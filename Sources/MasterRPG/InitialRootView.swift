@@ -67,7 +67,7 @@ struct InitialRootView: View {
                 .onChange(of: databaseModel.context, initial: true) {
                     guard let context = databaseModel.context else { return }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        appStore.setupRootModels(context: context)
+                        appStore.setupRootModels(context: context, spotlightIndexer: databaseModel.spotlightIndexer)
                     }
                 }
                 .alert("iCloud Account issues", isPresented: $showAccountAlert) {

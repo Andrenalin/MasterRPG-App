@@ -62,6 +62,7 @@
       }
     },
     "In App Purchase" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -80,6 +81,9 @@
           }
         }
       }
+    },
+    "Spotlight Indexer Message" : {
+
     },
     "The database cannot be loaded. The underlaying error: %@. But we can recover the app by removing the database file. All data will be lost if you click remove database." : {
       "localizations" : {

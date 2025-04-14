@@ -38,6 +38,8 @@ public final class AppStore: Sendable {
     public var selectionSheetLinkModel: SelectionSheetLinkModel
     public let deviceRotationModel: DeviceRotationModel
 
+    public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
+    
     // Options
     public var hasDatabase: Bool = false
     public var firstLunch: Bool = true
@@ -167,7 +169,7 @@ public final class AppStore: Sendable {
 
 extension AppStore {
     @MainActor
-    public func setupRootModels(context: NSManagedObjectContext) {
+    public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
         let diceRoot = DiceFactory.root(for: context)
         let photoRoot = PhotoFactory.root(for: context)
         let audioRoot = AudioFactory.root(for: context)
@@ -205,6 +207,9 @@ extension AppStore {
         valueRoot.setRootControllable(adventureRoot)
         weatherRoot.setRootControllable(adventureRoot)
 
+        self.rpgSpotlightIndexer = spotlightIndexer
+        spotlightIndexer?.observeIndexing()
+        
         hasDatabase = true
     }
 }
@@ -238,7 +243,7 @@ extension AppStore {
     public static var preview: AppStore {
         let dbModel = DataBaseModel.preview
         let model = AppStore()
-        model.setupRootModels(context: dbModel.context.unsafelyUnwrapped)
+        model.setupRootModels(context: dbModel.context.unsafelyUnwrapped, spotlightIndexer: nil)
         return model
     }
     @MainActor

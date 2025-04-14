@@ -15,12 +15,18 @@ public struct SettingsView: View {
     public var body: some View {
         AndrenalinKit.SettingsView(store: store.adventureRoot, exportController: store.adventureRoot.exportControllable, importController: store.adventureRoot.importControllable, audioFileStore: store.audioRoot.fileUrlDataController, pdfFileStore: store.pdfRoot.fileUrlDataController, photoFileStore: store.photoRoot.fileUrlDataController, spaceFileStore: store.spaceRoot.fileUrlDataController) {
                     
+//            SectionGroupEditorView {
+//                InAppView(inAppController: store.inAppController)
+//            } header: {
+//                Text("In App Purchase")
+//            }
+
             SectionGroupEditorView {
-                InAppView(inAppController: store.inAppController)
+                Text(store.rpgSpotlightIndexer?.model.message ?? "Not yet finished")
             } header: {
-                Text("In App Purchase")
+                Text("Spotlight Indexer Message")
             }
-            
+
             SectionGroupEditorView {
                 Button {
                     store.installExampleData()

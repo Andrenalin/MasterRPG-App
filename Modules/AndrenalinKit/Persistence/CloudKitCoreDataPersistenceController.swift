@@ -102,6 +102,8 @@ public struct CloudKitCoreDataPersistenceController {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }
         
+        model.spotlightIndexer = RpgSpotlightIndexerDelegate(forStoreWith: privateDescription, coordinator: container.persistentStoreCoordinator)
+        
         var privateStore: NSPersistentStore?
         var sharedStore: NSPersistentStore?
         var storeUrl: URL? = nil
@@ -173,6 +175,8 @@ public struct CloudKitCoreDataPersistenceController {
                 Logger.persistenceController.error("Failed to pin viewContext to the current generation: \(error.localizedDescription, privacy: .public)")
             }
             model.context = context
+            model.spotlightIndexer?.startSpotlightIndexing()
+
             context.performAndWait {
                 model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, model: model)
             }

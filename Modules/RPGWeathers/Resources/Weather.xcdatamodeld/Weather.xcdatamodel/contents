@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22522" systemVersion="23C71" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788" systemVersion="24E248" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="RPGWeather" representedClassName="RPGWeather" syncable="YES" codeGenerationType="class">
         <attribute name="cloudThickness" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="information" attributeType="String" defaultValueString=""/>
+        <attribute name="information" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>
         <attribute name="lightningForkProbability" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="lightningFrequency" attributeType="Float" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="lightningMaxBolts" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <attribute name="name" attributeType="String" defaultValueString="New"/>
+        <attribute name="name" attributeType="String" defaultValueString="New" spotlightIndexingEnabled="YES"/>
         <attribute name="photoUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="rainAngle" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="rainIntensity" attributeType="Float" defaultValueString="0" usesScalarValueType="YES"/>

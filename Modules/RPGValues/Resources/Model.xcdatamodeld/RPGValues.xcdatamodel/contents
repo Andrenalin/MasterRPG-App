@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22522" systemVersion="23C71" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788" systemVersion="24E248" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="RPGValue" representedClassName="RPGValue" syncable="YES" codeGenerationType="class">
         <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="entriesUpdate" attributeType="String" defaultValueString=""/>
-        <attribute name="information" optional="YES" attributeType="String"/>
-        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="information" optional="YES" attributeType="String" spotlightIndexingEnabled="YES"/>
+        <attribute name="name" optional="YES" attributeType="String" spotlightIndexingEnabled="YES"/>
         <attribute name="parentUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="photosUpdate" attributeType="String" defaultValueString=""/>
         <attribute name="photoUUID" optional="YES" attributeType="String" defaultValueString=""/>
@@ -19,10 +19,10 @@
         <attribute name="diceUUID" optional="YES" attributeType="String"/>
         <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="isGenerator" attributeType="String" defaultValueString=""/>
-        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="name" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>
         <attribute name="type" attributeType="String" defaultValueString=""/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="value" attributeType="String" defaultValueString=""/>
+        <attribute name="value" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>
         <attribute name="valueUUID" optional="YES" attributeType="String"/>
         <relationship name="rpgValue" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGValue" inverseName="entries" inverseEntity="RPGValue"/>
     </entity>

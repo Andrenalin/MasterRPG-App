@@ -7,6 +7,8 @@ import CloudKit
 @Observable
 public final class DataBaseModel {
     public private(set) var context: NSManagedObjectContext?
+    public private(set) var spotlightIndexer: RpgSpotlightIndexerDelegate?
+    
     private var inMemory: Bool
     private var currentActor: AppPersistentActor
     private var localPersistence: CoreDataPersistenceController?
@@ -68,8 +70,10 @@ public final class DataBaseModel {
             guard !hasContextSet else { return }
             if hasCloudKit {
                 context = cloudPersistence?.model.context
+                spotlightIndexer = cloudPersistence?.model.spotlightIndexer
             } else {
                 context = localPersistence?.model.context
+                spotlightIndexer = localPersistence?.model.spotlightIndexer
             }
             hasContextSet = true
             return

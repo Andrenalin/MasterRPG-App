@@ -30,6 +30,7 @@ public final class CoreDataInitModel {
     public internal(set) var privatePersistentStore: NSPersistentStore?
     public internal(set) var sharedPersistentStore: NSPersistentStore?
     
+    public internal(set) var spotlightIndexer: RpgSpotlightIndexerDelegate?    
     var persistentHistoryTracker: PersistentHistoryTrackerManager?
     
     public var hasError: Bool {
@@ -111,6 +112,8 @@ public struct CoreDataPersistenceController {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }
         
+        model.spotlightIndexer = RpgSpotlightIndexerDelegate(forStoreWith: localDescription, coordinator: container.persistentStoreCoordinator)
+
         var storeUrl: URL? = nil
         var initError: CoreDataInitError = .none
         container.loadPersistentStores { storeDescription, error in
@@ -159,7 +162,8 @@ public struct CoreDataPersistenceController {
                 Logger.persistenceController.error("Failed to pin viewContext to the current generation: \(error.localizedDescription, privacy: .public)")
             }
             model.context = context
-            
+
+            model.spotlightIndexer?.startSpotlightIndexing()
             model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, model: model)
         }
     }
