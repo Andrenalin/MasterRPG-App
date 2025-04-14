@@ -1,0 +1,28 @@
+// @copyright André Trettin
+
+import SwiftUI
+
+public extension Color {
+    static var random: Color {
+        Color(red: .random(in: 0 ... 1), green: .random(in: 0 ... 1), blue: .random(in: 0 ... 1))
+    }
+}
+
+public extension View {
+    func rainbowDebug() -> some View {
+        #if VIEW_DEBUG
+            background(Color.random)
+        #else
+            self
+        #endif
+    }
+
+    func printViewChanges<Content: View>(@ViewBuilder content: @escaping () -> Content) -> some View {
+        #if VIEW_DEBUG
+            Self._printChanges()
+            return content()
+        #else
+            content()
+        #endif
+    }
+}

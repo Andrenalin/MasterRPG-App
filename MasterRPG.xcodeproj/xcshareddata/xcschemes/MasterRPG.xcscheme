@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme
+   LastUpgradeVersion = "1630"
+   version = "1.7">
+   <BuildAction
+      parallelizeBuildables = "YES"
+      buildImplicitDependencies = "YES">
+      <BuildActionEntries>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EC4E46828DDA29600D0279F"
+               BuildableName = "MasterRPG.app"
+               BlueprintName = "MasterRPG"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+      </BuildActionEntries>
+   </BuildAction>
+   <TestAction
+      buildConfiguration = "Debug"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      shouldUseLaunchSchemeArgsEnv = "YES">
+      <TestPlans>
+         <TestPlanReference
+            reference = "container:TestPlans/MasterRPG.xctestplan"
+            default = "YES">
+         </TestPlanReference>
+      </TestPlans>
+      <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8E4B218C2CD78EF3009AB4D1"
+               BuildableName = "AndrenalinKitTests.xctest"
+               BlueprintName = "AndrenalinKitTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8E8EE8502CD8EA5D0010A25B"
+               BuildableName = "RPGAudiosTests.xctest"
+               BlueprintName = "RPGAudiosTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8E8EE87A2CD8EB430010A25B"
+               BuildableName = "RPGPdfsTests.xctest"
+               BlueprintName = "RPGPdfsTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8E8EE89B2CD8EB620010A25B"
+               BuildableName = "RPGPhotosTests.xctest"
+               BlueprintName = "RPGPhotosTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EBECD972CD8EDED004E7103"
+               BuildableName = "RPGDieTests.xctest"
+               BlueprintName = "RPGDieTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EBECE222CD8EE85004E7103"
+               BuildableName = "RPGSpacesTests.xctest"
+               BlueprintName = "RPGSpacesTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EBECE432CD8EE92004E7103"
+               BuildableName = "RPGTablesTests.xctest"
+               BlueprintName = "RPGTablesTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EBECE642CD8EE9D004E7103"
+               BuildableName = "RPGValuesTests.xctest"
+               BlueprintName = "RPGValuesTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EBECE852CD8EEA9004E7103"
+               BuildableName = "RPGWeathersTests.xctest"
+               BlueprintName = "RPGWeathersTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EBED0942CD8EF68004E7103"
+               BuildableName = "RPGAdventuresTests.xctest"
+               BlueprintName = "RPGAdventuresTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EBED0B52CD8EF94004E7103"
+               BuildableName = "RPGGamesTests.xctest"
+               BlueprintName = "RPGGamesTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EBED0D62CD8EFA5004E7103"
+               BuildableName = "RPGMapsTests.xctest"
+               BlueprintName = "RPGMapsTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+      </Testables>
+   </TestAction>
+   <LaunchAction
+      buildConfiguration = "Debug"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      launchStyle = "0"
+      useCustomWorkingDirectory = "NO"
+      ignoresPersistentStateOnLaunch = "NO"
+      debugDocumentVersioning = "YES"
+      debugServiceExtension = "internal"
+      allowLocationSimulation = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "8EC4E46828DDA29600D0279F"
+            BuildableName = "MasterRPG.app"
+            BlueprintName = "MasterRPG"
+            ReferencedContainer = "container:MasterRPG.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "-allowCloudKitSync 1"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-com.apple.CoreData.ConcurrencyDebug 1"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-com.apple.CoreData.MigrationDebug 1"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-com.apple.CoreData.SQLDebug 3"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-com.apple.CoreData.CloudKitDebug 1"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-com.apple.CoreData.Logging.stderr 0"
+            isEnabled = "YES">
+         </CommandLineArgument>
+      </CommandLineArguments>
+      <LocationScenarioReference
+         identifier = "com.apple.dt.IDEFoundation.CurrentLocationScenarioIdentifier"
+         referenceType = "1">
+      </LocationScenarioReference>
+   </LaunchAction>
+   <ProfileAction
+      buildConfiguration = "Debug"
+      shouldUseLaunchSchemeArgsEnv = "YES"
+      savedToolIdentifier = ""
+      useCustomWorkingDirectory = "NO"
+      debugDocumentVersioning = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "8EC4E46828DDA29600D0279F"
+            BuildableName = "MasterRPG.app"
+            BlueprintName = "MasterRPG"
+            ReferencedContainer = "container:MasterRPG.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+   </ProfileAction>
+   <AnalyzeAction
+      buildConfiguration = "Debug">
+   </AnalyzeAction>
+   <ArchiveAction
+      buildConfiguration = "Release"
+      revealArchiveInOrganizer = "YES">
+   </ArchiveAction>
+</Scheme>

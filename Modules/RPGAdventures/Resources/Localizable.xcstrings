@@ -1,0 +1,446 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Add link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Link"
+          }
+        }
+      }
+    },
+    "Adventure" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuer"
+          }
+        }
+      }
+    },
+    "Adventures" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuer"
+          }
+        }
+      }
+    },
+    "Audio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik"
+          }
+        }
+      }
+    },
+    "Change adventure links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Abenteuer Links"
+          }
+        }
+      }
+    },
+    "Change audio links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Musik Links"
+          }
+        }
+      }
+    },
+    "Change dice links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Würfel Links"
+          }
+        }
+      }
+    },
+    "Change map links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Karten Links"
+          }
+        }
+      }
+    },
+    "Change pdf links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere PDF Links"
+          }
+        }
+      }
+    },
+    "Change Photo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Foto"
+          }
+        }
+      }
+    },
+    "Change photo links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Foto Links"
+          }
+        }
+      }
+    },
+    "Change space links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere 3D Objekt Links"
+          }
+        }
+      }
+    },
+    "Change table links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Tabellen Links"
+          }
+        }
+      }
+    },
+    "Change value links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Charakter Links"
+          }
+        }
+      }
+    },
+    "Change weather links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Wetter Links"
+          }
+        }
+      }
+    },
+    "Collect Photo Links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammle Foto Links"
+          }
+        }
+      }
+    },
+    "Content" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inhalt"
+          }
+        }
+      }
+    },
+    "Create new" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstelle neu"
+          }
+        }
+      }
+    },
+    "Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
+    },
+    "Drop Links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop Links"
+          }
+        }
+      }
+    },
+    "Duplicate %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupliziere %@"
+          }
+        }
+      }
+    },
+    "Enter a name for the entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe einen Namen für den Eintrag ein"
+          }
+        }
+      }
+    },
+    "Enter some content for the entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe einen Inhalt für den Eintrag ein"
+          }
+        }
+      }
+    },
+    "Entries replaced" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einträge ersetzt"
+          }
+        }
+      }
+    },
+    "Extract PDF" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extrahiere aus PDF"
+          }
+        }
+      }
+    },
+    "Map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte"
+          }
+        }
+      }
+    },
+    "Module %@ not supported" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Module %@ wird nicht unterstützt"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "New Adventure" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neues Abenteuer"
+          }
+        }
+      }
+    },
+    "Pdf" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF"
+          }
+        }
+      }
+    },
+    "Photo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto"
+          }
+        }
+      }
+    },
+    "Photos" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotos"
+          }
+        }
+      }
+    },
+    "Quick Editor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell-Editor"
+          }
+        }
+      }
+    },
+    "Quick Links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell-Links"
+          }
+        }
+      }
+    },
+    "Redo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederholen %@"
+          }
+        }
+      }
+    },
+    "Remove Line Breaks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Zeilenumbruch"
+          }
+        }
+      }
+    },
+    "Show Adventures" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeige Abenteuer"
+          }
+        }
+      }
+    },
+    "Space" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3D Objekte"
+          }
+        }
+      }
+    },
+    "Special Editor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spezielle Editoren"
+          }
+        }
+      }
+    },
+    "Table" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabelle"
+          }
+        }
+      }
+    },
+    "The quick editor allows you to add all chapters for the adventure at once. The first line is the title and the next text represents the content of the chapter. An empty line is used to separate chapters." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Schnelleditor erlaubt das hinzufügen von allen Kapitel für ein Abenteuer auf einmal. Die erste Zeile ist der Titel und die nächsten Zeilen sind der Inhalt vom Kapitel. Eine Leerzeile ist der Trenner für das nächste Kapitel."
+          }
+        }
+      }
+    },
+    "Undo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widerrufen %@"
+          }
+        }
+      }
+    },
+    "Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charaktere"
+          }
+        }
+      }
+    },
+    "Weather" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wetter"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

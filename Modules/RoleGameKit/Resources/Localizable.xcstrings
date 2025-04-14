@@ -1,0 +1,146 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        }
+      }
+    },
+    "Download free game bundles" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lade freie Spielpakte "
+          }
+        }
+      }
+    },
+    "Explanation data packages to see how the app works. It explain with real data how to use and add data." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dies sind Datenpakte die erklären wie die App anhand von echten Daten funktioniert."
+          }
+        }
+      }
+    },
+    "Import Explanation English Data" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importiere Erklärungspaket Englisch"
+          }
+        }
+      }
+    },
+    "Import Explanation German Data" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importiere Erklärungspaket Deutsch"
+          }
+        }
+      }
+    },
+    "Import Prebundled Examples" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importiere Beispiele"
+          }
+        }
+      }
+    },
+    "In App Purchase" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In App Käufe"
+          }
+        }
+      }
+    },
+    "Purchased items: %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gekaufte Pakete: %lld"
+          }
+        }
+      }
+    },
+    "The database cannot be loaded. The underlaying error: %@. But we can recover the app by removing the database file. All data will be lost if you click remove database." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datenbank konnte nicht geladen werden. Folgender Fehler trat auf: %@ Die App kann sich reparieren in dem sie die alte Datenbank Datei löscht. Achtung alle Daten sind dann verloren."
+          }
+        }
+      }
+    },
+    "The database cannot be recreated on the device. This should never happen. Hardware defect? The underlaying error: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datenbank kann nicht wieder erzeugt werden. Diese sollte nie geschehen. Hardware kaputt? Der aufgetretene Fehler ist: %@"
+          }
+        }
+      }
+    },
+    "The database cannot be removed from the device. The app cannot recover by itself. The underlaying error: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datenbank kann nicht gelöscht werden vom Gerät. Die App kann sich nicht selbst reparieren. Der aufgetretene Fehler ist: %@"
+          }
+        }
+      }
+    },
+    "The database models can not be loaded. That means the app bundle is defect. Therefore delete the app and reinstall it. Sorry no recovery possible." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datenbank Models können nicht geladen werden. Das bedeutet das App Paket ist kaputt. Hier hilft nur die App zu löschen und erneut zu installieren."
+          }
+        }
+      }
+    },
+    "These are free packages ready to use. They will add tables with rules, photos, characters and adventures for a certain rule system." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dies sind freie Spielpakte, die vorbereitet sind zum sofortigen Spielen. Sie enthalten Regeln, Fotos, Charakters und Abenteuers für ein bestimmtes Spielsystem."
+          }
+        }
+      }
+    },
+    "Use the Free Support [Page](https://github.com/Andrenalin/MasterRPG)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besuche das freie [Archiv](https://github.com/Andrenalin/MasterRPG)"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

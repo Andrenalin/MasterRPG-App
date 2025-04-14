@@ -1,0 +1,27 @@
+{
+  "configurations" : [
+    {
+      "id" : "6D1DD1BB-41AD-4422-AFD1-1233FE8B2880",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "language" : "en",
+    "testTimeoutsEnabled" : true,
+    "threadSanitizerEnabled" : true,
+    "undefinedBehaviorSanitizerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "8EBECE222CD8EE85004E7103",
+        "name" : "RPGSpacesTests"
+      }
+    }
+  ],
+  "version" : 1
+}

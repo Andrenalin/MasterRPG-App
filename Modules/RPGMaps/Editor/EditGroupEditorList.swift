@@ -1,0 +1,17 @@
+// @copyright André Trettin
+
+import AndrenalinKit
+import SwiftUI
+
+struct EditGroupEditorList: View {
+    let editController: EditGroupController<ItemController, EditController>
+    @Binding var isPresented: Bool
+    
+    @Environment(MapRoot.self) private var root
+
+    var body: some View {
+        EditGroupEditor(editGroupController: editController, isPresented: $isPresented) { model in
+            MainRow(model: model, isSelected: false, cacheItemListModel: editController.cacheItemListModel)
+        }
+    }
+}

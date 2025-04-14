@@ -1,0 +1,32 @@
+// @copyright André Trettin
+
+import Testing
+
+@testable import AndrenalinKit
+
+struct StringLinkTests {
+
+    @Test(arguments: [
+        ("Hi Text", "[Name](RPG://TABLES/0/558DA4B8-54110398CBF3)", "Inserted", "Hi Text"),
+        ("Hi [Name](RPG://TABLES/0/558DA4B8-54110398CBF3)", "[Name](RPG://TABLES/0/558DA4B8-54110398CBF3)", "Inserted", "Hi [Name](RPG://TABLES/0/558DA4B8-54110398CBF3)➡️Inserted⬅️"),
+        ("Hi [Name](RPG://TABLES/0/558DA4B8-54110398CBF3)➡️Inserted⬅️", "[Name](RPG://TABLES/0/558DA4B8-54110398CBF3)", "Inserted", "Hi [Name](RPG://TABLES/0/558DA4B8-54110398CBF3)"),
+       ("Hi [Name](RPG://TABLES/0/558DA4B8-54110398CBF3) more Text", "[Name](RPG://TABLES/0/558DA4B8-54110398CBF3)", "Inserted", "Hi [Name](RPG://TABLES/0/558DA4B8-54110398CBF3)➡️Inserted⬅️ more Text"),
+        ("Hi [Name](RPG://TABLES/0/558DA4B8-54110398CBF3)➡️Insert [Name](RPG://TABLES/0/558DA4B8-54110398CBF2)⬅️", "[Name](RPG://TABLES/0/558DA4B8-54110398CBF2)", "Inner", "Hi [Name](RPG://TABLES/0/558DA4B8-54110398CBF3)➡️Insert [Name](RPG://TABLES/0/558DA4B8-54110398CBF2)➡️Inner⬅️⬅️"),
+    ])
+    func bracketsInsideName(what: (sut: String, url: String, insertText: String, result: String)) async throws {
+        #expect(what.sut.toggleLink(url: what.url, with: what.insertText) == what.result)
+    }
+
+    @Test
+    func handle3Links() {
+        let text = "**Battelvalue**: [Strength](RPG://VALUES/0/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/16587A5F-327B-4579-B528-D84E9E8DA363)+[Dexterity](RPG://VALUES/0/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/ACAB03A0-A174-4A52-B818-9E6E8344AEC0)+[Intelligence](RPG://VALUES/0/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/4FC4ABB3-97FE-417D-A89A-4D845126D030)➡️ [Show](RPG://VALUES/600/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/4FC4ABB3-97FE-417D-A89A-4D845126D030/show) 12⬅️*2 = 42"
+
+        let url = "[Dexterity](RPG://VALUES/0/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/ACAB03A0-A174-4A52-B818-9E6E8344AEC0)"
+
+        let result = text.toggleLink(url: url, with: "[Show](RPG://VALUES/600/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/ACAB03A0-A174-4A52-B818-9E6E8344AEC0/show) 14")
+
+        let exp = "**Battelvalue**: [Strength](RPG://VALUES/0/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/16587A5F-327B-4579-B528-D84E9E8DA363)+[Dexterity](RPG://VALUES/0/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/ACAB03A0-A174-4A52-B818-9E6E8344AEC0)➡️[Show](RPG://VALUES/600/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/ACAB03A0-A174-4A52-B818-9E6E8344AEC0/show) 14⬅️+[Intelligence](RPG://VALUES/0/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/4FC4ABB3-97FE-417D-A89A-4D845126D030)➡️ [Show](RPG://VALUES/600/B6B05571-E7E7-4BAE-B3F1-E503580DCB58/4FC4ABB3-97FE-417D-A89A-4D845126D030/show) 12⬅️*2 = 42"
+
+        #expect(result == exp)
+    }
+}

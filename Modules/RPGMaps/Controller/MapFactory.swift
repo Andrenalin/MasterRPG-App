@@ -1,0 +1,47 @@
+// @copyright André Trettin
+
+import AndrenalinKit
+import RPGAudios
+import RPGDie
+import RPGPdfs
+import RPGPhotos
+import RPGTables
+import RPGValues
+import CoreData
+import SwiftUI
+
+public enum MapFactory {
+    @MainActor
+    public static func root(for context: NSManagedObjectContext, audioRoot: AudioRoot, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) -> MapRoot {
+        MapRoot(context: context, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
+    }
+
+    @MainActor
+    public static func rootView(for root: MapRoot, tabId: UUID) -> some View {
+        RootList(root: root, tabId: tabId, selection: true)
+            .itemSplitViewSizeMode(.wide)
+    }
+    
+    @MainActor
+    public static func rootExtendedView(for root: MapRoot, tabId: UUID) -> some View {
+        RootExtendedList(editController: root.editController(type: .main), tabId: tabId, selection: true)
+            .itemSplitViewSizeMode(.wide)
+    }
+}
+
+public enum MapRoute: Hashable, Codable {
+    case detail(ItemRowTreeModel?, UUID)
+}
+
+extension MapRoute: NavigationDestination {
+    public var body: some View {
+        switch self {
+            case .detail(let itemRowTreeModel, let tabId):
+                if let itemRowTreeModel {
+                    RootExtendedDetail(itemRowTreeModel: itemRowTreeModel, tabId: tabId)
+                } else {
+                    SplitContentUnavailable(module: .map)
+                }
+        }
+    }
+}

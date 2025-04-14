@@ -1,0 +1,125 @@
+// @copyright André Trettin
+
+import AndrenalinKit
+import SwiftUI
+
+struct PhotoEditor: View {
+    let editController: EditController
+    let size: CGSize
+    let topMargin: CGFloat
+    let inline: Bool
+    
+    @Environment(PhotoRoot.self) private var root
+    @Environment(ListModel.self) private var itemListModel
+    
+    @State private var showImporter = false
+    
+    @State private var lastFileUrl: FileUrl?
+    @State private var isLoading: Bool = false
+    
+    var body: some View {
+        @Bindable var model = editController.model        
+        VStack {
+            HeaderPhoto(itemId: imageId, image: editController.cacheItemListModel.imageCache(cacheType: .image, itemId: editController.model.id), degrees: editController.model.degrees, size: size, topMargin: topMargin, withoutSize: true)
+                .overlay {
+                    if isLoading {
+                        Color.black.opacity(0.3)
+                            .overlay(alignment: .center) {
+                                ProgressView()
+                                    .tint(.teal)
+#if !os(tvOS)
+                                    .controlSize(.large)
+#endif
+                            }
+                    }
+                }
+#if os(iOS)
+                .toolbar {
+                    ToolbarItem {
+                        if inline == false {
+                            photoButton
+                        }
+                    }
+                }
+#else
+                .overlay(alignment: .topTrailing) {
+                    photoButton
+                        .padding([.top, .trailing])
+                }
+#endif
+#if !os(tvOS)
+                .overlay(alignment: .bottomTrailing) {
+                    if inline == false {
+                        PhotoImporterView(showImporter: $showImporter, updateImage: updateImage(image:))
+                        .padding([.trailing, .bottom])
+                    }
+                }
+#endif
+        }
+#if !os(tvOS)
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
+            guard let url = try? result.get() else { return }
+            editController.resetPhoto(url: url)
+        }
+        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
+#endif
+        .onChange(of: editController.model.fileUrl, initial: true) {
+            guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage(for: model.id) == nil) else { return }
+            loadImage()
+        }
+    }
+}
+
+private extension PhotoEditor {
+    private var imageId: Binding<UUID?> {
+        Binding {
+            editController.model.id
+        } set: { _ in
+            // never set
+        }
+    }
+    
+    private func cachedImage(for itemId: UUID) -> AKImage? {
+        cacheItemListModel.imageCache(cacheType: .image, itemId: itemId)
+    }
+    
+    private var cacheItemListModel: CacheItemListModel {
+        // image cache
+        editController.cacheItemListModel
+    }
+    
+    private func loadImage() {
+        Task { @MainActor in
+            isLoading = true
+            let reset = lastFileUrl != editController.model.fileUrl
+            lastFileUrl = editController.model.fileUrl
+            
+            let loaderTask = Task.detached(priority: .userInitiated) {
+                await editController.loadImage(cacheType: .image, itemId: editController.model.id, fileUrl: editController.model.fileUrl, reset: reset)
+            }
+            _ = await loaderTask.result
+            isLoading = false
+        }
+    }
+    
+    func updatePhoto(url: URL) {
+        editController.resetPhoto(url: url)
+    }
+    
+    @Sendable func updateImage(image: AKImage?) async {
+        await editController.resetPhoto(image: image)
+    }
+    
+    var photoButton: some View {
+        ShowQuickLook(listController: root.listController(model: itemListModel), windowId: WindowIdentifier.photoViewer.rawValue, useInternal: true, useSelection: nil) { model in
+            root.itemController.itemOrEmpty(for: model.itemId).hasPhoto
+        } content: { model in
+            root.viewController.photoWindow(selection: ItemSelection(itemId: model.itemId, entryId: model.entryId))
+        }
+    }
+}
+
+#Preview {
+    PhotoEditor(editController: .preview, size: CGSize(width: 300, height: 200), topMargin: 64, inline: false)
+        .environment(PhotoRoot.preview)
+}

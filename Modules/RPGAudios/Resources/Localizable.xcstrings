@@ -1,0 +1,146 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        }
+      }
+    },
+    "Add Audio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge Musik hinzu"
+          }
+        }
+      }
+    },
+    "Audio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik"
+          }
+        }
+      }
+    },
+    "Change Audio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Musik "
+          }
+        }
+      }
+    },
+    "Duplicate %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupliziere %@"
+          }
+        }
+      }
+    },
+    "New Audio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Musik"
+          }
+        }
+      }
+    },
+    "No song currently loaded" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es wird gerade keine Musik gespielt"
+          }
+        }
+      }
+    },
+    "PLaylist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musikliste"
+          }
+        }
+      }
+    },
+    "Redo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederholen %@"
+          }
+        }
+      }
+    },
+    "Remove Audio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Musik"
+          }
+        }
+      }
+    },
+    "Show Audios" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeige Musik"
+          }
+        }
+      }
+    },
+    "Time" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeit"
+          }
+        }
+      }
+    },
+    "Undo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widerrufen %@"
+          }
+        }
+      }
+    },
+    "Volume" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lautstärke"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

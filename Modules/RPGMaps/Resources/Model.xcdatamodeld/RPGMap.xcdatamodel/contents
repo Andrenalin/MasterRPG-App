@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22522" systemVersion="23D56" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="RPGDisplayConfig" representedClassName="RPGDisplayConfig" syncable="YES" codeGenerationType="class">
+        <attribute name="borderColor" optional="YES" attributeType="String"/>
+        <attribute name="borderThickness" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="color" attributeType="String" defaultValueString=""/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="map" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGMap" inverseName="displayConfig" inverseEntity="RPGMap"/>
+        <relationship name="tileCoordinates" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGPosition" inverseName="displayConfig" inverseEntity="RPGPosition"/>
+    </entity>
+    <entity name="RPGMap" representedClassName="RPGMap" syncable="YES" codeGenerationType="class">
+        <attribute name="displayConfigUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="entriesUpdate" optional="YES" attributeType="String"/>
+        <attribute name="height" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="hexMapScale" attributeType="String" defaultValueString=""/>
+        <attribute name="information" attributeType="String" defaultValueString=""/>
+        <attribute name="mapCategory" attributeType="String" defaultValueString=""/>
+        <attribute name="mapPinsUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="mapUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="photoUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="pinScale" attributeType="Double" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="tags" attributeType="String" defaultValueString=""/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="width" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="displayConfig" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="RPGDisplayConfig" inverseName="map" inverseEntity="RPGDisplayConfig"/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGMapEntry" inverseName="map" inverseEntity="RPGMapEntry"/>
+        <relationship name="mapPins" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="RPGMapPin" inverseName="map" inverseEntity="RPGMapPin"/>
+    </entity>
+    <entity name="RPGMapEntry" representedClassName="RPGMapEntry" syncable="YES" codeGenerationType="class">
+        <attribute name="content" attributeType="String" defaultValueString=""/>
+        <attribute name="coordinatesUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isHexGrid" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isShown" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="coordinates" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGPosition" inverseName="mapEntries" inverseEntity="RPGPosition"/>
+        <relationship name="map" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGMap" inverseName="entries" inverseEntity="RPGMap"/>
+    </entity>
+    <entity name="RPGMapPin" representedClassName="RPGMapPin" syncable="YES" codeGenerationType="class">
+        <attribute name="color" attributeType="String" defaultValueString=""/>
+        <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isShown" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="photoUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="size" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="location" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="RPGPosition" inverseName="mapPin" inverseEntity="RPGPosition"/>
+        <relationship name="map" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGMap" inverseName="mapPins" inverseEntity="RPGMap"/>
+    </entity>
+    <entity name="RPGPosition" representedClassName="RPGPosition" syncable="YES" codeGenerationType="class">
+        <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="xPos" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="yPos" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="displayConfig" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGDisplayConfig" inverseName="tileCoordinates" inverseEntity="RPGDisplayConfig"/>
+        <relationship name="mapEntries" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGMapEntry" inverseName="coordinates" inverseEntity="RPGMapEntry"/>
+        <relationship name="mapPin" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGMapPin" inverseName="location" inverseEntity="RPGMapPin"/>
+    </entity>
+</model>

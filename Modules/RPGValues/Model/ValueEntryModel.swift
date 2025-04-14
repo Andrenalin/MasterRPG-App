@@ -1,0 +1,266 @@
+// @copyright André Trettin
+
+import AndrenalinKit
+import SwiftUI
+
+struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
+    init(id: UUID, name: String, type: ValueEntryModel.ValueType, isGenerator: Bool = false, value: String, diceId: UUID? = nil, valueId: UUID? = nil, displayState: Int = 0) {
+        self.id = id
+        self.name = name
+        self.type = type
+        self.isGenerator = isGenerator
+        self.value = value
+        self.diceId = diceId
+        self.valueId = valueId
+        self.displayState = displayState
+    }
+
+    init(id: UUID, name: CRDT<String>, type: CRDT<ValueEntryModel.ValueType>, isGenerator: CRDT<Bool>, value: CRDT<String>, diceId: CRDT<UUID?>, valueId: CRDT<UUID?>, displayState: Int = 0) {
+        self.id = id
+        _name = name
+        _type = type
+        _isGenerator = isGenerator
+        _value = value
+        _diceId = diceId
+        _valueId = valueId
+        self.displayState = displayState
+    }
+
+    enum ValueType: Int, Equatable, Hashable, Codable, CaseIterable, Identifiable {
+        case text = 0
+        case number = 1
+        case decimal = 2
+        case selection = 4
+
+        var id: Int {
+            rawValue
+        }
+
+        var localizedTitle: LocalizedStringResource {
+            switch self {
+            case .text: "Text"
+            case .number: "Number"
+            case .decimal: "Decimal"
+            case .selection: "Selection"
+            }
+        }
+
+        var title: String {
+            String(localized: localizedTitle).localizedString
+        }
+
+        var icon: String {
+            switch self {
+                case .text: "doc.text"
+                case .number: "textformat.12"
+                case .decimal: "number"
+                case .selection: "checkmark.square"
+            }
+        }
+    }
+
+    let id: UUID
+    @CRDT var name: String
+    @CRDT var type: ValueType
+    @CRDT var isGenerator: Bool
+    @CRDT var value: String
+    @CRDT var diceId: UUID?
+    @CRDT var valueId: UUID?
+
+    var displayState: Int = 0
+
+    mutating func reset(isGenerator: Bool) {
+        if self.isGenerator != isGenerator {
+            self.isGenerator = isGenerator
+        }
+    }
+
+    mutating func reset(valueType: ValueType) {
+        if type != valueType {
+            type = valueType
+        }
+    }
+
+    var isGeneratorToggle: Bool {
+        get { isGenerator }
+        set { reset(isGenerator: newValue) }
+    }
+
+    var isSelectedToggle: Bool {
+        get { valueSelected }
+        set { toggleSelection() }
+    }
+
+    var valueTypeToggle: ValueType {
+        get { type }
+        set { reset(valueType: newValue) }
+    }
+
+    var canCalculate: Bool {
+        type == .number || type == .decimal
+    }
+
+    var canGenerator: Bool {
+        type != .selection
+    }
+
+    var canSelection: Bool {
+        type == .selection
+    }
+}
+
+extension ValueEntryModel {
+    func nameText(otherValue: String) -> String {
+        let bold = name.starts(with: "**") ? "" : "**"
+        let first = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        var firstBold = first
+        if !first.isEmpty {
+            firstBold = "\(bold)\(first)\(bold)"
+        }
+        return firstBold
+    }
+
+    func valueLinkText(otherValue: String, withoutName: Bool = false) -> String {
+        let bold = name.starts(with: "**") ? "" : "**"
+        var first: String
+        if valueId != nil {
+            first = name == "Group" ? "" : name
+        } else {
+            first = name
+        }
+        first = first.trimmingCharacters(in: .whitespacesAndNewlines)
+        var firstBold = withoutName ? "" : first
+        if !firstBold.isEmpty {
+            firstBold = "\(bold)\(first)\(bold): "
+        }
+        return "\(firstBold)\(value)\(otherValue)"
+    }
+    
+    var valueDecimal: Double {
+        get { Double(valueCalculated) ?? 0.0 }
+        set {
+            if type == .number {
+                valueNumber = Int(newValue)
+            } else {
+                setValue(from: "\(newValue)")
+            }
+        }
+    }
+
+    var valueNumber: Int {
+        get { Int(valueCalculated) ?? 0 }
+        set {
+            setValue(from: "\(newValue)")
+        }
+    }
+
+    mutating func setValue(from text: String) {
+        let comp = value.split(separator: "|")
+        var newValue = comp.isEmpty ? "0" : String(comp[0])
+        if text != "0" {
+            newValue.append("|\(text)")
+        }
+        value = newValue
+    }
+
+    var valueSelected: Bool {
+        type == .selection && value == "I"
+    }
+
+    mutating func toggleSelection() {
+        guard type == .selection else { return }
+        if valueSelected {
+            value = ""
+        } else {
+            value = "I"
+        }
+    }
+
+    mutating func resetSelection() {
+        guard type == .selection else { return }
+        value = ""
+    }
+
+    var valueCalculated: String {
+        guard type == .number || type == .decimal else { return "0" }
+        let calcValues =  value.split(separator: "|")
+        if calcValues.count == 2 {
+            return String(calcValues[1])
+        } else {
+            return "0"
+        }
+    }
+
+    @MainActor func calculate(on result: String) -> String {
+        if let final = Calculator.calculate(result) {
+            if type == .number {
+                if !(final.isNaN || final.isInfinite || abs(final) >= Double(Int.max)) {
+                    let valueTemp = Int(final)
+                    return "\(valueTemp)"
+                } else {
+                    return "0 Error"
+                }
+            } else {
+                return "\(final)"
+            }
+        }
+        return "0 Error"
+    }
+}
+
+extension ValueEntryModel: EntryDataAccessable, ItemDuplicatable {    
+    static var empty: ValueEntryModel {
+        empty(UUID())
+    }
+
+    static func empty(_ id: UUID) -> ValueEntryModel {
+        ValueEntryModel(id: id, name: "", type: .text, value: "")
+    }
+
+    func duplicate() -> ValueEntryModel {
+        ValueEntryModel(id: UUID(), name: name, type: type, isGenerator: isGenerator, value: value, diceId: diceId, valueId: valueId, displayState: displayState)
+    }
+
+    func filter(with search: String) -> Bool {
+        (search.isEmpty || name.localizedCaseInsensitiveContains(search) || value.localizedCaseInsensitiveContains(search))
+    }
+    
+    func linkContent() -> String { value }
+}
+
+extension ValueEntryModel: ItemLinkEditable {
+    var textLinkContent: String {
+        entryText(otherValue: "")
+    }
+
+    func entryText(otherValue: String) -> String {
+        let bold = name.starts(with: "**") ? "" : "**"
+        return "\(bold)\(name.trimmingCharacters(in: .whitespacesAndNewlines))\(bold): \(value)\(otherValue)"
+    }
+}
+
+extension ValueEntryModel: ItemDiffComparable {
+    func merge(_ other: ValueEntryModel) -> ValueEntryModel {
+        ValueEntryModel(
+            id: id,
+            name: $name.merged(other: other.$name),
+            type: $type.merged(other: other.$type),
+            isGenerator: $isGenerator.merged(other: other.$isGenerator),
+            value: $value.merged(other: other.$value),
+            diceId: $diceId.merged(other: other.$diceId),
+            valueId: $valueId.merged(other: other.$valueId),
+            displayState: other.displayState
+        )
+    }
+
+    func isSame(_ other: ValueEntryModel) -> Bool {
+        name == other.name &&
+        type == other.type &&
+        isGenerator == other.isGenerator &&
+        value == other.value &&
+        diceId == other.diceId &&
+        valueId == other.valueId
+    }
+}
+
+extension ValueEntryModel: ItemReferencable {}

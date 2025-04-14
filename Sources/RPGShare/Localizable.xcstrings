@@ -1,0 +1,76 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Add Content to Master RPG" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge Inhalt zu Master RPG hinzu"
+          }
+        }
+      }
+    },
+    "All photos will be created in Photo module. The selected module will create one item that will reference them." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Fotos werden im Foto Modul erstellt. Im ausgewählten Modul wird ein Eintrag erstellt, welches das Foto oder die Fotos als Referenzen enthält.  "
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        }
+      }
+    },
+    "Module" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modul"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sichern"
+          }
+        }
+      }
+    },
+    "Text" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beschreibung"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

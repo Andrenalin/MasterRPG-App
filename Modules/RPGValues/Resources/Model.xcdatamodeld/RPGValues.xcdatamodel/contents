@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22522" systemVersion="23C71" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="RPGValue" representedClassName="RPGValue" syncable="YES" codeGenerationType="class">
+        <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="entriesUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="information" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="parentUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="photosUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="photoUUID" optional="YES" attributeType="String" defaultValueString=""/>
+        <attribute name="tags" optional="YES" attributeType="String"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="valueCategory" attributeType="String" defaultValueString=""/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGValueEntry" inverseName="rpgValue" inverseEntity="RPGValueEntry"/>
+        <relationship name="photos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGValuePhoto" inverseName="rpgValue" inverseEntity="RPGValuePhoto"/>
+    </entity>
+    <entity name="RPGValueEntry" representedClassName="RPGValueEntry" syncable="YES" codeGenerationType="class">
+        <attribute name="calculated" attributeType="String" defaultValueString=""/>
+        <attribute name="diceUUID" optional="YES" attributeType="String"/>
+        <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isGenerator" attributeType="String" defaultValueString=""/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="type" attributeType="String" defaultValueString=""/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="value" attributeType="String" defaultValueString=""/>
+        <attribute name="valueUUID" optional="YES" attributeType="String"/>
+        <relationship name="rpgValue" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGValue" inverseName="entries" inverseEntity="RPGValue"/>
+    </entity>
+    <entity name="RPGValuePhoto" representedClassName="RPGValuePhoto" syncable="YES" codeGenerationType="class">
+        <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="rpgValue" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGValue" inverseName="photos" inverseEntity="RPGValue"/>
+    </entity>
+</model>

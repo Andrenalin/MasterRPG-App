@@ -1,0 +1,472 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "A table can be a List, Dice or All. A list table is a simple name / content table. The dice table uses the dice value as name and the content is the result of the dice roll. All tables are used for a generator to use all entries." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Tabelle kann eine Liste, Würfelliste oder Alles sein. Die Liste ist eine einfache Tabelle die Namen und Inhalt hat. Eine Würfelliste hat als Namen das Würfelergebnis und der Inhalt beschreibt das Ergebnis des Würfel Wurfes. Die Alles Tabelle wird benutzt für den Generator zum generieren von Werten für jedes Zeile der Tabelle."
+          }
+        }
+      }
+    },
+    "Add Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge Würfel hinzu"
+          }
+        }
+      }
+    },
+    "Add link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge Link hinzu"
+          }
+        }
+      }
+    },
+    "Add Table" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge Tabelle hinzu"
+          }
+        }
+      }
+    },
+    "All" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alles"
+          }
+        }
+      }
+    },
+    "As Entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Eintrag"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        }
+      }
+    },
+    "Change dice link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Würfel Link"
+          }
+        }
+      }
+    },
+    "Change dice links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Würfel Links"
+          }
+        }
+      }
+    },
+    "Change table links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Tabellen Links"
+          }
+        }
+      }
+    },
+    "Change table type" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Tabellen Type"
+          }
+        }
+      }
+    },
+    "Content" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inhalt"
+          }
+        }
+      }
+    },
+    "Create" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstellen"
+          }
+        }
+      }
+    },
+    "Delete" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löschen"
+          }
+        }
+      }
+    },
+    "Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
+    },
+    "Duplicate %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupliziere %@"
+          }
+        }
+      }
+    },
+    "Enter a name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe einen Namen ein"
+          }
+        }
+      }
+    },
+    "Enter a name for the entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe einen Namen für den Eintrag ein"
+          }
+        }
+      }
+    },
+    "Enter a value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe ein Wert ein"
+          }
+        }
+      }
+    },
+    "Enter some content for the entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe Inhalt für den Eintrag ein"
+          }
+        }
+      }
+    },
+    "Entries replaced" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einträge ersetzt"
+          }
+        }
+      }
+    },
+    "Extract PDF" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extrahiere aus PDF"
+          }
+        }
+      }
+    },
+    "List" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liste"
+          }
+        }
+      }
+    },
+    "Loading ..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lade ..."
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "New name for the item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Name für Tabelle"
+          }
+        }
+      }
+    },
+    "New Table" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Tabelle"
+          }
+        }
+      }
+    },
+    "New value for the item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Wert für den Eintrag"
+          }
+        }
+      }
+    },
+    "Quick Editor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell-Editor"
+          }
+        }
+      }
+    },
+    "Quick Links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell-Links"
+          }
+        }
+      }
+    },
+    "Redo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederholen %@"
+          }
+        }
+      }
+    },
+    "Remove Line Breaks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Zeilenumbruch"
+          }
+        }
+      }
+    },
+    "Roll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfeln"
+          }
+        }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sichern"
+          }
+        }
+      }
+    },
+    "Show Tables" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeige Tabelle"
+          }
+        }
+      }
+    },
+    "Special Editor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spezielle Editoren"
+          }
+        }
+      }
+    },
+    "Table" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabelle"
+          }
+        }
+      }
+    },
+    "Table Generator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabellen Generator"
+          }
+        }
+      }
+    },
+    "Table type" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabellen Typ"
+          }
+        }
+      }
+    },
+    "Table Type" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabellen Typ"
+          }
+        }
+      }
+    },
+    "Tables" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabellen"
+          }
+        }
+      }
+    },
+    "The quick editor allows you to add all entries for the table at once. The first line is the title and the next text represents the content of the entry. An empty line is used to separate entries." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Schnelleditor erlaubt das hinzufügen von allen Einträgen für eine Tabelle auf einmal. Die erste Zeile ist der Titel und die nächsten Zeilen sind der Inhalt vom Eintrag. Eine Leerzeile ist der Trenner für den nächsten Eintrag."
+          }
+        }
+      }
+    },
+    "Undo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widerrufen %@"
+          }
+        }
+      }
+    },
+    "Use" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutze"
+          }
+        }
+      }
+    },
+    "Use Entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutze Eintrag"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

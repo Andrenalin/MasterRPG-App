@@ -1,0 +1,188 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Master RPG"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Master RPG"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG"
+          }
+        }
+      }
+    },
+    "MasterRPG Document" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Dokument"
+          }
+        }
+      }
+    },
+    "MasterRPG Save Game" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG Spielstand"
+          }
+        }
+      }
+    },
+    "NSCameraUsageDescription" : {
+      "comment" : "Privacy - Camera Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG benutzt die Kamera um Fotos aufzunehmen und im Foto Modul hinzu zufügen. Diese Fotos können dann als Charakterbilder, Karten oder im Abenteuer verwendet werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the camera to take photos for the photo module and other modules to show photos and maps"
+          }
+        }
+      }
+    },
+    "NSDesktopFolderUsageDescription" : {
+      "comment" : "Privacy - Desktop Folder Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf die Dateien von deinem Schreibtisch zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game."
+          }
+        }
+      }
+    },
+    "NSDocumentsFolderUsageDescription" : {
+      "comment" : "Privacy - Documents Folder Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf die Dateien von deinem Dokumenten Ordner zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game."
+          }
+        }
+      }
+    },
+    "NSDownloadsFolderUsageDescription" : {
+      "comment" : "Privacy - Downloads Folder Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf die Dateien von deinem Download Ordner zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game."
+          }
+        }
+      }
+    },
+    "NSHumanReadableCopyright" : {
+      "comment" : "Copyright (human-readable)",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "© Copyright 2024, Andre Trettin"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "© Copyright 2024-2025, Andre Trettin"
+          }
+        }
+      }
+    },
+    "NSLocalNetworkUsageDescription" : {
+      "comment" : "Privacy - Local Network Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf dein lokales Netzwerk zugreifen um ein Spiel als Spielleiter anzukündigen. Andere Spieler von anderen Geräten können dann einem Spiel im lokalen Netzwerk beitreten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster"
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription" : {
+      "comment" : "Privacy - Photo Library Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf deine Fotos in der Fotobibliothek zugreifen. Die ausgewählten Fotos können dann als Charakterbilder, Karten oder in Abenteuern verwendet werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,810 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@" : {
+
+    },
+    "%d/%d (Format, # of Images)" : {
+      "comment" : "Images taken over maximum number of images.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$d/%2$d"
+          }
+        }
+      }
+    },
+    "Aim at your object (Object Capture)" : {
+      "comment" : "Feedback message to aim at your object for object capture",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Aim at your object"
+          }
+        }
+      }
+    },
+    "Aligning Images (Reconstruction)" : {
+      "comment" : "Feedback message during the object reconstruction phase.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Aligning Images…"
+          }
+        }
+      }
+    },
+    "All segments complete. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user has finished capturing final segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "All segments complete."
+          }
+        }
+      }
+    },
+    "Calculating… (Estimated time, Object Capture)" : {
+      "comment" : "When estimated processing time isn't available yet.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Calculating…"
+          }
+        }
+      }
+    },
+    "Can‘t find your object. It should be larger than 3in (8cm) in each dimension." : {
+      "comment" : "Feedback message when detection has failed."
+    },
+    "Can't flip your object? (Object Capture, Point Cloud)" : {
+      "comment" : "Title for button on the object capture screen that lets users indicate that their object cannot be flipped.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Can't flip your object?"
+          }
+        }
+      }
+    },
+    "Cancel (Object Capture, Point Cloud)" : {
+      "comment" : "Title of button to close review page.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "Cancel (Object Capture)" : {
+      "comment" : "Title for cancel button on the object capture screen.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "Cancel (Object Reconstruction)" : {
+      "comment" : "Button title to cancel reconstruction",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "Capture Help" : {
+
+    },
+    "Capture your object again from a higher angle. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user should capture again from a higher angle given flipping isn't recommended.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Capture your object again from a higher angle."
+          }
+        }
+      }
+    },
+    "Capture your object again from a lower angle. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user should capture again from a lower angle given flipping isn't recommended.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Capture your object again from a lower angle."
+          }
+        }
+      }
+    },
+    "Continue (Object Capture, Capture)" : {
+      "comment" : "Title for continue button on the object capture screen.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Continue"
+          }
+        }
+      }
+    },
+    "Continue (Object Capture, Point Cloud)" : {
+      "comment" : "Title of button to continue to flip the object and capture more.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Continue"
+          }
+        }
+      }
+    },
+    "Duplicate %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupliziere %@"
+          }
+        }
+      }
+    },
+    "Estimated time remaining: %@ (Object Capture)" : {
+      "comment" : "Estimated processing time to reconstruct object.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Estimated time remaining: %@"
+          }
+        }
+      }
+    },
+    "Finish (Object Capture, Point Cloud)" : {
+      "comment" : "Title for finish button on the object capture screen.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Finish"
+          }
+        }
+      }
+    },
+    "First segment complete. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user has finished capturing first segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "First segment complete."
+          }
+        }
+      }
+    },
+    "Flip object anyway (Object Capture, Point Cloud)" : {
+      "comment" : "Title for button on the object capture screen that lets users indicate they want to flip their object.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Flip object anyway"
+          }
+        }
+      }
+    },
+    "Flip object on its side and capture again. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user should flip the object and capture again.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Flip object on its side and capture again."
+          }
+        }
+      }
+    },
+    "Flip object on its side and move around. (Object Capture, Segment, Feedback)" : {
+      "comment" : "Guided feedback message for user to move around object again after flipping.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Flip object on its side and move around."
+          }
+        }
+      }
+    },
+    "Flip object on the opposite side and capture again. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user has not flipped object on the opposite side.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Flip object on the opposite side and capture again"
+          }
+        }
+      }
+    },
+    "Flipping this object is not recommended. (Review, Object Capture)" : {
+      "comment" : "Feedback title that this object is likely to fail if flipped.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Flipping this object is not recommended."
+          }
+        }
+      }
+    },
+    "For best quality, capture three segments.\nTap Skip if you can't make it all the way around but your final model may have missing areas. (Review, Object Capture, 2nd Segment)" : {
+      "comment" : "Feedback title for when user has not finished capturing second segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "For best quality, capture three segments.\nTap Skip if you can't make it all the way around but your final model may have missing areas."
+          }
+        }
+      }
+    },
+    "For best quality, capture three segments.\nTap Skip if you can't make it all the way around, but your final model may have missing areas. (Review, Object Capture, 1st Segment)" : {
+      "comment" : "Feedback for when user still has work to do to complete the first segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "For best quality, capture three segments.\nTap Skip if you can't make it all the way around, but your final model may have missing areas."
+          }
+        }
+      }
+    },
+    "For best quality, capture three segments. (Review, Object Capture, 1st Segment)" : {
+      "comment" : "Feedback for when user has finished capturing first segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "For best quality, caputure three segments."
+          }
+        }
+      }
+    },
+    "For best quality, capture three segments. (Review, Object Capture, 2nd segment)" : {
+      "comment" : "Feedback title for when user has finished capturing second segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "For best quality, capture three segments."
+          }
+        }
+      }
+    },
+    "For best quality, capture three segments. When you're done, tap Finish to complete your object. (Review, Object Capture)" : {
+      "comment" : "Feedback for when user still has work to do to complete the final segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "For best quality, capture three segments. When you're done, tap Finish to complete your object."
+          }
+        }
+      }
+    },
+    "Generating Mesh (Reconstruction)" : {
+      "comment" : "Feedback message during the object reconstruction phase.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Generating Mesh…"
+          }
+        }
+      }
+    },
+    "Generating Point Cloud (Reconstruction)" : {
+      "comment" : "Feedback message during the object reconstruction phase.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Generating Point Cloud…"
+          }
+        }
+      }
+    },
+    "Help (Object Capture)" : {
+      "comment" : "Title for help button on the object capture screen to show the tutorial pages.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Help"
+          }
+        }
+      }
+    },
+    "HIDDEN SPACER" : {
+
+    },
+    "Keep app running while processing. (Object Capture)" : {
+      "comment" : "Description displayed while processing models.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep app running while processing."
+          }
+        }
+      }
+    },
+    "Keep going to complete the final segment. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user still has work to do to complete the final segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep going to complete the final segment."
+          }
+        }
+      }
+    },
+    "Keep going to complete the first segment. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user still has work to do to complete the first segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep going to complete the first segment."
+          }
+        }
+      }
+    },
+    "Keep going to complete the second segment. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user has not finished capturing second segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep going to complete the second segment."
+          }
+        }
+      }
+    },
+    "Keep moving around your object. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user has less than the minimum images required.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep moving around your object."
+          }
+        }
+      }
+    },
+    "Make sure that areas you captured previously can still be seen. (Review, Object Capture)" : {
+      "comment" : "Feedback for when user has not flipped object on the opposite side.\nFeedback for when user should flip the object and capture again",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Make sure that areas you captured previously can still be seen. Avoid flipping your object if it changes the shape."
+          }
+        }
+      }
+    },
+    "Mapping Texture (Reconstruction)" : {
+      "comment" : "Feedback message during the object reconstruction phase.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Mapping Texture…"
+          }
+        }
+      }
+    },
+    "More Light Required (Object Capture)" : {
+      "comment" : "Feedback message to increase lighting for object capture",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "More Light Required"
+          }
+        }
+      }
+    },
+    "Move" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewege"
+          }
+        }
+      }
+    },
+    "Move above your object and capture again. (Object Capture, Segment, Feedback)" : {
+      "comment" : "Guided feedback message for user to move around object again from a higher angle without flipping",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move above your object and capture again."
+          }
+        }
+      }
+    },
+    "Move above your object and make sure that areas you captured previously can still be seen. (Review, Object Capture)" : {
+      "comment" : "Feedback for when user should capture again from above given flipping isn't recommended.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move above your object and make sure that areas you captured previously can still be seen."
+          }
+        }
+      }
+    },
+    "Move around to ensure that the whole object is inside the box. Drag handles to manually resize. (Object Capture, State)" : {
+      "comment" : "Feedback message to size box to object.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move around to ensure that the whole object is inside the box. Drag handles to manually resize."
+          }
+        }
+      }
+    },
+    "Move close and center the dot on your object, then tap Continue. (Object Capture, State)" : {
+      "comment" : "Feedback message to fill camera feed with object.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move close and center the dot on your object, then tap Continue."
+          }
+        }
+      }
+    },
+    "Move Closer (Object Capture)" : {
+      "comment" : "Feedback message to move closer for object capture",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move Closer"
+          }
+        }
+      }
+    },
+    "Move down to be level with the base of your object and capture again. (Review, Object Capture)" : {
+      "comment" : "Feedback for when user should capture again from a lower angle given flipping isn't recommended.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move down to be level with the base of your object and capture again."
+          }
+        }
+      }
+    },
+    "Move Farther Away (Object Capture)" : {
+      "comment" : "Feedback message to move back for object capture",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move Farther Away"
+          }
+        }
+      }
+    },
+    "Move low and capture again. (Object Capture, Segment, Feedback)" : {
+      "comment" : "Guided feedback message for user to move around object again from a lower angle without flipping",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move low and capture again."
+          }
+        }
+      }
+    },
+    "Move slower (Object Capture)" : {
+      "comment" : "Feedback message to slow down for object capture",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move slower"
+          }
+        }
+      }
+    },
+    "Move slowly around your object. (Object Capture, Segment, Feedback)" : {
+      "comment" : "Guided feedback message to move slowly around object to start capturing.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move slowly around your object."
+          }
+        }
+      }
+    },
+    "New Space" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neues 3D Objekt"
+          }
+        }
+      }
+    },
+    "Next (Object Capture)" : {
+      "comment" : "Title for next button on the object capture screen.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Next"
+          }
+        }
+      }
+    },
+    "OK" : {
+
+    },
+    "Optimizing (Reconstruction)" : {
+      "comment" : "Feedback message during the object reconstruction phase.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Optimizing…"
+          }
+        }
+      }
+    },
+    "Pre-Processing (Reconstruction)" : {
+      "comment" : "Feedback message during the object reconstruction phase.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Pre-Processing…"
+          }
+        }
+      }
+    },
+    "Processing (Object Capture)" : {
+      "comment" : "Processing title for object reconstruction.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Processing…"
+          }
+        }
+      }
+    },
+    "Processing title (Object Capture)" : {
+      "comment" : "Title of processing view during processing phase.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Processing"
+          }
+        }
+      }
+    },
+    "Redo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederholen %@"
+          }
+        }
+      }
+    },
+    "Remove Space" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne 3D Objekt"
+          }
+        }
+      }
+    },
+    "Reset Box (Object Capture)" : {
+      "comment" : "Title for resetting bounding box on the object capture screen.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Reset Box"
+          }
+        }
+      }
+    },
+    "Scanning Info" : {
+
+    },
+    "Second segment complete. (Review, Object Capture)" : {
+      "comment" : "Feedback title for when user has finished capturing second segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Second segment complete."
+          }
+        }
+      }
+    },
+    "Show Spaces" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeige 3D Objekte"
+          }
+        }
+      }
+    },
+    "Skip (Object Capture, Point Cloud)" : {
+      "comment" : "Title for skip button on the object capture screen.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Skip"
+          }
+        }
+      }
+    },
+    "Space" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3D Objekt"
+          }
+        }
+      }
+    },
+    "Spaces" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3D Objekte"
+          }
+        }
+      }
+    },
+    "Start Capture (Object Capture)" : {
+      "comment" : "Title for start capture button on the object capture screen.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Start Capture"
+          }
+        }
+      }
+    },
+    "Tap Finish to process your object. (Review, Object Capture)" : {
+      "comment" : "Feedback for when user has finished capturing final segment.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Tap Finish to process your object."
+          }
+        }
+      }
+    },
+    "Undo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widerrufen %@"
+          }
+        }
+      }
+    },
+    "Your object may have single color surfaces or be too reflective to add more segments.\nTap Continue to capture more detail without flipping, or Flip Object Anyway. (Review, Object Capture)" : {
+      "comment" : "Feedback that this object is likely to fail if flipped.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your object may have single color surfaces or be too reflective to add more segments.\nTap Continue to capture more detail without flipping, or Flip Object Anyway."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

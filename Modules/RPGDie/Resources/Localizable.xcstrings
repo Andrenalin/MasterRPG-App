@@ -1,0 +1,764 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        }
+      }
+    },
+    "%@%@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@%2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        }
+      }
+    },
+    "%lld --> %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld --> %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld --> %2$@"
+          }
+        }
+      }
+    },
+    "%lld --> %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld --> %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld --> %2$lld"
+          }
+        }
+      }
+    },
+    "%lld --> Max Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld --> Maximaler Wert"
+          }
+        }
+      }
+    },
+    "+/- 5" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+/- 5"
+          }
+        }
+      }
+    },
+    "<" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "<"
+          }
+        }
+      }
+    },
+    "<=" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "<="
+          }
+        }
+      }
+    },
+    ">" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ">"
+          }
+        }
+      }
+    },
+    ">=" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ">="
+          }
+        }
+      }
+    },
+    "Add" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen"
+          }
+        }
+      }
+    },
+    "Add %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen %@"
+          }
+        }
+      }
+    },
+    "Add as focus" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Fokus hinzufügen"
+          }
+        }
+      }
+    },
+    "Add dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Würfel"
+          }
+        }
+      }
+    },
+    "Add Dice each Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge Würfel jedem Wert hinzu "
+          }
+        }
+      }
+    },
+    "Add Die from Bag" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge Würfel vom Beutel hinzu"
+          }
+        }
+      }
+    },
+    "Add reroll options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge erneutes Würfel hinzu"
+          }
+        }
+      }
+    },
+    "Change add dice every" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere hinzufügen von Würfel "
+          }
+        }
+      }
+    },
+    "Change dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Würfel"
+          }
+        }
+      }
+    },
+    "Check for" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überprüfe auf"
+          }
+        }
+      }
+    },
+    "Compare Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vergleiche Werte"
+          }
+        }
+      }
+    },
+    "coup" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immersieg"
+          }
+        }
+      }
+    },
+    "Coup" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immersieg"
+          }
+        }
+      }
+    },
+    "Coup Dice Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immersieg Würfelwert"
+          }
+        }
+      }
+    },
+    "Coup Options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immersieg Einstellungen"
+          }
+        }
+      }
+    },
+    "Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
+    },
+    "Dice Editor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel Editor"
+          }
+        }
+      }
+    },
+    "Duplicate %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupliziere %@"
+          }
+        }
+      }
+    },
+    "fumble" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Patzer"
+          }
+        }
+      }
+    },
+    "Fumble" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Patzer"
+          }
+        }
+      }
+    },
+    "Fumble Dice Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Patzer Würfelwert"
+          }
+        }
+      }
+    },
+    "Fumble Options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Patzer Einstellungen"
+          }
+        }
+      }
+    },
+    "Modifier" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifier"
+          }
+        }
+      }
+    },
+    "New Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Würfel"
+          }
+        }
+      }
+    },
+    "Not rolled" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht gewürfelt"
+          }
+        }
+      }
+    },
+    "Off" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus"
+          }
+        }
+      }
+    },
+    "Off match value with all dice, on match with one die" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus: vergleiche mit allen Würfeln. An: vergleiche mit einem Würfel."
+          }
+        }
+      }
+    },
+    "Off replace with value, on preplace with max value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus: ersetze mit Wert. An: ersetze mit max. Wert."
+          }
+        }
+      }
+    },
+    "Only first die can coup" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur der erste Würfel kann ein Immersieg sein"
+          }
+        }
+      }
+    },
+    "Only first die can fumble" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur der erste Würfel kann ein Patzer sein"
+          }
+        }
+      }
+    },
+    "Options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
+          }
+        }
+      }
+    },
+    "Percent dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prozent Wurf"
+          }
+        }
+      }
+    },
+    "re-roll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneutes würfeln"
+          }
+        }
+      }
+    },
+    "Re-roll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneutes würfeln"
+          }
+        }
+      }
+    },
+    "Re-roll Options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneutes würfeln Einstellungen"
+          }
+        }
+      }
+    },
+    "Re-roll Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneutes würfeln Wert"
+          }
+        }
+      }
+    },
+    "Redo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederholen %@"
+          }
+        }
+      }
+    },
+    "Remove %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne %@"
+          }
+        }
+      }
+    },
+    "Remove coup options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Immersieg Einstellungen"
+          }
+        }
+      }
+    },
+    "Remove dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Würfel"
+          }
+        }
+      }
+    },
+    "Remove fumble options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Patzer Einstellungen"
+          }
+        }
+      }
+    },
+    "Remove reroll options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne erneutes Würfel Einstellungen"
+          }
+        }
+      }
+    },
+    "Reorder dice by value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortiere die Würfel nach Wert"
+          }
+        }
+      }
+    },
+    "replace" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ersetze"
+          }
+        }
+      }
+    },
+    "Replace" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ersatz"
+          }
+        }
+      }
+    },
+    "Replace Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ersatzwert"
+          }
+        }
+      }
+    },
+    "Reset" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurücksetzen"
+          }
+        }
+      }
+    },
+    "Roll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
+    },
+    "Roll & Share" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel & teile"
+          }
+        }
+      }
+    },
+    "Rolled" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gewürfelt"
+          }
+        }
+      }
+    },
+    "Scale" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skalierung"
+          }
+        }
+      }
+    },
+    "Set coup options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setze Immersieg Einstellung"
+          }
+        }
+      }
+    },
+    "Set fumble options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setze Patzer Einstellung"
+          }
+        }
+      }
+    },
+    "Share" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teilen"
+          }
+        }
+      }
+    },
+    "Show 2nd D20" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeige 2. W20"
+          }
+        }
+      }
+    },
+    "Show Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeige Würfel"
+          }
+        }
+      }
+    },
+    "Show Dice in Space" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeige Würfel im Raum"
+          }
+        }
+      }
+    },
+    "Special Options" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spezielle Einstellungen"
+          }
+        }
+      }
+    },
+    "Sum up dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Summiere die Würfel auf"
+          }
+        }
+      }
+    },
+    "Undo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widerrufen %@"
+          }
+        }
+      }
+    },
+    "value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wert"
+          }
+        }
+      }
+    },
+    "Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wert"
+          }
+        }
+      }
+    },
+    "Value to compare against" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vergleichswert"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,27 @@
+// @copyright André Trettin
+
+import AndrenalinKit
+import RPGDie
+import RPGPdfs
+import CoreData
+import SwiftUI
+
+public enum TableFactory {
+    @MainActor
+    public static func root(for context: NSManagedObjectContext, diceRoot: DiceRoot, pdfRoot: PdfRoot) -> TableRoot {
+        TableRoot(context: context, diceRoot: diceRoot, pdfRoot: pdfRoot)
+    }
+
+    @MainActor
+    public static func rootView(for root: TableRoot, tabId: UUID) -> some View {
+        RootList(root: root, tabId: tabId, selection: true)
+            .itemSplitViewSizeMode(.wide)
+    }
+
+    @MainActor
+    public static func rootExtendedView(for root: TableRoot, tabId: UUID) -> some View {
+        RootExtendedList(editController: root.editController(type: .main), tabId: tabId, selection: true)
+            .itemSplitViewSizeMode(.wide)
+            .navigationDestinationAutoReceive(InternalRoute.self)
+    }
+}

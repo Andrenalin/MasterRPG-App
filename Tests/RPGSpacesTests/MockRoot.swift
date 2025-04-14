@@ -1,0 +1,29 @@
+// @copyright André Trettin
+
+import AndrenalinKit
+import Foundation
+import RPGResources
+import RPGResourcesDebug
+import Testing
+
+@testable import RPGSpaces
+
+struct MockRoot {
+    static func importTestData(_ name: String = ResourcesDebug.spaceTestData, itemCounter: Int = 1) async throws -> SpaceRoot {
+        let root = await SpaceRoot.testRoot()
+
+        try await resetTestData(for: root)
+
+        let bundle = ResourcesDebug.bundle
+        let url = bundle.url(forResource: name, withExtension: "gmz").unsafelyUnwrapped
+        let task = root.importController.importUrl(from: url)
+        let _ = try await task.value
+        await #expect(root.itemController.itemDataModel.items.count == itemCounter)
+        
+        return root
+    }
+    
+    static func resetTestData(for root: SpaceRoot) async throws {
+        await root.itemController.resetData()
+    }
+}

@@ -1,0 +1,58 @@
+// @copyright André Trettin
+
+import AndrenalinKit
+import SwiftUI
+
+struct AdventureSheet: View {
+    let model: AdventureModel
+    let showImage: Bool
+    let dismissAction: (() -> Void)?
+
+    @Environment(AdventureRoot.self) private var root
+
+    @State private var sheetModel: SheetModel = SheetModel(id: UUID(), name: "", description: "", groups: [])
+
+    var body: some View {
+        TableRootSheet(linkControllable: root.linkControllable, model: sheetModel, showImage: showImage, dismissAction: dismissAction, imageContent: imageView(size:))
+            .onChange(of: model, initial: true) {
+                resetModels()
+            }
+    }
+
+    func resetModels() {
+        withAnimation {
+            sheetModel = SheetController(root: root).sheet(for: model.id)
+        }
+    }
+
+    func imageView(size: CGSize) -> some View {
+        root.photoRoot.viewController.photoView(for: model.photoId, useGame: false) { image, photoDegrees in
+            Image(akImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .rotationEffect(Angle(degrees: photoDegrees))
+                .clipShape(.rect(cornerRadius: 16))
+                .frame(width: size.width, height: size.height, alignment: .center)
+        }
+    }
+}
+
+struct TableGameSheet: View {
+    @Environment(AdventureRoot.self) private var root
+
+    @State private var model: AdventureModel = .empty
+
+    var body: some View {
+        AdventureSheet(model: model, showImage: true, dismissAction: nil)
+            .padding(32)
+            .onChange(of: root.gameController.gameModel.currentItemId) {
+                model = root.gameController.currentItem()
+            }
+    }
+}
+
+#Preview {
+    TableGameSheet()
+        .environment(AdventureRoot.previewWithData)
+
+}

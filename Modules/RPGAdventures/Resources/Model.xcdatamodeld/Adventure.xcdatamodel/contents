@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22522" systemVersion="23C71" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="RPGAdventure" representedClassName="RPGAdventure" syncable="YES" codeGenerationType="class">
+        <attribute name="adventureCategory" attributeType="String" defaultValueString=""/>
+        <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="entriesUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="information" attributeType="String" defaultValueString=""/>
+        <attribute name="name" attributeType="String" defaultValueString="New"/>
+        <attribute name="photoUUID" optional="YES" attributeType="String"/>
+        <attribute name="tags" attributeType="String" defaultValueString=""/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGAdventureEntry" inverseName="adventure" inverseEntity="RPGAdventureEntry"/>
+    </entity>
+    <entity name="RPGAdventureEntry" representedClassName="RPGAdventureEntry" syncable="YES" codeGenerationType="class">
+        <attribute name="content" attributeType="String" defaultValueString=""/>
+        <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="adventure" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGAdventure" inverseName="entries" inverseEntity="RPGAdventure"/>
+    </entity>
+</model>

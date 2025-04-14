@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>classNames</key>
+	<dict>
+		<key>MasterRPGUITests</key>
+		<dict>
+			<key>testScrollPerformance()</key>
+			<dict>
+				<key>com.apple.dt.XCTMetric_OSSignpost-Scroll_DraggingAndDeceleration.animation.frame.count</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>185.800000</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>Local Baseline</string>
+				</dict>
+				<key>com.apple.dt.XCTMetric_OSSignpost-Scroll_DraggingAndDeceleration.animation.frame.rate</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>73.187517</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>Local Baseline</string>
+				</dict>
+				<key>com.apple.dt.XCTMetric_OSSignpost-Scroll_DraggingAndDeceleration.animation.hitch.number</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>53.200000</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>Local Baseline</string>
+				</dict>
+				<key>com.apple.dt.XCTMetric_OSSignpost-Scroll_DraggingAndDeceleration.animation.hitch.time.ratio</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>206.601942</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>Local Baseline</string>
+				</dict>
+				<key>com.apple.dt.XCTMetric_OSSignpost-Scroll_DraggingAndDeceleration.animation.hitches.total.duration</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>525.030037</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>Local Baseline</string>
+				</dict>
+				<key>com.apple.dt.XCTMetric_OSSignpost-Scroll_DraggingAndDeceleration.duration</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>2.538718</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>Local Baseline</string>
+				</dict>
+			</dict>
+		</dict>
+	</dict>
+</dict>
+</plist>

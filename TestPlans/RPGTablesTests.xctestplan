@@ -1,0 +1,26 @@
+{
+  "configurations" : [
+    {
+      "id" : "489CE582-C402-4565-854E-989FDB12B240",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "language" : "en",
+    "threadSanitizerEnabled" : true,
+    "undefinedBehaviorSanitizerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "8EBECE432CD8EE92004E7103",
+        "name" : "RPGTablesTests"
+      }
+    }
+  ],
+  "version" : 1
+}

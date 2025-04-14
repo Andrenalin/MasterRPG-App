@@ -1,0 +1,2320 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        }
+      }
+    },
+    " - %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " - %lld"
+          }
+        }
+      }
+    },
+    " here" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " hier"
+          }
+        }
+      }
+    },
+    "%@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        }
+      }
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ File Management" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Datei Verwaltung"
+          }
+        }
+      }
+    },
+    "%@ File Settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Datei Einstellungen"
+          }
+        }
+      }
+    },
+    "%@ Folder Management" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Order verwalten"
+          }
+        }
+      }
+    },
+    "%@ Search" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Suche"
+          }
+        }
+      }
+    },
+    "%@%@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        }
+      }
+    },
+    "%lld Entry" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Entry"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Entries"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld Item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld %lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Access" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zugriff"
+          }
+        }
+      }
+    },
+    "Add" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen"
+          }
+        }
+      }
+    },
+    "Add " : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen "
+          }
+        }
+      }
+    },
+    "Add %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen %@"
+          }
+        }
+      }
+    },
+    "Add entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Eintrag"
+          }
+        }
+      }
+    },
+    "Added selected item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgewählter Eintrag hinzugefügt"
+          }
+        }
+      }
+    },
+    "Adventure" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuer"
+          }
+        }
+      }
+    },
+    "All" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
+          }
+        }
+      }
+    },
+    "Audio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik"
+          }
+        }
+      }
+    },
+    "Available" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verfügbar"
+          }
+        }
+      }
+    },
+    "Becareful this removes all data and resets the database." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sei vorsichtig! Das wird alle Daten löschen und die Datenbank zurücksetzen"
+          }
+        }
+      }
+    },
+    "Becareful this removes all data from the database, all files in local and appCloud storage associated with the database. Files in other or iCloud will not be touched." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sei vorsichtig! Dies löscht alle Daten aus der Datenbank, alle Dateien im Lokalen und AppCloud Ordner. Dateien in iCloud und Anderen Ordnern werden nicht gelöscht.."
+          }
+        }
+      }
+    },
+    "Building" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebäude"
+          }
+        }
+      }
+    },
+    "Campaign" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kampagne"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        }
+      }
+    },
+    "Cancel Export" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportieren abbrechen"
+          }
+        }
+      }
+    },
+    "Cancel Import" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importieren abbrechen"
+          }
+        }
+      }
+    },
+    "Case Insensitive" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Groß- und Kleinschreibung wird nicht beachtet"
+          }
+        }
+      }
+    },
+    "Category" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kategorie"
+          }
+        }
+      }
+    },
+    "Change" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändern"
+          }
+        }
+      }
+    },
+    "Change " : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändern "
+          }
+        }
+      }
+    },
+    "Change Database and quit the app" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Datenbank und beende die App"
+          }
+        }
+      }
+    },
+    "Change Database?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Datenbank?"
+          }
+        }
+      }
+    },
+    "Change item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Eintrag"
+          }
+        }
+      }
+    },
+    "Change to %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere zu %@"
+          }
+        }
+      }
+    },
+    "Change toggle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Auswahl"
+          }
+        }
+      }
+    },
+    "Change value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Wert"
+          }
+        }
+      }
+    },
+    "Character" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter"
+          }
+        }
+      }
+    },
+    "Choose an item to see more details" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle einen Eintrag aus, um mehr zu erfahren"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schliessen"
+          }
+        }
+      }
+    },
+    "Color Scheme" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erscheinigunsbild"
+          }
+        }
+      }
+    },
+    "Convert Data" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konvertiere Datei Daten"
+          }
+        }
+      }
+    },
+    "Copy" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopie"
+          }
+        }
+      }
+    },
+    "Copy %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiere %@"
+          }
+        }
+      }
+    },
+    "Copy %@ and %lld item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kopiere %1$@ und %2$lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kopiere %1$@ und %2$lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Copy %1$@ and %2$lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Copy %1$@ and %2$lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Copy %lld entry" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kopiere %lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kopiere %lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Copy %lld entry"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Copy %lld entries"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Copy entries" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiere Einträge"
+          }
+        }
+      }
+    },
+    "Copy entry %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiere Eintrag %@"
+          }
+        }
+      }
+    },
+    "Copy row %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiere Zeile: %@"
+          }
+        }
+      }
+    },
+    "Current selected item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgewählter Eintrag"
+          }
+        }
+      }
+    },
+    "Dark" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dunkel"
+          }
+        }
+      }
+    },
+    "Data" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daten"
+          }
+        }
+      }
+    },
+    "Databse Settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datenbank Einstellungen"
+          }
+        }
+      }
+    },
+    "Delete %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lösche %@"
+          }
+        }
+      }
+    },
+    "Delete %@ and %lld item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lösche %1$@ und %2$lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lösche %1$@ und %2$lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %1$@ and %2$lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %1$@ and %2$lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Delete %lld entry" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Entferne %lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Entferne %lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld entry"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld entries"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Delete row %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Zeile: %@"
+          }
+        }
+      }
+    },
+    "Description" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beschreibung"
+          }
+        }
+      }
+    },
+    "Deselect" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abwählen"
+          }
+        }
+      }
+    },
+    "Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fertig"
+          }
+        }
+      }
+    },
+    "Drop " : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop "
+          }
+        }
+      }
+    },
+    "Dungeon" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dungeon"
+          }
+        }
+      }
+    },
+    "Edit" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bearbeiten"
+          }
+        }
+      }
+    },
+    "Edit Group %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editiere Gruppe %@"
+          }
+        }
+      }
+    },
+    "Edit Group %@ and %lld item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Editiere Gruppe %1$@ und %2$lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Editiere Gruppe %1$@ und %2$lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Edit Group %1$@ and %2$lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Edit Group %1$@ and %2$lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Editors" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editoren"
+          }
+        }
+      }
+    },
+    "Enter a name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib einen Namen ein"
+          }
+        }
+      }
+    },
+    "Enter a name for the item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib einen Namen für den Eintrag ein"
+          }
+        }
+      }
+    },
+    "Entry links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eintrag Links"
+          }
+        }
+      }
+    },
+    "ERROR" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ERROR"
+          }
+        }
+      }
+    },
+    "Export" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportiere"
+          }
+        }
+      }
+    },
+    "Export & Import from files" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export und Import von Dateien"
+          }
+        }
+      }
+    },
+    "Export %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportiere %@"
+          }
+        }
+      }
+    },
+    "Export %@ and %lld item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Exportiere %1$@ und %2$lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Exportiere %1$@ und %2$lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export %1$@ and %2$lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export %1$@ and %2$lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Export is cancelled, but %lld are successfully exported." : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export wurde abgebrochen, aber %lld Eintrag ist erfolgreich exportiert worden."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export wurde abgebrochen, aber %lld Einträge sind erfolgreich exportiert worden."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export is cancelled, but %lld item is successfully exported."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Export is cancelled, but %lld items are successfully exported."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Exporting %lld of %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportiere %1$lld von %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Exporting %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "File Management" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dateien verwalten"
+          }
+        }
+      }
+    },
+    "File path" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datei Pfad"
+          }
+        }
+      }
+    },
+    "Fill in some description for the item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib eine Beschreibung für den Eintrag ein"
+          }
+        }
+      }
+    },
+    "Focus" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fokus"
+          }
+        }
+      }
+    },
+    "Focus \"%@\"" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fokusiere \"%@\""
+          }
+        }
+      }
+    },
+    "Folder Settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordner Einstellungen"
+          }
+        }
+      }
+    },
+    "Game" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spiel"
+          }
+        }
+      }
+    },
+    "Game Master" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielleiter"
+          }
+        }
+      }
+    },
+    "Generate" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generiere"
+          }
+        }
+      }
+    },
+    "Generate item for \"%@\"" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generiere Eintrag für \"%@\""
+          }
+        }
+      }
+    },
+    "Generator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generator"
+          }
+        }
+      }
+    },
+    "Group" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppe"
+          }
+        }
+      }
+    },
+    "Group \"%@\"" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppe \"%@\""
+          }
+        }
+      }
+    },
+    "Group \"%@\" with %lld item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Gruppiere \"%1$@\" mit %2$lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Gruppiere \"%1$@\" mit %2$lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Group \"%1$@\" with %2$lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Group \"%1$@\" with %2$lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Group Editor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppen Editor"
+          }
+        }
+      }
+    },
+    "Hidden" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versteckt"
+          }
+        }
+      }
+    },
+    "Hide" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verstecken"
+          }
+        }
+      }
+    },
+    "iCloud Account Status: " : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Konto Status:"
+          }
+        }
+      }
+    },
+    "Immersive" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immersiv"
+          }
+        }
+      }
+    },
+    "Import" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importiere"
+          }
+        }
+      }
+    },
+    "Import and Overwrite" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importiere und überschreibe"
+          }
+        }
+      }
+    },
+    "Import GMZ data files you got from friends or others" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importiere GMZ Dateien von Freunden oder deinen Sicherungen"
+          }
+        }
+      }
+    },
+    "Importing %lld of %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importiere %1$lld von %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Importing %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gegenstand"
+          }
+        }
+      }
+    },
+    "Light" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hell"
+          }
+        }
+      }
+    },
+    "Link %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verlinke %@"
+          }
+        }
+      }
+    },
+    "Link %@ and %lld item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Verlinke %1$@ und %2$lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Verlinke %1$@ und %2$lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Link %1$@ and %2$lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Link %1$@ and %2$lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Load Game" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lade Spielstand"
+          }
+        }
+      }
+    },
+    "Loaded" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geladen"
+          }
+        }
+      }
+    },
+    "Location" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ort"
+          }
+        }
+      }
+    },
+    "Loot" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beute"
+          }
+        }
+      }
+    },
+    "Map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte"
+          }
+        }
+      }
+    },
+    "Mark" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markiere"
+          }
+        }
+      }
+    },
+    "Mark for remove %lld Item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Eintrag markiert zum Löschen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Einträge markiert zum Löschen"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Mark for remove %lld Item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Mark for remove %lld Items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Monster" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bestie"
+          }
+        }
+      }
+    },
+    "Move entry down" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewege Eintrag runter"
+          }
+        }
+      }
+    },
+    "Move entry up" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewege Eintrag hoch"
+          }
+        }
+      }
+    },
+    "Move row down %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewege Zeile runter %@"
+          }
+        }
+      }
+    },
+    "Move row up %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewege Zeile hoch %@"
+          }
+        }
+      }
+    },
+    "Music" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "New" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neu"
+          }
+        }
+      }
+    },
+    "New tag" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Tag"
+          }
+        }
+      }
+    },
+    "No" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nein"
+          }
+        }
+      }
+    },
+    "No %@ selected" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein %@ ausgewählt"
+          }
+        }
+      }
+    },
+    "No Account" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht angemeldet"
+          }
+        }
+      }
+    },
+    "No file" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Datei"
+          }
+        }
+      }
+    },
+    "No file choosen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Datei ausgewählt"
+          }
+        }
+      }
+    },
+    "Not checked" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht überprüft"
+          }
+        }
+      }
+    },
+    "Not yet selected" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch nicht ausgewählt"
+          }
+        }
+      }
+    },
+    "Ok" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ok"
+          }
+        }
+      }
+    },
+    "Path" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pfad"
+          }
+        }
+      }
+    },
+    "Pdf" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pdf"
+          }
+        }
+      }
+    },
+    "Photo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto"
+          }
+        }
+      }
+    },
+    "Play" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abspielen"
+          }
+        }
+      }
+    },
+    "Playlist" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musikliste"
+          }
+        }
+      }
+    },
+    "Quick links added" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell Links hinzugefügt"
+          }
+        }
+      }
+    },
+    "Really Reset?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wirklich Zurücksetzen?"
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entfernen"
+          }
+        }
+      }
+    },
+    "Remove %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne %@"
+          }
+        }
+      }
+    },
+    "Remove entries" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Einträge"
+          }
+        }
+      }
+    },
+    "Remove entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Eintrag"
+          }
+        }
+      }
+    },
+    "Remove item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Eintrag"
+          }
+        }
+      }
+    },
+    "Reorder entries" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Einträge"
+          }
+        }
+      }
+    },
+    "Reset" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurücksetzen"
+          }
+        }
+      }
+    },
+    "Reset Data" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurücksetzen der Daten"
+          }
+        }
+      }
+    },
+    "Roll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
+    },
+    "Root Links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Links"
+          }
+        }
+      }
+    },
+    "Rules" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regeln"
+          }
+        }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speichern"
+          }
+        }
+      }
+    },
+    "Scan" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan"
+          }
+        }
+      }
+    },
+    "Scenario" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Szenario"
+          }
+        }
+      }
+    },
+    "Search" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suche"
+          }
+        }
+      }
+    },
+    "Search or use @ for tags" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suche oder benutze @ für Tags"
+          }
+        }
+      }
+    },
+    "Select" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auswählen"
+          }
+        }
+      }
+    },
+    "Select Default Path" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle Standard Ordner"
+          }
+        }
+      }
+    },
+    "Selected - %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgewählte - %lld"
+          }
+        }
+      }
+    },
+    "Selected Players get updates" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auswählte Spieler bekommen die Updates"
+          }
+        }
+      }
+    },
+    "Selection for: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auswahl von: %@"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
+          }
+        }
+      }
+    },
+    "Settings about the %@ file storage" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Datei Speicher Einstellungen"
+          }
+        }
+      }
+    },
+    "Settings about the Database storgae. You can switch back and furth, the database will not be removed. If you like you can export the current database and import it the other one. Use iCloud if you want automatical sync between the devices." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier kannst du einstellen, wo deine Datenbank gespeichert werden soll. Beim Wechsel werden die Daten nicht automatische kopiert. Möchtet du deine vorigen Daten verwenden, exportiere sie. Ein hin und her schalten löscht keine Daten und ist jederzeit möglich. Beachte dass du verantwortlich bist für Synchronisierung."
+          }
+        }
+      }
+    },
+    "Share" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teilen"
+          }
+        }
+      }
+    },
+    "Show" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anzeigen"
+          }
+        }
+      }
+    },
+    "Sound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klang"
+          }
+        }
+      }
+    },
+    "Space" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3D Objekt"
+          }
+        }
+      }
+    },
+    "Store Database in iCloud" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speicher die Datenbank in der iCloud"
+          }
+        }
+      }
+    },
+    "Supplement" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ergänzung"
+          }
+        }
+      }
+    },
+    "System" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        }
+      }
+    },
+    "Table" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabelle"
+          }
+        }
+      }
+    },
+    "Tag" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tag"
+          }
+        }
+      }
+    },
+    "Tags" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tags"
+          }
+        }
+      }
+    },
+    "The app will be terminated to apply the database change." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die App wird beendet und die Datenbank geändert"
+          }
+        }
+      }
+    },
+    "The quick link editor allows you to select another table to scan the references. It will add links into the entries by searching for the same text and replace the occurences." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Schnelleditor für Links hilft dir beim Hinzufügen der Links durch scannen der Referenzen einer anderen Quelle wie zum Beispiel Tabellen. Es sucht in der Tabelle nach dem Text und fügt die Referenz ein. "
+          }
+        }
+      }
+    },
+    "Type" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typ"
+          }
+        }
+      }
+    },
+    "Typing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eingabe"
+          }
+        }
+      }
+    },
+    "Unavailable" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht vertügbar"
+          }
+        }
+      }
+    },
+    "Unfocus \"%@\"" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unfokussieren \"%@\""
+          }
+        }
+      }
+    },
+    "Ungroup \"%@\" into %lld item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Gruppe \"%1$@\" auftrennen in %2$lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Gruppe \"%1$@\" auftrennen in %2$lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ungroup \"%1$@\" into %2$lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ungroup \"%1$@\" into %2$lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Unmark" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demarkiere"
+          }
+        }
+      }
+    },
+    "Validate Data" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überprüfe Daten"
+          }
+        }
+      }
+    },
+    "Validate Files" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überprüfe Dateien"
+          }
+        }
+      }
+    },
+    "Validate Links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überprüfe Links"
+          }
+        }
+      }
+    },
+    "Validate the links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überprüfe die Links"
+          }
+        }
+      }
+    },
+    "Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter"
+          }
+        }
+      }
+    },
+    "Warnung: The default Accessible %@ Folder path is not set. If you choose default location iCloud, please provide a default path to your iCloud path, where the files can be written. The app will fallback to AppCloud if it cannot write into the given path." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Achtung: Der Standard %@ Ordner ist nicht gesetzt worden. Wenn du als Standard Ort iCloud verwendest, solltest du auch einen Standard  Ordner angegeben wo die Dateien gespeichert werden dürfen. Die App wird den AppCloud Ort verwenden, wenn nicht in iCloud geschrieben werden darf."
+          }
+        }
+      }
+    },
+    "Weather" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wetter"
+          }
+        }
+      }
+    },
+    "Which Module" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welches Module"
+          }
+        }
+      }
+    },
+    "Word" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wort"
+          }
+        }
+      }
+    },
+    "Yes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ja"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22522" systemVersion="23C71" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="RPGPdf" representedClassName="RPGPdf" syncable="YES" codeGenerationType="class">
+        <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="entriesUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="fileUrl" attributeType="String" defaultValueString=""/>
+        <attribute name="fileUrlUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="information" attributeType="String" defaultValueString=""/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="pdfCategory" attributeType="String" defaultValueString=""/>
+        <attribute name="tags" attributeType="String" defaultValueString=""/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGPdfEntry" inverseName="pdf" inverseEntity="RPGPdfEntry"/>
+    </entity>
+    <entity name="RPGPdfEntry" representedClassName="RPGPdfEntry" syncable="YES" codeGenerationType="class">
+        <attribute name="bounds" attributeType="String" defaultValueString=""/>
+        <attribute name="content" attributeType="String" defaultValueString=""/>
+        <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="pageLabel" attributeType="String" defaultValueString=""/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="pdf" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGPdf" inverseName="entries" inverseEntity="RPGPdf"/>
+    </entity>
+</model>

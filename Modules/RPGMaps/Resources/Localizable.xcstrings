@@ -1,0 +1,1005 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+      "shouldTranslate" : false
+    },
+    "%lld Pin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Marker"
+          }
+        }
+      }
+    },
+    "Activate Border" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktiviere Umrandung"
+          }
+        }
+      }
+    },
+    "Add" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen"
+          }
+        }
+      }
+    },
+    "Add link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Link"
+          }
+        }
+      }
+    },
+    "Add monster" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Bestie"
+          }
+        }
+      }
+    },
+    "Add monsters" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Bestie"
+          }
+        }
+      }
+    },
+    "Add pin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Marker"
+          }
+        }
+      }
+    },
+    "Add Value as Monster?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soll ein Marker erstellt werden?"
+          }
+        }
+      }
+    },
+    "Audio" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik"
+          }
+        }
+      }
+    },
+    "Border color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umrandungsfarbe"
+          }
+        }
+      }
+    },
+    "Change audio links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Musik Links"
+          }
+        }
+      }
+    },
+    "Change dice links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Würfel Links"
+          }
+        }
+      }
+    },
+    "Change entry coordinates" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Koordinaten"
+          }
+        }
+      }
+    },
+    "Change map links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Karten Links"
+          }
+        }
+      }
+    },
+    "Change pdf links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere PDF Links"
+          }
+        }
+      }
+    },
+    "Change Photo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Foto"
+          }
+        }
+      }
+    },
+    "Change photo links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Foto Links"
+          }
+        }
+      }
+    },
+    "Change pin photo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Marker Foto"
+          }
+        }
+      }
+    },
+    "Change table links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Tabellen Links"
+          }
+        }
+      }
+    },
+    "Change to hexgrid" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere zu Hexkarte"
+          }
+        }
+      }
+    },
+    "Change value links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Character Links"
+          }
+        }
+      }
+    },
+    "Color Picker not available" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Farbauswahl nicht verfügbar"
+          }
+        }
+      }
+    },
+    "Config" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
+          }
+        }
+      }
+    },
+    "Content" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inhalt"
+          }
+        }
+      }
+    },
+    "Copy %lld entry" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kopiere %lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kopiere %lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Copy %lld entry"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Copy %lld entries"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Copy pin %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiere Marker %@"
+          }
+        }
+      }
+    },
+    "Copy pins" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiere Markers"
+          }
+        }
+      }
+    },
+    "Copy row %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiere Zeile: %@"
+          }
+        }
+      }
+    },
+    "Cover color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abdeckungsfarbe"
+          }
+        }
+      }
+    },
+    "Create new" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstelle neu"
+          }
+        }
+      }
+    },
+    "Delete %lld Pin" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lösche %lld Marker"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Lösche %lld Marker"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Pin"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Pins"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Delete row %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lösche Zeile: %@"
+          }
+        }
+      }
+    },
+    "Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
+    },
+    "Do you want to add the value:\n%@%@\nas a monster pin, too?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Möchtest du einen Marker hinzufügen %1$@%2$@? "
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Do you want to add the value:\n%1$@%2$@\nas a monster pin, too?"
+          }
+        }
+      }
+    },
+    "Drop link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop Link"
+          }
+        }
+      }
+    },
+    "Drop Links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop Links"
+          }
+        }
+      }
+    },
+    "Duplicate %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupliziere %@"
+          }
+        }
+      }
+    },
+    "Edit Entry Map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editiere Karteneintrag"
+          }
+        }
+      }
+    },
+    "Edit MapEntry %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editiere Karteneintrag %@"
+          }
+        }
+      }
+    },
+    "Edit Pin on Map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editiere Marker auf Karte"
+          }
+        }
+      }
+    },
+    "Edit Tile" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editiere Kachel"
+          }
+        }
+      }
+    },
+    "Enter a name for the entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe einen Namen für den Eintrag ein"
+          }
+        }
+      }
+    },
+    "Enter a name for the pin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe einen Namen für den Marker ein"
+          }
+        }
+      }
+    },
+    "Enter some content for the entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe einen Inhalt für den Eintrag ein"
+          }
+        }
+      }
+    },
+    "Entries replaced" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einträge ersetzt"
+          }
+        }
+      }
+    },
+    "Extract PDF" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extrahiere aus PDF"
+          }
+        }
+      }
+    },
+    "Generate Values" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generiere Werte"
+          }
+        }
+      }
+    },
+    "Hex Map Scale" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hexskalierung"
+          }
+        }
+      }
+    },
+    "Hexmap" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hexkarte"
+          }
+        }
+      }
+    },
+    "Hexmap is created" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hexkarte ist erzeugt"
+          }
+        }
+      }
+    },
+    "Hexmap is removed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hexkarte ist entfernt"
+          }
+        }
+      }
+    },
+    "Image" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto"
+          }
+        }
+      }
+    },
+    "Map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte"
+          }
+        }
+      }
+    },
+    "Maps" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karten"
+          }
+        }
+      }
+    },
+    "Module %@ not supported" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modul %@ wird nicht unterstützt"
+          }
+        }
+      }
+    },
+    "Move pin down" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewege Marker runter"
+          }
+        }
+      }
+    },
+    "Move pin up" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewege Marker hoch"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "New Map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Karte"
+          }
+        }
+      }
+    },
+    "New Pin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Marker"
+          }
+        }
+      }
+    },
+    "No Map Item is selected for editing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Karteneintrag ausgewählt zum Editieren"
+          }
+        }
+      }
+    },
+    "No only as Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nein nur als Wert"
+          }
+        }
+      }
+    },
+    "Ok" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verstanden"
+          }
+        }
+      }
+    },
+    "Pdf" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF"
+          }
+        }
+      }
+    },
+    "Photo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto"
+          }
+        }
+      }
+    },
+    "Pin from Charakter / Monster" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marker vom Charakter / Bestie"
+          }
+        }
+      }
+    },
+    "Pin Scale" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markerskalierung"
+          }
+        }
+      }
+    },
+    "Quick Editor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell-Editor"
+          }
+        }
+      }
+    },
+    "Quick Links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell-Links"
+          }
+        }
+      }
+    },
+    "Redo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederholen %@"
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entfernen"
+          }
+        }
+      }
+    },
+    "Remove Entries" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lösche Einträge"
+          }
+        }
+      }
+    },
+    "Remove hexgrid" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Hexkarte"
+          }
+        }
+      }
+    },
+    "Remove Line Breaks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Zeilenumbruch"
+          }
+        }
+      }
+    },
+    "Remove pin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lösche Marker"
+          }
+        }
+      }
+    },
+    "Remove pins" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lösche Markers"
+          }
+        }
+      }
+    },
+    "Reorder pins" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Markers"
+          }
+        }
+      }
+    },
+    "Show Maps" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeige Karten"
+          }
+        }
+      }
+    },
+    "Shown" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angezeigt"
+          }
+        }
+      }
+    },
+    "Size" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Größe"
+          }
+        }
+      }
+    },
+    "Special Editor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spezieller Editor"
+          }
+        }
+      }
+    },
+    "Submap" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eintrag"
+          }
+        }
+      }
+    },
+    "Table" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabelle"
+          }
+        }
+      }
+    },
+    "The quick editor allows you to add all rooms for the map at once. The first line is the title and the next text represents the description of the room. An empty line is used to separate rooms." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Schnelleditor erlaubt das hinzufügen von allen Räumen für eine Karte auf einmal. Die erste Zeile ist der Titel und die nächsten Zeilen sind der Inhalt vom Raum. Eine Leerzeile ist der Trenner für den nächsten Raum."
+          }
+        }
+      }
+    },
+    "Thickness" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stärke"
+          }
+        }
+      }
+    },
+    "Thickness of the border" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stärke der Umrandung"
+          }
+        }
+      }
+    },
+    "Undo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widerrufen %@"
+          }
+        }
+      }
+    },
+    "Updated pin from charakter" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualisiere Marker vom Charakter"
+          }
+        }
+      }
+    },
+    "Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wert"
+          }
+        }
+      }
+    },
+    "Yes add %lld Pin" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ja füge %lld Marker hinzu"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ja füge %lld Marker hinzu"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Yes add %lld Pin"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Yes add %lld Pins"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

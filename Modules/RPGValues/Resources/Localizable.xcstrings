@@ -1,0 +1,992 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        }
+      }
+    },
+    "Add" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen"
+          }
+        }
+      }
+    },
+    "Add child item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge Untereintrag hinzu"
+          }
+        }
+      }
+    },
+    "Add Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Würfel"
+          }
+        }
+      }
+    },
+    "Add link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Link"
+          }
+        }
+      }
+    },
+    "Add Pdf" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Pdf"
+          }
+        }
+      }
+    },
+    "Add Table" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Tabelle"
+          }
+        }
+      }
+    },
+    "Add Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen Werte"
+          }
+        }
+      }
+    },
+    "Adventure" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuer"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        }
+      }
+    },
+    "Change" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändern"
+          }
+        }
+      }
+    },
+    "Change dice link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Würfel Link"
+          }
+        }
+      }
+    },
+    "Change dice links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Würfel Links"
+          }
+        }
+      }
+    },
+    "Change pdf links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere PDF Links"
+          }
+        }
+      }
+    },
+    "Change selection" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Auswahl"
+          }
+        }
+      }
+    },
+    "Change table links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Tabellen Links"
+          }
+        }
+      }
+    },
+    "Change to %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere zu %@"
+          }
+        }
+      }
+    },
+    "Change type" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Type"
+          }
+        }
+      }
+    },
+    "Change value link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Charaktere Link"
+          }
+        }
+      }
+    },
+    "Change value links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere Charaktere Links"
+          }
+        }
+      }
+    },
+    "Character Generator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter Generator"
+          }
+        }
+      }
+    },
+    "Characters" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakters"
+          }
+        }
+      }
+    },
+    "Copy and add" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiere"
+          }
+        }
+      }
+    },
+    "Copy entry %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiere Eintrag %@"
+          }
+        }
+      }
+    },
+    "Create" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstellen"
+          }
+        }
+      }
+    },
+    "Create group from %lld entry" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Erstelle Gruppe aus %lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Erstelle Gruppe aus %lld Einträgen"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Create group from %lld entry"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Create group from %lld entries"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Create new" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstelle neu"
+          }
+        }
+      }
+    },
+    "Created group" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstelle Gruppe"
+          }
+        }
+      }
+    },
+    "Decimal" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dezimal"
+          }
+        }
+      }
+    },
+    "Delete" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löschen"
+          }
+        }
+      }
+    },
+    "Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
+    },
+    "Do you really want to remove the whole entry?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Möchtest du wirklich den gesamten Eintrag entfernen?"
+          }
+        }
+      }
+    },
+    "Drop Template for Generation" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lege Schablone für Generator ab"
+          }
+        }
+      }
+    },
+    "Duplicate %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupliziere %@"
+          }
+        }
+      }
+    },
+    "Enter a name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe einen Namen ein"
+          }
+        }
+      }
+    },
+    "Enter a name for the entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe einen Namen für den Eintrag ein"
+          }
+        }
+      }
+    },
+    "Enter a value for the entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gebe einen Wert für den Eintrag ein"
+          }
+        }
+      }
+    },
+    "Entries replaced" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einträge ersetzt"
+          }
+        }
+      }
+    },
+    "Extract PDF" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extrahiere aus PDF"
+          }
+        }
+      }
+    },
+    "Generator change" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generator Änderung"
+          }
+        }
+      }
+    },
+    "Group" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppe"
+          }
+        }
+      }
+    },
+    "Group \"%@\"" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppe \"%@\""
+          }
+        }
+      }
+    },
+    "Group \"%@\" with %lld item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Gruppiere \"%1$@\" mit %2$lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Gruppiere \"%1$@\" mit %2$lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Group \"%1$@\" with %2$lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Group \"%1$@\" with %2$lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Insert group" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppe eingesetzt"
+          }
+        }
+      }
+    },
+    "Item is used" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gegenstand wird verwendet"
+          }
+        }
+      }
+    },
+    "Items sent from the gamemaster" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gegenstände gesendet vom Spielleiter"
+          }
+        }
+      }
+    },
+    "Loading ..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lade ..."
+          }
+        }
+      }
+    },
+    "Module %@ not supported" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Module %@ wird nicht unterstützt"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "New Character" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Charakter"
+          }
+        }
+      }
+    },
+    "New name for the item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Name für den Charakter"
+          }
+        }
+      }
+    },
+    "No item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Eintrag"
+          }
+        }
+      }
+    },
+    "No Parent" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht vorhanden"
+          }
+        }
+      }
+    },
+    "Not Set" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht vorhanden"
+          }
+        }
+      }
+    },
+    "Number" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nummer"
+          }
+        }
+      }
+    },
+    "Pdf" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pdf"
+          }
+        }
+      }
+    },
+    "Quick Editor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell Editor"
+          }
+        }
+      }
+    },
+    "Quick Links" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell Links"
+          }
+        }
+      }
+    },
+    "Redo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederholen %@"
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enternen"
+          }
+        }
+      }
+    },
+    "Remove and add" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne vorherigen"
+          }
+        }
+      }
+    },
+    "Remove child item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Untereintrag"
+          }
+        }
+      }
+    },
+    "Remove dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Würfel"
+          }
+        }
+      }
+    },
+    "Remove entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Eintrag"
+          }
+        }
+      }
+    },
+    "Remove Line Breaks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entferne Zeilenumbruch"
+          }
+        }
+      }
+    },
+    "Roll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sichern"
+          }
+        }
+      }
+    },
+    "Selected" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgewählt"
+          }
+        }
+      }
+    },
+    "Selection" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auswahl"
+          }
+        }
+      }
+    },
+    "Set photos on all subgroups" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setze Photos in alle Untergruppen"
+          }
+        }
+      }
+    },
+    "Show Charactere" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeige Charaktere"
+          }
+        }
+      }
+    },
+    "Special Editor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spezial Editoren"
+          }
+        }
+      }
+    },
+    "Table" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabelle"
+          }
+        }
+      }
+    },
+    "Template" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schablone"
+          }
+        }
+      }
+    },
+    "Text" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        }
+      }
+    },
+    "The Item \"%@\" is already used in \"%@\" and cannot added as group item again. Do you want to remove it from the other character or item? Or you can copy the item and add." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Gegenstand \"%1$@\" ist schon benutzt in \"%2$@\" und kann nicht zwei mal als Gruppe hinzugefügt werden. Möchtest du ihn vorher vom vorigen Charakter entfernen und im neuen Charakter hinzufügen? Oder möchtest du eine Kopie vom Gegenstand hinzufügen?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The Item \"%1$@\" is already used in \"%2$@\" and cannot added as group item again. Do you want to remove it from the other character or item? Or you can copy the item and add."
+          }
+        }
+      }
+    },
+    "The quick editor allows you to add all values for the character at once. The first line is the title and the next text represents the content of the value. An empty line is used to separate values." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Schnelleditor erlaubt das hinzufügen von allen Werten für einen Charakter auf einmal. Die erste Zeile ist der Titel und die nächsten Zeilen sind der Inhalt vom Wert. Eine Leerzeile ist der Trenner für den nächsten Wert."
+          }
+        }
+      }
+    },
+    "Type" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typ"
+          }
+        }
+      }
+    },
+    "Undo %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widerrufen %@"
+          }
+        }
+      }
+    },
+    "Ungroup" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppe auflösen"
+          }
+        }
+      }
+    },
+    "Ungroup \"%@\" into %lld item" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Gruppe \"%1$@\" auftrennen in %2$lld Eintrag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Gruppe \"%1$@\" auftrennen in %2$lld Einträge"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ungroup \"%1$@\" into %2$lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ungroup \"%1$@\" into %2$lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Ungroup %lld entry if grouped" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Trenne %lld Eintrag auf, falls gruppiert"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Trenne %lld Einträge auf, falls gruppiert"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ungroup %lld entry if grouped"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ungroup %lld entries if grouped"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Ungroup row %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trenne Zeil %@ auf"
+          }
+        }
+      }
+    },
+    "Unnamed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbekannt"
+          }
+        }
+      }
+    },
+    "Value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wert"
+          }
+        }
+      }
+    },
+    "value Type" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wertetyp"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,27 @@
+{
+  "configurations" : [
+    {
+      "id" : "C59AACED-9042-45FC-9B15-03E19BDB7C32",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "language" : "en",
+    "region" : "US",
+    "threadSanitizerEnabled" : true,
+    "undefinedBehaviorSanitizerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "8E8EE89B2CD8EB620010A25B",
+        "name" : "RPGPhotosTests"
+      }
+    }
+  ],
+  "version" : 1
+}
