@@ -111,9 +111,11 @@ public struct CoreDataPersistenceController {
         if model.inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }
-        
-        model.spotlightIndexer = RpgSpotlightIndexerDelegate(forStoreWith: localDescription, coordinator: container.persistentStoreCoordinator)
 
+#if !os(tvOS)
+        model.spotlightIndexer = RpgSpotlightIndexerDelegate(forStoreWith: localDescription, coordinator: container.persistentStoreCoordinator)
+#endif
+        
         var storeUrl: URL? = nil
         var initError: CoreDataInitError = .none
         container.loadPersistentStores { storeDescription, error in
@@ -163,7 +165,9 @@ public struct CoreDataPersistenceController {
             }
             model.context = context
 
+#if !os(tvOS)
             model.spotlightIndexer?.startSpotlightIndexing()
+#endif
             model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, model: model)
         }
     }

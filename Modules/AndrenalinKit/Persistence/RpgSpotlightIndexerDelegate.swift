@@ -10,6 +10,8 @@ public final class RpgSpotlightIndexerModel: @unchecked Sendable {
     public var message: String?
 }
 
+
+#if !os(tvOS)
 public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate {
     public let model: RpgSpotlightIndexerModel = RpgSpotlightIndexerModel()
         
@@ -74,3 +76,11 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
         }
     }
 }
+
+#else
+public final class RpgSpotlightIndexerDelegate {
+    public let model: RpgSpotlightIndexerModel = RpgSpotlightIndexerModel()
+    
+    public func observeIndexing() {}
+}
+#endif
