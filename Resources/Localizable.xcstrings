@@ -21,6 +21,12 @@
         }
       }
     },
+    "Adventure" : {
+
+    },
+    "Adventure summary: %@" : {
+
+    },
     "Adventure Viewer" : {
       "localizations" : {
         "de" : {
@@ -81,6 +87,12 @@
         }
       }
     },
+    "Displays adventure details in the app." : {
+
+    },
+    "Displays and read the active adventure details." : {
+
+    },
     "Do you really want to delete the Database" : {
       "localizations" : {
         "de" : {
@@ -140,6 +152,9 @@
           }
         }
       }
+    },
+    "Get Active Adventure" : {
+
     },
     "iCloud Account issues" : {
       "localizations" : {
@@ -240,6 +255,12 @@
           }
         }
       }
+    },
+    "Open ${target}" : {
+
+    },
+    "Open Adventure" : {
+
     },
     "Pdf Viewer" : {
       "localizations" : {

@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import CoreData
+import CoreSpotlight
 
 extension RPGTable: CoreDataId {}
 extension RPGTableEntry: CoreDataId {}
@@ -27,5 +28,35 @@ extension RPGTable {
             return RPGTableEntry(context: context)
         }
         fatalError("ManagedObjectContext should be available!")
+    }
+}
+
+extension RPGTable: SpotlightIndexerAtyribute {
+    public func attributeSet() -> CSSearchableItemAttributeSet {
+        let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
+        attributeSet.identifier = (uuid ?? UUID()).uuidString
+        attributeSet.displayName = CRDT(wrappedValue: name ?? "").wrappedValue
+        attributeSet.title = CRDT(wrappedValue: name ?? "").wrappedValue
+        attributeSet.textContent = CRDT(wrappedValue: information ?? "").wrappedValue
+        let convertedTags = CRDT(string: tags ?? "", defaultValue: "")
+        convertedTags.wrappedValue.split(separator: ",").forEach {
+            if attributeSet.keywords != nil {
+                attributeSet.keywords?.append(String($0))
+            } else {
+                attributeSet.keywords = [String($0)]
+            }
+        }
+        return attributeSet
+    }
+}
+
+extension RPGTableEntry: SpotlightIndexerAtyribute {
+    public func attributeSet() -> CSSearchableItemAttributeSet {
+        let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
+        attributeSet.identifier = (uuid ?? UUID()).uuidString
+        attributeSet.displayName = CRDT(wrappedValue: name ?? "").wrappedValue
+        attributeSet.title = CRDT(wrappedValue: name ?? "").wrappedValue
+        attributeSet.textContent = CRDT(wrappedValue: content ?? "").wrappedValue
+        return attributeSet
     }
 }

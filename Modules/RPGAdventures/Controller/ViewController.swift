@@ -10,7 +10,7 @@ public struct ViewController: Sendable {
 // MARK: - Viewer
 
 public extension ViewController {
-    @MainActor
+    //@MainActor
     func viewMinimum(with id: UUID?) -> some View {
         MinimumRow(itemId: id ?? UUID())
             .environment(root)

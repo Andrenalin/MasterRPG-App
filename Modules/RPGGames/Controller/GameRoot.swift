@@ -25,7 +25,7 @@ final class GameModel: Sendable {
     
     var selectedCharacter: UUID?
     var selectedGameMaster: UUID?
-    var selectedAdventure: UUID?
+    public var selectedAdventure: UUID?
     
     var playerGameStarted: Bool = false
     

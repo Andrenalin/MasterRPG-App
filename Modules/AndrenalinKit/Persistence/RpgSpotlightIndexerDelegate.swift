@@ -5,11 +5,20 @@ import Combine
 import CoreData
 import CoreSpotlight
 
-@Observable
-public final class RpgSpotlightIndexerModel: @unchecked Sendable {
-    public var message: String?
+public protocol SpotlightIndexerAtyribute {
+    func attributeSet() -> CSSearchableItemAttributeSet
 }
 
+@Observable
+public final class RpgSpotlightIndexerModel: @unchecked Sendable {
+    public private(set) var message: String?
+    
+    func reset(message: String) {
+        Task { @MainActor in
+            self.message = message
+        }
+    }
+}
 
 #if !os(tvOS)
 public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate {
@@ -26,30 +35,8 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
     }
     
     public override func attributeSet(for object: NSManagedObject) -> CSSearchableItemAttributeSet? {
-//        if let photo = object as? Photo {
-//            let attributeSet = CSSearchableItemAttributeSet(contentType: .image)
-//            attributeSet.identifier = photo.uniqueName
-//            attributeSet.displayName = photo.userSpecifiedName
-//            attributeSet.thumbnailData = photo.thumbnail?.data
-//
-//            for case let tag as Tag in photo.tags ?? [] {
-//                if let name = tag.name {
-//                    if attributeSet.keywords != nil {
-//                        attributeSet.keywords?.append(name)
-//                    } else {
-//                        attributeSet.keywords = [name]
-//                    }
-//                }
-//            }
-//
-//            return attributeSet
-//        } else if let tag = object as? Tag {
-//            let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
-//            attributeSet.displayName = tag.name
-//            return attributeSet
-//        }
-
-        return nil
+        guard let objectAttritube = object as? SpotlightIndexerAtyribute else { return nil }
+        return objectAttritube.attributeSet()
     }
     
     public func observeIndexing() {
@@ -63,9 +50,7 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
                 let storeID = userInfo?[NSStoreUUIDKey] as? String
                 let token = userInfo?[NSPersistentHistoryTokenKey] as? NSPersistentHistoryToken
                 if let storeID = storeID, let token = token {
-                    print("Store with identifier \(storeID) has completed ",
-                          "indexing and has processed history token up through \(String(describing: token)).")
-                    model?.message = "Store with identifier \(storeID) has completed indexing and has processed history token up through \(String(describing: token))."
+                    model?.reset(message: "Store with identifier \(storeID) has completed indexing and has processed history token up through \(String(describing: token)).")
                 }
             }
         } else {

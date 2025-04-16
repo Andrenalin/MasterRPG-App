@@ -14,9 +14,15 @@ import SwiftUI
 import RPGWeathers
 
 public enum AdventureFactory {
+    @MainActor static var sharedRoot: AdventureRoot?
+    
     @MainActor
     public static func root(for context: NSManagedObjectContext, audioRoot: AudioRoot, diceRoot: DiceRoot, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRoot) -> AdventureRoot {
-        AdventureRoot(context: context, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
+        let root = AdventureRoot(context: context, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
+        if sharedRoot == nil {
+            sharedRoot = root
+        }
+        return root
     }
 
     @MainActor

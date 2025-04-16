@@ -230,6 +230,7 @@ extension AppStore {
         }
     }
     
+    @MainActor
     public var routeActions: RouteActions {
         RouteActions { [weak self] module, itemId, entryId in
             guard module != .none, let itemId else { return }
