@@ -6,6 +6,7 @@ import CoreSpotlight
 extension RPGWeather: CoreDataId {}
 
 extension RPGWeather: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -22,4 +23,5 @@ extension RPGWeather: SpotlightIndexerAtyribute {
         }
         return attributeSet
     }
+#endif
 }

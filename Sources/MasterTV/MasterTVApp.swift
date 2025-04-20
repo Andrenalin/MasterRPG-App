@@ -6,7 +6,7 @@ import SwiftUI
 
 @main
 struct MasterTVApp: App {
-    @State private var databaseModel = DataBaseModel(currentActor: .mainApp)
+    @State private var databaseModel = DataBaseModel(useCloudKit: true, currentActor: .mainApp)
     @State private var appStore = AppStore()
 
     @UIApplicationDelegateAdaptor private var appDelegate: IosAppDelegate

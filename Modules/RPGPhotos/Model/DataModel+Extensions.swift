@@ -33,6 +33,7 @@ extension RPGPhoto {
 
 
 extension RPGPhoto: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .image)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -50,4 +51,5 @@ extension RPGPhoto: SpotlightIndexerAtyribute {
         }
         return attributeSet
     }
+#endif
 }

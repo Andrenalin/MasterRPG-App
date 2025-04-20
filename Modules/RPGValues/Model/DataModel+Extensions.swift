@@ -19,7 +19,7 @@ extension RPGValue {
             entries = NSSet(array: newValue)
         }
     }
-
+    
     func entryOrNew(for uuid: UUID) -> RPGValueEntry {
         if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
             return entry
@@ -29,9 +29,9 @@ extension RPGValue {
         }
         fatalError("ManagedObjectContext should be available!")
     }
-
+    
     // MARK: Photos
-
+    
     var photoIds: [RPGValuePhoto] {
         get {
             guard let all = photos?.allObjects as? [RPGValuePhoto] else {
@@ -43,7 +43,7 @@ extension RPGValue {
             photos = NSSet(array: newValue)
         }
     }
-
+    
     func photoOrNew(for id: UUID) -> RPGValuePhoto {
         if let photo = photoIds.first(where: { $0.uuid == id }) {
             return photo
@@ -56,6 +56,7 @@ extension RPGValue {
 }
 
 extension RPGValue: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -72,9 +73,11 @@ extension RPGValue: SpotlightIndexerAtyribute {
         }
         return attributeSet
     }
+#endif
 }
 
 extension RPGValueEntry: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -83,4 +86,5 @@ extension RPGValueEntry: SpotlightIndexerAtyribute {
         attributeSet.textContent = CRDT(wrappedValue: value ?? "").wrappedValue
         return attributeSet
     }
+#endif
 }

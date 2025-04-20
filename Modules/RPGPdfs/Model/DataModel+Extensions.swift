@@ -19,7 +19,7 @@ extension RPGPdf {
             entries = NSSet(array: newValue)
         }
     }
-
+    
     func entryOrNew(for uuid: UUID) -> RPGPdfEntry {
         if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
             return entry
@@ -32,6 +32,7 @@ extension RPGPdf {
 }
 
 extension RPGPdf: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -48,9 +49,11 @@ extension RPGPdf: SpotlightIndexerAtyribute {
         }
         return attributeSet
     }
+#endif
 }
 
 extension RPGPdfEntry: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -59,4 +62,5 @@ extension RPGPdfEntry: SpotlightIndexerAtyribute {
         attributeSet.textContent = CRDT(wrappedValue: content ?? "").wrappedValue
         return attributeSet
     }
+#endif
 }

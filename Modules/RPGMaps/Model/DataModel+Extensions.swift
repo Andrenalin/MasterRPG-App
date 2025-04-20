@@ -21,7 +21,7 @@ extension RPGMap {
             entries = NSSet(array: newValue)
         }
     }
-
+    
     func entryOrNew(for uuid: UUID) -> RPGMapEntry {
         if let entry = entryModels.first(where: { $0.uuid == uuid }) {
             return entry
@@ -31,7 +31,7 @@ extension RPGMap {
         }
         fatalError("ManagedObjectContext should be available!")
     }
-
+    
     var mapPinModels: [RPGMapPin] {
         get {
             guard let all = mapPins?.allObjects as? [RPGMapPin] else {
@@ -43,7 +43,7 @@ extension RPGMap {
             mapPins = NSSet(array: newValue)
         }
     }
-
+    
     func mapPinOrNew(for uuid: UUID) -> RPGMapPin {
         if let mapPin = mapPinModels.first(where: { $0.uuid == uuid }) {
             return mapPin
@@ -53,7 +53,7 @@ extension RPGMap {
         }
         fatalError("ManagedObjectContext should be available!")
     }
-
+    
     func displyConfigOrNew(for _: UUID) -> RPGDisplayConfig {
         if let displayConfig {
             return displayConfig
@@ -77,7 +77,7 @@ extension RPGMapEntry {
             coordinates = NSSet(array: newValue)
         }
     }
-
+    
     func coordinateOrNew(for uuid: UUID) -> RPGPosition {
         if let coordinate = coordinateModels.first(where: { $0.uuid == uuid }) {
             return coordinate
@@ -101,7 +101,7 @@ extension RPGDisplayConfig {
             tileCoordinates = NSSet(array: newValue)
         }
     }
-
+    
     func coordinateOrNew(for uuid: UUID) -> RPGPosition {
         if let coordinate = tileCoordinateModels.first(where: { $0.uuid == uuid }) {
             return coordinate
@@ -126,6 +126,7 @@ extension RPGMapPin {
 }
 
 extension RPGMap: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -142,9 +143,11 @@ extension RPGMap: SpotlightIndexerAtyribute {
         }
         return attributeSet
     }
+#endif
 }
 
 extension RPGMapEntry: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -153,4 +156,5 @@ extension RPGMapEntry: SpotlightIndexerAtyribute {
         attributeSet.textContent = CRDT(wrappedValue: content ?? "").wrappedValue
         return attributeSet
     }
+#endif
 }

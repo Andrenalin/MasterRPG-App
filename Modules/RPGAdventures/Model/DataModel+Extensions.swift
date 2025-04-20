@@ -19,7 +19,7 @@ extension RPGAdventure {
             entries = NSSet(array: newValue)
         }
     }
-
+    
     func entryOrNew(for uuid: UUID) -> RPGAdventureEntry {
         if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
             return entry
@@ -32,6 +32,7 @@ extension RPGAdventure {
 }
 
 extension RPGAdventure: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -48,9 +49,11 @@ extension RPGAdventure: SpotlightIndexerAtyribute {
         }
         return attributeSet
     }
+#endif
 }
 
 extension RPGAdventureEntry: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -59,4 +62,5 @@ extension RPGAdventureEntry: SpotlightIndexerAtyribute {
         attributeSet.textContent = CRDT(wrappedValue: content ?? "").wrappedValue
         return attributeSet
     }
+#endif
 }

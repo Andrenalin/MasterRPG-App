@@ -7,6 +7,7 @@ import CoreSpotlight
 extension RPGDice: CoreDataId {}
 
 extension RPGDice: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -23,4 +24,5 @@ extension RPGDice: SpotlightIndexerAtyribute {
         }
         return attributeSet
     }
+#endif
 }

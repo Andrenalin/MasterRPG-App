@@ -19,7 +19,7 @@ extension RPGAudio {
             entries = NSSet(array: newValue)
         }
     }
-
+    
     func entryOrNew(for uuid: UUID) -> RPGAudioEntry {
         if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
             return entry
@@ -32,6 +32,7 @@ extension RPGAudio {
 }
 
 extension RPGAudio: SpotlightIndexerAtyribute {
+#if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
         attributeSet.identifier = (uuid ?? UUID()).uuidString
@@ -48,4 +49,5 @@ extension RPGAudio: SpotlightIndexerAtyribute {
         }
         return attributeSet
     }
+#endif
 }

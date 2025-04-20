@@ -6,7 +6,9 @@ import CoreData
 import CoreSpotlight
 
 public protocol SpotlightIndexerAtyribute {
+#if !os(tvOS)
     func attributeSet() -> CSSearchableItemAttributeSet
+#endif
 }
 
 @Observable
