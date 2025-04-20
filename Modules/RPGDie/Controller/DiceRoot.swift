@@ -171,3 +171,21 @@ public extension DiceRoot {
         RawDie(.number(number)).role()
     }
 }
+
+public extension DiceRoot {
+    
+    @MainActor
+    func widgetEntity(for idString: String?) async -> DiceWidgetModel? {
+        guard let idString else {
+            return DiceWidgetModel(itemId: UUID(), name: "idString == nil", displayName: "", root: self)
+        }
+        guard let itemId = UUID(uuidString: idString) else {
+            return DiceWidgetModel(itemId: UUID(), name: "itemId == nil", displayName: "itemId == nil", root: self)
+        }        
+        guard let item = itemController.itemSync(for: itemId) else {
+            return DiceWidgetModel(itemId: itemId, name: "\(itemId)", displayName: "item == nil", root: self)
+        }
+        
+        return DiceWidgetModel(itemId: itemId, name: item.name, displayName: item.inlineText, root: self)
+    }
+}

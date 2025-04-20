@@ -121,7 +121,13 @@ public extension ViewController {
         DiceRow(item: item, isSelected: false, cacheItemListModel: cacheItemListModel)
             .environment(root)
     }
-    
+
+    @MainActor
+    func viewCompactDice(itemId: UUID) -> some View {
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        return Text(item.inlineText)
+    }
+
     @MainActor
     func viewDice(with id: UUID?, for resultCategory: ResultCategory, onlyPrimaryAction: Bool = false) -> some View {
         DiceInline(itemId: id ?? UUID(), resultCategory: resultCategory, onlyPrimaryAction: onlyPrimaryAction)

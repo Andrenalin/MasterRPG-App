@@ -9,7 +9,7 @@ public enum AppPersistentActor: String, CaseIterable {
     case mainApp
     case sharingExtension
     // extensions that can read / write to the app group core database
-    case diceWidget
+    case rpgWidget
 }
 
 public struct PersistentHistoryCleaner {

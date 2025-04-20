@@ -7,7 +7,7 @@ import os.log
 
 @main
 struct MasterRPGApp: App {
-    @State private var databaseModel = DataBaseModel(currentActor: .mainApp)
+    @State private var databaseModel = DataBaseModel(useCloudKit: AppStore.shared.settingsModel.useCloudKit, currentActor: .mainApp)
     @State private var appStore: AppStore = AppStore.shared
 
     @Environment(\.colorScheme) private var colorScheme

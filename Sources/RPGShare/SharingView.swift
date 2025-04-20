@@ -12,6 +12,7 @@ struct SharingView: View {
         self.itemProviders = itemProviders
         self.extensionContext = extensionContext
         self._appStore = State(wrappedValue: AppStore.shared)
+        self._databaseModel = State(wrappedValue: DataBaseModel(useCloudKit: AppStore.shared.settingsModel.useCloudKit, currentActor: .sharingExtension))
     }
     
     // Entry State
@@ -20,7 +21,7 @@ struct SharingView: View {
     
     // Extension State
     @State private var appStore: AppStore
-    @State private var databaseModel = DataBaseModel(currentActor: .sharingExtension)
+    @State private var databaseModel: DataBaseModel
     @State private var loaded = false
 
     // ViewModel

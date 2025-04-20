@@ -26,20 +26,6 @@ struct StorageOptionEditor: View {
             .disabled(disabledUseCloud)
             .onChange(of: appSettings.useCloudKit, initial: true) {
                 useCloudKit <=> appSettings.useCloudKit
-                if appSettings.useCloudKit {
-                    if audioFileStore.model.defaultLoaction == FileLocation.local {
-                        audioFileStore.model.defaultLoaction = FileLocation.appCloud
-                    }
-                    if pdfFileStore.model.defaultLoaction == FileLocation.local {
-                        pdfFileStore.model.defaultLoaction = FileLocation.appCloud
-                    }
-                    if photoFileStore.model.defaultLoaction == FileLocation.local {
-                        photoFileStore.model.defaultLoaction = FileLocation.appCloud
-                    }
-                    if spaceFileStore.model.defaultLoaction == FileLocation.local {
-                        spaceFileStore.model.defaultLoaction = FileLocation.appCloud
-                    }
-                }
             }
             .onChange(of: useCloudKit, initial: false) {
                 guard useCloudKit != appSettings.useCloudKit else { return }
@@ -47,7 +33,7 @@ struct StorageOptionEditor: View {
             }
             .alert(Text("Change Database?", bundle: .module), isPresented: $showExitAlert) {
                 Button {
-                    appSettings.useCloudKit = useCloudKit
+                    appSettings.resetCloudKit(to: useCloudKit)
                     Task { @MainActor in
                         try await Task.sleep(for: .seconds(0.1))
                         Darwin.exit(0)
@@ -66,7 +52,7 @@ struct StorageOptionEditor: View {
         } header: {
             Text("Databse Settings", bundle: .module)
         } footer: {
-            Text("Settings about the Database storgae. You can switch back and furth, the database will not be removed. If you like you can export the current database and import it the other one. Use iCloud if you want automatical sync between the devices.", bundle: .module)
+            Text("Settings about the Database storage. You can switch back and furth, the database will not be removed. If you like you can export the current database and import it the other one. Use iCloud if you want automatical sync between the devices.", bundle: .module)
         }
         .task {
             iCloudAvailable = await CloudKitAccountController.checkAccountStatus()

@@ -23,10 +23,9 @@ public final class DataBaseModel {
     public var hasContextSet = false
     
     @MainActor
-    public init(inMemory: Bool = false, currentActor: AppPersistentActor) {
+    public init(inMemory: Bool = false, useCloudKit: Bool, currentActor: AppPersistentActor) {
         if !inMemory {
-            let userSettings = UserDefaults.standard.bool(forKey: UserSettingsViewModifier.useCloudKit)
-            hasCloudKit = userSettings
+            hasCloudKit = useCloudKit
         }
         self.inMemory = inMemory
         self.currentActor = currentActor
@@ -110,13 +109,13 @@ public final class DataBaseModel {
 extension DataBaseModel {
     @MainActor
     public static var preview: DataBaseModel {
-        let model = DataBaseModel(inMemory: true, currentActor: .mainApp)
+        let model = DataBaseModel(inMemory: true, useCloudKit: false, currentActor: .mainApp)
         model.setup()
         return model
     }
     
     @MainActor
     public static func previewWithOutSetup() -> DataBaseModel {
-        DataBaseModel(inMemory: true, currentActor: .mainApp)
+        DataBaseModel(inMemory: true, useCloudKit: false, currentActor: .mainApp)
     }
 }

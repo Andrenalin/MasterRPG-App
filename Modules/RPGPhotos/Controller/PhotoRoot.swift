@@ -208,6 +208,7 @@ public extension PhotoRoot {
         await editController.model.description = text
         
         try? await editController.resetPhotoJob(data: data)
+        await editController.save(with: "Add new Photo from Sharing".localizedString)
         
         return await (itemRowModel.itemId, editController.model.url(linkNumber: 0))
     }

@@ -55,7 +55,7 @@ struct InitialRootView: View {
                     }
                 }
                 .task {
-                    if UserDefaults.standard.bool(forKey: UserSettingsViewModifier.useCloudKit) {
+                    if appStore.settingsModel.useCloudKit {
                         iCloudAccount = await CloudKitAccountController.checkAccountStatus()
                         if iCloudAccount != .available {
                             showAccountAlert.toggle()

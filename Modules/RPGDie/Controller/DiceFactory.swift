@@ -5,9 +5,15 @@ import CoreData
 import SwiftUI
 
 public enum DiceFactory {
+    @MainActor public static var sharedRoot: DiceRoot?
+    
     @MainActor
     public static func root(for context: NSManagedObjectContext) -> DiceRoot {
-        DiceRoot(context: context)
+        let root = DiceRoot(context: context)
+        if sharedRoot == nil {
+            sharedRoot = root
+        }
+        return root
     }
 
     @MainActor

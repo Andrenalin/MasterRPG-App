@@ -78,7 +78,7 @@ struct RootView: View {
             }
 #else
             try? await Task.sleep(for: .seconds(1))
-            if appStore.firstLunch {
+            if appStore.settingsModel.firstLaunch {
                 showFirstLunchAlert.toggle()
             }
 #endif
@@ -86,14 +86,14 @@ struct RootView: View {
         .alert("First Launch", isPresented: $showFirstLunchAlert) {
             Button {
                 appStore.installExampleData(isGerman: locale.identifier.hasPrefix("de"))
-                appStore.firstLunch = false
+                appStore.settingsModel.firstLaunch = false
                 withAnimation { showFirstDataAlert.toggle() }
             } label: {
                 Text("Initialize")
             }
             
             Button {
-                appStore.firstLunch = false
+                appStore.settingsModel.firstLaunch = false
             } label: {
                 Text("Not now")
             }

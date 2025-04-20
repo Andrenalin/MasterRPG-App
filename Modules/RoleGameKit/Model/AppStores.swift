@@ -42,7 +42,6 @@ public final class AppStore: Sendable {
     
     // Options
     public var hasDatabase: Bool = false
-    public var firstLunch: Bool = true
     
     @ObservationIgnored
     let inAppModel = InAppModel()
@@ -210,6 +209,17 @@ extension AppStore {
         self.rpgSpotlightIndexer = spotlightIndexer
         spotlightIndexer?.observeIndexing()
         
+        hasDatabase = true
+    }
+    
+    @MainActor
+    public func setupDiceRootModel(context: NSManagedObjectContext) {
+        
+        let diceRoot = DiceFactory.root(for: context)
+
+        self._diceRoot = diceRoot
+
+        diceRoot.setRootControllable(diceRoot)
         hasDatabase = true
     }
 }
