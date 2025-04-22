@@ -129,7 +129,7 @@ private extension LocationFileManager {
             rootUrl = rootAppCloud
         case .icloud:
             return cloudUrl
-        case .other:
+        case .other, .url, .newCloud:
             return nil
         }
         guard var fileURL = rootUrl?

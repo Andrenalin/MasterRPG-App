@@ -24,7 +24,7 @@ struct PdfEntryEditor: View {
     
     @ViewBuilder
     func contextMenuView(entryId: UUID) -> some View {
-        ContextMenuEntryEditor(editControllable: editController, entryId: entryId, ) {
+        ContextMenuEntryEditor(editControllable: editController, entryId: entryId) {
             EmptyView()
         }
     }

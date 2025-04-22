@@ -137,7 +137,11 @@
         }
       }
     },
+    "Remove Pdf" : {
+
+    },
     "Remove Photo" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

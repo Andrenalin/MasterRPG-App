@@ -47,7 +47,7 @@ extension EditController {
         await resetURL(url: nil, on: item)
         guard let url else {
             if undoSave {
-                await save(with: String(localized: "Remove Photo").localizedString)
+                await save(with: String(localized: "Remove Pdf").localizedString)
             } else {
                 await itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
             }
@@ -61,7 +61,7 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             item.name = name
         }
-        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: itemController.itemDataModel.networkModule.token)
+        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: itemController.itemDataModel.networkModule.token, useNewCloud: true)
         await resetURL(url: fileUrl, on: item)
         if undoSave {
             await save(with: String(localized: "New Pdf").localizedString)

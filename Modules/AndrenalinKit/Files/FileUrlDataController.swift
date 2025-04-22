@@ -51,7 +51,8 @@ public struct FileUrlDataController: Sendable {
     let fileTypes: [UTType]
     let filenameExtension: String
     private let fileUrlAccess: any FileUrlAccessible
-    
+
+    private let cloudDocumentController: CloudDocumentController
     public let model: FileUrlDataModel
     
     @MainActor
@@ -63,7 +64,9 @@ public struct FileUrlDataController: Sendable {
         self.fileTypes = fileTypes
         self.filenameExtension = filenameExtension
         self.fileUrlAccess = fileUrlAccess
-        
+
+        self.cloudDocumentController = CloudDocumentController(modulePath: moduleFolder)
+
         self.model = FileUrlDataModel()
         
         let saveModel = self.model
@@ -89,7 +92,17 @@ public struct FileUrlDataController: Sendable {
     var processing: Int {
         get { model.processing }
         nonmutating set { model.processing = newValue }
-    }    
+    }
+
+    public func move(fileUrl: FileUrl, name: String, category: String, tags: [String]) async throws -> FileUrl? {
+        let sourceFilename = absoluteFileName(for: fileUrl)
+        guard let destinationName = try await cloudDocumentController.move(from: fileUrl, sourceFilename: sourceFilename, name: name, category: category, tags: tags) else { return nil }
+        guard let url = URL(string: destinationName) else { return nil }
+
+        let newFileUrl = FileUrl(fileId: fileUrl.fileId, url: url, location: .newCloud, module: fileUrl.module, relativeUrl: nil)
+        //delete(fileUrl)
+        return newFileUrl
+    }
 }
 
 // MARK: - Init Setup
@@ -183,6 +196,11 @@ public extension FileUrlDataController {
     }
 
     func url<T>(for fileUrl: FileUrl, action: @escaping (URL?) async throws -> T?) async rethrows -> T? {
+        if fileUrl.location == .newCloud {
+            let url = cloudDocumentController.url(fileUrl: fileUrl.rawUrl)
+            return try await action(url)
+        }
+
         let fullUrl = locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location) ?? fileUrl.rawUrl
         let fileUrl = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
 
@@ -198,6 +216,11 @@ public extension FileUrlDataController {
     }
 
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
+        if fileUrl.location == .newCloud {
+            let url = cloudDocumentController.url(fileUrl: fileUrl.rawUrl)
+            return try action(url)
+        }
+
         let fullUrl = locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location) ?? fileUrl.rawUrl
         var loadedFileUrl = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
 
@@ -214,6 +237,7 @@ public extension FileUrlDataController {
 
         defer { processUrl.stopAccessingSecurityScopedResource() }
         _ = processUrl.startAccessingSecurityScopedResource()
+
         let result = try action(processUrl)
         return result
     }
@@ -245,7 +269,7 @@ public extension FileUrlDataController {
     }
 
     /// ItemStore will call to get FileUrl for given urls from picker
-    func createFileUrl(fileId: UUID, url: URL, module: String) async throws -> FileUrl {
+    func createFileUrl(fileId: UUID, url: URL, module: String, useNewCloud: Bool = false) async throws -> FileUrl {
         do {
             let values = try url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
             if values.ubiquitousItemDownloadingStatus != .current {
@@ -254,7 +278,11 @@ public extension FileUrlDataController {
         } catch {
             Logger.fileStore.error("Cannot get the download status of url \(url.absoluteString, privacy: .public)")
         }
+        if useNewCloud {
+            return FileUrl(fileId: fileId, url: url, location: .newCloud, module: module, relativeUrl: nil)
+        }
         try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: url)
+
         return FileUrl(fileId: fileId, url: url, location: locationFileManager.fileLocation(for: url), module: module, relativeUrl: locationFileManager.relativeUrl(for: url))
     }
 
@@ -361,14 +389,18 @@ public extension FileUrlDataController {
                 // ignore any exception. If the file cannot be remove we cannot recover
                 try? await locationFileManager.remove(url: accessUrl)
             }
-        case .icloud, .other:
+            case .icloud, .other, .newCloud, .url:
             fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
             break
         }
     }
     
     func download(fileUrl: FileUrl) async throws {
-        _ = await validateFiles(fileUrls: [fileUrl])
+        if fileUrl.location == .newCloud {
+            try await cloudDocumentController.download(filePath: fileUrl.rawUrl.absoluteString)
+        } else {
+            _ = await validateFiles(fileUrls: [fileUrl])
+        }
     }
 
     func duplicate(fileUrl: FileUrl?, for fileId: UUID) async throws -> FileUrl? {
@@ -378,7 +410,7 @@ public extension FileUrlDataController {
         case .appCloud, .local:
             fullURL = try await locationFileManager.create(id: fileId, location: unconverted.location, pathExtension: filenameExtension, data: data)
             break
-        case .other, .icloud:
+            case .other, .icloud, .newCloud:
             // try to get access to the old location
             let oldUrl = locationFileManager.absoluteUrl(for: unconverted.rawUrl, at: unconverted.location) ?? unconverted.rawUrl
             let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
@@ -387,6 +419,9 @@ public extension FileUrlDataController {
                 let newUrl = await fileBookmarkController.loadBookmark(fileId: unconverted.fileId)
                 fullURL = newUrl
             }
+            break
+            case .url:
+                fullURL = unconverted.rawUrl
             break
         }
         guard let fullURL else { return nil }

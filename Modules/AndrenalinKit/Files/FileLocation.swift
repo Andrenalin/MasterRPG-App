@@ -8,16 +8,17 @@ public enum FileLocation: Int, Equatable, Hashable, Codable, CaseIterable, Ident
     case local = 2
     case other = 3
 
+    case newCloud = 4
+    case url = 5
+
     public var text: String {
         switch self {
-        case .appCloud:
-            return "AppCloud"
-        case .icloud:
-            return "iCloud"
-        case .local:
-            return "Local"
-        case .other:
-            return "Other"
+        case .appCloud: "AppCloud"
+        case .icloud: "iCloud"
+        case .local: "Local"
+        case .other: "Other"
+        case .newCloud: "Cloud"
+        case .url: "Url"
         }
     }
 
