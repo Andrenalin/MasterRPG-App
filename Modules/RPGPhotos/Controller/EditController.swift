@@ -36,7 +36,7 @@ extension EditController {
         var dataUrl = fileUrl
         dataUrl.convertFile(data, fileExtension: "jpg")
 
-        let newFileUrl = try await root.fileUrlDataController.createFileUrl(fileId: model.id, unconvertedFileUrl: dataUrl, pathExtension: "jpg")
+        let newFileUrl = try await root.fileUrlDataController.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataUrl, pathExtension: "jpg",)
 
         Task { @MainActor in
             model.fileUrl = newFileUrl
@@ -84,7 +84,7 @@ extension EditController {
         await resetFileUrl()
         guard let data, let dataFileUrl = await FileUrl(string: "", fileId: model.id, module: root.itemController.itemDataModel.networkModule.token, unconvertedData: data) else { return }
 
-        let fileUrl = try await root.fileUrlDataController.createFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
+        let fileUrl = try await root.fileUrlDataController.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
 
         let saveTask = Task { @MainActor in
             model.fileUrl = fileUrl
@@ -127,7 +127,7 @@ extension EditController {
             }
             _ = await saveName.value
         }
-        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: root.itemController.itemDataModel.networkModule.token)
+        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: root.itemController.itemDataModel.networkModule.token, useNewCloud: true)
         await resetURL(url: fileUrl, on: item)
         if undoSave {
             await save(with: String(localized: "New Photo").localizedString)

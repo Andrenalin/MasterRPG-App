@@ -174,4 +174,8 @@ extension SpaceRoot {
         guard mainListController == nil else { return }
         mainListController = listController
     }
+
+    public func moveFiles() async throws {
+        try await fileController.moveFiles()
+    }
 }

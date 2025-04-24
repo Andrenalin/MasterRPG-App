@@ -171,7 +171,7 @@ public extension FileUrlDataController {
             Logger.bookmarkStore.info("Different URL detected \(url.absoluteString, privacy: .public)")
             _ = url.startAccessingSecurityScopedResource()
             defer { url.stopAccessingSecurityScopedResource() }
-            if let updatedFileUrl = try? await createFileUrl(fileId: fileUrl.fileId, url: url, module: fileUrl.module) {
+            if let updatedFileUrl = try? await createFileUrl(fileId: fileUrl.fileId, url: url, module: fileUrl.module, useNewCloud: true) {
                 let saveTask = Task { @MainActor in
                     await fileUrlAccess.saveFileUrl(fileUrl: updatedFileUrl)
                 }
@@ -181,7 +181,7 @@ public extension FileUrlDataController {
                 Logger.bookmarkStore.info("URL cannot repaired \(fileUrl.rawUrl.absoluteString, privacy: .public)")
             }
         }
-        guard url != nil || newFileUrl.location == .local || newFileUrl.location == .appCloud else { return false }
+        guard url != nil || newFileUrl.location == .newCloud || newFileUrl.location == .local || newFileUrl.location == .appCloud else { return false }
         let checkUrl = url ?? newFileUrl.rawUrl
         defer { checkUrl.stopAccessingSecurityScopedResource() }
         return checkUrl.startAccessingSecurityScopedResource()
@@ -278,104 +278,55 @@ public extension FileUrlDataController {
         } catch {
             Logger.fileStore.error("Cannot get the download status of url \(url.absoluteString, privacy: .public)")
         }
+        try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: url)
         if useNewCloud {
             return FileUrl(fileId: fileId, url: url, location: .newCloud, module: module, relativeUrl: nil)
         }
-        try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: url)
 
         return FileUrl(fileId: fileId, url: url, location: locationFileManager.fileLocation(for: url), module: module, relativeUrl: locationFileManager.relativeUrl(for: url))
     }
 
     /// create a fileUrl with data from an import or on validation / convert data
-    func createFileUrl(fileId: UUID, unconvertedFileUrl: FileUrl, pathExtension: String) async throws -> FileUrl? {
+    func createNewFileUrl(fileId: UUID, unconvertedFileUrl: FileUrl, pathExtension: String) async throws -> FileUrl? {
         guard let oldData = unconvertedFileUrl.data else { return nil }
-        var location = unconvertedFileUrl.location
-        var fullURL: URL? = nil
-        let oldName = unconvertedFileUrl.rawUrl.lastPathComponent
+        let location: FileLocation = unconvertedFileUrl.location == .url ? .url : .newCloud
+        let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: location)
 
         do {
             // try to get access to the old location
-            let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: location) ?? unconvertedFileUrl.rawUrl
-            let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
-            let hasAccess = await hasAccess(for: unconvertedFileUrl)
-            if exists && !isDir && (location != .other || hasAccess) {
-                if let newUrl = await fileBookmarkController.loadBookmark(fileId: unconvertedFileUrl.fileId) {
-                    location = locationFileManager.fileLocation(for: newUrl) ?? unconvertedFileUrl.location
-                    fullURL = newUrl
-                } else if location != .local {
+            if let oldUrl {
+                let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
+                if exists && !isDir {
                     return unconvertedFileUrl
-                }
-            } else if location == .icloud {
-                if await validateFiles(fileUrls: [unconvertedFileUrl]), let newUrl = await fileBookmarkController.loadBookmark(fileId: unconvertedFileUrl.fileId) {
-                    location = locationFileManager.fileLocation(for: newUrl) ?? unconvertedFileUrl.location
-                    fullURL = newUrl
                 }
             }
         } catch {
             Logger.fileStore.error("Different device or different user \(error.localizedDescription, privacy: .public)")
         }
 
-        if fullURL == nil {
-            location = await model.defaultLoaction
-            if location == .icloud {
-                if let defaultCloudPath = await model.defaultCloudPath, let cloudUrl = await self.fileBookmarkController.loadBookmark(fileId: defaultCloudPath, folder: true), cloudUrl.startAccessingSecurityScopedResource() {
-                    defer { cloudUrl.stopAccessingSecurityScopedResource() }
 
-                    let cloudFileUrl = cloudUrl.appendingPathComponent(oldName)
-                    let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: cloudFileUrl)
-                    if exists && !isDir {
-                        if let newUrl = await fileBookmarkController.loadBookmark(fileId: unconvertedFileUrl.fileId) {
-                            location = locationFileManager.fileLocation(for: newUrl) ?? unconvertedFileUrl.location
-                            fullURL = newUrl
-                        } else {
-                            fullURL = cloudFileUrl
-                        }
-                    } else {
-                        do {
-                            fullURL = try await locationFileManager.create(id: fileId, location: location, pathExtension: pathExtension, data: oldData, cloudUrl: cloudFileUrl)
-                        } catch {
-                            location = .appCloud
-                            Logger.fileStore.error("Cannot create file in iCloud \(error.localizedDescription, privacy: .public)")
-                        }
-                    }
-                } else {
-                    location = .appCloud
-                }
-            }
-            if fullURL == nil && location == .appCloud {
-                do {
-                    fullURL = try await locationFileManager.create(id: fileId, location: location, pathExtension: pathExtension, data: oldData)
-                } catch {
-                    Logger.fileStore.error("Cannot create file in appCloud \(error.localizedDescription, privacy: .public)")
-                }
-            }
-            if fullURL == nil {
-                location = .local
-                do {
-                    fullURL = try await locationFileManager.create(id: fileId, location: location, pathExtension: pathExtension, data: oldData)
-                } catch {
-                    Logger.fileStore.error("Cannot create file locally \(error.localizedDescription, privacy: .public)")
-                    let fullUrl = try? await locationFileManager.createLocalUrl(id: fileId, pathExtension: pathExtension)
-                    var fileUrl = FileUrl(fileId: fileId, url: fullUrl ?? URL(fileURLWithPath: ""), location: .local, module: unconvertedFileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: fullURL))
-                    fileUrl.resetData(oldData) // added if any platform has issue to save data.
-                    return fileUrl
-                }
-            }
-        }
-        if let fullURL {
-            let _ = fullURL.startAccessingSecurityScopedResource()
-            defer { fullURL.stopAccessingSecurityScopedResource() }
-            do {
-                try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullURL)
-            } catch {
-                Logger.fileStore.error("Cannot create file locally \(error.localizedDescription, privacy: .public)")
-            }
-            var fileUrl = FileUrl(fileId: fileId, url: fullURL, location: locationFileManager.fileLocation(for: fullURL), module: unconvertedFileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: fullURL))
+        guard let fullURL = locationFileManager.relativeUrl(for: unconvertedFileUrl.rawUrl) else { return nil }
+        let filePath = fullURL.pathComponents.joined(separator: "/")
+
+        do {
+            try await cloudDocumentController.write(data: oldData, to: filePath)
+        } catch {
+            Logger.fileStore.error("Cannot create file in cloud app group \(error.localizedDescription, privacy: .public)")
+            let fullUrl = try? await locationFileManager.createLocalUrl(id: fileId, pathExtension: pathExtension)
+            var fileUrl = FileUrl(fileId: fileId, url: fullUrl ?? URL(fileURLWithPath: ""), location: .local, module: unconvertedFileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: fullURL))
             fileUrl.resetData(oldData) // added if any platform has issue to save data.
             return fileUrl
-        } else {
-            return nil
         }
+        let _ = fullURL.startAccessingSecurityScopedResource()
+        defer { fullURL.stopAccessingSecurityScopedResource() }
+        do {
+            try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullURL)
+        } catch {
+            Logger.fileStore.error("Cannot bookmark file \(error.localizedDescription, privacy: .public)")
+        }
+        var fileUrl = FileUrl(fileId: fileId, url: fullURL, location: locationFileManager.fileLocation(for: fullURL), module: unconvertedFileUrl.module, relativeUrl: nil)
+        fileUrl.resetData(oldData) // added if any platform has issue to save data.
+        return fileUrl
     }
 
     /// called from ItemStore on delete of the item
@@ -503,6 +454,99 @@ extension FileUrlDataController {
         }
         return nil
     }
+
+    /// create a fileUrl with data from an import or on validation / convert data
+    func createFileUrl(fileId: UUID, unconvertedFileUrl: FileUrl, pathExtension: String) async throws -> FileUrl? {
+        guard let oldData = unconvertedFileUrl.data else { return nil }
+        var location = unconvertedFileUrl.location
+        var fullURL: URL? = nil
+        let oldName = unconvertedFileUrl.rawUrl.lastPathComponent
+
+        do {
+            // try to get access to the old location
+            let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: location) ?? unconvertedFileUrl.rawUrl
+            let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
+            let hasAccess = await hasAccess(for: unconvertedFileUrl)
+            if exists && !isDir && (location != .other || hasAccess) {
+                if let newUrl = await fileBookmarkController.loadBookmark(fileId: unconvertedFileUrl.fileId) {
+                    location = locationFileManager.fileLocation(for: newUrl) ?? unconvertedFileUrl.location
+                    fullURL = newUrl
+                } else if location != .local {
+                    return unconvertedFileUrl
+                }
+            } else if location == .icloud {
+                if await validateFiles(fileUrls: [unconvertedFileUrl]), let newUrl = await fileBookmarkController.loadBookmark(fileId: unconvertedFileUrl.fileId) {
+                    location = locationFileManager.fileLocation(for: newUrl) ?? unconvertedFileUrl.location
+                    fullURL = newUrl
+                }
+            }
+        } catch {
+            Logger.fileStore.error("Different device or different user \(error.localizedDescription, privacy: .public)")
+        }
+
+        if fullURL == nil {
+            location = await model.defaultLoaction
+            if location == .icloud {
+                if let defaultCloudPath = await model.defaultCloudPath, let cloudUrl = await self.fileBookmarkController.loadBookmark(fileId: defaultCloudPath, folder: true), cloudUrl.startAccessingSecurityScopedResource() {
+                    defer { cloudUrl.stopAccessingSecurityScopedResource() }
+
+                    let cloudFileUrl = cloudUrl.appendingPathComponent(oldName)
+                    let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: cloudFileUrl)
+                    if exists && !isDir {
+                        if let newUrl = await fileBookmarkController.loadBookmark(fileId: unconvertedFileUrl.fileId) {
+                            location = locationFileManager.fileLocation(for: newUrl) ?? unconvertedFileUrl.location
+                            fullURL = newUrl
+                        } else {
+                            fullURL = cloudFileUrl
+                        }
+                    } else {
+                        do {
+                            fullURL = try await locationFileManager.create(id: fileId, location: location, pathExtension: pathExtension, data: oldData, cloudUrl: cloudFileUrl)
+                        } catch {
+                            location = .appCloud
+                            Logger.fileStore.error("Cannot create file in iCloud \(error.localizedDescription, privacy: .public)")
+                        }
+                    }
+                } else {
+                    location = .appCloud
+                }
+            }
+            if fullURL == nil && location == .appCloud {
+                do {
+                    fullURL = try await locationFileManager.create(id: fileId, location: location, pathExtension: pathExtension, data: oldData)
+                } catch {
+                    Logger.fileStore.error("Cannot create file in appCloud \(error.localizedDescription, privacy: .public)")
+                }
+            }
+            if fullURL == nil {
+                location = .local
+                do {
+                    fullURL = try await locationFileManager.create(id: fileId, location: location, pathExtension: pathExtension, data: oldData)
+                } catch {
+                    Logger.fileStore.error("Cannot create file locally \(error.localizedDescription, privacy: .public)")
+                    let fullUrl = try? await locationFileManager.createLocalUrl(id: fileId, pathExtension: pathExtension)
+                    var fileUrl = FileUrl(fileId: fileId, url: fullUrl ?? URL(fileURLWithPath: ""), location: .local, module: unconvertedFileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: fullURL))
+                    fileUrl.resetData(oldData) // added if any platform has issue to save data.
+                    return fileUrl
+                }
+            }
+        }
+        if let fullURL {
+            let _ = fullURL.startAccessingSecurityScopedResource()
+            defer { fullURL.stopAccessingSecurityScopedResource() }
+            do {
+                try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullURL)
+            } catch {
+                Logger.fileStore.error("Cannot create file locally \(error.localizedDescription, privacy: .public)")
+            }
+            var fileUrl = FileUrl(fileId: fileId, url: fullURL, location: locationFileManager.fileLocation(for: fullURL), module: unconvertedFileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: fullURL))
+            fileUrl.resetData(oldData) // added if any platform has issue to save data.
+            return fileUrl
+        } else {
+            return nil
+        }
+    }
+
 }
 
 // MARK: - Validate
@@ -632,4 +676,5 @@ struct FakeFileFileAccessible: FileUrlAccessible {
     func setFileUrl(_ fileUrl: FileUrl?, item: any Observable) async {}
     func fetchFileUrl() async -> [FileUrl] { [] }
     func saveFileUrl(fileUrl: FileUrl) async {}
+    func moveFiles() async throws {}
 }

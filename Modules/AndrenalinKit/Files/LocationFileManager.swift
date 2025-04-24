@@ -6,14 +6,16 @@ public struct LocationFileManager: Sendable {
     let rootAppCloud: URL?
     let rootLocal: URL?
     let rootICloud: URL?
+    let rootNewCloud: URL
     let moduleFolder: String
 
     public init(moduleFolder: String) {
         self.moduleFolder = moduleFolder
-        let cloud = FileManager.default.url(forUbiquityContainerIdentifier: nil)
+        let cloud = FileManager.cloudURL
         self.rootAppCloud = cloud?.appendingPathComponent("Documents")
         self.rootICloud = cloud?.deletingLastPathComponent().appendingPathComponent("com~apple~CloudDocs/")
         self.rootLocal = URL.documentsDirectory
+        self.rootNewCloud = (FileManager.cloudURL ?? FileManager.groupURL).appending(path: "Documents")
     }
 }
 
@@ -32,7 +34,7 @@ public extension LocationFileManager {
         if let rootICloud, path.starts(with: rootICloud.absoluteString) {
             return .icloud
         }
-        return .other
+        return .newCloud
     }
 
     func relativeUrl(for url: URL?) -> URL? {
@@ -58,6 +60,8 @@ public extension LocationFileManager {
         case .icloud:
             guard let cloudPath = rootICloud else { return nil }
             return add(relative: url, to: cloudPath)
+        case .newCloud:
+            return add(relative: url, to: rootNewCloud)
         default:
             return url
         }

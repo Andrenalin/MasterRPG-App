@@ -183,4 +183,8 @@ extension AudioRoot {
     public var audioCoordinatorPlayback: AudioListenerCoordinator? {
         audioController.model.coordinator
     }
+
+    public func moveFiles() async throws {
+        try await fileController.moveFiles()
+    }
 }

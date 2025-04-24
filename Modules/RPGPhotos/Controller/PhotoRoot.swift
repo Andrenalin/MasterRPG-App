@@ -212,4 +212,8 @@ public extension PhotoRoot {
         
         return await (itemRowModel.itemId, editController.model.url(linkNumber: 0))
     }
+
+    func moveFiles() async throws {
+        try await fileController.moveFiles()
+    }
 }

@@ -59,7 +59,7 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             item.name = name
         }
-        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: root.itemController.itemDataModel.networkModule.token)
+        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: root.itemController.itemDataModel.networkModule.token, useNewCloud: true)
         await resetURL(url: fileUrl, on: item)
         if undoSave {
             let saveTask = Task { @MainActor in

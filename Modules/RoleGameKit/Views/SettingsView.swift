@@ -22,6 +22,22 @@ public struct SettingsView: View {
 //            }
 
             SectionGroupEditorView {
+                Button("Convert / Move") {
+                    Task {
+                        try? await store.audioRoot.moveFiles()
+
+                        try? await store.pdfRoot.moveFiles()
+
+                        try? await store.photoRoot.moveFiles()
+
+                        try? await store.spaceRoot.moveFiles()
+                    }
+                }
+            } header: {
+                Text("Spotlight Indexer Message")
+            }
+
+            SectionGroupEditorView {
                 Text(store.rpgSpotlightIndexer?.model.message ?? "Not yet finished")
             } header: {
                 Text("Spotlight Indexer Message")

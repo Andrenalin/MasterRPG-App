@@ -77,5 +77,5 @@ extension ItemController {
     func didDelete(fileUrl: FileUrl?) async {
         guard let fileUrl else { return }
         root.fileUrlDataController.delete(fileUrl)
-    }
+    }    
 }
