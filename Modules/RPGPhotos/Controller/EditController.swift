@@ -28,6 +28,20 @@ extension EditController: EditControllable {
 }
 
 extension EditController {
+    @MainActor func reset(category: ItemListCategory) {
+        guard model.category != category else { return }
+        let item = model
+        Task { @MainActor in
+            let newFileUrl = await root.fileUrlDataController.move(fileUrl: item.fileUrl, from: model.category, to: category)
+            guard let newFileUrl else { return }
+            item.fileUrl = newFileUrl
+        }
+        model.category = category
+        save(with: String(localized: "Change to \(category.title)").localizedString)
+    }
+}
+
+extension EditController {
     func convert() async throws {
         await root.cacheController.photoId(for: model.id, with: model.fileUrl, shouldDownload: true)
         guard let image = await root.cacheController.image(for: model.id), let data = image.jpegData(compressionQuality: 0.9), let fileUrl = await model.fileUrl else { return }
@@ -82,8 +96,13 @@ extension EditController {
     
     func resetPhotoJob(data: Data?) async throws {
         await resetFileUrl()
-        guard let data, let dataFileUrl = await FileUrl(string: "", fileId: model.id, module: root.itemController.itemDataModel.networkModule.token, unconvertedData: data) else { return }
-
+        guard let data else { return }
+        
+        let module = await root.itemController.itemDataModel.networkModule.token
+        let filePath = await model.name.isEmpty ? "\(await model.category.title)/Image-\(model.id.uuidString).jpg" : "\(await model.category.title)/\(await model.name).jpg"
+        var dataFileUrl = await FileUrl(fileId: model.id, url: URL(string: filePath)!, location: .newCloud, module: module, relativeUrl: nil)
+        dataFileUrl.resetData(data)
+        
         let fileUrl = try await root.fileUrlDataController.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
 
         let saveTask = Task { @MainActor in
@@ -127,7 +146,7 @@ extension EditController {
             }
             _ = await saveName.value
         }
-        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: root.itemController.itemDataModel.networkModule.token, useNewCloud: true)
+        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: root.itemController.itemDataModel.networkModule.token, category: item.category.title)
         await resetURL(url: fileUrl, on: item)
         if undoSave {
             await save(with: String(localized: "New Photo").localizedString)

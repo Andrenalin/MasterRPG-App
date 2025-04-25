@@ -171,7 +171,7 @@ public extension FileUrlDataController {
             Logger.bookmarkStore.info("Different URL detected \(url.absoluteString, privacy: .public)")
             _ = url.startAccessingSecurityScopedResource()
             defer { url.stopAccessingSecurityScopedResource() }
-            if let updatedFileUrl = try? await createFileUrl(fileId: fileUrl.fileId, url: url, module: fileUrl.module, useNewCloud: true) {
+            if let updatedFileUrl = try? await createFileUrl(fileId: fileUrl.fileId, url: url, module: fileUrl.module, category: nil) {
                 let saveTask = Task { @MainActor in
                     await fileUrlAccess.saveFileUrl(fileUrl: updatedFileUrl)
                 }
@@ -269,7 +269,7 @@ public extension FileUrlDataController {
     }
 
     /// ItemController will call to get FileUrl for given urls from picker
-    func createFileUrl(fileId: UUID, url: URL, module: String, useNewCloud: Bool) async throws -> FileUrl {
+    func createFileUrl(fileId: UUID, url: URL, module: String, category: String?) async throws -> FileUrl {
         do {
             let values = try url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
             if values.ubiquitousItemDownloadingStatus != .current {
@@ -278,7 +278,7 @@ public extension FileUrlDataController {
         } catch {
             Logger.fileStore.error("Cannot get the download status of url \(url.absoluteString, privacy: .public)")
         }
-        let nameUrl = try await cloudDocumentController.createNameUrl(for: url)
+        let nameUrl = try await cloudDocumentController.createNameUrl(for: url, category: category ?? "New".localizedString)
         try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: nameUrl)
         return FileUrl(fileId: fileId, url: nameUrl, location: .newCloud, module: module, relativeUrl: nil)
     }
@@ -287,41 +287,39 @@ public extension FileUrlDataController {
     func createNewFileUrl(fileId: UUID, unconvertedFileUrl: FileUrl, pathExtension: String) async throws -> FileUrl? {
         guard let oldData = unconvertedFileUrl.data else { return nil }
         let location: FileLocation = unconvertedFileUrl.location == .url ? .url : .newCloud
-        let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: location)
+        guard let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: location, module: unconvertedFileUrl.module) else { return nil }
 
         do {
             // try to get access to the old location
-            if let oldUrl {
-                let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
-                if exists && !isDir {
-                    return unconvertedFileUrl
-                }
+            let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
+            if exists && !isDir {
+                return unconvertedFileUrl
             }
         } catch {
             Logger.fileStore.error("Different device or different user \(error.localizedDescription, privacy: .public)")
         }
 
 
-        guard let fullURL = locationFileManager.relativeUrl(for: unconvertedFileUrl.rawUrl) else { return nil }
-        let filePath = fullURL.pathComponents.joined(separator: "/")
-
+        guard let fileURL = locationFileManager.relativeUrl(for: unconvertedFileUrl.rawUrl) else { return nil }
+        let filePath = fileURL.pathComponents.joined(separator: "/")
+        let fullUrl: URL = cloudDocumentController.fileUrl(filePath: filePath)
         do {
             try await cloudDocumentController.write(data: oldData, to: filePath)
         } catch {
             Logger.fileStore.error("Cannot create file in cloud app group \(error.localizedDescription, privacy: .public)")
             let fullUrl = try? await locationFileManager.createLocalUrl(id: fileId, pathExtension: pathExtension)
-            var fileUrl = FileUrl(fileId: fileId, url: fullUrl ?? URL(fileURLWithPath: ""), location: .local, module: unconvertedFileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: fullURL))
+            var fileUrl = FileUrl(fileId: fileId, url: fullUrl ?? URL(fileURLWithPath: ""), location: .local, module: unconvertedFileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: fullUrl))
             fileUrl.resetData(oldData) // added if any platform has issue to save data.
             return fileUrl
         }
-        let _ = fullURL.startAccessingSecurityScopedResource()
-        defer { fullURL.stopAccessingSecurityScopedResource() }
+        let _ = fullUrl.startAccessingSecurityScopedResource()
+        defer { fullUrl.stopAccessingSecurityScopedResource() }
         do {
-            try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullURL)
+            try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullUrl)
         } catch {
             Logger.fileStore.error("Cannot bookmark file \(error.localizedDescription, privacy: .public)")
         }
-        var fileUrl = FileUrl(fileId: fileId, url: fullURL, location: locationFileManager.fileLocation(for: fullURL), module: unconvertedFileUrl.module, relativeUrl: nil)
+        var fileUrl = FileUrl(fileId: fileId, url: fileURL, location: location, module: unconvertedFileUrl.module, relativeUrl: nil)
         fileUrl.resetData(oldData) // added if any platform has issue to save data.
         return fileUrl
     }
@@ -658,6 +656,19 @@ extension FileUrlDataController: FileAccessible {
                 }
             }
         }
+    }
+}
+
+// MARK: - Manage files
+extension FileUrlDataController {
+    public func move(fileUrl: FileUrl?, from source: ItemListCategory, to destination: ItemListCategory) async -> FileUrl? {
+        do {
+            guard let fileUrl, fileUrl.location == .newCloud, let categoryPath = fileUrl.rawUrl.pathComponents.first, categoryPath == source.title, let newUrl = try await cloudDocumentController.move(url: fileUrl.rawUrl, to: destination.title) else { return nil }
+            return FileUrl(fileId: fileUrl.fileId, url: newUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil)
+        } catch {
+            print(">>> Error moving file: %{public}@\n", error.localizedDescription)
+        }
+        return nil
     }
 }
 

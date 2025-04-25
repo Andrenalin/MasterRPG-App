@@ -51,17 +51,17 @@ public extension LocationFileManager {
         }
     }
 
-    func absoluteUrl(for url: URL?, at location: FileLocation) -> URL? {
+    func absoluteUrl(for url: URL?, at location: FileLocation, module: String? = nil) -> URL? {
         guard let url else { return url }
         switch location {
         case .appCloud:
             guard let cloudPath = rootAppCloud else { return nil }
-            return add(relative: url, to: cloudPath)
+            return add(relative: url, to: cloudPath, module: nil)
         case .icloud:
             guard let cloudPath = rootICloud else { return nil }
-            return add(relative: url, to: cloudPath)
+            return add(relative: url, to: cloudPath, module: nil)
         case .newCloud:
-            return add(relative: url, to: rootNewCloud)
+            return add(relative: url, to: rootNewCloud, module: module)
         default:
             return url
         }
@@ -102,12 +102,15 @@ public extension LocationFileManager {
 }
 
 private extension LocationFileManager {
-    private func add(relative url: URL, to root: URL) -> URL {
+    private func add(relative url: URL, to root: URL, module: String?) -> URL {
         var pathComponents = url.pathComponents
         if pathComponents.first == "/" {
             pathComponents.removeFirst()
         }
         var result = root
+        if let module {
+            result.append(component: module)
+        }
         for component in pathComponents {
             result.append(component: component)
         }
