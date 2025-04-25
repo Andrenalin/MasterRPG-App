@@ -26,18 +26,29 @@ struct CloudDocumentController: Sendable {
         }
         return nameUrl
     }
+    
+    func createNameUrl(for selectedUrl: URL) async throws -> URL {
+        if isCloud(url: selectedUrl) {
+            return selectedUrl
+        } else {
+            let data = try await cloudDocumentsHandler.read(url: selectedUrl)
+            let filename = selectedUrl.lastPathComponent
+            let name = CloudDocumentController.suggestedFileName(for: modulePath, filename: filename, category: "New", tags: [])
+            return fileUrl(filePath: name)
+        }
+    }
 
     func move(from fileUrl: FileUrl, sourceFilename: String, name: String, category: String, tags: [String]) async throws -> String? {
-        var filename: String?
+        var filename: String
         switch fileUrl.location {
             case .appCloud, .local:
-                filename = nil
+                filename = name
             case .icloud, .other:
                 filename = fileUrl.rawUrl.absoluteString
             case .newCloud, .url:
                 return nil
         }
-        var newName = CloudDocumentController.suggestedFileName(for: modulePath, filename: filename, name: name, category: category, tags: tags)
+        var newName = CloudDocumentController.suggestedFileName(for: modulePath, filename: filename, category: category, tags: tags)
         let fileExtension = fileUrl.rawUrl.pathExtension
         newName = "\(newName).\(fileExtension)"
         let sourceUrl = URL(string: sourceFilename)!
@@ -53,16 +64,16 @@ struct CloudDocumentController: Sendable {
 }
 
 extension CloudDocumentController {
-    static func suggestedFileName(for modulePath: String, filename: String?, name: String, category: String, tags: [String]) -> String {
-
-        if let filename {
-            return filename
-        }
-        return "\(category)/\(name)"
+    static func suggestedFileName(for modulePath: String, filename: String, category: String, tags: [String]) -> String {
+        "\(category)/\(filename)"
     }
 }
 
 private extension CloudDocumentController {
+    func isCloud(url: URL) -> Bool {
+        url.absoluteString.hasPrefix(moduleUrl.absoluteString)
+    }
+    
     func fileUrl(filePath: String) -> URL {
         moduleUrl.appending(path: filePath)
     }

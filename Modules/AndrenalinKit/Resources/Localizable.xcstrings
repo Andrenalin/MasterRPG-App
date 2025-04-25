@@ -1100,6 +1100,7 @@
       }
     },
     "File path" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

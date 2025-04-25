@@ -157,7 +157,7 @@ public extension FileUrlDataController {
     }
 
     func fileDownloaded(for fileUrl: FileUrl) async -> Bool? {
-        guard fileUrl.location == .appCloud || fileUrl.location == .icloud else { return nil }
+        guard fileUrl.location != .local && fileUrl.location != .other else { return nil }
         guard await hasAccess(for: fileUrl) else { return nil }
         guard let fullUrl = locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location) else { return nil }
         guard let values = try? fullUrl.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]) else { return nil }
@@ -268,8 +268,8 @@ public extension FileUrlDataController {
         return FileUrl(fileId: fileUrl.fileId, url: destUrl, location: newLocation, module: fileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: destUrl))
     }
 
-    /// ItemStore will call to get FileUrl for given urls from picker
-    func createFileUrl(fileId: UUID, url: URL, module: String, useNewCloud: Bool = false) async throws -> FileUrl {
+    /// ItemController will call to get FileUrl for given urls from picker
+    func createFileUrl(fileId: UUID, url: URL, module: String, useNewCloud: Bool) async throws -> FileUrl {
         do {
             let values = try url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
             if values.ubiquitousItemDownloadingStatus != .current {
@@ -278,12 +278,9 @@ public extension FileUrlDataController {
         } catch {
             Logger.fileStore.error("Cannot get the download status of url \(url.absoluteString, privacy: .public)")
         }
-        try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: url)
-        if useNewCloud {
-            return FileUrl(fileId: fileId, url: url, location: .newCloud, module: module, relativeUrl: nil)
-        }
-
-        return FileUrl(fileId: fileId, url: url, location: locationFileManager.fileLocation(for: url), module: module, relativeUrl: locationFileManager.relativeUrl(for: url))
+        let nameUrl = try await cloudDocumentController.createNameUrl(for: url)
+        try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: nameUrl)
+        return FileUrl(fileId: fileId, url: nameUrl, location: .newCloud, module: module, relativeUrl: nil)
     }
 
     /// create a fileUrl with data from an import or on validation / convert data
