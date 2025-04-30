@@ -197,7 +197,7 @@ public extension FileUrlDataController {
 
     func url<T>(for fileUrl: FileUrl, action: @escaping (URL?) async throws -> T?) async rethrows -> T? {
         if fileUrl.location == .newCloud {
-            let url = cloudDocumentController.url(fileUrl: fileUrl.rawUrl)
+            let url = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
             return try await action(url)
         }
 
@@ -217,7 +217,7 @@ public extension FileUrlDataController {
 
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
         if fileUrl.location == .newCloud {
-            let url = cloudDocumentController.url(fileUrl: fileUrl.rawUrl)
+            let url = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
             return try action(url)
         }
 
@@ -302,7 +302,7 @@ public extension FileUrlDataController {
 
         guard let fileURL = locationFileManager.relativeUrl(for: unconvertedFileUrl.rawUrl) else { return nil }
         let filePath = fileURL.pathComponents.joined(separator: "/")
-        let fullUrl: URL = cloudDocumentController.fileUrl(filePath: filePath)
+        let fullUrl: URL = cloudDocumentController.fullUrl(filePath: filePath)
         do {
             try await cloudDocumentController.write(data: oldData, to: filePath)
         } catch {
@@ -663,12 +663,24 @@ extension FileUrlDataController: FileAccessible {
 extension FileUrlDataController {
     public func move(fileUrl: FileUrl?, from source: ItemListCategory, to destination: ItemListCategory) async -> FileUrl? {
         do {
-            guard let fileUrl, fileUrl.location == .newCloud, let categoryPath = fileUrl.rawUrl.pathComponents.first, categoryPath == source.title, let newUrl = try await cloudDocumentController.move(url: fileUrl.rawUrl, to: destination.title) else { return nil }
-            return FileUrl(fileId: fileUrl.fileId, url: newUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil)
+            guard let fileUrl, fileUrl.location == .newCloud, let categoryPath = fileUrl.rawUrl.pathComponents.first, categoryPath == source.title, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, to: destination.title) else { return nil }
+            await bookmark(url: fullUrl, fileId: fileUrl.fileId)
+
+            return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil)
         } catch {
-            print(">>> Error moving file: %{public}@\n", error.localizedDescription)
+            print(">>> Error moving file:@\n", error.localizedDescription)
         }
         return nil
+    }
+
+    private func bookmark(url: URL, fileId: UUID) async {
+        let _ = url.startAccessingSecurityScopedResource()
+        defer { url.stopAccessingSecurityScopedResource() }
+        do {
+            try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: url)
+        } catch {
+            Logger.fileStore.error("Cannot create file locally \(error.localizedDescription, privacy: .public)")
+        }
     }
 }
 

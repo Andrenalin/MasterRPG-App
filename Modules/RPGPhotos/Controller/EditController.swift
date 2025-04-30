@@ -30,11 +30,13 @@ extension EditController: EditControllable {
 extension EditController {
     @MainActor func reset(category: ItemListCategory) {
         guard model.category != category else { return }
-        let item = model
+        let oldCategory = model.category
+        let oldFileUrl = model.fileUrl
         Task { @MainActor in
-            let newFileUrl = await root.fileUrlDataController.move(fileUrl: item.fileUrl, from: model.category, to: category)
+            let newFileUrl = await root.fileUrlDataController.move(fileUrl: oldFileUrl, from: oldCategory, to: category)
             guard let newFileUrl else { return }
-            item.fileUrl = newFileUrl
+            model.fileUrl = newFileUrl
+            save(with: String(localized: "Change to FilePath").localizedString)
         }
         model.category = category
         save(with: String(localized: "Change to \(category.title)").localizedString)

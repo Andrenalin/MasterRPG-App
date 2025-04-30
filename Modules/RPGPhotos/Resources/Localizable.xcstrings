@@ -64,6 +64,9 @@
     "Change to %@" : {
 
     },
+    "Change to FilePath" : {
+
+    },
     "Convert Photo to JPEG" : {
       "localizations" : {
         "de" : {
