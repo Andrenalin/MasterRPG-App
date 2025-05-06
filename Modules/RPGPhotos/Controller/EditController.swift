@@ -32,14 +32,31 @@ extension EditController {
         guard model.category != category else { return }
         let oldCategory = model.category
         let oldFileUrl = model.fileUrl
+        model.category = category
+        let saveModel = model
         Task { @MainActor in
             let newFileUrl = await root.fileUrlDataController.move(fileUrl: oldFileUrl, from: oldCategory, to: category)
-            guard let newFileUrl else { return }
-            model.fileUrl = newFileUrl
-            save(with: String(localized: "Change to FilePath").localizedString)
+            if let newFileUrl {
+                saveModel.fileUrl = newFileUrl
+            }
+            save(with: String(localized: "Change to \(category.title)").localizedString)
         }
-        model.category = category
-        save(with: String(localized: "Change to \(category.title)").localizedString)
+    }
+
+    @MainActor func reset(name: String) {
+        guard model.name != name else { return }
+        let oldName = model.name
+        let oldFileUrl = model.fileUrl
+        model.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        editorModel.cacheItemListModel.reset(cacheType: .name, itemId: model.id, text: model.name.markDownText())
+        let saveModel = model
+        Task { @MainActor in
+            let newFileUrl = await root.fileUrlDataController.move(fileUrl: oldFileUrl, from: oldName, to: saveModel.name)
+            if let newFileUrl {
+                saveModel.fileUrl = newFileUrl
+            }
+            save(with: String(localized: "Typing").localizedString)
+        }
     }
 }
 

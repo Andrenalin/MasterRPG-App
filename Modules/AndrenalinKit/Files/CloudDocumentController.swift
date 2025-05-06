@@ -60,15 +60,30 @@ struct CloudDocumentController: Sendable {
         let sourceUrl = URL(string: sourceFilename)!
         let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: sourceUrl)
         try await write(data: data, to: newName)
-        
+
         return newName
     }
 
-    func move(url: URL, to destination: String) async throws -> (URL, URL)? {
+    func move(url: URL, newCategory destination: String) async throws -> (URL, URL)? {
         var pathComponents = url.pathComponents
+        guard let filename = pathComponents.last, pathComponents.count > 1 else { return nil }
         pathComponents[0] = destination
-        guard let filename = pathComponents.last else { return nil }
         let path = pathComponents.dropLast().joined(separator: "/")
+        let newFilename = try await suggestedFileName(for: path, filename: filename)
+        let newPath = path.appending("/\(newFilename)")
+        let destinationDirUrl = fullUrl(filePath: path)
+        try await FileManager.default.createDirectory(coordinatingAccessAt: destinationDirUrl, withIntermediateDirectories: true)
+        try await FileManager.default.moveItem(coordinatingAccessFrom: fullUrl(fileUrl: url), to: fullUrl(filePath: newPath))
+        guard let relativeUrl = URL(string: newPath) else { return nil }
+        return (fullUrl(filePath: newPath), relativeUrl)
+    }
+
+    func move(url: URL, newName destination: String) async throws -> (URL, URL)? {
+        let pathComponents = url.pathComponents
+        guard pathComponents.last != nil else { return nil }
+        let fileExt = url.pathExtension
+        let path = pathComponents.dropLast().joined(separator: "/")
+        let filename = destination + ".\(fileExt)"
         let newFilename = try await suggestedFileName(for: path, filename: filename)
         let newPath = path.appending("/\(newFilename)")
         let destinationDirUrl = fullUrl(filePath: path)
@@ -95,7 +110,7 @@ extension CloudDocumentController {
     }
 
     static func increasedFileName(for filename: String) -> String {
-        let comp = filename.split(separator: ".")
+        let comp = filename.split(separator: ".", omittingEmptySubsequences: false)
         let count = comp.count
         let ext: String
         let name: String
@@ -106,13 +121,18 @@ extension CloudDocumentController {
             ext = ""
             name = String(comp.joined(separator: "."))
         }
-        let numbers = name.split(separator: "-")
+        let numbers = name.split(separator: "-", omittingEmptySubsequences: false)
         let numCounter = numbers.count
         let number: Int
         var newFilename: String
         if numCounter > 1 {
-            number = (Int(numbers[numCounter - 1]) ?? 0) + 1
-            newFilename = numbers.dropLast().joined(separator: "-")
+            if let extractedNumber = Int(numbers[numCounter - 1]) {
+                number = extractedNumber + 1
+                newFilename = numbers.dropLast().joined(separator: "-")
+            } else {
+                number = 1
+                newFilename = numbers.joined(separator: "-")
+            }
         } else {
             number = 1
             newFilename = numbers.joined(separator: "-")

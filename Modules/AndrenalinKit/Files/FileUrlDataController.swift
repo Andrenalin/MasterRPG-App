@@ -663,12 +663,24 @@ extension FileUrlDataController: FileAccessible {
 extension FileUrlDataController {
     public func move(fileUrl: FileUrl?, from source: ItemListCategory, to destination: ItemListCategory) async -> FileUrl? {
         do {
-            guard let fileUrl, fileUrl.location == .newCloud, let categoryPath = fileUrl.rawUrl.pathComponents.first, categoryPath == source.title, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, to: destination.title) else { return nil }
+            guard let fileUrl, fileUrl.location == .newCloud, let categoryPath = fileUrl.rawUrl.pathComponents.first, categoryPath == source.title, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newCategory: destination.title) else { return nil }
             await bookmark(url: fullUrl, fileId: fileUrl.fileId)
 
             return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil)
         } catch {
-            print(">>> Error moving file:@\n", error.localizedDescription)
+            Logger.fileStore.error("Error moving file \(error.localizedDescription, privacy: .public)")
+        }
+        return nil
+    }
+
+    public func move(fileUrl: FileUrl?, from source: String, to destination: String) async -> FileUrl? {
+        do {
+            guard let fileUrl, fileUrl.location == .newCloud, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newName: destination) else { return nil }
+            await bookmark(url: fullUrl, fileId: fileUrl.fileId)
+
+            return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil)
+        } catch {
+            Logger.fileStore.error("Error moving file \(error.localizedDescription, privacy: .public)")
         }
         return nil
     }
