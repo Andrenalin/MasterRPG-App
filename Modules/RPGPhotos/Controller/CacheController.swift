@@ -4,6 +4,12 @@ import AndrenalinKit
 import Foundation
 import os.log
 
+#if os(macOS)
+internal import AppKit
+#else
+internal import UIKit
+#endif
+
 struct CacheController: Sendable {
     weak var root: PhotoRoot!
     

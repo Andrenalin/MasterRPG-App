@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 /// NavigationCheckpoints provide named checkpoints in the navigation tree.
 ///

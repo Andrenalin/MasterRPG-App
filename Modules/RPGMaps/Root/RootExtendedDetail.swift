@@ -2,6 +2,11 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGAudios
+import RPGPdfs
+import RPGPhotos
+import RPGTables
+import RPGValues
 
 struct RootExtendedDetail: View {
     let itemRowTreeModel: ItemRowTreeModel

@@ -4,6 +4,14 @@ import AndrenalinKit
 import RPGAdventures
 import RPGAudios
 import SwiftUI
+import RPGDie
+import RPGMaps
+import RPGPdfs
+import RPGPhotos
+import RPGSpaces
+import RPGTables
+import RPGValues
+import RPGWeathers
 
 public enum KnownRoutes: NavigationRoutes {
     case adventures(UUID?, UUID?)

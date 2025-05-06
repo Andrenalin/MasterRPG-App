@@ -4,6 +4,9 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGDie
+import RPGPdfs
+import RPGTables
 
 struct ValueEntryEditor: View {
     let root: ValueRoot

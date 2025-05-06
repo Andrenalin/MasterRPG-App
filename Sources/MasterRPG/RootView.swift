@@ -5,6 +5,8 @@ import RPGAdventures
 import RoleGameKit
 import RPGGame
 import SwiftUI
+import RPGMaps
+import RPGValues
 
 @MainActor
 struct RootView: View {

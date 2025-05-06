@@ -4,6 +4,9 @@ import AndrenalinKit
 import Foundation
 import SwiftUI
 import os.log
+import RPGTables
+import RPGDie
+import RPGPhotos
 
 public struct LinkController: Sendable {
     weak var root: ValueRoot!

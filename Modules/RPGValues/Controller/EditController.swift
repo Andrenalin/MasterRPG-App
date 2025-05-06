@@ -5,6 +5,9 @@ import Foundation
 import Observation
 import RegexBuilder
 import SwiftUI
+import RPGDie
+import RPGPdfs
+import RPGTables
 
 @MainActor @Observable
 final class ValueEditModel: Sendable {

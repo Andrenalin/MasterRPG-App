@@ -5,6 +5,15 @@ import Foundation
 import Observation
 import RegexBuilder
 import SwiftUI
+import RPGAudios
+import RPGDie
+import RPGMaps
+import RPGPdfs
+import RPGPhotos
+import RPGSpaces
+import RPGTables
+import RPGValues
+import RPGWeathers
 
 @MainActor @Observable
 final class AdventureEditModel: Sendable {

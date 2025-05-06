@@ -3,6 +3,7 @@
 import AndrenalinKit
 import CoreGraphics
 import Foundation
+internal import SwiftUICore
 
 enum MapPinId {
     case id

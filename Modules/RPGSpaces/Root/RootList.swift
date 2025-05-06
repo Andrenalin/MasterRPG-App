@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+internal import UniformTypeIdentifiers
 
 struct RootNaviList: View {
     let root: SpaceRoot

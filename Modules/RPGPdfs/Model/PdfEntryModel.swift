@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import Foundation
+internal import CoreGraphics
 
 struct PdfEntryModel: Identifiable, Equatable, Hashable, Codable {
     init(id: UUID, name: String, content: String, pageNumber: String, bounds: CGRect, displayState: Int = 0) {

@@ -11,6 +11,13 @@ import RPGPhotos
 import RPGTables
 import RPGValues
 import RPGWeathers
+import RPGPdfs
+import RPGSpaces
+#if os(macOS)
+internal import AppKit
+#else
+internal import UIKit
+#endif
 
 @MainActor @Observable
 final class PlayerControllerModel: Sendable {

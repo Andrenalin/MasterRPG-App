@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 public struct LinkData: Codable, Transferable {
     public init(item: ItemRowTreeModel, name: String) {

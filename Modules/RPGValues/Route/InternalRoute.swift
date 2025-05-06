@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGPdfs
 
 enum InternalRoute: Hashable, Codable {
     case editDetail(UUID)

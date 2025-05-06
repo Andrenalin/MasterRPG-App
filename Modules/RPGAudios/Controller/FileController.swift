@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import Foundation
+internal import UniformTypeIdentifiers
 
 struct FileController: Sendable {
     weak var root: AudioRoot!

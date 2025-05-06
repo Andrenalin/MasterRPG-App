@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct PhotoEditor: View {
     let editController: EditController

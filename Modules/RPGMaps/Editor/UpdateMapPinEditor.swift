@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGValues
 
 struct UpdateMapPinEditor: View {
     let editController: EditController

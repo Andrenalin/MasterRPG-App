@@ -5,7 +5,7 @@ import Foundation
 import UniformTypeIdentifiers
 
 #if os(macOS)
-import AppKit
+internal import AppKit
 #endif
 
 struct ItemController: Sendable {

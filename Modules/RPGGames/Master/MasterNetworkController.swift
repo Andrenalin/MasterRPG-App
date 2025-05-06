@@ -3,6 +3,7 @@
 import Foundation
 import Network
 import os.log
+import AndrenalinKit
 
 final class MasterNetworkController: Sendable {
     private unowned let delegate: MasterNetworkControllerDelegate?

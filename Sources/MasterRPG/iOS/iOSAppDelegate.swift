@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if os(iOS)  || os(visionOS) || os(tvOS)
+import Combine
 import UIKit
 
 final class IosAppDelegate: NSObject, UIApplicationDelegate, ObservableObject {

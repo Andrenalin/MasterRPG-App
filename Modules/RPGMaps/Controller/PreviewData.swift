@@ -9,6 +9,7 @@ import RPGPhotos
 import RPGResources
 import RPGTables
 import RPGValues
+internal import SwiftUICore
 
 public extension MapRoot {
     static let previewValueId = MapModel.previewId
