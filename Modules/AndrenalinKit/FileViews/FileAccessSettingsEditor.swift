@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 public protocol FileAccessible {
     func validateFiles() async -> Bool

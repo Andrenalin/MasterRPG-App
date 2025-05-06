@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGPhotos
 
 @Observable
 final class DropPinModel {

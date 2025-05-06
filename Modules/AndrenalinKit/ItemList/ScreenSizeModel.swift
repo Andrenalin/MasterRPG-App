@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreGraphics
 import Foundation
 
 public struct ScreenSizeModel: Equatable, Sendable {

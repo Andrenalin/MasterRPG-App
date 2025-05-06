@@ -1,9 +1,10 @@
 // @copyright André Trettin
 
+import Combine
 import Foundation
 
 @MainActor
-final class SharePlaySingleQueuePackageSender: ObservableObject {
+final class  SharePlaySingleQueuePackageSender: ObservableObject {
     init(packageSize: Int = SharePlaySingleQueuePackageSender.packageSize, sendPackage: @escaping (PackageMessage) async -> Void) {
         self.packageSize = packageSize
         self.sendPackage = sendPackage

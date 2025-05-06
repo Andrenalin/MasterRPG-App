@@ -2,6 +2,7 @@
 
 #if os(iOS) || os(visionOS) || os(tvOS)
 import AndrenalinKit
+import Combine
 import CloudKit
 import RoleGameKit
 import RPGGame

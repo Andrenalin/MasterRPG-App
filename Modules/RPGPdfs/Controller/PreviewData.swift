@@ -3,6 +3,7 @@
 import AndrenalinKit
 import Foundation
 import RPGResources
+internal import CoreGraphics
 
 public extension PdfRoot {
     static let previewSpaceId = PdfModel.previewId

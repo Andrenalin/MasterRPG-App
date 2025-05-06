@@ -3,6 +3,7 @@
 import AppIntents
 import RPGDie
 import WidgetKit
+import AndrenalinKit
 
 struct SelectedDiceAppIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource { "Selected Dice" }

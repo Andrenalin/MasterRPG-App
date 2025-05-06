@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGAdventures
 
 public struct RootURLHandler: NavigationURLHandler {
     public init(appStore: AppStore) {

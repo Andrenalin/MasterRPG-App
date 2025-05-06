@@ -2,6 +2,13 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGValues
+import RPGTables
+import RPGPdfs
+import RPGAudios
+import RPGPhotos
+import RPGSpaces
+import RPGDie
 
 struct OverlayPlayerTabBar: View {
     let root: GameRoot

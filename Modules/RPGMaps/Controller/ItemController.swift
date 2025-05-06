@@ -3,6 +3,12 @@
 import AndrenalinKit
 import Foundation
 import CoreData
+import RPGAudios
+import RPGDie
+import RPGPdfs
+import RPGPhotos
+import RPGTables
+import RPGValues
 
 struct ItemController: Sendable {
     @MainActor

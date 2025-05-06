@@ -2,6 +2,8 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGValues
+import RPGAdventures
 
 public struct ViewController {
     weak var root: GameRoot!

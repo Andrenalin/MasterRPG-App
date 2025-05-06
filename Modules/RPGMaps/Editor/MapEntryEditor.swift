@@ -4,6 +4,12 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGValues
+import RPGAudios
+import RPGDie
+import RPGPdfs
+import RPGPhotos
+import RPGTables
 
 struct MapEntryEditor: View {
     let root: MapRoot

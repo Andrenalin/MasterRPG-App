@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGDie
 
 public struct ViewController {
     weak var root: TableRoot!

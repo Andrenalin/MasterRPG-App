@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGAudios
 
 struct OverlayGameMenu: View {
     let root: GameRoot

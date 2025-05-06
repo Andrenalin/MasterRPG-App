@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import AppIntents
+import AndrenalinKit
 
 public struct DiceWidgetModel: Sendable {
     public init(itemId: UUID, name: String, displayName: String, root: DiceRoot) {

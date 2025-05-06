@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import RPGMaps
 
 public struct ExternalGameRootView: View {
     let root: GameRoot

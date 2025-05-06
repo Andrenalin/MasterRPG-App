@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import Combine
 import SwiftUI
 
 public struct MeshAnimationView: View {

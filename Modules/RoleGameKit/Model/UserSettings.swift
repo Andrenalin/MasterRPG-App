@@ -2,6 +2,10 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGAudios
+import RPGSpaces
+import RPGPhotos
+import RPGPdfs
 
 public struct UserSettingsViewModifier: ViewModifier {
     public init(appStore: AppStore) {

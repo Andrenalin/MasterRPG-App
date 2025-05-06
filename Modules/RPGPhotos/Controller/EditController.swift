@@ -3,6 +3,11 @@
 import AndrenalinKit
 import Foundation
 import Observation
+#if os(macOS)
+internal import AppKit
+#else
+internal import UIKit
+#endif
 
 struct EditController: Sendable {
     @MainActor

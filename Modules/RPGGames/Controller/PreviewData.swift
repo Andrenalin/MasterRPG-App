@@ -7,6 +7,11 @@ import Foundation
 import RPGMaps
 import RPGPhotos
 import RPGTables
+import RPGAudios
+import RPGPdfs
+import RPGSpaces
+import RPGValues
+import RPGWeathers
 
 extension GameRoot {
     @MainActor

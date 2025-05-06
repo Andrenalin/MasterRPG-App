@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import Foundation
+import UniformTypeIdentifiers
 
 struct FileController: Sendable {
     weak var root: PhotoRoot!

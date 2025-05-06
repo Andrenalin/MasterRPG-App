@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 public struct FolderSettingsEditor: View {
     public init(fileStore: FileUrlDataController) {

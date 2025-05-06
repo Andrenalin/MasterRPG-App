@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGPhotos
 
 struct MapPinSectionEditor: View {
     let editController: EditController

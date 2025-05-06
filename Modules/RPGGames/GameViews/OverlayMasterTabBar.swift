@@ -2,6 +2,15 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGAdventures
+import RPGTables
+import RPGAudios
+import RPGPhotos
+import RPGMaps
+import RPGValues
+import RPGPdfs
+import RPGSpaces
+import RPGWeathers
 
 struct OverlayMasterTabBar: View {
     let root: GameRoot

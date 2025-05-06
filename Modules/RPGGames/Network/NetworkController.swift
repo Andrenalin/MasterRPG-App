@@ -5,6 +5,7 @@ import Combine
 import Foundation
 import os.log
 import SwiftUI
+import GroupActivities
 
 final class NetworkController: Sendable {
     let model: NetworkControllerModel

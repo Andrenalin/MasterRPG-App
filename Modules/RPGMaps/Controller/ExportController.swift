@@ -2,6 +2,12 @@
 
 import AndrenalinKit
 import Foundation
+import RPGAudios
+import RPGDie
+import RPGPdfs
+import RPGPhotos
+import RPGTables
+import RPGValues
 
 struct ExportController: Sendable {
     @MainActor

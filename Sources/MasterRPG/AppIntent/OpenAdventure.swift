@@ -5,6 +5,8 @@ import Foundation
 import RPGAdventures
 import RoleGameKit
 import SwiftUICore
+import AndrenalinKit
+internal import _AppIntents_SwiftUI
 
 struct OpenAdventure: AppIntent, OpenIntent {
     static let title: LocalizedStringResource = "Open Adventure"
@@ -31,7 +33,7 @@ struct GetActiveAdventure: AppIntent {
         
     func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         let appStore = await AppStore.shared
-        let gameRoot = await appStore.gameRoot
+        //let gameRoot = await appStore.gameRoot
         let adventureRoot = await appStore.adventureRoot
         let viewController = adventureRoot.viewController
         //let itemId = await gameRoot.gameModel.selectedAdventure ?? UUID()

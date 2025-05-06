@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGPhotos
 
 struct MainRow: View {
     let model: MapModel

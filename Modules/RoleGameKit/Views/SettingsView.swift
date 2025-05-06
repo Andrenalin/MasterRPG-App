@@ -2,6 +2,11 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGAdventures
+import RPGAudios
+import RPGPdfs
+import RPGPhotos
+import RPGSpaces
 
 public struct SettingsView: View {
     public init(store: AppStore) {

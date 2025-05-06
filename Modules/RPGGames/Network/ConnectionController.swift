@@ -3,6 +3,7 @@
 import Foundation
 import Network
 import os.log
+import AndrenalinKit
 
 protocol ConnectionControllable {
     func startConnection()

@@ -2,6 +2,9 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGDie
+import RPGTables
+import RPGValues
 
 struct SpecialEditor: View {
     let editController: EditController

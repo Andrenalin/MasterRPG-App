@@ -3,6 +3,7 @@
 #if os(macOS)
 import AndrenalinKit
 import AppKit
+import Combine
 import CloudKit
 import os.log
 

@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGPhotos
 
 struct AnimatedHeaderMap: View {
     let editController: EditController

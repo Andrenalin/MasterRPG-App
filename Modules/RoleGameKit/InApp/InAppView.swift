@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import StoreKit
 
 public struct InAppView: View {
     public init(inAppController: InAppController) {

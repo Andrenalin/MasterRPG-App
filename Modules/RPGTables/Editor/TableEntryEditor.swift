@@ -4,6 +4,7 @@
 
 import AndrenalinKit
 import SwiftUI
+import RPGDie
 
 struct TableEntryEditor: View {
     let root: TableRoot
