@@ -2,12 +2,11 @@
 
 import AndrenalinKit
 import Foundation
+import RPGPhotos
 import os.log
 
 #if !os(tvOS)
 import QuickLookThumbnailing
-import RPGPhotos
-import RPGPhotos
 #endif
 
 struct CacheController: Sendable {
