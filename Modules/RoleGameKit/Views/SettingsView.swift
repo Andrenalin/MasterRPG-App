@@ -27,6 +27,8 @@ public struct SettingsView: View {
 //            }
 
             SectionGroupEditorView {
+                HarmonicButton()
+
                 Button("Convert / Move") {
                     Task {
                         try? await store.audioRoot.moveFiles()
