@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if canImport(Testing)
+import AndrenalinKit
 import RPGResourcesDebug
 import Testing
 

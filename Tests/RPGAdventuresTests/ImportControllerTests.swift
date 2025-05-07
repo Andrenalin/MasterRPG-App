@@ -2,6 +2,7 @@
 
 #if canImport(Testing)
 import AndrenalinKit
+import Foundation
 import RPGDie
 import RPGAudios
 import RPGMaps
