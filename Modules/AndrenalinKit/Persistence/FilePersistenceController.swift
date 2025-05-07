@@ -34,9 +34,11 @@ struct FilePersistenceController: Sendable {
 extension FilePersistenceController {
     func load() async -> [DataModel] {
         guard type != .memory else { return await model.cache }
+        let oldUrl = oldFileURL
         let loadUrl = fileURL
         let backgroundTask = Task.detached(priority: priority) {
             do {
+                try await migrateOldFile(oldUrl: oldUrl, newUrl: loadUrl)
                 let exists = FileManager.default.fileExists(atPath: loadUrl.relativePath)
                 if !exists {
                     try FileManager.default.createDirectory(at: loadUrl.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -127,7 +129,16 @@ private extension FilePersistenceController {
     }
 
     var fileURL: URL {
+        FileManager.groupURL.appendingPathComponent("\(name).json")
+    }
+
+    var oldFileURL: URL {
         URL.documentsDirectory.appendingPathComponent("\(name).json")
+    }
+
+    func migrateOldFile(oldUrl: URL, newUrl: URL) async throws {
+        guard FileManager.default.fileExists(atPath: oldUrl.relativePath) else { return }
+        try await FileManager.default.moveItem(coordinatingAccessFrom: oldUrl, to: newUrl)
     }
 }
 

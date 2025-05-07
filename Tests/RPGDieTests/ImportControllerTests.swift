@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import AndrenalinKit
+import Foundation
 import RPGResourcesDebug
 import Testing
 
@@ -22,4 +22,3 @@ struct ImportControllerTests {
         #expect(await root.itemController.itemDataModel.items.count == 5)
     }
 }
-#endif

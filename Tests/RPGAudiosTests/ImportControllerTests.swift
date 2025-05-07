@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
+import Foundation
 import RPGResourcesDebug
 import Testing
 
