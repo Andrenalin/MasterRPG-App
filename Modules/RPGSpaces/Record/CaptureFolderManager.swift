@@ -8,6 +8,7 @@ A class that supports the creation, listing, and filename support of a capture f
 #if os(iOS) && !targetEnvironment(simulator)
 
 import AndrenalinKit
+import Combine
 import Dispatch
 import Foundation
 import os

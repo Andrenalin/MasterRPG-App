@@ -31,13 +31,13 @@ public struct SettingsView: View {
 
                 Button("Convert / Move") {
                     Task {
-                        try? await store.audioRoot.moveFiles()
-
+//                        try? await store.audioRoot.moveFiles()
+//
                         try? await store.pdfRoot.moveFiles()
 
-                        try? await store.photoRoot.moveFiles()
-
-                        try? await store.spaceRoot.moveFiles()
+//                        try? await store.photoRoot.moveFiles()
+//
+//                        try? await store.spaceRoot.moveFiles()
                     }
                 }
             } header: {

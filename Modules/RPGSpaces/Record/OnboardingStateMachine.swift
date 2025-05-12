@@ -8,6 +8,7 @@ The state machine this sample uses to transition between the review screens, pla
 #if os(iOS) && !targetEnvironment(simulator)
 
 import AndrenalinKit
+import Combine
 import Foundation
 import os
 
