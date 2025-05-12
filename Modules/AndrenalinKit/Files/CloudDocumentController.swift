@@ -19,7 +19,15 @@ struct CloudDocumentController: Sendable {
         moduleUrl.appending(path: filePath)
     }
 
-
+    func nameUrl(fullUrl: URL) -> URL {
+        let namePath = fullUrl.pathComponents.drop(while: { $0 != CloudDocumentController.documentDirName }).dropFirst(2)
+        var name = URL(string: "")!
+        namePath.forEach {
+            name.append(path: $0)
+        }
+        return name
+    }
+    
     func read(filePath: String) async throws -> Data? {
         try? await FileManager.default.contentsOfFile(coordinatingAccessAt: fullUrl(filePath: filePath))
     }
