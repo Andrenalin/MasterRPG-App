@@ -24,7 +24,10 @@ struct FileController: Sendable {
             let item = await root.itemController.itemOrEmpty(for: itemId)
             guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
             if let newFileUrl = try? await root.fileUrlDataController.move(fileUrl: fileUrl, name: item.name, category: item.category.title, tags: item.tags) {
-                await root.editController(type: .main).resetAudio(url: newFileUrl.rawUrl)
+                await root.fileUrlDataController.url(for: newFileUrl) { url in
+                    guard let url else { return }
+                    await root.editController(type: .main).resetAudio(url: url)
+                }
             }
         }
     }

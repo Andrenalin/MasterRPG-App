@@ -62,6 +62,11 @@ public extension LocationFileManager {
             return add(relative: url, to: cloudPath, module: nil)
         case .newCloud:
             return add(relative: url, to: rootNewCloud, module: module)
+        case .local:
+            guard let rootLocal else { return nil }
+            let filePath = Array(url.pathComponents.drop(while: { $0 != "Documents" }).dropFirst()).joined(separator: "/")
+            let newUrl = rootLocal.appending(path: filePath)
+            return newUrl
         default:
             return url
         }
