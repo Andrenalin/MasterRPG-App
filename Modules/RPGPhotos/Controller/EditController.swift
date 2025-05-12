@@ -63,6 +63,16 @@ extension EditController {
             save(with: String(localized: "Typing").localizedString)
         }
     }
+    
+    func reset(fileUrl: FileUrl, for itemId: UUID) async {
+        let item = await itemId == model.id ? model : root.itemController.itemOrEmpty(for: itemId)
+        item.fileUrl = fileUrl
+        if await itemId == model.id {
+            await save(with: "")
+        } else {
+            await root.itemController.replace(model: item, isInsert: false, shouldRepairLinks: false)
+        }
+    }
 }
 
 extension EditController {

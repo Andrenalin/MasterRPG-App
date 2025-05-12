@@ -21,7 +21,7 @@ struct CloudDocumentController: Sendable {
 
     func nameUrl(fullUrl: URL) -> URL {
         let namePath = fullUrl.pathComponents.drop(while: { $0 != CloudDocumentController.documentDirName }).dropFirst(2)
-        var name = URL(string: "")!
+        var name = URL(string: "/")!
         namePath.forEach {
             name.append(path: $0)
         }

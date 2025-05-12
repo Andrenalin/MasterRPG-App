@@ -25,7 +25,8 @@ struct FileController: Sendable {
             guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
             do {
                 if let newFileUrl = try await root.fileUrlDataController.move(fileUrl: fileUrl, name: item.name, category: item.category.title, tags: item.tags) {
-                    await root.editController(type: .main).resetPhoto(url: newFileUrl.rawUrl)
+                    let editController = await root.editController(type: .main)
+                    await editController.reset(fileUrl: newFileUrl, for: itemId)
                 }
             } catch {
                 print(error)
