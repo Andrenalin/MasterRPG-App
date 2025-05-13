@@ -4,19 +4,25 @@ import AndrenalinKit
 import SwiftUI
 
 struct DiceDropDownMenuArea: View {
+    init(editController: any EditControllable, model: Binding<UUID?>) {
+        self.editController = editController
+        self.model = model
+        self._selectedId = .init(initialValue: model.wrappedValue ?? DiceDropDownMenuArea.noneDiceId)
+    }
+    
     let editController: any EditControllable
     let model: Binding<UUID?>
     
     @Environment(DiceRoot.self) private var root
     
-    @State private var selectedId: UUID?
+    @State private var selectedId: UUID
     @State private var dropBackgroundColor: Color = .clear
     @State private var dropForegroundColor: Color = .primary
     
     var body: some View {
         HStack(spacing: 8) {
             LabeledContent {
-                Picker(selection: selection) {
+                Picker(selection: $selectedId) {
                     ForEach(allDiceIds) { itemId in
                         Text(diceText(itemId: itemId))
                             .tag(itemId)
@@ -31,11 +37,24 @@ struct DiceDropDownMenuArea: View {
                 Text("Dice", bundle: .module)
             }
             .labelsHidden()
+            .onChange(of: selectedId) {
+                selectDice(id: selectedId)
+            }
+            .onChange(of: model, initial: true) {
+                let newSelectedId: UUID
+                if let id = model.wrappedValue {
+                    newSelectedId = id
+                } else {
+                    newSelectedId = DiceDropDownMenuArea.noneDiceId
+                }
+                guard newSelectedId != newSelectedId else { return }
+                withAnimation { selectedId = newSelectedId }
+            }
             
             if model.wrappedValue != nil {
                 Button {
                     withAnimation {
-                        model.wrappedValue = nil
+                        selectedId = DiceDropDownMenuArea.noneDiceId
                     }
                     editController.save(with: String(localized: "Remove dice").localizedString)
                 } label: {
@@ -73,7 +92,20 @@ private extension DiceDropDownMenuArea {
     var allDiceIds: [UUID] {
         [DiceDropDownMenuArea.noneDiceId] + root.itemController.itemDataModel.items
     }
-    
+
+    func selectDice(id: UUID) {
+        let newId: UUID?
+        if id == DiceDropDownMenuArea.noneDiceId {
+            newId = nil
+        } else {
+            newId = id
+        }
+        if newId != model.wrappedValue {
+            model.wrappedValue = newId
+            editController.save(with: String(localized: "Change dice").localizedString)
+        }
+    }
+
     var selection: Binding<UUID> {
         Binding {
             model.wrappedValue ?? DiceDropDownMenuArea.noneDiceId

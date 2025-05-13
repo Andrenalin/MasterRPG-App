@@ -9,8 +9,9 @@ struct ValueTypeEditor: View {
     let entryId: UUID
 
     var body: some View {
+        @Bindable var model = editController.model
         LabeledContent {
-            Picker(selection: selection) {
+            Picker(selection: $model[entryId].type) {
                 ForEach(ValueEntryModel.ValueType.allCases) { option in
                     Text(option.title)
                         .tag(option)
@@ -23,14 +24,6 @@ struct ValueTypeEditor: View {
             .tint(Color.accentColor)
         } label: {
             Text("Type", bundle: .module)
-        }
-    }
-
-    private var selection: Binding<ValueEntryModel.ValueType> {
-        Binding {
-            editController.model[entryId].type
-        } set: {
-            editController.reset(entryId: entryId, type: $0)
         }
     }
 }
