@@ -30,7 +30,13 @@ extension FileManager {
             try copyItem(at: readURL, to: writeURL)
         }
     }
-    
+
+    func moveItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
+        try coordinate(writingItemAt: fromURL, writingItemAt: toURL) { readURL, writeURL in
+            try moveItem(at: readURL, to: writeURL)
+        }
+    }
+
     func contentsOfDirectory(coordinatingAccessAt dirURL: URL) async throws -> [URL] {
         var contentsURLs: [URL] = []
         let keys: [URLResourceKey] = [.nameKey, .isDirectoryKey, .isReadableKey, .ubiquitousItemIsDownloadingKey]
@@ -47,7 +53,13 @@ extension FileManager {
         }
         return data
     }
-    
+
+    func download(coordinatingAccessAt url: URL) async throws {
+        try coordinate(writingItemAt: url) { newUrl in
+            try FileManager.default.startDownloadingUbiquitousItem(at: newUrl)
+        }
+    }
+
     func write(_ data: Data, coordinatingAccessTo url: URL) async throws {
         try coordinate(writingItemAt: url) { url in
             try data.write(to: url)
@@ -101,6 +113,27 @@ extension FileManager {
         var managerError: Swift.Error?
         let coordinator = NSFileCoordinator(filePresenter: nil)
         coordinator.coordinate(readingItemAt: readURL, options: readOptions, writingItemAt: writeURL, options: writeOptions, error: &coordinatorError) { (read: URL, write: URL) in
+            do {
+                _ = read.startAccessingSecurityScopedResource()
+                _ = write.startAccessingSecurityScopedResource()
+                defer {
+                    read.stopAccessingSecurityScopedResource()
+                    write.stopAccessingSecurityScopedResource()
+                }
+                try block(read, write)
+            } catch {
+                managerError = error
+            }
+        }
+        guard coordinatorError == nil else { throw coordinatorError! }
+        guard managerError == nil else { throw managerError! }
+    }
+
+    private func coordinate(writingItemAt sourceURL: URL, writingItemAt destinationURL: URL, with block: (_ sourceURL: URL, _ destinationURL: URL) throws -> Void) throws {
+        var coordinatorError: NSError?
+        var managerError: Swift.Error?
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        coordinator.coordinate(writingItemAt: sourceURL, options: .forMoving, writingItemAt: destinationURL, options: .forReplacing, error: &coordinatorError) { (read: URL, write: URL) in
             do {
                 _ = read.startAccessingSecurityScopedResource()
                 _ = write.startAccessingSecurityScopedResource()

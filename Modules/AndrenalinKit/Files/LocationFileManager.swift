@@ -6,14 +6,16 @@ public struct LocationFileManager: Sendable {
     let rootAppCloud: URL?
     let rootLocal: URL?
     let rootICloud: URL?
+    let rootNewCloud: URL
     let moduleFolder: String
 
     public init(moduleFolder: String) {
         self.moduleFolder = moduleFolder
-        let cloud = FileManager.default.url(forUbiquityContainerIdentifier: nil)
+        let cloud = FileManager.cloudURL
         self.rootAppCloud = cloud?.appendingPathComponent("Documents")
         self.rootICloud = cloud?.deletingLastPathComponent().appendingPathComponent("com~apple~CloudDocs/")
         self.rootLocal = URL.documentsDirectory
+        self.rootNewCloud = (FileManager.cloudURL ?? FileManager.groupURL).appending(path: "Documents")
     }
 }
 
@@ -32,7 +34,7 @@ public extension LocationFileManager {
         if let rootICloud, path.starts(with: rootICloud.absoluteString) {
             return .icloud
         }
-        return .other
+        return .newCloud
     }
 
     func relativeUrl(for url: URL?) -> URL? {
@@ -49,15 +51,22 @@ public extension LocationFileManager {
         }
     }
 
-    func absoluteUrl(for url: URL?, at location: FileLocation) -> URL? {
+    func absoluteUrl(for url: URL?, at location: FileLocation, module: String? = nil) -> URL? {
         guard let url else { return url }
         switch location {
         case .appCloud:
             guard let cloudPath = rootAppCloud else { return nil }
-            return add(relative: url, to: cloudPath)
+            return add(relative: url, to: cloudPath, module: nil)
         case .icloud:
             guard let cloudPath = rootICloud else { return nil }
-            return add(relative: url, to: cloudPath)
+            return add(relative: url, to: cloudPath, module: nil)
+        case .newCloud:
+            return add(relative: url, to: rootNewCloud, module: module)
+        case .local:
+            guard let rootLocal else { return nil }
+            let filePath = Array(url.pathComponents.drop(while: { $0 != "Documents" }).dropFirst()).joined(separator: "/")
+            let newUrl = rootLocal.appending(path: filePath)
+            return newUrl
         default:
             return url
         }
@@ -98,12 +107,15 @@ public extension LocationFileManager {
 }
 
 private extension LocationFileManager {
-    private func add(relative url: URL, to root: URL) -> URL {
+    private func add(relative url: URL, to root: URL, module: String?) -> URL {
         var pathComponents = url.pathComponents
         if pathComponents.first == "/" {
             pathComponents.removeFirst()
         }
         var result = root
+        if let module {
+            result.append(component: module)
+        }
         for component in pathComponents {
             result.append(component: component)
         }
@@ -129,7 +141,7 @@ private extension LocationFileManager {
             rootUrl = rootAppCloud
         case .icloud:
             return cloudUrl
-        case .other:
+        case .other, .url, .newCloud:
             return nil
         }
         guard var fileURL = rootUrl?

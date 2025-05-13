@@ -61,6 +61,9 @@
         }
       }
     },
+    "Change to %@" : {
+
+    },
     "Convert Photo to JPEG" : {
       "localizations" : {
         "de" : {
@@ -230,6 +233,9 @@
           }
         }
       }
+    },
+    "Typing" : {
+
     },
     "Undo %@" : {
       "localizations" : {

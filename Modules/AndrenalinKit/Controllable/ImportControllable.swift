@@ -200,7 +200,7 @@ private extension ImportControllable {
         guard let fileControllable, var fileUrl = await fileControllable.fileUrl(item: item) else { return }
         fileUrl.resetData(data)
         do {
-            let updated = try await fileControllable.fileUrlDataController.createFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
+            let updated = try await fileControllable.fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
             await fileControllable.setFileUrl(updated, item: item)
         } catch {
             await logImport(title: "Cannot save bookmark the file will be stored as data", count: 0)

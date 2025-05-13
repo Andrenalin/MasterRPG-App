@@ -27,6 +27,9 @@
         }
       }
     },
+    "Change to %@" : {
+
+    },
     "Content" : {
       "localizations" : {
         "de" : {
@@ -137,7 +140,11 @@
         }
       }
     },
+    "Remove Pdf" : {
+
+    },
     "Remove Photo" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -166,6 +173,9 @@
           }
         }
       }
+    },
+    "Typing" : {
+
     },
     "Undo %@" : {
       "localizations" : {

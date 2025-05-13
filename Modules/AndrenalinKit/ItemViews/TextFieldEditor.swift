@@ -116,6 +116,9 @@ public struct TextFieldControllerEditor: View {
             guard focusState == false else { return }
             save()
         }
+        .onDisappear {
+            save()
+        }
         .onChange(of: controller.editValue.wrappedValue) {
             guard name != controller.editValue.wrappedValue else { return }
             withAnimation { name = controller.editValue.wrappedValue }
@@ -142,7 +145,9 @@ public struct TextFieldControllerEditor: View {
     
     private func save() {
         name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        controller.editValue.wrappedValue = name
-        editController.save(with: String(localized: "Typing").localizedString)
+        if controller.editValue.wrappedValue != name {
+            controller.editValue.wrappedValue = name
+            editController.save(with: String(localized: "Typing").localizedString)
+        }
     }
 }

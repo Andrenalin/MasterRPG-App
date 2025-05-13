@@ -25,7 +25,7 @@ struct LocationFileManagerTests {
 
         #expect(sut.fileLocation(for: docUrl) == AndrenalinKit.FileLocation.local)
         #expect(sut.fileLocation(for: docFileUrl) == AndrenalinKit.FileLocation.local)
-        #expect(sut.fileLocation(for: downloadUrl) == AndrenalinKit.FileLocation.other)
+        #expect(sut.fileLocation(for: downloadUrl) == AndrenalinKit.FileLocation.newCloud)
     }
 
     @Test func AbsolutUrl() async throws {
@@ -65,7 +65,7 @@ struct LocationFileManagerTests {
         let url = try await sut.create(id: id, location: .local, pathExtension: "txt", data: Data(count: 4))
         let newUrl = try await sut.copy(pickedURL: url!, to: URL.temporaryDirectory.appending(path: id.uuidString).appendingPathExtension("txt"))
         #expect(nil != newUrl)
-        #expect(sut.fileLocation(for: newUrl!) == .other)
+        #expect(sut.fileLocation(for: newUrl!) == .newCloud)
         #expect(try Data(contentsOf: newUrl!).count == 4)
         #expect(!FileManager.default.fileExists(atPath: url!.absoluteString))
 

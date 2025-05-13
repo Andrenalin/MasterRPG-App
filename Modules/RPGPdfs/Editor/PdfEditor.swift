@@ -102,4 +102,6 @@ struct PdfEditor: View {
 #Preview {
     PdfEditor(editController: .preview, size: CGSize(width: 300, height: 200), topMargin: 64, inline: false)
         .environment(PdfRoot.preview)
+        .environment(ListModel.preview)
+        .environment(SelectionSheetLinkModel())
 }

@@ -19,7 +19,9 @@ public extension PdfRoot {
     @MainActor
     static let previewWithData: PdfRoot = {
         let root = PdfRoot.preview
+        let itemController = root.itemController
         let importController = root.importController
+        let editController = root.editController(type: .main)
 #if DEBUG
         Task.detached(priority: .userInitiated) {
             let bundle = Resources.bundle
@@ -29,6 +31,10 @@ public extension PdfRoot {
             }
             let task = importController.importUrl(from: url)
             let _ = try await task.value
+            let saveTask = Task { @MainActor in
+                editController.setCurrentItem(to: .previewWithData(from: itemController))
+            }
+            _ = await saveTask.result
         }
 #endif
         return root
@@ -67,6 +73,10 @@ extension PdfRoot: RootControllable {
 
 extension ItemRowTreeModel {
     static let preview = ItemRowTreeModel(itemId: PdfModel.previewId, entryId: PdfEntryModel.previewId, typeId: .pdf)
+    @MainActor
+    static func previewWithData(from itemController: ItemController) -> ItemRowTreeModel {
+        ItemRowTreeModel(itemId: itemController.itemDataModel.items[0], entryId: nil, typeId: .pdf)
+    }
 }
 
 extension ItemController {

@@ -60,6 +60,7 @@ struct ValueEntrySectionEditor: View {
 #endif
 
             ValueTypeEditor(editController: editController, entryId: entryId)
+                .id(entryId)
 
             Group {
                 if model[entryId].type == .selection {

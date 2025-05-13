@@ -9,7 +9,9 @@ import RPGPhotos
 import RPGSpaces
 import RPGTables
 import RPGWeathers
+#if !os(tvOS)
 import RealityKit
+#endif
 import SwiftUI
 
 public struct TabNavigation: View {

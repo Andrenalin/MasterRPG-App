@@ -10,7 +10,7 @@ struct PdfDetailEditor: View {
     @Environment(PdfRoot.self) private var root
     
     var body: some View {
-        @Bindable var model = model
+        @Bindable var model = editController.model
 
         DetailEditor(editController: editController) {
             HeaderEditor(editController: editController)
@@ -25,19 +25,19 @@ struct PdfDetailEditor: View {
 #if !os(macOS)
                 .ignoresSafeArea(.container, edges: .top)
 #endif
-                .id(model.id)
+                .id(editController.model.id)
         } extHeaderView: { dismiss in
-            root.viewController.viewPdfInline(with: model.id, withoutBookmark: false, dismissAction: dismiss)
-                .id(model.id)
+            root.viewController.viewPdfInline(with: editController.model.id, withoutBookmark: false, dismissAction: dismiss)
+                .id(editController.model.id)
         } extContentView: {
 #if !os(tvOS)
             PdfEntryEditor(root: root, editController: editController)
 #endif
         } extContentHeight: { screenHeight in
-            let minHeight = Double(model.entries.count * 128)
+            let minHeight = Double(editController.model.entries.count * 128)
             return min(max(minHeight, screenHeight * 0.5), screenHeight)
         } heightCalculator: { size in
-            (144, model.hasPdf ? min(size.height * 0.35, 400) : 144)
+            (144, editController.model.hasPdf ? min(size.height * 0.35, 400) : 144)
         }
 
         .focusedSceneValue(\.selectedPdf, $model.id)
@@ -45,8 +45,8 @@ struct PdfDetailEditor: View {
 }
 
 #Preview {
-    PdfDetailEditor(editController: .preview, model: .preview)
-        .environment(PdfRoot.preview)
+    PdfDetailEditor(editController: PdfRoot.previewWithData.editController(type: .main), model: .preview)
+        .environment(PdfRoot.previewWithData)
         .environment(ListModel.preview)
         .environment(SelectionSheetLinkModel())
 }

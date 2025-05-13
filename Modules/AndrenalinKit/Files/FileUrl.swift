@@ -9,7 +9,7 @@ public struct FileUrl: Equatable, Hashable, Codable, Sendable {
     public let module: String
     public private(set) var data: Data?
 
-    init(fileId: UUID, url: URL, location: FileLocation?, module: String, relativeUrl: URL?) {
+    public init(fileId: UUID, url: URL, location: FileLocation?, module: String, relativeUrl: URL?) {
         self.fileId = fileId
         self._url = relativeUrl ?? url
         self.location = location ?? .other

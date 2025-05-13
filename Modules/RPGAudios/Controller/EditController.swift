@@ -28,6 +28,16 @@ extension EditController: EditControllable {
 }
 
 extension EditController {
+    func reset(fileUrl: FileUrl, for itemId: UUID) async {
+        let item = await itemId == model.id ? model : root.itemController.itemOrEmpty(for: itemId).copy()
+        item.fileUrl = fileUrl
+        if await itemId == model.id {
+            await save(with: "")
+        } else {
+            await root.itemController.replace(model: item, isInsert: false, shouldRepairLinks: false)
+        }
+    }
+
     func resetAudio(url: URL?) {
         Task { @MainActor in
             await resetAudio(url: url, for: model, undoSave: true)
@@ -59,7 +69,7 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             item.name = name
         }
-        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: root.itemController.itemDataModel.networkModule.token)
+        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: root.itemController.itemDataModel.networkModule.token, category: item.category.title)
         await resetURL(url: fileUrl, on: item)
         if undoSave {
             let saveTask = Task { @MainActor in
