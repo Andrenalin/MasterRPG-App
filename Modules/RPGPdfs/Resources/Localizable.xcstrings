@@ -27,6 +27,9 @@
         }
       }
     },
+    "Change to %@" : {
+
+    },
     "Content" : {
       "localizations" : {
         "de" : {
@@ -170,6 +173,9 @@
           }
         }
       }
+    },
+    "Typing" : {
+
     },
     "Undo %@" : {
       "localizations" : {

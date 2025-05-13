@@ -23,7 +23,7 @@ struct FileController: Sendable {
         for itemId in itemIds {
             let item = await root.itemController.itemOrEmpty(for: itemId)
             guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
-            if let newFileUrl = try? await root.fileUrlDataController.move(fileUrl: fileUrl, name: item.name, category: item.category.title, tags: item.tags) {
+            if let newFileUrl = try? await root.fileUrlDataController.move(fileUrl: fileUrl, name: item.name, category: item.category.title) {
                 let editController = await root.editController(type: .main)
                 await editController.reset(fileUrl: newFileUrl, for: itemId)
             }

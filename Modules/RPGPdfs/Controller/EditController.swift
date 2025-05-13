@@ -30,6 +30,39 @@ extension EditController: EntryDataEditable {
 }
 
 extension EditController {
+    @MainActor func reset(category: ItemListCategory) {
+        guard model.category != category else { return }
+        let oldCategory = model.category
+        let oldFileUrl = model.fileUrl
+        model.category = category
+        let saveModel = model
+        Task { @MainActor in
+            let newFileUrl = await root.fileUrlDataController.move(fileUrl: oldFileUrl, from: oldCategory, to: category)
+            if let newFileUrl {
+                saveModel.fileUrl = newFileUrl
+            }
+            save(with: String(localized: "Change to \(category.title)").localizedString)
+        }
+    }
+
+    @MainActor func reset(name: String) {
+        guard model.name != name else { return }
+        let oldName = model.name
+        let oldFileUrl = model.fileUrl
+        model.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        editorModel.cacheItemListModel.reset(cacheType: .name, itemId: model.id, text: model.name.markDownText())
+        let saveModel = model
+        Task { @MainActor in
+            let newFileUrl = await root.fileUrlDataController.move(fileUrl: oldFileUrl, from: oldName, to: saveModel.name)
+            if let newFileUrl {
+                saveModel.fileUrl = newFileUrl
+            }
+            save(with: String(localized: "Typing").localizedString)
+        }
+    }
+}
+
+extension EditController {
     func reset(fileUrl: FileUrl, for itemId: UUID) async {
         let item = await itemId == model.id ? model : root.itemController.itemOrEmpty(for: itemId)
         item.fileUrl = fileUrl

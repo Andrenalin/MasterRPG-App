@@ -94,14 +94,30 @@ public struct FileUrlDataController: Sendable {
         nonmutating set { model.processing = newValue }
     }
 
-    public func move(fileUrl: FileUrl, name: String, category: String, tags: [String]) async throws -> FileUrl? {
-        let sourceFilename = absoluteFileName(for: fileUrl)
-        guard let destinationName = try await cloudDocumentController.move(from: fileUrl, sourceFilename: sourceFilename, name: name, category: category, tags: tags) else { return nil }
-        guard let url = URL(string: destinationName) else { return nil }
+    public func move(fileUrl: FileUrl, name: String, category: String) async throws -> FileUrl? {
+        try await url(for: fileUrl) { url -> FileUrl? in
+            guard let url else { return nil }
+            var part = (locationFileManager.relativeUrl(for: fileUrl.rawUrl) ?? fileUrl.rawUrl).absoluteString
+            if fileUrl.location == .icloud {
+                let folders = await fileBookmarkController.folders()
+                for folderId in folders {
+                    guard let folderUrl = await self.fileBookmarkController.loadBookmark(fileId: folderId, folder: true) else { continue }
+                    if url.absoluteString.hasPrefix(folderUrl.absoluteString) {
+                        let count = folderUrl.pathComponents.count
+                        let filePath = url.pathComponents.dropFirst(count)
+                        part = filePath.joined(separator: "/")
+                        break
+                    }
+                }
+            }
 
-        let newFileUrl = FileUrl(fileId: fileUrl.fileId, url: url, location: .newCloud, module: fileUrl.module, relativeUrl: nil)
-        //delete(fileUrl)
-        return newFileUrl
+            guard let destinationName = try await cloudDocumentController.move(sourceUrl: url, destinationFilename: part) else { return nil }
+
+            guard let url = URL(string: destinationName) else { return nil }
+
+            let newFileUrl = FileUrl(fileId: fileUrl.fileId, url: url, location: .newCloud, module: fileUrl.module, relativeUrl: nil)
+            return newFileUrl
+        }
     }
 }
 

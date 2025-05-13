@@ -101,15 +101,6 @@ extension ItemController {
     func pdfDocument(for itemId: UUID) async -> PDFDocument? {
         guard var fileUrl = await self.item(for: itemId)?.fileUrl else { return nil }
         try? await root.fileUrlDataController.download(fileUrl: fileUrl)
-
-        if fileUrl.location != .newCloud {
-            let item = await self.itemOrEmpty(for: itemId)
-
-            if let newFileUrl = try? await root.fileUrlDataController.move(fileUrl: fileUrl, name: item.name, category: item.category.title, tags: item.tags) {
-                await root.editController(type: .main).resetPdf(url: newFileUrl.rawUrl)
-                fileUrl = newFileUrl
-            }
-        }
         return await root.fileUrlDataController.url(for: fileUrl) { url -> PDFDocument? in
             guard let url else { return nil }
             return PDFDocument(url: url)

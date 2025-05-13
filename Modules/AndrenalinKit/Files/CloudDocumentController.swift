@@ -3,6 +3,10 @@
 import Foundation
 
 struct CloudDocumentController: Sendable {
+    init(modulePath: String) {
+        self.modulePath = modulePath[modulePath.startIndex..<modulePath.index(before: modulePath.endIndex)].lowercased()
+    }
+    
     // e.g.: Pdf
     let modulePath: String
 
@@ -47,29 +51,15 @@ struct CloudDocumentController: Sendable {
             return selectedUrl
         } else {
             let filename = selectedUrl.lastPathComponent
-            let name = CloudDocumentController.suggestedFileName(for: modulePath, filename: filename, category: category, tags: [])
+            let name = CloudDocumentController.suggestedFileName(for: modulePath, filename: filename, category: category)
             return fullUrl(filePath: name)
         }
     }
 
-    func move(from fileUrl: FileUrl, sourceFilename: String, name: String, category: String, tags: [String]) async throws -> String? {
-        var filename: String
-        switch fileUrl.location {
-            case .appCloud, .local:
-                filename = name
-            case .icloud, .other:
-                filename = fileUrl.rawUrl.absoluteString
-            case .newCloud, .url:
-                return nil
-        }
-        var newName = CloudDocumentController.suggestedFileName(for: modulePath, filename: filename, category: category, tags: tags)
-        let fileExtension = fileUrl.rawUrl.pathExtension
-        newName = "\(newName).\(fileExtension)"
-        let sourceUrl = URL(string: sourceFilename)!
+    func move(sourceUrl: URL, destinationFilename: String) async throws -> String? {
         let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: sourceUrl)
-        try await write(data: data, to: newName)
-
-        return newName
+        try await write(data: data, to: destinationFilename)
+        return destinationFilename
     }
 
     func move(url: URL, newCategory destination: String) async throws -> (URL, URL)? {
@@ -103,7 +93,7 @@ struct CloudDocumentController: Sendable {
 }
 
 extension CloudDocumentController {
-    static func suggestedFileName(for modulePath: String, filename: String, category: String, tags: [String]) -> String {
+    static func suggestedFileName(for modulePath: String, filename: String, category: String) -> String {
         "\(category)/\(filename)"
     }
     
