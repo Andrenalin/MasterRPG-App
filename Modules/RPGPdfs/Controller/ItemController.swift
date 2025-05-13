@@ -99,7 +99,7 @@ extension ItemController {
 extension ItemController {
 #if !os(tvOS)
     func pdfDocument(for itemId: UUID) async -> PDFDocument? {
-        guard var fileUrl = await self.item(for: itemId)?.fileUrl else { return nil }
+        guard let fileUrl = await self.item(for: itemId)?.fileUrl else { return nil }
         try? await root.fileUrlDataController.download(fileUrl: fileUrl)
         return await root.fileUrlDataController.url(for: fileUrl) { url -> PDFDocument? in
             guard let url else { return nil }
