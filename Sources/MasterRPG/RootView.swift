@@ -7,6 +7,10 @@ import RPGGame
 import SwiftUI
 import RPGMaps
 import RPGValues
+import RPGAudios
+import RPGPdfs
+import RPGPhotos
+import RPGSpaces
 
 @MainActor
 struct RootView: View {
@@ -83,6 +87,11 @@ struct RootView: View {
             if appStore.settingsModel.firstLaunch {
                 showFirstLunchAlert.toggle()
             }
+            try? await Task.sleep(for: .seconds(5))
+            try? await appStore.audioRoot.moveFiles()
+            try? await appStore.pdfRoot.moveFiles()
+            try? await appStore.photoRoot.moveFiles()
+            try? await appStore.spaceRoot.moveFiles()
 #endif
         }
         .alert("First Launch", isPresented: $showFirstLunchAlert) {

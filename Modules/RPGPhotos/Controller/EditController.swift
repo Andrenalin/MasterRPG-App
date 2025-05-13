@@ -65,7 +65,7 @@ extension EditController {
     }
     
     func reset(fileUrl: FileUrl, for itemId: UUID) async {
-        let item = await itemId == model.id ? model : root.itemController.itemOrEmpty(for: itemId)
+        let item = await itemId == model.id ? model : root.itemController.itemOrEmpty(for: itemId).copy()
         item.fileUrl = fileUrl
         if await itemId == model.id {
             await save(with: "")

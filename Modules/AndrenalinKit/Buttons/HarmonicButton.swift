@@ -60,7 +60,9 @@ struct HarmonicStyle: ButtonStyle {
         scale = newValue ? 0.95 : 1.0
       }
     }
+      #if !os(visionOS)
     .sensoryFeedback(.impact, trigger: configuration.isPressed)
+      #endif
   }
 }
 

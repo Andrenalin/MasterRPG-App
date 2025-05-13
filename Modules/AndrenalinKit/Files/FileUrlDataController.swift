@@ -112,10 +112,11 @@ public struct FileUrlDataController: Sendable {
             }
 
             guard let destinationName = try await cloudDocumentController.move(sourceUrl: url, destinationFilename: part) else { return nil }
-
-            guard let url = URL(string: destinationName) else { return nil }
-
-            let newFileUrl = FileUrl(fileId: fileUrl.fileId, url: url, location: .newCloud, module: fileUrl.module, relativeUrl: nil)
+            guard let newUrl = URL(string: destinationName) else { return nil }
+            if fileUrl.location == .local || fileUrl.location == .appCloud {
+                try? await FileManager.default.removeItem(coordinatingAccessAt: url)
+            }
+            let newFileUrl = FileUrl(fileId: fileUrl.fileId, url: newUrl, location: .newCloud, module: fileUrl.module, relativeUrl: nil)
             return newFileUrl
         }
     }
