@@ -39,15 +39,15 @@ struct LinkControllerTests {
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let text = await sut.generateLink(itemId: firstItem.id)
         var result = await sut.toggleTextLink(linkNumber: 0, itemId: firstItem.id, entryId: nil, command: nil, in: text, shareResult: shareResult, toggler: nil, editAction: nil)
-        var expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share) [Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)⬅️"
+        var expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share)[Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)⬅️"
         #expect(result == expectedText)
         
         result = await sut.toggleTextLink(linkNumber: LinkType.roll.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.roll.rawValue, in: result, shareResult: shareResult, toggler: nil, editAction: nil)
-        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share) [Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)➡️"
+        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share)[Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)➡️"
         #expect(result.starts(with: expectedText))
         
         result = await sut.toggleTextLink(linkNumber: LinkType.share.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.share.rawValue, in: result, shareResult: shareResult, toggler: nil, editAction: nil)
-        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share) [Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)➡️"
+        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share)[Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)➡️"
         #expect(result.starts(with: expectedText))
     }
     
@@ -60,15 +60,15 @@ struct LinkControllerTests {
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let text = await sut.generateLink(itemId: firstItem.id)
         var result = await sut.toggleTextLink(linkNumber: 0, itemId: firstItem.id, entryId: nil, command: nil, in: text, shareResult: shareResult, toggler: toggler(), editAction: nil)
-        var expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share) [Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show) [Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)⬅️"
+        var expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share)[Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show)[Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)⬅️"
         #expect(result == expectedText)
         
         result = await sut.toggleTextLink(linkNumber: LinkType.share.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.share.rawValue, in: result, shareResult: shareResult, toggler: toggler(), editAction: nil)
-        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share) [Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show) [Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)⬅️"
+        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share)[Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show)[Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)⬅️"
         #expect(result == expectedText)
 
         result = await sut.toggleTextLink(linkNumber: LinkType.roll.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.roll.rawValue, in: result, shareResult: shareResult, toggler: toggler(), editAction: nil)
-        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share) [Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show) [Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)➡️"
+        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share)[Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show)[Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)➡️"
         #expect(result.starts(with: expectedText))
     }
 
@@ -81,18 +81,18 @@ struct LinkControllerTests {
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let text = await sut.generateLink(itemId: firstItem.id)
         var result = await sut.toggleTextLink(linkNumber: 0, itemId: firstItem.id, entryId: nil, command: nil, in: text, shareResult: shareResult, toggler: toggler(), editAction: editAction())
-        var expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share) [Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show) [Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll) [Remove](RPG://DICE/300/2201FBB7-0403-4A18-A361-CAD5A76A637D/remove)⬅️"
+        var expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share)[Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show)[Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)[Remove](RPG://DICE/300/2201FBB7-0403-4A18-A361-CAD5A76A637D/remove)⬅️"
         #expect(result == expectedText)
         
         result = await sut.toggleTextLink(linkNumber: LinkType.share.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.share.rawValue, in: result, shareResult: shareResult, toggler: toggler(), editAction: editAction())
-        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share) [Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show) [Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll) [Remove](RPG://DICE/300/2201FBB7-0403-4A18-A361-CAD5A76A637D/remove)⬅️"
+        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share)[Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show)[Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)[Remove](RPG://DICE/300/2201FBB7-0403-4A18-A361-CAD5A76A637D/remove)⬅️"
         #expect(result == expectedText)
 
         result = await sut.toggleTextLink(linkNumber: LinkType.remove.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.remove.rawValue, in: result, shareResult: shareResult, toggler: toggler(), editAction: editAction())
         #expect(result == "CoC")
         
         result = await sut.toggleTextLink(linkNumber: LinkType.roll.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.roll.rawValue, in: expectedText, shareResult: shareResult, toggler: toggler(), editAction: nil)
-        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share) [Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show) [Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)➡️"
+        expectedText = "\(text)➡️[Share](RPG://DICE/500/2201FBB7-0403-4A18-A361-CAD5A76A637D/share)[Show](RPG://DICE/600/2201FBB7-0403-4A18-A361-CAD5A76A637D/show)[Roll](RPG://DICE/400/2201FBB7-0403-4A18-A361-CAD5A76A637D/roll)➡️"
         #expect(result.starts(with: expectedText))
     }
 

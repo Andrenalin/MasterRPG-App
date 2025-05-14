@@ -38,8 +38,10 @@ public final class LinkHighlightTextModel {
 
     public func reset(text: String) {
         guard self.text != text else { return }
-        linkLocations.locations = []
-        self.text = text
+        Task { @MainActor in
+            linkLocations.locations = []
+            self.text = text
+        }
     }
 
     public func resetLocations(force: Bool = false) {
@@ -63,8 +65,7 @@ public final class LinkHighlightTextModel {
         
         let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: toggler, editAction: editAction)
 
-        linkLocations.locations = []
-        text = updatedText
+        reset(text: updatedText)
     }
 }
 
@@ -163,8 +164,10 @@ extension LinkHighlightTextModel {
                     .customAttribute(LinkIconAttribute(linkModel: link))
                     .bold(boldRange != nil), string: link.icon, range: link.range))
                 
-                result.append(contentsOf: hightlight(text: link.name, range: link.name.startIndex..<link.name.endIndex, isBold: boldRange != nil, deep: deep, custom: [LinkHighlightAttribute(linkModel: link)]))
-                
+                result.append(contentsOf: hightlight(text: "\(link.name)", range: link.name.startIndex..<link.name.endIndex, isBold: boldRange != nil, deep: deep, custom: [LinkHighlightAttribute(linkModel: link)]))
+                result.append(HighlightedTextComponent(text: Text("  ")
+                    .customAttribute(LinkIconExpandedAttribute(isStart: false)), string: LinkExpandHighLightValues.space.rawValue, range: link.name.startIndex..<link.name.endIndex))
+
                 lastIndex = link.range.upperBound
                 index = text.index(before: link.range.upperBound)
                 if boldRange != nil {

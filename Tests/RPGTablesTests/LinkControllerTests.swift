@@ -52,11 +52,11 @@ struct LinkControllerTests {
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let text = await sut.generateLink(itemId: firstItem.id)
         var result = await sut.toggleTextLink(linkNumber: 0, itemId: firstItem.id, entryId: nil, command: nil, in: text, shareResult: shareResult, toggler: toggler(), editAction: nil)
-        var expectedText = "\(text)➡️[Share](RPG://TABLES/500/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/share) [Show](RPG://TABLES/600/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/show) Abenteuerhooks / W20 / 20 Entries⬅️"
+        var expectedText = "\(text)➡️[Share](RPG://TABLES/500/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/share)[Show](RPG://TABLES/600/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/show) Abenteuerhooks / W20 / 20 Entries⬅️"
         #expect(result == expectedText)
         
         result = await sut.toggleTextLink(linkNumber: LinkType.share.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.share.rawValue, in: result, shareResult: shareResult, toggler: toggler(), editAction: nil)
-        expectedText = "\(text)➡️[Share](RPG://TABLES/500/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/share) [Show](RPG://TABLES/600/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/show) Abenteuerhooks / W20 / 20 Entries⬅️"
+        expectedText = "\(text)➡️[Share](RPG://TABLES/500/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/share)[Show](RPG://TABLES/600/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/show) Abenteuerhooks / W20 / 20 Entries⬅️"
         #expect(result == expectedText)
     }
 
@@ -69,11 +69,11 @@ struct LinkControllerTests {
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let text = await sut.generateLink(itemId: firstItem.id)
         var result = await sut.toggleTextLink(linkNumber: 0, itemId: firstItem.id, entryId: nil, command: nil, in: text, shareResult: shareResult, toggler: toggler(), editAction: editAction())
-        var expectedText = "\(text)➡️[Share](RPG://TABLES/500/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/share) [Show](RPG://TABLES/600/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/show) Abenteuerhooks / W20 / 20 Entries [Remove](RPG://TABLES/300/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/remove)⬅️"
+        var expectedText = "\(text)➡️[Share](RPG://TABLES/500/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/share)[Show](RPG://TABLES/600/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/show) Abenteuerhooks / W20 / 20 Entries [Remove](RPG://TABLES/300/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/remove)⬅️"
         #expect(result == expectedText)
         
         result = await sut.toggleTextLink(linkNumber: LinkType.share.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.share.rawValue, in: result, shareResult: shareResult, toggler: toggler(), editAction: editAction())
-        expectedText = "\(text)➡️[Share](RPG://TABLES/500/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/share) [Show](RPG://TABLES/600/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/show) Abenteuerhooks / W20 / 20 Entries [Remove](RPG://TABLES/300/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/remove)⬅️"
+        expectedText = "\(text)➡️[Share](RPG://TABLES/500/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/share)[Show](RPG://TABLES/600/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/show) Abenteuerhooks / W20 / 20 Entries [Remove](RPG://TABLES/300/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/remove)⬅️"
         #expect(result == expectedText)
 
         result = await sut.toggleTextLink(linkNumber: LinkType.remove.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.remove.rawValue, in: result, shareResult: shareResult, toggler: toggler(), editAction: editAction())

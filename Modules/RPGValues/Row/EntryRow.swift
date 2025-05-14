@@ -77,10 +77,10 @@ struct EntryRow: View {
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entryId) else {
             return updateEntryValues()
         }
-        let entryText = linkController.linkText(model: model, entryId: entryId)
-        if entryText != linkModel.text  {
-            linkModel.reset(text: entryText)
-        }
+//        let entryText = linkController.linkText(model: model, entryId: entryId)
+//        if entryText != linkModel.text  {
+//            linkModel.reset(text: entryText)
+//        }
         return linkModel
     }
     

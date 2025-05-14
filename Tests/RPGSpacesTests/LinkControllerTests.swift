@@ -31,11 +31,11 @@ struct LinkControllerTests {
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let text = await sut.generateLink(itemId: firstItem.id)
         var result = await sut.toggleTextLink(linkNumber: 0, itemId: firstItem.id, entryId: nil, command: nil, in: text, shareResult: shareResult, toggler: toggler(), editAction: editAction())
-        var expectedText = "\(text)➡️[Share](RPG://SPACES/500/B76C7CA1-D594-4123-9563-33545ADD23A3/share) [Show](RPG://SPACES/600/B76C7CA1-D594-4123-9563-33545ADD23A3/show)  [Remove](RPG://SPACES/300/B76C7CA1-D594-4123-9563-33545ADD23A3/remove)⬅️"
+        var expectedText = "\(text)➡️[Share](RPG://SPACES/500/B76C7CA1-D594-4123-9563-33545ADD23A3/share)[Show](RPG://SPACES/600/B76C7CA1-D594-4123-9563-33545ADD23A3/show)[Remove](RPG://SPACES/300/B76C7CA1-D594-4123-9563-33545ADD23A3/remove)⬅️"
         #expect(result == expectedText)
         
         result = await sut.toggleTextLink(linkNumber: LinkType.share.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.share.rawValue, in: result, shareResult: shareResult, toggler: toggler(), editAction: editAction())
-        expectedText = "\(text)➡️[Share](RPG://SPACES/500/B76C7CA1-D594-4123-9563-33545ADD23A3/share) [Show](RPG://SPACES/600/B76C7CA1-D594-4123-9563-33545ADD23A3/show)  [Remove](RPG://SPACES/300/B76C7CA1-D594-4123-9563-33545ADD23A3/remove)⬅️"
+        expectedText = "\(text)➡️[Share](RPG://SPACES/500/B76C7CA1-D594-4123-9563-33545ADD23A3/share)[Show](RPG://SPACES/600/B76C7CA1-D594-4123-9563-33545ADD23A3/show)[Remove](RPG://SPACES/300/B76C7CA1-D594-4123-9563-33545ADD23A3/remove)⬅️"
         #expect(result == expectedText)
 
         result = await sut.toggleTextLink(linkNumber: LinkType.remove.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.remove.rawValue, in: result, shareResult: shareResult, toggler: toggler(), editAction: editAction())

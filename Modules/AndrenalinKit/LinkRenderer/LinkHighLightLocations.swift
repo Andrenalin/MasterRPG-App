@@ -61,6 +61,7 @@ enum LinkExpandHighLightValues: String {
     case end = "⬅️"
     case bold = "*"
     case italic = "-"
+    case space = " "
 }
 
 struct LinkExpandedAttribute: TextAttribute {

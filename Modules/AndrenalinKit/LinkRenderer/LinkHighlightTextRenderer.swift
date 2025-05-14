@@ -17,10 +17,8 @@ struct LinkHighlightTextRenderer: TextRenderer {
         set { elapsedTime = newValue }
     }
 
-    // MARK: - Private Properties
     private let style: any ShapeStyle
 
-    // MARK: - Initializer
     init(model: LinkHighlightTextModel, style: any ShapeStyle = .yellow.opacity(0.5), elapsedTime: TimeInterval, elementDuration: Double = 1.5, totalDuration: TimeInterval) {
         self.model = model
         self.style = style

@@ -56,12 +56,13 @@ extension LinkController: LinkControllable {
         } else {
             if let toggler, entryId == nil, editAction == nil {
                 Task { @MainActor in
+                    try await Task.sleep(for: .milliseconds(100))
                     await toggler(itemId, itemController.itemDataModel.networkModule)
                 }
             }
             let item = itemController.itemOrEmpty(for: itemId)
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? "\(specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
-            let showAction = toggler != nil ? " \(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
+            let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.itemDataModel.networkModule)) ?? false
             let removeAction = editLine ? " \(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let description: String

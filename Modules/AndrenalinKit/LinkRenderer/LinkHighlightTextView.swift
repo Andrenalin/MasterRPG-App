@@ -8,27 +8,11 @@ public struct LinkHighlightTextView: View {
     }
 
     let model: LinkHighlightTextModel
-
-    public var body: some View {
-        //let _ = Self._printChanges()
-        LinkHighlightText(model: model)
-    }
-}
-
-struct LinkHighlightText: View {
-    let model: LinkHighlightTextModel
-
-    // MARK: - Initializer
-    init(model: LinkHighlightTextModel) {
-        self.model = model
-    }
-    
 #if os(iOS)
     @Environment(DeviceRotationModel.self) private var deviceRotationModel
 #endif
-    
-    // MARK: - Body
-    var body: some View {
+
+    public var body: some View {
         ZStack(alignment: .topLeading) {
             overlays(foreground: false)
 
@@ -61,7 +45,7 @@ struct LinkHighlightText: View {
         }
 #endif
     }
-    
+
     func overlays(foreground: Bool) -> some View {
         ZStack(alignment: .topLeading) {
             ForEach(model.linkLocations.locations) { linkLocation in
@@ -98,11 +82,11 @@ struct LinkHighlightText: View {
 
 #Preview {
     @Previewable @State var text: String = "**Mega** nice, in my in but let **[More Values and very long Title](RPG://MAPS/0/\(UUID())) and also Value [inside link](RPG://MAPS/0/2181D9D0-8896-44E0-B2C4-A6E93F2533D7) of** Entry un [Name](RPG://PHOTOS/0/9D877C38-41F5-4595-93A4-C25DC94BDD2E) noch einer **nicinyi.,**and now **"
-    
+
     @Previewable @State var width: CGFloat = 300
-    
+
     @Previewable @State var model = LinkHighlightTextModel(linkControllable: FakeLinkController.fake, text: "**Mega** nice, in my in but let **[More Values and very long Title](RPG://MAPS/0/\(UUID())) and also Value [inside link](RPG://MAPS/0/2181D9D0-8896-44E0-B2C4-A6E93F2533D7) of** Entry un [Name](RPG://PHOTOS/0/9D877C38-41F5-4595-93A4-C25DC94BDD2E) noch einer **nicinyi.,**and now **", highlightedText: "in")
-    
+
     VStack {
         Button {
             withAnimation {
@@ -117,12 +101,12 @@ struct LinkHighlightText: View {
         }
         
         LinkHighlightTextView(model: model)
-        .frame(width: width)
-        .padding()
-        
+            .frame(width: width)
+            .padding()
+
         Spacer()
     }
-    #if os(visionOS)
+#if os(visionOS)
     .glassBackgroundEffect()
-    #endif
+#endif
 }
