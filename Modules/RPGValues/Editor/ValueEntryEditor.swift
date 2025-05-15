@@ -16,6 +16,7 @@ struct ValueEntryEditor: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
+        let _ = Self._printChanges()
         EntryEditor(editControllable: editController) {
             contentView()
         } linkActionView: {

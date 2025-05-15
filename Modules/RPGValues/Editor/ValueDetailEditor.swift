@@ -14,7 +14,7 @@ struct ValueDetailEditor: View {
     @State private var changeGeneratorModel = ChangeGeneratorModel()
 
     var body: some View {
-        //        let _ = Self._printChanges()
+        let _ = Self._printChanges()
         @Bindable var model = model
         DetailEditor(editController: editController) {
             HeaderEditor(editController: editController)

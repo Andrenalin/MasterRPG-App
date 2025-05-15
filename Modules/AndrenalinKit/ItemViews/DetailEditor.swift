@@ -72,6 +72,7 @@ public struct DetailEditor<Content: View, ExtContent: View, Header: View, Extent
     @State private var keyBoardShown = false
     
     public var body: some View {
+        let _ = Self._printChanges()
         GeometryReader { geometry in
             @Bindable var editorModel = editController.editorModel
             

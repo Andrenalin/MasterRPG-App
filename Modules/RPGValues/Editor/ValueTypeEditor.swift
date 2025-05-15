@@ -9,6 +9,7 @@ struct ValueTypeEditor: View {
     let entryId: UUID
 
     var body: some View {
+        let _ = Self._printChanges()
         @Bindable var model = editController.model
         LabeledContent {
             Picker(selection: $model[entryId].type) {

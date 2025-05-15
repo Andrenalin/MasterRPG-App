@@ -13,6 +13,7 @@ struct ValueEntrySectionEditor: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        let _ = Self._printChanges()
         @Bindable var model = editController.model
 
         EntrySectionEditor(editControllable: editController) { entryId, showLink in
