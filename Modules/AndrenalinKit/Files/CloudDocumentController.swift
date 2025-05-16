@@ -25,8 +25,8 @@ struct CloudDocumentController: Sendable {
 
     func nameUrl(fullUrl: URL) -> URL {
         let namePath = fullUrl.pathComponents.drop(while: { $0 != CloudDocumentController.documentDirName }).dropFirst(2)
-        var name = URL(string: "/")!
-        namePath.forEach {
+        var name = URL(string: namePath.first ?? "/")!
+        namePath.dropFirst().forEach {
             name.append(path: $0)
         }
         return name
@@ -66,15 +66,8 @@ struct CloudDocumentController: Sendable {
     func move(url: URL, newCategory destination: String) async throws -> (URL, URL)? {
         var pathComponents = url.pathComponents
         guard let filename = pathComponents.last, pathComponents.count > 1 else { return nil }
-        var hasLeadingSlash: Bool = false
-        if pathComponents[0] == "/" {
-            hasLeadingSlash = true
-            pathComponents[1] = destination
-            pathComponents = Array(pathComponents.dropFirst())
-        } else {
-            pathComponents[0] = destination
-        }
-        let path = (hasLeadingSlash ? "/" : "") + pathComponents.dropLast().joined(separator: "/")
+        pathComponents[0] = destination
+        let path = pathComponents.dropLast().joined(separator: "/")
         let newFilename = try await suggestedFileName(for: path, filename: filename)
         let newPath = path.appending("/\(newFilename)")
         let destinationDirUrl = fullUrl(filePath: path)
