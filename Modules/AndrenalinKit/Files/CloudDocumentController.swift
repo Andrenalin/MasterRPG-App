@@ -52,11 +52,12 @@ struct CloudDocumentController: Sendable {
         } else {
             let filename = selectedUrl.lastPathComponent
             let name = CloudDocumentController.suggestedFileName(for: modulePath, filename: filename, category: category)
-            return fullUrl(filePath: name)
+            let newFilename = try await move(sourceUrl: selectedUrl, destinationFilename: name)
+            return fullUrl(filePath: newFilename)
         }
     }
 
-    func move(sourceUrl: URL, destinationFilename: String) async throws -> String? {
+    func move(sourceUrl: URL, destinationFilename: String) async throws -> String {
         let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: sourceUrl)
         try await write(data: data, to: destinationFilename)
         return destinationFilename
@@ -65,8 +66,15 @@ struct CloudDocumentController: Sendable {
     func move(url: URL, newCategory destination: String) async throws -> (URL, URL)? {
         var pathComponents = url.pathComponents
         guard let filename = pathComponents.last, pathComponents.count > 1 else { return nil }
-        pathComponents[0] = destination
-        let path = pathComponents.dropLast().joined(separator: "/")
+        var hasLeadingSlash: Bool = false
+        if pathComponents[0] == "/" {
+            hasLeadingSlash = true
+            pathComponents[1] = destination
+            pathComponents = Array(pathComponents.dropFirst())
+        } else {
+            pathComponents[0] = destination
+        }
+        let path = (hasLeadingSlash ? "/" : "") + pathComponents.dropLast().joined(separator: "/")
         let newFilename = try await suggestedFileName(for: path, filename: filename)
         let newPath = path.appending("/\(newFilename)")
         let destinationDirUrl = fullUrl(filePath: path)

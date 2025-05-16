@@ -111,7 +111,7 @@ public struct FileUrlDataController: Sendable {
                 }
             }
 
-            guard let destinationName = try await cloudDocumentController.move(sourceUrl: url, destinationFilename: part) else { return nil }
+            let destinationName = try await cloudDocumentController.move(sourceUrl: url, destinationFilename: part)
             guard let newUrl = URL(string: destinationName) else { return nil }
             if fileUrl.location == .local || fileUrl.location == .appCloud {
                 try? await FileManager.default.removeItem(coordinatingAccessAt: url)
@@ -681,7 +681,11 @@ extension FileUrlDataController: FileAccessible {
 extension FileUrlDataController {
     public func move(fileUrl: FileUrl?, from source: ItemListCategory, to destination: ItemListCategory) async -> FileUrl? {
         do {
-            guard let fileUrl, fileUrl.location == .newCloud, let categoryPath = fileUrl.rawUrl.pathComponents.first, categoryPath == source.title, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newCategory: destination.title) else { return nil }
+            guard let fileUrl, fileUrl.location == .newCloud else { return nil }
+            let components = fileUrl.rawUrl.pathComponents
+            let firstComponent = components.first ?? ""
+            let secondComponent = components.count > 1 ? components[1] : ""
+            guard firstComponent == source.title || secondComponent == source.title, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newCategory: destination.title) else { return nil }
             await bookmark(url: fullUrl, fileId: fileUrl.fileId)
 
             return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil)
