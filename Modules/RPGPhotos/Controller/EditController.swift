@@ -84,7 +84,7 @@ extension EditController {
         var dataUrl = fileUrl
         dataUrl.convertFile(data, fileExtension: "jpg")
 
-        let newFileUrl = try await root.fileUrlDataController.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataUrl, pathExtension: "jpg",)
+        let newFileUrl = try await root.fileUrlDataController.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataUrl, pathExtension: "jpg")
 
         Task { @MainActor in
             model.fileUrl = newFileUrl
