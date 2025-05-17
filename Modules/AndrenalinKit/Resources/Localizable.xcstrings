@@ -74,6 +74,7 @@
       }
     },
     "%@ File Settings" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1993,6 +1994,7 @@
       }
     },
     "Settings about the %@ file storage" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

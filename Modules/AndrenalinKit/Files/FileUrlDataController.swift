@@ -109,6 +109,9 @@ public struct FileUrlDataController: Sendable {
                         break
                     }
                 }
+            } else {
+                let suggestedName = try? await cloudDocumentController.suggestedFileName(for: category, filename: name)
+                part = suggestedName ?? part
             }
 
             let destinationName = try await cloudDocumentController.move(sourceUrl: url, destinationFilename: part)
@@ -346,14 +349,14 @@ public extension FileUrlDataController {
     func delete(_ fileUrl: FileUrl?) {
         guard let fileUrl else { return }
         switch fileUrl.location {
-        case .local, .appCloud:
+        case .local, .appCloud, .newCloud:
             Task {
                 guard let accessUrl = await url(for: fileUrl, action: { $0 }) else { return }
-                fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 // ignore any exception. If the file cannot be remove we cannot recover
-                try? await locationFileManager.remove(url: accessUrl)
+                try await FileManager.default.removeItem(coordinatingAccessAt: accessUrl)
+                fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
             }
-            case .icloud, .other, .newCloud, .url:
+            case .icloud, .other, .url:
             fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
             break
         }

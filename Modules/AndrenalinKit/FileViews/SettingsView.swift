@@ -77,12 +77,6 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
                 
                 SectionGroupEditorView {
                     Button {
-                        store.validate(validateFiles: true)
-                    } label: {
-                        Label("Validate Files", systemImage: "externaldrive.badge.icloud")
-                    }
-                    
-                    Button {
                         store.validate(validateFiles: false)
                     } label: {
                         Label("Validate Links", systemImage: "checkmark.shield")

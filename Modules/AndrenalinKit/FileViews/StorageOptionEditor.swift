@@ -57,38 +57,6 @@ struct StorageOptionEditor: View {
         .task {
             iCloudAvailable = await CloudKitAccountController.checkAccountStatus()
         }
-
-        SectionGroupEditorView {
-            FileStorageEditor(module: .audio, fileStore: audioFileStore)
-        } header: {
-            Text("\(String(localized: NetworkModules.audio.localizedTitle)) File Settings", bundle: .module)
-        } footer: {
-            Text("Settings about the \(String(localized: NetworkModules.audio.localizedTitle)) file storage", bundle: .module)
-        }
-
-        SectionGroupEditorView {
-            FileStorageEditor(module: .pdf, fileStore: pdfFileStore)
-        } header: {
-            Text("\(String(localized: NetworkModules.pdf.localizedTitle)) File Settings", bundle: .module)
-        } footer: {
-            Text("Settings about the \(String(localized: NetworkModules.pdf.localizedTitle)) file storage", bundle: .module)
-        }
-
-        SectionGroupEditorView {
-            FileStorageEditor(module: .photo, fileStore: photoFileStore)
-        } header: {
-            Text("\(String(localized: NetworkModules.photo.localizedTitle)) File Settings", bundle: .module)
-        } footer: {
-            Text("Settings about the \(String(localized: NetworkModules.photo.localizedTitle)) file storage", bundle: .module)
-        }
-
-        SectionGroupEditorView {
-            FileStorageEditor(module: .space, fileStore: spaceFileStore)
-        } header: {
-            Text("\(String(localized: NetworkModules.space.localizedTitle)) File Settings", bundle: .module)
-        } footer: {
-            Text("Settings about the \(String(localized: NetworkModules.space.localizedTitle)) file storage", bundle: .module)
-        }
     }
     
     var disabledUseCloud: Bool {
