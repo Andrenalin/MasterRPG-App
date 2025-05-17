@@ -110,8 +110,9 @@ public struct FileUrlDataController: Sendable {
                     }
                 }
             } else {
-                let suggestedName = try? await cloudDocumentController.suggestedFileName(for: category, filename: name)
-                part = suggestedName ?? part
+                if let suggestedName = try? await cloudDocumentController.suggestedFileName(for: category, filename: name) {
+                    part = category + "/" + suggestedName
+                }
             }
 
             let destinationName = try await cloudDocumentController.move(sourceUrl: url, destinationFilename: part)
