@@ -6,11 +6,12 @@ import SwiftUI
 
 struct ValueTypeEditor: View {
     let editController: EditController
+    let model: ValueModel
     let entryId: UUID
 
     var body: some View {
         let _ = Self._printChanges()
-        @Bindable var model = editController.model
+        @Bindable var model = model
         LabeledContent {
             Picker(selection: $model[entryId].type) {
                 ForEach(ValueEntryModel.ValueType.allCases) { option in

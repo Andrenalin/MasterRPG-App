@@ -81,8 +81,9 @@ struct ValueEntryEditor: View {
             .width(220)
             
             TableColumn(Text("Type", bundle: .module)) { entry in
-                ValueTypeEditor(editController: editController, entryId: entry.id)
+                ValueTypeEditor(editController: editController, model: model, entryId: entry.id)
                     .labelsHidden()
+                    .id(entry.id)
             }
             .width(90)
 
@@ -101,6 +102,7 @@ struct ValueEntryEditor: View {
                 } dropAction: { linkData in
                     drop(links: linkData, entryId: entry.id, keyPath: \.[entry.id].value, isName: false)
                 }
+                .id(entry.id)
             }
             .width(min: 32)
             
@@ -110,6 +112,7 @@ struct ValueEntryEditor: View {
             }
             .width(96)
         }
+        .id(model.id)
     }
     
     func drop(links: [LinkData], entryId: UUID, keyPath: WritableKeyPath<ValueModel, String>, isName: Bool) -> Bool {

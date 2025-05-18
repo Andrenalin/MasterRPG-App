@@ -60,7 +60,7 @@ struct ValueEntrySectionEditor: View {
                 }
 #endif
 
-            ValueTypeEditor(editController: editController, entryId: entryId)
+            ValueTypeEditor(editController: editController, model: model, entryId: entryId)
                 .id(entryId)
 
             Group {
