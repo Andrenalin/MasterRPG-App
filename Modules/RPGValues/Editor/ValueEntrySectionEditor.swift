@@ -51,6 +51,7 @@ struct ValueEntrySectionEditor: View {
         @Bindable var model = editController.model
         Group {
             TextFieldControllerEditor(editController: editController, linkReplaceController: editController.nameEditLink(for: entryId), title: "Name", prompt: "Enter a name for the entry", bundle: .module)
+                .id(entryId)
                 .contextMenu {
                     contextMenu(for: entryId, selection: [], showLink: showLink, keyPath: \.[entryId].name)
                 }
@@ -66,8 +67,10 @@ struct ValueEntrySectionEditor: View {
             Group {
                 if model[entryId].type == .selection {
                     ToggleEditor(editController: editController, model: $model[entryId].isSelectedToggle, canToggle: model[entryId].canSelection, title: "Selection", bundle: .module, icon: "checkmark")
+                        .id(entryId)
                 } else {
                     TextFieldControllerEditor(editController: editController, linkReplaceController: editController.contentEditLink(for: entryId), title: "Value", prompt: "Enter a value for the entry", bundle: .module)
+                        .id(entryId)
                         .contextMenu {
                             contextMenu(for: entryId, selection: [], showLink: showLink, keyPath: \.[entryId].value)
                         }
@@ -84,8 +87,10 @@ struct ValueEntrySectionEditor: View {
 //            ToggleEditor(editController: editController, model: $model[entryId].isGeneratorToggle, canToggle: model[entryId].canGenerator, title: "Generator", bundle: .module, icon: "gear")
 
             diceRowEditor(for: model, entryId: entryId, showLink: showLink)
+                .id(entryId)
 
             valueRowEditor(for: model, entryId: entryId, showLink: showLink)
+                .id(entryId)
         }
     }
 
