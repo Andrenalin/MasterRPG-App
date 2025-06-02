@@ -23,7 +23,7 @@ public final class FileUrlDataModel: Sendable {
 
     var sortOrder = [KeyPathComparator(\FileUrlViewModel.type, order: .forward), KeyPathComparator(\FileUrlViewModel.name)]
 
-    public var defaultLoaction: FileLocation = .appCloud
+    public var defaultLoaction: FileLocation = .newCloud
     public var defaultCloudPath: UUID?
     
     func append(folder: FileUrlViewModel) {
@@ -45,6 +45,7 @@ public final class FileUrlDataModel: Sendable {
 }
 
 public struct FileUrlDataController: Sendable {
+    private let cloudDocumentController: CloudDocumentController
     private let fileBookmarkController: FileBookmarkController
     private let locationFileManager: LocationFileManager
     
@@ -52,7 +53,6 @@ public struct FileUrlDataController: Sendable {
     let filenameExtension: String
     private let fileUrlAccess: any FileUrlAccessible
 
-    private let cloudDocumentController: CloudDocumentController
     public let model: FileUrlDataModel
     
     @MainActor
@@ -265,46 +265,6 @@ public extension FileUrlDataController {
 }
 
 public extension FileUrlDataController {
-    func change(fileUrl: FileUrl, to newLocation: FileLocation, newUrl: URL? = nil) async throws -> FileUrl? {
-        guard let accessUrl = await url(for: fileUrl, action: { $0 }) else { return nil }
-
-        let destUrl: URL?
-        if newLocation == .other || newLocation == .icloud {
-            guard let newUrl else { return nil }
-            let folderUrl = newUrl.deletingLastPathComponent()
-            let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: folderUrl)
-            if !exists {
-                try await FileManager.default.createDirectory(coordinatingAccessAt: folderUrl, withIntermediateDirectories: true)
-            }
-            destUrl = try await locationFileManager.copy(pickedURL: accessUrl, to: newUrl)
-        } else {
-            destUrl = try await locationFileManager.copy(pickedURL: accessUrl, to: newLocation, id: fileUrl.fileId)
-        }
-        guard let destUrl else { return nil }
-        fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
-        if fileUrl.location == .local || fileUrl.location == .appCloud {
-            try await locationFileManager.remove(url: accessUrl)
-        }
-        try await fileBookmarkController.saveBookmark(fileId: fileUrl.fileId, fileUrl: destUrl)
-        return FileUrl(fileId: fileUrl.fileId, url: destUrl, location: newLocation, module: fileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: destUrl))
-    }
-
-    /// ItemController will call to get FileUrl for given urls from picker
-    func createFileUrl(fileId: UUID, url: URL, module: String, category: String?) async throws -> FileUrl {
-        do {
-            let values = try url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
-            if values.ubiquitousItemDownloadingStatus != .current {
-                try? FileManager.default.startDownloadingUbiquitousItem(at: url)
-            }
-        } catch {
-            Logger.fileStore.error("Cannot get the download status of url \(url.absoluteString, privacy: .public)")
-        }
-        let fullUrl = try await cloudDocumentController.createNameUrl(for: url, category: category ?? "New".localizedString)
-        try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullUrl)
-        let nameUrl = cloudDocumentController.nameUrl(fullUrl: fullUrl)
-        return FileUrl(fileId: fileId, url: nameUrl, location: .newCloud, module: module, relativeUrl: nil)
-    }
-
     /// create a fileUrl with data from an import or on validation / convert data
     func createNewFileUrl(fileId: UUID, unconvertedFileUrl: FileUrl, pathExtension: String) async throws -> FileUrl? {
         guard let oldData = unconvertedFileUrl.data else { return nil }
@@ -346,23 +306,39 @@ public extension FileUrlDataController {
         return fileUrl
     }
 
+    /// ItemController will call to get FileUrl for given urls from picker
+    func createFileUrl(fileId: UUID, url: URL, module: String, category: String?) async throws -> FileUrl {
+        do {
+            let values = try url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
+            if values.ubiquitousItemDownloadingStatus != .current {
+                try? FileManager.default.startDownloadingUbiquitousItem(at: url)
+            }
+        } catch {
+            Logger.fileStore.error("Cannot get the download status of url \(url.absoluteString, privacy: .public)")
+        }
+        let fullUrl = try await cloudDocumentController.createNameUrl(for: url, category: category ?? "New".localizedString)
+        try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullUrl)
+        let nameUrl = cloudDocumentController.nameUrl(fullUrl: fullUrl)
+        return FileUrl(fileId: fileId, url: nameUrl, location: .newCloud, module: module, relativeUrl: nil)
+    }
+
     /// called from ItemStore on delete of the item
     func delete(_ fileUrl: FileUrl?) {
         guard let fileUrl else { return }
         switch fileUrl.location {
-        case .local, .appCloud, .newCloud:
-            Task {
-                guard let accessUrl = await url(for: fileUrl, action: { $0 }) else { return }
-                // ignore any exception. If the file cannot be remove we cannot recover
-                try await FileManager.default.removeItem(coordinatingAccessAt: accessUrl)
-                fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
-            }
+            case .local, .appCloud, .newCloud:
+                Task {
+                    guard let accessUrl = await url(for: fileUrl, action: { $0 }) else { return }
+                    // ignore any exception. If the file cannot be remove we cannot recover
+                    try await FileManager.default.removeItem(coordinatingAccessAt: accessUrl)
+                    fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
+                }
             case .icloud, .other, .url:
-            fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
-            break
+                fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
+                break
         }
     }
-    
+
     func download(fileUrl: FileUrl) async throws {
         if fileUrl.location == .newCloud {
             try await cloudDocumentController.download(filePath: fileUrl.rawUrl.absoluteString)
@@ -375,22 +351,22 @@ public extension FileUrlDataController {
         guard let unconverted = fileUrl, let data = try await loadData(for: unconverted) else { return nil }
         var fullURL: URL? = nil
         switch unconverted.location {
-        case .appCloud, .local:
-            fullURL = try await locationFileManager.create(id: fileId, location: unconverted.location, pathExtension: filenameExtension, data: data)
-            break
+            case .appCloud, .local:
+                fullURL = try await locationFileManager.create(id: fileId, location: unconverted.location, pathExtension: filenameExtension, data: data)
+                break
             case .other, .icloud, .newCloud:
-            // try to get access to the old location
-            let oldUrl = locationFileManager.absoluteUrl(for: unconverted.rawUrl, at: unconverted.location) ?? unconverted.rawUrl
-            let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
-            let hasAccess = await hasAccess(for: unconverted)
-            if exists && !isDir && (unconverted.location != .other || hasAccess) {
-                let newUrl = await fileBookmarkController.loadBookmark(fileId: unconverted.fileId)
-                fullURL = newUrl
-            }
-            break
+                // try to get access to the old location
+                let oldUrl = locationFileManager.absoluteUrl(for: unconverted.rawUrl, at: unconverted.location) ?? unconverted.rawUrl
+                let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
+                let hasAccess = await hasAccess(for: unconverted)
+                if exists && !isDir && (unconverted.location != .other || hasAccess) {
+                    let newUrl = await fileBookmarkController.loadBookmark(fileId: unconverted.fileId)
+                    fullURL = newUrl
+                }
+                break
             case .url:
                 fullURL = unconverted.rawUrl
-            break
+                break
         }
         guard let fullURL else { return nil }
         do {
@@ -403,6 +379,9 @@ public extension FileUrlDataController {
         }
         return nil
     }
+
+    /// old ones
+
 
     func fetch() async {
         var fileModels: [FileUrlViewModel] = []
