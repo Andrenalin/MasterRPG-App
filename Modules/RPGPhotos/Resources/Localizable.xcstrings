@@ -62,7 +62,14 @@
       }
     },
     "Change to %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere zu %@"
+          }
+        }
+      }
     },
     "Convert Photo to JPEG" : {
       "localizations" : {

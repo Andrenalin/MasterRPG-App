@@ -79,8 +79,6 @@ struct RootView: View {
             try? await Task.sleep(for: .seconds(1))
             if appStore.photoRoot.itemControllable.itemDataModel.items.isEmpty {
                 appStore.installExampleData(isGerman: locale.identifier.hasPrefix("de"))
-                try? await Task.sleep(for: .seconds(1))
-                appStore.adventureRoot.validate(validateFiles: true)
             }
 #else
             try? await Task.sleep(for: .seconds(1))

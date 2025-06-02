@@ -28,7 +28,14 @@
       }
     },
     "Change to %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere zu %@"
+          }
+        }
+      }
     },
     "Content" : {
       "localizations" : {
@@ -141,15 +148,11 @@
       }
     },
     "Remove Pdf" : {
-
-    },
-    "Remove Photo" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Entferne Foto"
+            "value" : "Entferne Pdf"
           }
         }
       }
@@ -175,7 +178,14 @@
       }
     },
     "Typing" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eingabe"
+          }
+        }
+      }
     },
     "Undo %@" : {
       "localizations" : {

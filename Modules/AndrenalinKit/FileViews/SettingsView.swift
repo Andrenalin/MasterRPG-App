@@ -4,7 +4,7 @@ import SwiftUI
 
 public protocol StoreManiplable {
     func resetData() async
-    func validate(validateFiles: Bool)
+    func validate()
 }
 
 public struct SettingsView<Store, ImportContent: View>: View where Store: StoreManiplable {
@@ -46,12 +46,6 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
                         return exportController.createExport(itemIds: exportedIds, into: url)
                     }
                     ImportDataModels(importController: importController) {
-                        Task.detached {
-                            await audioFileStore.convertFileDataValidate()
-                            await pdfFileStore.convertFileDataValidate()
-                            await photoFileStore.convertFileDataValidate()
-                            await spaceFileStore.convertFileDataValidate()
-                        }
                     }
                     
 #if os(macOS)
@@ -59,12 +53,6 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
 #endif
                     
                     ImportDataModels(importController: importController, overwrite: true) {
-                        Task.detached {
-                            await audioFileStore.convertFileDataValidate()
-                            await pdfFileStore.convertFileDataValidate()
-                            await photoFileStore.convertFileDataValidate()
-                            await spaceFileStore.convertFileDataValidate()
-                        }
                     }
                     
                 } header: {
@@ -77,7 +65,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
                 
                 SectionGroupEditorView {
                     Button {
-                        store.validate(validateFiles: false)
+                        store.validate()
                     } label: {
                         Label("Validate Links", systemImage: "checkmark.shield")
                     }

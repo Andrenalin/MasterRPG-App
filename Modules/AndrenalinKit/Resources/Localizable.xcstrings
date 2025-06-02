@@ -63,37 +63,6 @@
         }
       }
     },
-    "%@ File Management" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ Datei Verwaltung"
-          }
-        }
-      }
-    },
-    "%@ File Settings" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ Datei Einstellungen"
-          }
-        }
-      }
-    },
-    "%@ Folder Management" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ Order verwalten"
-          }
-        }
-      }
-    },
     "%@ Search" : {
       "localizations" : {
         "de" : {
@@ -206,16 +175,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "Access" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zugriff"
           }
         }
       }
@@ -520,16 +479,6 @@
         }
       }
     },
-    "Convert Data" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Konvertiere Datei Daten"
-          }
-        }
-      }
-    },
     "Copy" : {
       "localizations" : {
         "de" : {
@@ -676,16 +625,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dunkel"
-          }
-        }
-      }
-    },
-    "Data" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Daten"
           }
         }
       }
@@ -1096,27 +1035,6 @@
         }
       }
     },
-    "File Management" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dateien verwalten"
-          }
-        }
-      }
-    },
-    "File path" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Datei Pfad"
-          }
-        }
-      }
-    },
     "Fill in some description for the item" : {
       "localizations" : {
         "de" : {
@@ -1143,16 +1061,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fokusiere \"%@\""
-          }
-        }
-      }
-    },
-    "Folder Settings" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ordner Einstellungen"
           }
         }
       }
@@ -1439,16 +1347,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lade Spielstand"
-          }
-        }
-      }
-    },
-    "Loaded" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geladen"
           }
         }
       }
@@ -1943,16 +1841,6 @@
         }
       }
     },
-    "Select Default Path" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle Standard Ordner"
-          }
-        }
-      }
-    },
     "Selected - %lld" : {
       "localizations" : {
         "de" : {
@@ -1993,30 +1881,8 @@
         }
       }
     },
-    "Settings about the %@ file storage" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ Datei Speicher Einstellungen"
-          }
-        }
-      }
-    },
     "Settings about the Database storage. You can switch back and furth, the database will not be removed. If you like you can export the current database and import it the other one. Use iCloud if you want automatical sync between the devices." : {
 
-    },
-    "Settings about the Database storgae. You can switch back and furth, the database will not be removed. If you like you can export the current database and import it the other one. Use iCloud if you want automatical sync between the devices." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hier kannst du einstellen, wo deine Datenbank gespeichert werden soll. Beim Wechsel werden die Daten nicht automatische kopiert. Möchtet du deine vorigen Daten verwenden, exportiere sie. Ein hin und her schalten löscht keine Daten und ist jederzeit möglich. Beachte dass du verantwortlich bist für Synchronisierung."
-          }
-        }
-      }
     },
     "Share" : {
       "localizations" : {
@@ -2138,16 +2004,6 @@
         }
       }
     },
-    "Type" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Typ"
-          }
-        }
-      }
-    },
     "Typing" : {
       "localizations" : {
         "de" : {
@@ -2238,16 +2094,6 @@
         }
       }
     },
-    "Validate Files" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Überprüfe Dateien"
-          }
-        }
-      }
-    },
     "Validate Links" : {
       "localizations" : {
         "de" : {
@@ -2274,16 +2120,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Charakter"
-          }
-        }
-      }
-    },
-    "Warnung: The default Accessible %@ Folder path is not set. If you choose default location iCloud, please provide a default path to your iCloud path, where the files can be written. The app will fallback to AppCloud if it cannot write into the given path." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Achtung: Der Standard %@ Ordner ist nicht gesetzt worden. Wenn du als Standard Ort iCloud verwendest, solltest du auch einen Standard  Ordner angegeben wo die Dateien gespeichert werden dürfen. Die App wird den AppCloud Ort verwenden, wenn nicht in iCloud geschrieben werden darf."
           }
         }
       }

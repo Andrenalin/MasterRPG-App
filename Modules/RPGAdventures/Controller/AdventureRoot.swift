@@ -216,14 +216,8 @@ extension AdventureRoot: StoreManiplable {
         await itemController.save()
     }
 
-    public func validate(validateFiles: Bool) {
+    public func validate() {
         Task { @MainActor in
-            if validateFiles {
-                let fileValidate = Task.detached(priority: .background) {
-                    await self.convertFileDataValidate()
-                }
-                let _ = await fileValidate.result
-            }
             linkController.validateLinks()
             audioRoot.linkController.validateLinks()
             diceRoot.linkController.validateLinks()
@@ -235,15 +229,6 @@ extension AdventureRoot: StoreManiplable {
             valueRoot.linkController.validateLinks()
             weatherRoot.linkController.validateLinks()
         }
-    }
-}
-
-public extension AdventureRoot {
-    func convertFileDataValidate() async {
-        await audioRoot.fileUrlDataController.convertFileDataValidate()
-        await pdfRoot.fileUrlDataController.convertFileDataValidate()
-        await photoRoot.fileUrlDataController.convertFileDataValidate()
-        await spaceRoot.fileUrlDataController.convertFileDataValidate()
     }
 }
 
