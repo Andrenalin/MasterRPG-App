@@ -12,6 +12,7 @@ struct RootExtendedDetail: View {
     @Environment(ValueRoot.self) private var root
     
     var body: some View {
+        let _ = Self._printChanges()
         RootDetail(editController: root.editController(for: itemRowTreeModel, type: .main))
             .environment(root.listController(tabId: tabId).model)
     }
@@ -25,6 +26,9 @@ struct RootDetail: View {
     @Environment(ListModel.self) private var listModel
     
     var body: some View {
+        let _ = Self._printChanges()
+        let _ = print(Unmanaged.passUnretained(editController.model).toOpaque())
+
         detailView(selectedItem: listController.model.selectedItem ?? .empty)
             .onChange(of: listController.model.selectedItem) {
                 if listController.model.selectedItem == nil {
@@ -88,6 +92,7 @@ struct RootEditDetailIm: View {
     @Environment(\.navigator) private var navigator
     
     var body: some View {
+        let _ = Self._printChanges()
         ValueDetailEditor(editController: editController, model: editController.model)
             .environment(listController.model)
             .environment(\.itemSplitViewSizeMode, .small)

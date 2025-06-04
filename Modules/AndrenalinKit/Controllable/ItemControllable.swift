@@ -81,6 +81,7 @@ public extension ItemControllable {
             let updateHidden = orignal.isGroupHidden != model.isGroupHidden
             let originalLinkModels = orignal.linkRegisterModels
             var originalEntryIds = Set(orignal.entries.map { $0.id })
+            let resort = orignal.name != model.name
             if orignal.replace(with: model) {
                 Task {
                     try? await dataControllable?.replace(id: orignal.id, with: orignal)
@@ -98,7 +99,9 @@ public extension ItemControllable {
                     resetUsedLink(for: ItemRowModel(itemId: orignal.id, entryId: entryId, typeId: itemDataModel.networkModule))
                 }
 
-                resortItem(changed: orignal)
+                if resort {
+                    resortItem(changed: orignal)
+                }
             }
             if updateHidden {
                 itemDataModel.increaseHiddenCounter()

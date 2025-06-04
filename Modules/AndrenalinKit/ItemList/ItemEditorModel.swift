@@ -37,6 +37,15 @@ public final class ItemEditorModel: Sendable {
     @ObservationIgnored
     var undoManaged: UndoManaged<ModelType?>
 
+    @ObservationIgnored
+    var nameTextFieldModel = TextFieldModel()
+
+    @ObservationIgnored
+    var descriptionTextFieldModel = TextFieldModel()
+
+    @ObservationIgnored
+    var categoryEditModel = CategoryEditModel()
+
     func reset() {
         if undoManaged.value != nil {
             undoManaged.resetValue(nil)
@@ -49,6 +58,9 @@ public final class ItemEditorModel: Sendable {
         selection = []
         deleteAlertIds = []
         cacheItemListModel.resetItemLink()
+        nameTextFieldModel.text = ""
+        categoryEditModel.selection = .all
+        descriptionTextFieldModel.text = ""
     }
     
     public func isExpanded(for entryId: UUID) -> Binding<Bool> {

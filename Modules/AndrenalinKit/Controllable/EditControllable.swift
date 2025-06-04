@@ -11,12 +11,13 @@ public enum EditTypes: Equatable, Hashable {
 
 public protocol EditControllable: Sendable {
     associatedtype Model: ItemDataAccessable & ItemDiffComparable & ModelType
-    
+
     var itemControllable: any ItemControllable { get }
     var rootControllable: any RootControllable { get }
-    
+
     var editorModel: ItemEditorModel { get }
     
+
     @MainActor
     var model: Model { get set }
 
@@ -121,6 +122,7 @@ public extension EditControllable {
     
     @MainActor
     func setModel(_ update: Model) {
+        guard !model.isEqual(other: update) else { return }
         model = update
     }
     
@@ -129,12 +131,17 @@ public extension EditControllable {
         save(with: "")
         resetCurrentModel()
         editorModel.reset()
-        
+
         guard let model = itemControllable.copy(of: item.model.itemId) as? Model else { return }
         editorModel.undoManaged.resetValue(model)
         editorModel.currentItemId = item.model.itemId
         editorModel.currentListItem = item
         editorModel.currentEntryId = item.model.entryId
+
+        editorModel.nameTextFieldModel.text = model.name
+        editorModel.categoryEditModel.selection = model.category
+        editorModel.descriptionTextFieldModel.text = model.description
+
         didSetModel()
     }
     

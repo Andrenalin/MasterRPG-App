@@ -9,6 +9,7 @@ struct RootNaviList: View {
     let tabId: UUID
     
     var body: some View {
+        let _ = Self._printChanges()
         ManagedNavigationStack {
             RootExtendedList(editController: root.editController(type: .link), tabId: tabId, selection: false)
         }
@@ -31,6 +32,7 @@ struct RootList: View {
     @State private var currentRoute: ValueRoute
     
     var body: some View {
+        let _ = Self._printChanges()
         NavigationSplitView(columnVisibility: $column) {
             RootExtendedList(editController: root.editController(type: .main), tabId: tabId, selection: selection)
                 .frame(minWidth: 250)
@@ -60,6 +62,7 @@ struct RootExtendedList: View {
 #endif
     
     var body: some View {
+        let _ = Self._printChanges()
         listView
             .environment(listController.model)
             .onChange(of: root.itemController.itemDataModel.items, initial: true) {
