@@ -8,7 +8,6 @@ public class TextFieldModel {
         self.text = text
     }
 
-    @ObservationIgnored
     public var text: String
 }
 

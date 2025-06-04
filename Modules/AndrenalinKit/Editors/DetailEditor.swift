@@ -65,7 +65,6 @@ public struct DetailEditor<Content: View, ExtContent: View, Header: View, Extent
     @State private var editMode: EditMode = .inactive
 #endif
     
-    @State private var scrollPosition = ScrollPosition()
     @State private var scrollPositionY: CGFloat = 0
     
     @State private var showExtHeader = false
@@ -94,16 +93,13 @@ public struct DetailEditor<Content: View, ExtContent: View, Header: View, Extent
                 } action: { oldValue, newValue in
 #if os(macOS)
                     guard newValue >= 0 else { return }
-                    print(newValue)
                     scrollPositionY = newValue
 #else
                     scrollPositionY = newValue
 #endif
                 }
-                .scrollPosition($scrollPosition)
                 .scrollIndicatorsFlash(onAppear: true)
                 .scrollIndicatorsFlash(trigger: entryCounter)
-                .animation(.spring, value: scrollPosition)
 #if os(macOS)
                 .safeAreaInset(edge: .top, spacing: 0) {
                     headerContent(geometry: geometry)
@@ -202,9 +198,6 @@ private extension DetailEditor {
                 guard hasExtHeaderView else { return }
                 extHeader(toggle: !showExtHeader, small: height)
             }
-            .onTapGesture(count: 2) {
-                scrollPosition.scrollTo(edge: .top)
-            }
 #endif
             .frame(height: height, alignment: .bottom)
             .background {
@@ -253,9 +246,10 @@ private extension DetailEditor {
         if let item = itemListModel.selectedItem {
             if editController.editorModel.currentItemId != item.model.itemId || editController.editorModel.currentEntryId != item.model.entryId {
                 editController.setCurrentItem(to: item)
+                guard let entryId = item.model.entryId else { return }
                 Task {
-                    try? await Task.sleep(for: .seconds(0.15))
-                    withAnimation { scrollProxy.scrollTo(item.model.entryId ?? item.model.itemId, anchor: .center) }
+                    try? await Task.sleep(for: .seconds(0.25))
+                    withAnimation { scrollProxy.scrollTo(entryId, anchor: .center) }
                 }
             }
         } else {

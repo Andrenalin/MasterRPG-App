@@ -27,7 +27,6 @@ struct RootDetail: View {
     
     var body: some View {
         let _ = Self._printChanges()
-        let _ = print(Unmanaged.passUnretained(editController.model).toOpaque())
 
         detailView(selectedItem: listController.model.selectedItem ?? .empty)
             .onChange(of: listController.model.selectedItem) {

@@ -30,6 +30,7 @@ public final class UndoManaged<T> {
     public func previousValue(_ prevValue: T, title: String) {
         undoStack.append(prevValue)
         undoTitles.append(title)
+        guard !redoStack.isEmpty else { return }
         redoStack.removeAll()
     }
 

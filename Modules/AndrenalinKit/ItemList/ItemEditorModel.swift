@@ -58,9 +58,6 @@ public final class ItemEditorModel: Sendable {
         selection = []
         deleteAlertIds = []
         cacheItemListModel.resetItemLink()
-        nameTextFieldModel.text = ""
-        categoryEditModel.selection = .all
-        descriptionTextFieldModel.text = ""
     }
     
     public func isExpanded(for entryId: UUID) -> Binding<Bool> {

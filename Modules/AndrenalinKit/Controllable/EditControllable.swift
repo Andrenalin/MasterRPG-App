@@ -46,7 +46,9 @@ public extension EditControllable {
     @MainActor
     var model: Model {
         get { editorModel.undoManaged.value as? Model ?? .empty }
-        nonmutating set { editorModel.undoManaged.updateValue(newValue) }
+        nonmutating set {
+            // it is a class an updated already
+        }
     }
     
     @MainActor var cacheItemListModel: CacheItemListModel {
@@ -123,7 +125,7 @@ public extension EditControllable {
     @MainActor
     func setModel(_ update: Model) {
         guard !model.isEqual(other: update) else { return }
-        model = update
+        editorModel.undoManaged.updateValue(update)
     }
     
     @MainActor
