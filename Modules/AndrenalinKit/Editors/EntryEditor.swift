@@ -3,24 +3,17 @@
 import SwiftUI
 
 public struct EntryEditor<EditController: EntryDataEditable, Content: View, LinkAction: View, AddAction: View>: View {
-    public init(editControllable: EditController, @ViewBuilder contentView: @escaping () -> Content, @ViewBuilder linkActionView: @escaping () -> LinkAction, @ViewBuilder addActionView: @escaping () -> AddAction) {
+    public init(editControllable: EditController, @ViewBuilder contentView: () -> Content, @ViewBuilder linkActionView: () -> LinkAction, @ViewBuilder addActionView: () -> AddAction = EmptyView.init) {
         self.editControllable = editControllable
-        self.contentView = contentView
-        self.linkActionView = linkActionView
-        self.addActionView = addActionView
-    }
-
-    public init(editControllable: EditController, @ViewBuilder contentView: @escaping () -> Content, @ViewBuilder linkActionView: @escaping () -> LinkAction) where AddAction == EmptyView {
-        self.editControllable = editControllable
-        self.contentView = contentView
-        self.linkActionView = linkActionView
-        self.addActionView = { EmptyView() }
+        self.contentView = contentView()
+        self.linkActionView = linkActionView()
+        self.addActionView = addActionView()
     }
 
     let editControllable: EditController
-    let contentView: () -> Content
-    let linkActionView: () -> LinkAction
-    let addActionView: () -> AddAction
+    let contentView: Content
+    let linkActionView: LinkAction
+    let addActionView: AddAction
 
     @Environment(ListModel.self) private var itemListModel
 
@@ -36,7 +29,7 @@ public struct EntryEditor<EditController: EntryDataEditable, Content: View, Link
             actionBarView
 
             ScrollViewReader { proxy in
-                contentView()
+                contentView
                     .onChange(of: scrollId, initial: false) {
                         if let scrollId {
                             proxy.scrollTo(scrollId)
@@ -127,13 +120,13 @@ private extension EntryEditor {
                 Label { Text("Add", bundle: .module) } icon: { Image(systemName: "plus") }
             }
 
-            addActionView()
+            addActionView
 
             Text("\(editControllable.editEntries.count) Entry", bundle: .module)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
 
-            linkActionView()
+            linkActionView
         }
     }
 
