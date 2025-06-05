@@ -21,7 +21,7 @@ public struct HeaderEditor: View {
                     .labelsHidden()
                     .fixedSize()
 
-                ToggleHiddenEditor(editController: editController, bundle: .module)
+                HiddenToggleEditor(editController: editController)
                     .labelsHidden()
             }
 #else
@@ -32,7 +32,7 @@ public struct HeaderEditor: View {
             TagsItemEditor(editController: editController, module: editController.itemControllable.itemDataModel.networkModule)
 
 #if !os(macOS)
-            ToggleHiddenEditor(editController: editController, bundle: .module)
+            HiddenToggleEditor(editController: editController)
 #endif
 
             DescriptionItemEditor(editController: editController)

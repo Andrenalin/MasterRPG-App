@@ -100,6 +100,7 @@ public struct DetailEditor<Content: View, ExtContent: View, Header: View, Extent
                 }
                 .scrollIndicatorsFlash(onAppear: true)
                 .scrollIndicatorsFlash(trigger: entryCounter)
+                .scrollBounceBehavior(.basedOnSize)
 #if os(macOS)
                 .safeAreaInset(edge: .top, spacing: 0) {
                     headerContent(geometry: geometry)

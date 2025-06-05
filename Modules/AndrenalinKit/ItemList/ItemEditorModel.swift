@@ -14,7 +14,7 @@ public final class ItemEditorModel: Sendable {
     public var currentModel: ModelType? {
         undoManaged.value
     }
-    
+
     public internal(set) var currentListItem: ItemRowTreeModel?
 
     public internal(set) var currentItemId: UUID?
@@ -23,28 +23,24 @@ public final class ItemEditorModel: Sendable {
 
     public var activateFocus: Bool = false
     public var activateDetailEditMode: Bool = false
-    
+
     public var cacheItemListModel: CacheItemListModel = CacheItemListModel()
-    
+
     public var expandedEntries: [UUID: Bool] = [:]
     public var selected: Set<UUID> = []
     public var selection: [UUID] = []
     public var deleteAlertIds: [UUID] = []
-    
-    @ObservationIgnored
-    public internal(set) var searchText: String = ""
 
-    @ObservationIgnored
-    var undoManaged: UndoManaged<ModelType?>
+    @ObservationIgnored public internal(set) var searchText: String = ""
 
-    @ObservationIgnored
-    var nameTextFieldModel = TextFieldModel()
+    @ObservationIgnored var undoManaged: UndoManaged<ModelType?>
 
-    @ObservationIgnored
-    var descriptionTextFieldModel = TextFieldModel()
+    // MARK: - Properties for the editor
+    @ObservationIgnored var categoryEditModel = CategoryEditModel()
+    @ObservationIgnored var descriptionTextFieldModel = TextFieldModel()
+    @ObservationIgnored var hiddenToggleModel = ToggleModel()
+    @ObservationIgnored var nameTextFieldModel = TextFieldModel()
 
-    @ObservationIgnored
-    var categoryEditModel = CategoryEditModel()
 
     func reset() {
         if undoManaged.value != nil {
@@ -59,7 +55,7 @@ public final class ItemEditorModel: Sendable {
         deleteAlertIds = []
         cacheItemListModel.resetItemLink()
     }
-    
+
     public func isExpanded(for entryId: UUID) -> Binding<Bool> {
         Binding {
             self.expandedEntries[entryId, default: false]

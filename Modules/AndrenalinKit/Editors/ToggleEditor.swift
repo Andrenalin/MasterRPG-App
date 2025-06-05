@@ -48,37 +48,3 @@ private extension ToggleEditor {
         }
     }
 }
-
-
-public struct ToggleHiddenEditor: View {
-    public init(editController: any EditControllable, title: LocalizedStringKey = "Hidden", bundle: Bundle?, icon: String = "eye.slash") {
-        self.editController = editController
-        self.title = title
-        self.bundle = bundle
-        self.icon = icon
-    }
-
-    let editController: any EditControllable
-    let title: LocalizedStringKey
-    let bundle: Bundle?
-    let icon: String
-
-    public var body: some View {
-        LabeledContent {
-            Toggle(isOn: calculatedBinding) {
-                Text(title, bundle: bundle)
-            }
-            .tint(Color.accentColor)
-        } label: {
-            Image(systemName: icon)
-        }
-    }
-
-    var calculatedBinding: Binding<Bool> {
-        Binding {
-            editController.model.isGroupHiddenToggle
-        } set: {
-            editController.reset(hidden: $0)
-        }
-    }
-}

@@ -85,7 +85,7 @@ struct EditGroupHeaderEditor<Model, ItemDataController: ItemControllable, ItemEd
                     .labelsHidden()
                     .fixedSize()
 
-                ToggleHiddenEditor(editController: editGroupController, bundle: .module)
+                HiddenToggleEditor(editController: editGroupController)
                     .labelsHidden()
                 Text("Hidden", bundle: .module)
             }
@@ -97,7 +97,7 @@ struct EditGroupHeaderEditor<Model, ItemDataController: ItemControllable, ItemEd
             TagsItemEditor(editController: editGroupController, module: editGroupController.itemControllable.itemDataModel.networkModule)
 
 #if !os(macOS)
-            ToggleHiddenEditor(editController: editGroupController, bundle: .module)
+            HiddenToggleEditor(editController: editGroupController)
 #endif
 
             DescriptionItemEditor(editController: editGroupController)

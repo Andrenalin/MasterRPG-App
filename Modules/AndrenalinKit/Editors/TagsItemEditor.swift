@@ -19,7 +19,7 @@ public struct TagsItemEditor: View {
     @State private var currentTag: String = ""
     
     public var body: some View {
-        //let _ = Self._printChanges()
+        let _ = Self._printChanges()
         LabeledContent {
             tagsView
         } label: {
