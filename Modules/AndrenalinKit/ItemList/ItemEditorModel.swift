@@ -6,9 +6,10 @@ import SwiftUI
 
 @MainActor @Observable
 public final class ItemEditorModel: Sendable {
-    public init(currentListItem: ItemRowTreeModel? = nil, currentModel: (ModelType)? = nil) {
+    public init(currentListItem: ItemRowTreeModel? = nil, currentModel: (ModelType)? = nil, categorySelection: ItemListCategory = .all) {
         self.currentListItem = currentListItem
         self.undoManaged = UndoManaged(initialValue: currentModel)
+        self.categoryEditModel = CategoryEditModel(selection: categorySelection)
     }
 
     public var currentModel: ModelType? {
@@ -36,7 +37,7 @@ public final class ItemEditorModel: Sendable {
     @ObservationIgnored var undoManaged: UndoManaged<ModelType?>
 
     // MARK: - Properties for the editor
-    @ObservationIgnored var categoryEditModel = CategoryEditModel()
+    @ObservationIgnored var categoryEditModel: CategoryEditModel
     @ObservationIgnored var descriptionTextFieldModel = TextFieldModel()
     @ObservationIgnored var hiddenToggleModel = ToggleModel()
     @ObservationIgnored var nameTextFieldModel = TextFieldModel()

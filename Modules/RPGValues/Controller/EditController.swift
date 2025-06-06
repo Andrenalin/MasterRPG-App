@@ -29,7 +29,7 @@ struct EditController: Sendable {
     @MainActor
     init(root: ValueRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
-        self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
+        self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel, categorySelection: root.itemControllable.itemDataModel.categoryTags.first ?? .all)
         self.valueEditModel = ValueEditModel()
     }
 
@@ -109,7 +109,7 @@ extension EditController: EntryDataEditable {
 
 // MARK: - Edit Entry
 extension EditController {
-    
+
     @MainActor func reset(entryId: UUID, type: ValueEntryModel.ValueType) {
         guard type != model[entryId].type else { return }
         model[entryId].valueTypeToggle = type
@@ -160,7 +160,7 @@ extension EditController {
             }
         }
     }
-    
+
     @MainActor
     func toggleSelected(itemId: UUID, entryId: UUID) {
         let model = editorModel.currentItemId == itemId ? self.model : (root.itemController.copy(of: itemId) ?? .empty)
@@ -201,7 +201,7 @@ extension EditController {
             }
         }
     }
-    
+
     @MainActor
     func updateNumber(itemId: UUID, entryId: UUID, value: Int) {
         let model = editorModel.currentItemId == itemId ? self.model : (root.itemController.copy(of: itemId) ?? .empty)
@@ -214,7 +214,7 @@ extension EditController {
             }
         }
     }
-    
+
     @MainActor
     func updateValue(itemId: UUID, entryId: UUID, value: String) {
         let model = editorModel.currentItemId == itemId ? self.model : (root.itemController.copy(of: itemId) ?? .empty)
@@ -313,7 +313,7 @@ extension EditController {
             await group(itemId: item.id, entryId: nil, models: models)
         }
     }
-    
+
     @MainActor
     func setGroupPhotos() async {
         let allGroupIds = valueGroupIds(value: model)
@@ -573,7 +573,7 @@ extension EditController {
                 selectionModel.childId = childId
             }
         }
-        
+
         return root.viewController.viewSelect(filter: .all, isGroupHidden: false) {
             if let valueId = self.valueEditModel.childIds[entryId] {
                 return [ItemRowModel(itemId: valueId, typeId: .value)]
@@ -592,7 +592,7 @@ extension EditController {
         }
     }
 
-    @MainActor 
+    @MainActor
     func selectTemplate(selectionModel: SelectionSheetLinkModel, dismissAction: @escaping () -> Void) -> some View {
         let selectionId = UUID()
         selectionModel.entryId = selectionId
@@ -663,7 +663,7 @@ extension EditController {
         }
         return controller
     }
-        
+
     @MainActor
     func updateNameContent(_ content: String, for entryId: UUID) {
         if let contentLink = valueEditModel.nameLinks[entryId] {
@@ -673,7 +673,7 @@ extension EditController {
         }
         save(with: String(localized: "Add link").localizedString)
     }
-    
+
     @MainActor func update(entryId: UUID, name: String) {
         model[entryId].name = name
         editorModel.cacheItemListModel.reset(cacheType: .entryName, itemId: entryId, text: name)
@@ -693,7 +693,7 @@ extension EditController {
         }
         return controller
     }
-    
+
     @MainActor
     func updateValueContent(_ content: String, for entryId: UUID) {
         if let contentLink = valueEditModel.valueLinks[entryId] {
@@ -703,7 +703,7 @@ extension EditController {
         }
         save(with: String(localized: "Add link").localizedString)
     }
-    
+
     @MainActor func update(entryId: UUID, value: String) {
         model[entryId].value = value
         let valueText = root.linkController.linkText(model: model, entryId: entryId, withoutName: true)
@@ -771,26 +771,26 @@ extension EditController {
         guard let anotherIds else {
             let otherEntries: [LinkEntryModel]
             switch module {
-            case .dice:
-                otherEntries = root.diceRoot.linkController.link(for: .table)
-            case .table:
-                otherEntries = root.tableRoot.linkController.link(for: .value)
-            default:
-                otherEntries = root.linkController.link(for: .value)
+                case .dice:
+                    otherEntries = root.diceRoot.linkController.link(for: .table)
+                case .table:
+                    otherEntries = root.tableRoot.linkController.link(for: .value)
+                default:
+                    otherEntries = root.linkController.link(for: .value)
             }
             return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
         }
 
         let otherEntries: [LinkEntryModel] = anotherIds.flatMap { anotherId in
             switch module {
-            case .dice:
-                return root.diceRoot.linkController.linkEntries(for: anotherId)
-            case .table:
-                return root.tableRoot.linkController.linkEntries(for: anotherId)
-            case .value:
-                return root.linkController.linkEntries(for: anotherId)
-            default:
-                return []
+                case .dice:
+                    return root.diceRoot.linkController.linkEntries(for: anotherId)
+                case .table:
+                    return root.tableRoot.linkController.linkEntries(for: anotherId)
+                case .value:
+                    return root.linkController.linkEntries(for: anotherId)
+                default:
+                    return []
             }
         }
         return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)

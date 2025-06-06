@@ -18,9 +18,9 @@ struct ValueEntryEditor: View {
     var body: some View {
         let _ = Self._printChanges()
         EntryEditor(editControllable: editController) {
-            contentView()
+            contentView
         } linkActionView: {
-            linkActionView()
+            linkActionView
         } addActionView: {
             addEntryFromTemplateView
         }
@@ -28,7 +28,7 @@ struct ValueEntryEditor: View {
     }
     
     @ViewBuilder
-    func linkActionView() -> some View {
+    var linkActionView: some View {
         AltOpenWindowButton(module: .dice)
         AltOpenWindowButton(module: .pdf)
         AltOpenWindowButton(module: .table)
@@ -64,7 +64,7 @@ struct ValueEntryEditor: View {
     }
 
     @ViewBuilder
-    func contentView() -> some View {
+    var contentView: some View {
         @Bindable var model = editController.model
         @Bindable var editorModel = editController.editorModel
         Table(model.entries, selection: $editorModel.selected) {
@@ -152,7 +152,6 @@ struct ValueEntryEditor: View {
         return unsupportedLinks > 0
     }
 
-    @MainActor
     var addEntryFromTemplateView: some View {
         DropItemArea {
             Text("Drop Template for Generation", bundle: .module)
