@@ -256,7 +256,7 @@ struct PinSectionEditor<EditContent: View, Content: View, ShowLink: View, SwipeA
         }
         .sheetFullScreen(isPresented: $showDeleteAlert) {
             EffectedLinkAction(itemControllable: editControllable.itemControllable, removeEntryList: removeEntryList) {
-                await deleteSelectedEntries(rowModels: $0)
+                deleteSelectedEntries(rowModels: $0)
             }
         }
     }
@@ -319,9 +319,7 @@ private extension PinSectionEditor {
         }
         
         Button(role: .destructive) {
-            Task {
-                await checkDeleteEntries(ids: [entry.id])
-            }
+            checkDeleteEntries(ids: [entry.id])
         } label: {
             Label { Text("Delete row \(String(entry.name.prefix(16)))", bundle: .module) } icon: { Image(systemName: "trash") }
                 .foregroundStyle(.red)
@@ -363,7 +361,7 @@ private extension PinSectionEditor {
 }
 
 private extension PinSectionEditor {
-    func checkDeleteEntries(ids: [UUID], alwaysDeleteCheck: Bool = false) async {
+    func checkDeleteEntries(ids: [UUID], alwaysDeleteCheck: Bool = false) {
         removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
 
         if alwaysDeleteCheck {
@@ -372,12 +370,12 @@ private extension PinSectionEditor {
             if editControllable.isUsed(rowModels: removeEntryList.removeItems) {
                 showDeleteAlert.toggle()
             } else {
-                await deleteSelectedEntries(rowModels: removeEntryList.removeItems)
+                deleteSelectedEntries(rowModels: removeEntryList.removeItems)
             }
         }
     }
         
-    func deleteSelectedEntries(rowModels: [ItemRowModel]) async {
+    func deleteSelectedEntries(rowModels: [ItemRowModel]) {
         for rowModel in rowModels {
             guard let entryId = rowModel.entryId else { continue }
             removeEntryState(for: entryId)
@@ -389,6 +387,6 @@ private extension PinSectionEditor {
         let ids = indexSet.map { editControllable.model.mapPins[$0].id }
         removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
 
-        await deleteSelectedEntries(rowModels: removeEntryList.removeItems)
+        deleteSelectedEntries(rowModels: removeEntryList.removeItems)
     }
 }

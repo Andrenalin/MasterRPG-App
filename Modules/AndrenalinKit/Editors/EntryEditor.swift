@@ -42,9 +42,7 @@ public struct EntryEditor<EditController: EntryDataEditable, Content: View, Link
             .alternatingRowBackgrounds(.enabled)
             .onDeleteCommand {
                 guard !editControllable.editorModel.selection.isEmpty else { return }
-                Task {
-                    await checkDeleteEntries(ids: editControllable.editorModel.selection, alwaysDeleteCheck: true)
-                }
+                checkDeleteEntries(ids: editControllable.editorModel.selection, alwaysDeleteCheck: true)
             }
             .onMoveCommand { direction in
                 guard editControllable.editorModel.selected.count == 1 && (direction == .left || direction == .right) else { return }
@@ -74,9 +72,7 @@ public struct EntryEditor<EditController: EntryDataEditable, Content: View, Link
             }
             .onChange(of: editControllable.editorModel.deleteAlertIds, initial: false) {
                 guard !editControllable.editorModel.deleteAlertIds.isEmpty else { return }
-                Task {
-                    await checkDeleteEntries(ids: editControllable.editorModel.deleteAlertIds)
-                }
+                checkDeleteEntries(ids: editControllable.editorModel.deleteAlertIds)
             }
             .sheetFullScreen(isPresented: $showDeleteAlert) {
                 EffectedLinkAction(itemControllable: editControllable.itemControllable, removeEntryList: removeEntryList) {
@@ -134,7 +130,7 @@ private extension EntryEditor {
         editControllable.remove(entryIds: rowModels.compactMap { $0.entryId })
     }
 
-    func checkDeleteEntries(ids: [UUID], alwaysDeleteCheck: Bool = false) async {
+    func checkDeleteEntries(ids: [UUID], alwaysDeleteCheck: Bool = false) {
         removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
         if alwaysDeleteCheck {
             showDeleteAlert.toggle()
