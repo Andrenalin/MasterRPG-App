@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import CoreData
-internal import SwiftUICore
+import SwiftUI
 
 struct DataController: Sendable {
     @MainActor

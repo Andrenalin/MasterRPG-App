@@ -4,7 +4,7 @@ import AppIntents
 import Foundation
 import RPGAdventures
 import RoleGameKit
-import SwiftUICore
+import SwiftUI
 import AndrenalinKit
 internal import _AppIntents_SwiftUI
 
