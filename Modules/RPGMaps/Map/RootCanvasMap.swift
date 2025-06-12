@@ -32,33 +32,50 @@ struct RootCanvasMap: View {
     @Environment(\.networkActions) private var networkActions
 
     @State private var dropPinModel = DropPinModel()
+    @State private var image: AKImage?
+    @State private var degrees: Double = 0
 
     var body: some View {
+        @Bindable var mapModel = mapModel
         GeometryReader { geo in
-            root.photoRoot.viewController.photoView(for: mapModel.photoId, useGame: true) { image, photoDegrees in
-                MapViewer(image: image, photoDegrees: photoDegrees, map: mapModel, toolBarModel: toolBarModel, playerPinId: playerPinId, mapMode: mode == .player ? .player : .gameMaster, containerSize: geo.size, sendMapUpdates: sendMapUpdates, focused: focused)
-                    .id(itemId)
-                    .environment(dropPinModel)
+            if let image {
+                MapViewer(image: image, photoDegrees: degrees, map: mapModel, toolBarModel: toolBarModel, playerPinId: playerPinId, mapMode: mode == .player ? .player : .gameMaster, containerSize: geo.size, sendMapUpdates: sendMapUpdates, focused: focused)
+                        .id(itemId)
+                        .environment(dropPinModel)
+            } else {
+                Color.clear
             }
-            .id(itemId)
-#if !os(tvOS)
-            .dropDestination(for: LinkData.self) { items, point in
-                let dropItems = items.filter { $0.module == .value && $0.entryId == nil }.map { ItemRowModel(itemId: $0.itemId, typeId: $0.module )}
-                guard !dropItems.isEmpty else { return false }
-                dropPinModel.point = point
-                dropPinModel.items = dropItems
-                return true
-            } isTargeted: { inDropArea in
-                dropPinModel.isTarget = inDropArea
-            }
-#endif
         }
+        .onChange(of: mapModel.id, initial: true) {
+            Task {
+                await reloadImage()
+            }
+        }
+#if !os(tvOS)
+        .dropDestination(for: LinkData.self) { items, point in
+            let dropItems = items.filter { $0.module == .value && $0.entryId == nil }.map { ItemRowModel(itemId: $0.itemId, typeId: $0.module )}
+            guard !dropItems.isEmpty else { return false }
+            dropPinModel.point = point
+            dropPinModel.items = dropItems
+            return true
+        } isTargeted: { inDropArea in
+            dropPinModel.isTarget = inDropArea
+        }
+#endif
     }
 }
 
 private extension RootCanvasMap {
     var mapModel: MapModel {
         root.gameController.gameItem(for: itemId)
+    }
+
+    func reloadImage() async {
+        let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(for: mapModel.photoId, useGame: true) ?? (nil, 0)
+        Task { @MainActor in
+            self.image = updateImage
+            self.degrees <=> updateDegrees
+        }
     }
 
     func sendMapUpdates() {

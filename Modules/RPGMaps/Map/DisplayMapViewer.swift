@@ -6,6 +6,7 @@ import RPGPhotos
 
 struct DisplayMapViewer: View {
     let editController: EditController
+    let image: AKImage
     let itemId: UUID
     @Binding var entryId: UUID
     let size: CGSize
@@ -16,9 +17,7 @@ struct DisplayMapViewer: View {
     var body: some View {
         @Bindable var model = editController.model
         VStack {
-            root.photoRoot.viewController.photoView(for: model.photoId, useGame: false) { image, photoDegrees in
-                MapViewer(image: image, photoDegrees: photoDegrees, map: mapUpdated, toolBarModel: GameToolBarModel(), playerPinId: nil, mapMode: .viewer, containerSize: size, focusedId: nil, sendMapUpdates: sendMapUpdates, focused: focused)
-            }
+            MapViewer(image: image, photoDegrees: 0, map: mapUpdated, toolBarModel: GameToolBarModel(), playerPinId: nil, mapMode: .viewer, containerSize: size, focusedId: nil, sendMapUpdates: sendMapUpdates, focused: focused)
         }
         .frame(width: size.width, height: size.height)
         .onChange(of: model, initial: false) {

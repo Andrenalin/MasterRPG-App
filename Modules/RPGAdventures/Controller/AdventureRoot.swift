@@ -241,7 +241,7 @@ public extension AdventureRoot {
     @MainActor
     func titleImage(for id: UUID?) async -> AKImage? {
         guard let id else { return nil }
-        let (image, _) = await photoRoot.fetchPhotoImage(for: itemController.itemOrEmpty(for: id).photoId) ?? (nil, 0.0)
+        let (image, _) = await photoRoot.fetchPhotoImage(for: itemController.itemOrEmpty(for: id).photoId, useGame: false) ?? (nil, 0.0)
         return image
     }
 }

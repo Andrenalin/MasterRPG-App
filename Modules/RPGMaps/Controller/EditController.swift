@@ -100,7 +100,7 @@ extension EditController {
 
     @MainActor
     func resetImageSize(photoId: UUID, updateModel: MapModel, save: Bool = false) async {
-        if let (image, degrees) = await root.photoRoot.fetchPhotoImage(for: photoId) {
+        if let (image, degrees) = await root.photoRoot.fetchPhotoImage(for: photoId, useGame: false) {
             let size = image.size
             updateModel.resetImage(with: photoId, size: size, degrees: degrees)
             if save {

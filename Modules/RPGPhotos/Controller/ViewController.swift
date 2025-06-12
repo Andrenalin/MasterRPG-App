@@ -134,14 +134,6 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func photoView<Content: View>(for itemId: UUID?, useGame: Bool, content: @escaping (AKImage, Double) -> Content) -> some View {
-        let id = itemId ?? UUID()
-        let model = useGame ? root.gameController.gameItem(for: id) : root.itemController.itemOrEmpty(for: id)
-        return AsyncPhoto(model: model, content: content)
-            .environment(root)
-    }
-
-    @MainActor
     func photoDetailView(for itemId: UUID?, useGame: Bool, size: CGSize, contentMode: ContentMode = .fit) -> some View {
         let id = itemId ?? UUID()
         let model = useGame ? root.gameController.gameItem(for: id) : root.itemController.itemOrEmpty(for: id)

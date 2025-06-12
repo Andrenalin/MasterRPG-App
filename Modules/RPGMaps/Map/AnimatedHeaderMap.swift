@@ -15,45 +15,57 @@ struct AnimatedHeaderMap: View {
     @Environment(MapRoot.self) private var root
     
     @State private var isAnimating = false
+    @State private var image: AKImage?
+    @State private var degrees: Double = 0
 
     var body: some View {
         @Bindable var model = editController.model
         
-        root.photoRoot.viewController.photoView(for: model.photoId, useGame: false) { image, photoDegrees in
-            HeaderPhoto(itemId: imageId, image: image, degrees: 0, size: size, topMargin: topMargin) { containerSize in
-                if isAnimating {
-                    TimelineView(.periodic(from: .now, by: 2.0)) { timeline in
-                        AnimatedMap(editController: editController, date: timeline.date, size: containerSize)
+        Group {
+            if let image {
+                HeaderPhoto(itemId: imageId, image: image, degrees: 0, size: size, topMargin: topMargin) { containerSize in
+                    if isAnimating {
+                        TimelineView(.periodic(from: .now, by: 2.0)) { timeline in
+                            AnimatedMap(editController: editController, image: image, date: timeline.date, size: containerSize)
+                        }
+                    } else {
+                        AnimatedMap(editController: editController, image: image, date: constTime, size: containerSize)
                     }
-                } else {
-                    AnimatedMap(editController: editController, date: constTime, size: containerSize)
                 }
-            }
 #if os(iOS)
-            .toolbar {
-                ToolbarItem {
-                    if inline == false {
-                        MapEditSectionEditor(editController: editController)
+                .toolbar {
+                    ToolbarItem {
+                        if inline == false {
+                            MapEditSectionEditor(editController: editController)
+                        }
                     }
                 }
-            }
 #else
-            .overlay(alignment: .topTrailing) {
-                MapEditSectionEditor(editController: editController)
-                    .padding([.top, .trailing])
-            }
-#endif
-            .overlay(alignment: .bottomTrailing) {
-                if inline == false {
-                    ImageOverlayButton(icon: "film\(isAnimating ? ".fill" : "")") {
-                        withAnimation { isAnimating.toggle() }
-                    }
-                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                    .padding([.trailing, .bottom])
+                .overlay(alignment: .topTrailing) {
+                    MapEditSectionEditor(editController: editController)
+                        .padding([.top, .trailing])
                 }
+#endif
+                .overlay(alignment: .bottomTrailing) {
+                    if inline == false {
+                        ImageOverlayButton(icon: "film\(isAnimating ? ".fill" : "")") {
+                            withAnimation { isAnimating.toggle() }
+                        }
+                        .contentTransition(.symbolEffect(.replace.wholeSymbol))
+                        .padding([.trailing, .bottom])
+                    }
+                }
+            } else {
+                Color.clear
+                    .frame(width: size.width, height: size.height)
             }
         }
-        .onChange(of: model, initial: true) {
+        .onChange(of: model.id, initial: true) {
+            Task {
+                await reloadImage()
+            }
+        }
+        .onChange(of: model.entries) {
             guard model.entries.count < 2 && isAnimating else { return }
             withAnimation { isAnimating = false }
         }
@@ -67,6 +79,14 @@ struct AnimatedHeaderMap: View {
             editController.model.id
         } set: { _ in
             // never set
+        }
+    }
+
+    func reloadImage() async {
+        let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(for: editController.model.photoId, useGame: false) ?? (nil, 0)
+        Task { @MainActor in
+            self.image = updateImage
+            self.degrees <=> updateDegrees
         }
     }
 }

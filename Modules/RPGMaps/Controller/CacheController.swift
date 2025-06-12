@@ -43,7 +43,7 @@ private extension CacheController {
     func createThumbnail(for item: MapModel, entryId: MapEntryModel.ID) async {
         guard await root.photoRoot.requestImageCache(for: item.photoId) else { return }
         guard !Task.isCancelled else { return }
-        guard let result = await root.photoRoot.fetchPhotoImage(for: item.photoId) else { return }
+        guard let result = await root.photoRoot.fetchPhotoImage(for: item.photoId, useGame: false) else { return }
         guard !Task.isCancelled else { return }
         let entry = item[entryId]
         let thumbnail = result.0.cropping(to: entry.rect)

@@ -195,9 +195,18 @@ public extension PhotoRoot {
     }
     
     @MainActor
-    func fetchPhotoImage(for id: UUID?) async -> (AKImage, Double)? {
-        guard let id, let image = await cacheController.image(for: id) else { return nil }
-        return (image, itemController.itemOrEmpty(for: id).degrees)
+    func fetchPhotoImage(for id: UUID?, useGame: Bool) async -> (AKImage, Double)? {
+        guard let id else { return nil }
+        let editController = editController(type: .main)
+        let model = useGame ? gameController.gameItem(for: id) : itemController.itemOrEmpty(for: id)
+
+        let loaderTask = Task.detached(priority: .userInitiated) {
+            await editController.loadImage(cacheType: .image, itemId: model.id, fileUrl: model.fileUrl)
+        }
+        _ = await loaderTask.result
+
+        guard let image = editController.cacheItemListModel.imageCache(cacheType: .image, itemId: model.id) else { return nil }
+        return (image, model.degrees)
     }
     
     func addNewPhoto(data: Data, name: String, text: String) async -> (UUID, String) {

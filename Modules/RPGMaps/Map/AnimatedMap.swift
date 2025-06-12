@@ -5,6 +5,7 @@ import SwiftUI
 
 struct AnimatedMap: View {
     let editController: EditController
+    let image: AKImage
     let date: Date
     let size: CGSize
 
@@ -17,7 +18,7 @@ struct AnimatedMap: View {
         @Bindable var model = editController.model
 
         VStack(alignment: .center) {
-            DisplayMapViewer(editController: editController, itemId: model.id, entryId: $entryId, size: size)
+            DisplayMapViewer(editController: editController, image: image, itemId: model.id, entryId: $entryId, size: size)
                 .environment(dropPinModel)
         }
         .onChange(of: date, initial: false) {
