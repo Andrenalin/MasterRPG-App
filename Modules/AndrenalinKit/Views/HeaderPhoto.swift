@@ -2,27 +2,13 @@
 
 import SwiftUI
 
-public struct HeaderPhoto<Content: View>: View {
-    public init(itemId: Binding<UUID?>, image: AKImage?, degrees: Double, size: CGSize, topMargin: CGFloat, withoutSize: Bool = false, @ViewBuilder content: @escaping (CGSize) -> Content) {
+public struct HeaderPhoto: View {
+    public init(itemId: Binding<UUID?>, image: AKImage?, degrees: Double, size: CGSize, topMargin: CGFloat) {
         self.itemId = itemId
         self.image = image
         self.degrees = degrees
         self.size = size
         self.topMargin = topMargin
-        self.hasContent = true
-        self.withoutSize = withoutSize
-        self.content = content
-    }
-
-    public init(itemId: Binding<UUID?>, image: AKImage?, degrees: Double, size: CGSize, topMargin: CGFloat, withoutSize: Bool = false) where Content == EmptyView {
-        self.itemId = itemId
-        self.image = image
-        self.degrees = degrees
-        self.size = size
-        self.topMargin = topMargin
-        self.hasContent = false
-        self.withoutSize = withoutSize
-        self.content = { _ in EmptyView() }
     }
 
     let itemId: Binding<UUID?>
@@ -30,10 +16,6 @@ public struct HeaderPhoto<Content: View>: View {
     let degrees: Double
     let size: CGSize
     let topMargin: CGFloat
-    let withoutSize: Bool
-
-    let hasContent: Bool
-    let content: (CGSize) -> Content
 
     @State private var fadeIn: Bool = false
 
@@ -47,15 +29,11 @@ public struct HeaderPhoto<Content: View>: View {
                     .blur(radius: fadeIn ? 8 : 0)
                     .overlay(alignment: .bottom) {
                         Group {
-                            if hasContent {
-                                content(containerSize(from: image))
-                            } else {
-                                Image(akImage: image)
-                                    .resizable()
-                                    .aspectRatio(contentMode: fadeIn ? .fit : .fill)
-                                    .frame(width: imageSize(from: image).width, height: imageSize(from: image).height)
-                                    .rotationEffect(Angle(degrees: degrees))
-                            }
+                            Image(akImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: fadeIn ? .fit : .fill)
+                                .frame(width: imageSize(from: image).width, height: imageSize(from: image).height)
+                                .rotationEffect(Angle(degrees: degrees))
                         }
                         .frame(width: containerSize(from: image).width, height: containerSize(from: image).height)
                         .clipShape(.rect(topLeadingRadius: 12, topTrailingRadius: 12))

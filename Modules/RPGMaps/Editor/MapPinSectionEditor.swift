@@ -262,9 +262,7 @@ struct PinSectionEditor<EditContent: View, Content: View, ShowLink: View, SwipeA
     }
     
     private func removeSync(indexSet: IndexSet) {
-        Task {
-            await remove(indexSet: indexSet)
-        }
+        remove(indexSet: indexSet)
     }
 }
 
@@ -383,7 +381,7 @@ private extension PinSectionEditor {
         }
     }
     
-    func remove(indexSet: IndexSet) async {
+    func remove(indexSet: IndexSet) {
         let ids = indexSet.map { editControllable.model.mapPins[$0].id }
         removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
 

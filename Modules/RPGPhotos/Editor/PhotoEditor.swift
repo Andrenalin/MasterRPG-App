@@ -21,7 +21,7 @@ struct PhotoEditor: View {
     var body: some View {
         @Bindable var model = editController.model        
         VStack {
-            HeaderPhoto(itemId: imageId, image: editController.cacheItemListModel.imageCache(cacheType: .image, itemId: editController.model.id), degrees: editController.model.degrees, size: size, topMargin: topMargin, withoutSize: true)
+            HeaderPhoto(itemId: imageId, image: editController.cacheItemListModel.imageCache(cacheType: .image, itemId: editController.model.id), degrees: editController.model.degrees, size: size, topMargin: topMargin)
                 .overlay {
                     if isLoading {
                         Color.black.opacity(0.3)
