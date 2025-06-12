@@ -62,8 +62,8 @@ public extension ViewController {
     }
     
     @MainActor
-    func mapImage<Content: View>(for itemId: UUID?, size: CGSize, content: @escaping (AKImage?) -> Content) -> some View {
-        AsyncThumbnail(model: root.gameController.gameItem(for: itemId ?? UUID()), size: size, content: content)
+    func mapImage(for itemId: UUID?, size: CGSize, color: Color) -> some View {
+        AsyncThumbnail(model: root.gameController.gameItem(for: itemId ?? UUID()), size: size, color: color)
             .environment(root)
     }
 }
@@ -153,18 +153,10 @@ public extension ViewController {
         ThumbnailItem(root: root, model: root.itemController.itemOrEmpty(for: id ?? UUID()), size: size, radius: radius, ratio: ratio, highResolution: highResolution)
             .environment(root)
     }
-    
-    @MainActor 
-    func headerView(with id: Binding<UUID?>, size: CGSize, topMargin: CGFloat) -> some View {
-        Group {
-            if let imageId = id.wrappedValue {
-                AsyncPhoto(model: root.itemController.itemOrEmpty(for: imageId)) { image, degress in
-                    HeaderPhoto(itemId: id, image: image, degrees: degress, size: size, topMargin: topMargin)
-                }
-            } else {
-                HeaderPhoto(itemId: id, image: nil, degrees: 0, size: size, topMargin: topMargin)
-            }
-        }
-        .environment(root)
+
+    @MainActor
+    func headerView(id: UUID?, size: CGSize, topMargin: CGFloat) -> some View {
+        AsyncHeaderPhoto(model: root.itemController.itemOrEmpty(for: id ?? UUID()), id: id, size: size, topMargin: topMargin)
+            .environment(root)
     }
 }

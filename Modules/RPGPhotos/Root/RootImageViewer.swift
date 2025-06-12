@@ -9,15 +9,17 @@ struct RootImageViewer: View {
     let toolBarModel: GameToolBarModel
     let isGame: Bool
     let dismiss: (() -> Void)?
-    
+
+    @Environment(PhotoRoot.self) private var root
+
     var body: some View {
-        AsyncPhoto(model: model) { image, photoDegrees in
-            ImageViewer(image: image, photoDegrees: photoDegrees, containerSize: size, toolBarModel: toolBarModel)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(alignment: .bottom) {
-            GameToolBar(model: toolBarModel, hideCloseButton: isGame, dismiss: dismiss)
-                .padding()
-        }
+        let _ = Self._printChanges()
+        AsyncImageViewer(model: model, size: size, toolBarModel: toolBarModel)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(.black.gradient)
+            .overlay(alignment: .bottom) {
+                GameToolBar(model: toolBarModel, hideCloseButton: isGame, dismiss: dismiss)
+                    .padding()
+            }
     }
 }

@@ -3,16 +3,10 @@
 import AndrenalinKit
 import SwiftUI
 
-struct AsyncThumbnail<Content: View>: View {
-    init(model: PhotoModel, size: CGSize, @ViewBuilder content: @escaping (AKImage?) -> Content) {
-        self.model = model
-        self.size = size
-        self.content = content
-    }
-
+struct AsyncThumbnail: View {
     let model: PhotoModel
     let size: CGSize
-    let content: (AKImage?) -> Content
+    let color: Color
 
     @Environment(PhotoRoot.self) private var root
 
@@ -20,31 +14,37 @@ struct AsyncThumbnail<Content: View>: View {
 
     var body: some View {
         @Bindable var model = model
-
-        content(image)
-            .onChange(of: model.fileUrl, initial: true) {
-                loadImage()
+        Group {
+            if let image {
+                Image(akImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                color
             }
+        }
+        .onChange(of: model.fileUrl, initial: true) {
+            loadImage()
+        }
     }
 
     private func loadImage() {
-        Task.detached(priority: .userInitiated) {
-            await root.cacheController.thumbnailId(for: model.id, with: model.fileUrl)
-            let newImage = await root.cacheController.thumbnail(for: model.id)
-            Task { @MainActor in
-                withAnimation { image = newImage }
-            }
+        let cacheController = root.cacheController
+        let id = model.id
+        let fileUrl = model.fileUrl
+        let loaderTask = Task.detached(priority: .userInitiated) {
+            await cacheController.thumbnailId(for: id, with: fileUrl)
+        }
+
+        Task { @MainActor in
+            let _ = await loaderTask.result
+            let newImage = await cacheController.thumbnail(for: id)
+            withAnimation { self.image = newImage }
         }
     }
 }
 
 #Preview {
-    AsyncThumbnail(model: .preview, size: CGSize(width: 128, height: 128)) {
-        if let image = $0 {
-            Image(akImage: image)
-        } else {
-            Text("No image found", bundle: .module)
-        }
-    }
-    .environment(PhotoRoot.preview)
+    AsyncThumbnail(model: .preview, size: CGSize(width: 128, height: 128), color: .gray)
+        .environment(PhotoRoot.preview)
 }

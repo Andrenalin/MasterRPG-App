@@ -21,6 +21,7 @@ struct ImageViewer: View {
     @State private var model: ImageViewerModel
         
     var body: some View {
+        let _ = Self._printChanges()
         ZStack(alignment: .topLeading) {
             Color.clear.ignoresSafeArea()
 
@@ -37,6 +38,9 @@ struct ImageViewer: View {
 #endif
         .onChange(of: toolBarModel.degrees) {
             resetZoom()
+        }
+        .onAppear {
+            resetZoom(withoutAnimation: true)
         }
     }
 }
@@ -68,11 +72,11 @@ private extension ImageViewer {
         ImageViewer.imageSize(image, degrees: toolBarModel.degrees) * model.scale
     }
 
-    func resetZoom() {
+    func resetZoom(withoutAnimation: Bool = false) {
         let (newScale, newOffset): (CGFloat, CGPoint)
         (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: toolBarModel.degrees)
         model.normScale = newScale
-        zoom(scale: newScale, at: newOffset)
+        zoom(scale: newScale, at: newOffset, withoutAnimation: withoutAnimation)
     }
 
     func zooming(on location: CGPoint) {
@@ -82,16 +86,24 @@ private extension ImageViewer {
         } else {
             (newScale, newOffset) = zoomIn(at: location)
         }
-        zoom(scale: newScale, at: newOffset)
+        zoom(scale: newScale, at: newOffset, withoutAnimation: false)
+    }
+
+    func zoom(scale: CGFloat, at offset: CGPoint, withoutAnimation: Bool) {
+        if withoutAnimation {
+            zoom(scale: scale, at: offset)
+        } else {
+            withAnimation {
+                zoom(scale: scale, at: offset)
+            }
+        }
     }
 
     func zoom(scale: CGFloat, at offset: CGPoint) {
-        withAnimation {
-            model.scale = scale
-            model.lastScale = model.scale
-            model.offset = offset
-            model.lastOffset = model.offset
-        }
+        model.scale = scale
+        model.lastScale = model.scale
+        model.offset = offset
+        model.lastOffset = model.offset
     }
 
     func zoomIn(at point: CGPoint) -> (CGFloat, CGPoint) {

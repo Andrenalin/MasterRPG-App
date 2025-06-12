@@ -121,4 +121,3 @@ public struct HeaderPhoto<Content: View>: View {
         return CGSize(width: width, height: height)
     }
 }
-

@@ -19,7 +19,8 @@ struct ValueDetailHeader: View {
     @State private var isReading = false
     
     var body: some View {
-        root.photoRoot.viewController.headerView(with: photoId, size: size, topMargin: topMargin)
+        root.photoRoot.viewController.headerView(id: model.photoId, size: size, topMargin: topMargin)
+
 #if os(iOS)
             .toolbar {
                 ToolbarItem {

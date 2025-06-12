@@ -21,7 +21,7 @@ struct AdventureDetailHeader: View {
     @State private var image: AKImage?
 
     var body: some View {
-        root.photoRoot.viewController.headerView(with: photoId, size: size, topMargin: topMargin)
+        root.photoRoot.viewController.headerView(id: model.photoId, size: size, topMargin: topMargin)
 #if os(iOS)
             .toolbar {
                 ToolbarItem {
@@ -50,9 +50,5 @@ struct AdventureDetailHeader: View {
             isReading.toggle()
 #endif
         }
-    }
-
-    private var photoId: Binding<UUID?> {
-        Binding { model.photoId } set: { _ in }
     }
 }

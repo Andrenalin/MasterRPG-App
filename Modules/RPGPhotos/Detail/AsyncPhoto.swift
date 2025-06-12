@@ -76,4 +76,3 @@ struct AsyncPhoto<Content: View>: View {
     }
     .environment(PhotoRoot.preview)
 }
-

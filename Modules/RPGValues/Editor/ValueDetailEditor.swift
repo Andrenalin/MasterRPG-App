@@ -44,10 +44,6 @@ struct ValueDetailEditor: View {
         .modifier(ChangeGeneratorEditorViewModifier(model: changeGeneratorModel))
         .focusedSceneValue(\.selectedValue, $model.id)
     }
-    
-    private var photoId: Binding<UUID> {
-        Binding { model.photoId ?? UUID() } set: { _ in }
-    }
 }
 
 #Preview {
