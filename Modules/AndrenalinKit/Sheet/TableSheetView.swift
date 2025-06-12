@@ -20,6 +20,7 @@ struct TableSheetView<ImageContent: View>: View {
 
             if showImage {
                 imageContent(CGSize(width: 360, height: 256))
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
 
             listContentView

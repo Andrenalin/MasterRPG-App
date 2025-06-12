@@ -68,13 +68,8 @@ public extension ViewController {
 
 extension ViewController {
     @MainActor @ViewBuilder
-    func photo(for itemId: UUID, useGame: Bool) -> some View {
-        root.photoRoot.viewController.photoView(for: root.itemController.itemOrEmpty(for: itemId).photoId, useGame: useGame) { image, degrees in
-            Image(akImage: image)
-                .resizable()
-                .rotationEffect(Angle(degrees: degrees))
-                .id(root.itemController.itemOrEmpty(for: itemId).photoId)
-        }
+    func photo(for itemId: UUID, useGame: Bool, size: CGSize) -> some View {
+        root.photoRoot.viewController.photoDetailView(for: itemId, useGame: useGame, size: size, contentMode: .fill)
     }
 }
 

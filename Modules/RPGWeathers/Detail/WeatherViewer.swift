@@ -74,9 +74,8 @@ struct WeatherViewer: View {
 
     var body: some View {
         ZStack {
-            if model.photoId != nil {
-                root.viewController.photo(for: model.id, useGame: useGame)
-                    .frame(width: size.width > 0 ? size.width : 320, height: size.height > 0 ? size.height : 64)
+            if let photoId = model.photoId {
+                root.viewController.photo(for: photoId, useGame: useGame, size: containerSize)
             }
 
             if isAnimating || useGame {
@@ -96,7 +95,7 @@ struct WeatherViewer: View {
                 }
             }
         }
-        .frame(width: size.width > 0 ? size.width : 320, height: size.height > 0 ? size.height : 64)
+        .frame(width: containerSize.width, height: containerSize.height)
         .overlay(alignment: .bottomTrailing) {
             ImageOverlayButton(icon: "film\(isAnimating ? ".fill" : "")") {
                 withAnimation { isAnimating.toggle() }
@@ -115,10 +114,14 @@ struct WeatherViewer: View {
             .ignoresSafeArea(.container)
         #endif
         }
-        .frame(width: size.width > 0 ? size.width : 320, height: size.height > 0 ? size.height : 64)
+        .frame(width: containerSize.width, height: containerSize.height)
         .onDisappear {
             isAnimating = false
         }
+    }
+
+    var containerSize: CGSize {
+        CGSize(width: size.width > 0 ? size.width : 320, height: size.height > 0 ? size.height : 64)
     }
 }
 

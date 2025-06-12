@@ -113,7 +113,6 @@ public extension ViewController {
 
     @MainActor
     func linkWindow() -> some View {
-//        RootLinkWindow(editController: root.editController(type: .link), tabId: ViewController.linkTabId, selection: false)
         RootNaviList(root: root, tabId: ViewController.linkTabId)
             .itemSplitViewSizeMode(.small)
             .itemListConfiguration(canAdd: false)
@@ -139,6 +138,14 @@ public extension ViewController {
         let id = itemId ?? UUID()
         let model = useGame ? root.gameController.gameItem(for: id) : root.itemController.itemOrEmpty(for: id)
         return AsyncPhoto(model: model, content: content)
+            .environment(root)
+    }
+
+    @MainActor
+    func photoDetailView(for itemId: UUID?, useGame: Bool, size: CGSize, contentMode: ContentMode = .fit) -> some View {
+        let id = itemId ?? UUID()
+        let model = useGame ? root.gameController.gameItem(for: id) : root.itemController.itemOrEmpty(for: id)
+        return AsyncPhotoViewer(model: model, size: size, contentMode: contentMode)
             .environment(root)
     }
 

@@ -57,14 +57,7 @@ private extension MapReader {
             .font(.largeTitle)
             .padding(.top, 8)
 
-            root.photoRoot.viewController.photoView(for: map.photoId, useGame: false) { image, photoDegrees in
-                Image(akImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .rotationEffect(Angle(degrees: photoDegrees))
-                    .cornerRadius(16)
-                    .frame(width: 256, height: 256, alignment: .center)
-            }
+            root.photoRoot.viewController.photoDetailView(for: map.photoId, useGame: false, size: CGSize(width: 256, height: 256))
         }
     }
 

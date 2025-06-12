@@ -30,14 +30,7 @@ struct CharacterSheet: View {
 
 private extension CharacterSheet {
     func imageView(size: CGSize) -> some View {
-        root.photoRoot.viewController.photoView(for: model.photoId, useGame: false) { image, photoDegrees in
-            Image(akImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .rotationEffect(Angle(degrees: photoDegrees))
-                .clipShape(.rect(cornerRadius: 16))
-                .frame(width: size.width, height: size.height, alignment: .center)
-        }
+        root.photoRoot.viewController.photoDetailView(for: model.photoId, useGame: false, size: size)
     }
 }
 
