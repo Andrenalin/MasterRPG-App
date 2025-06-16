@@ -6,11 +6,9 @@ internal import UniformTypeIdentifiers
 
 struct SpaceEditor: View {
     let editController: EditController
-    let size: CGSize
-    let topMargin: CGFloat
-    let inline: Bool
-    
+
     @Environment(SpaceRoot.self) private var root
+    @Environment(DetailHeaderModel.self) private var headerModel
 
     @State private var thumbnail: AKImage?
     @State private var showImporter = false
@@ -19,12 +17,12 @@ struct SpaceEditor: View {
         @Bindable var model = editController.model
         
         VStack {
-            HeaderPhoto(itemId: imageId, image: thumbnail, degrees: 0, size: size, topMargin: topMargin)
+            HeaderPhoto(itemId: imageId, image: thumbnail, degrees: 0, size: headerModel.size, topMargin: headerModel.topSafeAreaHeight)
 #if !os(tvOS)
 #if os(iOS)
             .toolbar {
                 ToolbarItem {
-                    if inline == false {
+                    if headerModel.isInline == false {
                         SpaceQuickLook(root: root, item: ItemSelection(itemId: model.id, entryId: nil), startLoading: false, gameMode: false, dismiss: nil)
                     }
                 }
@@ -36,7 +34,7 @@ struct SpaceEditor: View {
             }
 #endif
                 .overlay(alignment: .bottomTrailing) {
-                    if inline == false {
+                    if headerModel.isInline == false {
                         SpaceImporterView(showImporter: $showImporter)
                             .padding([.trailing, .bottom])
                     }
@@ -81,7 +79,7 @@ struct SpaceEditor: View {
 }
 
 #Preview {
-    SpaceEditor(editController: .preview, size: CGSize(width: 300, height: 200), topMargin: 64, inline: false)
+    SpaceEditor(editController: .preview)
         .environment(SpaceRoot.preview)
-
+        .environment(DetailHeaderModel(size: CGSize(width: 500, height: 300), topSafeAreaHeight: 0, isInline: false))
 }

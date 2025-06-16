@@ -2,57 +2,77 @@
 
 import SwiftUI
 
+@MainActor @Observable
+public final class DetailHeaderModel {
+    public init(size: CGSize = CGSize(width: 320, height: 150), topSafeAreaHeight: CGFloat = 60, isInline: Bool = false) {
+        self.size = size
+        self.topSafeAreaHeight = topSafeAreaHeight
+        self.isInline = isInline
+    }
+    public var size: CGSize
+    public var topSafeAreaHeight: CGFloat
+    public var isInline: Bool
+}
+
+@MainActor @Observable
+public final class ExternalHeaderModel {
+    public init(showExtHeader: Bool = false) {
+        self.showExtHeader = showExtHeader
+    }
+    public var showExtHeader: Bool
+}
+
 public struct DetailEditor<Content: View, ExtContent: View, Header: View, ExtentedHeader: View>: View {
-    public init(editController: any EditControllable, @ViewBuilder contentView: @escaping () -> Content, @ViewBuilder headerView: @escaping (CGSize, CGFloat, Bool) -> Header, @ViewBuilder extHeaderView: @escaping (@escaping (() -> Void)) -> ExtentedHeader, @ViewBuilder extContentView: @escaping () -> ExtContent, extContentHeight: @escaping (CGFloat) -> CGFloat, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) {
+    public init(editController: any EditControllable, @ViewBuilder contentView: () -> Content, @ViewBuilder headerView: () -> Header, @ViewBuilder extHeaderView: () -> ExtentedHeader, @ViewBuilder extContentView: () -> ExtContent = EmptyView.init, extContentHeight: @escaping (CGFloat) -> CGFloat, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) {
         self.editController = editController
-        self.contentView = contentView
-        self.headerView = headerView
-        self.extHeaderView = extHeaderView
+        self.contentView = contentView()
+        self.headerView = headerView()
+        self.extHeaderView = extHeaderView()
         self.hasExtHeaderView = true
-        self.extContentView = extContentView
+        self.extContentView = extContentView()
         self.extContentHeight = extContentHeight
         self.heightCalculator = heightCalculator
     }
     
-    public init(editController: any EditControllable, @ViewBuilder contentView: @escaping () -> Content, @ViewBuilder headerView: @escaping (CGSize, CGFloat, Bool) -> Header, @ViewBuilder extContentView: @escaping () -> ExtContent, extContentHeight: @escaping (CGFloat) -> CGFloat, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) where ExtentedHeader == EmptyView  {
+    public init(editController: any EditControllable, @ViewBuilder contentView: @escaping () -> Content, @ViewBuilder headerView: () -> Header, @ViewBuilder extContentView: () -> ExtContent = EmptyView.init, extContentHeight: @escaping (CGFloat) -> CGFloat, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) where ExtentedHeader == EmptyView  {
         self.editController = editController
-        self.contentView = contentView
-        self.headerView = headerView
-        self.extHeaderView = { _ in EmptyView() }
+        self.contentView = contentView()
+        self.headerView = headerView()
+        self.extHeaderView = { EmptyView() }()
         self.hasExtHeaderView = false
-        self.extContentView = extContentView
+        self.extContentView = extContentView()
         self.extContentHeight = extContentHeight
         self.heightCalculator = heightCalculator
     }
     
-    public init(editController: any EditControllable, @ViewBuilder contentView: @escaping () -> Content, @ViewBuilder headerView: @escaping (CGSize, CGFloat, Bool) -> Header, @ViewBuilder extHeaderView: @escaping (@escaping (() -> Void)) -> ExtentedHeader, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) where ExtContent == EmptyView {
+    public init(editController: any EditControllable, @ViewBuilder contentView: () -> Content, @ViewBuilder headerView: () -> Header, @ViewBuilder extHeaderView: () -> ExtentedHeader, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) where ExtContent == EmptyView {
         self.editController = editController
-        self.contentView = contentView
-        self.headerView = headerView
-        self.extHeaderView = extHeaderView
+        self.contentView = contentView()
+        self.headerView = headerView()
+        self.extHeaderView = extHeaderView()
         self.hasExtHeaderView = true
-        self.extContentView = { EmptyView() }
+        self.extContentView = { EmptyView() }()
         self.extContentHeight = { $0 }
         self.heightCalculator = heightCalculator
     }
     
-    public init(editController: any EditControllable, @ViewBuilder contentView: @escaping () -> Content, @ViewBuilder headerView: @escaping (CGSize, CGFloat, Bool) -> Header, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) where ExtContent == EmptyView, ExtentedHeader == EmptyView {
+    public init(editController: any EditControllable, @ViewBuilder contentView: () -> Content, @ViewBuilder headerView: () -> Header, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) where ExtContent == EmptyView, ExtentedHeader == EmptyView {
         self.editController = editController
-        self.contentView = contentView
-        self.headerView = headerView
-        self.extHeaderView = { _ in EmptyView() }
+        self.contentView = contentView()
+        self.headerView = headerView()
+        self.extHeaderView = { EmptyView() }()
         self.hasExtHeaderView = false
-        self.extContentView = { EmptyView() }
+        self.extContentView = { EmptyView() }()
         self.extContentHeight = { $0 }
         self.heightCalculator = heightCalculator
     }
     
     let editController: any EditControllable
-    let contentView: () -> Content
-    let headerView: (CGSize, CGFloat, Bool) -> Header
-    let extHeaderView: (@escaping (() -> Void)) -> ExtentedHeader
+    let contentView: Content
+    let headerView: Header
+    let extHeaderView: ExtentedHeader
     let hasExtHeaderView: Bool
-    let extContentView: () -> ExtContent
+    let extContentView: ExtContent
     let extContentHeight: (CGFloat) -> CGFloat
     let heightCalculator: (CGSize) -> (CGFloat, CGFloat)
     
@@ -67,9 +87,12 @@ public struct DetailEditor<Content: View, ExtContent: View, Header: View, Extent
     
     @State private var scrollPositionY: CGFloat = 0
     
-    @State private var showExtHeader = false
     @State private var keyBoardShown = false
-    
+
+    @State private var detailHeaderModel = DetailHeaderModel()
+    @State private var inlineDetailHeaderModel = DetailHeaderModel(isInline: true)
+    @State private var externalHeaderModel = ExternalHeaderModel()
+
     public var body: some View {
         let _ = Self._printChanges()
         GeometryReader { geometry in
@@ -96,6 +119,8 @@ public struct DetailEditor<Content: View, ExtContent: View, Header: View, Extent
                     scrollPositionY = newValue
 #else
                     scrollPositionY = newValue
+                    updateDetailHeaderModel(geometry: geometry)
+                    updateInlineDetailHeaderModel(geometry: geometry)
 #endif
                 }
                 .scrollIndicatorsFlash(onAppear: true)
@@ -143,17 +168,15 @@ public struct DetailEditor<Content: View, ExtContent: View, Header: View, Extent
                 UserActivity.addPayLoad(for: userActivity, title: "\(itemListModel.listTitleName): \(name))", module: editController.itemControllable.itemDataModel.networkModule, itemId: editorModel.currentListItem?.model.itemId ?? UUID(), childId: nil)
             }
             .overlay(alignment: .bottom) {
-                if showExtHeader {
-                    extHeaderView {
-                        extHeader(toggle: false, small: nil)
-                    }
-                    .background(.background)
-                    .shadow(radius: 8)
-                    .frame(height: geometry.size.height + geometry.safeAreaInsets.top - headerHeight(geometry: geometry))
-                    .transition(.move(edge: .bottom))
+                if externalHeaderModel.showExtHeader {
+                    extHeaderView
+                        .background(.background)
+                        .shadow(radius: 8)
+                        .frame(height: geometry.size.height + geometry.safeAreaInsets.top - headerHeight(geometry: geometry))
+                        .transition(.move(edge: .bottom))
                 }
             }
-            .animation(.spring(duration: 0.5).delay(0.15), value: showExtHeader)
+            .animation(.spring(duration: 0.5).delay(0.15), value: externalHeaderModel.showExtHeader)
             .onKeyboardShow { isShown in
                 withAnimation { keyBoardShown = isShown }
             }
@@ -168,16 +191,16 @@ private extension DetailEditor {
 #if !os(macOS)
             Group {
                 if keyBoardShown {
-                    let height = heightCalculator(geometry.size).1 + valueFor(iOS: widemode == .small ? 44 : topSafeArea(from: geometry.safeAreaInsets.top), macOS: 0, tvOS: 0, visionOS: 0)
-                    headerView(CGSize(width: geometry.size.width - valueFor(iOS: 8, macOS: 24, tvOS: 8, visionOS: 8), height: height), topSafeArea(from: geometry.safeAreaInsets.top), true)
+                    headerView
+                        .environment(inlineDetailHeaderModel)
                 } else {
                     Color.clear
                 }
             }
-            .frame(height: heightCalculator(geometry.size).1 + valueFor(iOS: widemode == .small ? 44 : topSafeArea(from: geometry.safeAreaInsets.top), macOS: 0, tvOS: 0, visionOS: 0))
+            .frame(height: inlineDetailHeaderModel.size.height)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 #endif
-            contentView()
+            contentView
         }
         
 #if os(macOS)
@@ -191,16 +214,17 @@ private extension DetailEditor {
     
     @ViewBuilder
     func headerContent(geometry: GeometryProxy) -> some View {
-        let height = headerHeight(geometry: geometry) + valueFor(iOS: 0, macOS: 0, tvOS: 0, visionOS: 44)
-        headerView(CGSize(width: geometry.size.width - valueFor(iOS: widemode == .small ? 0 : 8, macOS: 24, tvOS: 8, visionOS: 0), height: height), topSafeArea(from: geometry.safeAreaInsets.top), false)
+        headerView
+            .environment(detailHeaderModel)
+
             .contentShape(.rect)
 #if !os(tvOS)
             .onTapGesture(count: 1) {
                 guard hasExtHeaderView else { return }
-                extHeader(toggle: !showExtHeader, small: height)
+                externalHeaderModel.showExtHeader.toggle()
             }
 #endif
-            .frame(height: height, alignment: .bottom)
+            .frame(height: detailHeaderModel.size.height, alignment: .bottom)
             .background {
                 UnevenRoundedRectangle(bottomLeadingRadius: 24, bottomTrailingRadius: 24, style: .continuous)
                     .fill(fillDark())
@@ -286,10 +310,6 @@ private extension DetailEditor {
         editController.itemControllable.itemOrEmpty(for: editController.editorModel.currentItemId ?? UUID()).name
     }
     
-    func extHeader(toggle: Bool, small headerHeight: CGFloat?) {
-        withAnimation { showExtHeader = toggle }
-    }
-    
     func fillDark() -> some ShapeStyle {
 #if os(iOS)
         if colorScheme == .dark {
@@ -301,7 +321,29 @@ private extension DetailEditor {
         BackgroundStyle.background
 #endif
     }
-    
+
+    func updateInlineDetailHeaderModel(geometry: GeometryProxy) {
+        let height = heightCalculator(geometry.size).1 + valueFor(iOS: widemode == .small ? 44 : topSafeArea(from: geometry.safeAreaInsets.top), macOS: 0, tvOS: 0, visionOS: 0)
+        let offset = CGFloat(valueFor(iOS: 8, macOS: 24, tvOS: 8, visionOS: 8))
+
+        let size = CGSize(width: geometry.size.width - offset, height: height)
+        let topSafeAreaHeight = topSafeArea(from: geometry.safeAreaInsets.top)
+
+        inlineDetailHeaderModel.size <=> size
+        inlineDetailHeaderModel.topSafeAreaHeight <=> topSafeAreaHeight
+    }
+
+    func updateDetailHeaderModel(geometry: GeometryProxy) {
+        let height = headerHeight(geometry: geometry) + valueFor(iOS: 0, macOS: 0, tvOS: 0, visionOS: 44)
+        let offset = CGFloat(valueFor(iOS: widemode == .small ? 0 : 8, macOS: 24, tvOS: 8, visionOS: 0))
+
+        let size = CGSize(width: geometry.size.width - offset, height: height)
+        let topSafeAreaHeight = topSafeArea(from: geometry.safeAreaInsets.top)
+
+        detailHeaderModel.size <=> size
+        detailHeaderModel.topSafeAreaHeight <=> topSafeAreaHeight
+    }
+
     func topSafeArea(from height: CGFloat) -> CGFloat {
         #if os(iOS)
         UIDevice.current.userInterfaceIdiom == .phone ? height : height / 2

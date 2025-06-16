@@ -30,8 +30,8 @@ struct DiceDetailEditor: View {
             RerollEditor(editController: editController)
 
             SpecialOptionEditor(editController: editController)
-        } headerView: { size, safeTopMargin, isInline in
-            DiceHeader(editController: editController, size: size, topMargin: safeTopMargin, inline: isInline)
+        } headerView: {
+            DiceHeader(editController: editController)
 #if !os(macOS)
                 .ignoresSafeArea(.container, edges: .top)
 #endif

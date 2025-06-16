@@ -7,24 +7,22 @@ import RPGPhotos
 @MainActor
 struct ValueDetailHeader: View {
     let model: ValueModel
-    let size: CGSize
-    let topMargin: CGFloat
-    let inline: Bool
-    
+
 #if os(visionOS) || os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
     @Environment(ValueRoot.self) private var root
-    
+    @Environment(DetailHeaderModel.self) private var headerModel
+
     @State private var isReading = false
     
     var body: some View {
-        root.photoRoot.viewController.headerView(id: model.photoId, size: size, topMargin: topMargin)
+        root.photoRoot.viewController.headerView(id: model.photoId, size: headerModel.size, topMargin: headerModel.topSafeAreaHeight)
 
 #if os(iOS)
             .toolbar {
                 ToolbarItem {
-                    if inline == false {
+                    if headerModel.isInline == false {
                         overlayButton
                     }
                 }
@@ -57,7 +55,8 @@ struct ValueDetailHeader: View {
 }
 
 #Preview {
-    ValueDetailHeader(model: .preview, size: CGSize(width: 320, height: 600), topMargin: 64, inline: false)
+    ValueDetailHeader(model: .preview)
         .environment(ValueRoot.preview)
-    
+        .environment(DetailHeaderModel(size: CGSize(width: 375, height: 200), topSafeAreaHeight: 0, isInline: false))
+
 }

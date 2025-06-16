@@ -26,10 +26,10 @@ struct ValueDetailEditor: View {
 #if !os(macOS)
             ValueEntrySectionEditor(editController: editController, changeChildModel: changeChildModel, changeGeneratorModel: changeGeneratorModel)
 #endif
-        } headerView: { size, safeTopMargin, isInline in
-            ValueDetailHeader(model: model, size: size, topMargin: safeTopMargin, inline: isInline)
-        } extHeaderView: { dismiss in
-            CharacterSheet(model: editController.model, showTopImage: false, dismissAction: dismiss)
+        } headerView: {
+            ValueDetailHeader(model: model)
+        } extHeaderView: {
+            ValueExternalHeader(editController: editController)
         } extContentView: {
 #if !os(tvOS)
             ValueEntryEditor(root: root, editController: editController, changeChildModel: changeChildModel)
@@ -46,6 +46,17 @@ struct ValueDetailEditor: View {
     }
 }
 
+struct ValueExternalHeader: View {
+    let editController: EditController
+
+    @Environment(ExternalHeaderModel.self) private var externalHeaderModel
+
+    var body: some View {
+        CharacterSheet(model: editController.model, showTopImage: false) {
+            externalHeaderModel.showExtHeader = false
+        }
+    }
+}
 #Preview {
     ValueDetailEditor(editController: .preview, model: .preview)
         .environment(ValueRoot.preview)

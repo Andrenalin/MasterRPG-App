@@ -20,15 +20,14 @@ struct PdfDetailEditor: View {
 #if !os(macOS)
             PdfEntrySectionEditor(editController: editController)
 #endif
-        } headerView: { size, safeTopMargin, isInline in
-            PdfEditor(editController: editController, size: size, topMargin: safeTopMargin, inline: isInline)
+        } headerView: {
+            PdfEditor(editController: editController)
 #if !os(macOS)
                 .ignoresSafeArea(.container, edges: .top)
 #endif
                 .id(editController.model.id)
-        } extHeaderView: { dismiss in
-            root.viewController.viewPdfInline(with: editController.model.id, withoutBookmark: false, dismissAction: dismiss)
-                .id(editController.model.id)
+        } extHeaderView: {
+            PdfExternalHeader(editController: editController)
         } extContentView: {
 #if !os(tvOS)
             PdfEntryEditor(root: root, editController: editController)
@@ -41,6 +40,20 @@ struct PdfDetailEditor: View {
         }
 
         .focusedSceneValue(\.selectedPdf, $model.id)
+    }
+}
+
+struct PdfExternalHeader: View {
+    let editController: EditController
+
+    @Environment(PdfRoot.self) private var root
+    @Environment(ExternalHeaderModel.self) private var externalHeaderModel
+
+    var body: some View {
+        root.viewController.viewPdfInline(with: editController.model.id, withoutBookmark: false) {
+            externalHeaderModel.showExtHeader = false
+        }
+        .id(editController.model.id)
     }
 }
 

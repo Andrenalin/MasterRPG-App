@@ -21,21 +21,17 @@ struct WeatherDetailEditor: View {
             PhotoSelectionEditor(editController: editController)
             
             WeatherSectionEditor(editController: editController)
-        } headerView: { size, safeTopMargin, isInline in
-            WeatherEditHeader(editController: editController, size: size, topMargin: safeTopMargin, inline: isInline)
+        } headerView: {
+            WeatherEditHeader(editController: editController)
 #if !os(macOS)
                 .ignoresSafeArea(.container, edges: .top)
 #endif
                 .id(model.id)
-//        } extHeaderView: { dismiss in
+//        } extHeaderView: {
 //            WeatherViewer(model: model, size: CGSize(width: screenSize.size.width, height: screenSize.size.height), useGame: true)
-//                .onTapGesture {
-//                    dismiss()
-//                }
         } heightCalculator: { size in
             (144, min(size.height * 0.35, 400))
         }
-                
         .focusedSceneValue(\.selectedWeather, $model.id)
     }
 }

@@ -6,18 +6,16 @@ import SwiftUI
 struct AudioDetailHeader: View {
     let editController: EditController
     let model: AudioModel
-    let size: CGSize
-    let topMargin: CGFloat
     @Binding var isPlayerShown: Bool
-    let inline: Bool
-    
+
     @Environment(AudioRoot.self) private var root
-    
+    @Environment(DetailHeaderModel.self) private var headerModel
+
     var body: some View {
         VStack {
             Image(systemName: NetworkModules.audio.icon)
-                .font(.system(size: size.height - valueFor(iOS: topMargin, macOS: 16, tvOS: topMargin, visionOS: topMargin)))
-                .frame(height: size.height - valueFor(iOS: topMargin, macOS: 16, tvOS: topMargin, visionOS: topMargin), alignment: .center)
+                .font(.system(size: headerModel.size.height - valueFor(iOS: headerModel.topSafeAreaHeight, macOS: 16, tvOS: headerModel.topSafeAreaHeight, visionOS: headerModel.topSafeAreaHeight)))
+                .frame(height: headerModel.size.height - valueFor(iOS: headerModel.topSafeAreaHeight, macOS: 16, tvOS: headerModel.topSafeAreaHeight, visionOS: headerModel.topSafeAreaHeight), alignment: .center)
                 .foregroundStyle(.white)
                 .opacity(0.3)
         }
@@ -30,7 +28,7 @@ struct AudioDetailHeader: View {
 #if os(iOS)
         .toolbar {
             ToolbarItem {
-                if inline == false {
+                if headerModel.isInline == false {
                     mainToolbarButton
                 }
             }
@@ -41,8 +39,8 @@ struct AudioDetailHeader: View {
                 .padding(.trailing, valueFor(iOS: 16, macOS: 16, tvOS: 16, visionOS: 24))
         }
 #endif
-        .padding(.top, valueFor(iOS: topMargin / 2, macOS: 0, tvOS: topMargin / 2, visionOS: topMargin / 2))
-        .frame(height: size.height, alignment: .center)
+        .padding(.top, valueFor(iOS: headerModel.topSafeAreaHeight / 2, macOS: 0, tvOS: headerModel.topSafeAreaHeight / 2, visionOS: headerModel.topSafeAreaHeight / 2))
+        .frame(height: headerModel.size.height, alignment: .center)
     }
     
     private var mainToolbarButton: some View {

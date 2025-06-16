@@ -21,13 +21,13 @@ struct TableDetailEditor: View {
 #if !os(macOS)
             TableEntrySectionEditor(editController: editController)
 #endif
-        } headerView: { size, safeTopMargin, isInline in
-            TableDetailHeader(editController: editController, model: model, size: size, topMargin: safeTopMargin, inline: isInline)
+        } headerView: {
+            TableDetailHeader(editController: editController, model: model)
 #if !os(macOS)
                 .ignoresSafeArea(.container, edges: .top)
 #endif
-        } extHeaderView: { dismiss in
-            TableSheet(model: editController.model, showTopImage: false, dismissAction: dismiss)
+        } extHeaderView: {
+            TableExternalHeader(editController: editController)
         } extContentView: {
 #if !os(tvOS)
             TableEntryEditor(root: root, editController: editController)
@@ -39,6 +39,18 @@ struct TableDetailEditor: View {
             (96, 96)
         }
         .focusedSceneValue(\.selectedTable, $model.id)
+    }
+}
+
+struct TableExternalHeader: View {
+    let editController: EditController
+
+    @Environment(ExternalHeaderModel.self) private var externalHeaderModel
+
+    var body: some View {
+        TableSheet(model: editController.model, showTopImage: false) {
+            externalHeaderModel.showExtHeader = false
+        }
     }
 }
 

@@ -2,13 +2,13 @@
 
 import SwiftUI
 
-public protocol StoreManiplable {
+public protocol StoreManiplable: Sendable {
     func resetData() async
     func validate()
 }
 
 public struct SettingsView<Store, ImportContent: View>: View where Store: StoreManiplable {
-    public init(store: Store, exportController: any ExportControllable, importController: any ImportControllable, audioFileStore: FileUrlDataController, pdfFileStore: FileUrlDataController, photoFileStore: FileUrlDataController, spaceFileStore: FileUrlDataController, @ViewBuilder importContent: @escaping () -> ImportContent) {
+    public init(store: Store, exportController: any ExportControllable, importController: any ImportControllable, audioFileStore: FileUrlDataController, pdfFileStore: FileUrlDataController, photoFileStore: FileUrlDataController, spaceFileStore: FileUrlDataController, @ViewBuilder importContent: () -> ImportContent) {
         self.store = store
         self.exportController = exportController
         self.importController = importController
@@ -16,7 +16,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
         self.pdfFileStore = pdfFileStore
         self.photoFileStore = photoFileStore
         self.spaceFileStore = spaceFileStore
-        self.importContentView = importContent
+        self.importContentView = importContent()
     }
     
     let store: Store
@@ -28,7 +28,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
     let photoFileStore: FileUrlDataController
     let spaceFileStore: FileUrlDataController
     
-    let importContentView: () -> ImportContent
+    let importContentView: ImportContent
     
     @State private var showResetAlert = false
     
@@ -61,7 +61,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
                     Text("Import GMZ data files you got from friends or others", bundle: .module)
                 }
                 
-                importContentView()
+                importContentView
                 
                 SectionGroupEditorView {
                     Button {

@@ -28,11 +28,10 @@ struct MapDetailEditor: View {
             
             MapPinSectionEditor(editController: editController)
 #endif
-        } headerView: { size, safeTopMargin, isInline in
-            AnimatedHeaderMap(editController: editController, size: size, topMargin: safeTopMargin, inline: isInline)
-        } extHeaderView: { dismiss in
-            MapSheet(model: editController.model, showTopImage: false, dismissAction: dismiss)
-                .environment(\.showGame, false)
+        } headerView: {
+            AnimatedHeaderMap(editController: editController)
+        } extHeaderView: {
+            MapExternalHeader(editController: editController)
         } extContentView: {
 #if !os(tvOS)
             MapEntryEditor(root: root, editController: editController)
@@ -46,6 +45,19 @@ struct MapDetailEditor: View {
             (144, min(size.height * 0.35, 400))
         }
         .focusedSceneValue(\.selectedMap, $model.id)
+    }
+}
+
+struct MapExternalHeader: View {
+    let editController: EditController
+
+    @Environment(ExternalHeaderModel.self) private var externalHeaderModel
+
+    var body: some View {
+        MapSheet(model: editController.model, showTopImage: false) {
+            externalHeaderModel.showExtHeader = false
+        }
+        .environment(\.showGame, false)
     }
 }
 

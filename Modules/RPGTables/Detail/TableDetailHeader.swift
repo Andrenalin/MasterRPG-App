@@ -6,22 +6,20 @@ import SwiftUI
 struct TableDetailHeader: View {
     let editController: EditController
     let model: TableModel
-    let size: CGSize
-    let topMargin: CGFloat
-    let inline: Bool
-    
+
 #if os(visionOS) || os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
     @Environment(TableRoot.self) private var root
-    
+    @Environment(DetailHeaderModel.self) private var headerModel
+
     @State private var isReading = false
     
     var body: some View {
         VStack {
             Image(systemName: NetworkModules.table.icon)
-                .font(.system(size: size.height - valueFor(iOS: topMargin, macOS: 16, tvOS: topMargin, visionOS: topMargin)))
-                .frame(height: size.height - valueFor(iOS: topMargin, macOS: 16, tvOS: topMargin, visionOS: topMargin), alignment: .center)
+                .font(.system(size: headerModel.size.height - valueFor(iOS: headerModel.topSafeAreaHeight, macOS: 16, tvOS: headerModel.topSafeAreaHeight, visionOS: headerModel.topSafeAreaHeight)))
+                .frame(height: headerModel.size.height - valueFor(iOS: headerModel.topSafeAreaHeight, macOS: 16, tvOS: headerModel.topSafeAreaHeight, visionOS: headerModel.topSafeAreaHeight), alignment: .center)
                 .foregroundStyle(.white)
                 .opacity(0.3)
         }
@@ -34,7 +32,7 @@ struct TableDetailHeader: View {
 #if os(iOS)
         .toolbar {
             ToolbarItem {
-                if inline == false {
+                if headerModel.isInline == false {
                     overlayButton
                 }
             }
@@ -46,8 +44,8 @@ struct TableDetailHeader: View {
                 .padding(.trailing, valueFor(iOS: 16, macOS: 16, tvOS: 16, visionOS: 24))
         }
 #endif
-        .padding(.top, valueFor(iOS: topMargin / 2, macOS: 0, tvOS: topMargin / 2, visionOS: topMargin / 2))
-        .frame(height: size.height, alignment: .center)
+        .padding(.top, valueFor(iOS: headerModel.topSafeAreaHeight / 2, macOS: 0, tvOS: headerModel.topSafeAreaHeight / 2, visionOS: headerModel.topSafeAreaHeight / 2))
+        .frame(height: headerModel.size.height, alignment: .center)
         .sheetFullScreen(isPresented: $isReading) {
             if isReading {
                 tableSheetView
@@ -74,7 +72,7 @@ struct TableDetailHeader: View {
 }
 
 #Preview {
-    TableDetailHeader(editController: .preview, model: .preview, size: CGSize(width: 320, height: 600), topMargin: 64, inline: false)
+    TableDetailHeader(editController: .preview, model: .preview)
         .environment(TableRoot.preview)
-    
+        .environment(DetailHeaderModel(size: CGSize(width: 375, height: 64), topSafeAreaHeight: 0))
 }

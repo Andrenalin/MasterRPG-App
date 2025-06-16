@@ -6,13 +6,11 @@ import UniformTypeIdentifiers
 
 struct PhotoEditor: View {
     let editController: EditController
-    let size: CGSize
-    let topMargin: CGFloat
-    let inline: Bool
-    
+
     @Environment(PhotoRoot.self) private var root
     @Environment(ListModel.self) private var itemListModel
-    
+    @Environment(DetailHeaderModel.self) private var headerModel
+
     @State private var showImporter = false
     
     @State private var lastFileUrl: FileUrl?
@@ -21,7 +19,7 @@ struct PhotoEditor: View {
     var body: some View {
         @Bindable var model = editController.model        
         VStack {
-            HeaderPhoto(itemId: imageId, image: editController.cacheItemListModel.imageCache(cacheType: .image, itemId: editController.model.id), degrees: editController.model.degrees, size: size, topMargin: topMargin)
+            HeaderPhoto(itemId: imageId, image: editController.cacheItemListModel.imageCache(cacheType: .image, itemId: editController.model.id), degrees: editController.model.degrees, size: headerModel.size, topMargin: headerModel.topSafeAreaHeight)
                 .overlay {
                     if isLoading {
                         Color.black.opacity(0.3)
@@ -37,7 +35,7 @@ struct PhotoEditor: View {
 #if os(iOS)
                 .toolbar {
                     ToolbarItem {
-                        if inline == false {
+                        if headerModel.isInline == false {
                             photoButton
                         }
                     }
@@ -50,7 +48,7 @@ struct PhotoEditor: View {
 #endif
 #if !os(tvOS)
                 .overlay(alignment: .bottomTrailing) {
-                    if inline == false {
+                    if headerModel.isInline == false {
                         PhotoImporterView(showImporter: $showImporter, updateImage: updateImage(image:))
                         .padding([.trailing, .bottom])
                     }
@@ -121,6 +119,7 @@ private extension PhotoEditor {
 }
 
 #Preview {
-    PhotoEditor(editController: .preview, size: CGSize(width: 300, height: 200), topMargin: 64, inline: false)
+    PhotoEditor(editController: .preview)
         .environment(PhotoRoot.preview)
+        .environment(DetailHeaderModel())
 }

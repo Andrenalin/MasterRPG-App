@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-public protocol ItemLinkEditable {
+public protocol ItemLinkEditable: Sendable {
     var textLinkContent: String { get }
 }
 

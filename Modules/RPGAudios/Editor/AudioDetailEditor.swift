@@ -34,8 +34,8 @@ struct AudioDetailEditor: View {
             }
             
             AudiosSectionEditor(editController: editController)
-        } headerView: { size, safeTopMargin, isInline in
-            AudioDetailHeader(editController: editController, model: model, size: size, topMargin: safeTopMargin, isPlayerShown: $isPlayerShown, inline: isInline)
+        } headerView: {
+            AudioDetailHeader(editController: editController, model: model, isPlayerShown: $isPlayerShown)
 #if !os(macOS)
                 .ignoresSafeArea(.container, edges: .top)
 #endif

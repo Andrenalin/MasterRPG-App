@@ -17,40 +17,40 @@ struct SpaceDetailEditor: View {
             FileLocationEditor(editController: editController, fileStore: root.fileUrlDataController, fileUrlBinding: $model.fileUrl)
             
             SpacesSectionEditor(editController: editController, model: model)
-        } headerView: { size, safeTopMargin, isInline in
-            SpaceEditor(editController: editController, size: size, topMargin: safeTopMargin, inline: isInline)
+        } headerView: {
+            SpaceEditor(editController: editController)
 #if !os(macOS)
                 .ignoresSafeArea(.container, edges: .top)
 #endif
                 .id(model.id)
-        } extHeaderView: { dismiss in
-            extSpaceHeaderView(dismiss: dismiss)
+        } extHeaderView: {
+            SpaceExternalHeader(editController: editController, model: model)
         } heightCalculator: { size in
             (144, min(size.height * 0.35, 400))
         }
         .focusedSceneValue(\.selectedSpace, $model.id)
     }
-    
-    @ViewBuilder
-    func extSpaceHeaderView(dismiss: @escaping () -> Void) -> some View {
+}
+
+struct SpaceExternalHeader: View {
+    let editController: EditController
+    let model: SpaceModel
+
+    @Environment(SpaceRoot.self) private var root
+    @Environment(ExternalHeaderModel.self) private var externalHeaderModel
+
+    var body: some View {
 #if os(tvOS)
-        extSpaceHeaderQuickLookView(dismiss: dismiss)
+        SpaceEditor(editController: editController)
+            .environment(DetailHeaderModel(size: CGSize(width: 400, height: 400)))
 #else
         SpaceViewer(root: root, id: model.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(alignment: .bottomTrailing) {
-                ImageOverlayButton(icon: "xmark", action: dismiss)
-                    .padding()
-            }
-#endif
-    }
-    
-    func extSpaceHeaderQuickLookView(dismiss: @escaping () -> Void) -> some View {
-        SpaceEditor(editController: editController, size: CGSize(width: 400, height: 400), topMargin: 0, inline: false)
-#if !os(tvOS)
-            .overlay {
-                SpaceQuickLook(root: root, item: ItemSelection(itemId: model.id, entryId: nil), startLoading: true, gameMode: true, dismiss: dismiss)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                ImageOverlayButton(icon: "xmark") {
+                    externalHeaderModel.showExtHeader = false
+                }
+                .padding()
             }
 #endif
     }

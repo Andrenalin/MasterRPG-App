@@ -25,13 +25,13 @@ struct AdventureDetailEditor: View {
 #if !os(macOS)
             AdventureEntrySectionEditor(editController: editController)
 #endif
-        } headerView: { size, safeTopMargin, isInline in
-            AdventureDetailHeader(editController: editController, model: model, size: size, topMargin: safeTopMargin, inline: isInline)
+        } headerView: {
+            AdventureDetailHeader(editController: editController, model: model)
 #if !os(macOS)
                 .ignoresSafeArea(.container, edges: .top)
 #endif
-        } extHeaderView: { dismiss in
-            AdventureSheet(model: editController.model, showImage: false, dismissAction: dismiss)
+        } extHeaderView: {
+            AdventureExternalHeader(editController: editController)
         } extContentView: {
 #if !os(tvOS)
             AdventureEntryEditor(root: root, editController: editController)
@@ -47,6 +47,18 @@ struct AdventureDetailEditor: View {
     
     private var photoId: Binding<UUID> {
         Binding { model.photoId ?? UUID() } set: { _ in }
+    }
+}
+
+struct AdventureExternalHeader: View {
+    let editController: EditController
+
+    @Environment(ExternalHeaderModel.self) private var externalHeaderModel
+
+    var body: some View {
+        AdventureSheet(model: editController.model, showImage: false) {
+            externalHeaderModel.showExtHeader = false
+        }
     }
 }
 

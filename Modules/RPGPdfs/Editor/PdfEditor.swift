@@ -6,25 +6,23 @@ internal import UniformTypeIdentifiers
 
 struct PdfEditor: View {
     let editController: EditController
-    let size: CGSize
-    let topMargin: CGFloat
-    let inline: Bool
-    
+
     @Environment(PdfRoot.self) private var root
     @Environment(ListModel.self) private var itemListModel
-    
+    @Environment(DetailHeaderModel.self) private var headerModel
+
     @State private var thumbnail: AKImage?
     @State private var showImporter = false
     
     var body: some View {
         @Bindable var model = editController.model
         VStack(alignment: .center) {
-            HeaderPhoto(itemId: imageId, image: thumbnail, degrees: 0, size: size, topMargin: topMargin)
+            HeaderPhoto(itemId: imageId, image: thumbnail, degrees: 0, size: headerModel.size, topMargin: headerModel.topSafeAreaHeight)
                 .frame(maxWidth: .infinity, alignment: .center)
 #if os(iOS)
                 .toolbar {
                     ToolbarItem {
-                        if inline == false {
+                        if headerModel.isInline == false {
                             overlayButton
                         }
                     }
@@ -37,7 +35,7 @@ struct PdfEditor: View {
 #endif
 #if !os(tvOS)
                 .overlay(alignment: .bottomTrailing) {
-                    if inline == false {
+                    if headerModel.isInline == false {
                         PdfImporterButtonView(showImporter: $showImporter)
                             .padding([.trailing, .bottom])
                     }
@@ -100,8 +98,9 @@ struct PdfEditor: View {
 }
 
 #Preview {
-    PdfEditor(editController: .preview, size: CGSize(width: 300, height: 200), topMargin: 64, inline: false)
+    PdfEditor(editController: .preview)
         .environment(PdfRoot.preview)
         .environment(ListModel.preview)
         .environment(SelectionSheetLinkModel())
+        .environment(DetailHeaderModel(size: CGSize(width: 400, height: 200), topSafeAreaHeight: 0, isInline: false))
 }

@@ -8,24 +8,22 @@ import RPGPhotos
 struct AdventureDetailHeader: View {
     let editController: EditController
     let model: AdventureModel
-    let size: CGSize
-    let topMargin: CGFloat
-    let inline: Bool
 
 #if os(visionOS) || os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
     @Environment(AdventureRoot.self) private var root
+    @Environment(DetailHeaderModel.self) private var headerModel
 
     @State private var isReading = false
     @State private var image: AKImage?
 
     var body: some View {
-        root.photoRoot.viewController.headerView(id: model.photoId, size: size, topMargin: topMargin)
+        root.photoRoot.viewController.headerView(id: model.photoId, size: headerModel.size, topMargin: headerModel.topSafeAreaHeight)
 #if os(iOS)
             .toolbar {
                 ToolbarItem {
-                    if inline == false {
+                    if headerModel.isInline == false {
                         overlayButton
                     }
                 }

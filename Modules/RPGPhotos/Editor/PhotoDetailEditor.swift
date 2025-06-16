@@ -18,19 +18,31 @@ struct PhotoDetailEditor: View {
             PhotoSectionEditor(editController: editController, model: model)
 
             PhotosSectionEditor(editController: editController)
-        } headerView: { size, safeTopMargin, isInline in
-            PhotoEditor(editController: editController, size: size, topMargin: safeTopMargin, inline: isInline)
+        } headerView: {
+            PhotoEditor(editController: editController)
 #if !os(macOS)
                 .ignoresSafeArea(.container, edges: .top)
 #endif
                 .id(model.id)
-        } extHeaderView: { dismiss in
-            RootImageViewer(model: model, size: CGSize(width: 360, height: 400), toolBarModel: GameToolBarModel(), isGame: false, dismiss: dismiss)
-                .id(model.id)
+        } extHeaderView: {
+            PhotoExternalHeader(model: model)
         } heightCalculator: { size in
             (144, min(size.height * 0.35, 400))
         }
         .focusedSceneValue(\.selectedPhoto, $model.id)
+    }
+}
+
+struct PhotoExternalHeader: View {
+    let model: PhotoModel
+
+    @Environment(ExternalHeaderModel.self) private var externalHeaderModel
+
+    var body: some View {
+        RootImageViewer(model: model, size: CGSize(width: 360, height: 400), toolBarModel: GameToolBarModel(), isGame: false) {
+            externalHeaderModel.showExtHeader = false
+        }
+        .id(model.id)
     }
 }
 

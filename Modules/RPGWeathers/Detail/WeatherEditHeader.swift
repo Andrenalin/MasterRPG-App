@@ -5,23 +5,21 @@ import SwiftUI
 
 struct WeatherEditHeader: View {
     let editController: EditController
-    let size: CGSize
-    let topMargin: CGFloat
-    let inline: Bool
-    
+
 #if os(visionOS) || os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
     @Environment(WeatherRoot.self) private var root
+    @Environment(DetailHeaderModel.self) private var headerModel
 
     @State private var isReading = false
 
     var body: some View {
-        WeatherViewer(model: editController.model, size: size, useGame: inline)
+        WeatherViewer(model: editController.model, size: headerModel.size, useGame: headerModel.isInline)
 #if os(iOS)
             .toolbar {
                 ToolbarItem {
-                    if inline == false {
+                    if headerModel.isInline == false {
                         overlayBautton
                     }
                 }
@@ -50,6 +48,7 @@ struct WeatherEditHeader: View {
 }
 
 #Preview {
-    WeatherEditHeader(editController: .preview, size: CGSize(width: 375, height: 375), topMargin: 64, inline: false)
+    WeatherEditHeader(editController: .preview)
         .environment(WeatherRoot.preview)
+        .environment(DetailHeaderModel(size: CGSize(width: 375, height: 375), isInline: false))
 }

@@ -251,6 +251,6 @@ struct FakeSelectionRouteView: View {
     @Environment(\.navigator) private var navigator
     
     var body: some View {
-        Text("Selection for: \(module)")
+        Text("Selection for: \(module.title)")
     }
 }

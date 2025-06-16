@@ -6,13 +6,11 @@ import RPGPhotos
 
 struct AnimatedHeaderMap: View {
     let editController: EditController
-    let size: CGSize
-    let topMargin: CGFloat
-    let inline: Bool
 
     private let constTime = Date.now
 
     @Environment(MapRoot.self) private var root
+    @Environment(DetailHeaderModel.self) private var headerModel
 
     @State private var isAnimating = false
     @State private var image: AKImage?
@@ -22,11 +20,11 @@ struct AnimatedHeaderMap: View {
         @Bindable var model = editController.model
         Group {
             if let image {
-                HeaderPhoto(itemId: imageId, image: image, degrees: degrees, size: size, topMargin: topMargin)
+                HeaderPhoto(itemId: imageId, image: image, degrees: degrees, size: headerModel.size, topMargin: headerModel.topSafeAreaHeight)
 #if os(iOS)
                     .toolbar {
                         ToolbarItem {
-                            if inline == false {
+                            if headerModel.isInline == false {
                                 MapEditSectionEditor(editController: editController)
                             }
                         }
@@ -38,7 +36,7 @@ struct AnimatedHeaderMap: View {
                     }
 #endif
                     .overlay(alignment: .bottomTrailing) {
-                        if inline == false {
+                        if headerModel.isInline == false {
                             ImageOverlayButton(icon: "film\(isAnimating ? ".fill" : "")") {
                                 withAnimation { isAnimating.toggle() }
                             }
@@ -51,7 +49,7 @@ struct AnimatedHeaderMap: View {
                     }
             } else {
                 Color.clear
-                    .frame(width: size.width, height: size.height)
+                    .frame(width: headerModel.size.width, height: headerModel.size.height)
             }
         }
         .onChange(of: model.id, initial: true) {
@@ -88,8 +86,8 @@ private extension AnimatedHeaderMap {
 
     func containerSize(from image: AKImage) -> CGSize {
         let imageSize = CGSize(width: imageWidth, height: imageHeight)
-        let wf = size.width / imageSize.width
-        let wh = (size.height - valueFor(iOS: topMargin, macOS: 0, tvOS: topMargin, visionOS: topMargin)) / imageSize.height
+        let wf = headerModel.size.width / imageSize.width
+        let wh = (headerModel.size.height - valueFor(iOS: headerModel.topSafeAreaHeight, macOS: 0, tvOS: headerModel.topSafeAreaHeight, visionOS: headerModel.topSafeAreaHeight)) / imageSize.height
         let f = min(wf, wh)
         let width = max(f * imageSize.width, 64)
         let height = max(f * imageSize.height, 64)
@@ -117,10 +115,11 @@ private extension AnimatedHeaderMap {
         }
         .frame(width: containerSize(from: image).width, height: containerSize(from: image).height)
         .clipShape(.rect(topLeadingRadius: 12, topTrailingRadius: 12))
-        .padding(.top, valueFor(iOS: topMargin, macOS: 0, tvOS: topMargin, visionOS: topMargin))
+        .padding(.top, valueFor(iOS: headerModel.topSafeAreaHeight, macOS: 0, tvOS: headerModel.topSafeAreaHeight, visionOS: headerModel.topSafeAreaHeight))
     }
 }
 
 #Preview {
-    AnimatedHeaderMap(editController: .preview, size: CGSize(width: 300, height: 300), topMargin: 64, inline: false)
+    AnimatedHeaderMap(editController: .preview)
+        .environment(DetailHeaderModel(size: CGSize(width: 375, height: 200), topSafeAreaHeight: 0, isInline: false))
 }
