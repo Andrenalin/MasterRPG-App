@@ -8,6 +8,9 @@ struct PdfDetailEditor: View {
     let model: PdfModel
 
     @Environment(PdfRoot.self) private var root
+
+    @State private var detailHeaderModel = DetailHeaderModel(minHeight: 144, maxHeight: 400, maxHeightFromScreenHeight: true)
+    @State private var externalHeaderModel = ExternalHeaderModel()
     
     var body: some View {
         @Bindable var model = editController.model
@@ -32,14 +35,18 @@ struct PdfDetailEditor: View {
 #if !os(tvOS)
             PdfEntryEditor(root: root, editController: editController)
 #endif
-        } extContentHeight: { screenHeight in
-            let minHeight = Double(editController.model.entries.count * 128)
-            return min(max(minHeight, screenHeight * 0.5), screenHeight)
-        } heightCalculator: { size in
-            (144, editController.model.hasPdf ? min(size.height * 0.35, 400) : 144)
+        }
+        .focusedSceneValue(\.selectedPdf, $model.id)
+        .environment(detailHeaderModel)
+        .environment(externalHeaderModel)
+        .onChange(of: model.entries, initial: true) {
+            externalHeaderModel.minHeight = Double(model.entries.count * 128)
+        }
+        .onChange(of: model.hasPdf, initial: true) {
+            detailHeaderModel.maxHeight <=> model.hasPdf ? 400 : 144
+            detailHeaderModel.maxHeightFromScreenHeight <=> model.hasPdf
         }
 
-        .focusedSceneValue(\.selectedPdf, $model.id)
     }
 }
 

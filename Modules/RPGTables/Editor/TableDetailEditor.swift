@@ -8,6 +8,9 @@ struct TableDetailEditor: View {
     let model: TableModel
     
     @Environment(TableRoot.self) private var root
+
+    @State private var detailHeaderModel = DetailHeaderModel()
+    @State private var externalHeaderModel = ExternalHeaderModel()
     
     var body: some View {
         @Bindable var model = model
@@ -32,13 +35,13 @@ struct TableDetailEditor: View {
 #if !os(tvOS)
             TableEntryEditor(root: root, editController: editController)
 #endif
-        } extContentHeight: { screenHeight in
-            let minHeight = Double(model.entries.count * 128)
-            return min(max(minHeight, screenHeight * 0.5), screenHeight)
-        } heightCalculator: { size in
-            (96, 96)
         }
         .focusedSceneValue(\.selectedTable, $model.id)
+        .environment(detailHeaderModel)
+        .environment(externalHeaderModel)
+        .onChange(of: model.entries, initial: true) {
+            externalHeaderModel.minHeight = Double(model.entries.count * 128)
+        }
     }
 }
 

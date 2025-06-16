@@ -8,6 +8,9 @@ struct SpaceDetailEditor: View {
     let model: SpaceModel
     
     @Environment(SpaceRoot.self) private var root
+
+    @State private var detailHeaderModel = DetailHeaderModel(minHeight: 144, maxHeight: 400, maxHeightFromScreenHeight: true)
+    @State private var externalHeaderModel = ExternalHeaderModel()
     
     var body: some View {
         @Bindable var model = model
@@ -25,10 +28,10 @@ struct SpaceDetailEditor: View {
                 .id(model.id)
         } extHeaderView: {
             SpaceExternalHeader(editController: editController, model: model)
-        } heightCalculator: { size in
-            (144, min(size.height * 0.35, 400))
         }
         .focusedSceneValue(\.selectedSpace, $model.id)
+        .environment(detailHeaderModel)
+        .environment(externalHeaderModel)
     }
 }
 

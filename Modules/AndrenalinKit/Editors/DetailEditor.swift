@@ -4,14 +4,22 @@ import SwiftUI
 
 @MainActor @Observable
 public final class DetailHeaderModel {
-    public init(size: CGSize = CGSize(width: 320, height: 150), topSafeAreaHeight: CGFloat = 60, isInline: Bool = false) {
+    public init(size: CGSize = CGSize(width: 320, height: 150), topSafeAreaHeight: CGFloat = 60, isInline: Bool = false, minHeight: CGFloat = 96, maxHeight: CGFloat = 96, maxHeightFromScreenHeight: Bool = false) {
         self.size = size
         self.topSafeAreaHeight = topSafeAreaHeight
         self.isInline = isInline
+        self.minHeight = minHeight
+        self.maxHeight = maxHeight
+        self.maxHeightFromScreenHeight = maxHeightFromScreenHeight
     }
+
     public var size: CGSize
     public var topSafeAreaHeight: CGFloat
     public var isInline: Bool
+
+    public var minHeight: CGFloat
+    public var maxHeight: CGFloat
+    public var maxHeightFromScreenHeight: Bool
 }
 
 @MainActor @Observable
@@ -20,78 +28,37 @@ public final class ExternalHeaderModel {
         self.showExtHeader = showExtHeader
     }
     public var showExtHeader: Bool
+    public var minHeight: CGFloat = 600
 }
 
 public struct DetailEditor<Content: View, ExtContent: View, Header: View, ExtentedHeader: View>: View {
-    public init(editController: any EditControllable, @ViewBuilder contentView: () -> Content, @ViewBuilder headerView: () -> Header, @ViewBuilder extHeaderView: () -> ExtentedHeader, @ViewBuilder extContentView: () -> ExtContent = EmptyView.init, extContentHeight: @escaping (CGFloat) -> CGFloat, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) {
+    public init(editController: any EditControllable, @ViewBuilder contentView: () -> Content, @ViewBuilder headerView: () -> Header, @ViewBuilder extHeaderView: () -> ExtentedHeader = EmptyView.init, @ViewBuilder extContentView: () -> ExtContent = EmptyView.init) {
         self.editController = editController
         self.contentView = contentView()
         self.headerView = headerView()
         self.extHeaderView = extHeaderView()
-        self.hasExtHeaderView = true
         self.extContentView = extContentView()
-        self.extContentHeight = extContentHeight
-        self.heightCalculator = heightCalculator
-    }
-    
-    public init(editController: any EditControllable, @ViewBuilder contentView: @escaping () -> Content, @ViewBuilder headerView: () -> Header, @ViewBuilder extContentView: () -> ExtContent = EmptyView.init, extContentHeight: @escaping (CGFloat) -> CGFloat, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) where ExtentedHeader == EmptyView  {
-        self.editController = editController
-        self.contentView = contentView()
-        self.headerView = headerView()
-        self.extHeaderView = { EmptyView() }()
-        self.hasExtHeaderView = false
-        self.extContentView = extContentView()
-        self.extContentHeight = extContentHeight
-        self.heightCalculator = heightCalculator
-    }
-    
-    public init(editController: any EditControllable, @ViewBuilder contentView: () -> Content, @ViewBuilder headerView: () -> Header, @ViewBuilder extHeaderView: () -> ExtentedHeader, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) where ExtContent == EmptyView {
-        self.editController = editController
-        self.contentView = contentView()
-        self.headerView = headerView()
-        self.extHeaderView = extHeaderView()
-        self.hasExtHeaderView = true
-        self.extContentView = { EmptyView() }()
-        self.extContentHeight = { $0 }
-        self.heightCalculator = heightCalculator
-    }
-    
-    public init(editController: any EditControllable, @ViewBuilder contentView: () -> Content, @ViewBuilder headerView: () -> Header, heightCalculator: @escaping (CGSize) -> (CGFloat, CGFloat)) where ExtContent == EmptyView, ExtentedHeader == EmptyView {
-        self.editController = editController
-        self.contentView = contentView()
-        self.headerView = headerView()
-        self.extHeaderView = { EmptyView() }()
-        self.hasExtHeaderView = false
-        self.extContentView = { EmptyView() }()
-        self.extContentHeight = { $0 }
-        self.heightCalculator = heightCalculator
     }
     
     let editController: any EditControllable
     let contentView: Content
     let headerView: Header
     let extHeaderView: ExtentedHeader
-    let hasExtHeaderView: Bool
     let extContentView: ExtContent
-    let extContentHeight: (CGFloat) -> CGFloat
-    let heightCalculator: (CGSize) -> (CGFloat, CGFloat)
-    
+
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(DetailHeaderModel.self) private var detailHeaderModel
+    @Environment(ExternalHeaderModel.self) private var externalHeaderModel
     @Environment(ListModel.self) private var itemListModel
     @Environment(\.itemSplitViewSizeMode) private var sizemode
     @Environment(\.wideMode) private var widemode
-    
+
 #if os(iOS) || os(visionOS)
     @State private var editMode: EditMode = .inactive
 #endif
-    
     @State private var scrollPositionY: CGFloat = 0
-    
     @State private var keyBoardShown = false
-
-    @State private var detailHeaderModel = DetailHeaderModel()
     @State private var inlineDetailHeaderModel = DetailHeaderModel(isInline: true)
-    @State private var externalHeaderModel = ExternalHeaderModel()
 
     public var body: some View {
         let _ = Self._printChanges()
@@ -142,11 +109,11 @@ public struct DetailEditor<Content: View, ExtContent: View, Header: View, Extent
                 }
                 .onChange(of: itemListModel.scrollEntryId) {
                     guard let id = itemListModel.scrollEntryId else { return }
-                    Task {
+                    Task { @MainActor in
                         try? await Task.sleep(for: .seconds(0.15))
                         withAnimation { scrollProxy.scrollTo(id, anchor: .center) }
-                        itemListModel.scrollEntryId = nil
                     }
+                    itemListModel.scrollEntryId = nil
                 }
             }
 #if os(iOS)
@@ -208,7 +175,7 @@ private extension DetailEditor {
 
         extContentView()
             .listRowInsets(.init())
-            .frame(maxWidth: .infinity, minHeight: extContentHeight(geometry.size.height), idealHeight: extContentHeight(geometry.size.height) * 1.5,  maxHeight: .infinity)
+            .frame(maxWidth: .infinity, minHeight: extContentHeight(screenHeight: geometry.size.height), idealHeight: extContentHeight(screenHeight: geometry.size.height) * 1.5,  maxHeight: .infinity)
 #endif
     }
     
@@ -220,7 +187,6 @@ private extension DetailEditor {
             .contentShape(.rect)
 #if !os(tvOS)
             .onTapGesture(count: 1) {
-                guard hasExtHeaderView else { return }
                 externalHeaderModel.showExtHeader.toggle()
             }
 #endif
@@ -262,7 +228,7 @@ private extension DetailEditor {
     }
     
     func headerHeight(geometry: GeometryProxy) -> CGFloat {
-        let (low, high) = heightCalculator(geometry.size)
+        let (low, high) = heightCalculator(size: geometry.size)
         let safeArea = geometry.safeAreaInsets.top
         return max(((high + safeArea) - scrollPositionY), low + safeArea)
     }
@@ -323,7 +289,7 @@ private extension DetailEditor {
     }
 
     func updateInlineDetailHeaderModel(geometry: GeometryProxy) {
-        let height = heightCalculator(geometry.size).1 + valueFor(iOS: widemode == .small ? 44 : topSafeArea(from: geometry.safeAreaInsets.top), macOS: 0, tvOS: 0, visionOS: 0)
+        let height = heightCalculator(size: geometry.size).1 + valueFor(iOS: widemode == .small ? 44 : topSafeArea(from: geometry.safeAreaInsets.top), macOS: 0, tvOS: 0, visionOS: 0)
         let offset = CGFloat(valueFor(iOS: 8, macOS: 24, tvOS: 8, visionOS: 8))
 
         let size = CGSize(width: geometry.size.width - offset, height: height)
@@ -350,5 +316,18 @@ private extension DetailEditor {
         #else
         height
         #endif
+    }
+
+    func extContentHeight(screenHeight: CGFloat) -> CGFloat {
+        min(max(externalHeaderModel.minHeight, screenHeight * 0.5), screenHeight)
+    }
+
+    func heightCalculator(size: CGSize) -> (CGFloat, CGFloat) {
+        let low = detailHeaderModel.minHeight
+        var high = detailHeaderModel.maxHeight
+        if detailHeaderModel.maxHeightFromScreenHeight {
+            high = min(size.height * 0.35, high)
+        }
+        return (low, high)
     }
 }

@@ -12,6 +12,8 @@ struct ValueDetailEditor: View {
     
     @State private var changeChildModel = ChangeChildModel()
     @State private var changeGeneratorModel = ChangeGeneratorModel()
+    @State private var detailHeaderModel = DetailHeaderModel(minHeight: 144, maxHeight: 400, maxHeightFromScreenHeight: true)
+    @State private var externalHeaderModel = ExternalHeaderModel()
 
     var body: some View {
         let _ = Self._printChanges()
@@ -34,15 +36,15 @@ struct ValueDetailEditor: View {
 #if !os(tvOS)
             ValueEntryEditor(root: root, editController: editController, changeChildModel: changeChildModel)
 #endif
-        } extContentHeight: { screenHeight in
-            let minHeight = Double(model.entries.count * 128)
-            return min(max(minHeight, screenHeight * 0.5), screenHeight)
-        } heightCalculator: { size in
-            (144, min(size.height * 0.35, 400))
         }
         .modifier(ChangeChildEditorViewModifier(editController: editController, model: changeChildModel))
         .modifier(ChangeGeneratorEditorViewModifier(model: changeGeneratorModel))
         .focusedSceneValue(\.selectedValue, $model.id)
+        .environment(detailHeaderModel)
+        .environment(externalHeaderModel)
+        .onChange(of: model.entries, initial: true) {
+            externalHeaderModel.minHeight = Double(model.entries.count * 128)
+        }
     }
 }
 

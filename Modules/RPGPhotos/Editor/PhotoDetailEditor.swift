@@ -8,6 +8,9 @@ struct PhotoDetailEditor: View {
     let model: PhotoModel
 
     @Environment(PhotoRoot.self) private var root
+
+    @State private var detailHeaderModel = DetailHeaderModel(minHeight: 144, maxHeight: 400, maxHeightFromScreenHeight: true)
+    @State private var externalHeaderModel = ExternalHeaderModel()
     
     var body: some View {
         let _ = Self._printChanges()
@@ -26,10 +29,10 @@ struct PhotoDetailEditor: View {
                 .id(model.id)
         } extHeaderView: {
             PhotoExternalHeader(model: model)
-        } heightCalculator: { size in
-            (144, min(size.height * 0.35, 400))
         }
         .focusedSceneValue(\.selectedPhoto, $model.id)
+        .environment(detailHeaderModel)
+        .environment(externalHeaderModel)
     }
 }
 

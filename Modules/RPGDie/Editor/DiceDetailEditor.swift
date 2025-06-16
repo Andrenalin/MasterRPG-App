@@ -8,6 +8,9 @@ struct DiceDetailEditor: View {
     let model: DiceModel
 
     @Environment(DiceRoot.self) private var root
+    
+    @State private var detailHeaderModel = DetailHeaderModel()
+    @State private var externalHeaderModel = ExternalHeaderModel()
 
     var body: some View {
         @Bindable var model = model
@@ -36,11 +39,15 @@ struct DiceDetailEditor: View {
                 .ignoresSafeArea(.container, edges: .top)
 #endif
                 .id(model.id)
-        } heightCalculator: { size in
-            let height = max(root.viewController.height(for: root.gameController.gameItem(for: model.id), minResult: 0, maxResult: 4) + valueFor(iOS: 16, macOS: 0, tvOS: 16, visionOS: 48), 64)
-            return (height, height)
         }
         .focusedSceneValue(\.selectedDice, $model.id)
+        .environment(detailHeaderModel)
+        .environment(externalHeaderModel)
+        .onChange(of: model, initial: true) {
+            let height = max(root.viewController.height(for: root.gameController.gameItem(for: model.id), minResult: 0, maxResult: 4) + valueFor(iOS: 16, macOS: 0, tvOS: 16, visionOS: 48), 64)
+            detailHeaderModel.minHeight <=> height
+            detailHeaderModel.maxHeight <=> height
+        }
     }
 }
 

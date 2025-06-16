@@ -65,4 +65,42 @@ final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplica
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
+    
+    private enum CodingKeys: CodingKey {
+        case _entries
+        case _id
+        case _name
+        case _category
+        case _description
+        case _tags
+        case _displayState
+        case _isGroupHiddenToggle
+    }
+    
+    init(from decoder: any Decoder) throws {
+        let container: KeyedDecodingContainer<FakeItemModel.CodingKeys> = try decoder.container(keyedBy: FakeItemModel.CodingKeys.self)
+        
+        self._entries = try container.decode([FakeEntryModel].self, forKey: FakeItemModel.CodingKeys._entries)
+        self._id = try container.decode(UUID.self, forKey: FakeItemModel.CodingKeys._id)
+        self._name = try container.decode(String.self, forKey: FakeItemModel.CodingKeys._name)
+        self._category = try container.decode(ItemListCategory.self, forKey: FakeItemModel.CodingKeys._category)
+        self._description = try container.decode(String.self, forKey: FakeItemModel.CodingKeys._description)
+        self._tags = try container.decode([String].self, forKey: FakeItemModel.CodingKeys._tags)
+        self._displayState = try container.decode(Int.self, forKey: FakeItemModel.CodingKeys._displayState)
+        self._isGroupHiddenToggle = try container.decode(Bool.self, forKey: FakeItemModel.CodingKeys._isGroupHiddenToggle)
+        
+    }
+    
+    final func encode(to encoder: any Encoder) throws {
+        var container: KeyedEncodingContainer<FakeItemModel.CodingKeys> = encoder.container(keyedBy: FakeItemModel.CodingKeys.self)
+        
+        try container.encode(self._entries, forKey: FakeItemModel.CodingKeys._entries)
+        try container.encode(self._id, forKey: FakeItemModel.CodingKeys._id)
+        try container.encode(self._name, forKey: FakeItemModel.CodingKeys._name)
+        try container.encode(self._category, forKey: FakeItemModel.CodingKeys._category)
+        try container.encode(self._description, forKey: FakeItemModel.CodingKeys._description)
+        try container.encode(self._tags, forKey: FakeItemModel.CodingKeys._tags)
+        try container.encode(self._displayState, forKey: FakeItemModel.CodingKeys._displayState)
+        try container.encode(self._isGroupHiddenToggle, forKey: FakeItemModel.CodingKeys._isGroupHiddenToggle)
+    }
 }

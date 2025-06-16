@@ -8,11 +8,11 @@ struct WeatherDetailEditor: View {
     let editController: EditController
     let model: WeatherModel
     
-#if os(macOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
     @Environment(WeatherRoot.self) private var root
-        
+
+    @State private var detailHeaderModel = DetailHeaderModel(minHeight: 144, maxHeight: 400, maxHeightFromScreenHeight: true)
+    @State private var externalHeaderModel = ExternalHeaderModel()
+
     var body: some View {
         @Bindable var model = model
         DetailEditor(editController: editController) {
@@ -27,12 +27,10 @@ struct WeatherDetailEditor: View {
                 .ignoresSafeArea(.container, edges: .top)
 #endif
                 .id(model.id)
-//        } extHeaderView: {
-//            WeatherViewer(model: model, size: CGSize(width: screenSize.size.width, height: screenSize.size.height), useGame: true)
-        } heightCalculator: { size in
-            (144, min(size.height * 0.35, 400))
         }
         .focusedSceneValue(\.selectedWeather, $model.id)
+        .environment(detailHeaderModel)
+        .environment(externalHeaderModel)
     }
 }
 

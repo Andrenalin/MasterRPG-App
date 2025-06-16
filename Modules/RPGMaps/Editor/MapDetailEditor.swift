@@ -9,6 +9,9 @@ struct MapDetailEditor: View {
 
     @Environment(MapRoot.self) private var root
     
+    @State private var detailHeaderModel = DetailHeaderModel(minHeight: 144, maxHeight: 400, maxHeightFromScreenHeight: true)
+    @State private var externalHeaderModel = ExternalHeaderModel()
+
     var body: some View {
         @Bindable var model = model
         //let _ = Self._printChanges()
@@ -38,13 +41,13 @@ struct MapDetailEditor: View {
 
             MapPinEditor(root: root, editController: editController)
 #endif
-        } extContentHeight: { screenHeight in
-            let minHeight = Double(model.entries.count * 128 + model.mapPins.count * 64)
-            return min(max(minHeight, screenHeight * 0.5), screenHeight)
-        } heightCalculator: { size in
-            (144, min(size.height * 0.35, 400))
         }
         .focusedSceneValue(\.selectedMap, $model.id)
+        .environment(detailHeaderModel)
+        .environment(externalHeaderModel)
+        .onChange(of: model.entries, initial: true) {
+            externalHeaderModel.minHeight = Double(model.entries.count * 128)
+        }
     }
 }
 

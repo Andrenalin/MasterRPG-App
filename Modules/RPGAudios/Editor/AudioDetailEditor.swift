@@ -8,7 +8,9 @@ struct AudioDetailEditor: View {
     let model: AudioModel
     
     @Environment(AudioRoot.self) private var root
-    
+
+    @State private var detailHeaderModel = DetailHeaderModel()
+    @State private var externalHeaderModel = ExternalHeaderModel()
     @State private var isPlayerShown: Bool = false
 
     var body: some View {
@@ -39,10 +41,10 @@ struct AudioDetailEditor: View {
 #if !os(macOS)
                 .ignoresSafeArea(.container, edges: .top)
 #endif
-        } heightCalculator: { size in
-            (96, 96)
         }
         .focusedSceneValue(\.selectedAudio, $model.id)
+        .environment(detailHeaderModel)
+        .environment(externalHeaderModel)
     }
 
     var audioHeaderPlayerView: some View {
