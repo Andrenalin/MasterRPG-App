@@ -11,22 +11,23 @@ struct MapEntrySectionEditor: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var showMapEditor = false
+    @State private var entrySectionEditorModel = EntrySectionEditorModel<MapModel>()
 
     var body: some View {
         @Bindable var model = editController.model
 
-        EntrySectionEditor(editControllable: editController) { entryId, showLink in
-            editContent(entryId: entryId, showLink: showLink)
-        } contentView: { entryId, showLink in
+        EntrySectionEditor(editControllable: editController, entrySectionEditorModel: entrySectionEditorModel) { entryId in
+            editContent(entryId: entryId)
+        } contentView: { entryId in
             EntryRow(model: editController.model, item: ItemRowTreeModel(id: UUID(), model: ItemRowModel(itemId: editController.model.id, entryId: entryId, typeId: .map)), isEditing: true, cacheItemListModel: editController.cacheItemListModel)
-        } showLinkView: { linkValue in
-            showLink(linkValue: linkValue)
-        } swipeActionView: { entryId, showLink in
-            swipeButtons(for: entryId, keypath: \.[entryId].content, showLink: showLink)
-        } menuView: { entryId, selection, showLink in
-            contextMenu(for: entryId, selection: selection, showLink: showLink, keypath: nil)
-        } linkActionView: { entryId, showLink in
-            actionBarView(selection: entryId, showLink: showLink)
+        } showLinkView: {
+            showLink()
+        } swipeActionView: { entryId in
+            swipeButtons(for: entryId, keypath: \.[entryId].content)
+        } menuView: { entryId, selection in
+            contextMenu(for: entryId, selection: selection, keypath: nil)
+        } linkActionView: { entryId in
+            actionBarView(selection: entryId)
         }
         .onChange(of: showMapEditor) {
             if showMapEditor {
@@ -39,18 +40,18 @@ struct MapEntrySectionEditor: View {
     }
 
     @ViewBuilder
-    private func editContent(entryId: UUID, showLink: Binding<ShowLinkEntryAction<MapModel>?>) -> some View {
+    private func editContent(entryId: UUID) -> some View {
         @Bindable var model = editController.model
         Group {
             TextFieldEditor(editController: editController, model: $model[entryId].name, title: "Name", prompt: "Enter a name for the entry", bundle: .module)
 
             TextFieldControllerEditor(editController: editController, linkReplaceController: editController.contentEditLink(for: entryId), title: "Content", prompt: "Enter some content for the entry", bundle: .module)
                 .contextMenu {
-                    contextMenu(for: entryId, selection: [], showLink: showLink, keypath: \.[entryId].content)
+                    contextMenu(for: entryId, selection: [], keypath: \.[entryId].content)
                 }
 #if !os(tvOS)
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                    swipeButtons(for: entryId, keypath: \.[entryId].content, showLink: showLink)
+                    swipeButtons(for: entryId, keypath: \.[entryId].content)
                 }
 #endif
 
@@ -63,70 +64,75 @@ struct MapEntrySectionEditor: View {
     }
 
     @ViewBuilder
-    private func showLink(linkValue: ShowLinkEntryAction<MapModel>) -> some View {
-        switch linkValue.type {
-            case .audio:
-                editController.selectAudio(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
-            case .dice:
-                editController.selectDice(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
-            case .pdf:
-                editController.selectPdf(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
-            case .photo:
-                editController.selectPhoto(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
-            case .table:
-                editController.selectTable(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
-            case .value:
-                editController.selectValue(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
-            default:
-                editController.selectMap(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
+    private func showLink() -> some View {
+        @Bindable var entryModel = entrySectionEditorModel
+        if let linkValue = entryModel.showLink {
+            switch linkValue.type {
+                case .audio:
+                    editController.selectAudio(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
+                case .dice:
+                    editController.selectDice(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
+                case .pdf:
+                    editController.selectPdf(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
+                case .photo:
+                    editController.selectPhoto(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
+                case .table:
+                    editController.selectTable(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
+                case .value:
+                    editController.selectValue(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
+                default:
+                    editController.selectMap(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionModel.selection = false }
+            }
         }
     }
 
     @ViewBuilder
-    private func swipeButtons(for entryId: UUID, keypath: WritableKeyPath<MapModel, String>, showLink: Binding<ShowLinkEntryAction<MapModel>?>) -> some View {
-        LinkSelectionButton(entryId: entryId, type: .audio, keyPath: keypath, title: "Audio", bundle: .module, showLink: showLink)
+    private func swipeButtons(for entryId: UUID, keypath: WritableKeyPath<MapModel, String>) -> some View {
+        @Bindable var entryModel = entrySectionEditorModel
+        LinkSelectionButton(entryId: entryId, type: .audio, keyPath: keypath, title: "Audio", bundle: .module, showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keypath, title: "Dice", bundle: .module, showLink: showLink)
+        LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keypath, title: "Dice", bundle: .module, showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .map, keyPath: keypath, title: "Map", bundle: .module, showLink: showLink)
+        LinkSelectionButton(entryId: entryId, type: .map, keyPath: keypath, title: "Map", bundle: .module, showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keypath, title: "Pdf", bundle: .module, showLink: showLink)
+        LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keypath, title: "Pdf", bundle: .module, showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .photo, keyPath: keypath, title: "Photo", bundle: .module, showLink: showLink)
+        LinkSelectionButton(entryId: entryId, type: .photo, keyPath: keypath, title: "Photo", bundle: .module, showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .table, keyPath: keypath, title: "Table", bundle: .module, showLink: showLink)
+        LinkSelectionButton(entryId: entryId, type: .table, keyPath: keypath, title: "Table", bundle: .module, showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .value, keyPath: keypath, title: "Value", bundle: .module, showLink: showLink)
+        LinkSelectionButton(entryId: entryId, type: .value, keyPath: keypath, title: "Value", bundle: .module, showLink: $entryModel.showLink)
     }
 
     @ViewBuilder
-    private func contextMenu(for entryId: UUID?, selection: [UUID], showLink: Binding<ShowLinkEntryAction<MapModel>?>, keypath: WritableKeyPath<MapModel, String>?) -> some View {
+    private func contextMenu(for entryId: UUID?, selection: [UUID], keypath: WritableKeyPath<MapModel, String>?) -> some View {
 
+        @Bindable var entryModel = entrySectionEditorModel
         if let entryId {
             editEntryButtonView(entryId: entryId)
 
             if keypath != nil {
                 Divider()
 
-                LinkSelectionButton(entryId: entryId, type: .audio, keyPath: keypath, title: "Audio", bundle: .module, showLink: showLink)
+                LinkSelectionButton(entryId: entryId, type: .audio, keyPath: keypath, title: "Audio", bundle: .module, showLink: $entryModel.showLink)
 
-                LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keypath, title: "Dice", bundle: .module, showLink: showLink)
+                LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keypath, title: "Dice", bundle: .module, showLink: $entryModel.showLink)
 
-                LinkSelectionButton(entryId: entryId, type: .map, keyPath: keypath, title: "Map", bundle: .module, showLink: showLink)
+                LinkSelectionButton(entryId: entryId, type: .map, keyPath: keypath, title: "Map", bundle: .module, showLink: $entryModel.showLink)
 
-                LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keypath, title: "Pdf", bundle: .module, showLink: showLink)
+                LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keypath, title: "Pdf", bundle: .module, showLink: $entryModel.showLink)
 
-                LinkSelectionButton(entryId: entryId, type: .photo, keyPath: keypath, title: "Photo", bundle: .module, showLink: showLink)
+                LinkSelectionButton(entryId: entryId, type: .photo, keyPath: keypath, title: "Photo", bundle: .module, showLink: $entryModel.showLink)
 
-                LinkSelectionButton(entryId: entryId, type: .table, keyPath: keypath, title: "Table", bundle: .module, showLink: showLink)
+                LinkSelectionButton(entryId: entryId, type: .table, keyPath: keypath, title: "Table", bundle: .module, showLink: $entryModel.showLink)
 
-                LinkSelectionButton(entryId: entryId, type: .value, keyPath: keypath, title: "Value", bundle: .module, showLink: showLink)
+                LinkSelectionButton(entryId: entryId, type: .value, keyPath: keypath, title: "Value", bundle: .module, showLink: $entryModel.showLink)
             }
         }
     }
 
     @ViewBuilder
-    private func actionBarView(selection: UUID?, showLink: Binding<ShowLinkEntryAction<MapModel>?>) -> some View {
+    private func actionBarView(selection: UUID?) -> some View {
         LinkWindowButton(type: .audio)
         LinkWindowButton(type: .dice)
         LinkWindowButton(type: .map)

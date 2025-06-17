@@ -12,24 +12,26 @@ struct ValueEntrySectionEditor: View {
     @Environment(SelectionSheetLinkModel.self) private var selectionSheetLinkModel
     @Environment(\.dismiss) private var dismiss
 
+    @State private var entrySectionEditorModel = EntrySectionEditorModel<ValueModel>()
+
     var body: some View {
         let _ = Self._printChanges()
         @Bindable var model = editController.model
 
-        EntrySectionEditor(editControllable: editController) { entryId, showLink in
-            editContent(entryId: entryId, showLink: showLink)
-        } contentView: { entryId, showLink in
+        EntrySectionEditor(editControllable: editController, entrySectionEditorModel: entrySectionEditorModel) { entryId in
+            editContent(entryId: entryId)
+        } contentView: { entryId in
             EntryRow(linkController: root.linkController, model: editController.model, item: ItemRowTreeModel(id: UUID(), model: ItemRowModel(itemId: editController.model.id, entryId: entryId, typeId: root.itemController.itemDataModel.networkModule)), isEditing: true, hasQuickEditor: false, cacheItemListModel: editController.cacheItemListModel)
-        } showLinkView: { linkValue in
-            showLink(linkValue: linkValue)
-        } swipeActionView: { entryId, showLink in
-            swipeButtons(for: entryId, keypath: \.[entryId].value, showLink: showLink)
-        } menuView: { entryId, selection, showLink in
-            contextMenu(for: entryId, selection: selection, showLink: showLink, keyPath: nil)
-        } linkActionView: { entryId, showLink in
-            actionBarView(selection: entryId, showLink: showLink)
-        } addActionView: { showLink in
-            addEntryFromTemplateView(showLink: showLink)
+        } showLinkView: {
+            showLink()
+        } swipeActionView: { entryId in
+            swipeButtons(for: entryId, keypath: \.[entryId].value)
+        } menuView: { entryId, selection in
+            contextMenu(for: entryId, selection: selection, keyPath: nil)
+        } linkActionView: { entryId in
+            actionBarView(selection: entryId)
+        } addActionView: {
+            addEntryFromTemplateView()
         }
         .onChange(of: selectionSheetLinkModel.childId, initial: false) {
             guard let childId = selectionSheetLinkModel.childId else { return }
@@ -47,17 +49,17 @@ struct ValueEntrySectionEditor: View {
     }
 
     @ViewBuilder
-    private func editContent(entryId: UUID, showLink: Binding<ShowLinkEntryAction<ValueModel>?>) -> some View {
+    private func editContent(entryId: UUID) -> some View {
         @Bindable var model = editController.model
         Group {
             TextFieldControllerEditor(editController: editController, linkReplaceController: editController.nameEditLink(for: entryId), title: "Name", prompt: "Enter a name for the entry", bundle: .module)
                 .id(entryId)
                 .contextMenu {
-                    contextMenu(for: entryId, selection: [], showLink: showLink, keyPath: \.[entryId].name)
+                    contextMenu(for: entryId, selection: [], keyPath: \.[entryId].name)
                 }
 #if !os(tvOS)
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                    swipeButtons(for: entryId, keypath: \.[entryId].name, showLink: showLink)
+                    swipeButtons(for: entryId, keypath: \.[entryId].name)
                 }
 #endif
 
@@ -72,11 +74,11 @@ struct ValueEntrySectionEditor: View {
                     TextFieldControllerEditor(editController: editController, linkReplaceController: editController.contentEditLink(for: entryId), title: "Value", prompt: "Enter a value for the entry", bundle: .module)
                         .id(entryId)
                         .contextMenu {
-                            contextMenu(for: entryId, selection: [], showLink: showLink, keyPath: \.[entryId].value)
+                            contextMenu(for: entryId, selection: [], keyPath: \.[entryId].value)
                         }
 #if !os(tvOS)
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            swipeButtons(for: entryId, keypath: \.[entryId].value, showLink: showLink)
+                            swipeButtons(for: entryId, keypath: \.[entryId].value)
                         }
 #endif
                 }
@@ -86,52 +88,56 @@ struct ValueEntrySectionEditor: View {
 
 //            ToggleEditor(editController: editController, model: $model[entryId].isGeneratorToggle, canToggle: model[entryId].canGenerator, title: "Generator", bundle: .module, icon: "gear")
 
-            diceRowEditor(for: model, entryId: entryId, showLink: showLink)
+            diceRowEditor(for: model, entryId: entryId)
                 .id(entryId)
 
-            valueRowEditor(for: model, entryId: entryId, showLink: showLink)
+            valueRowEditor(for: model, entryId: entryId)
                 .id(entryId)
         }
     }
 
     @ViewBuilder
-    private func showLink(linkValue: ShowLinkEntryAction<ValueModel>) -> some View {
-        switch linkValue.type {
-            case .dice:
-                editController.selectDice(for: linkValue.entryId, linkKeyPath: linkValue.keyPath) { selectionSheetLinkModel.selection = false }
-            case .pdf:
-                editController.selectPdf(for: linkValue.entryId, linkKeyPath: linkValue.keyPath) { selectionSheetLinkModel.selection = false }
-            case .table:
-                editController.selectTable(for: linkValue.entryId, linkKeyPath: linkValue.keyPath) { selectionSheetLinkModel.selection = false }
-            case .editor:
-                editController.selectTemplate(selectionModel: selectionSheetLinkModel) { selectionSheetLinkModel.selection = false }
-            default:
-                editController.selectValue(for: linkValue.entryId, linkKeyPath: linkValue.keyPath, selectionModel: selectionSheetLinkModel) { selectionSheetLinkModel.selection = false }
+    private func showLink() -> some View {
+        @Bindable var entryModel = entrySectionEditorModel
+        if let linkValue = entryModel.showLink {
+            switch linkValue.type {
+                case .dice:
+                    editController.selectDice(for: linkValue.entryId, linkKeyPath: linkValue.keyPath) { selectionSheetLinkModel.selection = false }
+                case .pdf:
+                    editController.selectPdf(for: linkValue.entryId, linkKeyPath: linkValue.keyPath) { selectionSheetLinkModel.selection = false }
+                case .table:
+                    editController.selectTable(for: linkValue.entryId, linkKeyPath: linkValue.keyPath) { selectionSheetLinkModel.selection = false }
+                case .editor:
+                    editController.selectTemplate(selectionModel: selectionSheetLinkModel) { selectionSheetLinkModel.selection = false }
+                default:
+                    editController.selectValue(for: linkValue.entryId, linkKeyPath: linkValue.keyPath, selectionModel: selectionSheetLinkModel) { selectionSheetLinkModel.selection = false }
+            }
         }
     }
 
     @ViewBuilder
-    private func swipeButtons(for entryId: UUID, keypath: WritableKeyPath<ValueModel, String>, showLink: Binding<ShowLinkEntryAction<ValueModel>?>) -> some View {
-        LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keypath, title: "Dice", bundle: .module, showLink: showLink)
+    private func swipeButtons(for entryId: UUID, keypath: WritableKeyPath<ValueModel, String>) -> some View {
+        @Bindable var entryModel = entrySectionEditorModel
+        LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keypath, title: "Dice", bundle: .module, showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keypath, title: "Pdf", bundle: .module,showLink: showLink)
+        LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keypath, title: "Pdf", bundle: .module,showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .table, keyPath: keypath, title: "Table", bundle: .module,showLink: showLink)
+        LinkSelectionButton(entryId: entryId, type: .table, keyPath: keypath, title: "Table", bundle: .module,showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .value, keyPath: keypath, title: "Value", bundle: .module,showLink: showLink)
+        LinkSelectionButton(entryId: entryId, type: .value, keyPath: keypath, title: "Value", bundle: .module,showLink: $entryModel.showLink)
     }
 
     @ViewBuilder
-    private func contextMenu(for entryId: UUID?, selection: [UUID], showLink: Binding<ShowLinkEntryAction<ValueModel>?>, keyPath: WritableKeyPath<ValueModel, String>?) -> some View {
-
+    private func contextMenu(for entryId: UUID?, selection: [UUID], keyPath: WritableKeyPath<ValueModel, String>?) -> some View {
+        @Bindable var entryModel = entrySectionEditorModel
         if let entryId {
-            LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keyPath, title: "Add Dice", bundle: .module, showLink: showLink)
+            LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keyPath, title: "Add Dice", bundle: .module, showLink: $entryModel.showLink)
 
-            LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keyPath, title: "Add Pdf", bundle: .module, showLink: showLink)
+            LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keyPath, title: "Add Pdf", bundle: .module, showLink: $entryModel.showLink)
 
-            LinkSelectionButton(entryId: entryId, type: .table, keyPath: keyPath, title: "Add Table", bundle: .module, showLink: showLink)
+            LinkSelectionButton(entryId: entryId, type: .table, keyPath: keyPath, title: "Add Table", bundle: .module, showLink: $entryModel.showLink)
 
-            LinkSelectionButton(entryId: entryId, type: .value, keyPath: keyPath, title: "Add Value", bundle: .module, showLink: showLink)
+            LinkSelectionButton(entryId: entryId, type: .value, keyPath: keyPath, title: "Add Value", bundle: .module, showLink: $entryModel.showLink)
         } else if !selection.isEmpty {
             Button {
                 let rootModel = selection.first.map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value) }
@@ -146,24 +152,24 @@ struct ValueEntrySectionEditor: View {
     }
 
     @ViewBuilder
-    private func actionBarView(selection: UUID?, showLink: Binding<ShowLinkEntryAction<ValueModel>?>) -> some View {
+    private func actionBarView(selection: UUID?) -> some View {
         LinkWindowButton(type: .dice)
         LinkWindowButton(type: .pdf)
         LinkWindowButton(type: .table)
         LinkWindowButton(type: .value)
     }
 
-    private func addEntryFromTemplateView(showLink: Binding<ShowLinkEntryAction<ValueModel>?>) -> some View {
+    private func addEntryFromTemplateView() -> some View {
         Button {
             withAnimation {
-                showLink.wrappedValue = ShowLinkEntryAction(id: UUID(), entryId: UUID(), type: .editor, keyPath: nil)
+                entrySectionEditorModel.showLink = ShowLinkEntryAction(id: UUID(), entryId: UUID(), type: .editor, keyPath: nil)
             }
         } label: {
             Image(systemName: "gear")
         }
     }
 
-    private func diceRowEditor(for model: ValueModel, entryId: UUID, showLink: Binding<ShowLinkEntryAction<ValueModel>?>) -> some View {
+    private func diceRowEditor(for model: ValueModel, entryId: UUID) -> some View {
         HStack {
             Label { Text("Dice", bundle: .module) } icon: { Image(systemName: NetworkModules.dice.icon) }
 
@@ -177,7 +183,7 @@ struct ValueEntrySectionEditor: View {
             Spacer()
 
             Button {
-                showLink.wrappedValue = ShowLinkEntryAction(id: UUID(), entryId: entryId, type: .dice, keyPath: nil)
+                entrySectionEditorModel.showLink = ShowLinkEntryAction(id: UUID(), entryId: entryId, type: .dice, keyPath: nil)
             } label: {
                 Text(model[entryId].diceId == nil ? "Add" : "Change", bundle: .module)
             }
@@ -189,7 +195,7 @@ struct ValueEntrySectionEditor: View {
         return root.itemController.itemOrEmpty(for: valueId).name
     }
 
-    private func valueRowEditor(for model: ValueModel, entryId: UUID, showLink: Binding<ShowLinkEntryAction<ValueModel>?>) -> some View {
+    private func valueRowEditor(for model: ValueModel, entryId: UUID) -> some View {
         HStack {
             Label { Text("Group", bundle: .module) } icon: { Image(systemName: NetworkModules.value.icon) }
 
@@ -203,7 +209,7 @@ struct ValueEntrySectionEditor: View {
             Spacer()
 
             Button {
-                showLink.wrappedValue = ShowLinkEntryAction(id: UUID(), entryId: entryId, type: .value, keyPath: nil)
+                entrySectionEditorModel.showLink = ShowLinkEntryAction(id: UUID(), entryId: entryId, type: .value, keyPath: nil)
             } label: {
                 Text(model[entryId].valueId == nil ? "Add" : "Change", bundle: .module)
             }
