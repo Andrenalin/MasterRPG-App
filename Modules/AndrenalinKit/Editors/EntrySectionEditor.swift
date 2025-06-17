@@ -17,7 +17,7 @@ public final class EntrySectionEditorModel<Model> {
 
     var selection: UUID?
     var expandedEntries: [UUID: Bool]
-    var selectedEntries: [UUID]
+    public var selectedEntries: [UUID]
 
     var showDeleteAlert: Bool
     var removeEntryList: RemoveEntryListModel
@@ -46,8 +46,8 @@ public struct EntrySectionEditor<EditController: EntryDataEditable, EditContent:
         @ViewBuilder contentView: @escaping (UUID) -> Content,
         @ViewBuilder showLinkView: () -> ShowLink,
         @ViewBuilder swipeActionView: @escaping (UUID) -> SwipeAction,
-        @ViewBuilder menuView: @escaping (UUID?, [UUID]) -> MenuContent,
-        @ViewBuilder linkActionView: @escaping (UUID?) -> LinkAction,
+        @ViewBuilder menuView: @escaping (UUID?) -> MenuContent,
+        @ViewBuilder linkActionView: () -> LinkAction,
         @ViewBuilder addActionView: () -> AddAction = EmptyView.init
     ) {
         self.editControllable = editControllable
@@ -57,7 +57,7 @@ public struct EntrySectionEditor<EditController: EntryDataEditable, EditContent:
         self.showLinkView = showLinkView()
         self.swipeActionView = swipeActionView
         self.menuView = menuView
-        self.linkActionView = linkActionView
+        self.linkActionView = linkActionView()
         self.addActionView = addActionView()
     }
 
@@ -67,8 +67,8 @@ public struct EntrySectionEditor<EditController: EntryDataEditable, EditContent:
     let contentView: (UUID) -> Content
     let showLinkView: ShowLink
     let swipeActionView: (UUID) -> SwipeAction
-    let menuView: (UUID?, [UUID]) -> MenuContent
-    let linkActionView: (UUID?) -> LinkAction
+    let menuView: (UUID?) -> MenuContent
+    let linkActionView: LinkAction
     let addActionView: AddAction
 
     @Environment(\.colorScheme) private var colorScheme
@@ -79,15 +79,6 @@ public struct EntrySectionEditor<EditController: EntryDataEditable, EditContent:
     @Environment(ListModel.self) private var itemListModel
     @Environment(SelectionSheetLinkModel.self) private var selectionModel
 
-    @State private var showLink: ShowLinkEntryAction<EditController.Model>?
-
-    @State private var selection: UUID? = nil
-    @State private var expandedEntries: [UUID: Bool] = [:]
-    @State private var selectedEntries: [UUID] = []
-
-    @State private var showDeleteAlert: Bool = false
-    @State private var removeEntryList = RemoveEntryListModel()
-    
     public var body: some View {
         let _ = Self._printChanges()
         Section {
@@ -105,13 +96,13 @@ public struct EntrySectionEditor<EditController: EntryDataEditable, EditContent:
                     contentView(entry.id)
 #if os(iOS)
                         .selectListItem(isActive: editMode?.wrappedValue == .active ) {
-                            if let index =  selectedEntries.firstIndex(of: entry.id) {
-                                selectedEntries.remove(at: index)
+                            if let index = entrySectionEditorModel.selectedEntries.firstIndex(of: entry.id) {
+                                entrySectionEditorModel.selectedEntries.remove(at: index)
                             } else {
-                                selectedEntries.append(entry.id)
+                                entrySectionEditorModel.selectedEntries.append(entry.id)
                             }
                         } isSelected: {
-                            selectedEntries.contains(entry.id)
+                            entrySectionEditorModel.selectedEntries.contains(entry.id)
                         }
 #endif
                         .contextMenu {
@@ -140,60 +131,50 @@ public struct EntrySectionEditor<EditController: EntryDataEditable, EditContent:
         }
 #if os(macOS)
         .onDeleteCommand {
-            guard let selection else { return }
+            guard let selection = entrySectionEditorModel.selection else { return }
             checkDeleteEntries(ids: [selection], alwaysDeleteCheck: true)
         }
 #endif
         .onChange(of: editControllable.editorModel.currentItemId, initial: true) {
             guard editControllable.editorModel.currentItemId != nil else { return }
             withAnimation {
-                expandedEntries = [:]
-                selectedEntries = []
+                entrySectionEditorModel.expandedEntries = [:]
+                entrySectionEditorModel.selectedEntries = []
             }
         }
         .onChange(of: editControllable.editorModel.currentEntryId, initial: true) {
             guard let entryId = editControllable.editorModel.currentEntryId else { return }
 
-            if expandedEntries[entryId, default: false] == false {
+            if entrySectionEditorModel.expandedEntries[entryId, default: false] == false {
                 withAnimation {
-                    expandedEntries = [:]
-                    expandedEntries[entryId] = true
+                    entrySectionEditorModel.expandedEntries = [:]
+                    entrySectionEditorModel.expandedEntries[entryId] = true
                 }
             }
         }
         .onChange(of: model.entries) {
-            selectedEntries = selectedEntries.filter { entryId in
+            entrySectionEditorModel.selectedEntries = entrySectionEditorModel.selectedEntries.filter { entryId in
                 model.entries.contains(where: { $0.id == entryId })
             }
         }
-        .onChange(of: showLinkToggle.wrappedValue) {
-            guard let showLink else { return }
+        .onChange(of: entrySectionEditorModel.showLink?.id) {
+            guard entrySectionEditorModel.showLink != nil else { return }
             selectionModel.selectionView = AnyView(showLinkView)
-            self.showLink = nil
+            entrySectionEditorModel.showLink = nil
             withAnimation { selectionModel.selection = true }
         }
-        .onChange(of: showDeleteAlert) {
-            guard showDeleteAlert else { return }
+        .onChange(of: entrySectionEditorModel.showDeleteAlert) {
+            guard entrySectionEditorModel.showDeleteAlert else { return }
             selectionModel.selectionFullView = AnyView(effectedLinkView)
             selectionModel.idealSize = CGSize(width: 600, height: 800)
-            showDeleteAlert = false
+            entrySectionEditorModel.showDeleteAlert = false
             withAnimation { selectionModel.selectionFullScreen = true }
         }
     }
     
     private var effectedLinkView: some View {
-        EffectedLinkAction(itemControllable: editControllable.itemControllable, removeEntryList: removeEntryList) {
+        EffectedLinkAction(itemControllable: editControllable.itemControllable, removeEntryList: entrySectionEditorModel.removeEntryList) {
             deleteSelectedEntries(rowModels: $0)
-        }
-    }
-    
-    var showLinkToggle: Binding<Bool> {
-        Binding {
-            showLink != nil
-        } set: {
-            if !$0 {
-                showLink = nil
-            }
         }
     }
 }
@@ -209,16 +190,16 @@ private extension EntrySectionEditor {
 
     func expandedEntry(entryId: UUID) -> Binding<Bool> {
         Binding {
-            expandedEntries[entryId, default: false]
+            entrySectionEditorModel.expandedEntries[entryId, default: false]
         } set: {
-            expandedEntries[entryId] = $0
+            entrySectionEditorModel.expandedEntries[entryId] = $0
         }
     }
 
     func removeEntryState(for entryId: UUID) {
-        expandedEntries[entryId] = nil
-        if let index = selectedEntries.firstIndex(of: entryId) {
-            selectedEntries.remove(at: index)
+        entrySectionEditorModel.expandedEntries[entryId] = nil
+        if let index = entrySectionEditorModel.selectedEntries.firstIndex(of: entryId) {
+            entrySectionEditorModel.selectedEntries.remove(at: index)
         }
     }
 
@@ -238,7 +219,7 @@ private extension EntrySectionEditor {
 #else
         let entryId: UUID? = nil
 #endif
-        menuView(entryId, selectedEntries)
+        menuView(entryId)
 
         Divider()
 
@@ -259,8 +240,8 @@ private extension EntrySectionEditor {
     var actionBarView: some View {
         ViewThatFits {
             HStack {
-                linkActionView(selection)
-                
+                linkActionView
+
                 Spacer()
                 
                 actionTitleAddBarView
@@ -268,7 +249,7 @@ private extension EntrySectionEditor {
 
             VStack {
                 HStack {
-                    linkActionView(selection)
+                    linkActionView
                 }
                 
                 actionTitleAddBarView
@@ -286,7 +267,7 @@ private extension EntrySectionEditor {
             
             Button {
                 withAnimation {
-                    expandedEntries = [:]
+                    entrySectionEditorModel.expandedEntries = [:]
                     editControllable.editorModel.activateDetailEditMode.toggle()
                 }
             } label: {
@@ -298,7 +279,7 @@ private extension EntrySectionEditor {
             Button {
                 let entryId = editControllable.addNewEntry()
                 withAnimation {
-                    expandedEntries = [entryId: true]
+                    entrySectionEditorModel.expandedEntries = [entryId: true]
                     itemListModel.scrollEntryId = entryId
                 }
             } label: {
@@ -310,14 +291,14 @@ private extension EntrySectionEditor {
 
 private extension EntrySectionEditor {
     func checkDeleteEntries(ids: [UUID], alwaysDeleteCheck: Bool = false) {
-        removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
+        entrySectionEditorModel.removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
         if alwaysDeleteCheck {
-            withAnimation { showDeleteAlert.toggle() }
+            withAnimation { entrySectionEditorModel.showDeleteAlert.toggle() }
         } else {
-            if editControllable.isUsed(rowModels: removeEntryList.removeItems) {
-                withAnimation { showDeleteAlert.toggle() }
+            if editControllable.isUsed(rowModels: entrySectionEditorModel.removeEntryList.removeItems) {
+                withAnimation { entrySectionEditorModel.showDeleteAlert.toggle() }
             } else {
-                deleteSelectedEntries(rowModels: removeEntryList.removeItems)
+                deleteSelectedEntries(rowModels: entrySectionEditorModel.removeEntryList.removeItems)
             }
         }
     }
@@ -332,15 +313,15 @@ private extension EntrySectionEditor {
 
     func remove(indexSet: IndexSet) {
         let ids = indexSet.map { editControllable.model.entries[$0].id }
-        removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
-        
-        if editControllable.isUsed(rowModels: removeEntryList.removeItems) {
+        entrySectionEditorModel.removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
+
+        if editControllable.isUsed(rowModels: entrySectionEditorModel.removeEntryList.removeItems) {
             let copyEntries = model.entries
-            deleteSelectedEntries(rowModels: removeEntryList.removeItems)
+            deleteSelectedEntries(rowModels: entrySectionEditorModel.removeEntryList.removeItems)
             editControllable.model.entries = copyEntries
             checkDeleteEntries(ids: ids, alwaysDeleteCheck: true)
         } else {
-            deleteSelectedEntries(rowModels: removeEntryList.removeItems)
+            deleteSelectedEntries(rowModels: entrySectionEditorModel.removeEntryList.removeItems)
         }
     }
 }

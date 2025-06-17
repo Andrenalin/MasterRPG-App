@@ -24,9 +24,9 @@ struct PdfEntrySectionEditor: View {
             EmptyView()
         } swipeActionView: { entryId in
             EmptyView()
-        } menuView: { entryId, selection in
+        } menuView: { entryId in
             EmptyView()
-        } linkActionView: { entryId in
+        } linkActionView: {
             EmptyView()
         }
     }

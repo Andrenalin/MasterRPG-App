@@ -22,10 +22,10 @@ struct TableEntrySectionEditor: View {
             showLink()
         } swipeActionView: { entryId in
             swipeButtons(for: entryId, keypath: \.[entryId].content)
-        } menuView: { entryId, selection in
-            contextMenu(for: entryId, selection: selection, keyPath: nil)
-        } linkActionView: { entryId in
-            actionBarView(selection: entryId)
+        } menuView: { entryId in
+            contextMenu(for: entryId, keyPath: nil)
+        } linkActionView: {
+            actionBarView()
         }
     }
 
@@ -37,7 +37,7 @@ struct TableEntrySectionEditor: View {
 
             TextFieldControllerEditor(editController: editController, linkReplaceController: editController.contentEditLink(for: entryId), title: "Content", prompt: "Enter some content for the entry", bundle: .module)
                 .contextMenu {
-                    contextMenu(for: entryId, selection: [], keyPath: \.[entryId].content)
+                    contextMenu(for: entryId, keyPath: \.[entryId].content)
                 }
 #if !os(tvOS)
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -73,7 +73,7 @@ struct TableEntrySectionEditor: View {
     }
 
     @ViewBuilder
-    private func contextMenu(for entryId: UUID?, selection: [UUID], keyPath: WritableKeyPath<TableModel, String>?) -> some View {
+    private func contextMenu(for entryId: UUID?, keyPath: WritableKeyPath<TableModel, String>?) -> some View {
         @Bindable var entryModel = entrySectionEditorModel
         if let entryId, let keyPath {
             LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keyPath, title: "Add Dice", bundle: .module, showLink: $entryModel.showLink)
@@ -83,7 +83,7 @@ struct TableEntrySectionEditor: View {
     }
     
     @ViewBuilder
-    private func actionBarView(selection: UUID?) -> some View {
+    private func actionBarView() -> some View {
         AltOpenWindowButton(module: .dice)
         AltOpenWindowButton(module: .table)
     }

@@ -18,13 +18,14 @@ struct AdventureEntrySectionEditor: View {
             editContent(entryId: entryId)
         } contentView: { entryId in
             EntryRow(model: editController.model, item: ItemRowTreeModel(id: UUID(), model: ItemRowModel(itemId: editController.model.id, entryId: entryId, typeId: .adventure)), isEditing: true, cacheItemListModel: editController.cacheItemListModel)
-        } showLinkView: {             showLink()
+        } showLinkView: {
+            showLink()
         } swipeActionView: { entryId in
             swipeButtons(for: entryId, keypath: \.[entryId].content)
-        } menuView: { entryId, selection in
-            contextMenu(for: entryId, selection: selection, keypath: nil)
-        } linkActionView: { entryId in
-            actionBarView(selection: entryId)
+        } menuView: { entryId in
+            contextMenu(for: entryId, keypath: nil)
+        } linkActionView: {
+            actionBarView()
         }
     }
 
@@ -36,7 +37,7 @@ struct AdventureEntrySectionEditor: View {
 
             TextFieldControllerEditor(editController: editController, linkReplaceController: editController.contentEditLink(for: entryId), title: "Content", prompt: "Enter some content for the entry", bundle: .module)
                 .contextMenu {
-                    contextMenu(for: entryId, selection: [], keypath: \.[entryId].content)
+                    contextMenu(for: entryId, keypath: \.[entryId].content)
                 }
 #if !os(tvOS)
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -100,7 +101,7 @@ struct AdventureEntrySectionEditor: View {
     }
 
     @ViewBuilder
-    private func contextMenu(for entryId: UUID?, selection: [UUID], keypath: WritableKeyPath<AdventureModel, String>?) -> some View {
+    private func contextMenu(for entryId: UUID?, keypath: WritableKeyPath<AdventureModel, String>?) -> some View {
         @Bindable var entryModel = entrySectionEditorModel
         if let entryId, let keypath {
             LinkSelectionButton(entryId: entryId, type: .adventure, keyPath: keypath, title: "Adventure", bundle: .module, showLink: $entryModel.showLink)
@@ -136,7 +137,7 @@ struct AdventureEntrySectionEditor: View {
     }
 
     @ViewBuilder
-    private func actionBarView(selection: UUID?) -> some View {
+    private func actionBarView() -> some View {
         LinkWindowButton(type: .adventure)
         LinkWindowButton(type: .audio)
         LinkWindowButton(type: .dice)

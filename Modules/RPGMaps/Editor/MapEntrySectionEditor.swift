@@ -24,10 +24,10 @@ struct MapEntrySectionEditor: View {
             showLink()
         } swipeActionView: { entryId in
             swipeButtons(for: entryId, keypath: \.[entryId].content)
-        } menuView: { entryId, selection in
-            contextMenu(for: entryId, selection: selection, keypath: nil)
-        } linkActionView: { entryId in
-            actionBarView(selection: entryId)
+        } menuView: { entryId in
+            contextMenu(for: entryId, keypath: nil)
+        } linkActionView: {
+            actionBarView()
         }
         .onChange(of: showMapEditor) {
             if showMapEditor {
@@ -47,7 +47,7 @@ struct MapEntrySectionEditor: View {
 
             TextFieldControllerEditor(editController: editController, linkReplaceController: editController.contentEditLink(for: entryId), title: "Content", prompt: "Enter some content for the entry", bundle: .module)
                 .contextMenu {
-                    contextMenu(for: entryId, selection: [], keypath: \.[entryId].content)
+                    contextMenu(for: entryId, keypath: \.[entryId].content)
                 }
 #if !os(tvOS)
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -105,7 +105,7 @@ struct MapEntrySectionEditor: View {
     }
 
     @ViewBuilder
-    private func contextMenu(for entryId: UUID?, selection: [UUID], keypath: WritableKeyPath<MapModel, String>?) -> some View {
+    private func contextMenu(for entryId: UUID?, keypath: WritableKeyPath<MapModel, String>?) -> some View {
 
         @Bindable var entryModel = entrySectionEditorModel
         if let entryId {
@@ -132,7 +132,7 @@ struct MapEntrySectionEditor: View {
     }
 
     @ViewBuilder
-    private func actionBarView(selection: UUID?) -> some View {
+    private func actionBarView() -> some View {
         LinkWindowButton(type: .audio)
         LinkWindowButton(type: .dice)
         LinkWindowButton(type: .map)

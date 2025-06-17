@@ -26,10 +26,10 @@ struct ValueEntrySectionEditor: View {
             showLink()
         } swipeActionView: { entryId in
             swipeButtons(for: entryId, keypath: \.[entryId].value)
-        } menuView: { entryId, selection in
-            contextMenu(for: entryId, selection: selection, keyPath: nil)
-        } linkActionView: { entryId in
-            actionBarView(selection: entryId)
+        } menuView: { entryId in
+            contextMenu(for: entryId, keyPath: nil)
+        } linkActionView: {
+            actionBarView()
         } addActionView: {
             addEntryFromTemplateView()
         }
@@ -55,7 +55,7 @@ struct ValueEntrySectionEditor: View {
             TextFieldControllerEditor(editController: editController, linkReplaceController: editController.nameEditLink(for: entryId), title: "Name", prompt: "Enter a name for the entry", bundle: .module)
                 .id(entryId)
                 .contextMenu {
-                    contextMenu(for: entryId, selection: [], keyPath: \.[entryId].name)
+                    contextMenu(for: entryId, keyPath: \.[entryId].name)
                 }
 #if !os(tvOS)
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -74,7 +74,7 @@ struct ValueEntrySectionEditor: View {
                     TextFieldControllerEditor(editController: editController, linkReplaceController: editController.contentEditLink(for: entryId), title: "Value", prompt: "Enter a value for the entry", bundle: .module)
                         .id(entryId)
                         .contextMenu {
-                            contextMenu(for: entryId, selection: [], keyPath: \.[entryId].value)
+                            contextMenu(for: entryId, keyPath: \.[entryId].value)
                         }
 #if !os(tvOS)
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -128,7 +128,7 @@ struct ValueEntrySectionEditor: View {
     }
 
     @ViewBuilder
-    private func contextMenu(for entryId: UUID?, selection: [UUID], keyPath: WritableKeyPath<ValueModel, String>?) -> some View {
+    private func contextMenu(for entryId: UUID?, keyPath: WritableKeyPath<ValueModel, String>?) -> some View {
         @Bindable var entryModel = entrySectionEditorModel
         if let entryId {
             LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keyPath, title: "Add Dice", bundle: .module, showLink: $entryModel.showLink)
@@ -138,21 +138,21 @@ struct ValueEntrySectionEditor: View {
             LinkSelectionButton(entryId: entryId, type: .table, keyPath: keyPath, title: "Add Table", bundle: .module, showLink: $entryModel.showLink)
 
             LinkSelectionButton(entryId: entryId, type: .value, keyPath: keyPath, title: "Add Value", bundle: .module, showLink: $entryModel.showLink)
-        } else if !selection.isEmpty {
+        } else if !entrySectionEditorModel.selectedEntries.isEmpty {
             Button {
-                let rootModel = selection.first.map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value) }
+                let rootModel = entrySectionEditorModel.selectedEntries.first.map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value) }
                 guard let rootModel else { return }
                 Task {
-                    await editController.toggleGroup(for: rootModel, models: selection.dropFirst().map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value) })
+                    await editController.toggleGroup(for: rootModel, models: entrySectionEditorModel.selectedEntries.dropFirst().map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value) })
                 }
             } label: {
-                Label(editController.groupTitle(for: selection.dropFirst().map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value)}, rootModel: selection.first.map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value)}), systemImage: "square.on.square.squareshape.controlhandles")
+                Label(editController.groupTitle(for: entrySectionEditorModel.selectedEntries.dropFirst().map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value)}, rootModel: entrySectionEditorModel.selectedEntries.first.map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value)}), systemImage: "square.on.square.squareshape.controlhandles")
             }
         }
     }
 
     @ViewBuilder
-    private func actionBarView(selection: UUID?) -> some View {
+    private func actionBarView() -> some View {
         LinkWindowButton(type: .dice)
         LinkWindowButton(type: .pdf)
         LinkWindowButton(type: .table)
