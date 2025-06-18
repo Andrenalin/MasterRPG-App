@@ -48,10 +48,6 @@ struct ValueDetailHeader: View {
 #endif
         }
     }
-    
-    private var photoId: Binding<UUID?> {
-        Binding { model.photoId } set: { _ in }
-    }
 }
 
 #Preview {

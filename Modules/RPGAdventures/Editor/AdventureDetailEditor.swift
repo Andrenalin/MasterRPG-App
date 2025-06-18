@@ -46,11 +46,7 @@ struct AdventureDetailEditor: View {
         .onChange(of: model.entries, initial: true) {
             externalHeaderModel.minHeight = Double(model.entries.count * 128)
         }
-    }
-    
-    private var photoId: Binding<UUID> {
-        Binding { model.photoId ?? UUID() } set: { _ in }
-    }
+    }    
 }
 
 struct AdventureExternalHeader: View {

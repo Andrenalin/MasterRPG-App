@@ -173,7 +173,7 @@ private extension DetailEditor {
 #if os(macOS)
         Divider()
 
-        extContentView()
+        extContentView
             .listRowInsets(.init())
             .frame(maxWidth: .infinity, minHeight: extContentHeight(screenHeight: geometry.size.height), idealHeight: extContentHeight(screenHeight: geometry.size.height) * 1.5,  maxHeight: .infinity)
 #endif
