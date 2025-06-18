@@ -4,10 +4,16 @@ import AndrenalinKit
 import SwiftUI
 
 struct ValueEntrySwipeAction: View {
+    enum ActionType {
+        case name
+        case value
+    }
+
     let editController: EditController
     let entrySectionEditorModel: EntrySectionEditorModel<ValueModel>
-    let entryId: UUID
-    let keyPath: WritableKeyPath<ValueModel, String>?
+    let actionType: ActionType
+
+    @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
 
     var body: some View {
         @Bindable var entryModel = entrySectionEditorModel
@@ -19,42 +25,15 @@ struct ValueEntrySwipeAction: View {
 
         LinkSelectionButton(entryId: entryId, type: .value, keyPath: keyPath, title: "Value", bundle: .module,showLink: $entryModel.showLink)
     }
-}
-
-struct ValueEntrySwipeActionName: View {
-    let editController: EditController
-    let entrySectionEditorModel: EntrySectionEditorModel<ValueModel>
-
-    @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
-
-    var body: some View {
-        ValueEntrySwipeAction(editController: editController, entrySectionEditorModel: entrySectionEditorModel, entryId: entryId, keyPath: keyPath)
-    }
 
     private var entryId: UUID {
         entrySectionSelectionModel.id
     }
 
-    private var keyPath: WritableKeyPath<ValueModel, String>? {
-        \.[entryId].name
-    }
-}
-
-struct ValueEntrySwipeActionValue: View {
-    let editController: EditController
-    let entrySectionEditorModel: EntrySectionEditorModel<ValueModel>
-
-    @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
-
-    var body: some View {
-        ValueEntrySwipeAction(editController: editController, entrySectionEditorModel: entrySectionEditorModel, entryId: entryId, keyPath: keyPath)
-    }
-
-    private var entryId: UUID {
-        entrySectionSelectionModel.id
-    }
-
-    private var keyPath: WritableKeyPath<ValueModel, String>? {
-        \.[entryId].value
+    private var keyPath: WritableKeyPath<ValueModel, String> {
+        switch actionType {
+            case .name: \.[entryId].name
+            case .value: \.[entryId].value
+        }
     }
 }

@@ -1,20 +1,17 @@
-//
-//  ValueEntrySwipeAction.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 18/6/2568 BE.
-//
-
-
 // @copyright André Trettin
 
 import AndrenalinKit
 import SwiftUI
 
-struct ValueEntrySwipeAction: View {
+struct TableEntrySwipeAction: View {
+    enum ActionType {
+        case name
+        case content
+    }
+
     let editController: EditController
-    let entrySectionEditorModel: EntrySectionEditorModel<ValueModel>
-    let isValueAction: Bool
+    let entrySectionEditorModel: EntrySectionEditorModel<TableModel>
+    let actionType: ActionType
 
     @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
 
@@ -22,18 +19,17 @@ struct ValueEntrySwipeAction: View {
         @Bindable var entryModel = entrySectionEditorModel
         LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keyPath, title: "Dice", bundle: .module, showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keyPath, title: "Pdf", bundle: .module,showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .table, keyPath: keyPath, title: "Table", bundle: .module,showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .value, keyPath: keyPath, title: "Value", bundle: .module,showLink: $entryModel.showLink)
+        LinkSelectionButton(entryId: entryId, type: .table, keyPath: keyPath, title: "Table", bundle: .module, showLink: $entryModel.showLink)
     }
 
     private var entryId: UUID {
         entrySectionSelectionModel.id
     }
 
-    private var keyPath: WritableKeyPath<ValueModel, String> {
-        isValueAction ? \.[entryId].value : \.[entryId].name
+    private var keyPath: WritableKeyPath<TableModel, String> {
+        switch actionType {
+            case .name: \.[entryId].name
+            case .content: \.[entryId].content
+        }
     }
 }

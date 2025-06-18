@@ -1,21 +1,13 @@
-//
-//  TableEntryEditContent.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 18/6/2568 BE.
-//
-
-
 // @copyright André Trettin
 
 import AndrenalinKit
 import SwiftUI
 
-struct TableEntryEditContent: View {
+struct AdventureEntryEditContent: View {
     let editController: EditController
-    let entrySectionEditorModel: EntrySectionEditorModel<TableModel>
+    let entrySectionEditorModel: EntrySectionEditorModel<AdventureModel>
 
-    @Environment(TableRoot.self) private var root
+    @Environment(AdventureRoot.self) private var root
     @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
 
     var body: some View {
@@ -25,18 +17,18 @@ struct TableEntryEditContent: View {
 
             TextFieldControllerEditor(editController: editController, linkReplaceController: editController.contentEditLink(for: entryId), title: "Content", prompt: "Enter some content for the entry", bundle: .module)
                 .contextMenu {
-                    TableEntryMenuContext(editController: editController, entrySectionEditorModel: entrySectionEditorModel, menuType: .content)
+                    AdventureEntryMenuContext(editController: editController, entrySectionEditorModel: entrySectionEditorModel,menuType: .content)
                 }
 #if !os(tvOS)
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                    TableEntrySwipeAction(editController: editController, entrySectionEditorModel: entrySectionEditorModel, actionType: .content)
+                    AdventureEntrySwipeAction(editController: editController, entrySectionEditorModel: entrySectionEditorModel, actionType: .content)
                 }
 #endif
         }
     }
 }
 
-private extension TableEntryEditContent {
+private extension AdventureEntryEditContent {
     var entryId: UUID {
         entrySectionSelectionModel.id
     }

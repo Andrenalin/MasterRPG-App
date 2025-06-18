@@ -1,17 +1,9 @@
-//
-//  TableEntryMenuContext.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 18/6/2568 BE.
-//
-
-
 // @copyright André Trettin
 
 import AndrenalinKit
 import SwiftUI
 
-struct TableEntryMenuContext: View {
+struct AdventureEntryMenuContext: View {
     enum MenuType {
         case all
         case name
@@ -19,7 +11,7 @@ struct TableEntryMenuContext: View {
     }
 
     let editController: EditController
-    let entrySectionEditorModel: EntrySectionEditorModel<TableModel>
+    let entrySectionEditorModel: EntrySectionEditorModel<AdventureModel>
     let menuType: MenuType
 
     @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
@@ -27,16 +19,41 @@ struct TableEntryMenuContext: View {
     var body: some View {
         @Bindable var entryModel = entrySectionEditorModel
 
-        LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keyPath, title: "Add Dice", bundle: .module, showLink: $entryModel.showLink)
+        LinkSelectionButton(entryId: entryId, type: .adventure, keyPath: keyPath, title: "Adventure", bundle: .module, showLink: $entryModel.showLink)
 
-        LinkSelectionButton(entryId: entryId, type: .table, keyPath: keyPath, title: "Add Table", bundle: .module, showLink: $entryModel.showLink)
-    }
+        LinkSelectionButton(entryId: entryId, type: .audio, keyPath: keyPath, title: "Audio", bundle: .module, showLink: $entryModel.showLink)
+
+        LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keyPath, title: "Dice", bundle: .module, showLink: $entryModel.showLink)
+
+        LinkSelectionButton(entryId: entryId, type: .map, keyPath: keyPath, title: "Map", bundle: .module, showLink: $entryModel.showLink)
+
+        LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keyPath, title: "Pdf", bundle: .module, showLink: $entryModel.showLink)
+
+        LinkSelectionButton(entryId: entryId, type: .photo, keyPath: keyPath, title: "Photo", bundle: .module, showLink: $entryModel.showLink)
+
+        LinkSelectionButton(entryId: entryId, type: .space, keyPath: keyPath, title: "Space", bundle: .module, showLink: $entryModel.showLink)
+
+        LinkSelectionButton(entryId: entryId, type: .table, keyPath: keyPath, title: "Table", bundle: .module, showLink: $entryModel.showLink)
+
+        LinkSelectionButton(entryId: entryId, type: .value, keyPath: keyPath, title: "Value", bundle: .module, showLink: $entryModel.showLink)
+
+        LinkSelectionButton(entryId: entryId, type: .weather, keyPath: keyPath, title: "Weather", bundle: .module, showLink: $entryModel.showLink)
+
+        Button {
+            withAnimation { editController.collectPhotos(entryId: entryId) }
+        } label: {
+            Label {
+                Text("Collect Photo Links", bundle: .module)
+            } icon: {
+                Image(systemName: "photo.stack.fill")
+            }
+        }    }
 
     private var entryId: UUID {
         entrySectionSelectionModel.id
     }
 
-    private var keyPath: WritableKeyPath<TableModel, String>? {
+    private var keyPath: WritableKeyPath<AdventureModel, String>? {
         switch menuType {
             case .all: nil
             case .name: \.[entryId].name

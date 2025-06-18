@@ -12,19 +12,15 @@ struct PdfEntrySectionEditor: View {
     var body: some View {
         @Bindable var model = editController.model
 
-        EntrySectionEditor(editControllable: editController, entrySectionEditorModel: entrySectionEditorModel) { entryId in
-            Group {
-                TextFieldEditor(editController: editController, model: $model[entryId].name, title: "Name", prompt: "Enter a name for the bookmark", bundle: .module)
-
-                TextFieldEditor(editController: editController, model: $model[entryId].content, title: "Content", prompt: "Enter some content for the bookmark", bundle: .module)
-            }
-        } contentView: { entryId in
-            EntryRow(item: ItemRowTreeModel(itemId: editController.model.id, entryId: entryId, typeId: root.itemController.itemDataModel.networkModule), isSelected: false, cacheItemListModel: editController.cacheItemListModel)
+        EntrySectionEditor(editControllable: editController, entrySectionEditorModel: entrySectionEditorModel) {
+            PdfEntryEditContent(editController: editController, entrySectionEditorModel: entrySectionEditorModel)
+        } contentView: {
+            PdfEntryEditRow(editController: editController, entrySectionEditorModel: entrySectionEditorModel)
         } showLinkView: {
             EmptyView()
-        } swipeActionView: { entryId in
+        } swipeActionView: {
             EmptyView()
-        } menuView: { entryId in
+        } menuView: {
             EmptyView()
         } linkActionView: {
             EmptyView()

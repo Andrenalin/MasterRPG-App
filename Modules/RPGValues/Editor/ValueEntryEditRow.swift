@@ -1,3 +1,8 @@
+// @copyright André Trettin
+
+import AndrenalinKit
+import SwiftUI
+
 struct ValueEntryEditRow: View {
     let editController: EditController
     let entrySectionEditorModel: EntrySectionEditorModel<ValueModel>

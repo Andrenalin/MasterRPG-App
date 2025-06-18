@@ -14,36 +14,18 @@ struct AdventureEntrySectionEditor: View {
     var body: some View {
         @Bindable var model = editController.model
 
-        EntrySectionEditor(editControllable: editController, entrySectionEditorModel: entrySectionEditorModel) { entryId in
-            editContent(entryId: entryId)
-        } contentView: { entryId in
-            EntryRow(model: editController.model, item: ItemRowTreeModel(id: UUID(), model: ItemRowModel(itemId: editController.model.id, entryId: entryId, typeId: .adventure)), isEditing: true, cacheItemListModel: editController.cacheItemListModel)
+        EntrySectionEditor(editControllable: editController, entrySectionEditorModel: entrySectionEditorModel) {
+            AdventureEntryEditContent(editController: editController, entrySectionEditorModel: entrySectionEditorModel)
+        } contentView: {
+            AdventureEntryEditRow(editController: editController, entrySectionEditorModel: entrySectionEditorModel)
         } showLinkView: {
             showLink()
-        } swipeActionView: { entryId in
-            swipeButtons(for: entryId, keypath: \.[entryId].content)
-        } menuView: { entryId in
-            contextMenu(for: entryId, keypath: nil)
+        } swipeActionView: {
+            AdventureEntrySwipeAction(editController: editController, entrySectionEditorModel: entrySectionEditorModel, actionType: .content)
+        } menuView: {
+            AdventureEntryMenuContext(editController: editController, entrySectionEditorModel: entrySectionEditorModel,menuType: .all)
         } linkActionView: {
             actionBarView()
-        }
-    }
-
-    @ViewBuilder
-    private func editContent(entryId: UUID) -> some View {
-        @Bindable var model = editController.model
-        Group {
-            TextFieldEditor(editController: editController, model: $model[entryId].name, title: "Name", prompt: "Enter a name for the entry", bundle: .module)
-
-            TextFieldControllerEditor(editController: editController, linkReplaceController: editController.contentEditLink(for: entryId), title: "Content", prompt: "Enter some content for the entry", bundle: .module)
-                .contextMenu {
-                    contextMenu(for: entryId, keypath: \.[entryId].content)
-                }
-#if !os(tvOS)
-                .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                    swipeButtons(for: entryId, keypath: \.[entryId].content)
-                }
-#endif
         }
     }
 
@@ -72,66 +54,6 @@ struct AdventureEntrySectionEditor: View {
                     editController.selectWeather(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionSheetLinkModel.selection = false }
                 default:
                     editController.selectAdventure(for: linkValue.entryId, linkKeyPath: \.[linkValue.entryId].content) { selectionSheetLinkModel.selection = false }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func swipeButtons(for entryId: UUID, keypath: WritableKeyPath<AdventureModel, String>) -> some View {
-        @Bindable var entryModel = entrySectionEditorModel
-        LinkSelectionButton(entryId: entryId, type: .adventure, keyPath: keypath, title: "Adventure", bundle: .module, showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .audio, keyPath: keypath, title: "Audio", bundle: .module, showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keypath, title: "Dice", bundle: .module, showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .map, keyPath: keypath, title: "Map", bundle: .module, showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keypath, title: "Pdf", bundle: .module, showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .photo, keyPath: keypath, title: "Photo", bundle: .module, showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .space, keyPath: keypath, title: "Space", bundle: .module, showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .table, keyPath: keypath, title: "Table", bundle: .module, showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .value, keyPath: keypath, title: "Value", bundle: .module, showLink: $entryModel.showLink)
-
-        LinkSelectionButton(entryId: entryId, type: .weather, keyPath: keypath, title: "Weather", bundle: .module, showLink: $entryModel.showLink)
-    }
-
-    @ViewBuilder
-    private func contextMenu(for entryId: UUID?, keypath: WritableKeyPath<AdventureModel, String>?) -> some View {
-        @Bindable var entryModel = entrySectionEditorModel
-        if let entryId, let keypath {
-            LinkSelectionButton(entryId: entryId, type: .adventure, keyPath: keypath, title: "Adventure", bundle: .module, showLink: $entryModel.showLink)
-
-            LinkSelectionButton(entryId: entryId, type: .audio, keyPath: keypath, title: "Audio", bundle: .module, showLink: $entryModel.showLink)
-
-            LinkSelectionButton(entryId: entryId, type: .dice, keyPath: keypath, title: "Dice", bundle: .module, showLink: $entryModel.showLink)
-
-            LinkSelectionButton(entryId: entryId, type: .map, keyPath: keypath, title: "Map", bundle: .module, showLink: $entryModel.showLink)
-
-            LinkSelectionButton(entryId: entryId, type: .pdf, keyPath: keypath, title: "Pdf", bundle: .module, showLink: $entryModel.showLink)
-
-            LinkSelectionButton(entryId: entryId, type: .photo, keyPath: keypath, title: "Photo", bundle: .module, showLink: $entryModel.showLink)
-
-            LinkSelectionButton(entryId: entryId, type: .space, keyPath: keypath, title: "Space", bundle: .module, showLink: $entryModel.showLink)
-
-            LinkSelectionButton(entryId: entryId, type: .table, keyPath: keypath, title: "Table", bundle: .module, showLink: $entryModel.showLink)
-
-            LinkSelectionButton(entryId: entryId, type: .value, keyPath: keypath, title: "Value", bundle: .module, showLink: $entryModel.showLink)
-
-            LinkSelectionButton(entryId: entryId, type: .weather, keyPath: keypath, title: "Weather", bundle: .module, showLink: $entryModel.showLink)
-
-            Button {
-                withAnimation { editController.collectPhotos(entryId: entryId) }
-            } label: {
-                Label {
-                    Text("Collect Photo Links", bundle: .module)
-                } icon: {
-                    Image(systemName: "photo.stack.fill")
-                }
             }
         }
     }

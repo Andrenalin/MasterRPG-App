@@ -4,10 +4,17 @@ import AndrenalinKit
 import SwiftUI
 
 struct ValueEntryMenuContext: View {
+    enum MenuType {
+        case all
+        case name
+        case value
+    }
+
     let editController: EditController
     let entrySectionEditorModel: EntrySectionEditorModel<ValueModel>
-    let entryId: UUID
-    let keyPath: WritableKeyPath<ValueModel, String>?
+    let menuType: MenuType
+
+    @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
 
     var body: some View {
         @Bindable var entryModel = entrySectionEditorModel
@@ -30,6 +37,18 @@ struct ValueEntryMenuContext: View {
             } label: {
                 Label(editController.groupTitle(for: entrySectionEditorModel.selectedEntries.dropFirst().map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value)}, rootModel: entrySectionEditorModel.selectedEntries.first.map { ItemRowModel(itemId: editController.model.id, entryId: $0, typeId: .value)}), systemImage: "square.on.square.squareshape.controlhandles")
             }
+        }
+    }
+
+    private var entryId: UUID {
+        entrySectionSelectionModel.id
+    }
+
+    private var keyPath: WritableKeyPath<ValueModel, String>? {
+        switch menuType {
+            case .all: nil
+            case .name: \.[entryId].name
+            case .value: \.[entryId].value
         }
     }
 }

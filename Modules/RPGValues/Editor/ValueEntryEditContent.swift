@@ -1,3 +1,8 @@
+// @copyright André Trettin
+
+import AndrenalinKit
+import SwiftUI
+
 struct ValueEntryEditContent: View {
     let editController: EditController
     let entrySectionEditorModel: EntrySectionEditorModel<ValueModel>
@@ -11,11 +16,11 @@ struct ValueEntryEditContent: View {
             TextFieldControllerEditor(editController: editController, linkReplaceController: editController.nameEditLink(for: entryId), title: "Name", prompt: "Enter a name for the entry", bundle: .module)
                 .id(entryId)
                 .contextMenu {
-                    ValueEntryMenuContextName(editController: editController, entrySectionEditorModel: entrySectionEditorModel)
+                    ValueEntryMenuContext(editController: editController, entrySectionEditorModel: entrySectionEditorModel, menuType: .name)
                 }
 #if !os(tvOS)
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                    ValueEntrySwipeAction(editController: editController, entrySectionEditorModel: entrySectionEditorModel, isValueAction: false)
+                    ValueEntrySwipeAction(editController: editController, entrySectionEditorModel: entrySectionEditorModel, actionType: .name)
                 }
 #endif
 
@@ -30,11 +35,11 @@ struct ValueEntryEditContent: View {
                     TextFieldControllerEditor(editController: editController, linkReplaceController: editController.contentEditLink(for: entryId), title: "Value", prompt: "Enter a value for the entry", bundle: .module)
                         .id(entryId)
                         .contextMenu {
-                            ValueEntryMenuContextValue(editController: editController, entrySectionEditorModel: entrySectionEditorModel)
+                            ValueEntryMenuContext(editController: editController, entrySectionEditorModel: entrySectionEditorModel, menuType: .value)
                         }
 #if !os(tvOS)
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            ValueEntrySwipeAction(editController: editController, entrySectionEditorModel: entrySectionEditorModel, isValueAction: true)
+                            ValueEntrySwipeAction(editController: editController, entrySectionEditorModel: entrySectionEditorModel, actionType: .value)
                         }
 #endif
                 }
@@ -49,12 +54,14 @@ struct ValueEntryEditContent: View {
                 .id(entryId)
         }
     }
+}
 
-    private var entryId: UUID {
+private extension ValueEntryEditContent {
+    var entryId: UUID {
         entrySectionSelectionModel.id
     }
 
-    private func diceRowEditor(for model: ValueModel, entryId: UUID) -> some View {
+    func diceRowEditor(for model: ValueModel, entryId: UUID) -> some View {
         HStack {
             Label { Text("Dice", bundle: .module) } icon: { Image(systemName: NetworkModules.dice.icon) }
 
@@ -75,12 +82,12 @@ struct ValueEntryEditContent: View {
         }
     }
 
-    private func valueGroupTitle(entryId: UUID) -> String {
+    func valueGroupTitle(entryId: UUID) -> String {
         guard let valueId =  editController.model[entryId].valueId else { return "" }
         return root.itemController.itemOrEmpty(for: valueId).name
     }
 
-    private func valueRowEditor(for model: ValueModel, entryId: UUID) -> some View {
+    func valueRowEditor(for model: ValueModel, entryId: UUID) -> some View {
         HStack {
             Label { Text("Group", bundle: .module) } icon: { Image(systemName: NetworkModules.value.icon) }
 

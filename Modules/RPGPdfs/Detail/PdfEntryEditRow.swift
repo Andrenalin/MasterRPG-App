@@ -1,25 +1,17 @@
-//
-//  MapEntryEditRow.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 18/6/2568 BE.
-//
-
-
 // @copyright André Trettin
 
 import AndrenalinKit
 import SwiftUI
 
-struct MapEntryEditRow: View {
+struct PdfEntryEditRow: View {
     let editController: EditController
-    let entrySectionEditorModel: EntrySectionEditorModel<MapModel>
+    let entrySectionEditorModel: EntrySectionEditorModel<PdfModel>
 
-    @Environment(MapRoot.self) private var root
+    @Environment(PdfRoot.self) private var root
     @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
 
     var body: some View {
-        EntryRow(model: editController.model, item: ItemRowTreeModel(id: UUID(), model: ItemRowModel(itemId: editController.model.id, entryId: entryId, typeId: .map)), isEditing: true, cacheItemListModel: editController.cacheItemListModel)
+        EntryRow(item: ItemRowTreeModel(itemId: editController.model.id, entryId: entryId, typeId: root.itemController.itemDataModel.networkModule), isSelected: false, cacheItemListModel: editController.cacheItemListModel)
     }
 
     private var entryId: UUID {

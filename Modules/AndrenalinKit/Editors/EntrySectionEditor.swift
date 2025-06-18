@@ -23,6 +23,15 @@ public final class EntrySectionEditorModel<Model> {
     var removeEntryList: RemoveEntryListModel
 }
 
+@MainActor @Observable
+public final class EntrySectionSelectionModel {
+    public init(id: UUID = UUID()) {
+        self.id = id
+    }
+    
+    public var id: UUID
+}
+
 public struct ShowLinkEntryAction<Model>: Identifiable {
     public init(id: UUID, entryId: UUID, type: NetworkModules, keyPath: WritableKeyPath<Model, String>?) {
         self.id = id
@@ -42,32 +51,32 @@ public struct EntrySectionEditor<EditController: EntryDataEditable, EditContent:
     public init(
         editControllable: EditController,
         entrySectionEditorModel: EntrySectionEditorModel<EditController.Model>,
-        @ViewBuilder editContentView: @escaping (UUID) -> EditContent,
-        @ViewBuilder contentView: @escaping (UUID) -> Content,
+        @ViewBuilder editContentView: () -> EditContent,
+        @ViewBuilder contentView: () -> Content,
         @ViewBuilder showLinkView: () -> ShowLink,
-        @ViewBuilder swipeActionView: @escaping (UUID) -> SwipeAction,
-        @ViewBuilder menuView: @escaping (UUID?) -> MenuContent,
+        @ViewBuilder swipeActionView: () -> SwipeAction,
+        @ViewBuilder menuView: () -> MenuContent,
         @ViewBuilder linkActionView: () -> LinkAction,
         @ViewBuilder addActionView: () -> AddAction = EmptyView.init
     ) {
         self.editControllable = editControllable
         self.entrySectionEditorModel = entrySectionEditorModel
-        self.editContentView = editContentView
-        self.contentView = contentView
+        self.editContentView = editContentView()
+        self.contentView = contentView()
         self.showLinkView = showLinkView()
-        self.swipeActionView = swipeActionView
-        self.menuView = menuView
+        self.swipeActionView = swipeActionView()
+        self.menuView = menuView()
         self.linkActionView = linkActionView()
         self.addActionView = addActionView()
     }
 
     let editControllable: EditController
     let entrySectionEditorModel: EntrySectionEditorModel<EditController.Model>
-    let editContentView: (UUID) -> EditContent
-    let contentView: (UUID) -> Content
+    let editContentView: EditContent
+    let contentView: Content
     let showLinkView: ShowLink
-    let swipeActionView: (UUID) -> SwipeAction
-    let menuView: (UUID?) -> MenuContent
+    let swipeActionView: SwipeAction
+    let menuView: MenuContent
     let linkActionView: LinkAction
     let addActionView: AddAction
 
@@ -84,7 +93,8 @@ public struct EntrySectionEditor<EditController: EntryDataEditable, EditContent:
         Section {
             ForEach(editControllable.editEntries) { entry in
                 DisclosureGroupTV(isExpanded: expandedEntry(entryId: entry.id)) {
-                    editContentView(entry.id)
+                    editContentView
+                        .environment(EntrySectionSelectionModel(id: entry.id))
                         .deleteDisabled(true)
                         .moveDisabled(true)
                         .listRowBackground(Rectangle().fill(colorRow))
@@ -93,7 +103,8 @@ public struct EntrySectionEditor<EditController: EntryDataEditable, EditContent:
 #endif
 
                 } label: {
-                    contentView(entry.id)
+                    contentView
+                        .environment(EntrySectionSelectionModel(id: entry.id))
 #if os(iOS)
                         .selectListItem(isActive: editMode?.wrappedValue == .active ) {
                             if let index = entrySectionEditorModel.selectedEntries.firstIndex(of: entry.id) {
@@ -111,6 +122,7 @@ public struct EntrySectionEditor<EditController: EntryDataEditable, EditContent:
 #if !os(tvOS)
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             swipeButtons(for: entry.id)
+                                .environment(EntrySectionSelectionModel(id: entry.id))
                         }
 #endif
                 }
@@ -209,7 +221,8 @@ private extension EntrySectionEditor {
 
     @ViewBuilder
     func swipeButtons(for entryId: UUID) -> some View {
-        swipeActionView(entryId)
+        swipeActionView
+            .environment(EntrySectionSelectionModel(id: entryId))
     }
 
     @ViewBuilder
@@ -219,21 +232,24 @@ private extension EntrySectionEditor {
 #else
         let entryId: UUID? = nil
 #endif
-        menuView(entryId)
+        if let entryId {
+            menuView
+                .environment(EntrySectionSelectionModel(id: entryId))
 
-        Divider()
+            Divider()
 
-        Button {
-            editControllable.copy(entryId: entry.id, shouldSave: true)
-        } label: {
-            Text("Copy row \(String(entry.name.prefix(16)))", bundle: .module)
-        }
+            Button {
+                editControllable.copy(entryId: entry.id, shouldSave: true)
+            } label: {
+                Text("Copy row \(String(entry.name.prefix(16)))", bundle: .module)
+            }
 
-        Button(role: .destructive) {
-            checkDeleteEntries(ids: [entry.id])
-        } label: {
-            Label { Text("Delete row \(String(entry.name.prefix(16)))", bundle: .module) } icon: { Image(systemName: "trash") }
-                .foregroundStyle(.red)
+            Button(role: .destructive) {
+                checkDeleteEntries(ids: [entry.id])
+            } label: {
+                Label { Text("Delete row \(String(entry.name.prefix(16)))", bundle: .module) } icon: { Image(systemName: "trash") }
+                    .foregroundStyle(.red)
+            }
         }
     }
 
