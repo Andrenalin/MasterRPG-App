@@ -63,7 +63,7 @@ struct ItemListSection<Row: View>: View {
             ForEach(listController.model.filteredItems, id: \.id) { item in
                 VStack {
                     rowLinkView(for: item, selectable: listController.model.allowEditing || !childrenConfiguration.disableSelection)
-                        .environment(\.itemListToggleAction, ItemListToggleAction(toggler: { itemId, module in await listController.toggle(parent: item, child: ItemRowModel(itemId: itemId, typeId: module))
+                        .environment(\.itemListToggleAction, ItemListToggleAction(toggler: { itemId, module in listController.toggle(parent: item, child: ItemRowModel(itemId: itemId, typeId: module))
                         }))
 #if !os(tvOS)
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {

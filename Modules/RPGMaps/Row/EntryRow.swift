@@ -90,7 +90,7 @@ struct EntryRow: View {
                 routeActions.routePage(module, itemId, nil)
             }
         } else {
-            await itemListToggleAction.toggler(itemId, module)
+            itemListToggleAction.toggler(itemId, module)
         }
     }
 }

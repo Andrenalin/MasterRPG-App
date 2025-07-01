@@ -45,10 +45,11 @@ public struct EditGroupEditor<Model, ItemDataController: ItemControllable, ItemE
 
             ToolbarItem(placement: .confirmationAction) {
                 Button {
-                    Task {
-                        await editGroupController.save()
-                        isPresented.toggle()
+                    let controller = editGroupController
+                    Task { @MainActor in
+                        await controller.save()
                     }
+                    isPresented.toggle()
                 } label: {
                     Label("Save", systemImage: "square.and.arrow.down")
                 }

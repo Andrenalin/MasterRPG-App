@@ -20,11 +20,11 @@ public extension EnvironmentValues {
 }
 
 public struct ItemListToggleAction: Sendable {
-    public init(toggler: @escaping @Sendable (UUID, NetworkModules) async -> Void) {
+    public init(toggler: @MainActor @escaping @Sendable (UUID, NetworkModules) -> Void) {
         self.toggler = toggler
     }
 
-    public let toggler: @Sendable (UUID, NetworkModules) async -> Void
+    public let toggler: @MainActor @Sendable (UUID, NetworkModules) -> Void
 
     public static let empty: ItemListToggleAction = ItemListToggleAction(toggler: { _, _ in })
 }
