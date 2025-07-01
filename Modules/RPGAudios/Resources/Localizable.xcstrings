@@ -41,6 +41,16 @@
         }
       }
     },
+    "Change to %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geändert zu %@"
+          }
+        }
+      }
+    },
     "Duplicate %@" : {
       "localizations" : {
         "de" : {
@@ -117,6 +127,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zeit"
+          }
+        }
+      }
+    },
+    "Typing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eingabe"
           }
         }
       }
