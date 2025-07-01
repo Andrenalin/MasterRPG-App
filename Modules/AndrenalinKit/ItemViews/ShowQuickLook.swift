@@ -15,77 +15,43 @@ public struct ItemSelection: Equatable, Hashable, Codable {
 }
 
 public struct ShowQuickLook<Content: View>: View {
-    public init(listController: any ListControllable, windowId: String, useInternal: Bool, useSelection: ItemRowModel?, canQuickLook: @escaping (ItemRowModel) -> Bool, @ViewBuilder content: @escaping (ItemRowModel) -> Content) {
+    public init(listController: any ListControllable, windowId: String, canQuickLook: @escaping (ItemRowModel) -> Bool, @ViewBuilder content: @escaping (ItemRowModel) -> Content) {
         self.listController = listController
         self.windowId = windowId
-        self.useInternal = useInternal
-        self.useSelection = useSelection
         self.canQuickLook = canQuickLook
         self.content = content
     }
-
+    
     let listController: any ListControllable
     let windowId: String
-    let useInternal: Bool
-    let useSelection: ItemRowModel?
     let canQuickLook: (ItemRowModel) -> Bool
     let content: (ItemRowModel) -> Content
-
+    
     @State private var hasItem: Bool = false
     @State private var showItem: Bool = false
-
-    @State private var selected: URL?
-
+    
 #if os(visionOS) || os(macOS)
     @Environment(\.openWindow) var openWindow
 #endif
-
+    
     public var body: some View {
-        VStack(alignment: .trailing) {
-            ImageOverlayButton(icon: "book\(showItem ? ".fill" : "")") {
-                guard let selection = useSelection ?? listController.model.selectedItem?.model else { return }
-
+        ImageOverlayButton(icon: "book\(showItem ? ".fill" : "")") {
 #if os(visionOS) || os(macOS)
-                openWindow(id: windowId, value: ItemSelection(itemId: selection.itemId, entryId: selection.entryId))
-#elseif os(tvOS)
-                withAnimation { showItem.toggle() }
+            guard let selection = listController.model.selectedItem?.model else { return }
+            openWindow(id: windowId, value: ItemSelection(itemId: selection.itemId, entryId: selection.entryId))
 #else
-                withAnimation {
-                    if useInternal {
-                        showItem.toggle()
-                    } else {
-                        Task {
-                            selected = await listController.itemControllable.loadableUrl(for: selection)
-                        }
-                    }
-                }
-#endif
-            }
-#if os(visionOS)
-            .applyIf(!useInternal) { content in
-                content
-                    .onDrag {
-                        guard let selected else {
-                            return NSItemProvider()
-                        }
-                        return NSItemProvider(contentsOf: selected) ?? NSItemProvider()
-                    }
+            withAnimation {
+                showItem.toggle()
             }
 #endif
-            .disabled(!hasItem)
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
+        .disabled(!hasItem)
         .sheetFullScreen(isPresented: $showItem) {
-            content(useSelection ?? listController.model.selectedItem?.model ?? ItemRowModel(itemId: UUID(), typeId: .none))
+            content(listController.model.selectedItem?.model ?? ItemRowModel(itemId: UUID(), typeId: .none))
         }
         .onChange(of: listController.model.selectedItem, initial: true) {
-            guard useSelection == nil, let item = listController.model.selectedItem else { return }
+            guard let item = listController.model.selectedItem else { return }
             withAnimation { hasItem <=> canQuickLook(item.model) }
-            if hasItem {
-                Task {
-                    selected = await listController.itemControllable.loadableUrl(for: item.model)
-                }
-            }
         }
     }
 }

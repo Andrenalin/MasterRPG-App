@@ -66,7 +66,7 @@ struct PdfEditor: View {
     }
     
     private var overlayButton: some View {
-        ShowQuickLook(listController: root.listController(model: itemListModel), windowId: WindowIdentifier.pdfViewer.rawValue, useInternal: true, useSelection: nil) { model in
+        ShowQuickLook(listController: root.listController(model: itemListModel), windowId: WindowIdentifier.pdfViewer.rawValue) { model in
             root.itemController.itemOrEmpty(for: model.itemId).hasPdf
         } content: { model in
             root.viewController.pdfWindow(selection: ItemSelection(itemId: model.itemId, entryId: model.entryId))
