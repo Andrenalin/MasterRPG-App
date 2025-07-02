@@ -60,9 +60,17 @@ public struct TabNavigation: View {
 
 private extension TabNavigation {
     func pageTab(for tab: RootRoute) -> Tab<RootRoute, some View, DefaultTabLabel> {
-        Tab(tab.title, systemImage: tab.icon, value: tab) {
+        Tab(title(for: tab), systemImage: tab.icon, value: tab) {
             tab
         }
+    }
+    
+    func title(for tab: RootRoute) -> String {
+        #if os(iOS)
+        ""
+        #else
+        tab.title
+        #endif
     }
 
     var allTabs: some View {
