@@ -432,6 +432,20 @@
 			remoteGlobalIDString = 8EC4E46828DDA29600D0279F;
 			remoteInfo = MasterRPG;
 		};
+		8E7C7A062E14C73700C98D17 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E7C79F42E14C73600C98D17;
+			remoteInfo = Master3RPG;
+		};
+		8E7C7A102E14C73700C98D17 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E7C79F42E14C73600C98D17;
+			remoteInfo = Master3RPG;
+		};
 		8E8EE8532CD8EA600010A25B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
@@ -1398,6 +1412,9 @@
 		8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8E795D482DAE362F001E699A /* OpenAdventure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAdventure.swift; sourceTree = "<group>"; };
 		8E795D4D2DAE3D5C001E699A /* AdventureShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdventureShortcuts.swift; sourceTree = "<group>"; };
+		8E7C79F52E14C73600C98D17 /* Master3RPG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Master3RPG.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E7C7A052E14C73700C98D17 /* Master3RPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Master3RPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E7C7A0F2E14C73700C98D17 /* Master3RPGUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Master3RPGUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E81B0D22C26E4A0005B7B6F /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		8E8809CC2BC8B45E00186C7A /* InfoTVPlist.xcstrings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json.xcstrings; path = InfoTVPlist.xcstrings; sourceTree = "<group>"; };
 		8E8809CF2BC8B49200186C7A /* InfoTV.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = InfoTV.plist; sourceTree = "<group>"; };
@@ -1466,11 +1483,21 @@
 			);
 			target = 8E33767B2DB1140B00F9C14C /* RPGWidgetExtension */;
 		};
+		8E7C7A172E14C73700C98D17 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8E7C79F42E14C73600C98D17 /* Master3RPG */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8E33767F2DB1140B00F9C14C /* RPGWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E33768D2DB1140C00F9C14C /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = RPGWidget; sourceTree = "<group>"; };
 		8E4B274E2CD79E7D009AB4D1 /* RPGResources */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGResources; sourceTree = "<group>"; };
+		8E7C79F62E14C73600C98D17 /* Master3RPG */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E7C7A172E14C73700C98D17 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Master3RPG; sourceTree = "<group>"; };
+		8E7C7A082E14C73700C98D17 /* Master3RPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Master3RPGTests; sourceTree = "<group>"; };
+		8E7C7A122E14C73700C98D17 /* Master3RPGUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Master3RPGUITests; sourceTree = "<group>"; };
 		8E8ED7582CD8D8B80010A25B /* RoleGameKit */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RoleGameKit; sourceTree = "<group>"; };
 		8E8EE7012CD8E3E10010A25B /* RPGResourcesDebug */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGResourcesDebug; sourceTree = "<group>"; };
 		8E8EEEBD2CD8EC6D0010A25B /* RPGAudios */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGAudios; sourceTree = "<group>"; };
@@ -1590,6 +1617,27 @@
 				8E1CF9342BD14CD200891478 /* RoleGameKit.framework in Frameworks */,
 				8E479FE12CF20C690041F283 /* RPGResources.framework in Frameworks */,
 				8E479FD52CF20C5E0041F283 /* RPGAudios.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E7C79F22E14C73600C98D17 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E7C7A022E14C73700C98D17 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E7C7A0C2E14C73700C98D17 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1947,6 +1995,8 @@
 				8EBED47D2CD9A617004E7103 /* RPGTablesTests */,
 				8EBED4922CD9A617004E7103 /* RPGValuesTests */,
 				8EBED4852CD9A617004E7103 /* RPGWeathersTests */,
+				8E7C7A082E14C73700C98D17 /* Master3RPGTests */,
+				8E7C7A122E14C73700C98D17 /* Master3RPGUITests */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -2020,6 +2070,9 @@
 				8EBED0D02CD8EFA4004E7103 /* RPGMaps.framework */,
 				8EBED0D72CD8EFA5004E7103 /* RPGMapsTests.xctest */,
 				8E33767C2DB1140B00F9C14C /* RPGWidgetExtension.appex */,
+				8E7C79F52E14C73600C98D17 /* Master3RPG.app */,
+				8E7C7A052E14C73700C98D17 /* Master3RPGTests.xctest */,
+				8E7C7A0F2E14C73700C98D17 /* Master3RPGUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2027,6 +2080,7 @@
 		8EC4E47C28DDAAF300D0279F /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				8E7C79F62E14C73600C98D17 /* Master3RPG */,
 				8EC4E48028DDAAF300D0279F /* MasterRPG */,
 				8E6BC9CC2AFB0B2200E5E098 /* MasterTV */,
 				8E13A3FF2BCE88BB00B2FCD4 /* RPGShare */,
@@ -2404,6 +2458,74 @@
 			productName = MasterTV;
 			productReference = 8E6BC9CB2AFB0B2200E5E098 /* MasterRPG.app */;
 			productType = "com.apple.product-type.application";
+		};
+		8E7C79F42E14C73600C98D17 /* Master3RPG */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8E7C7A182E14C73700C98D17 /* Build configuration list for PBXNativeTarget "Master3RPG" */;
+			buildPhases = (
+				8E7C79F12E14C73600C98D17 /* Sources */,
+				8E7C79F22E14C73600C98D17 /* Frameworks */,
+				8E7C79F32E14C73600C98D17 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8E7C79F62E14C73600C98D17 /* Master3RPG */,
+			);
+			name = Master3RPG;
+			packageProductDependencies = (
+			);
+			productName = Master3RPG;
+			productReference = 8E7C79F52E14C73600C98D17 /* Master3RPG.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8E7C7A042E14C73700C98D17 /* Master3RPGTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8E7C7A1B2E14C73700C98D17 /* Build configuration list for PBXNativeTarget "Master3RPGTests" */;
+			buildPhases = (
+				8E7C7A012E14C73700C98D17 /* Sources */,
+				8E7C7A022E14C73700C98D17 /* Frameworks */,
+				8E7C7A032E14C73700C98D17 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8E7C7A072E14C73700C98D17 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8E7C7A082E14C73700C98D17 /* Master3RPGTests */,
+			);
+			name = Master3RPGTests;
+			packageProductDependencies = (
+			);
+			productName = Master3RPGTests;
+			productReference = 8E7C7A052E14C73700C98D17 /* Master3RPGTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		8E7C7A0E2E14C73700C98D17 /* Master3RPGUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8E7C7A1E2E14C73700C98D17 /* Build configuration list for PBXNativeTarget "Master3RPGUITests" */;
+			buildPhases = (
+				8E7C7A0B2E14C73700C98D17 /* Sources */,
+				8E7C7A0C2E14C73700C98D17 /* Frameworks */,
+				8E7C7A0D2E14C73700C98D17 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8E7C7A112E14C73700C98D17 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8E7C7A122E14C73700C98D17 /* Master3RPGUITests */,
+			);
+			name = Master3RPGUITests;
+			packageProductDependencies = (
+			);
+			productName = Master3RPGUITests;
+			productReference = 8E7C7A0F2E14C73700C98D17 /* Master3RPGUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 		8E8EE6CA2CD8E3A00010A25B /* RPGResourcesDebug */ = {
 			isa = PBXNativeTarget;
@@ -3089,7 +3211,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1630;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					8E00BC5C2990942C00C484A1 = {
@@ -3116,6 +3238,17 @@
 					};
 					8E6BC9CA2AFB0B2200E5E098 = {
 						CreatedOnToolsVersion = 15.0.1;
+					};
+					8E7C79F42E14C73600C98D17 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					8E7C7A042E14C73700C98D17 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 8E7C79F42E14C73600C98D17;
+					};
+					8E7C7A0E2E14C73700C98D17 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 8E7C79F42E14C73600C98D17;
 					};
 					8E8EE6CA2CD8E3A00010A25B = {
 						CreatedOnToolsVersion = 16.1;
@@ -3243,6 +3376,9 @@
 				8EBECE432CD8EE92004E7103 /* RPGTablesTests */,
 				8EBECE642CD8EE9D004E7103 /* RPGValuesTests */,
 				8EBECE852CD8EEA9004E7103 /* RPGWeathersTests */,
+				8E7C79F42E14C73600C98D17 /* Master3RPG */,
+				8E7C7A042E14C73700C98D17 /* Master3RPGTests */,
+				8E7C7A0E2E14C73700C98D17 /* Master3RPGUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -3310,6 +3446,27 @@
 				8E8809CE2BC8B45E00186C7A /* InfoTVPlist.xcstrings in Resources */,
 				8E6F3F342BC4C7FC00600556 /* PrivacyInfo.xcprivacy in Resources */,
 				8E6BC9D22AFB0B2400E5E098 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E7C79F32E14C73600C98D17 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E7C7A032E14C73700C98D17 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E7C7A0D2E14C73700C98D17 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3586,6 +3743,27 @@
 				8E635A712C69C9D400A9F2E0 /* WindowMacVisionList.swift in Sources */,
 				8E926E892B452AB10025B659 /* WindowLinkList.swift in Sources */,
 				8E926E952B47B5810025B659 /* WindowVisionList.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E7C79F12E14C73600C98D17 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E7C7A012E14C73700C98D17 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E7C7A0B2E14C73700C98D17 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3905,6 +4083,16 @@
 			isa = PBXTargetDependency;
 			target = 8EC4E46828DDA29600D0279F /* MasterRPG */;
 			targetProxy = 8E4B21912CD78EF3009AB4D1 /* PBXContainerItemProxy */;
+		};
+		8E7C7A072E14C73700C98D17 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E7C79F42E14C73600C98D17 /* Master3RPG */;
+			targetProxy = 8E7C7A062E14C73700C98D17 /* PBXContainerItemProxy */;
+		};
+		8E7C7A112E14C73700C98D17 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E7C79F42E14C73600C98D17 /* Master3RPG */;
+			targetProxy = 8E7C7A102E14C73700C98D17 /* PBXContainerItemProxy */;
 		};
 		8E8EE8542CD8EA600010A25B /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -5063,6 +5251,213 @@
 				TARGETED_DEVICE_FAMILY = 3;
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		8E7C7A192E14C73700C98D17 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U3G27T67U6;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/Master3RPG/Info.plist;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.Master3RPG;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		8E7C7A1A2E14C73700C98D17 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U3G27T67U6;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/Master3RPG/Info.plist;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.Master3RPG;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		8E7C7A1C2E14C73700C98D17 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U3G27T67U6;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.Master3RPGTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Master3RPG.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Master3RPG";
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		8E7C7A1D2E14C73700C98D17 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U3G27T67U6;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.Master3RPGTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Master3RPG.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Master3RPG";
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		8E7C7A1F2E14C73700C98D17 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U3G27T67U6;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.Master3RPGUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = Master3RPG;
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		8E7C7A202E14C73700C98D17 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U3G27T67U6;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.Master3RPGUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = Master3RPG;
+				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -7169,6 +7564,33 @@
 			buildConfigurations = (
 				8E6BC9D62AFB0B2400E5E098 /* Debug */,
 				8E6BC9D72AFB0B2400E5E098 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8E7C7A182E14C73700C98D17 /* Build configuration list for PBXNativeTarget "Master3RPG" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E7C7A192E14C73700C98D17 /* Debug */,
+				8E7C7A1A2E14C73700C98D17 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8E7C7A1B2E14C73700C98D17 /* Build configuration list for PBXNativeTarget "Master3RPGTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E7C7A1C2E14C73700C98D17 /* Debug */,
+				8E7C7A1D2E14C73700C98D17 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8E7C7A1E2E14C73700C98D17 /* Build configuration list for PBXNativeTarget "Master3RPGUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E7C7A1F2E14C73700C98D17 /* Debug */,
+				8E7C7A202E14C73700C98D17 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
