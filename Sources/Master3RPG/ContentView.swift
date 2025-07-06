@@ -20,7 +20,7 @@ struct ContentView: View {
                     NavigationLink {
                         Text("Item at \(item.name)")
                     } label: {
-                        Text(item.name.wrappedValue)
+                        Text(item.name)
                     }
                 }
                 .onDelete(perform: deleteItems)

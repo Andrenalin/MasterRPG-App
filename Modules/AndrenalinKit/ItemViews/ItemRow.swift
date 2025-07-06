@@ -3,7 +3,7 @@
 import SwiftUI
 
 public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>: View {
-    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool, @ViewBuilder thumbnail: @escaping () -> Thumbnail, @ViewBuilder tagAdds: @escaping () -> Additional, @ViewBuilder actionBar: @escaping () -> ActionBar) {
+    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder tagAdds: () -> Additional = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
         self.itemId = itemId
         self.model = model
         self.cacheItemListModel = cacheItemListModel
@@ -11,50 +11,11 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
         tagsKeyPath = tags
         descriptionKeyPath = description
         self.isSelected = isSelected
-        self.thumbnail = thumbnail
-        additional = tagAdds
-        self.actionBar = actionBar
+        self.thumbnail = thumbnail()
+        additional = tagAdds()
+        self.actionBar = actionBar()
     }
     
-    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool, @ViewBuilder tagAdds: @escaping () -> Additional, @ViewBuilder actionBar: @escaping () -> ActionBar) where Thumbnail == EmptyView {
-        self.itemId = itemId
-        self.model = model
-        self.cacheItemListModel = cacheItemListModel
-        nameKeyPath = name
-        tagsKeyPath = tags
-        descriptionKeyPath = description
-        self.isSelected = isSelected
-        thumbnail = { EmptyView() }
-        additional = tagAdds
-        self.actionBar = actionBar
-    }
-    
-    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool, @ViewBuilder tagAdds: @escaping () -> Additional) where Thumbnail == EmptyView, ActionBar == EmptyView {
-        self.itemId = itemId
-        self.model = model
-        self.cacheItemListModel = cacheItemListModel
-        nameKeyPath = name
-        tagsKeyPath = tags
-        descriptionKeyPath = description
-        self.isSelected = isSelected
-        thumbnail = { EmptyView() }
-        additional = tagAdds
-        actionBar = { EmptyView() }
-    }
-    
-    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool, @ViewBuilder thumbnail: @escaping () -> Thumbnail, @ViewBuilder tagAdds: @escaping () -> Additional) where ActionBar == EmptyView {
-        self.itemId = itemId
-        self.model = model
-        self.cacheItemListModel = cacheItemListModel
-        nameKeyPath = name
-        tagsKeyPath = tags
-        descriptionKeyPath = description
-        self.isSelected = isSelected
-        self.thumbnail = thumbnail
-        self.additional = tagAdds
-        actionBar = { EmptyView() }
-    }
-
     let itemId: UUID
     let model: Model
     let cacheItemListModel: CacheItemListModel
@@ -62,13 +23,13 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     let tagsKeyPath: KeyPath<Model, [String]>
     let descriptionKeyPath: KeyPath<Model, String>
     let isSelected: Bool
-    let thumbnail: () -> Thumbnail
-    let additional: () -> Additional
-    let actionBar: () -> ActionBar
+    let thumbnail: Thumbnail
+    let additional: Additional
+    let actionBar: ActionBar
     
     public var body: some View {
         HStack(spacing: 4) {
-            thumbnail()
+            thumbnail
             
             VStack(alignment: .leading, spacing: 4) {
                 NameItemRow(itemId: itemId, name: model[keyPath: nameKeyPath], cacheItemListModel: cacheItemListModel)
@@ -79,7 +40,7 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
                     allTagsView
                 }
                 
-                actionBar()
+                actionBar
                 
                 DescriptionItemRow(itemId: itemId, description: model[keyPath: descriptionKeyPath], cacheItemListModel: cacheItemListModel)
             }
@@ -93,7 +54,7 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     
     var allTagsView: some View {
         HStack(spacing: 4) {
-            additional()
+            additional
             
             TagItemRow(tags: tagContent)
         }
@@ -118,7 +79,7 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     var twoLineTagView: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
-                additional()
+                additional
                 TagItemRow(tags: tagFirstContent)
             }
             
@@ -126,35 +87,5 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
                 TagItemRow(tags: tagSecondContent)
             }
         }
-    }
-}
-
-public extension ItemRow where Additional == EmptyView, ActionBar == EmptyView {
-    init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool, @ViewBuilder thumbnail: @escaping () -> Thumbnail) {
-        self.itemId = itemId
-        self.model = model
-        self.cacheItemListModel = cacheItemListModel
-        nameKeyPath = name
-        tagsKeyPath = tags
-        descriptionKeyPath = description
-        self.isSelected = isSelected
-        self.thumbnail = thumbnail
-        additional = { EmptyView() }
-        actionBar = { EmptyView() }
-    }
-}
-
-public extension ItemRow where Thumbnail == EmptyView, Additional == EmptyView, ActionBar == EmptyView {
-    init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool) {
-        self.itemId = itemId
-        self.model = model
-        self.cacheItemListModel = cacheItemListModel
-        nameKeyPath = name
-        tagsKeyPath = tags
-        descriptionKeyPath = description
-        self.isSelected = isSelected
-        thumbnail = { EmptyView() }
-        additional = { EmptyView() }
-        actionBar = { EmptyView() }
     }
 }

@@ -11,7 +11,8 @@ public struct CategoryItemRow<Value: CategoryTextRepresentable>: View {
 
     public var body: some View {
         Text(category.title)
-            .rowColoredTag()
+            .rowColoredTag(backgroundColor: Color.accentColor)
+            .foregroundStyle(Color.primary)
     }
 }
 

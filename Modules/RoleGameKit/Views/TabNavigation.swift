@@ -23,6 +23,10 @@ public struct TabNavigation: View {
     let appStore: AppStore
     let tabId: UUID
 
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#endif
+
     @Namespace private var hoverEffectNameSpace
     @SceneStorage("RootRoute") private var selectedTab: RootRoute = .game
     @State private var splitSelectedTab: RootRoute = .game
@@ -66,11 +70,11 @@ private extension TabNavigation {
     }
     
     func title(for tab: RootRoute) -> String {
-        #if os(iOS)
-        ""
-        #else
+#if os(iOS)
+        horizontalSizeClass == .compact ? tab.title : ""
+#else
         tab.title
-        #endif
+#endif
     }
 
     var allTabs: some View {

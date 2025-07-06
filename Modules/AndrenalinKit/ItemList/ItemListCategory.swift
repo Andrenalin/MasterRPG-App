@@ -85,4 +85,24 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
     public var title: String {
         String(localized: localizedTitle).localizedString
     }
+    
+    public var icon: String {
+        switch self {
+        case .all: "list.bullet"
+        case .hide: "eye.slash"
+            
+        case .game: "person.2.wave.2"
+        case .photo: "photo.on.rectangle.angled"
+        case .value: "list.bullet.rectangle"
+        case .adventure: "wand.and.stars"
+        case .map: "map"
+        case .table: "tablecells.fill"
+        case .weather: "cloud.bolt.rain"
+        case .dice: "dice"
+        case .audio: "music.note.list"
+        case .pdf: "books.vertical"
+        default: "exclamationmark.triangle"
+        }
+    }
+
 }

@@ -6,34 +6,48 @@ import SwiftData
 
 @Model
 public final class PhotoDataModel {
-    init(id: UUID = UUID(), name: String = "", information: String = "", photoCategory: String = "", tags: String = "", displayState: Int32 = 0, degrees: String = "", entriesUpdate: String = "", fileUrl: String = "", fileUrlUpdate: String = "", entries: [PhotoEntryDataModel]? = nil) {
+    init(id: UUID = UUID(), name: String = "", information: String = "", category: ItemListCategory = .adventure, tags: [String] = [], displayState: Int32 = 0, degrees: Double = 0, fileUrl: String = "", entries: [PhotoEntryDataModel]? = nil) {
         self.id = id
-        self.name = CRDT(wrappedValue: name)
+        self.name = name
         self.information = information
-        self.category = photoCategory
+        self.category = category
         self.tags = tags
         self.displayState = displayState
         self.degrees = degrees
-        self.entriesUpdate = entriesUpdate
         self.fileUrl = fileUrl
-        self.fileUrlUpdate = fileUrlUpdate
         self.entries = entries
     }
 
     @Attribute(.preserveValueOnDeletion)
     public var id: UUID
-    var name: CRDT<String> = CRDT(wrappedValue: "")
+    var name: String = ""
     var information: String = ""
-    var category: String = ""
-    var tags: String = ""
+    private var _nameLWW: CRDT<String> = CRDT(wrappedValue: "")
+    private var _informationLWW: CRDT<String> = CRDT(wrappedValue: "")
+
+    var category: ItemListCategory = ItemListCategory.adventure
+    var tags: [String] = []
     var displayState: Int32 = 0
 
-    var degrees: String = ""
-    var entriesUpdate: String = ""
+    var degrees: Double = 0
     var fileUrl: String = ""
-    var fileUrlUpdate: String = ""
     
     @Relationship(deleteRule: .cascade) var entries: [PhotoEntryDataModel]?
+    
+    var nameLLW: String {
+        _nameLWW.rawValue
+    }
+    
+    func reset(name: String) {
+        do {
+            try modelContext?.transaction {
+                _nameLWW.wrappedValue = name
+                self.name = name
+            }
+        } catch {
+            modelContext?.rollback()
+        }
+    }
 }
 
 extension PhotoDataModel {

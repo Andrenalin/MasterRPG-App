@@ -9,7 +9,8 @@ struct TagItemRow: View {
         //let _ = Self._printChanges()
         ForEach(tags, id: \.self) { tag in
             Text(tag)
-                .rowColoredTag()
+                .rowColoredTag(backgroundColor: Color.accentColor)
+                .foregroundStyle(Color.primary)
         }
     }
 }
