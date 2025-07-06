@@ -1,13 +1,14 @@
 //
-//  Master3RPGTests.swift
-//  Master3RPGTests
+//  PhotoRPGTests.swift
+//  PhotoRPGTests
 //
-//  Created by Andre Trettin on 02.07.25.
+//  Created by Andre Trettin on 06.07.25.
 //
 
 import Testing
+@testable import PhotoRPG
 
-struct Master3RPGTests {
+struct PhotoRPGTests {
 
     @Test func example() async throws {
         // Write your test here and use APIs like `#expect(...)` to check expected conditions.

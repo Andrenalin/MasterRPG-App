@@ -1,100 +1,49 @@
 import AndrenalinKit
+import CoreRPG
+import PhotoRPG
 import SwiftUI
 import SwiftData
-import RPGPhotos
 
-enum RootRoute: Equatable, CaseIterable {
-    case photo
-    case adventure
-    case character
-    case pdf
-    case settings
-    
-    var title: String {
-        switch self {
-        case .adventure:
-            return "Adventure"
-        case .character:
-            return "Character"
-        case .photo:
-            return "Photo"
-        case .pdf:
-            return "PDF"
-        case .settings:
-            return "Settings"
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .adventure: "wand.and.stars"
-        case .character: "person.fill"
-        case .photo: "photo"
-        case .pdf: "doc.fill"
-        case .settings: "gear"
-        }
-    }
-}
 
-extension RootRoute: @MainActor NavigationDestination {
-    var body: some View {
-        if self == .photo {
-            PhotoRootView()
-        } else {
-            RootListView(rootRoute: self)
+extension RootRoute: @retroactive View {}
+extension RootRoute: @retroactive Identifiable {}
+extension RootRoute: @MainActor @retroactive NavigationDestination {
+    public var body: some View {
+        Group {
+            if self == .photos {
+                PhotoRootView()
+            } else {
+                RootListView(rootRoute: self)
+            }
         }
     }
 }
 
 struct AppRootView: View {
-    
-    #if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    #endif
-    
     @Environment(ListModel.self) private var listModel
-    @Environment(AppRootModel.self) private var appRootModel
+    @Environment(AppRootUiModel.self) private var appRootModel
     
-    @State private var selectedTab: RootRoute = .photo
-    @State private var column: NavigationSplitViewVisibility = .all
-    @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
+    @State private var selectedTab: RootRoute = .photos
+    @State private var tabTitleModel = TabTitleModel()
 
-    @State private var searchText: String = ""
-    
-    @State private var category: ItemListCategory = .adventure
-    
     var body: some View {
         @Bindable var listModel = listModel
         TabView(selection: $selectedTab) {
-            ForEach(RootRoute.allCases) { tab in
+            ForEach(RootRoute.allTabs) { tab in
                 if tab == .settings {
-                    Tab(title(for: tab), systemImage: tab.icon, value: tab, role: .search) {
-                      tab
+                    Tab(tabTitleModel.titles[tab, default: tab.title], systemImage: tab.icon, value: tab, role: .search) {
+                        tab
                     }
                 } else {
-                    Tab(title(for: tab), systemImage: tab.icon, value: tab) {
+                    Tab(tabTitleModel.titles[tab, default: tab.title], systemImage: tab.icon, value: tab) {
                         tab
                     }
                 }
             }
         }
-        #if !os(macOS)
+        .environment(tabTitleModel)
+        #if os(iOS)
         .tabBarMinimizeBehavior(.onScrollDown)
-        .tabViewBottomAccessory {
-            if selectedTab == .photo {
-                Picker(selection: $category) {
-                    ForEach(appRootModel.listModel.categoryTags) { category in
-                        Text(category.localizedTitle)
-                            .tag(category)
-                    }
-                } label: {
-                 Text("Selected Cataegory")
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                //.glassEffect(.regular.interactive())
-            }
-        }
         #endif
         #if os(macOS)
         .tabViewStyle(.tabBarOnly)
@@ -102,29 +51,22 @@ struct AppRootView: View {
         .tabViewStyle(.sidebarAdaptable)
         #endif
     }
-    
-    func title(for tab: RootRoute) -> String {
-        #if os(iOS)
-        horizontalSizeClass == .compact ? tab.title : ""
-        #else
-        tab.title
-        #endif
-    }
-}
-
-@Observable
-final class ListSelectionModel {
-    var selectedItem: PhotoDataModel?
 }
 
 struct RootListView: View {
     let rootRoute: RootRoute
     
-    @State private var selectionModel = ListSelectionModel()
+    @State private var selectionModel = ListSelectionModel<PhotoDataModel>()
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
+    @Environment(TabTitleModel.self) private var tabTitleModel
+#if os(iOS)
+@Environment(\.horizontalSizeClass) private var horizontalSizeClass
+@Environment(\.tabBarPlacement) private var tabBarPlacement
+#endif
+
     var body: some View {
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             ListView(rootRoute: rootRoute)
@@ -137,6 +79,11 @@ struct RootListView: View {
             }
         }
         .ignoresSafeArea(edges: .top)
+#if os(iOS)
+                .onChange(of: tabBarPlacement, initial: true) {
+                    tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
+                }               
+#endif
     }
 }
 
@@ -144,7 +91,7 @@ struct ListView: View {
     let rootRoute: RootRoute
     
     @Environment(\.modelContext) private var modelContext
-    @Environment(ListSelectionModel.self) private var model
+    @Environment(ListSelectionModel<PhotoDataModel>.self) private var model
     @Query private var items: [PhotoDataModel]
 
     @State private var selected: UUID?
@@ -161,46 +108,14 @@ struct ListView: View {
 #if os(macOS)
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
 #endif
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
     }
-        private func addItem() {
-            withAnimation {
-                let newItem = PhotoDataModel(name: "Hello", information: "Mega view Text here")
-                modelContext.insert(newItem)
-            }
-        }
-
-        private func deleteItems(offsets: IndexSet) {
-            withAnimation {
-                for index in offsets {
-                    modelContext.delete(items[index])
-                }
-            }
-        }
-
 }
 
 struct RowView: View {
     let item: PhotoDataModel
     var body: some View {
         VStack(alignment: .leading) {
-            Text(item.name)
-            Text(item.information).foregroundStyle(.secondary)
-            Text(item.category.localizedTitle)
-            
-            Text(item.nameLLW)
-                .foregroundStyle(.secondary)
+            Text("Bla")
         }
     }
 }
@@ -225,18 +140,6 @@ struct DetailView: View {
                     //.flexibleHeaderContent()
 
                 RowView(item: item)
-                
-                TextField(text: $name) {
-                    Text("Name:")
-                }
-                .onSubmit {
-                    if item.name != name {
-                        withAnimation { item.reset(name: name) }
-                    }
-                }
-                .onAppear {
-                    name = item.name
-                }
             }
         }
         //.flexibleHeaderScrollView()
@@ -279,17 +182,9 @@ struct ImageHeaderView: View {
 #Preview {
     AppRootView()
         .modelContainer(for: [PhotoDataModel.self, PhotoEntryDataModel.self], inMemory: true)
-        .environment(AppRootModel())
-        .environment(AppRootModel().listModel)
-        .environment(AppRootModel().deviceRotationModel)
-}
-
-
-@Observable final class AppRootModel {
-    var windowSize: CGSize = CGSize(width: 300, height: 800)
-    var deviceRotationModel = DeviceRotationModel()
-    var listModel = ListModel(searchToken: .all, categoryTags: [.adventure, .character, .photo, .weather], listStoreName: "Photo", hasChildren: false)
-    var cacheModel = CacheItemListModel()
+        .environment(AppRootUiModel())
+        .environment(ListModel(searchToken: .photo, categoryTags: [.adventure, .photo, .weather], listStoreName: "Test", hasChildren: false))
+        .environment(DeviceRotationModel())
 }
 
 @Observable private class FlexibleHeaderGeometry {
@@ -298,7 +193,7 @@ struct ImageHeaderView: View {
 
 /// A view modifer that stretches content when the containing geometry offset changes.
 private struct FlexibleHeaderContentModifier: ViewModifier {
-    @Environment(AppRootModel.self) private var modelData
+    @Environment(AppRootUiModel.self) private var modelData
     @Environment(FlexibleHeaderGeometry.self) private var geometry
 
     func body(content: Content) -> some View {
@@ -338,23 +233,5 @@ extension View {
     /// A function that returns a view after it applies `FlexibleHeaderContentModifier` to it.
     func flexibleHeaderContent() -> some View {
         modifier(FlexibleHeaderContentModifier())
-    }
-}
-
-extension View {
-    func stretchy() -> some View {
-        visualEffect { effect, geometry in
-            let currentHeight = geometry.size.height
-            let scrollOffset = geometry.frame(in: .scrollView).minY
-            let positiveOffset = max(0, scrollOffset)
-            
-            let newHeight = currentHeight + positiveOffset
-            let scaleFactor = newHeight / currentHeight
-            
-            return effect.scaleEffect(
-                x: scaleFactor, y: scaleFactor,
-                anchor: .bottom
-            )
-        }
     }
 }
