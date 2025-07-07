@@ -7,7 +7,7 @@ import SwiftData
 
 extension RootRoute: @retroactive View {}
 extension RootRoute: @retroactive Identifiable {}
-extension RootRoute: @MainActor @retroactive NavigationDestination {
+extension RootRoute: @MainActor @retroactive CoreRPG.NavigationDestination {
     public var body: some View {
         Group {
             if self == .photos {
@@ -23,7 +23,7 @@ struct AppRootView: View {
     @Environment(ListModel.self) private var listModel
     @Environment(AppRootUiModel.self) private var appRootModel
     
-    @State private var selectedTab: RootRoute = .photos
+    @State private var selectedTab: RootRoute = .adventures
     @State private var tabTitleModel = TabTitleModel()
 
     var body: some View {
@@ -184,7 +184,7 @@ struct ImageHeaderView: View {
         .modelContainer(for: [PhotoDataModel.self, PhotoEntryDataModel.self], inMemory: true)
         .environment(AppRootUiModel())
         .environment(ListModel(searchToken: .photo, categoryTags: [.adventure, .photo, .weather], listStoreName: "Test", hasChildren: false))
-        .environment(DeviceRotationModel())
+        .environment(CoreRPG.DeviceRotationModel())
 }
 
 @Observable private class FlexibleHeaderGeometry {

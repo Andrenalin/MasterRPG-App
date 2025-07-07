@@ -14,7 +14,7 @@ import SwiftData
 @main
 struct Master3RPGApp: App {
     @State private var appRootUiModel = AppRootUiModel()
-    @State private var deviceRotationModel = DeviceRotationModel()
+    @State private var deviceRotationModel = CoreRPG.DeviceRotationModel()
     @State private var listModel = ListModel(searchToken: .all, categoryTags: [.adventure, .character, .photo, .weather], listStoreName: "Photo", hasChildren: false)
     @State private var cacheModel = CacheItemListModel()
 
