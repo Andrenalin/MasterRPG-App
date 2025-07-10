@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 
-struct PhotoListView: View {
+struct ListView: View {
     @Environment(SearchModel.self) private var searchModel
     @Environment(\.modelContext) private var modelContext
     @Environment(ListSelectionModel<PhotoDataModel>.self) private var model
@@ -14,10 +14,6 @@ struct PhotoListView: View {
     @State private var selected: UUID?
     @State private var selection: Set<UUID> = []
     @State private var isSelectionMode: Bool = false
-
-#if os(iOS)
-    @Environment(\.editMode) private var editMode
-#endif
 
     var body: some View {
         @Bindable var searchModel = searchModel
@@ -40,11 +36,6 @@ struct PhotoListView: View {
         .onChange(of: selected) {
             model.selectedItem = items.first { $0.id == selected }
         }
-#if os(iOS)
-        .onChange(of: editMode) {
-            isSelectionMode = (editMode?.wrappedValue == .active)
-        }
-#endif
         .navigationTitle("Photos")
         //.navigationSubtitle("\(filteredItems.count) items (\(items.count) total)")
 #if os(macOS)
@@ -57,15 +48,11 @@ struct PhotoListView: View {
                 }
             }
             ToolbarItem(placement: .secondaryAction) {
-#if os(iOS)
-                EditButton()
-#else
                 Button {
                     isSelectionMode.toggle()
                 } label: {
                     Label("Change Mode to \(isSelectionMode ? "Off" : "On")", systemImage: "list.bullet")
                 }
-#endif
             }
         }
     }
@@ -88,7 +75,8 @@ struct PhotoListView: View {
     private func listView(filteredItems: [PhotoDataModel]) -> some View {
         List(selection: $selected) {
             ForEach(filteredItems) { item in
-                PhotoRow(model: item)
+                MainRowView(model: item)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             }
             .onDelete(perform: deleteItems)
         }
@@ -97,14 +85,17 @@ struct PhotoListView: View {
     private func selectionListView(filteredItems: [PhotoDataModel]) -> some View {
         List(selection: $selection) {
             ForEach(filteredItems) { item in
-                PhotoRow(model: item)
-                #if os(macOS)
+                MainRowView(model: item)
                     .selectListItem {
-                        // some action not needed now
+                        if selection.contains(item.id) {
+                            selection.remove(item.id)
+                        } else {
+                            selection.insert(item.id)
+                        }
                     } isSelected: {
                         selection.contains(item.id)
                     }
-                #endif
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             }
         }
     }

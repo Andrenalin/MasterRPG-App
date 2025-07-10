@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-struct PhotoRow: View {
+struct MainRowView: View {
     let model: PhotoDataModel
 
     @Environment(CacheItemListModel.self) private var cacheModel
@@ -11,7 +11,7 @@ struct PhotoRow: View {
 
     var body: some View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
-            ThumbnailItem(model: model, highResolution: false)
+            PlainPhotoView(model: model, size: .maxHeightWidth(96), ratio: .fill, highResolution: false)
         }, tagAdds: {
             CategoryItemRow(category: model.category)
         }, actionBar: {

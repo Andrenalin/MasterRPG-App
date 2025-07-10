@@ -23,7 +23,7 @@ public struct PhotoRootView: View {
     public var body: some View {
         @Bindable var searchModel = searchModel
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-            PhotoListView()
+            ListView()
                 .environment(selectionModel)
                 .searchable(text: $searchModel.searchText, placement: .automatic, prompt: "Search")
                 .searchScopes($searchModel.searchToken, activation: searchScopeActivition) {
@@ -38,7 +38,7 @@ public struct PhotoRootView: View {
                 }
         } detail: {
             if let selected = selectionModel.selectedItem {
-                DetailView(item: selected)
+                DetailView(model: selected)
                     .environment(selectionModel)
             } else {
                 ContentUnavailableView("Photo", image: "photos")

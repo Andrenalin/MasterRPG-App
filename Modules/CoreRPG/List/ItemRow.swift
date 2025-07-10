@@ -29,8 +29,10 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     
     public var body: some View {
         HStack(spacing: 4) {
-            thumbnail
-            
+            VStack(spacing: 0) {
+                thumbnail
+            }
+
             VStack(alignment: .leading, spacing: 4) {
                 NameItemRow(itemId: itemId, name: model[keyPath: nameKeyPath], cacheItemListModel: cacheItemListModel)
 
@@ -44,8 +46,9 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
                 
                 DescriptionItemRow(itemId: itemId, description: model[keyPath: descriptionKeyPath], cacheItemListModel: cacheItemListModel)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
     }
     
     var tagContent: [String] {

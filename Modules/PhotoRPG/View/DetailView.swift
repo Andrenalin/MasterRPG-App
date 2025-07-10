@@ -6,37 +6,32 @@ import SwiftUI
 struct DetailView: View {
     @Environment(\.isSearching) private var isSearching
     
-    let item: PhotoDataModel
-    
+    let model: PhotoDataModel
+
     @State private var name = ""
     
     var body: some View {
-        @Bindable var item = item
-        
+        @Bindable var model = model
         ScrollView(showsIndicators: false) {
             LazyVStack(alignment: .leading, spacing: 8) {
-
-                ImageHeaderView()
-                    .ignoresSafeArea(edges: .top)
+                PlainPhotoView(model: model)
                     .stretchy()
-                    //.flexibleHeaderContent()
 
-                PhotoRow(model: item)
+                MainRowView(model: model)
                 
                 TextField(text: $name) {
                     Text("Name:")
                 }
                 .onSubmit {
-                    if item.name != name {
-                        withAnimation { item.reset(name: name) }
+                    if model.name != name {
+                        withAnimation { model.reset(name: name) }
                     }
                 }
                 .onAppear {
-                    name = item.name
+                    name = model.name
                 }
             }
         }
-        //.flexibleHeaderScrollView()
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
         .toolbar(removing: .title)
