@@ -5,7 +5,6 @@
 //  Created by Andre Trettin on 02.07.25.
 //
 
-import AndrenalinKit
 import CoreRPG
 import PhotoRPG
 import SwiftUI
@@ -14,8 +13,8 @@ import SwiftData
 @main
 struct Master3RPGApp: App {
     @State private var appRootUiModel = AppRootUiModel()
-    @State private var deviceRotationModel = CoreRPG.DeviceRotationModel()
-    @State private var listModel = ListModel(searchToken: .all, categoryTags: [.adventure, .character, .photo, .weather], listStoreName: "Photo", hasChildren: false)
+    @State private var deviceRotationModel = DeviceRotationModel()
+    @State private var searchModel = SearchModel()
     @State private var cacheModel = CacheItemListModel()
 
     
@@ -37,7 +36,7 @@ struct Master3RPGApp: App {
                 .environment(\.colorScheme, .dark)
                 .environment(appRootUiModel)
                 .environment(deviceRotationModel)
-                .environment(listModel)
+                .environment(searchModel)
                 .environment(cacheModel)
                 .frame(minWidth: 375.0, minHeight: 600.0)
                 // Keeps the current window's size for use in scrolling header calculations.

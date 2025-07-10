@@ -9,6 +9,16 @@
 /* Begin PBXBuildFile section */
 		593994072B28649100AB9BBE /* AboutMenuCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593994062B28649100AB9BBE /* AboutMenuCommand.swift */; };
 		593994092B28649100AB9BBE /* AboutMenuCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593994062B28649100AB9BBE /* AboutMenuCommand.swift */; };
+		594686042E1E0D11004DC406 /* PhotoRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; };
+		594686052E1E0D11004DC406 /* PhotoRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5946860C2E1E0F69004DC406 /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
+		5946860D2E1E0F69004DC406 /* RPGResources.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		594686102E1E1012004DC406 /* CoreRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; };
+		594686112E1E1012004DC406 /* CoreRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		594686142E1E1016004DC406 /* PhotoRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; };
+		594686152E1E1016004DC406 /* PhotoRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5946861B2E1E136D004DC406 /* RPGPhotos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE8952CD8EB5F0010A25B /* RPGPhotos.framework */; };
+		5946861C2E1E136D004DC406 /* RPGPhotos.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE8952CD8EB5F0010A25B /* RPGPhotos.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		59DC213D2BD75537001140B1 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 59DC213C2BD75537001140B1 /* Localizable.xcstrings */; };
@@ -280,6 +290,41 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		594686062E1E0D11004DC406 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E3620DA2E1A9EAF00E5C99A;
+			remoteInfo = PhotoRPG;
+		};
+		5946860E2E1E0F69004DC406 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E4B27012CD79E2E009AB4D1;
+			remoteInfo = RPGResources;
+		};
+		594686122E1E1012004DC406 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E3620AC2E1A80FF00E5C99A;
+			remoteInfo = CoreRPG;
+		};
+		594686162E1E1016004DC406 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E3620DA2E1A9EAF00E5C99A;
+			remoteInfo = PhotoRPG;
+		};
+		5946861D2E1E136D004DC406 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8EE8942CD8EB5F0010A25B;
+			remoteInfo = RPGPhotos;
+		};
 		8E00BC632990942C00C484A1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
@@ -1334,6 +1379,8 @@
 			dstSubfolderSpec = 10;
 			files = (
 				8E3620FD2E1A9F8E00E5C99A /* CoreRPG.framework in Embed Frameworks */,
+				5946861C2E1E136D004DC406 /* RPGPhotos.framework in Embed Frameworks */,
+				5946860D2E1E0F69004DC406 /* RPGResources.framework in Embed Frameworks */,
 				8E36210D2E1AA41200E5C99A /* AndrenalinKit.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -1449,6 +1496,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				594686112E1E1012004DC406 /* CoreRPG.framework in Embed Frameworks */,
+				594686152E1E1016004DC406 /* PhotoRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1480,6 +1529,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				8EF250072CF0AE8E005D1170 /* AndrenalinKit.framework in Embed Frameworks */,
+				594686052E1E0D11004DC406 /* PhotoRPG.framework in Embed Frameworks */,
 				8EF2500A2CF0AE8F005D1170 /* RoleGameKit.framework in Embed Frameworks */,
 				8EF2500C2CF0AE91005D1170 /* RPGAdventures.framework in Embed Frameworks */,
 				8EF2500E2CF0AE95005D1170 /* RPGAudios.framework in Embed Frameworks */,
@@ -1709,6 +1759,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				8E3620FC2E1A9F8E00E5C99A /* CoreRPG.framework in Frameworks */,
+				5946861B2E1E136D004DC406 /* RPGPhotos.framework in Frameworks */,
+				5946860C2E1E0F69004DC406 /* RPGResources.framework in Frameworks */,
 				8E36210C2E1AA41200E5C99A /* AndrenalinKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1885,6 +1937,8 @@
 				8EBED1CF2CD9A383004E7103 /* RPGSpaces.framework in Frameworks */,
 				8EBED1C72CD9A383004E7103 /* RPGPhotos.framework in Frameworks */,
 				8EBED1B32CD9A383004E7103 /* RPGAudios.framework in Frameworks */,
+				594686102E1E1012004DC406 /* CoreRPG.framework in Frameworks */,
+				594686142E1E1016004DC406 /* PhotoRPG.framework in Frameworks */,
 				8EBED1D72CD9A383004E7103 /* RPGValues.framework in Frameworks */,
 				8EBED1CB2CD9A383004E7103 /* RPGResources.framework in Frameworks */,
 				8EBED1B72CD9A383004E7103 /* RPGDie.framework in Frameworks */,
@@ -2084,6 +2138,7 @@
 				8EF250192CF0AE9E005D1170 /* RPGResources.framework in Frameworks */,
 				8EF2501B2CF0AEA2005D1170 /* RPGSpaces.framework in Frameworks */,
 				8EF2501D2CF0AEA3005D1170 /* RPGTables.framework in Frameworks */,
+				594686042E1E0D11004DC406 /* PhotoRPG.framework in Frameworks */,
 				8EF2501F2CF0AEA5005D1170 /* RPGValues.framework in Frameworks */,
 				8EF250212CF0AEA8005D1170 /* RPGWeathers.framework in Frameworks */,
 				8E81B0D32C26E4A0005B7B6F /* StoreKit.framework in Frameworks */,
@@ -2586,6 +2641,8 @@
 			dependencies = (
 				8E3620FF2E1A9F8E00E5C99A /* PBXTargetDependency */,
 				8E36210F2E1AA41200E5C99A /* PBXTargetDependency */,
+				5946860F2E1E0F69004DC406 /* PBXTargetDependency */,
+				5946861E2E1E136D004DC406 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E3620DC2E1A9EAF00E5C99A /* PhotoRPG */,
@@ -3020,6 +3077,8 @@
 				8EBED1D62CD9A383004E7103 /* PBXTargetDependency */,
 				8EBED1DA2CD9A383004E7103 /* PBXTargetDependency */,
 				8EBED1DE2CD9A383004E7103 /* PBXTargetDependency */,
+				594686132E1E1012004DC406 /* PBXTargetDependency */,
+				594686172E1E1016004DC406 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E8ED7582CD8D8B80010A25B /* RoleGameKit */,
@@ -3488,6 +3547,7 @@
 				8EB74F9F2BD13B5800BEDFE2 /* PBXTargetDependency */,
 				8E33768B2DB1140C00F9C14C /* PBXTargetDependency */,
 				8E3620BF2E1A810000E5C99A /* PBXTargetDependency */,
+				594686072E1E0D11004DC406 /* PBXTargetDependency */,
 			);
 			name = MasterRPG;
 			packageProductDependencies = (
@@ -4330,6 +4390,31 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		594686072E1E0D11004DC406 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E3620DA2E1A9EAF00E5C99A /* PhotoRPG */;
+			targetProxy = 594686062E1E0D11004DC406 /* PBXContainerItemProxy */;
+		};
+		5946860F2E1E0F69004DC406 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E4B27012CD79E2E009AB4D1 /* RPGResources */;
+			targetProxy = 5946860E2E1E0F69004DC406 /* PBXContainerItemProxy */;
+		};
+		594686132E1E1012004DC406 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E3620AC2E1A80FF00E5C99A /* CoreRPG */;
+			targetProxy = 594686122E1E1012004DC406 /* PBXContainerItemProxy */;
+		};
+		594686172E1E1016004DC406 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E3620DA2E1A9EAF00E5C99A /* PhotoRPG */;
+			targetProxy = 594686162E1E1016004DC406 /* PBXContainerItemProxy */;
+		};
+		5946861E2E1E136D004DC406 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E8EE8942CD8EB5F0010A25B /* RPGPhotos */;
+			targetProxy = 5946861D2E1E136D004DC406 /* PBXContainerItemProxy */;
+		};
 		8E00BC642990942C00C484A1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8EC4E46828DDA29600D0279F /* MasterRPG */;
@@ -5283,8 +5368,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_MODULE = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
@@ -5334,8 +5417,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_MODULE = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
@@ -5445,8 +5526,6 @@
 				SWIFT_INSTALL_MODULE = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
@@ -5497,8 +5576,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_MODULE = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
@@ -6005,7 +6082,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_ENTITLEMENTS = Sources/Master3RPG/Master3RPG.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U3G27T67U6;
@@ -6056,7 +6134,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_ENTITLEMENTS = Sources/Master3RPG/Master3RPG.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U3G27T67U6;

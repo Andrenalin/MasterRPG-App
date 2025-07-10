@@ -225,4 +225,11 @@ public extension PhotoRoot {
     func moveFiles() async throws {
         try await fileController.moveFiles()
     }
+
+    @MainActor
+    func listPhotos() -> [PhotoModel] {
+        itemController.itemDataModel.items.map {
+            itemController.itemOrEmpty(for: $0)
+        }
+    }
 }

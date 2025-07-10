@@ -1,4 +1,3 @@
-import AndrenalinKit
 import CoreRPG
 import PhotoRPG
 import SwiftUI
@@ -7,7 +6,7 @@ import SwiftData
 
 extension RootRoute: @retroactive View {}
 extension RootRoute: @retroactive Identifiable {}
-extension RootRoute: @MainActor @retroactive CoreRPG.NavigationDestination {
+extension RootRoute: @MainActor @retroactive NavigationDestination {
     public var body: some View {
         Group {
             if self == .photos {
@@ -20,14 +19,12 @@ extension RootRoute: @MainActor @retroactive CoreRPG.NavigationDestination {
 }
 
 struct AppRootView: View {
-    @Environment(ListModel.self) private var listModel
     @Environment(AppRootUiModel.self) private var appRootModel
     
-    @State private var selectedTab: RootRoute = .adventures
+    @State private var selectedTab: RootRoute = .photos
     @State private var tabTitleModel = TabTitleModel()
 
     var body: some View {
-        @Bindable var listModel = listModel
         TabView(selection: $selectedTab) {
             ForEach(RootRoute.allTabs) { tab in
                 if tab == .settings {
@@ -106,7 +103,7 @@ struct ListView: View {
         }
         .navigationTitle(rootRoute.title)
 #if os(macOS)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+        .navigationSplitViewColumnWidth(min: 180, ideal: 200)
 #endif
     }
 }
@@ -137,12 +134,10 @@ struct DetailView: View {
                 ImageHeaderView()
                     .ignoresSafeArea(edges: .top)
                     .stretchy()
-                    //.flexibleHeaderContent()
 
                 RowView(item: item)
             }
         }
-        //.flexibleHeaderScrollView()
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
         .toolbar(removing: .title)
@@ -183,8 +178,8 @@ struct ImageHeaderView: View {
     AppRootView()
         .modelContainer(for: [PhotoDataModel.self, PhotoEntryDataModel.self], inMemory: true)
         .environment(AppRootUiModel())
-        .environment(ListModel(searchToken: .photo, categoryTags: [.adventure, .photo, .weather], listStoreName: "Test", hasChildren: false))
-        .environment(CoreRPG.DeviceRotationModel())
+        .environment(SearchModel.preview)
+        .environment(DeviceRotationModel())
 }
 
 @Observable private class FlexibleHeaderGeometry {

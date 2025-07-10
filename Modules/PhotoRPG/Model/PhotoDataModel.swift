@@ -1,12 +1,12 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import Foundation
 import SwiftData
 
 @Model
 public final class PhotoDataModel {
-    init(id: UUID = UUID(), name: String = "", information: String = "", category: ItemListCategory = .adventure, tags: [String] = [], displayState: Int32 = 0, degrees: Double = 0, fileUrl: String = "", entries: [PhotoEntryDataModel]? = nil) {
+    init(id: UUID = UUID(), name: String = "", information: String = "", category: ItemListCategory = .adventure, tags: [String] = [], displayState: Int32 = 0, degrees: Double = 0, url: URL? = nil, entries: [PhotoEntryDataModel]? = nil) {
         self.id = id
         self.name = name
         self.information = information
@@ -14,12 +14,12 @@ public final class PhotoDataModel {
         self.tags = tags
         self.displayState = displayState
         self.degrees = degrees
-        self.fileUrl = fileUrl
+        self.url = url
         self.entries = entries
     }
 
     @Attribute(.preserveValueOnDeletion)
-    public var id: UUID
+    public var id: UUID = UUID()
     var name: String = ""
     var information: String = ""
     private var _nameLWW: CRDT<String> = CRDT(wrappedValue: "")
@@ -30,8 +30,12 @@ public final class PhotoDataModel {
     var displayState: Int32 = 0
 
     var degrees: Double = 0
-    var fileUrl: String = ""
-    
+    var url: URL?
+    var fileUrl: FileUrl? {
+        guard let url else { return nil }
+        return FileUrl(fileId: id, url: url, location: .cloud, module: "Photos")
+    }
+
     @Relationship(deleteRule: .cascade) var entries: [PhotoEntryDataModel]?
     
     var nameLLW: String {

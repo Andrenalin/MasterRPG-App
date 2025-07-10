@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
+import PhotoRPG
 import RPGAdventures
 import RPGAudios
 import RPGDie
@@ -204,8 +205,7 @@ struct RouteRouteDestionationView: View {
             PdfFactory.rootView(for: appStore.pdfRoot, tabId: tabId)
                 .environment(appStore.pdfRoot)
         case .photos(let tabId):
-            PhotoFactory.rootView(for: appStore.photoRoot, tabId: tabId)
-                .environment(appStore.photoRoot)
+            NewPhotoRoute(appStore: appStore, tabId: tabId)
         case .space(let tabId):
             SpaceFactory.rootView(for: appStore.spaceRoot, tabId: tabId)
                 .environment(appStore.spaceRoot)

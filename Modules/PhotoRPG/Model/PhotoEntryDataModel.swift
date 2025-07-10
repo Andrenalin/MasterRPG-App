@@ -1,11 +1,3 @@
-//
-//  RPGPhotoEntry.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 02.07.25.
-//
-
-
 // @copyright André Trettin
 
 import Foundation

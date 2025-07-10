@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import RoleGameKit
+import SwiftData
 import SwiftUI
 import os.log
 
@@ -28,6 +29,7 @@ struct MasterRPGApp: App {
                 .frame(minWidth: 800, minHeight: 600)
 #endif
                 .environment(appStore.windowStateModel)
+                .modelContainer(appStore.sharedModelContainer)
                 .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
                     handle(userActivity: userActivity)
                 }                
@@ -62,6 +64,7 @@ struct MasterRPGApp: App {
                     .environment(appStore.optionKeyDownModel)
                     .environment(appStore.settingsModel)
                     .frame(minWidth: 600, minHeight: 400)
+                    .modelContainer(appStore.sharedModelContainer)
             }
         }
         .keyboardShortcut("E", modifiers: [.command, .shift, .option])

@@ -5,7 +5,7 @@ import Foundation
 import Observation
 
 @Observable
-final class PhotoModel: Identifiable, @unchecked Sendable {
+public final class PhotoModel: Identifiable, @unchecked Sendable {
     init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, degrees: Double = 0, fileUrl: FileUrl? = nil, entries: [PhotoEntryModel] = []) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
@@ -30,7 +30,7 @@ final class PhotoModel: Identifiable, @unchecked Sendable {
         entries_ = entries
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<PhotoModel.CodingKeys> = try decoder.container(keyedBy: PhotoModel.CodingKeys.self)
 
         self._id = try container.decode(UUID.self, forKey: PhotoModel.CodingKeys._id)
@@ -44,59 +44,54 @@ final class PhotoModel: Identifiable, @unchecked Sendable {
         self._entries_ = try container.decode(CRDTDataUpdate<[PhotoEntryModel]>.self, forKey: PhotoModel.CodingKeys._entries_)
     }
 
-    var id: UUID
+    public var id: UUID
 
-    var name: String {
+    public var name: String {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
     var name_: CRDT<String>
 
-    var description: String {
+    public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
     var description_: CRDT<String>
 
-    var tags: [String] {
+    public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
     var tags_: CRDT<[String]>
 
-    var category: ItemListCategory {
+    public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
     var category_: CRDT<ItemListCategory>
 
-    var displayState: Int
+    public var displayState: Int
 
-    var degrees: Double {
+    public var degrees: Double {
         get { degrees_.wrappedValue }
         set { degrees_.wrappedValue = newValue }
     }
     var degrees_: CRDT<Double>
 
-    var fileUrl: FileUrl? {
+    public var fileUrl: FileUrl? {
         get { fileUrl_.wrappedValue }
         set { fileUrl_.wrappedValue = newValue }
     }
-    var fileUrl_: CRDTDataUpdate<FileUrl?> {
-        willSet {
-//            ItemController.sharedThumbnailCache.removeObject(for: id)
-//            ItemController.sharedImageCache.removeObject(for: id)
-        }
-    }
+    var fileUrl_: CRDTDataUpdate<FileUrl?>
     
-    var entries: [PhotoEntryModel] {
+    public var entries: [PhotoEntryModel] {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
     var entries_: CRDTDataUpdate<[PhotoEntryModel]>
 
     // only game properties
-    var players: [UUID] = []
+    public var players: [UUID] = []
 }
 
 extension PhotoModel: ItemGameReportable, ItemLinkRegistable {}
@@ -108,13 +103,13 @@ extension PhotoModel {
 }
 
 extension PhotoModel: Comparable {
-    static func < (lhs: PhotoModel, rhs: PhotoModel) -> Bool {
+    public static func < (lhs: PhotoModel, rhs: PhotoModel) -> Bool {
         lhs.name < rhs.name
     }
 }
 
 extension PhotoModel: ItemDiffComparable {
-    func merge(_ other: PhotoModel) -> PhotoModel {
+    public func merge(_ other: PhotoModel) -> PhotoModel {
         PhotoModel(
             id: id,
             name: name_.merged(other: other.name_),
@@ -128,7 +123,7 @@ extension PhotoModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: PhotoModel) -> Bool {
+    public func isSame(_ other: PhotoModel) -> Bool {
         name == other.name &&
         description == other.description &&
         tags == other.tags &&
@@ -143,38 +138,38 @@ extension PhotoModel: ItemDiffComparable {
         }
     }
     
-    var version: Int {
+    public var version: Int {
         fileUrl_.update.hashValue
     }
 }
 
 extension PhotoModel: ItemDuplicatable {
-    func duplicate() -> PhotoModel {
+    public func duplicate() -> PhotoModel {
         let copyName = duplicateName(from: name)
         return PhotoModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() })
     }
 }
 
 extension PhotoModel: ItemDataAccessable {
-    static var empty: PhotoModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> PhotoModel {
+    public static var empty: PhotoModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> PhotoModel {
         PhotoModel(id: id, name: "")
     }
-    static let typeId: NetworkModules = .photo
+    public static let typeId: NetworkModules = .photo
 
-    func copy() -> PhotoModel {
+    public func copy() -> PhotoModel {
         PhotoModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, degrees: degrees_, fileUrl: fileUrl_, entries: entries_)
     }
     
-    func filter(_ filter: String) -> Bool {
+    public func filter(_ filter: String) -> Bool {
         (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
     }
     
-    func isEqual(other: PhotoModel) -> Bool {
+    public func isEqual(other: PhotoModel) -> Bool {
         self == other
     }
     
-    var isGroupHiddenToggle: Bool {
+    public var isGroupHiddenToggle: Bool {
         get { isGroupHidden }
         set {
             if newValue {
@@ -185,7 +180,7 @@ extension PhotoModel: ItemDataAccessable {
         }
     }
 
-    func replace(with model: PhotoModel) -> Bool {
+    public func replace(with model: PhotoModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_
@@ -198,7 +193,7 @@ extension PhotoModel: ItemDataAccessable {
         return true
     }
 
-    subscript(id: UUID) -> PhotoEntryModel {
+    public subscript(id: UUID) -> PhotoEntryModel {
         get {
             guard let index = entries.firstIndex(where: { $0.id == id }) else { return .empty(id) }
             return entries[index]
@@ -209,11 +204,11 @@ extension PhotoModel: ItemDataAccessable {
         }
     }
 
-    func urlAdr(linkNumber: Int, entryId: UUID) -> String {
+    public func urlAdr(linkNumber: Int, entryId: UUID) -> String {
         "\(URL.appScheme)://\(Self.typeId.token)/\(linkNumber)/\(entryId)"
     }
 
-    func urlName(entryId: UUID) -> String {
+    public func urlName(entryId: UUID) -> String {
         let title = entries.first(where: { $0.id == entryId })?.name ?? name
         return "\(title.withoutLink())"
     }
@@ -232,7 +227,7 @@ extension PhotoModel: Codable {
         case _entries_
     }
 
-    final func encode(to encoder: Encoder) throws {
+    final public func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<PhotoModel.CodingKeys> = encoder.container(keyedBy: PhotoModel.CodingKeys.self)
 
         try container.encode(self._id, forKey: PhotoModel.CodingKeys._id)
@@ -248,11 +243,11 @@ extension PhotoModel: Codable {
 }
 
 extension PhotoModel: Equatable, Hashable {
-    static func == (lhs: PhotoModel, rhs: PhotoModel) -> Bool {
+    public static func == (lhs: PhotoModel, rhs: PhotoModel) -> Bool {
         lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     }
 
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }
