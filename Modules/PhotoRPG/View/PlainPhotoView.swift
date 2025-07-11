@@ -9,16 +9,18 @@ struct PlainPhotoView: View {
         case maxHeightWidth(CGFloat)
     }
 
-    init(model: PhotoDataModel, size: SizeType = .maxWidth, ratio: ContentMode = .fill, highResolution: Bool = true) {
+    init(model: PhotoDataModel, size: SizeType = .maxWidth, ratio: ContentMode = .fit, hasRoundedCorners: Bool = false, highResolution: Bool = true) {
         self.model = model
         self.size = size
         self.ratio = ratio
+        self.hasRoundedCorners = hasRoundedCorners
         self.highResolution = highResolution
     }
 
     let model: PhotoDataModel
     let size: SizeType
     let ratio: ContentMode
+    let hasRoundedCorners: Bool
     let highResolution: Bool
 
     @Environment(PhotoRootModel.self) private var rootModel
@@ -34,7 +36,7 @@ struct PlainPhotoView: View {
                     case .maxHeightWidth(let width):
                         GeometryReader { proxy in
                             imageView(image: image)
-                                .clipShape(.rect(topLeadingRadius: 12, bottomLeadingRadius: 12))
+                                .clipShape(.rect(topLeadingRadius: 24, bottomLeadingRadius: 24))
                         }
                         .frame(width: width)
                     case .maxWidth:
@@ -43,7 +45,10 @@ struct PlainPhotoView: View {
                             .backgroundExtensionEffect26()
                 }
             } else {
-                placeHolder(size: CGSize(width: 96, height: 96))
+                VStack {
+                    placeHolder(size: CGSize(width: 96, height: 96))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
         }
         .onChange(of: model.fileUrl, initial: true) {
@@ -76,7 +81,13 @@ private extension PlainPhotoView {
             Image(systemName: model.fileUrl == nil ? "photo" : "photo.badge.arrow.down")
                 .font(.system(size: 32))
                 .frame(width: size.width, height: size.height)
-                .border(Color.secondary, width: 2)
+                .overlay {
+                    if hasRoundedCorners {
+                        UnevenRoundedRectangle(topLeadingRadius: 24, bottomLeadingRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
+                    } else {
+                        RoundedRectangle(cornerRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
+                    }
+                }
         }
     }
 

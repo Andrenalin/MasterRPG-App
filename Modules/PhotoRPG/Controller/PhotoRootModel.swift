@@ -4,6 +4,7 @@ import AndrenalinKit
 import CoreRPG
 import RPGPhotos
 import SwiftData
+import Foundation
 
 
 @MainActor @Observable
@@ -25,8 +26,12 @@ public final class PhotoRootModel {
             let fetchDesc = FetchDescriptor<PhotoDataModel>()
             let models = try? modelContext.fetch(fetchDesc)
             guard let models, !models.contains(where: { $0.id == photo.id }) else { return }
+
+            let entries = photo.entries.enumerated().map { (index, entry) in
+                PhotoEntryDataModel(id: entry.id, index: Int16(index), parentId: photo.id, photoId: entry.photoId, photo: nil)
+            }
             modelContext.insert(
-                PhotoDataModel(id: photo.id, name: photo.name, information: photo.description, category: CoreRPG.ItemListCategory(rawValue: photo.category.rawValue) ?? .adventure, tags: photo.tags, displayState: Int32(photo.displayState), degrees: photo.degrees, url: photo.fileUrl?.rawUrl, entries: [])
+                PhotoDataModel(id: photo.id, name: photo.name, information: photo.description, category: CoreRPG.ItemListCategory(rawValue: photo.category.rawValue) ?? .adventure, tags: photo.tags, displayState: Int32(photo.displayState), degrees: photo.degrees, url: photo.fileUrl?.rawUrl, entries: entries)
             )
         }
     }

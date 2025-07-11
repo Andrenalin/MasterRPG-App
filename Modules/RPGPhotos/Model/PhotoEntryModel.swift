@@ -11,7 +11,7 @@ public struct PhotoEntryModel: Identifiable, Equatable, Hashable, Codable {
     }
 
     public let id: UUID
-    let photoId: UUID
+    public let photoId: UUID
 
     public var displayState: Int = 0
 }

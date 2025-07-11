@@ -32,6 +32,7 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
             VStack(spacing: 0) {
                 thumbnail
             }
+            .fixedSize(horizontal: true, vertical: false)
 
             VStack(alignment: .leading, spacing: 4) {
                 NameItemRow(itemId: itemId, name: model[keyPath: nameKeyPath], cacheItemListModel: cacheItemListModel)

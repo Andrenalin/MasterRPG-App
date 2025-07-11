@@ -3,67 +3,91 @@
 import CoreRPG
 import SwiftUI
 
+@Observable
+final class DetailPhotoSelection {
+    var selectedPhoto: PhotoDataModel?
+}
+
 struct DetailView: View {
-    @Environment(\.isSearching) private var isSearching
-    
     let model: PhotoDataModel
 
-    @State private var name = ""
-    
+    @State var selection = DetailPhotoSelection()
+
     var body: some View {
         @Bindable var model = model
-        ScrollView(showsIndicators: false) {
-            LazyVStack(alignment: .leading, spacing: 8) {
-                PlainPhotoView(model: model)
-                    .stretchy()
-
-                MainRowView(model: model)
-                
-                TextField(text: $name) {
-                    Text("Name:")
-                }
-                .onSubmit {
-                    if model.name != name {
-                        withAnimation { model.reset(name: name) }
+        VStack {
+            GeometryReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    ZStack(alignment: .center) {
+                        PlainPhotoView(model: selection.selectedPhoto ?? model, ratio: .fit)
+                            .stretchy()
                     }
+                    .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
                 }
-                .onAppear {
-                    name = model.name
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .bottom) {
+                    HStack(alignment: .bottom) {
+                        DetailOverlayView(model: selection.selectedPhoto ?? model)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        DetailToolbar()
+                    }
+                    .padding()
                 }
             }
+
+            CarouselPhotosView(model: model)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .environment(selection)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
         .toolbar(removing: .title)
+        .onChange(of: model.id) {
+            selection.selectedPhoto = nil
+        }
     }
 }
 
-struct ImageHeaderView: View {
+struct DetailToolbar: View {
     var body: some View {
-        Image(decorative: "1022")
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-            .clipped()
-            .backgroundExtensionEffect26()
-            .overlay(alignment: .bottom) {
-                VStack {
-                    Text("Featured Landmark", comment: "Big headline in the main image of featured landmarks.")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .opacity(0.8)
-                    Text("Kirchenberg")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                    Button("Learn More") {
-                        
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .padding(.bottom, 6)
-                }
-                .padding([.bottom], 40)
+        if #available(iOS 26.0, *) {
+            Button {
+                
+            } label: {
+                Image(systemName: "gear")
             }
+            .buttonStyle(.glass)
+        } else {
+            Button {
+
+            } label: {
+                Image(systemName: "gear")
+            }
+            .buttonStyle(.imageOverlay)
+        }
+    }
+}
+struct DetailOverlayView: View {
+    let model: PhotoDataModel
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(model.name)
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+            HStack {
+                TagItemRow(tags: model.tags)
+            }
+            Text(model.information)
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+                .opacity(0.8)
+        }
+        .padding(.bottom, 40)
     }
 }

@@ -11,7 +11,7 @@ struct MainRowView: View {
 
     var body: some View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
-            PlainPhotoView(model: model, size: .maxHeightWidth(96), ratio: .fill, highResolution: false)
+            PlainPhotoView(model: model, size: .maxHeightWidth(96), ratio: .fill, hasRoundedCorners: true, highResolution: false)
         }, tagAdds: {
             CategoryItemRow(category: model.category)
         }, actionBar: {
