@@ -14,6 +14,7 @@ import SwiftUI
 struct NewPhotoRoute: View {
     let appStore: AppStore
     let tabId: UUID
+    let isExtended: Bool
 
     @State private var cacheModel = CacheItemListModel()
     @State private var deviceRotationModel = DeviceRotationModel()
@@ -23,17 +24,24 @@ struct NewPhotoRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        PhotoRootView()
-            .environment(cacheModel)
-            .environment(deviceRotationModel)
-            .environment(searchModel)
-            .environment(tabTitleModel)
-            .task {
-                try? await Task.sleep(for: .seconds(3))
-                await DBConverter.convert(appStore: appStore, modelContext: modelContext)
+        if appStore.isNewUICode {
+            PhotoRootView()
+                .environment(cacheModel)
+                .environment(deviceRotationModel)
+                .environment(searchModel)
+                .environment(tabTitleModel)
+                .task {
+                    try? await Task.sleep(for: .seconds(3))
+                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
+                }
+        } else {
+            if isExtended {
+                PhotoFactory.rootExtendedView(for: appStore.photoRoot, tabId: tabId)
+                    .environment(appStore.photoRoot)
+            } else {
+                PhotoFactory.rootView(for: appStore.photoRoot, tabId: tabId)
+                    .environment(appStore.photoRoot)
             }
-
-//        PhotoFactory.rootView(for: appStore.photoRoot, tabId: tabId)
-//            .environment(appStore.photoRoot)
+        }
     }
 }

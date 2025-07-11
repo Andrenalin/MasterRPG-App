@@ -32,13 +32,13 @@ public final class AppStore: Sendable {
     @MainActor
     public static let shared = AppStore()
 
+    var isNewUICode: Bool = true
     public var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             PhotoDataModel.self, PhotoEntryDataModel.self,
         ])
         let storeURL = FileManager.groupURL.appending(path: "masterRPG.sqlite")
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
-//        let modelConfiguration = ModelConfiguration(schema: schema, url: storeURL, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {

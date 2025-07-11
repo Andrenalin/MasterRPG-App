@@ -12,6 +12,7 @@ struct DetailView: View {
     let model: PhotoDataModel
 
     @State var selection = DetailPhotoSelection()
+    @State private var isEditing = false
 
     var body: some View {
         @Bindable var model = model
@@ -30,7 +31,7 @@ struct DetailView: View {
                         DetailOverlayView(model: selection.selectedPhoto ?? model)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        DetailToolbar()
+                        toolbarButtons
                     }
                     .padding()
                 }
@@ -48,28 +49,43 @@ struct DetailView: View {
         .onChange(of: model.id) {
             selection.selectedPhoto = nil
         }
+        .overlay(alignment: .bottom) {
+            if isEditing {
+                DetailEditorView(model: model) {
+                    isEditing = false
+                }
+                .background(.ultraThickMaterial)
+                .padding(40)
+                .padding(.top)
+                .transition(.scale)
+                .animation(.bouncy, value: isEditing)
+            }
+        }
     }
-}
-
-struct DetailToolbar: View {
-    var body: some View {
+    
+    @ViewBuilder
+    private var toolbarButtons: some View {
         if #available(iOS 26.0, *) {
             Button {
-                
+                isEditing = true
             } label: {
-                Image(systemName: "gear")
+                Image(systemName: "pencil")
             }
             .buttonStyle(.glass)
         } else {
             Button {
-
+                isEditing = true
             } label: {
-                Image(systemName: "gear")
+                Image(systemName: "pencil")
             }
             .buttonStyle(.imageOverlay)
         }
     }
 }
+
+//struct DetailToolbar: View {
+//}
+
 struct DetailOverlayView: View {
     let model: PhotoDataModel
 
@@ -88,6 +104,5 @@ struct DetailOverlayView: View {
                 .foregroundColor(.white)
                 .opacity(0.8)
         }
-        .padding(.bottom, 40)
     }
 }

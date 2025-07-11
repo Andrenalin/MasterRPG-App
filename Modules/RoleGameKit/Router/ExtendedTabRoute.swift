@@ -102,8 +102,7 @@ struct ExtendedTabRouteDestionationView: View {
                 PdfFactory.rootExtendedView(for: appStore.pdfRoot, tabId: tabId)
                     .environment(appStore.pdfRoot)
             case .photos:
-                PhotoFactory.rootExtendedView(for: appStore.photoRoot, tabId: tabId)
-                    .environment(appStore.photoRoot)
+                NewPhotoRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .space:
                 SpaceFactory.rootExtendedView(for: appStore.spaceRoot, tabId: tabId)
                     .environment(appStore.spaceRoot)
