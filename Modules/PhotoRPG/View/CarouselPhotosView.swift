@@ -1,9 +1,4 @@
-//
-//  CarouselPhotosView.swift
-//  PhotoRPG
-//
-//  Created by Andre Trettin on 10/7/2568 BE.
-//
+// @copyright André Trettin
 
 import SwiftData
 import SwiftUI

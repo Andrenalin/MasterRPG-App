@@ -4,11 +4,15 @@ import CoreRPG
 import SwiftUI
 
 public struct PhotoRootView: View {
-    public init() {}
+    public init(withoutNavigation: Bool) {
+        self.withoutNavigation = withoutNavigation
+    }
+    let withoutNavigation: Bool
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(SearchModel.self) private var searchModel
     @Environment(TabTitleModel.self) private var tabTitleModel
+    
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.tabBarPlacement) private var tabBarPlacement
@@ -21,27 +25,13 @@ public struct PhotoRootView: View {
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
 
     public var body: some View {
-        @Bindable var searchModel = searchModel
-        NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-            ListView()
-                .environment(selectionModel)
-                .searchable(text: $searchModel.searchText, placement: .automatic, prompt: "Search")
-                .searchScopes($searchModel.searchToken, activation: searchScopeActivition) {
-                    ForEach(searchModel.categoryTags) { category in
-                        Label(category.title, systemImage: category.icon)
-                            .tag(category)
-                    }
+        Group {
+            if withoutNavigation {
+                ManagedPresentationView {
+                    listView
                 }
-                .searchPresentationToolbarBehavior(.avoidHidingContent)
-                .onChange(of: searchModel.searchText, initial: true) {
-                    cacheItemListModel.reset(search: searchModel.searchText)
-                }
-        } detail: {
-            if let selected = selectionModel.selectedItem {
-                DetailView(model: selected)
-                    .environment(selectionModel)
             } else {
-                ContentUnavailableView("Photo", image: "photos")
+                splitRoot
             }
         }
         .ignoresSafeArea(edges: .top)
@@ -51,7 +41,38 @@ public struct PhotoRootView: View {
             tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
         }
 #endif
+    }
+    
+    @ViewBuilder
+    private var splitRoot: some View {
+        NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
+            listView
+        } detail: {
+            if let selected = selectionModel.selectedItem {
+                DetailView(model: selected)
+                    .environment(selectionModel)
+            } else {
+                ContentUnavailableView("Photo", image: "photos")
+            }
+        }
+    }
 
+    @ViewBuilder
+    private var listView: some View {
+        @Bindable var searchModel = searchModel
+        ListView()
+            .environment(selectionModel)
+            .searchable(text: $searchModel.searchText, placement: .automatic, prompt: "Search")
+            .searchScopes($searchModel.searchToken, activation: searchScopeActivition) {
+                ForEach(searchModel.categoryTags) { category in
+                    Label(category.title, systemImage: category.icon)
+                        .tag(category)
+                }
+            }
+            //.searchPresentationToolbarBehavior(.avoidHidingContent)
+            .onChange(of: searchModel.searchText, initial: true) {
+                cacheItemListModel.reset(search: searchModel.searchText)
+            }
     }
 
     var searchPlacement: SearchFieldPlacement {

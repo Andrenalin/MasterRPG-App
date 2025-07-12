@@ -13,54 +13,68 @@ struct DetailView: View {
 
     @State var selection = DetailPhotoSelection()
     @State private var isEditing = false
-
+    
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+    
     var body: some View {
         @Bindable var model = model
         VStack {
-            GeometryReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    ZStack(alignment: .center) {
-                        PlainPhotoView(model: selection.selectedPhoto ?? model, ratio: .fit)
-                            .stretchy()
-                    }
-                    .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay(alignment: .bottom) {
-                    HStack(alignment: .bottom) {
-                        DetailOverlayView(model: selection.selectedPhoto ?? model)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                        toolbarButtons
-                    }
-                    .padding()
-                }
-            }
-
+            detailView
+            
             CarouselPhotosView(model: model)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .environment(selection)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea(.keyboard)
-        .ignoresSafeArea(edges: .top)
         .toolbar(removing: .title)
         .onChange(of: model.id) {
             selection.selectedPhoto = nil
         }
-        .overlay(alignment: .bottom) {
-            if isEditing {
-                DetailEditorView(model: model) {
-                    isEditing = false
+        .overlay(alignment: .top) {
+            detailEditorView
+        }
+        .ignoresSafeArea(.keyboard)
+        .ignoresSafeArea(edges: .top)
+    }
+    
+    private var detailView: some View {
+        GeometryReader { proxy in
+            ScrollView(showsIndicators: false) {
+                ZStack(alignment: .center) {
+                    PlainPhotoView(model: selection.selectedPhoto ?? model, ratio: .fit)
+                        .stretchy()
                 }
-                .background(.ultraThickMaterial)
-                .padding(40)
-                .padding(.top)
-                .transition(.scale)
-                .animation(.bouncy, value: isEditing)
+                .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(alignment: .bottom) {
+                HStack(alignment: .bottom) {
+                    DetailOverlayView(model: selection.selectedPhoto ?? model)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    toolbarButtons
+                }
+                .padding()
             }
         }
+    }
+    
+    private var detailEditorView: some View {
+        DetailEditorView(model: model) {
+            isEditing = false
+        }
+        .background {
+            RoundedRectangle(cornerRadius: 24).fill(.thickMaterial)
+        }
+        .frame(minWidth: 320, alignment: .center)
+        .padding(40)
+        .offset(y: 128)
+        .transition(.scale)
+        .animation(.bouncy, value: isEditing)
+        .opacity(isEditing ? 1 : 0)
     }
     
     @ViewBuilder
@@ -82,9 +96,6 @@ struct DetailView: View {
         }
     }
 }
-
-//struct DetailToolbar: View {
-//}
 
 struct DetailOverlayView: View {
     let model: PhotoDataModel

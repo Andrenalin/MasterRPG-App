@@ -29,12 +29,19 @@ struct DetailEditorView: View {
         self.dismiss = dismiss
     }
     
+    enum FocusField {
+        case name
+        case information
+    }
+    
+    @FocusState private var currentFocus: FocusField?
+    
     var body: some View {
         VStack(spacing: 0) {
-            PlainPhotoView(model: model, ratio: .fit)
-                .frame(height: 128)
-                .frame(maxWidth: .infinity)
-            
+//            PlainPhotoView(model: model, ratio: .fit)
+//                .frame(height: 128)
+//                .frame(maxWidth: .infinity)
+//        Form {
             ScrollView {
                 VStack(alignment: .leading, spacing: 4) {
                     
@@ -42,19 +49,35 @@ struct DetailEditorView: View {
                     Text("Name")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
                     HStack {
-                        TextField("Name", text: $name)
-                        if !name.isEmpty {
-                            Button {
-                                name = ""
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.secondary)
-                            }
+                        TextField(text: $name, prompt: Text("Enter a name")) {
+                            Text("Name")
                         }
+                        .focused($currentFocus, equals: .name)
+
+                        Button {
+                            name = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                        .opacity(name.isEmpty ? 0: 1)
+                        .contentTransition(.symbolEffect(.automatic))
                     }
-                    .padding(.vertical, 6)
-                    Divider()
+                    .padding(.bottom, 6)
+                    
+                    // Information
+                    Text("Information")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextEditor(text: $information)
+                        .frame(minHeight: 120, maxHeight: 200)
+                        .border(Color.accentColor.secondary)
+                        .padding(.bottom, 6)
+                        .focused($currentFocus, equals: .information)
+                    //Divider()
                     
                     HStack(alignment: .top) {
                         VStack(alignment: .leading) {
@@ -80,13 +103,9 @@ struct DetailEditorView: View {
                             TagsItemEditor(tags: $tags)
                         }
                     }
-                        
+                    
                     Divider()
-                                        
-                    // Degrees
-//                    Text("Degrees")
-//                        .font(.caption)
-//                        .foregroundStyle(.secondary)
+
                     Picker("Degrees", selection: $degrees) {
                         Text("0°").tag(0.0)
                         Text("90°").tag(90.0)
@@ -95,27 +114,23 @@ struct DetailEditorView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.vertical, 6)
-                    Divider()
                     
-                    // Information
-                    Text("Information")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    TextEditor(text: $information)
-                        .frame(minHeight: 12)
-                        .padding(.vertical, 6)
                 }
-                .padding(.horizontal)
+                .padding()
             }
-            
-            HStack {
+            .fixedSize(horizontal: false, vertical: true)
+            .keyboardAvoiding(height: 12)
+        }
+        .toolbar {
+            ToolbarItem(placement: .bottomBar) {
                 Button {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark")
                 }
-
-                Spacer()
+            }
+            
+            ToolbarItem(placement: .bottomBar) {
                 Button {
                     model.name = name
                     model.information = information
@@ -130,9 +145,7 @@ struct DetailEditorView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(isEqual)
             }
-            .padding()
         }
-        .padding()
     }
     
     private var isEqual: Bool {

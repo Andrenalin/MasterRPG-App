@@ -8,6 +8,7 @@ struct ListView: View {
     @Environment(SearchModel.self) private var searchModel
     @Environment(\.modelContext) private var modelContext
     @Environment(ListSelectionModel<PhotoDataModel>.self) private var model
+    @Environment(\.navigator) private var navigator
 
     @Query(sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
 
@@ -30,14 +31,18 @@ struct ListView: View {
                 listView(filteredItems: filteredItems)
             }
         }
+        .navigationDestination(for: PhotoRoute.self) { route in
+            route
+        }
         .animation(.smooth, value: filteredItems)
         .animation(.snappy, value: isSelectionMode)
         .scrollBounceBehavior(.basedOnSize)
         .onChange(of: selected) {
             model.selectedItem = items.first { $0.id == selected }
+            guard let selected = model.selectedItem else { return }
+            navigator.navigate(to: PhotoRoute.photo(selected.id), method: .push)
         }
         .navigationTitle("Photos")
-        //.navigationSubtitle("\(filteredItems.count) items (\(items.count) total)")
 #if os(macOS)
         .navigationSplitViewColumnWidth(min: 180, ideal: 200)
 #endif
@@ -52,6 +57,14 @@ struct ListView: View {
                     isSelectionMode.toggle()
                 } label: {
                     Label("Change Mode to \(isSelectionMode ? "Off" : "On")", systemImage: "list.bullet")
+                }
+            }
+
+            ToolbarItem(placement: .secondaryAction) {
+                Button {
+                    isSelectionMode.toggle()
+                } label: {
+                    Label("Some", systemImage: "gear")
                 }
             }
         }
