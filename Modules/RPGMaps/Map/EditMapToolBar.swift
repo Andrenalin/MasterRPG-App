@@ -49,6 +49,8 @@ struct EditToolBar: View {
 #if os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
+    @State private var pinScale: CGFloat = 1
+    @State private var hexScale: Double = 1
     
     @State private var showPinSelection: Bool = false
     @State private var pinSelection: [UUID] = []
@@ -118,6 +120,9 @@ struct EditToolBar: View {
         .padding(.horizontal)
         .animation(.bouncy.delay(hideScales ? 0 : 0.25), value: showToolBar)
         .buttonStyle(.borderedProminent)
+        .onChange(of: model.pinScale, initial: true) {
+            pinScale <=> model.pinScale
+        }
     }
     
     @ViewBuilder
@@ -166,8 +171,11 @@ struct EditToolBar: View {
 #if !os(tvOS)
             Text("Pin Scale", bundle: .module)
             
-            Slider(value: $model.pinScale, in: 0.5 ... 3.5) {
+            Slider(value: $pinScale, in: 0.5 ... 3.5) {
                 Text("Pin Scale", bundle: .module)
+            }
+            .onChange(of: pinScale) {
+                model.pinScale = pinScale
             }
             .labelsHidden()
 #endif
@@ -191,8 +199,11 @@ struct EditToolBar: View {
             }
             Text("Hex Map Scale", bundle: .module)
             
-            Slider(value: $model.hexScale, in: 20 ... 200) {
+            Slider(value: $hexScale, in: 20 ... 200) {
                 Text("Hex Map Scale", bundle: .module)
+            }
+            .onChange(of: hexScale) {
+                model.hexScale = hexScale
             }
             .labelsHidden()
 #endif
