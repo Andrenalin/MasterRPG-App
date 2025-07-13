@@ -38,10 +38,6 @@ struct DetailEditorView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-//            PlainPhotoView(model: model, ratio: .fit)
-//                .frame(height: 128)
-//                .frame(maxWidth: .infinity)
-//        Form {
             ScrollView {
                 VStack(alignment: .leading, spacing: 4) {
                     
@@ -69,7 +65,7 @@ struct DetailEditorView: View {
                     .padding(.bottom, 6)
                     
                     // Information
-                    Text("Information")
+                    Text("Description")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     TextEditor(text: $information)
@@ -77,7 +73,6 @@ struct DetailEditorView: View {
                         .border(Color.accentColor.secondary)
                         .padding(.bottom, 6)
                         .focused($currentFocus, equals: .information)
-                    //Divider()
                     
                     HStack(alignment: .top) {
                         VStack(alignment: .leading) {
@@ -100,9 +95,12 @@ struct DetailEditorView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             
-                            TagsItemEditor(tags: $tags)
+                            RemoveTagsEditor(tags: $tags)
+                                .offset(y: -8)
                         }
                     }
+                    
+                    AddTagsEditor(tags: $tags)
                     
                     Divider()
 
@@ -115,36 +113,41 @@ struct DetailEditorView: View {
                     .pickerStyle(.segmented)
                     .padding(.vertical, 6)
                     
+                    Divider()
+                 
+                    actionToolbarView
+                        .padding(.top)
                 }
                 .padding()
             }
             .fixedSize(horizontal: false, vertical: true)
             .keyboardAvoiding(height: 12)
         }
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                }
+    }
+    
+    private var actionToolbarView: some View {
+        HStack {
+            GlassButton {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
             }
             
-            ToolbarItem(placement: .bottomBar) {
-                Button {
-                    model.name = name
-                    model.information = information
-                    model.category = category
-                    model.tags = tags
-                    model.degrees = degrees
-                    model.url = url
-                    dismiss()
-                } label: {
-                    Image(systemName: "checkmark")
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isEqual)
+            Spacer()
+            
+            GlassButton(isProminent: !isEqual) {
+                model.name = name
+                model.information = information
+                model.category = category
+                model.tags = tags
+                model.degrees = degrees
+                model.url = url
+                dismiss()
+            } label: {
+                Image(systemName: "checkmark")
             }
+            .disabled(isEqual)
+
         }
     }
     

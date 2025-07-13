@@ -2,7 +2,7 @@
 
 #if !os(tvOS)
 
-import AndrenalinKit
+import CoreRPG
 import PhotosUI
 import SwiftUI
 
@@ -13,18 +13,31 @@ struct LibraryPhotoPicker: View {
     
     var body: some View {
         PhotosPicker(selection: $selectedItem, matching: .images, photoLibrary: .shared()) {
-            Image(systemName: "photo")
-    #if os(iOS) || os(visionOS)
-                .imageScale(.medium)
-                .padding(8)
-    #if os(iOS)
-                .background(.ultraThinMaterial)
-                .foregroundStyle(Color.teal)
-                .hoverEffect(.highlight)
-    #endif
-                .clipShape(.circle)
-                .shadow(color: .primary, radius: 4)
-    #endif
+            if #available(iOS 26.0, *) {
+                Image(systemName: "photo")
+                    .imageScale(.medium)
+                    .padding(8)
+#if os(iOS)
+                    .background(.ultraThinMaterial)
+                    .foregroundStyle(Color.teal)
+                    .hoverEffect(.highlight)
+#endif
+                    .clipShape(.circle)
+                    .glassEffect()
+            } else {
+                Image(systemName: "photo")
+#if os(iOS) || os(visionOS)
+                    .imageScale(.medium)
+                    .padding(8)
+#if os(iOS)
+                    .background(.ultraThinMaterial)
+                    .foregroundStyle(Color.teal)
+                    .hoverEffect(.highlight)
+#endif
+                    .clipShape(.circle)
+                    .shadow(color: .primary, radius: 4)
+#endif
+            }
         }
         .onChange(of: selectedItem) {
             guard let localItem = selectedItem else { return }

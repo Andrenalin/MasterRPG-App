@@ -13,6 +13,7 @@ public final class PhotoEntryDataModel {
         self.photo = photo
     }
     
+    @Attribute(.preserveValueOnDeletion)
     public var id: UUID?
     var index: Int16 = 0
     var parentId: UUID?

@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import SwiftData
 import SwiftUI
 
 @Observable
@@ -10,13 +11,13 @@ final class DetailPhotoSelection {
 
 struct DetailView: View {
     let model: PhotoDataModel
-
+    
     @State var selection = DetailPhotoSelection()
     @State private var isEditing = false
     
-    #if os(iOS)
+#if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    #endif
+#endif
     
     var body: some View {
         @Bindable var model = model
@@ -34,10 +35,28 @@ struct DetailView: View {
             selection.selectedPhoto = nil
         }
         .overlay(alignment: .top) {
+            #if os(iOS)
+            if horizontalSizeClass == .regular {
+                detailEditorView
+            }
+            #else
             detailEditorView
+            #endif
         }
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
+#if os(iOS)
+        .applyIf(horizontalSizeClass == .compact) {
+            $0.sheet(isPresented: $isEditing) {
+                DetailEditorView(model: model) {
+                    isEditing = false
+                }
+                .presentationContentInteraction(.resizes)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+        }
+#endif
     }
     
     private var detailView: some View {
@@ -54,7 +73,7 @@ struct DetailView: View {
                 HStack(alignment: .bottom) {
                     DetailOverlayView(model: selection.selectedPhoto ?? model)
                         .frame(maxWidth: .infinity, alignment: .leading)
-
+                    
                     toolbarButtons
                 }
                 .padding()
@@ -79,41 +98,45 @@ struct DetailView: View {
     
     @ViewBuilder
     private var toolbarButtons: some View {
-        if #available(iOS 26.0, *) {
-            Button {
-                isEditing = true
-            } label: {
-                Image(systemName: "pencil")
-            }
-            .buttonStyle(.glass)
-        } else {
-            Button {
-                isEditing = true
-            } label: {
-                Image(systemName: "pencil")
-            }
-            .buttonStyle(.imageOverlay)
+        LibraryPhotoPicker { _ in }
+        GlassButton {
+            isEditing = true
+        } label: {
+            Image(systemName: "photo")
+        }
+
+        GlassButton(isProminent: true) {
+            isEditing = true
+        } label: {
+            Image(systemName: "pencil")
         }
     }
 }
 
 struct DetailOverlayView: View {
     let model: PhotoDataModel
-
+    
     var body: some View {
         VStack(alignment: .leading) {
             Text(model.name)
                 .font(.largeTitle)
                 .fontWeight(.bold)
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
             HStack {
                 TagItemRow(tags: model.tags)
             }
             Text(model.information)
                 .font(.subheadline)
                 .fontWeight(.bold)
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
                 .opacity(0.8)
         }
     }
+}
+
+#Preview(traits: .mockData) {
+    @Previewable @Query var photos: [PhotoDataModel]
+    DetailView(model: photos[0])
+        .environment(PhotoRootModel())
+        .environment(CacheItemListModel())
 }

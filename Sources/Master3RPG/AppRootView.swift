@@ -10,7 +10,7 @@ extension RootRoute: @MainActor @retroactive NavigationDestination {
     public var body: some View {
         Group {
             if self == .photos {
-                PhotoRootView()
+                PhotoRootView(withoutNavigation: false)
             } else {
                 RootListView(rootRoute: self)
             }

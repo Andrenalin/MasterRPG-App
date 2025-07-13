@@ -1,15 +1,42 @@
+// @copyright André Trettin
+
+import SwiftUI
+
+public struct GlassButton<Content: View>: View {
+    public init(isProminent: Bool = false,  action: @escaping () -> Void, @ViewBuilder label: () -> Content) {
+        self.isProminet = isProminent
+        self.label = label()
+        self.action = action
+    }
+    
+    let isProminet: Bool
+    let label: Content
+    let action: () -> Void
+    
+    public var body: some View {
         if #available(iOS 26.0, *) {
-            Button {
-                isEditing = true
-            } label: {
-                Image(systemName: "pencil")
+            if isProminet {
+                button
+                    .buttonStyle(.glassProminent)
+            } else {
+                button
+                    .buttonStyle(.glass)
             }
-            .buttonStyle(.glass)
         } else {
             Button {
-                isEditing = true
+                action()
             } label: {
-                Image(systemName: "pencil")
+                label
             }
             .buttonStyle(.imageOverlay)
         }
+    }
+    
+    private var button: some View {
+        Button {
+            action()
+        } label: {
+            label
+        }
+    }
+}

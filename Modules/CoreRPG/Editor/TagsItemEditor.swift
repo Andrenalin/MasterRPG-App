@@ -2,35 +2,26 @@
 
 import SwiftUI
 
-public struct TagsItemEditor: View {
-    public init(tags: Binding<[String]>, title: LocalizedStringKey = "Tags", prompt: LocalizedStringKey = "New tag") {
+public struct RemoveTagsEditor: View {
+    public init(tags: Binding<[String]>) {
         self._tags = tags
-        self.title = title
-        self.prompt = prompt
     }
     
     @Binding var tags: [String]
-    let title: LocalizedStringKey
-    let prompt: LocalizedStringKey
-    
-    @FocusState var focusState: Bool
-    @State private var currentTag: String = ""
     
     public var body: some View {
         let _ = Self._printChanges()
         tagsView
-        
-        addTagView
     }
 }
 
-private extension TagsItemEditor {
+private extension RemoveTagsEditor {
     var tagsView: some View {
-        ScrollView(.horizontal) {
+        ScrollView(.horizontal, showsIndicators: false) {
             HStack {
                 ForEach(tags, id: \.self) { tag in
                     Text(tag)
-                        .rowColoredTag()
+                        .rowColoredTag(backgroundColor: Color.accentColor)
                         .removeItemImage {
                             remove(tag: tag)
                         }
@@ -38,8 +29,33 @@ private extension TagsItemEditor {
                 }
             }
         }
+        .scrollBounceBehavior(.basedOnSize)
+    }
+
+    func remove(tag: String) {
+        withAnimation(.bouncy(duration: 0.5, extraBounce: 0.4)) { tags.removeAll(where: { $0 == tag }) }
+    }
+}
+
+public struct AddTagsEditor: View {
+    public init(tags: Binding<[String]>, prompt: LocalizedStringKey = "New tag") {
+        self._tags = tags
+        self.prompt = prompt
     }
     
+    @Binding var tags: [String]
+    let prompt: LocalizedStringKey
+    
+    @FocusState var focusState: Bool
+    @State private var currentTag: String = ""
+    
+    public var body: some View {
+        let _ = Self._printChanges()
+        addTagView
+    }
+}
+
+private extension AddTagsEditor {
     var addTagView: some View {
         HStack {
             TextField(text: $currentTag, prompt: Text(prompt, bundle: .module)) {
@@ -64,20 +80,17 @@ private extension TagsItemEditor {
             .disabled(currentTag.isEmpty)
             .buttonStyle(.borderedProminent)
         }
-        //.labelsHidden()
     }
     
     func addCurrentTag() {
         let tag = currentTag.localizedUppercase
-        withAnimation {
-            tags.append(tag)
-            //editController.add(tag: tag)
+        guard !tags.contains(where: { $0 == tag }) else { return }
+        var updatedTags = tags
+        updatedTags.append(tag)
+        updatedTags = updatedTags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
+        withAnimation(.bouncy(duration: 0.5, extraBounce: 0.4)) {
+            tags = updatedTags
             currentTag = ""
         }
-    }
-    
-    func remove(tag: String) {
-        tags.removeAll(where: { $0 == tag })
-        //editController.remove(tag: tag)
     }
 }
