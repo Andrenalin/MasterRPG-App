@@ -200,7 +200,7 @@ extension MapEditor {
                 var changedPin = pin
                 if changedPin.location == .zero {
                     changedPin.location = leftCenter
-                    leftCenter = leftCenter + changedPin.size.size.width * map.pinScale + 5
+                    leftCenter = leftCenter + changedPin.size.size.width * toolBarModel.pinScale + 5
                 }
                 return changedPin
             }
@@ -301,7 +301,7 @@ extension MapEditor {
     func drawPin(id: UUID) -> some View {
         let pin = pins.pinPointer(for: id) ?? .empty(id)
         let scaleFact: CGFloat = scalePinId == id ? 4.0 : 1.0
-        let pinSize = pin.size.size * map.pinScale * scaleFact
+        let pinSize = pin.size.size * toolBarModel.pinScale * scaleFact
         let location: CGPoint = (pin.location) - (pinSize / CGFloat(2.0))
         
         MapPinView(model: pins, pinId: id, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: true) {
