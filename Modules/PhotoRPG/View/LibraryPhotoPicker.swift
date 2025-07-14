@@ -19,10 +19,10 @@ struct LibraryPhotoPicker: View {
                     .padding(8)
 #if os(iOS)
                     .background(.ultraThinMaterial)
-                    .foregroundStyle(Color.teal)
+                    .foregroundStyle(.primary)
                     .hoverEffect(.highlight)
 #endif
-                    .clipShape(.circle)
+                    .clipShape(.capsule)
                     .glassEffect()
             } else {
                 Image(systemName: "photo")
@@ -31,7 +31,7 @@ struct LibraryPhotoPicker: View {
                     .padding(8)
 #if os(iOS)
                     .background(.ultraThinMaterial)
-                    .foregroundStyle(Color.teal)
+                    .foregroundStyle(.primary)
                     .hoverEffect(.highlight)
 #endif
                     .clipShape(.circle)

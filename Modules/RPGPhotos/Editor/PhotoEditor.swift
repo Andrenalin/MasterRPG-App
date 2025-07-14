@@ -122,4 +122,5 @@ private extension PhotoEditor {
     PhotoEditor(editController: .preview)
         .environment(PhotoRoot.preview)
         .environment(DetailHeaderModel())
+        .environment(ListModel.preview)
 }

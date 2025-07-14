@@ -55,6 +55,13 @@ public final class PhotoDataModel {
 }
 
 extension PhotoDataModel {
+    static func model(modelContext: ModelContext, id: UUID?) -> PhotoDataModel? {
+        guard let id else { return nil }
+        let fetchDesc = FetchDescriptor<PhotoDataModel>()
+        let models = try? modelContext.fetch(fetchDesc)
+        return models?.first { $0.id == id }
+    }
+
     var entriesModel: [PhotoEntryDataModel] {
         get {
             guard let all = entries else {

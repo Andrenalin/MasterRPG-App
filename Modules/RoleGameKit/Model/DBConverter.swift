@@ -8,6 +8,6 @@ struct DBConverter {
     @MainActor
     static func convert(appStore: AppStore, modelContext: ModelContext) async {
         let photos = appStore.photoRoot.listPhotos()
-        PhotoRootModel.insertPhotos(photos: photos, into: appStore.sharedModelContainer.mainContext)
+        ConverterController.insertPhotos(photos: photos, into: appStore.sharedModelContainer.mainContext)
     }
 }

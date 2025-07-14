@@ -25,7 +25,6 @@ struct PhotoRouteDestinationView: View {
     
     let itemId: UUID
 
-    @Environment(\.modelContext) private var modelContext
     @Query private var photos: [PhotoDataModel]
     
     var body: some View {

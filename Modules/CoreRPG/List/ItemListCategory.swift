@@ -7,7 +7,7 @@ public protocol CategoryTextRepresentable: Equatable, Hashable, Identifiable {
     var title: String { get }
 }
 
-public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTextRepresentable {
+public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTextRepresentable, Sendable {
     case all = 0
     case hide = 1
 

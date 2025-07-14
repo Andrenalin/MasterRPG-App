@@ -23,6 +23,19 @@ struct DetailView: View {
         @Bindable var model = model
         VStack {
             detailView
+//#if !os(tvOS)
+//        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
+//            guard let url = try? result.get() else { return }
+//            editController.resetPhoto(url: url)
+//        }
+//        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
+//#endif
+//        .onChange(of: editController.model.fileUrl, initial: true) {
+//            guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage(for: model.id) == nil) else { return }
+//            loadImage()
+//        }
+//    }
+
             
             CarouselPhotosView(model: model)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -98,12 +111,7 @@ struct DetailView: View {
     
     @ViewBuilder
     private var toolbarButtons: some View {
-        LibraryPhotoPicker { _ in }
-        GlassButton {
-            isEditing = true
-        } label: {
-            Image(systemName: "photo")
-        }
+        FolderImporterView(model: model)
 
         GlassButton(isProminent: true) {
             isEditing = true
@@ -113,26 +121,6 @@ struct DetailView: View {
     }
 }
 
-struct DetailOverlayView: View {
-    let model: PhotoDataModel
-    
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text(model.name)
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-            HStack {
-                TagItemRow(tags: model.tags)
-            }
-            Text(model.information)
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-                .opacity(0.8)
-        }
-    }
-}
 
 #Preview(traits: .mockData) {
     @Previewable @Query var photos: [PhotoDataModel]

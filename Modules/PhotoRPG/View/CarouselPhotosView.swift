@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftData
 import SwiftUI
 
@@ -12,15 +13,25 @@ struct CarouselPhotosView: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack {
-                if let entries = model.entries, !entries.isEmpty {
                     PlainPhotoView(model: model, size: .maxWidth, ratio: .fit)
                         .frame(height: 128)
                         .onTapGesture {
                             selection.selectedPhoto = nil
                         }
-                }
+                        .overlay(alignment: .top) {
+                            LibraryImporterView(model: model)
+                        }
+                        .overlay(alignment: .bottom) {
+                            FolderImporterView(model: model)
+                        }
+                        .overlay(alignment: .trailing) {
+                            CameraImporterView(model: model)
+                                .offset(x: 20)
+                        }
+
+
                 ForEach(model.entriesModel) { entry in
-                    if let photo = photo(with: entry.photoId) {
+                    if let photo = PhotoDataModel.model(modelContext: modelContext, id: entry.photoId) {
                         PlainPhotoView(model: photo, size: .maxWidth, ratio: .fit)
                             .frame(height: 128)
                             .onTapGesture {
@@ -31,15 +42,12 @@ struct CarouselPhotosView: View {
             }
         }
     }
-
-    func photo(with id: UUID?) -> PhotoDataModel? {
-        guard let id else { return nil }
-        let fetchDesc = FetchDescriptor<PhotoDataModel>()
-        let models = try? modelContext.fetch(fetchDesc)
-        return models?.first { $0.id == id }
-    }
 }
 
-#Preview {
-    //CarouselPhotosView()
+#Preview(traits: .mockData) {
+    @Previewable @Query var photos: [PhotoDataModel]
+    CarouselPhotosView(model: photos[0])
+        .environment(DetailPhotoSelection())
+        .environment(PhotoRootModel())
+        .environment(CacheItemListModel())
 }
