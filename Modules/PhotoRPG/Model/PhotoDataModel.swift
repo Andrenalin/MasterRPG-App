@@ -61,6 +61,11 @@ extension PhotoDataModel {
         let models = try? modelContext.fetch(fetchDesc)
         return models?.first { $0.id == id }
     }
+    
+    func modelActor() -> PhotoDataModelActor? {
+        guard let container = modelContext?.container else { return nil }
+        return PhotoDataModelActor(modelContainer: container)
+    }
 
     var entriesModel: [PhotoEntryDataModel] {
         get {

@@ -18,9 +18,9 @@ public protocol FileUrlAccessible: Sendable {
 @MainActor @Observable
 public final class FileUrlDataModel: Sendable {
     var folders: [FileUrlViewModel] = []
-
+    
     var sortOrder = [KeyPathComparator(\FileUrlViewModel.type, order: .forward), KeyPathComparator(\FileUrlViewModel.name)]
-
+    
     public var defaultLoaction: FileLocation = .cloud
     public var defaultCloudPath: UUID?
     
@@ -42,7 +42,7 @@ public struct FileUrlDataController: Sendable {
     let fileTypes: [UTType]
     let filenameExtension: String
     private let fileUrlAccess: any FileUrlAccessible
-
+    
     public let model: FileUrlDataModel
     
     @MainActor
@@ -54,9 +54,9 @@ public struct FileUrlDataController: Sendable {
         self.fileTypes = fileTypes
         self.filenameExtension = filenameExtension
         self.fileUrlAccess = fileUrlAccess
-
+        
         self.cloudDocumentController = CloudDocumentController(modulePath: moduleFolder)
-
+        
         self.model = FileUrlDataModel()
         
         let saveModel = self.model
@@ -65,7 +65,7 @@ public struct FileUrlDataController: Sendable {
             saveModel.folders = folders
         }
     }
-
+    
     private static func loadFolderBookmarks(with store: FileBookmarkController) async -> [FileUrlViewModel] {
         let allFolderIds = await store.folders()
         var folders: [FileUrlViewModel] = []
@@ -78,6 +78,24 @@ public struct FileUrlDataController: Sendable {
     }
 }
 
+// MARK: - Confirmed 
+
+public extension FileUrlDataController {
+    func delete(_ fileUrl: FileUrl?) async {
+        guard let fileUrl else { return }
+        switch fileUrl.location {
+        case .cloud:
+            guard let accessUrl = await url(for: fileUrl, action: { $0 }) else { return }
+            // ignore any exception. If the file cannot be remove we cannot recover
+            try? await FileManager.default.removeItem(coordinatingAccessAt: accessUrl)
+            fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
+        case .url:
+            fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
+            break
+        }
+    }
+}
+
 // MARK: - FileUrl Accessors
 
 public extension FileUrlDataController {
@@ -87,7 +105,7 @@ public extension FileUrlDataController {
         guard let values = try? fullUrl.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]) else { return nil }
         return values.ubiquitousItemDownloadingStatus == .downloaded
     }
-
+    
     func hasAccess(for fileUrl: FileUrl) async -> Bool {
         let url = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
         var newFileUrl = fileUrl
@@ -110,7 +128,7 @@ public extension FileUrlDataController {
         defer { checkUrl.stopAccessingSecurityScopedResource() }
         return checkUrl.startAccessingSecurityScopedResource()
     }
-
+    
     func loadData(for fileUrl: FileUrl) async throws -> Data? {
         guard !fileUrl.hasUnconvertedData else { return fileUrl.data }
         return try await url(for: fileUrl) { url async throws -> Data? in
@@ -118,7 +136,7 @@ public extension FileUrlDataController {
             return try await FileManager.default.contentsOfFile(coordinatingAccessAt: url)
         }
     }
-
+    
     func url<T>(for fileUrl: FileUrl, action: @escaping (URL?) async throws -> T?) async rethrows -> T? {
         if fileUrl.location == .cloud {
             let url = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
@@ -128,17 +146,17 @@ public extension FileUrlDataController {
         let result = try await action(nil)
         return result
     }
-
+    
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
         if fileUrl.location == .cloud {
             let url = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
             return try action(url)
         }
-
+        
         // here old write code maybe we need to recover..?
         let fullUrl = locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location) ?? fileUrl.rawUrl
         var loadedFileUrl = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
-
+        
         if loadedFileUrl == nil, let data = fileUrl.data {
             let tempUrl = URL.temporaryDirectory.appendingPathComponent(fileUrl.fileId.uuidString).appendingPathExtension(filenameExtension)
             try? data.write(to: tempUrl)
@@ -149,10 +167,10 @@ public extension FileUrlDataController {
         if processUrl.scheme == nil {
             processUrl = fullUrl
         }
-
+        
         defer { processUrl.stopAccessingSecurityScopedResource() }
         _ = processUrl.startAccessingSecurityScopedResource()
-
+        
         let result = try action(processUrl)
         return result
     }
@@ -164,7 +182,7 @@ public extension FileUrlDataController {
         guard let oldData = unconvertedFileUrl.data else { return nil }
         let location: FileLocation = unconvertedFileUrl.location == .url ? .url : .cloud
         guard let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: location, module: unconvertedFileUrl.module) else { return nil }
-
+        
         do {
             // try to get access to the old location
             let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
@@ -174,8 +192,8 @@ public extension FileUrlDataController {
         } catch {
             Logger.fileStore.error("Different device or different user \(error.localizedDescription, privacy: .public)")
         }
-
-
+        
+        
         guard let fileURL = locationFileManager.relativeUrl(for: unconvertedFileUrl.rawUrl) else { return nil }
         let filePath = fileURL.pathComponents.joined(separator: "/")
         let fullUrl: URL = cloudDocumentController.fullUrl(filePath: filePath)
@@ -183,10 +201,10 @@ public extension FileUrlDataController {
             try await cloudDocumentController.write(data: oldData, to: filePath)
         } catch {
             Logger.fileStore.error("Cannot create file in cloud app group \(error.localizedDescription, privacy: .public)")
-//            let fullUrl = try? await locationFileManager.createLocalUrl(id: fileId, pathExtension: pathExtension)
-//            var fileUrl = FileUrl(fileId: fileId, url: fullUrl ?? URL(fileURLWithPath: ""), location: .local, module: unconvertedFileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: fullUrl))
-//            fileUrl.resetData(oldData) // added if any platform has issue to save data.
-//            return fileUrl
+            //            let fullUrl = try? await locationFileManager.createLocalUrl(id: fileId, pathExtension: pathExtension)
+            //            var fileUrl = FileUrl(fileId: fileId, url: fullUrl ?? URL(fileURLWithPath: ""), location: .local, module: unconvertedFileUrl.module, relativeUrl: locationFileManager.relativeUrl(for: fullUrl))
+            //            fileUrl.resetData(oldData) // added if any platform has issue to save data.
+            //            return fileUrl
         }
         let _ = fullUrl.startAccessingSecurityScopedResource()
         defer { fullUrl.stopAccessingSecurityScopedResource() }
@@ -199,7 +217,7 @@ public extension FileUrlDataController {
         fileUrl.resetData(oldData) // added if any platform has issue to save data.
         return fileUrl
     }
-
+    
     /// ItemController will call to get FileUrl for given urls from picker
     func createFileUrl(fileId: UUID, url: URL, module: String, category: String?) async throws -> FileUrl {
         do {
@@ -215,47 +233,30 @@ public extension FileUrlDataController {
         let nameUrl = cloudDocumentController.nameUrl(fullUrl: fullUrl)
         return FileUrl(fileId: fileId, url: nameUrl, location: .cloud, module: module)
     }
-
-    /// called from ItemStore on delete of the item
-    func delete(_ fileUrl: FileUrl?) {
-        guard let fileUrl else { return }
-        switch fileUrl.location {
-            case .cloud:
-                Task {
-                    guard let accessUrl = await url(for: fileUrl, action: { $0 }) else { return }
-                    // ignore any exception. If the file cannot be remove we cannot recover
-                    try await FileManager.default.removeItem(coordinatingAccessAt: accessUrl)
-                    fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
-                }
-            case .url:
-                fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
-                break
-        }
-    }
-
+    
     func download(fileUrl: FileUrl) async throws {
         if fileUrl.location == .cloud {
             try await cloudDocumentController.download(filePath: fileUrl.rawUrl.absoluteString)
         }
     }
-
+    
     func duplicate(fileUrl: FileUrl?, for fileId: UUID) async throws -> FileUrl? {
         guard let unconverted = fileUrl, let data = try await loadData(for: unconverted) else { return nil }
         var fullURL: URL? = nil
         switch unconverted.location {
-            case .cloud:
-                // try to get access to the old location
-                let oldUrl = locationFileManager.absoluteUrl(for: unconverted.rawUrl, at: unconverted.location) ?? unconverted.rawUrl
-                let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
-                let hasAccess = await hasAccess(for: unconverted)
-                if exists && !isDir && hasAccess {
-                    let newUrl = await fileBookmarkController.loadBookmark(fileId: unconverted.fileId)
-                    fullURL = newUrl
-                }
-                break
-            case .url:
-                fullURL = unconverted.rawUrl
-                break
+        case .cloud:
+            // try to get access to the old location
+            let oldUrl = locationFileManager.absoluteUrl(for: unconverted.rawUrl, at: unconverted.location) ?? unconverted.rawUrl
+            let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
+            let hasAccess = await hasAccess(for: unconverted)
+            if exists && !isDir && hasAccess {
+                let newUrl = await fileBookmarkController.loadBookmark(fileId: unconverted.fileId)
+                fullURL = newUrl
+            }
+            break
+        case .url:
+            fullURL = unconverted.rawUrl
+            break
         }
         guard let fullURL else { return nil }
         do {
@@ -280,14 +281,14 @@ extension FileUrlDataController {
             if let suggestedName = try? await cloudDocumentController.suggestedFileName(for: category, filename: name) {
                 part = category + "/" + suggestedName
             }
-
+            
             let destinationName = try await cloudDocumentController.move(sourceUrl: url, destinationFilename: part)
             guard let newUrl = URL(string: destinationName) else { return nil }
             let newFileUrl = FileUrl(fileId: fileUrl.fileId, url: newUrl, location: .cloud, module: fileUrl.module)
             return newFileUrl
         }
     }
-
+    
     public func move(fileUrl: FileUrl?, from source: ItemListCategory, to destination: ItemListCategory) async -> FileUrl? {
         do {
             guard let fileUrl, fileUrl.location == .cloud else { return nil }
@@ -296,26 +297,26 @@ extension FileUrlDataController {
             let secondComponent = components.count > 1 ? components[1] : ""
             guard firstComponent == source.title || secondComponent == source.title, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newCategory: destination.title) else { return nil }
             await bookmark(url: fullUrl, fileId: fileUrl.fileId)
-
+            
             return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module)
         } catch {
             Logger.fileStore.error("Error moving file \(error.localizedDescription, privacy: .public)")
         }
         return nil
     }
-
+    
     public func move(fileUrl: FileUrl?, from source: String, to destination: String) async -> FileUrl? {
         do {
             guard let fileUrl, fileUrl.location == .cloud, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newName: destination) else { return nil }
             await bookmark(url: fullUrl, fileId: fileUrl.fileId)
-
+            
             return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module)
         } catch {
             Logger.fileStore.error("Error moving file \(error.localizedDescription, privacy: .public)")
         }
         return nil
     }
-
+    
     private func bookmark(url: URL, fileId: UUID) async {
         let _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }

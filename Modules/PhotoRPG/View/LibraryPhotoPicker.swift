@@ -41,7 +41,7 @@ struct LibraryPhotoPicker: View {
         }
         .onChange(of: selectedItem) {
             guard let localItem = selectedItem else { return }
-            Task {
+            Task.detached {
                 if let data = try? await localItem.loadTransferable(type: Data.self) {
                     await updateImage(AKImage(data: data))
                 }

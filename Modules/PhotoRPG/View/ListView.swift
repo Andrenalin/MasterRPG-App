@@ -72,8 +72,9 @@ struct ListView: View {
 
     private func addItem() {
         withAnimation {
-            let newItem = PhotoDataModel(name: "\(Date()) Hello", information: "Some more Text ususally longer", category: .character, tags: ["Held", "Meins"], degrees: Double.random(in: 0...360.0))
+            let newItem = PhotoDataModel(name: "New Photo", information: "", category: .character, tags: [])
             modelContext.insert(newItem)
+            try? modelContext.save()
         }
     }
 

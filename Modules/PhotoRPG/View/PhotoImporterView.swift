@@ -58,14 +58,26 @@ struct FolderImporterView: View {
 }
 
 struct LibraryImporterView: View {
-    let model: PhotoDataModel
-    
-    var body: some View {
-        LibraryPhotoPicker(updateImage: update(image:))
+    init(model: PhotoDataModel) {
+        self.model = model
+        self.modelActor = model.modelActor()
     }
     
-    private func update(image: AKImage?) async {
-        
+    let model: PhotoDataModel
+    let modelActor: PhotoDataModelActor?
+    
+    @Environment(PhotoRootModel.self) private var rootModel
+    
+    var body: some View {
+        LibraryPhotoPicker { [id = model.id] image in
+            await update(id: id, image: image)
+        }
+    }
+    
+    private func update(id: UUID, image: AKImage?) async {
+        guard let modelActor else { return }
+        let editController = EditController(root: rootModel)
+        await editController.resetPhoto(image: image, id: id, actor: modelActor)
     }
 }
 
