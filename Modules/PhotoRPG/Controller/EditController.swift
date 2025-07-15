@@ -12,6 +12,26 @@ struct EditController {
 
 // MARK: - Edit Photo Data Model Properties
 extension EditController {
+    func copy(model: PhotoDataModel) {
+        let newId = UUID()
+        guard let actor = model.modelActor() else { return }
+        let id = model.id
+        Task.detached {
+            await actor.setup(id: id)
+            let fileUrl = try? await fileController.fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newId)
+            await actor.duplicate(id: id, url: fileUrl?.rawUrl)
+            await actor.save()
+        }
+    }
+    
+    func delete(model: PhotoDataModel) {
+        let fileUrl = model.fileUrl
+        model.modelContext?.delete(model)
+        Task.detached {
+            await fileController.fileUrlDataController.delete(fileUrl)
+        }
+    }
+    
     func addSubPhoto(photoId: UUID, model: PhotoDataModel) {
         model.withTransaction {
             var entries: [PhotoEntryDataModel] = model.entries ?? []

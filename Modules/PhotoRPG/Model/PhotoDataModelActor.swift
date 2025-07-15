@@ -42,6 +42,22 @@ actor PhotoDataModelActor {
         model.url = url
     }
 
+    func duplicate(id: UUID, url: URL?) {
+        let copiedPhoto = PhotoDataModel(
+            id: id,
+            name: "\(model.name) copy",
+            information: model.information,
+            category: model.category,
+            tags: model.tags,
+            displayState: 0,
+            degrees: model.degrees,
+            url: url,
+            entries: nil
+        )
+
+        modelContext.insert(copiedPhoto)
+    }
+    
     func save() {
         try? modelContext.save()
     }

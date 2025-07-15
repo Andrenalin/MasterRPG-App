@@ -5,10 +5,12 @@ import SwiftData
 import SwiftUI
 
 struct ListView: View {
-    @Environment(SearchModel.self) private var searchModel
     @Environment(\.modelContext) private var modelContext
-    @Environment(ListSelectionModel<PhotoDataModel>.self) private var model
     @Environment(\.navigator) private var navigator
+
+    @Environment(ListSelectionModel<PhotoDataModel>.self) private var model
+    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(SearchModel.self) private var searchModel
 
     @Query(filter: #Predicate<PhotoDataModel>{ $0.displayState == 0 }, sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
 
@@ -92,6 +94,9 @@ struct ListView: View {
             ForEach(filteredItems) { item in
                 MainRowView(model: item)
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                    .contextMenu {
+                        ItemListContextMenu(controller: ContextMenuController(editController: rootModel.editController, model: item))
+                    }
             }
             .onDelete(perform: deleteItems)
         }
