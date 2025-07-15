@@ -16,6 +16,11 @@ struct MainRowView: View {
             CategoryItemRow(category: model.category)
         }, actionBar: {
         })
+        .draggable(LinkData(itemId: model.id, module: .photo, name: model.name))
+//        .applyIf(valueFor(iOS: true, macOS: !childrenConfiguration.canNavigate, tvOS: false, visionOS: true)) { content in
+//            content.draggable(LinkData(item: item, name: listController.itemControllable.createLink(model: item.model)))
+//        }
+
     }
 }
 

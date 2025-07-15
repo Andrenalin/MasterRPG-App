@@ -6,12 +6,40 @@ import SwiftData
 internal import UIKit
 
 struct EditController {
-    let root: PhotoRootModel
-    
+    let fileController: FileController
+    let networkModule: NetworkModules = .photo
 }
 
 // MARK: - Edit Photo Data Model Properties
 extension EditController {
+    func addSubPhoto(photoId: UUID, model: PhotoDataModel) {
+        model.withTransaction {
+            var entries: [PhotoEntryDataModel] = model.entries ?? []
+
+            let entry = PhotoEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, photoId: photoId, photo: model)
+            entries.append(entry)
+            model.entries = entries
+            
+            guard let modelContext = model.modelContext, let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
+            modelContext.insert(entry)
+            subModel.displayState = DisplayStateMask.totalHidden.rawValue
+        }
+    }
+
+    func removeSubPhoto(photoId: UUID, model: PhotoDataModel) {
+        model.withTransaction {
+            guard let entry = model.entries?.first(where: { $0.photoId == photoId }) else { return }
+            model.entries?.removeAll(where: { $0.photoId == photoId })
+            model.entries?.enumerated().forEach { index, entry in
+                entry.index = Int16(index)
+            }
+                        
+            guard let modelContext = model.modelContext, let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
+            modelContext.delete(entry)
+            subModel.displayState = 0
+        }
+    }
+
     func update(model: PhotoDataModel, name: String, information: String, category: ItemListCategory, tags: [String], degrees: Double) {
         if let modelContext = model.modelContext {
             do {
@@ -59,7 +87,7 @@ extension EditController {
     
     
     private func resetPhoto(url: URL?, id: UUID, actor: PhotoDataModelActor) async {
-        await root.fileController.fileUrlDataController.delete(await actor.fileUrl)
+        await fileController.fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
             await actor.update(url: url)
             return
@@ -72,21 +100,21 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             await actor.update(name: name)
         }
-        let updatedFileUrl = try? await root.fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: root.networkModule.token, category: actor.category.title)
+        let updatedFileUrl = try? await fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: networkModule.token, category: actor.category.title)
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
     
     private func resetPhoto(data: Data?, id: UUID, actor: PhotoDataModelActor) async {
-        await root.fileController.fileUrlDataController.delete(await actor.fileUrl)
+        await fileController.fileUrlDataController.delete(await actor.fileUrl)
         await actor.update(url: nil)
         guard let data else { return }
         
-        let module = root.networkModule.token
+        let module = networkModule.token
         let filePath = await actor.name.isEmpty ? "\(await actor.category.title)/Image-\(id.uuidString).jpg" : "\(await actor.category.title)/\(await actor.name).jpg"
         var dataFileUrl = FileUrl(fileId: id, url: URL(string: filePath)!, location: .cloud, module: module)
         dataFileUrl.resetData(data)
         
-        let updatedFileUrl = try? await root.fileController.fileUrlDataController.createNewFileUrl(fileId: id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
+        let updatedFileUrl = try? await fileController.fileUrlDataController.createNewFileUrl(fileId: id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
 }

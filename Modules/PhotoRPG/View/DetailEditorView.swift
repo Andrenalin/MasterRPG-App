@@ -134,8 +134,7 @@ struct DetailEditorView: View {
             Spacer()
             
             GlassButton(isProminent: !isEqual) {
-                let editController = EditController(root: rootModel)
-                editController.update(model: model, name: name, information: information, category: category, tags: tags, degrees: degrees)
+                rootModel.editController.update(model: model, name: name, information: information, category: category, tags: tags, degrees: degrees)
                 dismiss()
             } label: {
                 Image(systemName: "checkmark")

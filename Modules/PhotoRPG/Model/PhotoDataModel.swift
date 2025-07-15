@@ -6,7 +6,17 @@ import SwiftData
 
 @Model
 public final class PhotoDataModel {
-    init(id: UUID = UUID(), name: String = "", information: String = "", category: ItemListCategory = .adventure, tags: [String] = [], displayState: Int32 = 0, degrees: Double = 0, url: URL? = nil, entries: [PhotoEntryDataModel]? = nil) {
+    init(
+        id: UUID = UUID(),
+        name: String = "",
+        information: String = "",
+        category: ItemListCategory = .adventure,
+        tags: [String] = [],
+        displayState: Int32 = 0,
+        degrees: Double = 0,
+        url: URL? = nil,
+        entries: [PhotoEntryDataModel]? = nil
+    ) {
         self.id = id
         self.name = name
         self.information = information
@@ -27,7 +37,7 @@ public final class PhotoDataModel {
     
     var category: ItemListCategory = ItemListCategory.adventure
     var tags: [String] = []
-    var displayState: Int32 = 0
+    public var displayState: Int32 = 0
     
     var degrees: Double = 0
     var url: URL?
@@ -62,6 +72,20 @@ extension PhotoDataModel {
         return PhotoDataModelActor(modelContainer: container)
     }
 
+    func withTransaction(_ transaction: () -> Void) {
+        if let modelContext {
+            do {
+                try modelContext.transaction {
+                    transaction()
+                }
+            } catch {
+                modelContext.rollback()
+            }
+        } else {
+            transaction()
+        }
+    }
+
     var entriesModel: [PhotoEntryDataModel] {
         get {
             guard let all = entries else {
@@ -81,3 +105,5 @@ extension PhotoDataModel {
         return PhotoEntryDataModel(id: id)
     }
 }
+
+extension PhotoDataModel: ItemDataAccessable {}

@@ -100,8 +100,7 @@ struct DetailView: View {
     }
     
     private func updatePhoto(url: URL) {
-        let editController = EditController(root: rootModel)
-        editController.resetPhoto(url: url, in: model)
+        rootModel.editController.resetPhoto(url: url, in: model)
     }
 
     @ViewBuilder

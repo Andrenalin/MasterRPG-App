@@ -66,8 +66,7 @@ struct CameraImporterView: View {
     
     private func update(id: UUID, image: AKImage?) async {
         guard let modelActor else { return }
-        let editController = EditController(root: rootModel)
-        await editController.resetPhoto(image: image, id: id, actor: modelActor)
+        await rootModel.editController.resetPhoto(image: image, id: id, actor: modelActor)
     }
 }
 
@@ -96,8 +95,7 @@ struct FileImporterView: View {
         .contentTransition(.symbolEffect(.replace.wholeSymbol))
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
             guard let url = try? result.get() else { return }
-            let editController = EditController(root: rootModel)
-            editController.resetPhoto(url: url, in: model)
+            rootModel.editController.resetPhoto(url: url, in: model)
         }
 #endif
     }
@@ -124,8 +122,7 @@ struct LibraryImporterView: View {
     
     private func update(id: UUID, image: AKImage?) async {
         guard let modelActor else { return }
-        let editController = EditController(root: rootModel)
-        await editController.resetPhoto(image: image, id: id, actor: modelActor)
+        await rootModel.editController.resetPhoto(image: image, id: id, actor: modelActor)
     }
 }
 

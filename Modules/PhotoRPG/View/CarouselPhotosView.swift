@@ -5,10 +5,11 @@ import SwiftData
 import SwiftUI
 
 struct CarouselPhotosView: View {
-    let model: PhotoDataModel
+    var model: PhotoDataModel
 
     @Environment(\.modelContext) private var modelContext
     @Environment(DetailPhotoSelection.self) private var selection
+    @Environment(PhotoRootModel.self) private var rootModel
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -18,11 +19,51 @@ struct CarouselPhotosView: View {
                 ForEach(model.entriesModel) { entry in
                     if let photo = PhotoDataModel.model(modelContext: modelContext, id: entry.photoId) {
                         photoView(photo: photo, selectedPhoto: photo)
+                            .overlay(alignment: .topTrailing) {
+                                GlassButton {
+                                    withAnimation { rootModel.editController.removeSubPhoto(photoId: photo.id, model: model) }
+                                } label: {
+                                    Image(systemName: "minus")
+                                        .foregroundStyle(.red, .white)
+                                }
+                            }
                     }
                 }
+
+                dropPhotoView
             }
         }
-        .scrollClipDisabled()
+    }
+    
+    @ViewBuilder
+    var dropPhotoView: some View {
+        DropItemArea {
+            VStack {
+                Text("Drop Photo")
+                
+                Image(systemName: "square.and.arrow.down")
+                    .imageScale(.large)
+            }
+        } dropAction: { links in
+            addLinks(links: links)
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 128)
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.accentColor.secondary, lineWidth: 2)
+        }
+    }
+    
+    private func addLinks(links: [LinkData]) -> Bool {
+        var result = true
+        links.forEach { link in
+            guard link.module == .photo else {
+                result = false
+                return
+            }
+            withAnimation { rootModel.editController.addSubPhoto(photoId: link.itemId, model: model) }
+        }
+        return result
     }
     
     func photoView(photo: PhotoDataModel, selectedPhoto: PhotoDataModel?) -> some View {
@@ -38,6 +79,13 @@ struct CarouselPhotosView: View {
                         .stroke(selection.selectedPhoto?.id == selectedPhoto?.id ? Color.accentColor : Color.clear, lineWidth: 4)
                 }
             }
+#if !os(tvOS)
+            .dropDestination(for: LinkData.self) { items, _ in
+                guard !items.isEmpty else { return false }
+                return addLinks(links: items)
+            }
+#endif
+
     }
 }
 

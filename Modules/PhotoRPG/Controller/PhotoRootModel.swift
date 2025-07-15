@@ -10,9 +10,11 @@ public final class PhotoRootModel {
         let fileController = FileController()
         self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
         self.fileController = fileController
+        self.editController = EditController(fileController: fileController)
     }
 
     let cacheController: CacheController
+    let editController: EditController
     let fileController: FileController
     let networkModule: NetworkModules = .photo
 }

@@ -10,7 +10,7 @@ struct ListView: View {
     @Environment(ListSelectionModel<PhotoDataModel>.self) private var model
     @Environment(\.navigator) private var navigator
 
-    @Query(sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
+    @Query(filter: #Predicate<PhotoDataModel>{ $0.displayState == 0 }, sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
 
     @State private var selected: UUID?
     @State private var selection: Set<UUID> = []
