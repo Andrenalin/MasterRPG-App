@@ -13,34 +13,31 @@ struct CarouselPhotosView: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack {
-                    PlainPhotoView(model: model, size: .maxWidth, ratio: .fit)
-                        .frame(height: 128)
-                        .onTapGesture {
-                            selection.selectedPhoto = nil
-                        }
-                        .overlay(alignment: .top) {
-                            LibraryImporterView(model: model)
-                        }
-                        .overlay(alignment: .bottom) {
-                            FolderImporterView(model: model)
-                        }
-                        .overlay(alignment: .trailing) {
-                            CameraImporterView(model: model)
-                                .offset(x: 20)
-                        }
-
+                photoView(photo: model, selectedPhoto: nil)
 
                 ForEach(model.entriesModel) { entry in
                     if let photo = PhotoDataModel.model(modelContext: modelContext, id: entry.photoId) {
-                        PlainPhotoView(model: photo, size: .maxWidth, ratio: .fit)
-                            .frame(height: 128)
-                            .onTapGesture {
-                                selection.selectedPhoto = photo
-                            }
+                        photoView(photo: photo, selectedPhoto: photo)
                     }
                 }
             }
         }
+        .scrollClipDisabled()
+    }
+    
+    func photoView(photo: PhotoDataModel, selectedPhoto: PhotoDataModel?) -> some View {
+        PlainPhotoView(model: photo, highResolution: false)
+            .frame(height: 128)
+            .onTapGesture {
+                withAnimation { selection.selectedPhoto = selectedPhoto }
+            }
+            .clipShape(.rect(cornerRadius: 20, style: .continuous))
+            .overlay {
+                if photo.url != nil {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(selection.selectedPhoto?.id == selectedPhoto?.id ? Color.accentColor : Color.clear, lineWidth: 4)
+                }
+            }
     }
 }
 

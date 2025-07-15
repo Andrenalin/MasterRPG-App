@@ -3,6 +3,7 @@
 import CoreRPG
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 @Observable
 final class DetailPhotoSelection {
@@ -12,40 +13,34 @@ final class DetailPhotoSelection {
 struct DetailView: View {
     let model: PhotoDataModel
     
-    @State var selection = DetailPhotoSelection()
-    @State private var isEditing = false
-    
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
+    @Environment(PhotoRootModel.self) private var rootModel
+    
+    @State var selection = DetailPhotoSelection()
+    @State private var isEditing = false
+    @State private var showImporter = false
     
     var body: some View {
         @Bindable var model = model
         VStack {
             detailView
-//#if !os(tvOS)
-//        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
-//            guard let url = try? result.get() else { return }
-//            editController.resetPhoto(url: url)
-//        }
-//        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
-//#endif
-//        .onChange(of: editController.model.fileUrl, initial: true) {
-//            guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage(for: model.id) == nil) else { return }
-//            loadImage()
-//        }
-//    }
-
             
-            CarouselPhotosView(model: model)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .environment(selection)
+            if model.url != nil {
+                CarouselPhotosView(model: model)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .environment(selection)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .toolbar(removing: .title)
         .onChange(of: model.id) {
-            selection.selectedPhoto = nil
+            withAnimation {
+                selection.selectedPhoto = nil
+                //isEditing = false
+            }
         }
         .overlay(alignment: .top) {
             #if os(iOS)
@@ -62,7 +57,7 @@ struct DetailView: View {
         .applyIf(horizontalSizeClass == .compact) {
             $0.sheet(isPresented: $isEditing) {
                 DetailEditorView(model: model) {
-                    isEditing = false
+                    withAnimation { isEditing = false }
                 }
                 .presentationContentInteraction(.resizes)
                 .presentationDetents([.medium, .large])
@@ -82,6 +77,10 @@ struct DetailView: View {
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            #if !os(tvOS)
+            .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
+            #endif
+
             .overlay(alignment: .bottom) {
                 HStack(alignment: .bottom) {
                     DetailOverlayView(model: selection.selectedPhoto ?? model)
@@ -91,33 +90,76 @@ struct DetailView: View {
                 }
                 .padding()
             }
+            .overlay(alignment: .center) {
+                if model.url == nil {
+                    PhotoImporterView(model: model)
+                }
+            }
+
         }
     }
     
+    private func updatePhoto(url: URL) {
+        let editController = EditController(root: rootModel)
+        editController.resetPhoto(url: url, in: model)
+    }
+
+    @ViewBuilder
     private var detailEditorView: some View {
-        DetailEditorView(model: model) {
-            isEditing = false
+        if isEditing {
+            DetailEditorView(model: model) {
+                withAnimation { isEditing = false }
+            }
+            .id(model.id)
+            .background {
+                RoundedRectangle(cornerRadius: 24).fill(.thickMaterial)
+            }
+            .frame(minWidth: 320, alignment: .center)
+            .padding(40)
+            .offset(y: 128)
+            .transition(.scale)
+            .animation(.bouncy, value: isEditing)
         }
-        .background {
-            RoundedRectangle(cornerRadius: 24).fill(.thickMaterial)
-        }
-        .frame(minWidth: 320, alignment: .center)
-        .padding(40)
-        .offset(y: 128)
-        .transition(.scale)
-        .animation(.bouncy, value: isEditing)
-        .opacity(isEditing ? 1 : 0)
     }
     
     @ViewBuilder
     private var toolbarButtons: some View {
-        FolderImporterView(model: model)
+        VStack(alignment: .center) {
+            if model.url != nil {
+                if showImporter {
+                    photoImporterView
+                }
+                GlassButton {
+                    withAnimation(.bouncy(duration: 0.3)) {
+                        showImporter.toggle()
+                    }
+                } label: {
+                    Image(systemName: "photo.badge.plus")
+                        .font(.system(size: 24))
+                        .padding(8)
+                }
+                .animation(.bouncy, value: model.url)
+                .transition(.scale.combined(with: .opacity))
+            }
 
-        GlassButton(isProminent: true) {
-            isEditing = true
-        } label: {
-            Image(systemName: "pencil")
+            GlassButton(isProminent: true) {
+                isEditing = true
+            } label: {
+                Image(systemName: "pencil")
+                    .font(.system(size: 24))
+                    .padding(8)
+
+            }
         }
+    }
+    
+    @ViewBuilder
+    private var photoImporterView: some View {
+        CameraImporterView(model: model)
+        
+        LibraryImporterView(model: model)
+        
+        FileImporterView(model: model)
     }
 }
 

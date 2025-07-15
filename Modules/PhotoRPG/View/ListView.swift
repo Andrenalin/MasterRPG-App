@@ -69,12 +69,13 @@ struct ListView: View {
             }
         }
     }
-
+    
     private func addItem() {
         withAnimation {
-            let newItem = PhotoDataModel(name: "New Photo", information: "", category: .character, tags: [])
+            let newItem = PhotoDataModel(name: " New ", information: "", category: .character, tags: [])
             modelContext.insert(newItem)
             try? modelContext.save()
+            selected = newItem.id
         }
     }
 

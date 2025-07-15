@@ -7,15 +7,14 @@ struct DetailEditorView: View {
     let model: PhotoDataModel
     let dismiss: () -> Void
     
+    @Environment(PhotoRootModel.self) private var rootModel
+    
     // Editor working copy
     @State private var name: String
     @State private var information: String
     @State private var category: ItemListCategory
     @State private var tags: [String]
-    @State private var newTag: String = ""
     @State private var degrees: Double
-    @State private var url: URL?
-    @State private var entriesCount: Int
     
     init(model: PhotoDataModel, dismiss: @escaping () -> Void) {
         self.model = model
@@ -24,8 +23,6 @@ struct DetailEditorView: View {
         _category = State(initialValue: model.category)
         _tags = State(initialValue: model.tags)
         _degrees = State(initialValue: model.degrees)
-        _url = State(initialValue: model.url)
-        _entriesCount = State(initialValue: model.entries?.count ?? 0)
         self.dismiss = dismiss
     }
     
@@ -128,6 +125,7 @@ struct DetailEditorView: View {
     private var actionToolbarView: some View {
         HStack {
             GlassButton {
+                reset()
                 dismiss()
             } label: {
                 Image(systemName: "xmark")
@@ -136,19 +134,22 @@ struct DetailEditorView: View {
             Spacer()
             
             GlassButton(isProminent: !isEqual) {
-                model.name = name
-                model.information = information
-                model.category = category
-                model.tags = tags
-                model.degrees = degrees
-                model.url = url
+                let editController = EditController(root: rootModel)
+                editController.update(model: model, name: name, information: information, category: category, tags: tags, degrees: degrees)
                 dismiss()
             } label: {
                 Image(systemName: "checkmark")
             }
             .disabled(isEqual)
-
         }
+    }
+    
+    private func reset() {
+        name =  model.name
+        information = model.information
+        category = model.category
+        tags = model.tags
+        degrees = model.degrees
     }
     
     private var isEqual: Bool {
@@ -156,15 +157,7 @@ struct DetailEditorView: View {
         model.information == information &&
         model.category == category &&
         model.tags == tags &&
-        model.degrees == degrees &&
-        model.url == url
-    }
-    
-    private func addNewTag() {
-        let trimmed = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !tags.contains(trimmed) else { return }
-        tags.append(trimmed)
-        newTag = ""
+        model.degrees == degrees
     }
 }
 

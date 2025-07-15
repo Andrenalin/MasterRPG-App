@@ -7,6 +7,7 @@ import PhotosUI
 import SwiftUI
 
 struct LibraryPhotoPicker: View {
+    let size: CGFloat
     let updateImage: @Sendable (AKImage?) async -> Void
     
     @State private var selectedItem: PhotosPickerItem? = nil
@@ -15,11 +16,10 @@ struct LibraryPhotoPicker: View {
         PhotosPicker(selection: $selectedItem, matching: .images, photoLibrary: .shared()) {
             if #available(iOS 26.0, *) {
                 Image(systemName: "photo")
-                    .imageScale(.medium)
-                    .padding(8)
+                    .font(.system(size: size))
+                    .padding(size / 3)
+                    .tint(.primary)
 #if os(iOS)
-                    .background(.ultraThinMaterial)
-                    .foregroundStyle(.primary)
                     .hoverEffect(.highlight)
 #endif
                     .clipShape(.capsule)
@@ -27,11 +27,11 @@ struct LibraryPhotoPicker: View {
             } else {
                 Image(systemName: "photo")
 #if os(iOS) || os(visionOS)
-                    .imageScale(.medium)
-                    .padding(8)
+                    .font(.system(size: size))
+                    .padding(size / 3)
+                    .tint(.primary)
 #if os(iOS)
                     .background(.ultraThinMaterial)
-                    .foregroundStyle(.primary)
                     .hoverEffect(.highlight)
 #endif
                     .clipShape(.circle)
@@ -51,7 +51,7 @@ struct LibraryPhotoPicker: View {
 }
 
 #Preview {
-    LibraryPhotoPicker { _ in }
+    LibraryPhotoPicker(size: 24) { _ in }
 }
 
 #endif

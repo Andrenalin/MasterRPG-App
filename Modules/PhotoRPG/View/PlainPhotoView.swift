@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import SwiftData
 import SwiftUI
 
 struct PlainPhotoView: View {
@@ -117,7 +118,11 @@ private extension PlainPhotoView {
     }
 }
 
-#Preview {
-    //ThumbnailItem(model: .preview)
-        Text("Need Mock Traits")
+#Preview(traits: .mockData) {
+    @Previewable @Query var photos: [PhotoDataModel]
+    PlainPhotoView(model: photos[0])
+        .environment(DetailPhotoSelection())
+        .environment(PhotoRootModel())
+        .environment(CacheItemListModel())
+
 }

@@ -17,40 +17,35 @@ public final class PhotoDataModel {
         self.url = url
         self.entries = entries
     }
-
+    
     @Attribute(.preserveValueOnDeletion)
     public var id: UUID = UUID()
     var name: String = ""
     var information: String = ""
     private var _nameLWW: CRDT<String> = CRDT(wrappedValue: "")
     private var _informationLWW: CRDT<String> = CRDT(wrappedValue: "")
-
+    
     var category: ItemListCategory = ItemListCategory.adventure
     var tags: [String] = []
     var displayState: Int32 = 0
-
+    
     var degrees: Double = 0
     var url: URL?
     var fileUrl: FileUrl? {
         guard let url else { return nil }
         return FileUrl(fileId: id, url: url, location: .cloud, module: "Photos")
     }
-
+    
     @Relationship(deleteRule: .cascade) var entries: [PhotoEntryDataModel]?
     
-    var nameLLW: String {
-        _nameLWW.rawValue
+    func reset(name: String) {
+        _nameLWW.wrappedValue = name
+        self.name = name
     }
     
-    func reset(name: String) {
-        do {
-            try modelContext?.transaction {
-                _nameLWW.wrappedValue = name
-                self.name = name
-            }
-        } catch {
-            modelContext?.rollback()
-        }
+    func reset(information: String) {
+        _informationLWW.wrappedValue = information
+        self.information = information
     }
 }
 
