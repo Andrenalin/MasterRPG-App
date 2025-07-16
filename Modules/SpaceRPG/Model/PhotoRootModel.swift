@@ -1,0 +1,26 @@
+// @copyright André Trettin
+
+import CoreRPG
+import SwiftData
+import Foundation
+
+@MainActor @Observable
+public final class PhotoRootModel {
+    init(modelContext: ModelContext) {
+        let fileController = FileController()
+        self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
+        self.editController = EditController(fileController: fileController)
+        let itemController = ItemController(container: modelContext.container)
+        self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
+        self.fileController = fileController
+        self.itemController = itemController
+    }
+
+    @ObservationIgnored let cacheController: CacheController
+    @ObservationIgnored let editController: EditController
+    @ObservationIgnored let exportController: ExportController
+    @ObservationIgnored let fileController: FileController
+    @ObservationIgnored let itemController: ItemController
+    
+    @ObservationIgnored let networkModule: NetworkModules = .photo
+}

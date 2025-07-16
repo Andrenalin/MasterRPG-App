@@ -21,13 +21,3 @@ extension PhotoEntryModel: EntryDataAccessable {
         "Photo"
     }
 }
-
-//extension PhotoEntryModel: ItemDiffComparable {
-//    public func merge(_ other: PhotoEntryModel) -> PhotoEntryModel {
-//        PhotoEntryModel(id: id,photoId: other.photoId)
-//    }
-//
-//    public func isSame(_ other: PhotoEntryModel) -> Bool {
-//        photoId == other.photoId
-//    }
-//}

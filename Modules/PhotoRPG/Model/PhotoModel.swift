@@ -129,12 +129,3 @@ extension PhotoModel: ItemDataAccessable {
         }
     }
 }
-//extension PhotoModel: Equatable, Hashable {
-//    public static func == (lhs: PhotoModel, rhs: PhotoModel) -> Bool {
-//        lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
-//    }
-//
-//    public func hash(into hasher: inout Hasher) {
-//        hasher.combine(id)
-//    }
-//}
