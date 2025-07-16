@@ -4,6 +4,7 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
+import ImagePlayground
 
 @Observable
 final class DetailPhotoSelection {
@@ -66,11 +67,6 @@ struct DetailView: View {
             }
         }
 #endif
-        .sheet(isPresented: $showImagePlayground) {
-            if #available(iOS 18.1, visionOS 2.4, *) {
-                ImageGenerationView()
-            }
-        }
     }
     
     private var detailView: some View {
@@ -168,10 +164,15 @@ struct DetailView: View {
     
     @ViewBuilder
     private var photoImporterView: some View {
-        GlassButton {
-            showImagePlayground.toggle()
-        } label: {
-            Image(systemName: "gear")
+        if #available(iOS 18.1, visionOS 2.4, *) {
+            GlassButton {
+                showImagePlayground.toggle()
+            } label: {
+                Image(systemName: "gear")
+            }
+            .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
+                rootModel.editController.resetPhoto(url: url, in: model)
+            }
         }
 
         CameraImporterView(model: model)
