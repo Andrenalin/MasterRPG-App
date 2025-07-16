@@ -3,6 +3,11 @@
 import CoreRPG
 import Foundation
 import SwiftData
+#if os(macOS)
+import AppKit
+#else
+internal import UIKit
+#endif
 
 struct ContextMenuController: ItemListContextMenuControllable {
     let editController: EditController
@@ -25,6 +30,16 @@ struct ContextMenuController: ItemListContextMenuControllable {
     }
     
     func generateLink() {
+        let linkText = model.url(linkNumber: 0)
         
+#if os(macOS)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(linkText, forType: .string)
+#elseif !os(tvOS)
+        let pasteboard = UIPasteboard.general
+        pasteboard.string = linkText
+#endif
+
     }
 }

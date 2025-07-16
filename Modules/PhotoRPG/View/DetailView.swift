@@ -21,6 +21,7 @@ struct DetailView: View {
     @State var selection = DetailPhotoSelection()
     @State private var isEditing = false
     @State private var showImporter = false
+    @State private var showImagePlayground = false
     
     var body: some View {
         @Bindable var model = model
@@ -39,7 +40,7 @@ struct DetailView: View {
         .onChange(of: model.id) {
             withAnimation {
                 selection.selectedPhoto = nil
-                //isEditing = false
+                isEditing = false
             }
         }
         .overlay(alignment: .top) {
@@ -65,6 +66,11 @@ struct DetailView: View {
             }
         }
 #endif
+        .sheet(isPresented: $showImagePlayground) {
+            if #available(iOS 18.1, *) {
+                ImageGenerationView()
+            }
+        }
     }
     
     private var detailView: some View {
@@ -92,7 +98,15 @@ struct DetailView: View {
             }
             .overlay(alignment: .center) {
                 if model.url == nil {
-                    PhotoImporterView(model: model)
+                    VStack {
+                        GlassButton {
+                            showImagePlayground.toggle()
+                        } label: {
+                            Image(systemName: "gear")
+                        }
+
+                        PhotoImporterView(model: model)
+                    }
                 }
             }
 
@@ -154,6 +168,12 @@ struct DetailView: View {
     
     @ViewBuilder
     private var photoImporterView: some View {
+        GlassButton {
+            showImagePlayground.toggle()
+        } label: {
+            Image(systemName: "gear")
+        }
+
         CameraImporterView(model: model)
         
         LibraryImporterView(model: model)

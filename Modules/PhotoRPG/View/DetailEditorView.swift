@@ -170,7 +170,7 @@ struct DetailEditorView: View {
         displayState: 1,
         degrees: 0,
         url: URL(string: "https://example.com/photo.jpg"),
-        entries: nil
+        entries: []
     )
     return DetailEditorView(model: sampleModel) { }
         .environment(SearchModel.preview)

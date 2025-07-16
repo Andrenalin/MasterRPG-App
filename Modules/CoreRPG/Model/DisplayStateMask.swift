@@ -2,7 +2,7 @@
 
 import Foundation
 
-public enum DisplayStateMask: Int32 {
+public enum DisplayStateMask: Int {
     case fullVisible = 0
     case groupHidden = 1
     case totalHidden = 2
@@ -10,15 +10,15 @@ public enum DisplayStateMask: Int32 {
     case descriptionHidden = 8
     case otherHidden = 16
 
-    public func set(on value: Int32) -> Int32 {
+    public func set(on value: Int) -> Int {
         value | rawValue
     }
 
-    public func reset(on value: Int32) -> Int32 {
+    public func reset(on value: Int) -> Int {
         value & ~rawValue
     }
 
-    public func toggle(on value: Int32) -> Int32 {
+    public func toggle(on value: Int) -> Int {
         if value & rawValue == rawValue {
             return reset(on: value)
         } else {

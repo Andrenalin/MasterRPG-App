@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import SwiftData
 
@@ -14,9 +15,16 @@ public final class PhotoEntryDataModel {
     }
     
     @Attribute(.preserveValueOnDeletion)
-    public var id: UUID?
+    public var id: UUID = UUID()
     var index: Int16 = 0
     var parentId: UUID?
     var photoId: UUID?
     var photo: PhotoDataModel?
+}
+
+extension PhotoEntryDataModel: EntryDataAccessable {
+    public var name: String {
+        guard let modelContext, let photoId, let entryPhoto = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return "Name unknown" }
+        return entryPhoto.name
+    }        
 }

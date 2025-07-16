@@ -12,10 +12,10 @@ public final class PhotoDataModel {
         information: String = "",
         category: ItemListCategory = .adventure,
         tags: [String] = [],
-        displayState: Int32 = 0,
+        displayState: Int = 0,
         degrees: Double = 0,
         url: URL? = nil,
-        entries: [PhotoEntryDataModel]? = nil
+        entries: [PhotoEntryDataModel] = []
     ) {
         self.id = id
         self.name = name
@@ -30,23 +30,23 @@ public final class PhotoDataModel {
     
     @Attribute(.preserveValueOnDeletion)
     public var id: UUID = UUID()
-    var name: String = ""
-    var information: String = ""
+    public var name: String = ""
+    public var information: String = ""
     private var _nameLWW: CRDT<String> = CRDT(wrappedValue: "")
     private var _informationLWW: CRDT<String> = CRDT(wrappedValue: "")
     
-    var category: ItemListCategory = ItemListCategory.adventure
-    var tags: [String] = []
-    public var displayState: Int32 = 0
+    public var category: ItemListCategory = ItemListCategory.adventure
+    public var tags: [String] = []
+    public var displayState: Int = 0
     
-    var degrees: Double = 0
+    public var degrees: Double = 0
     var url: URL?
     var fileUrl: FileUrl? {
         guard let url else { return nil }
         return FileUrl(fileId: id, url: url, location: .cloud, module: "Photos")
     }
     
-    @Relationship(deleteRule: .cascade) var entries: [PhotoEntryDataModel]?
+    @Relationship(deleteRule: .cascade) public var entries: [PhotoEntryDataModel] = []
     
     func reset(name: String) {
         _nameLWW.wrappedValue = name
@@ -88,10 +88,7 @@ extension PhotoDataModel {
 
     var entriesModel: [PhotoEntryDataModel] {
         get {
-            guard let all = entries else {
-                return []
-            }
-            return all.sorted { $0.index < $1.index }
+            entries.sorted { $0.index < $1.index }
         }
         set {
             entries = newValue
@@ -106,4 +103,18 @@ extension PhotoDataModel {
     }
 }
 
-extension PhotoDataModel: ItemDataAccessable {}
+extension PhotoDataModel: ItemDataAccessable {
+    public subscript(id: UUID) -> PhotoEntryDataModel {
+        get {
+            entries.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id)
+        }
+        set(newValue) {
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+            entries[index] = newValue
+        }
+    }
+    
+    public typealias Entry = PhotoEntryDataModel
+    
+    public static var typeId: NetworkModules { .photo }
+}

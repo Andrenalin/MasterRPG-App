@@ -52,7 +52,7 @@ actor PhotoDataModelActor {
             displayState: 0,
             degrees: model.degrees,
             url: url,
-            entries: nil
+            entries: []
         )
 
         modelContext.insert(copiedPhoto)

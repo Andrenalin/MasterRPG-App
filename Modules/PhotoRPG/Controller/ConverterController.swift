@@ -7,7 +7,7 @@ import RPGPhotos
 import SwiftData
 
 public struct ConverterController {
-    public static func insertPhotos(photos: [PhotoModel], into modelContext: ModelContext) {
+    public static func insertPhotos(photos: [RPGPhotos.PhotoModel], into modelContext: ModelContext) {
         let fetchDesc = FetchDescriptor<PhotoDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
 
@@ -18,7 +18,7 @@ public struct ConverterController {
                 PhotoEntryDataModel(id: entry.id, index: Int16(index), parentId: photo.id, photoId: entry.photoId, photo: nil)
             }
             modelContext.insert(
-                PhotoDataModel(id: photo.id, name: photo.name, information: photo.description, category: CoreRPG.ItemListCategory(rawValue: photo.category.rawValue) ?? .adventure, tags: photo.tags, displayState: Int32(photo.displayState), degrees: photo.degrees, url: photo.fileUrl?.rawUrl, entries: entries)
+                PhotoDataModel(id: photo.id, name: photo.name, information: photo.description, category: CoreRPG.ItemListCategory(rawValue: photo.category.rawValue) ?? .adventure, tags: photo.tags, displayState: photo.displayState, degrees: photo.degrees, url: photo.fileUrl?.rawUrl, entries: entries)
             )
         }
     }
