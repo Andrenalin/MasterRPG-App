@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import SwiftData
 import SwiftUI
 
 struct DetailEditorView: View {
@@ -160,21 +161,13 @@ struct DetailEditorView: View {
     }
 }
 
-#Preview {
-    let sampleModel = PhotoDataModel(
-        id: UUID(),
-        name: "Sunset Beach",
-        information: "A photo taken at sunset.",
-        category: .photo,
-        tags: ["beach","summer","sunset"],
-        displayState: 1,
-        degrees: 0,
-        url: URL(string: "https://example.com/photo.jpg"),
-        entries: []
-    )
-    return DetailEditorView(model: sampleModel) { }
+#Preview(traits: .mockData) {
+    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Environment(\.modelContext) var modelContext
+    
+    DetailEditorView(model: photos[0]) { }
         .environment(SearchModel.preview)
         .environment(DeviceRotationModel())
-        .environment(PhotoRootModel())
+        .environment(PhotoRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
 }

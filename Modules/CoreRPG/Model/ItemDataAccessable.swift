@@ -18,7 +18,7 @@ public protocol ItemDataAccessable {
     var information: String { get set }
     var tags: [String] { get set }
     var displayState: Int { get }
-    var entries: [Entry] { get set }
+    var entries: [Entry]? { get set }
 
     subscript(id: UUID) -> Entry { get set }
 

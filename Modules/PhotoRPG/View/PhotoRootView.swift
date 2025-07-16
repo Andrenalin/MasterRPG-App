@@ -1,11 +1,13 @@
 // @copyright André Trettin
 
 import CoreRPG
+import SwiftData
 import SwiftUI
 
 public struct PhotoRootView: View {
-    public init(withoutNavigation: Bool) {
+    public init(modelContext: ModelContext, withoutNavigation: Bool) {
         self.withoutNavigation = withoutNavigation
+        self._rootModel = State(wrappedValue: PhotoRootModel(modelContext: modelContext))
     }
     let withoutNavigation: Bool
 
@@ -17,7 +19,7 @@ public struct PhotoRootView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.tabBarPlacement) private var tabBarPlacement
 #endif
-    @State private var rootModel = PhotoRootModel()
+    @State private var rootModel: PhotoRootModel
 
     @State private var selectionModel = ListSelectionModel<PhotoDataModel>()
 
@@ -46,13 +48,15 @@ public struct PhotoRootView: View {
     @ViewBuilder
     private var splitRoot: some View {
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-            listView
+            ManagedPresentationView {
+                listView
+            }
         } detail: {
             if let selected = selectionModel.selectedItem {
                 DetailView(model: selected)
                     .environment(selectionModel)
             } else {
-                ContentUnavailableView("Photo", image: "photos")
+                SplitContentUnavailableView(module: .photo)
             }
         }
     }
@@ -69,7 +73,7 @@ public struct PhotoRootView: View {
                         .tag(category)
                 }
             }
-            //.searchPresentationToolbarBehavior(.avoidHidingContent)
+            .searchPresentationToolbarBehavior(.avoidHidingContent)
             .onChange(of: searchModel.searchText, initial: true) {
                 cacheItemListModel.reset(search: searchModel.searchText)
             }
@@ -86,4 +90,15 @@ public struct PhotoRootView: View {
         .onSearchPresentation
 #endif
     }
+}
+
+#Preview(traits: .mockData) {
+    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Environment(\.modelContext) var modelContext
+    
+    PhotoRootView(modelContext: modelContext, withoutNavigation: false)
+        .environment(CacheItemListModel())
+        .environment(SearchModel.preview)
+        .environment(TabTitleModel())
+        .environment(DeviceRotationModel())
 }

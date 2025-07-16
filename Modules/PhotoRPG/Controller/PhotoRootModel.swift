@@ -6,15 +6,21 @@ import Foundation
 
 @MainActor @Observable
 public final class PhotoRootModel {
-    init() {
+    init(modelContext: ModelContext) {
         let fileController = FileController()
         self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
-        self.fileController = fileController
         self.editController = EditController(fileController: fileController)
+        let itemController = ItemController(container: modelContext.container)
+        self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
+        self.fileController = fileController
+        self.itemController = itemController
     }
 
-    let cacheController: CacheController
-    let editController: EditController
-    let fileController: FileController
-    let networkModule: NetworkModules = .photo
+    @ObservationIgnored let cacheController: CacheController
+    @ObservationIgnored let editController: EditController
+    @ObservationIgnored let exportController: ExportController
+    @ObservationIgnored let fileController: FileController
+    @ObservationIgnored let itemController: ItemController
+    
+    @ObservationIgnored let networkModule: NetworkModules = .photo
 }

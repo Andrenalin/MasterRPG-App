@@ -130,6 +130,7 @@ struct LibraryImporterView: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Environment(\.modelContext) var modelContext
     VStack {
         Color
             .teal
@@ -140,5 +141,5 @@ struct LibraryImporterView: View {
         
         PhotoImporterView(model: photos[0])
     }
-    .environment(PhotoRootModel())
+    .environment(PhotoRootModel(modelContext: modelContext))
 }

@@ -25,8 +25,8 @@ struct ContextMenuController: ItemListContextMenuControllable {
         editController.delete(model: model)
     }
     
-    func exportItem() {
-        
+    func exportItem() -> any NavigationDestination {
+        InternalRoute.export(id: model.id)
     }
     
     func generateLink() {

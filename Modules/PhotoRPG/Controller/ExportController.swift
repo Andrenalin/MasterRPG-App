@@ -21,7 +21,6 @@ struct ExportController: Sendable {
 
 extension ExportController: ExportControllable {
     
-
     @MainActor
     public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         var checkIds = itemIds.ids[networkModule, default: []]
@@ -37,14 +36,16 @@ extension ExportController: ExportControllable {
             }
             results.insert(id)
             
-            let ids = item.entries.compactMap { entry -> UUID? in
-                guard let entry = entry as? PhotoEntryDataModel, let subId = entry.photoId else { return nil }
-                if !(results.contains(subId) || checkIds.contains(subId)) && itemControllable.itemSync(for: subId) != nil {
-                    return subId
+            if let entries = item.entries {
+                let ids = entries.compactMap { entry -> UUID? in
+                    guard let entry = entry as? PhotoEntryDataModel, let subId = entry.photoId else { return nil }
+                    if !(results.contains(subId) || checkIds.contains(subId)) && itemControllable.itemSync(for: subId) != nil {
+                        return subId
+                    }
+                    return nil
                 }
-                return nil
+                checkIds.append(contentsOf: ids)
             }
-            checkIds.append(contentsOf: ids)
         }
         var allIds = itemIds
         allIds.ids[networkModule] = Array(results)

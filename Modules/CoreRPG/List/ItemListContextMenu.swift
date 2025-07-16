@@ -7,7 +7,7 @@ public protocol ItemListContextMenuControllable {
 
     func copyItem()
     func deleteItem()
-    func exportItem()
+    func exportItem() -> any NavigationDestination
     func generateLink()
 }
 
@@ -17,6 +17,8 @@ public struct ItemListContextMenu: View {
     }
     
     let controller: ItemListContextMenuControllable
+    
+    @Environment(\.navigator) private var navigator
     
     public var body: some View {
         copyItemView
@@ -53,7 +55,8 @@ private extension ItemListContextMenu {
 
     var exportItemView: some View {
         Button {
-            withAnimation { controller.exportItem() }
+            let route = controller.exportItem()
+            navigator.navigate(to: route, method: .sheet)
         } label: {
             Label {
                 Text("Export \(controller.itemName)", bundle: .module)

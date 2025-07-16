@@ -28,3 +28,9 @@ extension PhotoEntryDataModel: EntryDataAccessable {
         return entryPhoto.name
     }        
 }
+
+extension PhotoEntryDataModel {
+    var photoEntryModel: PhotoEntryModel {
+        PhotoEntryModel(id: id, photoId: photoId ?? UUID())
+    }
+}

@@ -120,3 +120,16 @@ struct ListView: View {
         }
     }
 }
+
+#Preview(traits: .mockData) {
+    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Environment(\.modelContext) var modelContext
+    
+    ListView()
+        .environment(ListSelectionModel<PhotoDataModel>())
+        .environment(PhotoRootModel(modelContext: modelContext))
+        .environment(CacheItemListModel())
+        .environment(SearchModel.preview)
+        .environment(DeviceRotationModel())
+}
+

@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import SwiftData
 import SwiftUI
 
 struct MainRowView: View {
@@ -18,5 +19,16 @@ struct MainRowView: View {
         })
         .draggable(LinkData(itemId: model.id, module: .photo, name: model.name))
     }
+}
+
+#Preview(traits: .mockData) {
+    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Environment(\.modelContext) var modelContext
+    
+    MainRowView(model: photos[0])
+        .environment(PhotoRootModel(modelContext: modelContext))
+        .environment(CacheItemListModel())
+        .environment(SearchModel.preview)
+        .environment(DeviceRotationModel())
 }
 

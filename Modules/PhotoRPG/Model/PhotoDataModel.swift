@@ -46,7 +46,7 @@ public final class PhotoDataModel {
         return FileUrl(fileId: id, url: url, location: .cloud, module: "Photos")
     }
     
-    @Relationship(deleteRule: .cascade) public var entries: [PhotoEntryDataModel] = []
+    @Relationship(deleteRule: .cascade) public var entries: [PhotoEntryDataModel]? = []
     
     func reset(name: String) {
         _nameLWW.wrappedValue = name
@@ -66,7 +66,7 @@ extension PhotoDataModel {
         let models = try? modelContext.fetch(fetchDesc)
         return models?.first { $0.id == id }
     }
-    
+
     func modelActor() -> PhotoDataModelActor? {
         guard let container = modelContext?.container else { return nil }
         return PhotoDataModelActor(modelContainer: container)
@@ -88,7 +88,8 @@ extension PhotoDataModel {
 
     var entriesModel: [PhotoEntryDataModel] {
         get {
-            entries.sorted { $0.index < $1.index }
+            guard let all = entries else { return [] }
+            return all.sorted { $0.index < $1.index }
         }
         set {
             entries = newValue
@@ -106,15 +107,32 @@ extension PhotoDataModel {
 extension PhotoDataModel: ItemDataAccessable {
     public subscript(id: UUID) -> PhotoEntryDataModel {
         get {
-            entries.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id)
+            entriesModel.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id)
         }
         set(newValue) {
-            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
-            entries[index] = newValue
+            guard let index = entriesModel.firstIndex(where: { $0.id == id }) else { return }
+            entriesModel[index] = newValue
         }
     }
     
     public typealias Entry = PhotoEntryDataModel
     
     public static var typeId: NetworkModules { .photo }
+}
+
+extension PhotoDataModel {
+    var photoModel: PhotoModel {
+        let entries = entriesModel.map { $0.photoEntryModel }
+        return PhotoModel(
+            id: id,
+            name: _nameLWW,
+            description: _informationLWW,
+            tags: CRDT(wrappedValue: tags),
+            category: CRDT(wrappedValue: category),
+            displayState: displayState,
+            degrees: CRDT(wrappedValue: degrees),
+            fileUrl: CRDTDataUpdate(wrappedValue: fileUrl),
+            entries: CRDTDataUpdate(wrappedValue: entries)
+        )
+    }
 }

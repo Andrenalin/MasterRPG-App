@@ -8,12 +8,19 @@ extension RootRoute: @retroactive View {}
 extension RootRoute: @retroactive Identifiable {}
 extension RootRoute: @MainActor @retroactive NavigationDestination {
     public var body: some View {
-        Group {
-            if self == .photos {
-                PhotoRootView(withoutNavigation: false)
-            } else {
-                RootListView(rootRoute: self)
-            }
+        RootRouteDestionationView(route: self)
+    }
+}
+
+struct RootRouteDestionationView: View {
+    let route: RootRoute
+    @Environment(\.modelContext) private var modelContext
+    
+    var body: some View {
+        if route == .photos {
+            PhotoRootView(modelContext: modelContext, withoutNavigation: false)
+        } else {
+            RootListView(rootRoute: route)
         }
     }
 }
@@ -180,6 +187,7 @@ struct ImageHeaderView: View {
         .environment(AppRootUiModel())
         .environment(SearchModel.preview)
         .environment(DeviceRotationModel())
+        .environment(CacheItemListModel())
 }
 
 @Observable private class FlexibleHeaderGeometry {

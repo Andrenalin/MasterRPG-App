@@ -21,7 +21,7 @@ actor PhotoDataModelActor {
         self._id = id
         self._model = PhotoDataModel.model(modelContext: modelContext, id: id)
     }
-    
+
     var name: String {
         model.name
     }
@@ -56,6 +56,10 @@ actor PhotoDataModelActor {
         )
 
         modelContext.insert(copiedPhoto)
+    }
+    
+    func photoModel() -> PhotoModel {
+        model.photoModel
     }
     
     func save() {
