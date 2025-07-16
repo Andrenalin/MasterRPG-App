@@ -14,7 +14,7 @@ struct LibraryPhotoPicker: View {
     
     var body: some View {
         PhotosPicker(selection: $selectedItem, matching: .images, photoLibrary: .shared()) {
-            if #available(iOS 26.0, *) {
+            if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *) {
                 Image(systemName: "photo")
                     .font(.system(size: size))
                     .padding(size / 3)
@@ -23,7 +23,9 @@ struct LibraryPhotoPicker: View {
                     .hoverEffect(.highlight)
 #endif
                     .clipShape(.capsule)
+#if !os(visionOS)
                     .glassEffect()
+#endif
             } else {
                 Image(systemName: "photo")
 #if os(iOS) || os(visionOS)

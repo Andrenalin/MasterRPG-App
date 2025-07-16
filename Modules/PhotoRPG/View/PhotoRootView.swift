@@ -29,9 +29,7 @@ public struct PhotoRootView: View {
     public var body: some View {
         Group {
             if withoutNavigation {
-                ManagedPresentationView {
-                    listView
-                }
+                listView
             } else {
                 splitRoot
             }
@@ -95,17 +93,6 @@ public struct PhotoRootView: View {
     @Previewable @Query var photos: [PhotoDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
-    PhotoRootView(modelContext: modelContext, withoutNavigation: false)
-        .environment(CacheItemListModel())
-        .environment(SearchModel.preview)
-        .environment(TabTitleModel())
-        .environment(DeviceRotationModel())
-}
-
-#Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
-    
     ManagedNavigationStack {
         PhotoRootView(modelContext: modelContext, withoutNavigation: true)
             .environment(CacheItemListModel())
@@ -113,4 +100,17 @@ public struct PhotoRootView: View {
             .environment(TabTitleModel())
             .environment(DeviceRotationModel())
     }
+    .environment(PhotoRootModel(modelContext: modelContext))
 }
+
+#Preview(traits: .mockData) {
+    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Environment(\.modelContext) var modelContext
+
+    PhotoRootView(modelContext: modelContext, withoutNavigation: false)
+        .environment(CacheItemListModel())
+        .environment(SearchModel.preview)
+        .environment(TabTitleModel())
+        .environment(DeviceRotationModel())
+}
+

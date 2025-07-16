@@ -3,7 +3,7 @@
 import ImagePlayground
 import SwiftUI
 
-@available(iOS 18.1, *)
+@available(iOS 18.1, visionOS 2.4, *)
 struct ImageGenerationView: View {
     @State private var imageDescription = ""
     @State private var isShowingImagePlayground = false
@@ -40,7 +40,7 @@ struct ImageGenerationView: View {
 }
 
 #Preview {
-    if #available(iOS 18.1, *) {
+    if #available(iOS 18.1, visionOS 2.4, *) {
         ImageGenerationView()
     } else {
         Text("Dead")

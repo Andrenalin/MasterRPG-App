@@ -3,7 +3,13 @@
 import CoreRPG
 import Foundation
 import SwiftData
+import UniformTypeIdentifiers
+
+#if os(macOS)
+internal import AppKit
+#else
 internal import UIKit
+#endif
 
 struct EditController {
     let fileController: FileController
@@ -12,6 +18,13 @@ struct EditController {
 
 // MARK: - Edit Photo Data Model Properties
 extension EditController {
+    func addNew(modelContext: ModelContext) -> PhotoDataModel {
+        let newItem = PhotoDataModel(name: "", information: "", category: .adventure, tags: [])
+        modelContext.insert(newItem)
+        try? modelContext.save()
+        return newItem
+    }
+    
     func copy(model: PhotoDataModel) {
         let newId = UUID()
         guard let actor = model.modelActor() else { return }
@@ -99,13 +112,23 @@ extension EditController {
     }
     
     func resetPhoto(image: AKImage?, id: UUID, actor: PhotoDataModelActor) async {
-        let data = image?.jpegData(compressionQuality: 0.9)
+        guard let image else { return }
+        let data = image.jpegData(compressionQuality: 0.9)
         await actor.setup(id: id)
         await resetPhoto(data: data, id: id, actor: actor)
         await actor.save()
     }
-    
-    
+
+    func resetPhoto(data: Data, model: PhotoDataModel) {
+        guard let actor = model.modelActor() else { return }
+        let id = model.id
+        Task.detached {
+            await actor.setup(id: id)
+            await resetPhoto(data: data, id: id, actor: actor)
+            await actor.save()
+        }
+    }
+
     private func resetPhoto(url: URL?, id: UUID, actor: PhotoDataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
@@ -137,4 +160,26 @@ extension EditController {
         let updatedFileUrl = try? await fileController.fileUrlDataController.createNewFileUrl(fileId: id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
+}
+
+extension EditController {
+#if os(macOS)
+    static let importImageTypes = AKImage.imageTypes.compactMap { UTType($0) }
+
+    static func importImageFromProviders(_ itemProviders: [NSItemProvider], completion: @Sendable @escaping (Data?) -> Void) -> Bool {
+        guard let provider = itemProviders.first else { return false }
+        for type in importImageTypes {
+            let typeIdentifier = type.identifier
+            if provider.hasItemConformingToTypeIdentifier(typeIdentifier) {
+                provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, _ in
+                    DispatchQueue.main.async {
+                        completion(data)
+                    }
+                }
+                return true
+            }
+        }
+        return false
+    }
+#endif
 }

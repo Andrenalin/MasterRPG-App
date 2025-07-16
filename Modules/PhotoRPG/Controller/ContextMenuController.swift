@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 import SwiftData
 #if os(macOS)
-import AppKit
+internal import AppKit
 #else
 internal import UIKit
 #endif

@@ -8,6 +8,7 @@ struct ListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.navigator) private var navigator
 
+    @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListSelectionModel<PhotoDataModel>.self) private var model
     @Environment(PhotoRootModel.self) private var rootModel
     @Environment(SearchModel.self) private var searchModel
@@ -35,14 +36,22 @@ struct ListView: View {
         }
         .navigationDestination(for: PhotoRoute.self) { route in
             route
+                .environment(rootModel)
+                .environment(cacheItemListModel)
         }
         .animation(.smooth, value: filteredItems)
         .animation(.snappy, value: isSelectionMode)
         .scrollBounceBehavior(.basedOnSize)
+#if os(macOS)
+        .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
+#endif
         .onChange(of: selected) {
+            print("Seleccted Change: \(selected)")
             model.selectedItem = items.first { $0.id == selected }
-            guard let selected = model.selectedItem else { return }
-            navigator.navigate(to: PhotoRoute.photo(selected.id), method: .push)
+            print("Change as well: \(model.selectedItem)")
+            guard let id = model.selectedItem?.id else { return }
+            print("Change as id: \(id)")
+            navigator.navigate(to: PhotoRoute.photo(id), method: .push)
         }
         .navigationTitle("Photos")
 #if os(macOS)
@@ -50,7 +59,7 @@ struct ListView: View {
 #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(action: addItem) {
+                Button {  addItem() } label: {
                     Label("Add Item", systemImage: "plus")
                 }
             }
@@ -73,10 +82,8 @@ struct ListView: View {
     }
     
     private func addItem() {
+        let newItem = rootModel.editController.addNew(modelContext: modelContext)
         withAnimation {
-            let newItem = PhotoDataModel(name: "", information: "", category: .character, tags: [])
-            modelContext.insert(newItem)
-            try? modelContext.save()
             selected = newItem.id
         }
     }
@@ -119,17 +126,35 @@ struct ListView: View {
             }
         }
     }
+    
+#if os(macOS)
+    func importImage(_ providers: [NSItemProvider]) -> Bool {
+        EditController.importImageFromProviders(providers) { data in
+            guard let data = data else { return }
+            Task { @MainActor in
+                let model = rootModel.editController.addNew(modelContext: modelContext)
+                try? await Task.sleep(for: .seconds(0.5))
+                withAnimation {
+                    rootModel.editController.resetPhoto(data: data, model: model)
+                    selected = model.id
+                }
+            }
+        }
+    }
+#endif
 }
 
 #Preview(traits: .mockData) {
     @Previewable @Query var photos: [PhotoDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
-    ListView()
-        .environment(ListSelectionModel<PhotoDataModel>())
-        .environment(PhotoRootModel(modelContext: modelContext))
-        .environment(CacheItemListModel())
-        .environment(SearchModel.preview)
-        .environment(DeviceRotationModel())
+    ManagedNavigationStack {
+        ListView()
+            .environment(ListSelectionModel<PhotoDataModel>())
+            .environment(PhotoRootModel(modelContext: modelContext))
+            .environment(CacheItemListModel())
+            .environment(SearchModel.preview)
+            .environment(DeviceRotationModel())
+    }
 }
 
