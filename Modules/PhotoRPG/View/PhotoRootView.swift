@@ -36,7 +36,6 @@ public struct PhotoRootView: View {
                 splitRoot
             }
         }
-        .ignoresSafeArea(edges: .top)
         .environment(rootModel)
 #if os(iOS)
         .onChange(of: tabBarPlacement, initial: true) {
@@ -101,4 +100,17 @@ public struct PhotoRootView: View {
         .environment(SearchModel.preview)
         .environment(TabTitleModel())
         .environment(DeviceRotationModel())
+}
+
+#Preview(traits: .mockData) {
+    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Environment(\.modelContext) var modelContext
+    
+    ManagedNavigationStack {
+        PhotoRootView(modelContext: modelContext, withoutNavigation: true)
+            .environment(CacheItemListModel())
+            .environment(SearchModel.preview)
+            .environment(TabTitleModel())
+            .environment(DeviceRotationModel())
+    }
 }

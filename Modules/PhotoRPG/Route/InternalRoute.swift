@@ -26,6 +26,7 @@ struct InternalRouteDestinationView: View {
                 let ids = rootModel.exportController.exporting(ids: [id])
                 return rootModel.exportController.export(ids: ids)
             }
+            .presentationDetents([.height(160)])
         }
     }
 }

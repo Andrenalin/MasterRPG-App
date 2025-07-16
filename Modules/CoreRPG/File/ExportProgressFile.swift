@@ -24,57 +24,79 @@ public struct ExportProgressFile: View {
     @State private var exportError: String?
 
     public var body: some View {
-        VStack {
-            Button {
-                exportTask?.cancel()
-                dismiss()
-            } label: {
-                Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark.square") }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .disabled(!exportController.exportModel.isExportRunning)
-
-            if exportController.exportModel.isExportRunning &&  exportController.exportModel.totalExportingItems > 0 {
-                ProgressView(value: Double(exportController.exportModel.exportedItems), total: Double(exportController.exportModel.totalExportingItems))
-                    .tint(.teal)
-            }
-
-            if hasError {
-                if isCancelled {
-                    Text("Export is cancelled, but \(exportController.exportModel.exportedItems) are successfully exported.", bundle: .module)
-                } else {
-                    Text(exportError ?? "")
+        NavigationStack {
+            @Bindable var exportModel = exportController.exportModel
+            VStack {
+                Button {
+                    exportTask?.cancel()
+                    dismiss()
+                } label: {
+                    Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark.square") }
                 }
-            } else {
-                Text("Exporting \(exportController.exportModel.exportedItems) of \(exportController.exportModel.totalExportingItems)", bundle: .module)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .disabled(!exportController.exportModel.isExportRunning)
+                
+                if exportController.exportModel.isExportRunning &&  exportController.exportModel.totalExportingItems > 0 {
+                    ProgressView(value: Double(exportController.exportModel.exportedItems), total: Double(exportController.exportModel.totalExportingItems))
+                        .tint(Color.accentColor)
+                }
+                
+                VStack {
+                    if hasError {
+                        if isCancelled {
+                            Text("Export is cancelled, but \(exportController.exportModel.exportedItems) are successfully exported.", bundle: .module)
+                        } else {
+                            Text(exportError ?? "")
+                        }
+                    } else {
+                        Text("Exporting \(exportController.exportModel.exportedItems) of \(exportController.exportModel.totalExportingItems)", bundle: .module)
+                    }
+                }
+                .frame(width: 320)
             }
-        }
-        .padding()
-        .background(.secondary.opacity(0.7))
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .padding()
-        .task {
-            try? await Task.sleep(for: .seconds(0.5))
-            let (exportTask, saveUrl) = exporter()
-            self.exportTask = exportTask
-            self.saveUrl = saveUrl
-            let result = await exportTask.result
-            do {
-                _ = try result.get()
-                showExporter.toggle()
-            } catch is CancellationError {
-                isCancelled = true
-                hasError = true
-            } catch {
-                exportError = error.localizedDescription
-                hasError = true
+            .padding()
+            .task {
+                try? await Task.sleep(for: .seconds(0.5))
+                let (exportTask, saveUrl) = exporter()
+                self.exportTask = exportTask
+                self.saveUrl = saveUrl
+                let result = await exportTask.result
+                do {
+                    _ = try result.get()
+                    showExporter.toggle()
+                } catch is CancellationError {
+                    isCancelled = true
+                    hasError = true
+                } catch {
+                    exportError = error.localizedDescription
+                    hasError = true
+                }
             }
-        }
 #if !os(tvOS)
-        .fileMover(isPresented: $showExporter, file: saveUrl ?? URL(string: "Export.gmz")) { _ in
-            finishAction()
-        }
+            .fileMover(isPresented: $showExporter, file: saveUrl ?? URL(string: "Export.gmz")) { _ in
+                finishAction()
+            }
 #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        exportTask?.cancel()
+                        dismiss()
+                    } label: {
+                        Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark") }
+                    }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Label { Text("Ok", bundle: .module) } icon: { Image(systemName: "checkmark") }
+                    }
+                    .disabled(exportController.exportModel.isExportRunning)
+                }
+            }
+        }
     }
 
     var exportTitle: String {
