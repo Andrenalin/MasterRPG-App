@@ -145,7 +145,7 @@ struct ListView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var models: [PhotoDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
     ManagedNavigationStack {

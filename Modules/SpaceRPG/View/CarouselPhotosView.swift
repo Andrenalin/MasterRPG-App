@@ -90,10 +90,10 @@ struct CarouselPhotosView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [SpaceDataModel]
+    @Previewable @Query var models: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
 
-    CarouselPhotosView(model: photos[0])
+    CarouselPhotosView(model: models[0])
         .environment(DetailPhotoSelection())
         .environment(SpaceRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())

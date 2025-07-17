@@ -22,10 +22,10 @@ struct MainRowView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [SpaceDataModel]
+    @Previewable @Query var models: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
-    MainRowView(model: photos[0])
+    MainRowView(model: models[0])
         .environment(SpaceRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
         .environment(SearchModel.preview)

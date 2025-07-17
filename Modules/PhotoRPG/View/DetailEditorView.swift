@@ -162,10 +162,10 @@ struct DetailEditorView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var models: [PhotoDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
-    DetailEditorView(model: photos[0]) { }
+    DetailEditorView(model: models[0]) { }
         .environment(SearchModel.preview)
         .environment(DeviceRotationModel())
         .environment(PhotoRootModel(modelContext: modelContext))

@@ -185,10 +185,10 @@ struct DetailView: View {
 
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var models: [PhotoDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
-    DetailView(model: photos[0])
+    DetailView(model: models[0])
         .environment(PhotoRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
 }

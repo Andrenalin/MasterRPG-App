@@ -129,17 +129,17 @@ struct LibraryImporterView: View {
 
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var models: [PhotoDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     VStack {
         Color
             .teal
             .frame(width: 256, height: 256)
-            .overlay(CameraImporterView(model: photos[0]), alignment: .bottom)
-            .overlay(FileImporterView(model: photos[0]), alignment: .top)
-            .overlay(LibraryImporterView(model: photos[0]), alignment: .center)
+            .overlay(CameraImporterView(model: models[0]), alignment: .bottom)
+            .overlay(FileImporterView(model: models[0]), alignment: .top)
+            .overlay(LibraryImporterView(model: models[0]), alignment: .center)
         
-        PhotoImporterView(model: photos[0])
+        PhotoImporterView(model: models[0])
     }
     .environment(PhotoRootModel(modelContext: modelContext))
 }

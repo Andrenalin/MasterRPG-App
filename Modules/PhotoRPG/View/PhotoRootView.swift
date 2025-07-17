@@ -90,7 +90,7 @@ public struct PhotoRootView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var models: [PhotoDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
     ManagedNavigationStack {
@@ -104,7 +104,7 @@ public struct PhotoRootView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var models: [PhotoDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
 
     PhotoRootView(modelContext: modelContext, withoutNavigation: false)

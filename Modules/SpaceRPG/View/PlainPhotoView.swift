@@ -117,10 +117,10 @@ private extension PlainPhotoView {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [SpaceDataModel]
+    @Previewable @Query var models: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
-    PlainPhotoView(model: photos[0])
+    PlainPhotoView(model: models[0])
         .environment(DetailPhotoSelection())
         .environment(SpaceRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())

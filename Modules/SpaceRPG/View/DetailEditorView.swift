@@ -147,10 +147,10 @@ struct DetailEditorView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [SpaceDataModel]
+    @Previewable @Query var models: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
-    DetailEditorView(model: photos[0]) { }
+    DetailEditorView(model: models[0]) { }
         .environment(SearchModel.preview)
         .environment(DeviceRotationModel())
         .environment(SpaceRootModel(modelContext: modelContext))

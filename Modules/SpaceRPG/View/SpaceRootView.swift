@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 
-public struct PhotoRootView: View {
+public struct SpaceRootView: View {
     public init(modelContext: ModelContext, withoutNavigation: Bool) {
         self.withoutNavigation = withoutNavigation
         self._rootModel = State(wrappedValue: SpaceRootModel(modelContext: modelContext))
@@ -89,12 +89,12 @@ public struct PhotoRootView: View {
     }
 }
 
-#Preview(traits: .mockData) {
-    @Previewable @Query var photos: [SpaceDataModel]
+#Preview("Embed", traits: .mockData) {
+    @Previewable @Query var models: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
     ManagedNavigationStack {
-        PhotoRootView(modelContext: modelContext, withoutNavigation: true)
+        SpaceRootView(modelContext: modelContext, withoutNavigation: true)
             .environment(CacheItemListModel())
             .environment(SearchModel.preview)
             .environment(TabTitleModel())
@@ -103,11 +103,11 @@ public struct PhotoRootView: View {
     .environment(SpaceRootModel(modelContext: modelContext))
 }
 
-#Preview(traits: .mockData) {
-    @Previewable @Query var photos: [SpaceDataModel]
+#Preview("Split", traits: .mockData) {
+    @Previewable @Query var models: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
 
-    PhotoRootView(modelContext: modelContext, withoutNavigation: false)
+    SpaceRootView(modelContext: modelContext, withoutNavigation: false)
         .environment(CacheItemListModel())
         .environment(SearchModel.preview)
         .environment(TabTitleModel())

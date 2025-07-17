@@ -28,6 +28,6 @@ struct DetailOverlayView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [SpaceDataModel]
-    DetailOverlayView(model: photos[0])
+    @Previewable @Query var models: [SpaceDataModel]
+    DetailOverlayView(model: models[0])
 }

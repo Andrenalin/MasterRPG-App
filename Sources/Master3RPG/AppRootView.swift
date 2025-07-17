@@ -1,5 +1,6 @@
 import CoreRPG
 import PhotoRPG
+import SpaceRPG
 import SwiftUI
 import SwiftData
 
@@ -17,9 +18,32 @@ struct RootRouteDestionationView: View {
     @Environment(\.modelContext) private var modelContext
     
     var body: some View {
-        if route == .photos {
+        switch route {
+        case .adventures:
+            RootListView(rootRoute: route)
+        case .audios:
+            RootListView(rootRoute: route)
+        case .dice:
+            RootListView(rootRoute: route)
+        case .editors:
+            RootListView(rootRoute: route)
+        case .game:
+            RootListView(rootRoute: route)
+        case .maps:
+            RootListView(rootRoute: route)
+        case .pdfs:
+            RootListView(rootRoute: route)
+        case .photos:
             PhotoRootView(modelContext: modelContext, withoutNavigation: false)
-        } else {
+        case .settings:
+            RootListView(rootRoute: route)
+        case .space:
+            SpaceRootView(modelContext: modelContext, withoutNavigation: false)
+        case .tables:
+            RootListView(rootRoute: route)
+        case .values:
+            RootListView(rootRoute: route)
+        case .weathers:
             RootListView(rootRoute: route)
         }
     }
