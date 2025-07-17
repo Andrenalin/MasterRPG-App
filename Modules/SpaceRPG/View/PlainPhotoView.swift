@@ -10,7 +10,7 @@ struct PlainPhotoView: View {
         case maxHeightWidth(CGFloat)
     }
 
-    init(model: PhotoDataModel, size: SizeType = .maxWidth, ratio: ContentMode = .fit, hasRoundedCorners: Bool = false, highResolution: Bool = true) {
+    init(model: SpaceDataModel, size: SizeType = .maxWidth, ratio: ContentMode = .fit, hasRoundedCorners: Bool = false, highResolution: Bool = true) {
         self.model = model
         self.size = size
         self.ratio = ratio
@@ -18,13 +18,13 @@ struct PlainPhotoView: View {
         self.highResolution = highResolution
     }
 
-    let model: PhotoDataModel
+    let model: SpaceDataModel
     let size: SizeType
     let ratio: ContentMode
     let hasRoundedCorners: Bool
     let highResolution: Bool
 
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var rootModel
     @Environment(CacheItemListModel.self) private var cacheItemListModel
 
     @State private var lastFileUrl: FileUrl?
@@ -55,7 +55,6 @@ struct PlainPhotoView: View {
         .onChange(of: model.fileUrl, initial: true) {
             initImage()
         }
-        .animation(.bouncy, value: model.degrees)
     }
 }
 
@@ -68,7 +67,6 @@ private extension PlainPhotoView {
         Image(akImage: image)
             .resizable()
             .aspectRatio(contentMode: ratio)
-            .rotationEffect(Angle(degrees: model.degrees))
             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
     }
 
@@ -119,12 +117,12 @@ private extension PlainPhotoView {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var photos: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
     PlainPhotoView(model: photos[0])
         .environment(DetailPhotoSelection())
-        .environment(PhotoRootModel(modelContext: modelContext))
+        .environment(SpaceRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
 
 }

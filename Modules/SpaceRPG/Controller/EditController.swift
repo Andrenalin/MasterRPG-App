@@ -18,14 +18,14 @@ struct EditController {
 
 // MARK: - Edit Photo Data Model Properties
 extension EditController {
-    func addNew(modelContext: ModelContext) -> PhotoDataModel {
-        let newItem = PhotoDataModel(name: "", information: "", category: .adventure, tags: [])
+    func addNew(modelContext: ModelContext) -> SpaceDataModel {
+        let newItem = SpaceDataModel(name: "", information: "", category: .adventure, tags: [])
         modelContext.insert(newItem)
         try? modelContext.save()
         return newItem
     }
     
-    func copy(model: PhotoDataModel) {
+    func copy(model: SpaceDataModel) {
         let newId = UUID()
         guard let actor = model.modelActor() else { return }
         let id = model.id
@@ -37,7 +37,7 @@ extension EditController {
         }
     }
     
-    func delete(model: PhotoDataModel) {
+    func delete(model: SpaceDataModel) {
         let fileUrl = model.fileUrl
         model.modelContext?.delete(model)
         Task.detached {
@@ -45,54 +45,41 @@ extension EditController {
         }
     }
     
-    func addSubPhoto(photoId: UUID, model: PhotoDataModel) {
+    func addSubPhoto(photoId: UUID, model: SpaceDataModel) {
         model.withTransaction {
-            var entries: [PhotoEntryDataModel] = model.entriesModel
+            var entries: [SpaceEntryDataModel] = model.entryModels
 
-            let entry = PhotoEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, photoId: photoId, photo: model)
+            let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, spaceId: photoId, space: model)
             entries.append(entry)
-            model.entries = entries
+            model.entryModels = entries
             
-            guard let modelContext = model.modelContext, let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
+            guard let modelContext = model.modelContext, let subModel = SpaceDataModel.model(modelContext: modelContext, id: photoId) else { return }
             modelContext.insert(entry)
             subModel.displayState = DisplayStateMask.totalHidden.rawValue
         }
     }
 
-    func removeSubPhoto(photoId: UUID, model: PhotoDataModel) {
+    func removeSubPhoto(photoId: UUID, model: SpaceDataModel) {
         model.withTransaction {
             let entry = model[photoId]
-            model.entries?.removeAll(where: { $0.photoId == photoId })
-            model.entriesModel.enumerated().forEach { index, entry in
+            model.entryModels.removeAll(where: { $0.spaceId == photoId })
+            model.entryModels.enumerated().forEach { index, entry in
                 entry.index = Int16(index)
             }
                         
-            guard let modelContext = model.modelContext, let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
+            guard let modelContext = model.modelContext, let subModel = SpaceDataModel.model(modelContext: modelContext, id: photoId) else { return }
             modelContext.delete(entry)
             subModel.displayState = 0
         }
     }
 
-    func update(model: PhotoDataModel, name: String, information: String, category: ItemListCategory, tags: [String], degrees: Double) {
-        if let modelContext = model.modelContext {
-            do {
-                try modelContext.transaction {
-                    updateInternal(model: model, name: name, information: information, category: category, tags: tags, degrees: degrees)
-                }
-            } catch {
-                modelContext.rollback()
-            }
-        } else {
-            updateInternal(model: model, name: name, information: information, category: category, tags: tags, degrees: degrees)
+    func update(model: SpaceDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
+        model.withTransaction {
+            model.reset(name: name)
+            model.reset(information: information)
+            model.category = category
+            model.tags = tags
         }
-    }
-    
-    private func updateInternal(model: PhotoDataModel, name: String, information: String, category: ItemListCategory, tags: [String], degrees: Double) {
-        model.reset(name: name)
-        model.reset(information: information)
-        model.category = category
-        model.tags = tags
-        model.degrees = degrees
     }
 }
 
@@ -101,7 +88,7 @@ extension EditController {
 extension EditController {
     
     // import from file browser
-    func resetPhoto(url: URL?, in model: PhotoDataModel) {
+    func resetPhoto(url: URL?, in model: SpaceDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id
         Task.detached {
@@ -111,7 +98,7 @@ extension EditController {
         }
     }
     
-    func resetPhoto(image: AKImage?, id: UUID, actor: PhotoDataModelActor) async {
+    func resetPhoto(image: AKImage?, id: UUID, actor: DataModelActor) async {
         guard let image else { return }
         let data = image.jpegData(compressionQuality: 0.9)
         await actor.setup(id: id)
@@ -119,7 +106,7 @@ extension EditController {
         await actor.save()
     }
 
-    func resetPhoto(data: Data, model: PhotoDataModel) {
+    func resetPhoto(data: Data, model: SpaceDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id
         Task.detached {
@@ -129,7 +116,7 @@ extension EditController {
         }
     }
 
-    private func resetPhoto(url: URL?, id: UUID, actor: PhotoDataModelActor) async {
+    private func resetPhoto(url: URL?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
             await actor.update(url: url)
@@ -147,7 +134,7 @@ extension EditController {
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
     
-    private func resetPhoto(data: Data?, id: UUID, actor: PhotoDataModelActor) async {
+    private func resetPhoto(data: Data?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         await actor.update(url: nil)
         guard let data else { return }

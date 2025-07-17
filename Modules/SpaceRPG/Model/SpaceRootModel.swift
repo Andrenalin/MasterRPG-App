@@ -5,7 +5,7 @@ import SwiftData
 import Foundation
 
 @MainActor @Observable
-public final class PhotoRootModel {
+public final class SpaceRootModel {
     init(modelContext: ModelContext) {
         let fileController = FileController()
         self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)

@@ -47,11 +47,11 @@ extension EditController {
     
     func addSubPhoto(photoId: UUID, model: PhotoDataModel) {
         model.withTransaction {
-            var entries: [PhotoEntryDataModel] = model.entriesModel
+            var entries: [PhotoEntryDataModel] = model.entryModels
 
             let entry = PhotoEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, photoId: photoId, photo: model)
             entries.append(entry)
-            model.entries = entries
+            model.entryModels = entries
             
             guard let modelContext = model.modelContext, let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
             modelContext.insert(entry)
@@ -62,8 +62,8 @@ extension EditController {
     func removeSubPhoto(photoId: UUID, model: PhotoDataModel) {
         model.withTransaction {
             let entry = model[photoId]
-            model.entries?.removeAll(where: { $0.photoId == photoId })
-            model.entriesModel.enumerated().forEach { index, entry in
+            model.entryModels.removeAll(where: { $0.photoId == photoId })
+            model.entryModels.enumerated().forEach { index, entry in
                 entry.index = Int16(index)
             }
                         
@@ -74,25 +74,13 @@ extension EditController {
     }
 
     func update(model: PhotoDataModel, name: String, information: String, category: ItemListCategory, tags: [String], degrees: Double) {
-        if let modelContext = model.modelContext {
-            do {
-                try modelContext.transaction {
-                    updateInternal(model: model, name: name, information: information, category: category, tags: tags, degrees: degrees)
-                }
-            } catch {
-                modelContext.rollback()
-            }
-        } else {
-            updateInternal(model: model, name: name, information: information, category: category, tags: tags, degrees: degrees)
+        model.withTransaction {
+            model.reset(name: name)
+            model.reset(information: information)
+            model.category = category
+            model.tags = tags
+            model.degrees = degrees
         }
-    }
-    
-    private func updateInternal(model: PhotoDataModel, name: String, information: String, category: ItemListCategory, tags: [String], degrees: Double) {
-        model.reset(name: name)
-        model.reset(information: information)
-        model.category = category
-        model.tags = tags
-        model.degrees = degrees
     }
 }
 
@@ -111,7 +99,7 @@ extension EditController {
         }
     }
     
-    func resetPhoto(image: AKImage?, id: UUID, actor: PhotoDataModelActor) async {
+    func resetPhoto(image: AKImage?, id: UUID, actor: DataModelActor) async {
         guard let image else { return }
         let data = image.jpegData(compressionQuality: 0.9)
         await actor.setup(id: id)
@@ -129,7 +117,7 @@ extension EditController {
         }
     }
 
-    private func resetPhoto(url: URL?, id: UUID, actor: PhotoDataModelActor) async {
+    private func resetPhoto(url: URL?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
             await actor.update(url: url)
@@ -147,7 +135,7 @@ extension EditController {
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
     
-    private func resetPhoto(data: Data?, id: UUID, actor: PhotoDataModelActor) async {
+    private func resetPhoto(data: Data?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         await actor.update(url: nil)
         guard let data else { return }

@@ -17,7 +17,7 @@ extension InternalRoute: NavigationDestination {
 struct InternalRouteDestinationView: View {
     let route: InternalRoute
     
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var rootModel
     
     var body: some View {
         switch route {

@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct MainRowView: View {
-    let model: PhotoDataModel
+    let model: SpaceDataModel
 
     @Environment(CacheItemListModel.self) private var cacheModel
     @Environment(SearchModel.self) private var searchModel
@@ -22,11 +22,11 @@ struct MainRowView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var photos: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
     MainRowView(model: photos[0])
-        .environment(PhotoRootModel(modelContext: modelContext))
+        .environment(SpaceRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
         .environment(SearchModel.preview)
         .environment(DeviceRotationModel())

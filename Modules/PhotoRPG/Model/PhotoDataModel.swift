@@ -46,8 +46,29 @@ public final class PhotoDataModel {
         return FileUrl(fileId: id, url: url, location: .cloud, module: "Photos")
     }
     
-    @Relationship(deleteRule: .cascade) public var entries: [PhotoEntryDataModel]? = []
-    
+    @Relationship(deleteRule: .cascade) private var entries: [PhotoEntryDataModel]? = []
+}
+
+extension PhotoDataModel {
+    public var entryModels: [PhotoEntryDataModel] {
+        get {
+            guard let all = entries else { return [] }
+            return all.sorted { $0.index < $1.index }
+        }
+        set {
+            entries = newValue
+        }
+    }
+
+    func entryOrNew(for id: UUID) -> PhotoEntryDataModel {
+        if let entry = entryModels.first(where: { $0.id == id }) {
+            return entry
+        }
+        return PhotoEntryDataModel(id: id)
+    }
+}
+
+extension PhotoDataModel {
     func reset(name: String) {
         _nameLWW.wrappedValue = name
         self.name = name
@@ -67,9 +88,9 @@ extension PhotoDataModel {
         return models?.first { $0.id == id }
     }
 
-    func modelActor() -> PhotoDataModelActor? {
+    func modelActor() -> DataModelActor? {
         guard let container = modelContext?.container else { return nil }
-        return PhotoDataModelActor(modelContainer: container)
+        return DataModelActor(modelContainer: container)
     }
 
     func withTransaction(_ transaction: () -> Void) {
@@ -85,44 +106,25 @@ extension PhotoDataModel {
             transaction()
         }
     }
-
-    var entriesModel: [PhotoEntryDataModel] {
-        get {
-            guard let all = entries else { return [] }
-            return all.sorted { $0.index < $1.index }
-        }
-        set {
-            entries = newValue
-        }
-    }
-
-    func entryOrNew(for id: UUID) -> PhotoEntryDataModel {
-        if let entry = entriesModel.first(where: { $0.id == id }) {
-            return entry
-        }
-        return PhotoEntryDataModel(id: id)
-    }
 }
 
 extension PhotoDataModel: ItemDataAccessable {
+    public static var typeId: NetworkModules { .photo }
+
     public subscript(id: UUID) -> PhotoEntryDataModel {
         get {
-            entriesModel.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id)
+            entryModels.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id)
         }
         set(newValue) {
-            guard let index = entriesModel.firstIndex(where: { $0.id == id }) else { return }
-            entriesModel[index] = newValue
+            guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
+            entryModels[index] = newValue
         }
     }
-    
-    public typealias Entry = PhotoEntryDataModel
-    
-    public static var typeId: NetworkModules { .photo }
 }
 
 extension PhotoDataModel {
     var photoModel: PhotoModel {
-        let entries = entriesModel.map { $0.photoEntryModel }
+        let entries = entryModels.map { $0.photoEntryModel }
         return PhotoModel(
             id: id,
             name: _nameLWW,

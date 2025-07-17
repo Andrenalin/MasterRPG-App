@@ -36,16 +36,14 @@ extension ExportController: ExportControllable {
             }
             results.insert(id)
             
-            if let entries = item.entries {
-                let ids = entries.compactMap { entry -> UUID? in
-                    guard let entry = entry as? PhotoEntryDataModel, let subId = entry.photoId else { return nil }
-                    if !(results.contains(subId) || checkIds.contains(subId)) && itemControllable.itemSync(for: subId) != nil {
-                        return subId
-                    }
-                    return nil
+            let ids = item.entryModels.compactMap { entry -> UUID? in
+                guard let entry = entry as? SpaceEntryDataModel, let subId = entry.spaceId else { return nil }
+                if !(results.contains(subId) || checkIds.contains(subId)) && itemControllable.itemSync(for: subId) != nil {
+                    return subId
                 }
-                checkIds.append(contentsOf: ids)
+                return nil
             }
+            checkIds.append(contentsOf: ids)
         }
         var allIds = itemIds
         allIds.ids[networkModule] = Array(results)

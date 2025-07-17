@@ -11,7 +11,7 @@ internal import UIKit
 
 struct ContextMenuController: ItemListContextMenuControllable {
     let editController: EditController
-    let model: PhotoDataModel
+    let model: SpaceDataModel
     
     var itemName: String {
         model.name

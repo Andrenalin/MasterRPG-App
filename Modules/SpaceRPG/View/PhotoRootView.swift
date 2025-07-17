@@ -7,7 +7,7 @@ import SwiftUI
 public struct PhotoRootView: View {
     public init(modelContext: ModelContext, withoutNavigation: Bool) {
         self.withoutNavigation = withoutNavigation
-        self._rootModel = State(wrappedValue: PhotoRootModel(modelContext: modelContext))
+        self._rootModel = State(wrappedValue: SpaceRootModel(modelContext: modelContext))
     }
     let withoutNavigation: Bool
 
@@ -19,9 +19,9 @@ public struct PhotoRootView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.tabBarPlacement) private var tabBarPlacement
 #endif
-    @State private var rootModel: PhotoRootModel
+    @State private var rootModel: SpaceRootModel
 
-    @State private var selectionModel = ListSelectionModel<PhotoDataModel>()
+    @State private var selectionModel = ListSelectionModel<SpaceDataModel>()
 
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
@@ -90,7 +90,7 @@ public struct PhotoRootView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var photos: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
     ManagedNavigationStack {
@@ -100,11 +100,11 @@ public struct PhotoRootView: View {
             .environment(TabTitleModel())
             .environment(DeviceRotationModel())
     }
-    .environment(PhotoRootModel(modelContext: modelContext))
+    .environment(SpaceRootModel(modelContext: modelContext))
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var photos: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
 
     PhotoRootView(modelContext: modelContext, withoutNavigation: false)

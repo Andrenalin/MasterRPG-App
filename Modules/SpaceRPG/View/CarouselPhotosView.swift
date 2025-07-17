@@ -5,19 +5,19 @@ import SwiftData
 import SwiftUI
 
 struct CarouselPhotosView: View {
-    var model: PhotoDataModel
+    var model: SpaceDataModel
 
     @Environment(\.modelContext) private var modelContext
     @Environment(DetailPhotoSelection.self) private var selection
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var rootModel
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack {
                 photoView(photo: model, selectedPhoto: nil)
 
-                ForEach(model.entriesModel) { entry in
-                    if let photo = PhotoDataModel.model(modelContext: modelContext, id: entry.photoId) {
+                ForEach(model.entryModels) { entry in
+                    if let photo = SpaceDataModel.model(modelContext: modelContext, id: entry.spaceId) {
                         photoView(photo: photo, selectedPhoto: photo)
                             .overlay(alignment: .topTrailing) {
                                 GlassButton {
@@ -66,7 +66,7 @@ struct CarouselPhotosView: View {
         return result
     }
     
-    func photoView(photo: PhotoDataModel, selectedPhoto: PhotoDataModel?) -> some View {
+    func photoView(photo: SpaceDataModel, selectedPhoto: SpaceDataModel?) -> some View {
         PlainPhotoView(model: photo, highResolution: false)
             .frame(height: 128)
             .onTapGesture {
@@ -90,11 +90,11 @@ struct CarouselPhotosView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var photos: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
 
     CarouselPhotosView(model: photos[0])
         .environment(DetailPhotoSelection())
-        .environment(PhotoRootModel(modelContext: modelContext))
+        .environment(SpaceRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
 }

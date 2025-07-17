@@ -35,7 +35,7 @@ struct FileController: Sendable {
 
 extension FileController: FileControllable {
     func fileUrl(item: any Observable) async -> FileUrl? {
-        guard let item = item as? PhotoDataModel else { return nil }
+        guard let item = item as? SpaceDataModel else { return nil }
         return item.fileUrl
 //        guard let fileUrl = await root.itemController.item(for: item.id)?.fileUrl else {
 //            return item.fileUrl
@@ -44,7 +44,7 @@ extension FileController: FileControllable {
     }
     
     func setFileUrl(_ fileUrl: FileUrl?, item: any Observable) async {
-        guard let item = item as? PhotoDataModel else { return }
+        guard let item = item as? SpaceDataModel else { return }
 //        if let oldFileUlr = item.fileUrl {
 //            await root.cacheController.remove(itemId: oldFileUlr.fileId)
 //        }

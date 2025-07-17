@@ -9,11 +9,11 @@ struct ListView: View {
     @Environment(\.navigator) private var navigator
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(ListSelectionModel<PhotoDataModel>.self) private var model
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(ListSelectionModel<SpaceDataModel>.self) private var model
+    @Environment(SpaceRootModel.self) private var rootModel
     @Environment(SearchModel.self) private var searchModel
 
-    @Query(filter: #Predicate<PhotoDataModel>{ $0.displayState == 0 }, sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
+    @Query(filter: #Predicate<SpaceDataModel>{ $0.displayState == 0 }, sort: \SpaceDataModel.name, animation: .smooth) private var items: [SpaceDataModel]
 
     @State private var selected: UUID?
     @State private var selection: Set<UUID> = []
@@ -34,7 +34,7 @@ struct ListView: View {
                 listView(filteredItems: filteredItems)
             }
         }
-        .navigationDestination(for: PhotoRoute.self) { route in
+        .navigationDestination(for: SpaceRoute.self) { route in
             route
                 .environment(rootModel)
                 .environment(cacheItemListModel)
@@ -51,7 +51,7 @@ struct ListView: View {
             print("Change as well: \(model.selectedItem)")
             guard let id = model.selectedItem?.id else { return }
             print("Change as id: \(id)")
-            navigator.navigate(to: PhotoRoute.photo(id), method: .push)
+            navigator.navigate(to: SpaceRoute.photo(id), method: .push)
         }
         .navigationTitle("Photos")
 #if os(macOS)
@@ -96,7 +96,7 @@ struct ListView: View {
         }
     }
 
-    private func listView(filteredItems: [PhotoDataModel]) -> some View {
+    private func listView(filteredItems: [SpaceDataModel]) -> some View {
         List(selection: $selected) {
             ForEach(filteredItems) { item in
                 MainRowView(model: item)
@@ -109,7 +109,7 @@ struct ListView: View {
         }
     }
 
-    private func selectionListView(filteredItems: [PhotoDataModel]) -> some View {
+    private func selectionListView(filteredItems: [SpaceDataModel]) -> some View {
         List(selection: $selection) {
             ForEach(filteredItems) { item in
                 MainRowView(model: item)
@@ -145,13 +145,13 @@ struct ListView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var photos: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
     ManagedNavigationStack {
         ListView()
-            .environment(ListSelectionModel<PhotoDataModel>())
-            .environment(PhotoRootModel(modelContext: modelContext))
+            .environment(ListSelectionModel<SpaceDataModel>())
+            .environment(SpaceRootModel(modelContext: modelContext))
             .environment(CacheItemListModel())
             .environment(SearchModel.preview)
             .environment(DeviceRotationModel())

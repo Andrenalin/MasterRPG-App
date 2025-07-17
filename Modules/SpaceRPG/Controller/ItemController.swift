@@ -7,27 +7,27 @@ import SwiftData
 struct ItemController: ItemControllable {
     let container: ModelContainer
     
-    func item(for id: UUID) async -> PhotoModel? {
-        let actor = PhotoDataModelActor(modelContainer: container)
+    func item(for id: UUID) async -> SpaceModel? {
+        let actor = DataModelActor(modelContainer: container)
         await actor.setup(id: id)
-        return await actor.photoModel()
+        return await actor.spaceModel()
     }
     
-    func itemSync(for id: UUID) -> PhotoModel? {
-        PhotoDataModel.model(modelContext: ModelContext(container), id: id)?.photoModel
+    func itemSync(for id: UUID) -> SpaceModel? {
+        SpaceDataModel.model(modelContext: ModelContext(container), id: id)?.spaceModel
     }
     
-    typealias Model = PhotoModel
+    typealias Model = SpaceModel
     
     func allItemIds() -> [UUID] {
         let modelContext = ModelContext(container)
-        let fetchDesc = FetchDescriptor<PhotoDataModel>()
+        let fetchDesc = FetchDescriptor<SpaceDataModel>()
         guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
         return models.map { $0.id }
     }
     
     func fileUrl(for id: UUID) async -> FileUrl? {
-        let actor = PhotoDataModelActor(modelContainer: container)
+        let actor = DataModelActor(modelContainer: container)
         await actor.setup(id: id)
         return await actor.fileUrl
     }

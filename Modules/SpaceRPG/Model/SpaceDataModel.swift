@@ -5,17 +5,16 @@ import Foundation
 import SwiftData
 
 @Model
-public final class PhotoDataModel {
+public final class SpaceDataModel {
     init(
         id: UUID = UUID(),
         name: String = "",
         information: String = "",
-        category: ItemListCategory = .adventure,
+        category: ItemListCategory = .building,
         tags: [String] = [],
         displayState: Int = 0,
-        degrees: Double = 0,
         url: URL? = nil,
-        entries: [PhotoEntryDataModel] = []
+        entries: [SpaceEntryDataModel]? = nil
     ) {
         self.id = id
         self.name = name
@@ -23,11 +22,10 @@ public final class PhotoDataModel {
         self.category = category
         self.tags = tags
         self.displayState = displayState
-        self.degrees = degrees
         self.url = url
         self.entries = entries
     }
-    
+
     @Attribute(.preserveValueOnDeletion)
     public var id: UUID = UUID()
     public var name: String = ""
@@ -39,15 +37,35 @@ public final class PhotoDataModel {
     public var tags: [String] = []
     public var displayState: Int = 0
     
-    public var degrees: Double = 0
     var url: URL?
     var fileUrl: FileUrl? {
         guard let url else { return nil }
         return FileUrl(fileId: id, url: url, location: .cloud, module: "Photos")
     }
     
-    @Relationship(deleteRule: .cascade) public var entries: [PhotoEntryDataModel]? = []
-    
+    @Relationship(deleteRule: .cascade) private var entries: [SpaceEntryDataModel]?
+}
+
+extension SpaceDataModel {
+    public var entryModels: [SpaceEntryDataModel] {
+        get {
+            guard let all = entries else { return [] }
+            return all.sorted { $0.index < $1.index }
+        }
+        set {
+            entries = newValue
+        }
+    }
+
+    func entryOrNew(for id: UUID) -> SpaceEntryDataModel {
+        if let entry = entryModels.first(where: { $0.id == id }) {
+            return entry
+        }
+        return SpaceEntryDataModel(id: id)
+    }
+}
+
+extension SpaceDataModel {
     func reset(name: String) {
         _nameLWW.wrappedValue = name
         self.name = name
@@ -59,17 +77,17 @@ public final class PhotoDataModel {
     }
 }
 
-extension PhotoDataModel {
-    static func model(modelContext: ModelContext, id: UUID?) -> PhotoDataModel? {
+extension SpaceDataModel {
+    static func model(modelContext: ModelContext, id: UUID?) -> SpaceDataModel? {
         guard let id else { return nil }
-        let fetchDesc = FetchDescriptor<PhotoDataModel>()
+        let fetchDesc = FetchDescriptor<SpaceDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
         return models?.first { $0.id == id }
     }
 
-    func modelActor() -> PhotoDataModelActor? {
+    func modelActor() -> DataModelActor? {
         guard let container = modelContext?.container else { return nil }
-        return PhotoDataModelActor(modelContainer: container)
+        return DataModelActor(modelContainer: container)
     }
 
     func withTransaction(_ transaction: () -> Void) {
@@ -85,52 +103,32 @@ extension PhotoDataModel {
             transaction()
         }
     }
-
-    var entriesModel: [PhotoEntryDataModel] {
-        get {
-            guard let all = entries else { return [] }
-            return all.sorted { $0.index < $1.index }
-        }
-        set {
-            entries = newValue
-        }
-    }
-
-    func entryOrNew(for id: UUID) -> PhotoEntryDataModel {
-        if let entry = entriesModel.first(where: { $0.id == id }) {
-            return entry
-        }
-        return PhotoEntryDataModel(id: id)
-    }
 }
 
-extension PhotoDataModel: ItemDataAccessable {
-    public subscript(id: UUID) -> PhotoEntryDataModel {
+extension SpaceDataModel: ItemDataAccessable {
+    public static var typeId: NetworkModules { .photo }
+
+    public subscript(id: UUID) -> SpaceEntryDataModel {
         get {
-            entriesModel.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id)
+            entryModels.first(where: { $0.id == id }) ?? SpaceEntryDataModel(id: id)
         }
         set(newValue) {
-            guard let index = entriesModel.firstIndex(where: { $0.id == id }) else { return }
-            entriesModel[index] = newValue
+            guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
+            entryModels[index] = newValue
         }
     }
-    
-    public typealias Entry = PhotoEntryDataModel
-    
-    public static var typeId: NetworkModules { .photo }
 }
 
-extension PhotoDataModel {
-    var photoModel: PhotoModel {
-        let entries = entriesModel.map { $0.photoEntryModel }
-        return PhotoModel(
+extension SpaceDataModel {
+    var spaceModel: SpaceModel {
+        let entries = entryModels.map { $0.spaceEntryModel }
+        return SpaceModel(
             id: id,
             name: _nameLWW,
             description: _informationLWW,
             tags: CRDT(wrappedValue: tags),
             category: CRDT(wrappedValue: category),
             displayState: displayState,
-            degrees: CRDT(wrappedValue: degrees),
             fileUrl: CRDTDataUpdate(wrappedValue: fileUrl),
             entries: CRDTDataUpdate(wrappedValue: entries)
         )

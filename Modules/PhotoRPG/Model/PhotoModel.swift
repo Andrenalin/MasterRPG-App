@@ -70,9 +70,9 @@ struct PhotoModel: Identifiable, Sendable {
     }
     var fileUrl_: CRDTDataUpdate<FileUrl?>
     
-    public var entries: [PhotoEntryModel]? {
+    public var entries: [PhotoEntryModel] {
         get { entries_.wrappedValue }
-        set { entries_.wrappedValue = newValue ?? [] }
+        set { entries_.wrappedValue = newValue }
     }
     var entries_: CRDTDataUpdate<[PhotoEntryModel]>
 }
@@ -110,6 +110,11 @@ extension PhotoModel: ItemDataAccessable {
         .photo
     }
     
+    var entryModels: [PhotoEntryModel] {
+        get { entries }
+        set(newValue) { entries = newValue }
+    }
+
     var information: String {
         get {
             description
@@ -118,14 +123,11 @@ extension PhotoModel: ItemDataAccessable {
             description = newValue
         }
     }
-    
-    
+        
     subscript(id: UUID) -> PhotoEntryModel {
         get {
-            entries?.first(where: { $0.id == id }) ?? PhotoEntryModel(id: id, photoId: UUID())
+            entries.first(where: { $0.id == id }) ?? PhotoEntryModel(id: id, photoId: UUID())
         }
-        set(newValue) {
-            //
-        }
+        set(newValue) {}
     }
 }

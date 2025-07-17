@@ -5,25 +5,23 @@ import SwiftData
 import SwiftUI
 
 struct DetailEditorView: View {
-    let model: PhotoDataModel
+    let model: SpaceDataModel
     let dismiss: () -> Void
     
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var rootModel
     
     // Editor working copy
     @State private var name: String
     @State private var information: String
     @State private var category: ItemListCategory
     @State private var tags: [String]
-    @State private var degrees: Double
     
-    init(model: PhotoDataModel, dismiss: @escaping () -> Void) {
+    init(model: SpaceDataModel, dismiss: @escaping () -> Void) {
         self.model = model
         _name = State(initialValue: model.name)
         _information = State(initialValue: model.information)
         _category = State(initialValue: model.category)
         _tags = State(initialValue: model.tags)
-        _degrees = State(initialValue: model.degrees)
         self.dismiss = dismiss
     }
     
@@ -101,17 +99,6 @@ struct DetailEditorView: View {
                     AddTagsEditor(tags: $tags)
                     
                     Divider()
-
-                    Picker("Degrees", selection: $degrees) {
-                        Text("0°").tag(0.0)
-                        Text("90°").tag(90.0)
-                        Text("180°").tag(180.0)
-                        Text("270°").tag(270.0)
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.vertical, 6)
-                    
-                    Divider()
                  
                     actionToolbarView
                         .padding(.top)
@@ -135,7 +122,7 @@ struct DetailEditorView: View {
             Spacer()
             
             GlassButton(isProminent: !isEqual) {
-                rootModel.editController.update(model: model, name: name, information: information, category: category, tags: tags, degrees: degrees)
+                rootModel.editController.update(model: model, name: name, information: information, category: category, tags: tags)
                 dismiss()
             } label: {
                 Image(systemName: "checkmark")
@@ -149,25 +136,23 @@ struct DetailEditorView: View {
         information = model.information
         category = model.category
         tags = model.tags
-        degrees = model.degrees
     }
     
     private var isEqual: Bool {
         model.name == name &&
         model.information == information &&
         model.category == category &&
-        model.tags == tags &&
-        model.degrees == degrees
+        model.tags == tags
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var photos: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
     DetailEditorView(model: photos[0]) { }
         .environment(SearchModel.preview)
         .environment(DeviceRotationModel())
-        .environment(PhotoRootModel(modelContext: modelContext))
+        .environment(SpaceRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
 }

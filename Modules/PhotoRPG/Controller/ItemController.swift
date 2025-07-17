@@ -8,7 +8,7 @@ struct ItemController: ItemControllable {
     let container: ModelContainer
     
     func item(for id: UUID) async -> PhotoModel? {
-        let actor = PhotoDataModelActor(modelContainer: container)
+        let actor = DataModelActor(modelContainer: container)
         await actor.setup(id: id)
         return await actor.photoModel()
     }
@@ -27,7 +27,7 @@ struct ItemController: ItemControllable {
     }
     
     func fileUrl(for id: UUID) async -> FileUrl? {
-        let actor = PhotoDataModelActor(modelContainer: container)
+        let actor = DataModelActor(modelContainer: container)
         await actor.setup(id: id)
         return await actor.fileUrl
     }

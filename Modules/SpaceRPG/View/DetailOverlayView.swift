@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct DetailOverlayView: View {
-    let model: PhotoDataModel
+    let model: SpaceDataModel
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -28,6 +28,6 @@ struct DetailOverlayView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var photos: [SpaceDataModel]
     DetailOverlayView(model: photos[0])
 }

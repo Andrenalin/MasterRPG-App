@@ -5,8 +5,7 @@ import Foundation
 import SwiftData
 
 @ModelActor
-actor PhotoDataModelActor {
-    
+actor DataModelActor {    
     private var _id: UUID?
     var id: UUID {
         _id.unsafelyUnwrapped
@@ -43,7 +42,7 @@ actor PhotoDataModelActor {
     }
 
     func duplicate(id: UUID, url: URL?) {
-        let copiedPhoto = PhotoDataModel(
+        let newModel = PhotoDataModel(
             id: id,
             name: "\(model.name) copy",
             information: model.information,
@@ -55,7 +54,7 @@ actor PhotoDataModelActor {
             entries: []
         )
 
-        modelContext.insert(copiedPhoto)
+        modelContext.insert(newModel)
     }
     
     func photoModel() -> PhotoModel {

@@ -36,7 +36,7 @@ struct CameraImporterView: View {
     }
 
     let model: PhotoDataModel
-    let modelActor: PhotoDataModelActor?
+    let modelActor: DataModelActor?
     let size: CGFloat
     
     @Environment(PhotoRootModel.self) private var rootModel
@@ -109,7 +109,7 @@ struct LibraryImporterView: View {
     }
     
     let model: PhotoDataModel
-    let modelActor: PhotoDataModelActor?
+    let modelActor: DataModelActor?
     let size: CGFloat
     
     @Environment(PhotoRootModel.self) private var rootModel

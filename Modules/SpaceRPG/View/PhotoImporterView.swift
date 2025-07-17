@@ -6,7 +6,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct PhotoImporterView: View {
-    let model: PhotoDataModel
+    let model: SpaceDataModel
 
     var body: some View {
         ViewThatFits {
@@ -29,17 +29,17 @@ struct PhotoImporterView: View {
 }
 
 struct CameraImporterView: View {
-    init(model: PhotoDataModel, size: CGFloat = 24) {
+    init(model: SpaceDataModel, size: CGFloat = 24) {
         self.model = model
         self.size = size
         self.modelActor = model.modelActor()
     }
 
-    let model: PhotoDataModel
-    let modelActor: PhotoDataModelActor?
+    let model: SpaceDataModel
+    let modelActor: DataModelActor?
     let size: CGFloat
     
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var rootModel
     
     @State private var showCamera = false
     
@@ -71,14 +71,14 @@ struct CameraImporterView: View {
 }
 
 struct FileImporterView: View {
-    let model: PhotoDataModel
+    let model: SpaceDataModel
     let size: CGFloat
     
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var rootModel
     
     @State private var showImporter = false
     
-    init(model: PhotoDataModel, size: CGFloat = 24) {
+    init(model: SpaceDataModel, size: CGFloat = 24) {
         self.model = model
         self.size = size
     }
@@ -102,17 +102,17 @@ struct FileImporterView: View {
 }
 
 struct LibraryImporterView: View {
-    init(model: PhotoDataModel, size: CGFloat = 32) {
+    init(model: SpaceDataModel, size: CGFloat = 32) {
         self.model = model
         self.size = size
         self.modelActor = model.modelActor()
     }
     
-    let model: PhotoDataModel
-    let modelActor: PhotoDataModelActor?
+    let model: SpaceDataModel
+    let modelActor: DataModelActor?
     let size: CGFloat
     
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var rootModel
     
     var body: some View {
         LibraryPhotoPicker(size: size) { [id = model.id] image in
@@ -129,7 +129,7 @@ struct LibraryImporterView: View {
 
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var photos: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     VStack {
         Color
@@ -141,5 +141,5 @@ struct LibraryImporterView: View {
         
         PhotoImporterView(model: photos[0])
     }
-    .environment(PhotoRootModel(modelContext: modelContext))
+    .environment(SpaceRootModel(modelContext: modelContext))
 }

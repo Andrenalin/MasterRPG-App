@@ -8,16 +8,16 @@ import ImagePlayground
 
 @Observable
 final class DetailPhotoSelection {
-    var selectedPhoto: PhotoDataModel?
+    var selectedPhoto: SpaceDataModel?
 }
 
 struct DetailView: View {
-    let model: PhotoDataModel
+    let model: SpaceDataModel
     
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var rootModel
     
     @State var selection = DetailPhotoSelection()
     @State private var isEditing = false
@@ -185,10 +185,10 @@ struct DetailView: View {
 
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var photos: [PhotoDataModel]
+    @Previewable @Query var photos: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     
     DetailView(model: photos[0])
-        .environment(PhotoRootModel(modelContext: modelContext))
+        .environment(SpaceRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
 }

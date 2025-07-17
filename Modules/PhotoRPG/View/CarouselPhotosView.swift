@@ -16,7 +16,7 @@ struct CarouselPhotosView: View {
             LazyHStack {
                 photoView(photo: model, selectedPhoto: nil)
 
-                ForEach(model.entriesModel) { entry in
+                ForEach(model.entryModels) { entry in
                     if let photo = PhotoDataModel.model(modelContext: modelContext, id: entry.photoId) {
                         photoView(photo: photo, selectedPhoto: photo)
                             .overlay(alignment: .topTrailing) {
