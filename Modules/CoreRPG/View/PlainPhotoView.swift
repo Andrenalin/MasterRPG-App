@@ -1,16 +1,20 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
 import SwiftUI
 
-struct PlainPhotoView: View {
-    enum SizeType {
+public protocol HasPhotoModel: Observable {
+    var id: UUID { get }
+    var fileUrl: FileUrl? { get }
+}
+
+public struct PlainPhotoView: View {
+    public enum SizeType {
         case maxWidth
         case maxHeightWidth(CGFloat)
     }
 
-    init(model: PhotoDataModel, size: SizeType = .maxWidth, ratio: ContentMode = .fit, hasRoundedCorners: Bool = false, highResolution: Bool = true) {
+    public init(cacheController: any ImageCacheControllable, model: any HasPhotoModel, size: SizeType = .maxWidth, ratio: ContentMode = .fit, hasRoundedCorners: Bool = false, highResolution: Bool = true) {
+        self.cacheController = cacheController
         self.model = model
         self.size = size
         self.ratio = ratio
@@ -18,19 +22,19 @@ struct PlainPhotoView: View {
         self.highResolution = highResolution
     }
 
-    let model: PhotoDataModel
+    let cacheController: ImageCacheControllable
+    let model: HasPhotoModel
     let size: SizeType
     let ratio: ContentMode
     let hasRoundedCorners: Bool
     let highResolution: Bool
 
-    @Environment(PhotoRootModel.self) private var rootModel
     @Environment(CacheItemListModel.self) private var cacheItemListModel
 
     @State private var lastFileUrl: FileUrl?
     @State private var isLoading: Bool = false
 
-    var body: some View {
+    public var body: some View {
         VStack {
             if let image = cachedImage {
                 switch size {
@@ -55,7 +59,6 @@ struct PlainPhotoView: View {
         .onChange(of: model.fileUrl, initial: true) {
             initImage()
         }
-        .animation(.bouncy, value: model.degrees)
     }
 }
 
@@ -68,7 +71,6 @@ private extension PlainPhotoView {
         Image(akImage: image)
             .resizable()
             .aspectRatio(contentMode: ratio)
-            .rotationEffect(Angle(degrees: model.degrees))
             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
     }
 
@@ -105,26 +107,15 @@ private extension PlainPhotoView {
             let fileUrl = model.fileUrl
             let loaderTask = Task.detached(priority: .userInitiated) {
                 if highResolution {
-                    await rootModel.cacheController.photoId(for: fileId, with: fileUrl)
+                    await cacheController.photoId(for: fileId, with: fileUrl, shouldDownload: false)
                 } else {
-                    await rootModel.cacheController.thumbnailId(for: fileId, with: fileUrl)
+                    await cacheController.thumbnailId(for: fileId, with: fileUrl)
                 }
             }
             _ = await loaderTask.result
-            let newImage = highResolution ? await rootModel.cacheController.image(for: fileId) : await rootModel.cacheController.thumbnail(for: fileId)
+            let newImage = highResolution ? await cacheController.photo(for: fileId) : await cacheController.thumbnail(for: fileId)
             withAnimation { cacheItemListModel.setImageCache(cacheType: highResolution ? .image : .thumbnail, itemId: fileId, image: newImage) }
             isLoading = false
         }
     }
-}
-
-#Preview(traits: .mockData) {
-    @Previewable @Query var models: [PhotoDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
-    
-    PlainPhotoView(model: models[0])
-        .environment(DetailPhotoSelection())
-        .environment(PhotoRootModel(modelContext: modelContext))
-        .environment(CacheItemListModel())
-
 }

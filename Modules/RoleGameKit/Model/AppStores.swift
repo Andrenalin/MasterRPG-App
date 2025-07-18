@@ -8,6 +8,7 @@ import SwiftUI
 import os.log
 
 import PhotoRPG
+import SpaceRPG
 import RPGAdventures
 import RPGDie
 import RPGAudios
@@ -35,7 +36,7 @@ public final class AppStore: Sendable {
     var isNewUICode: Bool = true
     public var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            PhotoDataModel.self, PhotoEntryDataModel.self,
+            PhotoDataModel.self, PhotoEntryDataModel.self, SpaceDataModel.self, SpaceEntryDataModel.self,
         ])
         let storeURL = FileManager.groupURL.appending(path: "masterRPG.sqlite")
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))

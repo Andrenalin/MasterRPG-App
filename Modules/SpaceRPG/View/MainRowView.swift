@@ -9,10 +9,11 @@ struct MainRowView: View {
 
     @Environment(CacheItemListModel.self) private var cacheModel
     @Environment(SearchModel.self) private var searchModel
+    @Environment(SpaceRootModel.self) private var rootModel
 
     var body: some View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
-            PlainPhotoView(model: model, size: .maxHeightWidth(96), ratio: .fill, hasRoundedCorners: true, highResolution: false)
+            PlainPhotoView(cacheController: rootModel.cacheController, model: model, size: .maxHeightWidth(96), ratio: .fill, hasRoundedCorners: true, highResolution: false)
         }, tagAdds: {
             CategoryItemRow(category: model.category)
         }, actionBar: {

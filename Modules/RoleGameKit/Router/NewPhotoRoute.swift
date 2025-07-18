@@ -8,7 +8,9 @@
 import CoreRPG
 import Foundation
 import PhotoRPG
+import SpaceRPG
 import RPGPhotos
+import RPGSpaces
 import SwiftUI
 
 struct NewPhotoRoute: View {
@@ -45,3 +47,41 @@ struct NewPhotoRoute: View {
         }
     }
 }
+
+struct NewSpaceRoute: View {
+    let appStore: AppStore
+    let tabId: UUID
+    let isExtended: Bool
+
+    @State private var cacheModel = CacheItemListModel()
+    @State private var deviceRotationModel = DeviceRotationModel()
+    @State private var searchModel = SearchModel()
+    @State private var tabTitleModel = TabTitleModel()
+
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        if appStore.isNewUICode {
+            SpaceRootView(modelContext: modelContext, withoutNavigation: isExtended)
+                .environment(cacheModel)
+                .environment(deviceRotationModel)
+                .environment(searchModel)
+                .environment(tabTitleModel)
+                .task {
+                    try? await Task.sleep(for: .seconds(3))
+                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
+                }
+        } else {
+            if isExtended {
+                SpaceFactory.rootExtendedView(for: appStore.spaceRoot, tabId: tabId)
+                    .environment(appStore.spaceRoot)
+            } else {
+                SpaceFactory.rootView(for: appStore.spaceRoot, tabId: tabId)
+                    .environment(appStore.spaceRoot)
+            }
+        }
+    }
+}
+
+
+

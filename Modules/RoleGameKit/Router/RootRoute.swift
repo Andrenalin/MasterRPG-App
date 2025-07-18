@@ -207,8 +207,7 @@ struct RouteRouteDestionationView: View {
         case .photos(let tabId):
             NewPhotoRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .space(let tabId):
-            SpaceFactory.rootView(for: appStore.spaceRoot, tabId: tabId)
-                .environment(appStore.spaceRoot)
+            NewSpaceRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .settings:
             SettingsView(store: appStore)
         case .tables(let tabId):

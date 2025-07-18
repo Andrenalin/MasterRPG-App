@@ -67,7 +67,7 @@ struct CarouselPhotosView: View {
     }
     
     func photoView(photo: PhotoDataModel, selectedPhoto: PhotoDataModel?) -> some View {
-        PlainPhotoView(model: photo, highResolution: false)
+        PlainPhotoView(cacheController: rootModel.cacheController, model: photo, highResolution: false)
             .frame(height: 128)
             .onTapGesture {
                 withAnimation { selection.selectedPhoto = selectedPhoto }

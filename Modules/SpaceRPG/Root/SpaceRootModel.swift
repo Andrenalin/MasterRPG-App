@@ -22,5 +22,5 @@ public final class SpaceRootModel {
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: ItemController
     
-    @ObservationIgnored let networkModule: NetworkModules = .photo
+    @ObservationIgnored let networkModule: NetworkModules = .space
 }

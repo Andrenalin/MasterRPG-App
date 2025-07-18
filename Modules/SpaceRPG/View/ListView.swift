@@ -16,9 +16,12 @@ struct ListView: View {
     @Query(filter: #Predicate<SpaceDataModel>{ $0.displayState == 0 }, sort: \SpaceDataModel.name, animation: .smooth) private var items: [SpaceDataModel]
 
     @State private var selected: UUID?
-    @State private var selection: Set<UUID> = []
+    @State private var selection: [UUID] = []
+    @State private var listSelection: Set<UUID> = []
     @State private var isSelectionMode: Bool = false
 
+    @Environment(\.editMode) private var editMode
+    
     var body: some View {
         @Bindable var searchModel = searchModel
 
@@ -41,19 +44,12 @@ struct ListView: View {
         }
         .animation(.smooth, value: filteredItems)
         .animation(.snappy, value: isSelectionMode)
-        .scrollBounceBehavior(.basedOnSize)
-#if os(macOS)
-        .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
-#endif
         .onChange(of: selected) {
-            print("Seleccted Change: \(selected)")
             model.selectedItem = items.first { $0.id == selected }
-            print("Change as well: \(model.selectedItem)")
             guard let id = model.selectedItem?.id else { return }
-            print("Change as id: \(id)")
             navigator.navigate(to: SpaceRoute.photo(id), method: .push)
         }
-        .navigationTitle("Photos")
+        .navigationTitle("Spaces")
 #if os(macOS)
         .navigationSplitViewColumnWidth(min: 180, ideal: 200)
 #endif
@@ -66,16 +62,13 @@ struct ListView: View {
             ToolbarItem(placement: .secondaryAction) {
                 Button {
                     isSelectionMode.toggle()
+                    if isSelectionMode {
+                        editMode?.wrappedValue = .active
+                    } else {
+                        editMode?.wrappedValue = .inactive
+                    }
                 } label: {
-                    Label("Change Mode to \(isSelectionMode ? "Off" : "On")", systemImage: "list.bullet")
-                }
-            }
-
-            ToolbarItem(placement: .secondaryAction) {
-                Button {
-                    isSelectionMode.toggle()
-                } label: {
-                    Label("Some", systemImage: "gear")
+                    Label("Select", systemImage: "checkmark.circle")
                 }
             }
         }
@@ -110,38 +103,12 @@ struct ListView: View {
     }
 
     private func selectionListView(filteredItems: [SpaceDataModel]) -> some View {
-        List(selection: $selection) {
+        List(selection: $listSelection) {
             ForEach(filteredItems) { item in
                 MainRowView(model: item)
-                    .selectListItem {
-                        if selection.contains(item.id) {
-                            selection.remove(item.id)
-                        } else {
-                            selection.insert(item.id)
-                        }
-                    } isSelected: {
-                        selection.contains(item.id)
-                    }
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             }
         }
     }
-    
-#if os(macOS)
-    func importImage(_ providers: [NSItemProvider]) -> Bool {
-        EditController.importImageFromProviders(providers) { data in
-            guard let data = data else { return }
-            Task { @MainActor in
-                let model = rootModel.editController.addNew(modelContext: modelContext)
-                try? await Task.sleep(for: .seconds(0.5))
-                withAnimation {
-                    rootModel.editController.resetPhoto(data: data, model: model)
-                    selected = model.id
-                }
-            }
-        }
-    }
-#endif
 }
 
 #Preview(traits: .mockData) {
@@ -157,4 +124,20 @@ struct ListView: View {
             .environment(DeviceRotationModel())
     }
 }
+
+//                    .selectListItem {
+//                        if listSelection.contains(item.id) {
+//                            listSelection.remove(item.id)
+//                        } else {
+//                            listSelection.insert(item.id)
+//                        }
+//
+//                        if let index = selection.firstIndex(of: item.id) {
+//                            selection.remove(at: index)
+//                        } else {
+//                            selection.append(item.id)
+//                        }
+//                    } isSelected: {
+//                        listSelection.contains(item.id)
+//                    }
 

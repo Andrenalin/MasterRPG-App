@@ -7,6 +7,7 @@
 
 import CoreRPG
 import PhotoRPG
+import SpaceRPG
 import SwiftUI
 import SwiftData
 
@@ -20,7 +21,7 @@ struct Master3RPGApp: App {
     
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            PhotoDataModel.self, PhotoEntryDataModel.self,
+            PhotoDataModel.self, PhotoEntryDataModel.self, SpaceDataModel.self, SpaceEntryDataModel.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {

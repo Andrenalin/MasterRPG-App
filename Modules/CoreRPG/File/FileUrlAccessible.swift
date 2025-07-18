@@ -241,7 +241,7 @@ public extension FileUrlDataController {
     }
     
     func duplicate(fileUrl: FileUrl?, for fileId: UUID) async throws -> FileUrl? {
-        guard let unconverted = fileUrl, let data = try await loadData(for: unconverted) else { return nil }
+        guard let unconverted = fileUrl, let _ = try await loadData(for: unconverted) else { return nil }
         var fullURL: URL? = nil
         switch unconverted.location {
         case .cloud:

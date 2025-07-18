@@ -46,11 +46,8 @@ struct ListView: View {
         .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
 #endif
         .onChange(of: selected) {
-            print("Seleccted Change: \(selected)")
             model.selectedItem = items.first { $0.id == selected }
-            print("Change as well: \(model.selectedItem)")
             guard let id = model.selectedItem?.id else { return }
-            print("Change as id: \(id)")
             navigator.navigate(to: PhotoRoute.photo(id), method: .push)
         }
         .navigationTitle("Photos")

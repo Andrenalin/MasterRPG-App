@@ -178,4 +178,11 @@ extension SpaceRoot {
     public func moveFiles() async throws {
         try await fileController.moveFiles()
     }
+    
+    @MainActor
+    public func listItems() -> [SpaceModel] {
+        itemController.itemDataModel.items.map {
+            itemController.itemOrEmpty(for: $0)
+        }
+    }
 }

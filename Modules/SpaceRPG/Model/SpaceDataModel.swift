@@ -38,9 +38,9 @@ public final class SpaceDataModel {
     public var displayState: Int = 0
     
     var url: URL?
-    var fileUrl: FileUrl? {
+    public var fileUrl: FileUrl? {
         guard let url else { return nil }
-        return FileUrl(fileId: id, url: url, location: .cloud, module: "Photos")
+        return FileUrl(fileId: id, url: url, location: .cloud, module: "Spaces")
     }
     
     @Relationship(deleteRule: .cascade) private var entries: [SpaceEntryDataModel]?
@@ -105,6 +105,7 @@ extension SpaceDataModel {
     }
 }
 
+extension SpaceDataModel: HasPhotoModel {}
 extension SpaceDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .photo }
 

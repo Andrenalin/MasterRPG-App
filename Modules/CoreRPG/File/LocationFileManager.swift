@@ -23,9 +23,7 @@ public extension LocationFileManager {
     /// This function cannot detect iCloud nor AppCloud if the device has not enabled iCloud
     /// It will return then `other` as file location even the url might be iCloud nor AppCloud
     func fileLocation(for url: URL?) -> FileLocation? {
-        guard let url else { return nil }
-        let path = url.absoluteString
-        return .cloud
+        .cloud
     }
 
     func relativeUrl(for url: URL?) -> URL? {

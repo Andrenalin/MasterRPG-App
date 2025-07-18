@@ -4,10 +4,8 @@ import CoreRPG
 import Foundation
 import os.log
 
-#if os(macOS)
-internal import AppKit
-#else
-internal import UIKit
+#if !os(tvOS)
+import QuickLookThumbnailing
 #endif
 
 struct CacheController: Sendable {
@@ -17,83 +15,48 @@ struct CacheController: Sendable {
         self.fileUrlDataController = fileUrlDataController
     }
     
-    private let imageCacheController: ImageCacheController
-    private let thumbnailCacheController: ImageCacheController
-    private let fileUrlDataController: FileUrlDataController
-
-    func image(for itemId: UUID) async -> AKImage? {
-        let image = await imageCacheController.object(for: itemId)
-        image?.resetSize()
-        return image
-    }
-    
-    func thumbnail(for itemId: UUID) async -> AKImage? {
-        await thumbnailCacheController.object(for: itemId)
-    }
-    
-    func remove(itemId: UUID) async {
-        await imageCacheController.removeObject(for: itemId)
-        await thumbnailCacheController.removeObject(for: itemId)
-    }
-    
-    @discardableResult
-    func photoId(for itemId: UUID, with fileUrl: FileUrl?, shouldDownload: Bool = false) async -> UUID? {
-        guard let fileUrl else { return nil }
-        guard await !imageCacheController.hasObject(for: itemId) else { return itemId }
-        let imageTask = Task.detached(priority: .userInitiated) {
-            if shouldDownload {
-                if await fileUrlDataController.hasAccess(for: fileUrl) == false {
-                    try? await fileUrlDataController.download(fileUrl: fileUrl)
-                    await thumbnailCacheController.removeObject(for: itemId)
-                }
-            }
-            await self.createImage(for: itemId, fileUrl: fileUrl)
-        }
-        _ = await imageTask.value
-        return await imageCacheController.hasObject(for: itemId) ? itemId : nil
-    }
-    
-    @discardableResult
-    func thumbnailId(for itemId: UUID, with fileUrl: FileUrl?) async -> UUID? {
-        guard let fileUrl else { return nil }
-        guard await !thumbnailCacheController.hasObject(for: itemId) else { return itemId }
-        let imageTask = Task.detached(priority: .userInitiated) {
-            await self.createThumbnail(for: itemId, fileUrl: fileUrl)
-        }
-        _ = await imageTask.value
-        return await thumbnailCacheController.hasObject(for: itemId) ? itemId : nil
-    }
+    let imageCacheController: ImageCacheController
+    let thumbnailCacheController: ImageCacheController
+    let fileUrlDataController: FileUrlDataController
 }
 
-private extension CacheController {
+extension CacheController: ImageCacheControllable {
     func createImage(for itemId: UUID, fileUrl: FileUrl?) async {
-        guard let fileUrl else { return }
-        let image: AKImage?
-        if let data = fileUrl.data {
-            image = AKImage(data: data)
-        } else {
-            image = await fileUrlDataController.url(for: fileUrl) { url -> AKImage? in
-                guard let url else { return nil }
-                return AKImage(contentsOfFile: url.relativePath)
-            }
-        }
-        if let image {
-            await imageCacheController.setObject(image, for: itemId)
-        } else {
-            Logger.cacheController.warning("Cannot get image \(itemId, privacy: .public)")
-        }
+        //await createThumbnail(for: itemId, fileUrl: fileUrl)
     }
 
     func createThumbnail(for itemId: UUID, fileUrl: FileUrl?) async {
-        let cachedImage = await imageCacheController.object(for: itemId)
-        if cachedImage == nil {
-            await createImage(for: itemId, fileUrl: fileUrl)
+        guard let fileUrl else { return }
+        let thumbnail = await fileUrlDataController.url(for: fileUrl) { url -> AKImage? in
+            guard let url else { return nil }
+            return await CacheController.generateThumbnail(for: url)
         }
-        guard let image = await imageCacheController.object(for: itemId) else { return }
-        let thumbnail = image.resize(to: CGSize(width: 64, height: 64), topAligned: true)
         if let thumbnail {
             await thumbnailCacheController.setObject(thumbnail, for: itemId)
         }
     }
+    
+    static func generateThumbnail(for url: URL?) async -> AKImage? {
+        guard let url else { return nil }
+        let size = CGSize(width: 393, height: 350)
+        let scale: CGFloat = 2
+        
+#if !os(tvOS)
+        let request = QLThumbnailGenerator.Request(fileAt: url, size: size, scale: scale, representationTypes: .all)
+        let generator = QLThumbnailGenerator.shared
+        do {
+            let result = try await generator.generateBestRepresentation(for: request)
+#if os(macOS)
+            return result.nsImage
+#else
+            return result.uiImage
+#endif
+        } catch let error {
+            Logger.cacheController.error("QLThumbnail failed \(error.localizedDescription, privacy: .public)")
+        }
+#endif
+        return nil
+    }
+
 }
 

@@ -11,81 +11,18 @@ public struct PhotoRootView: View {
     }
     let withoutNavigation: Bool
 
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(SearchModel.self) private var searchModel
-    @Environment(TabTitleModel.self) private var tabTitleModel
-    
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.tabBarPlacement) private var tabBarPlacement
-#endif
     @State private var rootModel: PhotoRootModel
-
     @State private var selectionModel = ListSelectionModel<PhotoDataModel>()
 
-    @State private var column: NavigationSplitViewVisibility = .all
-    @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
-
     public var body: some View {
-        Group {
-            if withoutNavigation {
-                listView
-            } else {
-                splitRoot
-            }
-        }
-        .environment(rootModel)
-#if os(iOS)
-        .onChange(of: tabBarPlacement, initial: true) {
-            tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
-        }
-#endif
-    }
-    
-    @ViewBuilder
-    private var splitRoot: some View {
-        NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-            ManagedPresentationView {
-                listView
-            }
-        } detail: {
+        RootView(module: .space, selectionModel: selectionModel, withoutNavigation: withoutNavigation, list: {
+            ListView()
+        }, detail: {
             if let selected = selectionModel.selectedItem {
                 DetailView(model: selected)
-                    .environment(selectionModel)
-            } else {
-                SplitContentUnavailableView(module: .photo)
             }
-        }
-    }
-
-    @ViewBuilder
-    private var listView: some View {
-        @Bindable var searchModel = searchModel
-        ListView()
-            .environment(selectionModel)
-            .searchable(text: $searchModel.searchText, placement: .automatic, prompt: "Search")
-            .searchScopes($searchModel.searchToken, activation: searchScopeActivition) {
-                ForEach(searchModel.categoryTags) { category in
-                    Label(category.title, systemImage: category.icon)
-                        .tag(category)
-                }
-            }
-            .searchPresentationToolbarBehavior(.avoidHidingContent)
-            .onChange(of: searchModel.searchText, initial: true) {
-                cacheItemListModel.reset(search: searchModel.searchText)
-            }
-    }
-
-    var searchPlacement: SearchFieldPlacement {
-        .automatic
-    }
-
-    var searchScopeActivition: SearchScopeActivation {
-#if os(tvOS)
-        .automatic
-#else
-        .onSearchPresentation
-#endif
+        })
+        .environment(rootModel)
     }
 }
 
