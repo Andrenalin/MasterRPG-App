@@ -24,3 +24,11 @@ public final class SpaceRootModel {
     
     @ObservationIgnored let networkModule: NetworkModules = .space
 }
+
+
+extension SpaceRootModel {
+    func loadableUrl(for itemId: UUID) async -> URL? {
+        guard let fileUrl = await itemController.item(for: itemId)?.fileUrl else { return nil }
+        return await fileController.fileUrlDataController.url(for: fileUrl, action: { $0 })
+    }
+}

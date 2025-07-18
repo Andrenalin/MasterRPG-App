@@ -13,7 +13,7 @@ struct FileController: Sendable {
     
     @MainActor
     init() {
-        _fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.photo.token, fileTypes: [.image], filenameExtension: "jpg", fileUrlAccess: self)
+        _fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.space.token, fileTypes: [.usdz], filenameExtension: "usdz", fileUrlAccess: self)
     }
 
     func moveFiles() async throws {

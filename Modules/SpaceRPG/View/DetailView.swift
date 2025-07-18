@@ -73,8 +73,9 @@ struct DetailView: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 ZStack(alignment: .center) {
-                    PlainPhotoView(cacheController: rootModel.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
-                        .stretchy()
+                    SpaceViewer(root: rootModel, id: selection.selectedPhoto?.id ?? model.id)
+//                    PlainPhotoView(cacheController: rootModel.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
+//                        .stretchy()
                 }
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
             }
