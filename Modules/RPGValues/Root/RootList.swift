@@ -1,8 +1,8 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import AndrenalinKit
 import SwiftUI
-
 
 struct RootNaviList: View {
     let root: ValueRoot

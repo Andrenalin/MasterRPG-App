@@ -50,6 +50,40 @@
 		8E3376922DB114FD00F9C14C /* RoleGameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EB74F9A2BD13B5800BEDFE2 /* RoleGameKit.framework */; };
 		8E3376972DB1150300F9C14C /* RPGDie.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECD912CD8EDED004E7103 /* RPGDie.framework */; };
 		8E33769B2DB1150B00F9C14C /* AndrenalinKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B21862CD78EF3009AB4D1 /* AndrenalinKit.framework */; };
+		8E359A582E2A679E00355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A592E2A679E00355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A5C2E2A67B000355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A5D2E2A67B000355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A612E2A67B500355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A622E2A67B500355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A652E2A67BA00355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A662E2A67BA00355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A692E2A67BF00355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A6A2E2A67BF00355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A6E2E2A67C300355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A6F2E2A67C300355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A722E2A67C700355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A732E2A67C700355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A762E2A67CC00355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A772E2A67CC00355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A7A2E2A67D000355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A7B2E2A67D000355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A7E2E2A67D400355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A7F2E2A67D400355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A822E2A67D700355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A832E2A67D700355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A862E2A67DB00355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A872E2A67DB00355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A8A2E2A67E200355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A8B2E2A67E200355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A8E2E2A67E600355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A8F2E2A67E600355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A922E2A67E900355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A932E2A67E900355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A962E2A67EE00355587 /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; platformFilters = (ios, macos, xros, ); };
+		8E359A972E2A67EE00355587 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E359A9A2E2A692B00355587 /* SpaceRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E983DA62E27D057002B25C2 /* SpaceRPG.framework */; };
+		8E359A9B2E2A692B00355587 /* SpaceRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E983DA62E27D057002B25C2 /* SpaceRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E3620B62E1A810000E5C99A /* CoreRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; };
 		8E3620C02E1A810000E5C99A /* CoreRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; };
 		8E3620C12E1A810000E5C99A /* CoreRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -161,6 +195,8 @@
 		8E8ABB8B2E28D77100E877CF /* RPGPhotos.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE8952CD8EB5F0010A25B /* RPGPhotos.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E8ABB8E2E28D77100E877CF /* RPGSpaces.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECE1C2CD8EE85004E7103 /* RPGSpaces.framework */; };
 		8E8ABB8F2E28D77100E877CF /* RPGSpaces.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECE1C2CD8EE85004E7103 /* RPGSpaces.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E8ABBEA2E2A662400E877CF /* CoreExternalRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; };
+		8E8ABBEB2E2A662400E877CF /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E8EE8522CD8EA600010A25B /* RPGAudios.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE84A2CD8EA5B0010A25B /* RPGAudios.framework */; };
 		8E8EE8662CD8EAA70010A25B /* AndrenalinKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B21862CD78EF3009AB4D1 /* AndrenalinKit.framework */; };
 		8E8EE86A2CD8EAA70010A25B /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
@@ -401,6 +437,125 @@
 			remoteGlobalIDString = 8E4B21852CD78EF3009AB4D1;
 			remoteInfo = AndrenalinKit;
 		};
+		8E359A5A2E2A679E00355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A5E2E2A67B000355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A632E2A67B500355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A672E2A67BA00355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A6B2E2A67BF00355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A702E2A67C300355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A742E2A67C700355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A782E2A67CC00355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A7C2E2A67D000355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A802E2A67D400355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A842E2A67D700355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A882E2A67DB00355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A8C2E2A67E200355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A902E2A67E600355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A942E2A67E900355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A982E2A67EE00355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
+		};
+		8E359A9C2E2A692B00355587 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E983DA52E27D057002B25C2;
+			remoteInfo = SpaceRPG;
+		};
 		8E3620B72E1A810000E5C99A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
@@ -631,6 +786,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 8EBECE1B2CD8EE85004E7103;
 			remoteInfo = RPGSpaces;
+		};
+		8E8ABBE82E2A662400E877CF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8ABBD62E2A662300E877CF;
+			remoteInfo = CoreExternalRPG;
 		};
 		8E8EE8532CD8EA600010A25B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1441,6 +1603,28 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8E359A602E2A67B000355587 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				8E359A5D2E2A67B000355587 /* CoreExternalRPG.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E359A6D2E2A67BF00355587 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				8E359A6A2E2A67BF00355587 /* CoreExternalRPG.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8E3621002E1A9F8E00E5C99A /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1449,6 +1633,7 @@
 			files = (
 				8E3620FD2E1A9F8E00E5C99A /* CoreRPG.framework in Embed Frameworks */,
 				5946861C2E1E136D004DC406 /* RPGPhotos.framework in Embed Frameworks */,
+				8E359A622E2A67B500355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 				5946860D2E1E0F69004DC406 /* RPGResources.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -1462,6 +1647,7 @@
 			files = (
 				8E5480802E27E3D900435AB5 /* CoreRPG.framework in Embed Frameworks */,
 				8E5480892E27E3F100435AB5 /* RPGResources.framework in Embed Frameworks */,
+				8E359A662E2A67BA00355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 				8E5480852E27E3E000435AB5 /* RPGSpaces.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -1490,6 +1676,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A732E2A67C700355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1500,6 +1687,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A832E2A67D700355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1510,6 +1698,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A972E2A67EE00355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1520,6 +1709,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A8B2E2A67E200355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1530,6 +1720,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A8F2E2A67E600355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1540,6 +1731,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A932E2A67E900355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1550,6 +1742,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A7F2E2A67D400355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1560,6 +1753,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A6F2E2A67C300355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1570,6 +1764,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A772E2A67CC00355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1581,7 +1776,9 @@
 			dstSubfolderSpec = 10;
 			files = (
 				594686112E1E1012004DC406 /* CoreRPG.framework in Embed Frameworks */,
+				8E359A592E2A679E00355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 				594686152E1E1016004DC406 /* PhotoRPG.framework in Embed Frameworks */,
+				8E359A9B2E2A692B00355587 /* SpaceRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1592,6 +1789,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A7B2E2A67D000355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1602,6 +1800,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E359A872E2A67DB00355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1622,6 +1821,7 @@
 				8E983DBA2E27D057002B25C2 /* SpaceRPG.framework in Embed Frameworks */,
 				8EF250122CF0AE98005D1170 /* RPGGame.framework in Embed Frameworks */,
 				8EF250142CF0AE9A005D1170 /* RPGMaps.framework in Embed Frameworks */,
+				8E8ABBEB2E2A662400E877CF /* CoreExternalRPG.framework in Embed Frameworks */,
 				8EF250162CF0AE9B005D1170 /* RPGPdfs.framework in Embed Frameworks */,
 				8EF250182CF0AE9D005D1170 /* RPGPhotos.framework in Embed Frameworks */,
 				8EF2501A2CF0AE9E005D1170 /* RPGResources.framework in Embed Frameworks */,
@@ -1677,6 +1877,7 @@
 		8E81B0D22C26E4A0005B7B6F /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		8E8809CC2BC8B45E00186C7A /* InfoTVPlist.xcstrings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json.xcstrings; path = InfoTVPlist.xcstrings; sourceTree = "<group>"; };
 		8E8809CF2BC8B49200186C7A /* InfoTV.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = InfoTV.plist; sourceTree = "<group>"; };
+		8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CoreExternalRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RPGResourcesDebug.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E8EE84A2CD8EA5B0010A25B /* RPGAudios.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RPGAudios.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E8EE8512CD8EA5D0010A25B /* RPGAudiosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RPGAudiosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1769,6 +1970,7 @@
 		8E4B274E2CD79E7D009AB4D1 /* RPGResources */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGResources; sourceTree = "<group>"; };
 		8E7C79F62E14C73600C98D17 /* Master3RPG */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E7C7A172E14C73700C98D17 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Master3RPG; sourceTree = "<group>"; };
 		8E7C7A122E14C73700C98D17 /* Master3RPGUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Master3RPGUITests; sourceTree = "<group>"; };
+		8E8ABBD82E2A662300E877CF /* CoreExternalRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CoreExternalRPG; sourceTree = "<group>"; };
 		8E8ED7582CD8D8B80010A25B /* RoleGameKit */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RoleGameKit; sourceTree = "<group>"; };
 		8E8EE7012CD8E3E10010A25B /* RPGResourcesDebug */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGResourcesDebug; sourceTree = "<group>"; };
 		8E8EEEBD2CD8EC6D0010A25B /* RPGAudios */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGAudios; sourceTree = "<group>"; };
@@ -1832,6 +2034,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8E359A5C2E2A67B000355587 /* CoreExternalRPG.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1849,6 +2052,7 @@
 			files = (
 				8E3620FC2E1A9F8E00E5C99A /* CoreRPG.framework in Frameworks */,
 				5946861B2E1E136D004DC406 /* RPGPhotos.framework in Frameworks */,
+				8E359A612E2A67B500355587 /* CoreExternalRPG.framework in Frameworks */,
 				5946860C2E1E0F69004DC406 /* RPGResources.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1887,6 +2091,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8E359A692E2A67BF00355587 /* CoreExternalRPG.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1954,6 +2159,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8E8ABBD42E2A662300E877CF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8E8EE6C82CD8E3A00010A25B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1966,6 +2178,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8E8EE86A2CD8EAA70010A25B /* RPGResources.framework in Frameworks */,
+				8E359A722E2A67C700355587 /* CoreExternalRPG.framework in Frameworks */,
 				8E8EE8662CD8EAA70010A25B /* AndrenalinKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1984,6 +2197,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8E8EE8B52CD8EBA70010A25B /* RPGResources.framework in Frameworks */,
+				8E359A822E2A67D700355587 /* CoreExternalRPG.framework in Frameworks */,
 				8E8EE8B12CD8EBA70010A25B /* AndrenalinKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2002,6 +2216,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8EBED4F52CD9A799004E7103 /* RPGResources.framework in Frameworks */,
+				8E359A862E2A67DB00355587 /* CoreExternalRPG.framework in Frameworks */,
 				8EBED4F12CD9A799004E7103 /* AndrenalinKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2021,6 +2236,7 @@
 			files = (
 				8E54807F2E27E3D900435AB5 /* CoreRPG.framework in Frameworks */,
 				8E5480882E27E3F100435AB5 /* RPGResources.framework in Frameworks */,
+				8E359A652E2A67BA00355587 /* CoreExternalRPG.framework in Frameworks */,
 				8E5480842E27E3E000435AB5 /* RPGSpaces.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2044,9 +2260,11 @@
 				8EBED1AF2CD9A383004E7103 /* RPGAdventures.framework in Frameworks */,
 				8EBED1BF2CD9A383004E7103 /* RPGMaps.framework in Frameworks */,
 				8EBED1CF2CD9A383004E7103 /* RPGSpaces.framework in Frameworks */,
+				8E359A9A2E2A692B00355587 /* SpaceRPG.framework in Frameworks */,
 				8EBED1C72CD9A383004E7103 /* RPGPhotos.framework in Frameworks */,
 				8EBED1B32CD9A383004E7103 /* RPGAudios.framework in Frameworks */,
 				594686102E1E1012004DC406 /* CoreRPG.framework in Frameworks */,
+				8E359A582E2A679E00355587 /* CoreExternalRPG.framework in Frameworks */,
 				594686142E1E1016004DC406 /* PhotoRPG.framework in Frameworks */,
 				8EBED1D72CD9A383004E7103 /* RPGValues.framework in Frameworks */,
 				8EBED1CB2CD9A383004E7103 /* RPGResources.framework in Frameworks */,
@@ -2060,6 +2278,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8EBED4EC2CD9A777004E7103 /* RPGResources.framework in Frameworks */,
+				8E359A7A2E2A67D000355587 /* CoreExternalRPG.framework in Frameworks */,
 				8EBED4E82CD9A777004E7103 /* AndrenalinKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2078,6 +2297,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8EBED0FA2CD9A2B5004E7103 /* RPGResources.framework in Frameworks */,
+				8E359A8A2E2A67E200355587 /* CoreExternalRPG.framework in Frameworks */,
 				8EBED0F52CD9A2B1004E7103 /* AndrenalinKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2096,6 +2316,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8EBED1022CD9A2E7004E7103 /* AndrenalinKit.framework in Frameworks */,
+				8E359A8E2E2A67E600355587 /* CoreExternalRPG.framework in Frameworks */,
 				8EBED10A2CD9A2E7004E7103 /* RPGPdfs.framework in Frameworks */,
 				8EBED10E2CD9A2E7004E7103 /* RPGResources.framework in Frameworks */,
 				8EBED1062CD9A2E7004E7103 /* RPGDie.framework in Frameworks */,
@@ -2121,6 +2342,7 @@
 				8EBED1272CD9A305004E7103 /* RPGTables.framework in Frameworks */,
 				8EBED11B2CD9A305004E7103 /* RPGPdfs.framework in Frameworks */,
 				8EBED1172CD9A305004E7103 /* RPGDie.framework in Frameworks */,
+				8E359A922E2A67E900355587 /* CoreExternalRPG.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2139,6 +2361,7 @@
 			files = (
 				8EBED0F12CD9A286004E7103 /* RPGResources.framework in Frameworks */,
 				8EBED0EC2CD9A27D004E7103 /* AndrenalinKit.framework in Frameworks */,
+				8E359A962E2A67EE00355587 /* CoreExternalRPG.framework in Frameworks */,
 				8EBED0FE2CD9A2C2004E7103 /* RPGPhotos.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2166,6 +2389,7 @@
 				8EBED1612CD9A33B004E7103 /* RPGPhotos.framework in Frameworks */,
 				8EBED1712CD9A33C004E7103 /* RPGValues.framework in Frameworks */,
 				8EBED1752CD9A33C004E7103 /* RPGWeathers.framework in Frameworks */,
+				8E359A6E2E2A67C300355587 /* CoreExternalRPG.framework in Frameworks */,
 				8EBED1692CD9A33C004E7103 /* RPGSpaces.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2193,6 +2417,7 @@
 				8EBED1822CD9A357004E7103 /* RPGAudios.framework in Frameworks */,
 				8EBED19A2CD9A357004E7103 /* RPGSpaces.framework in Frameworks */,
 				8EBED19E2CD9A357004E7103 /* RPGTables.framework in Frameworks */,
+				8E359A762E2A67CC00355587 /* CoreExternalRPG.framework in Frameworks */,
 				8EBED1962CD9A357004E7103 /* RPGResources.framework in Frameworks */,
 				8EBED1862CD9A357004E7103 /* RPGDie.framework in Frameworks */,
 			);
@@ -2212,6 +2437,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8EBED1482CD9A321004E7103 /* RPGValues.framework in Frameworks */,
+				8E359A7E2E2A67D400355587 /* CoreExternalRPG.framework in Frameworks */,
 				8EBED12C2CD9A321004E7103 /* AndrenalinKit.framework in Frameworks */,
 				8EBED1442CD9A321004E7103 /* RPGTables.framework in Frameworks */,
 				8EBED1342CD9A321004E7103 /* RPGDie.framework in Frameworks */,
@@ -2241,6 +2467,7 @@
 				8EF2500D2CF0AE95005D1170 /* RPGAudios.framework in Frameworks */,
 				8EF2500F2CF0AE96005D1170 /* RPGDie.framework in Frameworks */,
 				8EF250112CF0AE98005D1170 /* RPGGame.framework in Frameworks */,
+				8E8ABBEA2E2A662400E877CF /* CoreExternalRPG.framework in Frameworks */,
 				8EF250132CF0AE9A005D1170 /* RPGMaps.framework in Frameworks */,
 				8EF250152CF0AE9B005D1170 /* RPGPdfs.framework in Frameworks */,
 				8EF250172CF0AE9D005D1170 /* RPGPhotos.framework in Frameworks */,
@@ -2298,6 +2525,7 @@
 		8E8EEC3E2CD8EC3A0010A25B /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				8E8ABBD82E2A662300E877CF /* CoreExternalRPG */,
 				8E8EEFE12CD8EC7C0010A25B /* AndrenalinKit */,
 				8E3620AE2E1A80FF00E5C99A /* CoreRPG */,
 				8E8ED7582CD8D8B80010A25B /* RoleGameKit */,
@@ -2420,6 +2648,7 @@
 				8E3620E32E1A9EAF00E5C99A /* PhotoRPGTests.xctest */,
 				8E983DA62E27D057002B25C2 /* SpaceRPG.framework */,
 				8E983DAE2E27D057002B25C2 /* SpaceRPGTests.xctest */,
+				8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2529,6 +2758,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		8E4B26FD2CD79E2E009AB4D1 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E8ABBD22E2A662300E877CF /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -2708,10 +2944,12 @@
 				8E3620A92E1A80FF00E5C99A /* Sources */,
 				8E3620AA2E1A80FF00E5C99A /* Frameworks */,
 				8E3620AB2E1A80FF00E5C99A /* Resources */,
+				8E359A602E2A67B000355587 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				8E359A5F2E2A67B000355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E3620AE2E1A80FF00E5C99A /* CoreRPG */,
@@ -2763,6 +3001,7 @@
 				8E3620FF2E1A9F8E00E5C99A /* PBXTargetDependency */,
 				5946860F2E1E0F69004DC406 /* PBXTargetDependency */,
 				5946861E2E1E136D004DC406 /* PBXTargetDependency */,
+				8E359A642E2A67B500355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E3620DC2E1A9EAF00E5C99A /* PhotoRPG */,
@@ -2842,10 +3081,12 @@
 				8E4B21822CD78EF3009AB4D1 /* Sources */,
 				8E4B21832CD78EF3009AB4D1 /* Frameworks */,
 				8E4B21842CD78EF3009AB4D1 /* Resources */,
+				8E359A6D2E2A67BF00355587 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				8E359A6C2E2A67BF00355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E8EEFE12CD8EC7C0010A25B /* AndrenalinKit */,
@@ -2998,6 +3239,29 @@
 			productReference = 8E7C7A0F2E14C73700C98D17 /* Master3RPGUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		8E8ABBD62E2A662300E877CF /* CoreExternalRPG */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8E8ABBEC2E2A662400E877CF /* Build configuration list for PBXNativeTarget "CoreExternalRPG" */;
+			buildPhases = (
+				8E8ABBD22E2A662300E877CF /* Headers */,
+				8E8ABBD32E2A662300E877CF /* Sources */,
+				8E8ABBD42E2A662300E877CF /* Frameworks */,
+				8E8ABBD52E2A662300E877CF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8E8ABBD82E2A662300E877CF /* CoreExternalRPG */,
+			);
+			name = CoreExternalRPG;
+			packageProductDependencies = (
+			);
+			productName = CoreExternalRPG;
+			productReference = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */;
+			productType = "com.apple.product-type.framework";
+		};
 		8E8EE6CA2CD8E3A00010A25B /* RPGResourcesDebug */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8E8EE6D32CD8E3A10010A25B /* Build configuration list for PBXNativeTarget "RPGResourcesDebug" */;
@@ -3036,6 +3300,7 @@
 			dependencies = (
 				8E8EE8692CD8EAA70010A25B /* PBXTargetDependency */,
 				8E8EE86D2CD8EAA70010A25B /* PBXTargetDependency */,
+				8E359A752E2A67C700355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E8EEEBD2CD8EC6D0010A25B /* RPGAudios */,
@@ -3087,6 +3352,7 @@
 			dependencies = (
 				8E8EE8B42CD8EBA70010A25B /* PBXTargetDependency */,
 				8E8EE8B82CD8EBA70010A25B /* PBXTargetDependency */,
+				8E359A852E2A67D700355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E8EF0EF2CD8EC870010A25B /* RPGPdfs */,
@@ -3138,6 +3404,7 @@
 			dependencies = (
 				8EBED4F42CD9A799004E7103 /* PBXTargetDependency */,
 				8EBED4F82CD9A799004E7103 /* PBXTargetDependency */,
+				8E359A892E2A67DB00355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E8EF1572CD8ECD40010A25B /* RPGPhotos */,
@@ -3190,6 +3457,7 @@
 				8E5480822E27E3D900435AB5 /* PBXTargetDependency */,
 				8E5480872E27E3E000435AB5 /* PBXTargetDependency */,
 				8E54808B2E27E3F100435AB5 /* PBXTargetDependency */,
+				8E359A682E2A67BA00355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E983DA72E27D057002B25C2 /* SpaceRPG */,
@@ -3253,6 +3521,8 @@
 				8EBED1DE2CD9A383004E7103 /* PBXTargetDependency */,
 				594686132E1E1012004DC406 /* PBXTargetDependency */,
 				594686172E1E1016004DC406 /* PBXTargetDependency */,
+				8E359A5B2E2A679E00355587 /* PBXTargetDependency */,
+				8E359A9D2E2A692B00355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E8ED7582CD8D8B80010A25B /* RoleGameKit */,
@@ -3279,6 +3549,7 @@
 			dependencies = (
 				8EBED4EB2CD9A777004E7103 /* PBXTargetDependency */,
 				8EBED4EF2CD9A777004E7103 /* PBXTargetDependency */,
+				8E359A7D2E2A67D000355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8EBECEDD2CD8EEC1004E7103 /* RPGDie */,
@@ -3330,6 +3601,7 @@
 			dependencies = (
 				8EBED0F82CD9A2B1004E7103 /* PBXTargetDependency */,
 				8EBED0FD2CD9A2B5004E7103 /* PBXTargetDependency */,
+				8E359A8D2E2A67E200355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8EBECF872CD8EECB004E7103 /* RPGSpaces */,
@@ -3383,6 +3655,7 @@
 				8EBED1092CD9A2E7004E7103 /* PBXTargetDependency */,
 				8EBED10D2CD9A2E7004E7103 /* PBXTargetDependency */,
 				8EBED1112CD9A2E7004E7103 /* PBXTargetDependency */,
+				8E359A912E2A67E600355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8EBECFBE2CD8EECE004E7103 /* RPGTables */,
@@ -3438,6 +3711,7 @@
 				8EBED1222CD9A305004E7103 /* PBXTargetDependency */,
 				8EBED1262CD9A305004E7103 /* PBXTargetDependency */,
 				8EBED12A2CD9A305004E7103 /* PBXTargetDependency */,
+				8E359A952E2A67E900355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8EBECFFC2CD8EED1004E7103 /* RPGValues */,
@@ -3490,6 +3764,7 @@
 				8EBED0EF2CD9A27D004E7103 /* PBXTargetDependency */,
 				8EBED0F42CD9A286004E7103 /* PBXTargetDependency */,
 				8EBED1012CD9A2C2004E7103 /* PBXTargetDependency */,
+				8E359A992E2A67EE00355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8EBED03B2CD8EED4004E7103 /* RPGWeathers */,
@@ -3550,6 +3825,7 @@
 				8EBED1702CD9A33C004E7103 /* PBXTargetDependency */,
 				8EBED1742CD9A33C004E7103 /* PBXTargetDependency */,
 				8EBED1782CD9A33C004E7103 /* PBXTargetDependency */,
+				8E359A712E2A67C300355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8EBED26A2CD9A3F2004E7103 /* RPGAdventures */,
@@ -3611,6 +3887,7 @@
 				8EBED1A12CD9A357004E7103 /* PBXTargetDependency */,
 				8EBED1A52CD9A357004E7103 /* PBXTargetDependency */,
 				8EBED1A92CD9A357004E7103 /* PBXTargetDependency */,
+				8E359A792E2A67CC00355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8EBED0882CD8EED9004E7103 /* RPGGames */,
@@ -3668,6 +3945,7 @@
 				8EBED1432CD9A321004E7103 /* PBXTargetDependency */,
 				8EBED1472CD9A321004E7103 /* PBXTargetDependency */,
 				8EBED14B2CD9A321004E7103 /* PBXTargetDependency */,
+				8E359A812E2A67D400355587 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8EBECF2A2CD8EEC7004E7103 /* RPGMaps */,
@@ -3723,6 +4001,7 @@
 				8E3620BF2E1A810000E5C99A /* PBXTargetDependency */,
 				594686072E1E0D11004DC406 /* PBXTargetDependency */,
 				8E983DB82E27D057002B25C2 /* PBXTargetDependency */,
+				8E8ABBE92E2A662400E877CF /* PBXTargetDependency */,
 			);
 			name = MasterRPG;
 			packageProductDependencies = (
@@ -3738,7 +4017,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1640;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					8E00BC5C2990942C00C484A1 = {
@@ -3791,6 +4070,9 @@
 					8E7C7A0E2E14C73700C98D17 = {
 						CreatedOnToolsVersion = 26.0;
 						TestTargetID = 8E7C79F42E14C73600C98D17;
+					};
+					8E8ABBD62E2A662300E877CF = {
+						CreatedOnToolsVersion = 26.0;
 					};
 					8E8EE6CA2CD8E3A00010A25B = {
 						CreatedOnToolsVersion = 16.1;
@@ -3934,6 +4216,7 @@
 				8E7C7A042E14C73700C98D17 /* Master3RPGTests */,
 				8E7C7A0E2E14C73700C98D17 /* Master3RPGUITests */,
 				8E983DAD2E27D057002B25C2 /* SpaceRPGTests */,
+				8E8ABBD62E2A662300E877CF /* CoreExternalRPG */,
 			);
 		};
 /* End PBXProject section */
@@ -4047,6 +4330,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		8E7C7A0D2E14C73700C98D17 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E8ABBD52E2A662300E877CF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -4392,6 +4682,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8E8ABBD32E2A662300E877CF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8E8EE6C72CD8E3A00010A25B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -4673,6 +4970,171 @@
 			target = 8E4B21852CD78EF3009AB4D1 /* AndrenalinKit */;
 			targetProxy = 8E33769D2DB1150B00F9C14C /* PBXContainerItemProxy */;
 		};
+		8E359A5B2E2A679E00355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A5A2E2A679E00355587 /* PBXContainerItemProxy */;
+		};
+		8E359A5F2E2A67B000355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A5E2E2A67B000355587 /* PBXContainerItemProxy */;
+		};
+		8E359A642E2A67B500355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A632E2A67B500355587 /* PBXContainerItemProxy */;
+		};
+		8E359A682E2A67BA00355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A672E2A67BA00355587 /* PBXContainerItemProxy */;
+		};
+		8E359A6C2E2A67BF00355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A6B2E2A67BF00355587 /* PBXContainerItemProxy */;
+		};
+		8E359A712E2A67C300355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A702E2A67C300355587 /* PBXContainerItemProxy */;
+		};
+		8E359A752E2A67C700355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A742E2A67C700355587 /* PBXContainerItemProxy */;
+		};
+		8E359A792E2A67CC00355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A782E2A67CC00355587 /* PBXContainerItemProxy */;
+		};
+		8E359A7D2E2A67D000355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A7C2E2A67D000355587 /* PBXContainerItemProxy */;
+		};
+		8E359A812E2A67D400355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A802E2A67D400355587 /* PBXContainerItemProxy */;
+		};
+		8E359A852E2A67D700355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A842E2A67D700355587 /* PBXContainerItemProxy */;
+		};
+		8E359A892E2A67DB00355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A882E2A67DB00355587 /* PBXContainerItemProxy */;
+		};
+		8E359A8D2E2A67E200355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A8C2E2A67E200355587 /* PBXContainerItemProxy */;
+		};
+		8E359A912E2A67E600355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A902E2A67E600355587 /* PBXContainerItemProxy */;
+		};
+		8E359A952E2A67E900355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A942E2A67E900355587 /* PBXContainerItemProxy */;
+		};
+		8E359A992E2A67EE00355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E359A982E2A67EE00355587 /* PBXContainerItemProxy */;
+		};
+		8E359A9D2E2A692B00355587 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E983DA52E27D057002B25C2 /* SpaceRPG */;
+			targetProxy = 8E359A9C2E2A692B00355587 /* PBXContainerItemProxy */;
+		};
 		8E3620B82E1A810000E5C99A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8E3620AC2E1A80FF00E5C99A /* CoreRPG */;
@@ -4842,6 +5304,11 @@
 			isa = PBXTargetDependency;
 			target = 8EBECE1B2CD8EE85004E7103 /* RPGSpaces */;
 			targetProxy = 8E8ABB902E28D77100E877CF /* PBXContainerItemProxy */;
+		};
+		8E8ABBE92E2A662400E877CF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E8ABBD62E2A662300E877CF /* CoreExternalRPG */;
+			targetProxy = 8E8ABBE82E2A662400E877CF /* PBXContainerItemProxy */;
 		};
 		8E8EE8542CD8EA600010A25B /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -5609,7 +6076,7 @@
 					"@loader_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
@@ -5654,7 +6121,7 @@
 					"@loader_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
@@ -5757,7 +6224,7 @@
 					"@loader_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
@@ -5803,7 +6270,7 @@
 					"@loader_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
@@ -5990,7 +6457,6 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -6023,9 +6489,6 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -6039,7 +6502,6 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -6072,8 +6534,6 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -6529,6 +6989,111 @@
 			};
 			name = Release;
 		};
+		8E8ABBED2E2A662400E877CF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"@executable_path/../Frameworks",
+					"@loader_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.CoreExternalRPG;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_MODULE = YES;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		8E8ABBEE2E2A662400E877CF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"@executable_path/../Frameworks",
+					"@loader_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.CoreExternalRPG;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_MODULE = YES;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
 		8E8EE6D42CD8E3A10010A25B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -6631,7 +7196,6 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -6664,9 +7228,6 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -6680,7 +7241,6 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -6713,8 +7273,6 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -7075,7 +7633,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
@@ -7085,7 +7643,7 @@
 					"@loader_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
@@ -7093,11 +7651,12 @@
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-				XROS_DEPLOYMENT_TARGET = 2.5;
+				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
 		};
@@ -7118,7 +7677,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
@@ -7128,7 +7687,7 @@
 					"@loader_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
@@ -7136,11 +7695,12 @@
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-				XROS_DEPLOYMENT_TARGET = 2.5;
+				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
 		};
@@ -7202,7 +7762,6 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -7235,9 +7794,6 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -7251,7 +7807,6 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -7284,8 +7839,6 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -7299,7 +7852,6 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -7332,9 +7884,6 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -7348,7 +7897,6 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -7381,8 +7929,6 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -8019,7 +8565,6 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -8052,9 +8597,6 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -8068,7 +8610,6 @@
 			buildSettings = {
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -8101,8 +8642,6 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TVOS_DEPLOYMENT_TARGET = 18.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -8838,6 +9377,15 @@
 			buildConfigurations = (
 				8E7C7A1F2E14C73700C98D17 /* Debug */,
 				8E7C7A202E14C73700C98D17 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8E8ABBEC2E2A662400E877CF /* Build configuration list for PBXNativeTarget "CoreExternalRPG" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E8ABBED2E2A662400E877CF /* Debug */,
+				8E8ABBEE2E2A662400E877CF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

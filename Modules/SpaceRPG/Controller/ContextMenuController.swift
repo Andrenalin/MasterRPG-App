@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import CoreRPG
 import Foundation
 import SwiftData

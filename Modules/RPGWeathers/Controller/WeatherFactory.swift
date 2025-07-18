@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import AndrenalinKit
 import RPGPhotos
 import CoreData

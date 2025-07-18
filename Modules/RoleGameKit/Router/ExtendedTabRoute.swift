@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import AndrenalinKit
 import RPGAdventures
 import RPGAudios
@@ -104,8 +105,7 @@ struct ExtendedTabRouteDestionationView: View {
             case .photos:
                 NewPhotoRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .space:
-                SpaceFactory.rootExtendedView(for: appStore.spaceRoot, tabId: tabId)
-                    .environment(appStore.spaceRoot)
+                NewSpaceRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .tables:
                 TableFactory.rootExtendedView(for: appStore.tableRoot, tabId: tabId)
                     .environment(appStore.tableRoot)

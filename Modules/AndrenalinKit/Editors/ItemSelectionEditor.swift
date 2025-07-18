@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import SwiftUI
 
 extension UUID: @retroactive Identifiable {

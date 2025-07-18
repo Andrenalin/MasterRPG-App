@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import CoreRPG
 import SwiftData
 import SwiftUI

@@ -1,5 +1,6 @@
 // @copyright André Trettin00000
 
+import CoreExternalRPG
 import AndrenalinKit
 import SwiftUI
 import UniformTypeIdentifiers

@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import SwiftUI
 
 public struct ItemSelectionNaviEditor<Viewer: View>: View {
