@@ -28,9 +28,7 @@ struct NewPhotoRoute: View {
     var body: some View {
         if appStore.isNewUICode {
             PhotoRootFactory.rootView(withoutNavigation: isExtended)
-                .environment(cacheModel)
                 .environment(deviceRotationModel)
-                .environment(searchModel)
                 .environment(tabTitleModel)
                 .task {
                     try? await Task.sleep(for: .seconds(3))
@@ -62,10 +60,8 @@ struct NewSpaceRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            SpaceRootView(modelContext: modelContext, withoutNavigation: isExtended)
-                .environment(cacheModel)
+            SpaceRootFactory.rootView(withoutNavigation: isExtended)
                 .environment(deviceRotationModel)
-                .environment(searchModel)
                 .environment(tabTitleModel)
                 .task {
                     try? await Task.sleep(for: .seconds(3))

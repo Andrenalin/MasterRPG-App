@@ -34,19 +34,25 @@ public final class AppStore: Sendable {
     @MainActor
     public static let shared = AppStore()
 
+    public let modelContainer: ModelContainer
+
+    public var photoRootModel: PhotoRootModel
+    public var spaceRootModel: SpaceRootModel
+
     var isNewUICode: Bool = true
-    public var sharedModelContainer: ModelContainer = {
+
+    @MainActor
+    private static func initModelContainer() -> ModelContainer {
         let schema = Schema([
             PhotoDataModel.self, PhotoEntryDataModel.self, SpaceDataModel.self, SpaceEntryDataModel.self,
         ])
-        let storeURL = FileManager.groupURL.appending(path: "masterRPG.sqlite")
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
+    }
 
     // Other Models
     public let windowStateModel: WindowStateModel
@@ -103,6 +109,10 @@ public final class AppStore: Sendable {
         self.deviceRotationModel = DeviceRotationModel()
         self.inAppController = InAppController(model: inAppModel)
         self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.0", executionDelay: 0.4, verbosity: .info))
+        let modelContainer = Self.initModelContainer()
+        self.modelContainer = modelContainer
+        self.photoRootModel = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.spaceRootModel = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
     }
 
     public func resetData() async {

@@ -33,6 +33,8 @@ public struct TabNavigation: View {
 #endif
         }
         .environment(appModel.deviceRotationModel)
+        .environment(appModel.photoRoot)
+        .environment(appModel.spaceRoot)
         .environment(tabTitleModel)
 #if os(iOS)
         .tabBarMinimizeBehavior26(.onScrollDown)

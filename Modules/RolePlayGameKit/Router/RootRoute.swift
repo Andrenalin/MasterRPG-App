@@ -176,10 +176,8 @@ struct RouteRouteDestionationView: View {
             RootListView(rootRoute: route)
         case .photos:
             PhotoRootFactory.rootView(withoutNavigation: false)
-                .environment(appModel.photoRoot)
         case .space:
             SpaceRootFactory.rootView(withoutNavigation: false)
-                .environment(appModel.spaceRoot)
         case .settings:
             RootListView(rootRoute: route)
             //SettingsView()

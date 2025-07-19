@@ -90,10 +90,8 @@ struct ExtendedTabRouteDestionationView: View {
             RootListView(rootRoute: .pdfs)
             case .photos:
             PhotoRootFactory.rootView(withoutNavigation: true)
-                .environment(appModel.photoRoot)
             case .space:
             SpaceRootFactory.rootView(withoutNavigation: true)
-                .environment(appModel.spaceRoot)
             case .tables:
             RootListView(rootRoute: .tables)
             case .weathers:

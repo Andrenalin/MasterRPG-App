@@ -29,7 +29,7 @@ struct MasterRPGApp: App {
                 .frame(minWidth: 800, minHeight: 600)
 #endif
                 .environment(appStore.windowStateModel)
-                .modelContainer(appStore.sharedModelContainer)
+                .modelContainer(appStore.modelContainer)
                 .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
                     handle(userActivity: userActivity)
                 }                

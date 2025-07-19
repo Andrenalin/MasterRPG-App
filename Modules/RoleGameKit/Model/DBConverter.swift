@@ -10,9 +10,9 @@ struct DBConverter {
     @MainActor
     static func convert(appStore: AppStore, modelContext: ModelContext) async {
         let photos = appStore.photoRoot.listPhotos()
-        PhotoRPG.ConverterController.insertPhotos(photos: photos, into: appStore.sharedModelContainer.mainContext)
+        PhotoRPG.ConverterController.insertPhotos(photos: photos, into: appStore.modelContainer.mainContext)
         
         let items = appStore.spaceRoot.listItems()
-        SpaceRPG.ConverterController.insertSpaces(items: items, into: appStore.sharedModelContainer.mainContext)
+        SpaceRPG.ConverterController.insertSpaces(items: items, into: appStore.modelContainer.mainContext)
     }
 }

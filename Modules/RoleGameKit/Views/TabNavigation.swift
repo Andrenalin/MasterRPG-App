@@ -50,6 +50,8 @@ public struct TabNavigation: View {
             }
 #endif
         }
+        .environment(appStore.photoRootModel)
+        .environment(appStore.spaceRootModel)
         .onNavigationOpenURL(RootURLHandler(appStore: appStore))
         .focusedSceneValue(\.selectedModule, tabSelectedModule)
     }
