@@ -16,6 +16,8 @@ public struct TabNavigation: View {
     @SceneStorage("RootRoute") private var selectedTab: RootRoute = .game
     @State private var tabTitleModel = TabTitleModel()
     
+    @State private var tabSelectedModule: NetworkModules = .game
+    
     public var body: some View {
         let _ = Self._printChanges()
 
@@ -33,6 +35,7 @@ public struct TabNavigation: View {
 #endif
         }
         .environment(appModel.deviceRotationModel)
+        .environment(\.navigator, appModel.navigator)
         .environment(appModel.photoRoot)
         .environment(appModel.spaceRoot)
         .environment(tabTitleModel)
@@ -44,17 +47,20 @@ public struct TabNavigation: View {
 #else
         .tabViewStyle(.sidebarAdaptable)
 #endif
-        //.onNavigationOpenURL(RootURLHandler(appStore: appStore))
-        //.focusedSceneValue(\.selectedModule, tabSelectedModule)
-    }
-    
-    private var tabSelectedModule: Binding<NetworkModules> {
-        Binding {
-            selectedTab.module
-        } set: {
-            try? appModel.externalRouter.route(to: KnownRoutes.route(module: $0, itemId: nil, entryId: nil))
+        .onNavigationOpenURL(RootURLHandler(appModel: appModel))
+        .focusedSceneValue(\.selectedModule, $tabSelectedModule)
+        .onChange(of: selectedTab, initial: true) {
+            tabSelectedModule = selectedTab.module
         }
     }
+    
+//    private var tabSelectedModule: Binding<NetworkModules> {
+//        Binding {
+//            selectedTab.module
+//        } set: {
+//            try? appModel.externalRouter.route(to: KnownRoutes.route(module: $0, itemId: nil, entryId: nil))
+//        }
+//    }
 }
 
 private extension TabNavigation {
@@ -107,7 +113,7 @@ private extension TabNavigation {
         .onNavigationRoute(RootRouteRouter(appModel: appModel))
 #if os(visionOS)
         .ornament(attachmentAnchor: .scene(.leading), contentAlignment: .center) {
-            PrimaryTabBar(tabId: tabId, selectedTab: $selectedTab)
+            PrimaryTabBar(selectedTab: $selectedTab)
         }
 #endif
     }

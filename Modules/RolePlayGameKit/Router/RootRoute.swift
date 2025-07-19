@@ -21,7 +21,7 @@ public enum RootRoute: Hashable, Codable {
     case values
     case weathers
     
-    public init(networkModule: NetworkModules, tabId: UUID) {
+    public init(networkModule: NetworkModules) {
         switch networkModule {
         case .none:
             self = .game
