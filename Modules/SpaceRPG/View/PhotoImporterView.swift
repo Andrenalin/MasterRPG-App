@@ -22,51 +22,7 @@ struct PhotoImporterView: View {
     
     @ViewBuilder
     var contentView: some View {
-        CameraImporterView(model: model, size: 80)
         FileImporterView(model: model, size: 80)
-        LibraryImporterView(model: model, size: 80)
-    }
-}
-
-struct CameraImporterView: View {
-    init(model: SpaceDataModel, size: CGFloat = 24) {
-        self.model = model
-        self.size = size
-        self.modelActor = model.modelActor()
-    }
-
-    let model: SpaceDataModel
-    let modelActor: DataModelActor?
-    let size: CGFloat
-    
-    @Environment(SpaceRootModel.self) private var rootModel
-    
-    @State private var showCamera = false
-    
-    var body: some View {
-#if os(iOS)
-        GlassButton {
-            showCamera.toggle()
-        } label: {
-            Image(systemName: "camera\(showCamera ? ".fill" : "")")
-                .font(.system(size: size))
-                .padding(size / 3)
-
-        }
-        .contentTransition(.symbolEffect(.replace.wholeSymbol))
-        .opacity(CaptureImagePicker.isCameraAvailable ? 1 : 0)
-        
-        .sheet(isPresented: $showCamera) {
-            CaptureImagePicker(shown: $showCamera) { [id = model.id] image in
-                await update(id: id, image: image)
-            }
-        }
-#endif
-    }
-    
-    private func update(id: UUID, image: AKImage?) async {
-        guard let modelActor else { return }
-        await rootModel.editController.resetPhoto(image: image, id: id, actor: modelActor)
     }
 }
 
@@ -101,33 +57,6 @@ struct FileImporterView: View {
     }
 }
 
-struct LibraryImporterView: View {
-    init(model: SpaceDataModel, size: CGFloat = 32) {
-        self.model = model
-        self.size = size
-        self.modelActor = model.modelActor()
-    }
-    
-    let model: SpaceDataModel
-    let modelActor: DataModelActor?
-    let size: CGFloat
-    
-    @Environment(SpaceRootModel.self) private var rootModel
-    
-    var body: some View {
-        LibraryPhotoPicker(size: size) { [id = model.id] image in
-            await update(id: id, image: image)
-        }
-    }
-    
-    private func update(id: UUID, image: AKImage?) async {
-        guard let modelActor else { return }
-        await rootModel.editController.resetPhoto(image: image, id: id, actor: modelActor)
-    }
-}
-
-
-
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
@@ -135,9 +64,7 @@ struct LibraryImporterView: View {
         Color
             .teal
             .frame(width: 256, height: 256)
-            .overlay(CameraImporterView(model: models[0]), alignment: .bottom)
             .overlay(FileImporterView(model: models[0]), alignment: .top)
-            .overlay(LibraryImporterView(model: models[0]), alignment: .center)
         
         PhotoImporterView(model: models[0])
     }

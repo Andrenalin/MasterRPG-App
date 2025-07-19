@@ -4,7 +4,10 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
+#if canImport(ImagePlayground)
 import ImagePlayground
+#endif
+
 
 @Observable
 final class DetailPhotoSelection {
@@ -37,7 +40,9 @@ struct DetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+#if !os(tvOS)
         .toolbar(removing: .title)
+#endif
         .onChange(of: model.id) {
             withAnimation {
                 selection.selectedPhoto = nil
@@ -73,9 +78,12 @@ struct DetailView: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 ZStack(alignment: .center) {
+                    #if os(tvOS)
+                    PlainPhotoView(cacheController: rootModel.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
+                        .stretchy()
+    #else
                     SpaceViewer(root: rootModel, id: selection.selectedPhoto?.id ?? model.id)
-//                    PlainPhotoView(cacheController: rootModel.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
-//                        .stretchy()
+                    #endif
                 }
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
             }
@@ -165,21 +173,6 @@ struct DetailView: View {
     
     @ViewBuilder
     private var photoImporterView: some View {
-        if #available(iOS 18.1, visionOS 2.4, *) {
-            GlassButton {
-                showImagePlayground.toggle()
-            } label: {
-                Image(systemName: "gear")
-            }
-            .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
-                rootModel.editController.resetPhoto(url: url, in: model)
-            }
-        }
-
-        CameraImporterView(model: model)
-        
-        LibraryImporterView(model: model)
-        
         FileImporterView(model: model)
     }
 }

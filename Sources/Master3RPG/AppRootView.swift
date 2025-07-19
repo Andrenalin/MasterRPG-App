@@ -1,4 +1,5 @@
 import CoreRPG
+import CoreExternalRPG
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
@@ -45,6 +46,8 @@ struct RootRouteDestionationView: View {
             RootListView(rootRoute: route)
         case .weathers:
             RootListView(rootRoute: route)
+        @unknown default:
+            fatalError()
         }
     }
 }
@@ -171,7 +174,9 @@ struct DetailView: View {
         }
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
+        #if !os(tvOS)
         .toolbar(removing: .title)
+        #endif
     }
 }
 

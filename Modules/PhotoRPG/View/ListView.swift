@@ -61,19 +61,11 @@ struct ListView: View {
                     Label("Add Item", systemImage: "plus")
                 }
             }
-            ToolbarItem(placement: .secondaryAction) {
+            ToolbarItem(placement: .automatic) {
                 Button {
                     isSelectionMode.toggle()
                 } label: {
                     Label("Change Mode to \(isSelectionMode ? "Off" : "On")", systemImage: "list.bullet")
-                }
-            }
-
-            ToolbarItem(placement: .secondaryAction) {
-                Button {
-                    isSelectionMode.toggle()
-                } label: {
-                    Label("Some", systemImage: "gear")
                 }
             }
         }

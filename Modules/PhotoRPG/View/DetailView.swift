@@ -4,7 +4,9 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
+#if canImport(ImagePlayground)
 import ImagePlayground
+#endif
 
 @Observable
 final class DetailPhotoSelection {
@@ -37,7 +39,9 @@ struct DetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+#if !os(tvOS)
         .toolbar(removing: .title)
+#endif
         .onChange(of: model.id) {
             withAnimation {
                 selection.selectedPhoto = nil
@@ -164,7 +168,8 @@ struct DetailView: View {
     
     @ViewBuilder
     private var photoImporterView: some View {
-        if #available(iOS 18.1, visionOS 2.4, *) {
+#if !os(tvOS)
+        if #available(iOS 18.1, visionOS 2.4, macOS 15.1, *) {
             GlassButton {
                 showImagePlayground.toggle()
             } label: {
@@ -174,11 +179,11 @@ struct DetailView: View {
                 rootModel.editController.resetPhoto(url: url, in: model)
             }
         }
-
         CameraImporterView(model: model)
         
         LibraryImporterView(model: model)
-        
+#endif
+
         FileImporterView(model: model)
     }
 }

@@ -66,11 +66,21 @@ struct DetailEditorView: View {
                     Text("Description")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+#if os(tvOS)
+                    TextField(text: $information, prompt: Text("Insert a description"), axis: .vertical) {
+                        Text("Description")
+                    }
+                    .frame(minHeight: 120, maxHeight: 200)
+                    .border(Color.accentColor.secondary)
+                    .padding(.bottom, 6)
+                    .focused($currentFocus, equals: .information)
+#else
                     TextEditor(text: $information)
                         .frame(minHeight: 120, maxHeight: 200)
                         .border(Color.accentColor.secondary)
                         .padding(.bottom, 6)
                         .focused($currentFocus, equals: .information)
+#endif
                     
                     HStack(alignment: .top) {
                         VStack(alignment: .leading) {

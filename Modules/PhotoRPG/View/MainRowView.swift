@@ -18,7 +18,9 @@ struct MainRowView: View {
             CategoryItemRow(category: model.category)
         }, actionBar: {
         })
+#if !os(tvOS)
         .draggable(LinkData(itemId: model.id, module: .photo, name: model.name))
+#endif
     }
 }
 

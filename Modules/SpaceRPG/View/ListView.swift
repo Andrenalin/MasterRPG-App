@@ -21,7 +21,9 @@ struct ListView: View {
     @State private var listSelection: Set<UUID> = []
     @State private var isSelectionMode: Bool = false
 
+    #if !os(macOS)
     @Environment(\.editMode) private var editMode
+    #endif
     
     var body: some View {
         @Bindable var searchModel = searchModel
@@ -60,14 +62,16 @@ struct ListView: View {
                     Label("Add Item", systemImage: "plus")
                 }
             }
-            ToolbarItem(placement: .secondaryAction) {
+            ToolbarItem(placement: .automatic) {
                 Button {
                     isSelectionMode.toggle()
+#if !os(macOS)
                     if isSelectionMode {
                         editMode?.wrappedValue = .active
                     } else {
                         editMode?.wrappedValue = .inactive
                     }
+#endif
                 } label: {
                     Label("Select", systemImage: "checkmark.circle")
                 }

@@ -24,7 +24,9 @@ struct PhotoImporterView: View {
     var contentView: some View {
         CameraImporterView(model: model, size: 80)
         FileImporterView(model: model, size: 80)
+#if !os(tvOS)
         LibraryImporterView(model: model, size: 80)
+#endif
     }
 }
 
@@ -101,6 +103,7 @@ struct FileImporterView: View {
     }
 }
 
+#if !os(tvOS)
 struct LibraryImporterView: View {
     init(model: PhotoDataModel, size: CGFloat = 32) {
         self.model = model
@@ -125,7 +128,7 @@ struct LibraryImporterView: View {
         await rootModel.editController.resetPhoto(image: image, id: id, actor: modelActor)
     }
 }
-
+#endif
 
 
 #Preview(traits: .mockData) {
@@ -137,7 +140,10 @@ struct LibraryImporterView: View {
             .frame(width: 256, height: 256)
             .overlay(CameraImporterView(model: models[0]), alignment: .bottom)
             .overlay(FileImporterView(model: models[0]), alignment: .top)
+#if !os(tvOS)
             .overlay(LibraryImporterView(model: models[0]), alignment: .center)
+#endif
+
         
         PhotoImporterView(model: models[0])
     }
