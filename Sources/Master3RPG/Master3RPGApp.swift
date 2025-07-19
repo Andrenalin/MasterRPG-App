@@ -29,6 +29,6 @@ struct Master3RPGApp: App {
                 .tint(Color.teal)
 
         }
-        .modelContainer(appModel.sharedModelContainer)
+        .modelContainer(appModel.modelContainer)
     }
 }

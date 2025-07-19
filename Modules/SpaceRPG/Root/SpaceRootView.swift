@@ -5,17 +5,14 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 
-public struct SpaceRootView: View {
-    public init(modelContext: ModelContext, withoutNavigation: Bool) {
-        self.withoutNavigation = withoutNavigation
-        self._rootModel = State(wrappedValue: SpaceRootModel(modelContext: modelContext))
-    }
+struct SpaceRootView: View {
     let withoutNavigation: Bool
     
-    @State private var rootModel: SpaceRootModel
+    @State private var cacheItemListModel = CacheItemListModel()
+    @State private var searchModel = SearchModel()
     @State private var selectionModel = ListSelectionModel<SpaceDataModel>()
 
-    public var body: some View {
+    var body: some View {
         RootView(module: .space, selectionModel: selectionModel, withoutNavigation: withoutNavigation, list: {
             ListView()
         }, detail: {
@@ -23,7 +20,8 @@ public struct SpaceRootView: View {
                 DetailView(model: selected)
             }
         })
-        .environment(rootModel)
+        .environment(cacheItemListModel)
+        .environment(searchModel)
     }
 }
 
@@ -32,9 +30,7 @@ public struct SpaceRootView: View {
     @Previewable @Environment(\.modelContext) var modelContext
     
     ManagedNavigationStack {
-        SpaceRootView(modelContext: modelContext, withoutNavigation: true)
-            .environment(CacheItemListModel())
-            .environment(SearchModel.preview)
+        SpaceRootView(withoutNavigation: true)
             .environment(TabTitleModel())
             .environment(DeviceRotationModel())
     }
@@ -45,10 +41,9 @@ public struct SpaceRootView: View {
     @Previewable @Query var models: [SpaceDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
 
-    SpaceRootView(modelContext: modelContext, withoutNavigation: false)
-        .environment(CacheItemListModel())
-        .environment(SearchModel.preview)
+    SpaceRootView(withoutNavigation: false)
         .environment(TabTitleModel())
         .environment(DeviceRotationModel())
+        .environment(SpaceRootModel(modelContext: modelContext))
 }
 

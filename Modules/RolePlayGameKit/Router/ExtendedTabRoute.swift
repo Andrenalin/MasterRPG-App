@@ -75,7 +75,6 @@ extension ExtendedTabRoute: NavigationDestination {
 
 struct ExtendedTabRouteDestionationView: View {
     let route: ExtendedTabRoute
-    let tabId = UUID()
 
     @Environment(AppModel.self) private var appModel
 
@@ -90,9 +89,11 @@ struct ExtendedTabRouteDestionationView: View {
             case .pdfs:
             RootListView(rootRoute: .pdfs)
             case .photos:
-            RootListView(rootRoute: .photos)
+            PhotoRootFactory.rootView(withoutNavigation: true)
+                .environment(appModel.photoRoot)
             case .space:
-            RootListView(rootRoute: .space)
+            SpaceRootFactory.rootView(withoutNavigation: true)
+                .environment(appModel.spaceRoot)
             case .tables:
             RootListView(rootRoute: .tables)
             case .weathers:

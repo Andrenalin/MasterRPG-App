@@ -5,17 +5,14 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 
-public struct PhotoRootView: View {
-    public init(modelContext: ModelContext, withoutNavigation: Bool) {
-        self.withoutNavigation = withoutNavigation
-        self._rootModel = State(wrappedValue: PhotoRootModel(modelContext: modelContext))
-    }
+struct PhotoRootView: View {
     let withoutNavigation: Bool
 
-    @State private var rootModel: PhotoRootModel
+    @State private var cacheItemListModel = CacheItemListModel()
+    @State private var searchModel = SearchModel()
     @State private var selectionModel = ListSelectionModel<PhotoDataModel>()
 
-    public var body: some View {
+    var body: some View {
         RootView(module: .space, selectionModel: selectionModel, withoutNavigation: withoutNavigation, list: {
             ListView()
         }, detail: {
@@ -23,7 +20,8 @@ public struct PhotoRootView: View {
                 DetailView(model: selected)
             }
         })
-        .environment(rootModel)
+        .environment(cacheItemListModel)
+        .environment(searchModel)
     }
 }
 
@@ -32,9 +30,7 @@ public struct PhotoRootView: View {
     @Previewable @Environment(\.modelContext) var modelContext
     
     ManagedNavigationStack {
-        PhotoRootView(modelContext: modelContext, withoutNavigation: true)
-            .environment(CacheItemListModel())
-            .environment(SearchModel.preview)
+        PhotoRootView(withoutNavigation: true)
             .environment(TabTitleModel())
             .environment(DeviceRotationModel())
     }
@@ -45,10 +41,8 @@ public struct PhotoRootView: View {
     @Previewable @Query var models: [PhotoDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
 
-    PhotoRootView(modelContext: modelContext, withoutNavigation: false)
-        .environment(CacheItemListModel())
-        .environment(SearchModel.preview)
+    PhotoRootView(withoutNavigation: false)
         .environment(TabTitleModel())
         .environment(DeviceRotationModel())
+        .environment(PhotoRootModel(modelContext: modelContext))
 }
-

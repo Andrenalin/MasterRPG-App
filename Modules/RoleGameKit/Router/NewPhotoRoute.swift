@@ -27,7 +27,7 @@ struct NewPhotoRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            PhotoRootView(modelContext: modelContext, withoutNavigation: isExtended)
+            PhotoRootFactory.rootView(withoutNavigation: isExtended)
                 .environment(cacheModel)
                 .environment(deviceRotationModel)
                 .environment(searchModel)

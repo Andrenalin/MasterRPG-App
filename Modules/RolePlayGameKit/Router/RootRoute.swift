@@ -151,6 +151,8 @@ extension RootRoute: NavigationDestination {
 
 struct RouteRouteDestionationView: View {
     let route: RootRoute
+    
+    @Environment(AppModel.self) private var appModel
         
     var body: some View {
         switch route {
@@ -173,9 +175,11 @@ struct RouteRouteDestionationView: View {
         case .pdfs:
             RootListView(rootRoute: route)
         case .photos:
-            RootListView(rootRoute: route)
+            PhotoRootFactory.rootView(withoutNavigation: false)
+                .environment(appModel.photoRoot)
         case .space:
-            RootListView(rootRoute: route)
+            SpaceRootFactory.rootView(withoutNavigation: false)
+                .environment(appModel.spaceRoot)
         case .settings:
             RootListView(rootRoute: route)
             //SettingsView()
