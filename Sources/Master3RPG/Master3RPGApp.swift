@@ -6,49 +6,29 @@
 //
 
 import CoreRPG
-import PhotoRPG
-import SpaceRPG
+import RolePlayGameKit
 import SwiftUI
 import SwiftData
 
 @main
 struct Master3RPGApp: App {
-    @State private var appRootUiModel = AppRootUiModel()
-    @State private var deviceRotationModel = DeviceRotationModel()
-    @State private var searchModel = SearchModel()
-    @State private var cacheModel = CacheItemListModel()
-
+    @State private var appModel = AppModel()
     
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            PhotoDataModel.self, PhotoEntryDataModel.self, SpaceDataModel.self, SpaceEntryDataModel.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
     var body: some Scene {
         WindowGroup {
             AppRootView()
                 .environment(\.colorScheme, .dark)
-                .environment(appRootUiModel)
-                .environment(deviceRotationModel)
-                .environment(searchModel)
-                .environment(cacheModel)
+                .environment(appModel)
                 .frame(minWidth: 375.0, minHeight: 600.0)
                 // Keeps the current window's size for use in scrolling header calculations.
-                .onGeometryChange(for: CGSize.self) { geometry in
-                    geometry.size
-                } action: {
-                    appRootUiModel.windowSize = $0
-                }
+//                .onGeometryChange(for: CGSize.self) { geometry in
+//                    geometry.size
+//                } action: {
+//                    appRootUiModel.windowSize = $0
+//                }
                 .tint(Color.teal)
 
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(appModel.sharedModelContainer)
     }
 }

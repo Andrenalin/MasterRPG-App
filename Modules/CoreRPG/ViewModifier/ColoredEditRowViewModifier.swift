@@ -1,0 +1,40 @@
+// @copyright André Trettin
+
+import SwiftUI
+
+public extension View {
+    func rowEditColor(backgroundColor: Color = .black) -> some View {
+        modifier(ColoredEditRowViewModifier(backgroundColor: backgroundColor))
+    }
+
+    func rowDiceResultColor(backgroundColor: Color = .black) -> some View {
+        modifier(ColoredDiceResultRowViewModifier(backgroundColor: backgroundColor))
+    }
+}
+
+struct ColoredEditRowViewModifier: ViewModifier {
+    var backgroundColor: Color = .black
+
+    func body(content: Content) -> some View {
+        content
+            .foregroundStyle(.white)
+            .padding(6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(backgroundColor.opacity(0.7))
+            }
+    }
+}
+
+struct ColoredDiceResultRowViewModifier: ViewModifier {
+    var backgroundColor: Color = .black
+
+    func body(content: Content) -> some View {
+        content
+            .foregroundStyle(.white)
+            .padding(6)
+            .background {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(backgroundColor.opacity(0.7))
+            }
+    }
+}

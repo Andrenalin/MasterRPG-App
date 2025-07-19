@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1630"
+   LastUpgradeVersion = "2600"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -328,6 +328,28 @@
                BlueprintIdentifier = "8E8ABBDE2E2A662400E877CF"
                BuildableName = "CoreExternalRPGTests.xctest"
                BlueprintName = "CoreExternalRPGTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8ED3AB6A2E2B3CC900FF3AE8"
+               BuildableName = "RoelPlayGameKitTests.xctest"
+               BlueprintName = "RoelPlayGameKitTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8ED3ABA02E2B45AF00FF3AE8"
+               BuildableName = "RolePlayGameKitTests.xctest"
+               BlueprintName = "RolePlayGameKitTests"
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
