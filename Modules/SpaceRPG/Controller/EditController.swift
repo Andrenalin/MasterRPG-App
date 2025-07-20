@@ -32,7 +32,7 @@ extension EditController {
         Task.detached {
             await actor.setup(id: id)
             let fileUrl = try? await fileController.fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newId)
-            await actor.duplicate(id: id, url: fileUrl?.rawUrl)
+            await actor.duplicate(url: fileUrl?.rawUrl)
             await actor.save()
         }
     }

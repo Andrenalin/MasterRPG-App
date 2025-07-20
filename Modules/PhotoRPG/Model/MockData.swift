@@ -8,9 +8,10 @@ struct MockData: PreviewModifier {
     static let previewId = UUID()
     static let previewId2 = UUID()
     static let previewId3 = UUID()
-    
+        
     func body(content: Content, context: ModelContainer) -> some View {
         content
+            .modifier(MockRootViewModifier(modelContext: context.mainContext))
             .modelContainer(context)
     }
     static func makeSharedContext() async throws -> ModelContainer {
@@ -19,6 +20,9 @@ struct MockData: PreviewModifier {
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
+        guard try! container.mainContext.fetch(FetchDescriptor<PhotoDataModel>()).isEmpty else {
+            return container
+        }
         let photo1 = PhotoDataModel(
             id: previewId,
             name: "Mega Nice Photo",
@@ -47,6 +51,18 @@ struct MockData: PreviewModifier {
         container.mainContext.insert(photo3)
 
         return container
+    }
+}
+
+struct MockRootViewModifier: ViewModifier {
+    init(modelContext: ModelContext) {
+        self._root = State(wrappedValue: PhotoRootModel(modelContext: modelContext))
+    }
+    
+    @State private var root: PhotoRootModel
+
+    func body(content: Content) -> some View {
+        content.environment(root)
     }
 }
 

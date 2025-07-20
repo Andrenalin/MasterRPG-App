@@ -56,10 +56,6 @@ struct ExtendedTabBar: View {
 //                route
 //                    .environment(appStore.pdfRoot)
 //            }
-//            .navigationDestination(for: PhotoRoute.self) { route in
-//                route
-//                    .environment(appStore.photoRoot)
-//            }
 //            .navigationDestination(for: SpaceRoute.self) { route in
 //                route
 //                    .environment(appStore.spaceRoot)

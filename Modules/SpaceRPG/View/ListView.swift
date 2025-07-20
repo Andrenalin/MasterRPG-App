@@ -50,7 +50,7 @@ struct ListView: View {
         .onChange(of: selected) {
             model.selectedItem = items.first { $0.id == selected }
             guard let id = model.selectedItem?.id else { return }
-            navigator.navigate(to: SpaceRoute.photo(id), method: .push)
+            navigator.navigate(to: SpaceRoute.detail(id), method: .push)
         }
         .navigationTitle("Spaces")
 #if os(macOS)

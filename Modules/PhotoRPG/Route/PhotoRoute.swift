@@ -5,34 +5,32 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 
-enum PhotoRoute: Equatable, Codable {
-    case photo(UUID)
+public enum PhotoRoute: Equatable, Codable {
+    case detail(UUID)
 }
 
 extension PhotoRoute: NavigationDestination {
-    var body: some View {
+    public var body: some View {
         switch self {
-        case .photo(let itemId):
-            PhotoRouteDestinationView(itemId: itemId)
+        case .detail(let itemId):
+            DetailRouteDestinationView(itemId: itemId)
         }
     }
 }
 
-extension PhotoRoute: NavigationRoutes {}
-
-struct PhotoRouteDestinationView: View {
+struct DetailRouteDestinationView: View {
     init(itemId: UUID) {
         self.itemId = itemId
-        self._photos = Query(filter: #Predicate<PhotoDataModel>{ $0.id == itemId })
+        self._items = Query(filter: #Predicate<PhotoDataModel>{ $0.id == itemId })
     }
     
     let itemId: UUID
 
-    @Query private var photos: [PhotoDataModel]
+    @Query private var items: [PhotoDataModel]
     
     var body: some View {
-        if let photo = photos.first {
-            DetailView(model: photo)
+        if let item = items.first {
+            DetailView(model: item)
         }
     }
 }

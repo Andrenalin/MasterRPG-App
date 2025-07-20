@@ -6,45 +6,6 @@ import SwiftUI
 import PhotoRPG
 import SpaceRPG
 
-public enum KnownRoutes: NavigationRoutes {
-    case adventures(UUID?, UUID?)
-    case audios(UUID?, UUID?)
-    case dice(UUID?, UUID?)
-    case game
-    case maps(UUID?, UUID?)
-    case pdfs(UUID?, UUID?)
-    case photos(UUID?, UUID?)
-    case settings
-    case spaces(UUID?, UUID?)
-    case tables(UUID?, UUID?)
-    case values(UUID?, UUID?)
-    case weathers(UUID?, UUID?)
-}
-
-extension KnownRoutes {
-    static func route(module: NetworkModules, itemId: UUID?, entryId: UUID?) -> KnownRoutes {
-        switch module {
-        case .adventure: .adventures(itemId, entryId)
-        case .audio: .audios(itemId, entryId)
-        case .dice: .dice(itemId, entryId)
-        case .game: .game
-        case .map: .maps(itemId, entryId)
-        case .pdf: .pdfs(itemId, entryId)
-        case .photo: .photos(itemId, entryId)
-        case .setting: .settings
-        case .space: .spaces(itemId, entryId)
-        case .table: .tables(itemId, entryId)
-        case .value: .values(itemId, entryId)
-        case .weather: .weathers(itemId, entryId)
-        default: .game
-        }
-    }
-}
-
-extension EnvironmentValues {
-    @Entry public var router: any NavigationRouting<KnownRoutes> = MockNavigationRouter()
-}
-
 struct RootRouteRouter: NavigationRouteHandling {
     let appModel: AppModel
     
@@ -54,90 +15,39 @@ struct RootRouteRouter: NavigationRouteHandling {
     
     @MainActor func actions(for route: KnownRoutes) -> [NavigationAction] {
         switch route {
-        case .adventures(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .adventure, itemId: itemId, entryId: entryId)
-            }
+        case .adventures(_, _):
             return [.send(RootRoute.adventures)]
-        case .audios(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .audio, itemId: itemId, entryId: entryId)
-            }
+        case .audios(_, _):
             return [.send(RootRoute.audios)]
-        case .dice(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .dice, itemId: itemId, entryId: entryId)
-            }
+        case .dice(_, _):
             return [.send(RootRoute.dice)]
         case .game:
             return [.send(RootRoute.game)]
-        case .maps(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .map, itemId: itemId, entryId: entryId)
-            }
+        case .maps(_, _):
             return [.send(RootRoute.maps)]
-        case .pdfs(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .pdf, itemId: itemId, entryId: entryId)
-            }
+        case .pdfs(_, _):
             return [.send(RootRoute.pdfs)]
-        case .photos(let itemId, let entryId):
+        case .photos(let itemId, _):
             if let itemId {
-                selectItem(for: .photo, itemId: itemId, entryId: entryId)
+                return [.send(RootRoute.photos), .send(PhotoRoute.detail(itemId))]
             }
             return [.send(RootRoute.photos)]
-        case .spaces(let itemId, let entryId):
+        case .spaces(let itemId, _):
             if let itemId {
-                selectItem(for: .space, itemId: itemId, entryId: entryId)
+                return [.send(RootRoute.space), .send(SpaceRoute.detail(itemId))]
             }
             return [.send(RootRoute.space)]
         case .settings:
             return [.send(RootRoute.editors)]
-        case .tables(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .table, itemId: itemId, entryId: entryId)
-            }
+        case .tables(_, _):
             return [.send(RootRoute.tables)]
-        case .values(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .value, itemId: itemId, entryId: entryId)
-            }
+        case .values(_, _):
             return [.send(RootRoute.values)]
-        case .weathers(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .weather, itemId: itemId, entryId: entryId)
-            }
+        case .weathers(_, _):
             return [.send(RootRoute.weathers)]
+        @unknown default:
+            fatalError()
         }
-    }
-    
-    @MainActor func selectItem(for module: NetworkModules, itemId: UUID?, entryId: UUID?) {
-        guard let itemId else { return }
-//        let item = ItemRowModel(itemId: itemId, entryId: entryId, typeId: module)
-//        switch module {
-//        case .adventure:
-//            appStore.adventureRoot.rootModel.selectedItem = item
-//        case .audio:
-//            appStore.audioRoot.rootModel.selectedItem = item
-//        case .dice:
-//            appStore.diceRoot.rootModel.selectedItem = item
-//        case .map:
-//            appStore.mapRoot.rootModel.selectedItem = item
-//        case .pdf:
-//            appStore.pdfRoot.rootModel.selectedItem = item
-//        case .photo:
-//            appStore.photoRoot.rootModel.selectedItem = item
-//        case .space:
-//            appStore.spaceRoot.rootModel.selectedItem = item
-//        case .table:
-//            appStore.tableRoot.rootModel.selectedItem = item
-//        case .value:
-//            appStore.valueRoot.rootModel.selectedItem = item
-//        case .weather:
-//            appStore.weatherRoot.rootModel.selectedItem = item
-//        default:
-//            break
-//        }
     }
 }
 
@@ -151,89 +61,40 @@ struct RootFiveRouteRouter: NavigationRouteHandling {
     
     @MainActor func actions(for route: KnownRoutes) -> [NavigationAction] {
         switch route {
-        case .adventures(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .adventure, itemId: itemId, entryId: entryId)
-            }
+        case .adventures(_, _):
             return [.send(RootRoute.adventures)]
-        case .audios(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .audio, itemId: itemId, entryId: entryId)
-            }
+        case .audios(_, _):
             return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.audios)]
-        case .dice(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .dice, itemId: itemId, entryId: entryId)
-            }
+        case .dice(_, _):
             return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.dice)]
         case .game:
             return [.send(RootRoute.game)]
-        case .maps(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .map, itemId: itemId, entryId: entryId)
-            }
+        case .maps(_, _):
             return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.maps)]
-        case .pdfs(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .pdf, itemId: itemId, entryId: entryId)
-            }
+        case .pdfs(_, _):
             return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.pdfs)]
-        case .photos(let itemId, let entryId):
+        case .photos(let itemId, _):
+            var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.photos)]
             if let itemId {
-                selectItem(for: .photo, itemId: itemId, entryId: entryId)
+                routes.append(.send(PhotoRoute.detail(itemId)))
             }
-            return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.photos)]
-        case .spaces(let itemId, let entryId):
+            return routes
+        case .spaces(let itemId, _):
+            var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.photos)]
             if let itemId {
-                selectItem(for: .space, itemId: itemId, entryId: entryId)
+                routes.append(.send(SpaceRoute.detail(itemId)))
             }
-            return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.space)]
+            return routes
         case .settings:
             return [.send(RootRoute.settings)]
-        case .tables(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .table, itemId: itemId, entryId: entryId)
-            }
+        case .tables(_, _):
             return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.tables)]
-        case .values(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .value, itemId: itemId, entryId: entryId)
-            }
+        case .values(_, _):
             return [.send(RootRoute.values)]
-        case .weathers(let itemId, let entryId):
-            if let itemId {
-                selectItem(for: .weather, itemId: itemId, entryId: entryId)
-            }
+        case .weathers(_, _):
             return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.weathers)]
+        @unknown default:
+            fatalError()
         }
-    }
-    
-    @MainActor func selectItem(for module: NetworkModules, itemId: UUID?, entryId: UUID?) {
-        guard let itemId else { return }
-//        let item = ItemRowModel(itemId: itemId, entryId: entryId, typeId: module)
-//        switch module {
-//        case .adventure:
-//            appStore.adventureRoot.rootModel.selectedItem = item
-//        case .audio:
-//            appStore.audioRoot.rootModel.selectedItem = item
-//        case .dice:
-//            appStore.diceRoot.rootModel.selectedItem = item
-//        case .map:
-//            appStore.mapRoot.rootModel.selectedItem = item
-//        case .pdf:
-//            appStore.pdfRoot.rootModel.selectedItem = item
-//        case .photo:
-//            appStore.photoRoot.rootModel.selectedItem = item
-//        case .space:
-//            appStore.spaceRoot.rootModel.selectedItem = item
-//        case .table:
-//            appStore.tableRoot.rootModel.selectedItem = item
-//        case .value:
-//            appStore.valueRoot.rootModel.selectedItem = item
-//        case .weather:
-//            appStore.weatherRoot.rootModel.selectedItem = item
-//        default:
-//            break
-//        }
     }
 }

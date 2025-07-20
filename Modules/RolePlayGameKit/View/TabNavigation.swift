@@ -34,11 +34,6 @@ public struct TabNavigation: View {
             }
 #endif
         }
-        .environment(appModel.deviceRotationModel)
-        .environment(\.navigator, appModel.navigator)
-        .environment(appModel.photoRoot)
-        .environment(appModel.spaceRoot)
-        .environment(tabTitleModel)
 #if os(iOS)
         .tabBarMinimizeBehavior26(.onScrollDown)
 #endif
@@ -47,8 +42,9 @@ public struct TabNavigation: View {
 #else
         .tabViewStyle(.sidebarAdaptable)
 #endif
-        .onNavigationOpenURL(RootURLHandler(appModel: appModel))
+        .environment(tabTitleModel)
         .focusedSceneValue(\.selectedModule, $tabSelectedModule)
+        .onNavigationOpenURL(RootURLHandler(appModel: appModel))
         .onChange(of: selectedTab, initial: true) {
             tabSelectedModule = selectedTab.module
         }

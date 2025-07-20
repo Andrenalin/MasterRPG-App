@@ -16,7 +16,7 @@ struct OpenPhotoIntent: OpenIntent {
     @Dependency var navigator: Navigator
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: PhotoRoute.photo(target.id))
+        await navigator.perform(route: KnownRoutes.photos(target.id, nil))
         return .result()
     }
 }

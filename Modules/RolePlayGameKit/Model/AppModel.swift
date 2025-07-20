@@ -65,6 +65,8 @@ extension AppModel {
                 self.navigator.perform(route: KnownRoutes.adventures(nil, nil))
             case .audios:
                 self.navigator.perform(route: KnownRoutes.audios(nil, nil))
+            case .photos(let itemId, let entryId):
+                self.navigator.perform(route: KnownRoutes.photos(itemId, entryId))
             default:
                 break
             }

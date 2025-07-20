@@ -6,7 +6,7 @@ import SwiftData
 import SwiftUI
 
 enum InternalRoute: Equatable, Codable {
-    case export(id: UUID)
+    case export(ids: [UUID])
 }
 
 extension InternalRoute: NavigationDestination {
@@ -22,10 +22,10 @@ struct InternalRouteDestinationView: View {
     
     var body: some View {
         switch route {
-        case .export(let id):
+        case .export(let ids):
             ExportProgressFile(exportController: rootModel.exportController) {
-                let ids = rootModel.exportController.exporting(ids: [id])
-                return rootModel.exportController.export(ids: ids)
+                let exportIds = rootModel.exportController.exporting(ids: Set(ids))
+                return rootModel.exportController.export(ids: exportIds)
             }
             .presentationDetents([.height(160)])
         }

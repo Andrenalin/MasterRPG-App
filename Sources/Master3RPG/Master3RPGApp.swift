@@ -13,6 +13,8 @@ import SwiftData
 
 @main
 struct Master3RPGApp: App {
+    @Environment(\.openURL) private var openURL
+
     @State private var appModel = AppModel()
     
     init() {
@@ -27,12 +29,23 @@ struct Master3RPGApp: App {
     var body: some Scene {
         WindowGroup {
             AppRootView()
-                .environment(\.colorScheme, .dark)
                 .environment(appModel)
-                .frame(minWidth: 375.0, minHeight: 600.0)
-                .tint(Color.teal)
-
+                .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
+                    handle(userActivity: userActivity)
+                }
         }
         .modelContainer(appModel.modelContainer)
     }
+    
+    func handle(userActivity: NSUserActivity) {
+        // SIRI & Search
+        let module = UserActivity.module(from: userActivity)
+        guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
+        let childId = UserActivity.childId(from: userActivity)
+        //let command: String? = UserActivity.command(from: userActivity)
+        let child = childId != nil ? "/\(childId?.uuidString ?? "")" : ""
+        let url = URL(string: "\(URL.appScheme)://\(module.token)/0/\(itemId)\(child)")!
+        openURL(url)
+    }
+
 }

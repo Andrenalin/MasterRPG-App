@@ -41,9 +41,9 @@ actor DataModelActor {
         model.url = url
     }
 
-    func duplicate(id: UUID, url: URL?) {
+    func duplicate(url: URL?) {
         let newModel = PhotoDataModel(
-            id: id,
+            id: UUID(),
             name: "\(model.name) copy",
             information: model.information,
             category: model.category,

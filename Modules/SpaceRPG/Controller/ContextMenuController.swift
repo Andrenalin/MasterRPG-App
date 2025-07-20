@@ -18,7 +18,7 @@ struct ContextMenuController: ItemListContextMenuControllable {
         model.name
     }
     
-    func copyItem() {
+    func duplicateItem() {
         editController.copy(model: model)
     }
     

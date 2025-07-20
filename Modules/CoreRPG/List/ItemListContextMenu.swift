@@ -6,7 +6,7 @@ import SwiftUI
 public protocol ItemListContextMenuControllable {
     var itemName: String { get }
 
-    func copyItem()
+    func duplicateItem()
     func deleteItem()
     func exportItem() -> any NavigationDestination
     func generateLink()
@@ -22,7 +22,7 @@ public struct ItemListContextMenu: View {
     @Environment(\.navigator) private var navigator
     
     public var body: some View {
-        copyItemView
+        duplicateItemView
         exportItemView
         generateLinkView
         deleteItemView
@@ -30,12 +30,12 @@ public struct ItemListContextMenu: View {
 }
 
 private extension ItemListContextMenu {
-    var copyItemView: some View {
+    var duplicateItemView: some View {
         Button {
-            withAnimation { controller.copyItem() }
+            withAnimation { controller.duplicateItem() }
         } label: {
             Label {
-                Text("Copy \(controller.itemName)", bundle: .module)
+                Text("Duplicate \(controller.itemName)", bundle: .module)
             } icon: {
                 Image(systemName: "doc.on.doc")
             }

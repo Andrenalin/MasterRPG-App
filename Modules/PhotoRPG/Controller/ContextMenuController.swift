@@ -18,8 +18,8 @@ struct ContextMenuController: ItemListContextMenuControllable {
         model.name
     }
     
-    func copyItem() {
-        editController.copy(model: model)
+    func duplicateItem() {
+        editController.duplicate(model: model)
     }
     
     func deleteItem() {
@@ -27,7 +27,7 @@ struct ContextMenuController: ItemListContextMenuControllable {
     }
     
     func exportItem() -> any NavigationDestination {
-        InternalRoute.export(id: model.id)
+        InternalRoute.export(ids: [model.id])
     }
     
     func generateLink() {
@@ -41,6 +41,5 @@ struct ContextMenuController: ItemListContextMenuControllable {
         let pasteboard = UIPasteboard.general
         pasteboard.string = linkText
 #endif
-
     }
 }

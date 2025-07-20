@@ -176,12 +176,6 @@
 		8E6F3F332BC4C7FC00600556 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */; };
 		8E6F3F342BC4C7FC00600556 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */; };
 		8E6F3F352BC4C7FC00600556 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */; };
-		8E795D492DAE362F001E699A /* OpenAdventure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E795D482DAE362F001E699A /* OpenAdventure.swift */; };
-		8E795D4A2DAE362F001E699A /* OpenAdventure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E795D482DAE362F001E699A /* OpenAdventure.swift */; };
-		8E795D4B2DAE362F001E699A /* OpenAdventure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E795D482DAE362F001E699A /* OpenAdventure.swift */; };
-		8E795D4E2DAE3D5C001E699A /* AdventureShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E795D4D2DAE3D5C001E699A /* AdventureShortcuts.swift */; };
-		8E795D4F2DAE3D5C001E699A /* AdventureShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E795D4D2DAE3D5C001E699A /* AdventureShortcuts.swift */; };
-		8E795D502DAE3D5C001E699A /* AdventureShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E795D4D2DAE3D5C001E699A /* AdventureShortcuts.swift */; };
 		8E81B0D32C26E4A0005B7B6F /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E81B0D22C26E4A0005B7B6F /* StoreKit.framework */; };
 		8E81B0D42C26E4B9005B7B6F /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E81B0D22C26E4A0005B7B6F /* StoreKit.framework */; };
 		8E8809CE2BC8B45E00186C7A /* InfoTVPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E8809CC2BC8B45E00186C7A /* InfoTVPlist.xcstrings */; };
@@ -1964,8 +1958,6 @@
 		8E6BC9FD2AFB0D9300E5E098 /* MasterTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MasterTV.entitlements; sourceTree = "<group>"; };
 		8E6BCA392AFB20EA00E5E098 /* TabRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabRootView.swift; sourceTree = "<group>"; };
 		8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		8E795D482DAE362F001E699A /* OpenAdventure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAdventure.swift; sourceTree = "<group>"; };
-		8E795D4D2DAE3D5C001E699A /* AdventureShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdventureShortcuts.swift; sourceTree = "<group>"; };
 		8E7C79F52E14C73600C98D17 /* Master3RPG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Master3RPG.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E7C7A052E14C73700C98D17 /* Master3RPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Master3RPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E7C7A0F2E14C73700C98D17 /* Master3RPGUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Master3RPGUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2634,15 +2626,6 @@
 			path = MasterTV;
 			sourceTree = "<group>";
 		};
-		8E795D472DAE361C001E699A /* AppIntent */ = {
-			isa = PBXGroup;
-			children = (
-				8E795D482DAE362F001E699A /* OpenAdventure.swift */,
-				8E795D4D2DAE3D5C001E699A /* AdventureShortcuts.swift */,
-			);
-			path = AppIntent;
-			sourceTree = "<group>";
-		};
 		8E8EEC3E2CD8EC3A0010A25B /* Modules */ = {
 			isa = PBXGroup;
 			children = (
@@ -2793,7 +2776,6 @@
 		8EC4E48028DDAAF300D0279F /* MasterRPG */ = {
 			isa = PBXGroup;
 			children = (
-				8E795D472DAE361C001E699A /* AppIntent */,
 				593994062B28649100AB9BBE /* AboutMenuCommand.swift */,
 				8E926E9B2B47BDC00025B659 /* InitialRootView.swift */,
 				8EC4E48628DDAAF300D0279F /* iOS */,
@@ -4810,9 +4792,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8E795D4F2DAE3D5C001E699A /* AdventureShortcuts.swift in Sources */,
 				8E635A6F2C69C9D400A9F2E0 /* WindowMacVisionList.swift in Sources */,
-				8E795D4B2DAE362F001E699A /* OpenAdventure.swift in Sources */,
 				8E190DA42B8F6C190084B0F4 /* WindowLinkList.swift in Sources */,
 				8E190D982B8F6C0D0084B0F4 /* AboutMenuCommand.swift in Sources */,
 				8E190D992B8F6C150084B0F4 /* macOSAppDelegate.swift in Sources */,
@@ -4858,12 +4838,10 @@
 				8E6BC9CE2AFB0B2300E5E098 /* MasterTVApp.swift in Sources */,
 				8E6BC9E12AFB0BCF00E5E098 /* iOSAppDelegate.swift in Sources */,
 				8E926E9A2B47B80E0025B659 /* MenuCommandList.swift in Sources */,
-				8E795D4E2DAE3D5C001E699A /* AdventureShortcuts.swift in Sources */,
 				5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
 				8E6BCA3C2AFB20EA00E5E098 /* TabRootView.swift in Sources */,
 				8E6BC9E22AFB0BCF00E5E098 /* iOSSceneDelegate.swift in Sources */,
 				8E926E9E2B47BDC00025B659 /* InitialRootView.swift in Sources */,
-				8E795D4A2DAE362F001E699A /* OpenAdventure.swift in Sources */,
 				593994092B28649100AB9BBE /* AboutMenuCommand.swift in Sources */,
 				8E635A712C69C9D400A9F2E0 /* WindowMacVisionList.swift in Sources */,
 				8E926E892B452AB10025B659 /* WindowLinkList.swift in Sources */,
@@ -5092,10 +5070,8 @@
 				8E926E8B2B453D450025B659 /* WindowMacList.swift in Sources */,
 				8E926E872B452AB10025B659 /* WindowLinkList.swift in Sources */,
 				8EC4E49528DDAAF400D0279F /* RootView.swift in Sources */,
-				8E795D492DAE362F001E699A /* OpenAdventure.swift in Sources */,
 				8EC4E49728DDAAF400D0279F /* iOSSceneDelegate.swift in Sources */,
 				8EC4E49228DDAAF400D0279F /* macOSAppDelegate.swift in Sources */,
-				8E795D502DAE3D5C001E699A /* AdventureShortcuts.swift in Sources */,
 				8E635A702C69C9D400A9F2E0 /* WindowMacVisionList.swift in Sources */,
 				8E6BCA3A2AFB20EA00E5E098 /* TabRootView.swift in Sources */,
 				8EC4E49828DDAAF400D0279F /* MasterRPGApp.swift in Sources */,

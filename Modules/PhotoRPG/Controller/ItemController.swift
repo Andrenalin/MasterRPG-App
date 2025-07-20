@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-struct ItemController: ItemControllable {
+struct ItemController: ItemControllable, Sendable {
     let container: ModelContainer
     
     func item(for id: UUID) async -> PhotoModel? {
@@ -16,7 +16,11 @@ struct ItemController: ItemControllable {
     func itemSync(for id: UUID) -> PhotoModel? {
         PhotoDataModel.model(modelContext: ModelContext(container), id: id)?.photoModel
     }
-    
+
+    func modelSync(for id: UUID) -> PhotoDataModel? {
+        PhotoDataModel.model(modelContext: ModelContext(container), id: id)
+    }
+
     typealias Model = PhotoModel
     
     func allItemIds() -> [UUID] {

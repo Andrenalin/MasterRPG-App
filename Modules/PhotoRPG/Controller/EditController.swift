@@ -25,14 +25,14 @@ extension EditController {
         return newItem
     }
     
-    func copy(model: PhotoDataModel) {
+    func duplicate(model: PhotoDataModel) {
         let newId = UUID()
         guard let actor = model.modelActor() else { return }
         let id = model.id
         Task.detached {
             await actor.setup(id: id)
             let fileUrl = try? await fileController.fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newId)
-            await actor.duplicate(id: id, url: fileUrl?.rawUrl)
+            await actor.duplicate(url: fileUrl?.rawUrl)
             await actor.save()
         }
     }
