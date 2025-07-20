@@ -21,7 +21,9 @@ struct ListView: View {
     
     @Query(filter: #Predicate<PhotoDataModel>{ $0.displayState == 0 }, sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
     
-    @State private var selection: Set<UUID> = []
+    @State private var selected: UUID?
+    @State private var selection: [UUID] = []
+    @State private var listSelection: Set<UUID> = []
     @State private var isSelectionMode: Bool = false
     
     var body: some View {
@@ -33,58 +35,82 @@ struct ListView: View {
         }
         
         listView(filteredItems: filteredItems)
-            .navigationDestination(for: PhotoRoute.self) { route in
-                route
-                    .environment(rootModel)
-                    .environment(cacheItemListModel)
-            }
-            .animation(.smooth, value: filteredItems)
+        .navigationDestination(for: PhotoRoute.self) { route in
+            route
+                .environment(rootModel)
+                .environment(cacheItemListModel)
+        }
+        .animation(.smooth, value: filteredItems)
 #if os(macOS)
-            .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
+        .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
+        .onChange(of: selected) {
+            model.selectedItem = items.first { $0.id == selected }
+            guard let id = model.selectedItem?.id else { return }
+            navigator.navigate(to: PhotoRoute.photo(id), method: .push)
+        }
 #endif
-            .onChange(of: selection) {
-                guard !isSelectionMode else { return }
-                let selected = items.first { $0.id == selection.first }
-                withAnimation {
-                    if selected != model.selectedItem {
-                        model.selectedItem = selected
-                    } else {
-                        model.selectedItem = nil
-                    }
-                }
-                guard let id = model.selectedItem?.id else { return }
-                navigator.navigate(to: PhotoRoute.photo(id), method: .push)
-                #if os(iOS)
-                if horizontalSizeClass == .compact {
-//                    withAnimation { selection.removeAll() }
-                }
-                #endif
-            }
-#if os(iOS) || os(visionOS)
-            .onChange(of: editMode) {
-                if editMode?.wrappedValue == .active {
-                    isSelectionMode = true
+        .onChange(of: selection) {
+            guard !isSelectionMode else { return }
+            let selected = items.first { $0.id == selection.first }
+            withAnimation {
+                if selected != model.selectedItem {
+                    model.selectedItem = selected
                 } else {
-                    isSelectionMode = false
+                    model.selectedItem = nil
                 }
             }
+            guard let id = model.selectedItem?.id else { return }
+            navigator.navigate(to: PhotoRoute.photo(id), method: .push)
+#if os(iOS)
+            if horizontalSizeClass == .compact {
+                //                    withAnimation { selection.removeAll() }
+            }
 #endif
-            .navigationTitle("Photos")
+        }
+#if os(iOS) || os(visionOS)
+        .onChange(of: editMode) {
+            if editMode?.wrappedValue == .active {
+                isSelectionMode = true
+            } else {
+                isSelectionMode = false
+            }
+        }
+#endif
+        .navigationTitle("Photos")
 #if os(macOS)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+        .navigationSplitViewColumnWidth(min: 180, ideal: 200)
 #endif
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {  addItem() } label: {
-                        Label("Add", systemImage: "plus")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {  addItem() } label: {
+                    Label("Add", systemImage: "plus")
+                }
+            }
+#if os(macOS)
+            ToolbarItem(placement: .automatic) {
+                if isSelectionMode {
+                    Button {
+                        isSelectionMode.toggle()
+                    } label: {
+                        Label("Select", systemImage: "checkmark.circle")
+                    }
+                    .buttonStyle(.borderedProminent)
+                } else {
+                    Button {
+                        isSelectionMode.toggle()
+                    } label: {
+                        Label("Select", systemImage: "checkmark.circle")
                     }
                 }
-#if os(iOS) || os(visionOS)
-                ToolbarItem(placement: .automatic) {
-                    EditButton()
-                }
+        }
 #endif
+
+#if os(iOS) || os(visionOS)
+            ToolbarItem(placement: .automatic) {
+                EditButton()
             }
+#endif
+        }
     }
     
     private func addItem() {
@@ -102,36 +128,41 @@ struct ListView: View {
         }
     }
     
+    @ViewBuilder
     private func listView(filteredItems: [PhotoDataModel]) -> some View {
-        List(selection: $selection) {
-            ForEach(filteredItems) { item in
-                MainRowView(model: item)
-                    .contextMenu {
-                        ItemListContextMenu(controller: ContextMenuController(editController: rootModel.editController, model: item))
-                    }
-                    .listRowInsets(EdgeInsets(top: 2, leading: isSelectionMode ? 12 : 2, bottom: 2, trailing: 0))
+#if os(macOS)
+        if isSelectionMode {
+            List(selection: $listSelection) {
+                itemRows(filteredItems: filteredItems)
             }
-            .onDelete(perform: deleteItems)
-            .deleteDisabled(isSelectionMode)
+            .contextMenu {
+                ItemListContextMenu(controller: ContextMenuController(editController: rootModel.editController, model: PhotoDataModel()))
+            }
+        } else {
+            List(selection: $selected) {
+                itemRows(filteredItems: filteredItems)
+            }
         }
+#else
+        List(selection: $listSelection) {
+            itemRows(filteredItems: filteredItems)
+        }
+#endif
+        
     }
     
-    private func selectionListView(filteredItems: [PhotoDataModel]) -> some View {
-        List(selection: $selection) {
-            ForEach(filteredItems) { item in
-                MainRowView(model: item)
-                    .selectListItem {
-                        if selection.contains(item.id) {
-                            selection.remove(item.id)
-                        } else {
-                            selection.insert(item.id)
-                        }
-                    } isSelected: {
-                        selection.contains(item.id)
+    private func itemRows(filteredItems: [PhotoDataModel]) -> some View {
+        ForEach(filteredItems) { item in
+            MainRowView(model: item)
+                .contextMenu {
+                    if !isSelectionMode {
+                        ItemListContextMenu(controller: ContextMenuController(editController: rootModel.editController, model: item))
                     }
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            }
+                }
+                .listRowInsets(EdgeInsets(top: 2, leading: valueFor(iOS: isSelectionMode ? 12 : 2, macOS: 2, tvOS: isSelectionMode ? 12 : 2, visionOS: isSelectionMode ? 12 : 2), bottom: 2, trailing: 0))
         }
+        .onDelete(perform: deleteItems)
+        .deleteDisabled(isSelectionMode)
     }
     
 #if os(macOS)
