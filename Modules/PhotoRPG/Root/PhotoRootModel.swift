@@ -24,3 +24,14 @@ public final class PhotoRootModel {
     
     @ObservationIgnored let networkModule: NetworkModules = .photo
 }
+
+extension PhotoRootModel {
+    func loadableUrl(for itemId: UUID) async -> URL? {
+        guard let fileUrl = await itemController.item(for: itemId)?.fileUrl else { return nil }
+        return await fileController.fileUrlDataController.url(for: fileUrl, action: { $0 })
+    }
+    
+    func loadImage(for itemId: UUID, isThumbnail: Bool) async -> AKImage? {
+        isThumbnail ? await cacheController.thumbnail(for: itemId) : await cacheController.photo(for: itemId)
+    }
+}

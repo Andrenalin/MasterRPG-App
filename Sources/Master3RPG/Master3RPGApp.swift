@@ -18,6 +18,10 @@ struct Master3RPGApp: App {
     init() {
         let data = appModel
         AppDependencyManager.shared.add(dependency: data)
+        let photoRootModel = appModel.photoRoot
+        AppDependencyManager.shared.add(dependency: photoRootModel)
+        let navigator = appModel.navigator
+        AppDependencyManager.shared.add(dependency: navigator)
     }
 
     var body: some Scene {

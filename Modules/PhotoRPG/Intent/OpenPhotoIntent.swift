@@ -4,26 +4,29 @@ import AppIntents
 import Foundation
 import SwiftUI
 import CoreRPG
+import CoreExternalRPG
 
-//struct OpenAdventure: AppIntent, OpenIntent {
-//    static let title: LocalizedStringResource = "Open Adventure"
-//    static let description = IntentDescription("Displays adventure details in the app.")
-//    
-//    @Parameter(title: "Adventure")
-//    var target: AdventureEntity
-//    
-//    func perform() async throws -> some IntentResult {
-//        let router = await AppStore.shared.routeActions
-//        await router.routePage(.adventure, target.id, nil)
-//        return .result()
-//    }
-//    
-//    static var parameterSummary: some ParameterSummary {
-//        Summary("Open \(\.$target)")
-//    }
-//}
-//
-//
+@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
+struct OpenPhotoIntent: OpenIntent {
+    static let title: LocalizedStringResource = "Open Photo"
+
+    @Parameter(title: "Photo", requestValueDialog: "Which photo?")
+    var target: PhotoEntity
+
+    @Dependency var navigator: Navigator
+
+    func perform() async throws -> some IntentResult {
+        await navigator.perform(route: PhotoRoute.photo(target.id))
+        return .result()
+    }
+}
+
+#if os(iOS)
+@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
+extension OpenPhotoIntent: TargetContentProvidingIntent {}
+#endif
+
+
 //struct GetActiveAdventure: AppIntent {
 //    static let title: LocalizedStringResource = "Get Active Adventure"
 //    static let description = IntentDescription("Displays and read the active adventure details.")

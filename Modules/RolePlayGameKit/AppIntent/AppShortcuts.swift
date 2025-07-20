@@ -1,6 +1,6 @@
 import AppIntents
 
-@available(iOS 26.0, *)
+@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
 struct AppShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
@@ -19,15 +19,6 @@ struct AppShortcuts: AppShortcutsProvider {
 //            ],
 //            shortTitle: "Find Closest",
 //            systemImageName: "location"
-//        )
-//        AppShortcut(
-//            intent: OpenLandmarkIntent(),
-//            phrases: [
-//                "Open in \(.applicationName)",
-//                "Open \(\.$target) in \(.applicationName)"
-//            ],
-//            shortTitle: "Open",
-//            systemImageName: "building.columns"
 //        )
     }
 }

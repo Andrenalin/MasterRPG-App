@@ -26,13 +26,13 @@ public protocol ImageCacheControllable: Sendable {
 }
 
 extension ImageCacheControllable {
-    func photo(for itemId: UUID) async -> AKImage? {
+    public func photo(for itemId: UUID) async -> AKImage? {
         let image = await imageCacheController.object(for: itemId)
         image?.resetSize()
         return image
     }
     
-    func thumbnail(for itemId: UUID) async -> AKImage? {
+    public func thumbnail(for itemId: UUID) async -> AKImage? {
         await thumbnailCacheController.object(for: itemId)
     }
     

@@ -6,6 +6,9 @@ import SwiftData
 
 struct MockData: PreviewModifier {
     static let previewId = UUID()
+    static let previewId2 = UUID()
+    static let previewId3 = UUID()
+    
     func body(content: Content, context: ModelContainer) -> some View {
         content
             .modelContainer(context)
@@ -24,7 +27,25 @@ struct MockData: PreviewModifier {
             tags: ["Example", "Title", "Ouside"]
         )
         container.mainContext.insert(photo1)
-        
+
+        let photo2 = PhotoDataModel(
+            id: previewId2,
+            name: "Albert",
+            information: "The is an example photo and the information is also set here",
+            category: .character,
+            tags: ["Player", "Mega", "Gnome"]
+        )
+        container.mainContext.insert(photo2)
+
+        let photo3 = PhotoDataModel(
+            id: previewId3,
+            name: "Zauberer",
+            information: "A photo of a wizard.",
+            category: .adventure,
+            tags: ["NPC", "Wizward", "Schwarzmagier"]
+        )
+        container.mainContext.insert(photo3)
+
         return container
     }
 }

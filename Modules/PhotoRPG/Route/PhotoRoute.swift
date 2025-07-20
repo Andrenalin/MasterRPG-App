@@ -18,6 +18,8 @@ extension PhotoRoute: NavigationDestination {
     }
 }
 
+extension PhotoRoute: NavigationRoutes {}
+
 struct PhotoRouteDestinationView: View {
     init(itemId: UUID) {
         self.itemId = itemId
