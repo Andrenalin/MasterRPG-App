@@ -3,21 +3,21 @@
 import CoreExternalRPG
 import SwiftUI
 
-public struct RootView<DataModel, List: View, Detail: View>: View {
-    public init(module: NetworkModules, selectionModel: ListSelectionModel<DataModel>, withoutNavigation: Bool, @ViewBuilder list: () -> List, @ViewBuilder detail: () -> Detail) {
+public struct RootView<List: View, Detail: View>: View {
+    public init(module: NetworkModules, listModel: ListModel, withoutNavigation: Bool, @ViewBuilder list: () -> List, @ViewBuilder detail: () -> Detail) {
         self.module = module
-        self.selectionModel = selectionModel
+        self.listModel = listModel
         self.withoutNavigation = withoutNavigation
         self.list = list()
         self.detail = detail()
     }
     
     let module: NetworkModules
-    let selectionModel: ListSelectionModel<DataModel>
+    let listModel: ListModel
     let withoutNavigation: Bool
     let list: List
     let detail: Detail
-
+    
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(SearchModel.self) private var searchModel
     @Environment(TabTitleModel.self) private var tabTitleModel
@@ -29,20 +29,35 @@ public struct RootView<DataModel, List: View, Detail: View>: View {
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
-
+    
     public var body: some View {
+#if os(iOS)
         Group {
-            if withoutNavigation {
+            if horizontalSizeClass == .compact {
                 listRoot
             } else {
-                splitRoot
+                rootView
             }
         }
-#if os(iOS)
         .onChange(of: tabBarPlacement, initial: true) {
             tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
         }
+        .onChange(of: horizontalSizeClass, initial: true) {
+            tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
+            listModel.splitList = horizontalSizeClass == .regular
+        }
+#else
+        rootView
 #endif
+    }
+    
+    @ViewBuilder
+    private var rootView: some View {
+        if withoutNavigation {
+            listRoot
+        } else {
+            splitRoot
+        }
     }
     
     @ViewBuilder
@@ -52,20 +67,18 @@ public struct RootView<DataModel, List: View, Detail: View>: View {
                 listRoot
             }
         } detail: {
-            if selectionModel.selectedItem == nil {
+            if listModel.selected == nil {
                 SplitContentUnavailableView(module: module)
             } else {
                 detail
-                    .environment(selectionModel)
             }
         }
     }
-
+    
     @ViewBuilder
     private var listRoot: some View {
         @Bindable var searchModel = searchModel
         list
-            .environment(selectionModel)
             .searchable(text: $searchModel.searchText, placement: .automatic, prompt: "Search")
             .searchScopes($searchModel.searchToken, activation: searchScopeActivition) {
                 ForEach(searchModel.categoryTags) { category in
@@ -78,11 +91,11 @@ public struct RootView<DataModel, List: View, Detail: View>: View {
                 cacheItemListModel.reset(search: searchModel.searchText)
             }
     }
-
+    
     var searchPlacement: SearchFieldPlacement {
         .automatic
     }
-
+    
     var searchScopeActivition: SearchScopeActivation {
 #if os(tvOS)
         .automatic

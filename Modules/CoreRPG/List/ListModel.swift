@@ -7,25 +7,35 @@ public final class ListModel {
     public init(isSelectionMode: Bool = false, selection: [UUID] = []) {
         self.isSelectionMode = isSelectionMode
         self.selection = selection
+        self.listSelection = Set(selection)
+        update(selection: Set(selection))
     }
     
     private(set) public var isSelectionMode: Bool
+    var splitList: Bool = false
+    public var listSelection: Set<UUID>
     public var selection: [UUID]
     public var selected: UUID?
-    
-    public var splitList: Bool = false
-    
-    public func update(listSelection: Set<UUID>) {
+
+    public func resetListSelection() {
+        listSelection = []
+    }
+
+    public func update(selection: Set<UUID>) {
         if isSelectionMode {
-            selection = Array(listSelection)
+            self.selection = Array(selection)
         } else {
-            selected = listSelection.first
+            selected = selection.first
         }
     }
     
     public func toogleSelectionMode() {
         isSelectionMode.toggle()
-        selection = []
+        if isSelectionMode {
+            selection = []
+        } else if let selected {
+            selection = [selected]
+        }
     }
 }
 

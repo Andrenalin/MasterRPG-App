@@ -10,10 +10,9 @@ struct ListView: View {
     @Environment(\.navigator) private var navigator
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(ListSelectionModel<PhotoDataModel>.self) private var model
+    @Environment(ListModel.self) private var listModel
     @Environment(PhotoRootModel.self) private var rootModel
     @Environment(SearchModel.self) private var searchModel
-    @Environment(ListModel.self) private var listModel
     
 #if os(iOS) || os(visionOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -23,7 +22,6 @@ struct ListView: View {
     @Query(filter: #Predicate<PhotoDataModel>{ $0.displayState == 0 }, sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
     
     @State private var selected: UUID?
-    @State private var listSelection: Set<UUID> = []
     
     var body: some View {
         @Bindable var searchModel = searchModel
@@ -35,36 +33,6 @@ struct ListView: View {
         
         listView(filteredItems: filteredItems)
             .animation(.smooth, value: filteredItems)
-#if os(macOS)
-            .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
-            .onChange(of: selected) {
-                model.selectedItem = items.first { $0.id == selected }
-                guard let id = model.selectedItem?.id else { return }
-                navigator.navigate(to: PhotoRoute.photo(id), method: .push)
-            }
-#endif
-            .onChange(of: listSelection) {
-                listModel.update(listSelection: listSelection)
-            }
-            .onChange(of: listModel.selected) {
-                withAnimation {
-                    if listModel.selected != model.selectedItem?.id {
-                        model.selectedItem = items.first { $0.id == listModel.selected }
-                    } else {
-                        model.selectedItem = nil
-                    }
-                }
-                guard let id = model.selectedItem?.id else { return }
-                if !listSelection.contains(id) {
-                    listSelection = Set(arrayLiteral: id)
-                }
-                navigator.navigate(to: PhotoRoute.detail(id), method: .push)
-#if os(iOS)
-//                if !listModel.splitList {
-//                    withAnimation { listModel.selected = nil }
-//                }
-#endif
-            }
 #if os(iOS) || os(visionOS)
             .environment(\.editMode, $editMode)
 #endif
@@ -75,8 +43,24 @@ struct ListView: View {
 #endif
             .navigationTitle(rootModel.networkModule.title)
 #if os(macOS)
+            .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
             .navigationSplitViewColumnWidth(min: 180, ideal: 250)
+//            .onChange(of: listModel.selected) {
+//                listModel.update(selection: listModel.selected)
+//            }
 #endif
+            .onChange(of: listModel.listSelection) {
+                guard !listModel.listSelection.isEmpty else { return }
+                listModel.update(selection: listModel.listSelection)
+            }
+            .onChange(of: listModel.selected) {
+                if let id = listModel.selected {
+                    listModel.listSelection <=> Set(arrayLiteral: id)
+                    navigator.navigate(to: PhotoRoute.detail(id), method: .push)
+                } else {
+                    listModel.resetListSelection()
+                }
+            }
             .toolbar {
                 if listModel.isSelectionMode {
                     ToolbarItem(placement: .primaryAction) {
@@ -147,21 +131,22 @@ struct ListView: View {
     
     @ViewBuilder
     private func listView(filteredItems: [PhotoDataModel]) -> some View {
+        @Bindable var listModel = listModel
 #if os(macOS)
         if isSelectionMode {
-            List(selection: $listSelection) {
+            List(selection: $listModel.listSelection) {
                 itemRows(filteredItems: filteredItems)
             }
             .contextMenu {
                 ItemListContextMenu(controller: ContextMenuMultiController(editController: rootModel.editController, itemController: rootModel.itemController, selection: selection))
             }
         } else {
-            List(selection: $selected) {
+            List(selection: $listModel.selected) {
                 itemRows(filteredItems: filteredItems)
             }
         }
 #else
-        List(selection: $listSelection) {
+        List(selection: $listModel.listSelection) {
             itemRows(filteredItems: filteredItems)
         }
 #endif

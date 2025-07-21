@@ -7,7 +7,7 @@ import SpaceRPG
 import SwiftUI
 
 struct ExtendedTabBar: View {
-    @State var currentModule: ExtendedTabRoute?
+    @SceneStorage("ExtendedTabRoute") var currentModule: ExtendedTabRoute?
 
     @Environment(AppModel.self) private var appModel
     @Environment(\.navigator) private var navigator
@@ -40,34 +40,6 @@ struct ExtendedTabBar: View {
                 route
                     .modifier(ZoomTransitionViewModifier(sourceID: route.module.token, namespace: zoomNamespace))
             }
-//            .navigationDestination(for: AudioRoute.self) { route in
-//                route
-//                    .environment(appStore.audioRoot)
-//            }
-//            .navigationDestination(for: DiceRoute.self) { route in
-//                route
-//                    .environment(appStore.diceRoot)
-//            }
-//            .navigationDestination(for: MapRoute.self) { route in
-//                route
-//                    .environment(appStore.mapRoot)
-//            }
-//            .navigationDestination(for: PdfRoute.self) { route in
-//                route
-//                    .environment(appStore.pdfRoot)
-//            }
-//            .navigationDestination(for: SpaceRoute.self) { route in
-//                route
-//                    .environment(appStore.spaceRoot)
-//            }
-//            .navigationDestination(for: TableRoute.self) { route in
-//                route
-//                    .environment(appStore.tableRoot)
-//            }
-//            .navigationDestination(for: WeatherRoute.self) { route in
-//                route
-//                    .environment(appStore.weatherRoot)
-//            }
             .onNavigationReceive { (route: ExtendedTabRoute, navigator) in
                 if currentModule == route {
                     return .immediately
@@ -75,54 +47,6 @@ struct ExtendedTabBar: View {
                 navigator.push(route)
                 return .auto
             }
-//            .onNavigationReceive { (route: AudioRoute, navigator) in
-//                if case .detail(let selected, _) = route {
-//                    changeNavigation(selected: selected, navigator: navigator, route: route)
-//                }
-//                return .auto
-//            }
-//            .onNavigationReceive { (route: DiceRoute, navigator) in
-//                if case .detail(let selected, _) = route {
-//                    changeNavigation(selected: selected, navigator: navigator, route: route)
-//                }
-//                return .auto
-//            }
-//            .onNavigationReceive { (route: MapRoute, navigator) in
-//                if case .detail(let selected, _) = route {
-//                    changeNavigation(selected: selected, navigator: navigator, route: route)
-//                }
-//                return .auto
-//            }
-//            .onNavigationReceive { (route: PdfRoute, navigator) in
-//                if case .detail(let selected, _) = route {
-//                    changeNavigation(selected: selected, navigator: navigator, route: route)
-//                }
-//                return .auto
-//            }
-//            .onNavigationReceive { (route: PhotoRoute, navigator) in
-//                if case .detail(let selected, _) = route {
-//                    changeNavigation(selected: selected, navigator: navigator, route: route)
-//                }
-//                return .auto
-//            }
-//            .onNavigationReceive { (route: SpaceRoute, navigator) in
-//                if case .detail(let selected, _) = route {
-//                    changeNavigation(selected: selected, navigator: navigator, route: route)
-//                }
-//                return .auto
-//            }
-//            .onNavigationReceive { (route: TableRoute, navigator) in
-//                if case .detail(let selected, _) = route {
-//                    changeNavigation(selected: selected, navigator: navigator, route: route)
-//                }
-//                return .auto
-//            }
-//            .onNavigationReceive { (route: WeatherRoute, navigator) in
-//                if case .detail(let selected, _) = route {
-//                    changeNavigation(selected: selected, navigator: navigator, route: route)
-//                }
-//                return .auto
-//            }
             .onNavigationRoute(RootFiveRouteRouter(appModel: appModel))
         }
     }
