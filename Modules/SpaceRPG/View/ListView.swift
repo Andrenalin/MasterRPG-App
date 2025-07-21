@@ -99,9 +99,9 @@ struct ListView: View {
             ForEach(filteredItems) { item in
                 MainRowView(model: item)
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-                    .contextMenu {
-                        ItemListContextMenu(controller: ContextMenuController(editController: rootModel.editController, model: item))
-                    }
+//                    .contextMenu {
+//                        ItemListContextMenu(controller: ContextMenuController(editController: rootModel.editController, model: item))
+//                    }
             }
             .onDelete(perform: deleteItems)
         }

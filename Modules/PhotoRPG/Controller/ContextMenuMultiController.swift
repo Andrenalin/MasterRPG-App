@@ -10,12 +10,19 @@ internal import AppKit
 internal import UIKit
 #endif
 
+@MainActor
 struct ContextMenuMultiController: ItemListContextMenuControllable {
     let editController: EditController
     let itemController: ItemController
-    let selection: [UUID]
-    
-    var itemName: String {
+    let listModel: ListModel
+
+    func selection(currentSelected: UUID?) -> [UUID] {
+        guard let currentSelected else { return listModel.selection }
+        return [currentSelected]
+    }
+
+    func itemName(currentSelected: UUID?) -> String {
+        let selection = selection(currentSelected: currentSelected)
         guard let itemId = selection.first, let model = itemController.modelSync(for: itemId) else { return "" }
         if selection.count > 1 {
             return "\(model.name) and \(selection.count - 1) more"
@@ -24,25 +31,30 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
         }
     }
     
-    func duplicateItem() {
+    func duplicateItem(currentSelected: UUID?) {
+        let selection = selection(currentSelected: currentSelected)
         for itemId in selection {
             guard let model = itemController.modelSync(for: itemId) else { continue }
             editController.duplicate(model: model)
         }
     }
     
-    func deleteItem() {
+    func deleteItem(currentSelected: UUID?) {
+        let selection = selection(currentSelected: currentSelected)
         for itemId in selection {
             guard let model = itemController.modelSync(for: itemId) else { continue }
             editController.delete(model: model)
         }
     }
     
-    func exportItem() -> any NavigationDestination {
-        InternalRoute.export(ids: selection)
+    func exportItem(currentSelected: UUID?) -> any NavigationDestination {
+        let selection = selection(currentSelected: currentSelected)
+        return InternalRoute.export(ids: selection)
     }
     
-    func generateLink() {
+    func generateLink(currentSelected: UUID?) {
+        let selection = selection(currentSelected: currentSelected)
+
         let linkText = selection.compactMap {
             guard let model = itemController.modelSync(for: $0) else { return nil }
             return model.url(linkNumber: 0)

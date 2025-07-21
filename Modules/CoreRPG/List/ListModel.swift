@@ -17,6 +17,8 @@ public final class ListModel {
     public var selection: [UUID]
     public var selected: UUID?
 
+    public var currentMenuSelection: UUID?
+
     public func resetListSelection() {
         listSelection = []
     }

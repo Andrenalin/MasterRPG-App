@@ -4,14 +4,17 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct ListView<Model: Identifiable, Row: View>: View {
-    public init(items: [Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (Model) -> Row) {
+public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == UUID {
+    public init(editController: any EditControllable, menuController: any ItemListContextMenuControllable, items: [Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (Model) -> Row) {
+        self.editController = editController
+        self.menuController = menuController
         self.items = items
         self.module = module
         self.route = route
         self.row = row
     }
-    
+    let editController: any EditControllable
+    let menuController: ItemListContextMenuControllable
     let items: [Model]
     let module: NetworkModules
     let route: (UUID) -> any NavigationDestination
@@ -31,6 +34,11 @@ public struct ListView<Model: Identifiable, Row: View>: View {
     
     public var body: some View {
         listView(filteredItems: items)
+            .applyIf(listModel.isSelectionMode) { content in
+                content.contextMenu(forSelectionType: Model.ID.self) { selectedItemIDs in
+                    ItemListContextMenu(controller: menuController)
+                }
+            }
             .animation(.smooth, value: items.count)
 #if os(iOS) || os(visionOS)
             .environment(\.editMode, $editMode)
@@ -81,8 +89,8 @@ public struct ListView<Model: Identifiable, Row: View>: View {
     private var actionMenu: some View {
         Menu {
             selectionButton
-            
-            //ItemListContextMenu(controller: ContextMenuMultiController(editController: rootModel.editController, itemController: rootModel.itemController, selection: listModel.selection))
+
+            ItemListContextMenu(controller: menuController)
         } label: {
             Image(systemName: "ellipsis.circle")
         }
@@ -110,18 +118,18 @@ public struct ListView<Model: Identifiable, Row: View>: View {
     }
     
     private func addItem() {
-//        let newItem = rootModel.editController.addNew(modelContext: modelContext)
-//        withAnimation {
-//            listModel.selected = newItem.id
-//        }
+        let newItem = editController.addNew(modelContext: modelContext)
+        withAnimation {
+            listModel.selected = newItem.id
+        }
     }
     
     private func deleteItems(offsets: IndexSet) {
-//        withAnimation {
-//            for index in offsets {
-//                rootModel.editController.delete(model: items[index])
-//            }
-//        }
+        withAnimation {
+            for index in offsets {
+                editController.delete(model: items[index])
+            }
+        }
     }
     
     @ViewBuilder
@@ -131,9 +139,6 @@ public struct ListView<Model: Identifiable, Row: View>: View {
         if listModel.isSelectionMode {
             List(selection: $listModel.listSelection) {
                 itemRows(filteredItems: filteredItems)
-            }
-            .contextMenu {
-                //ItemListContextMenu(controller: ContextMenuMultiController(editController: rootModel.editController, itemController: rootModel.itemController, selection: listModel.selection))
             }
         } else {
             List(selection: $listModel.selected) {
@@ -150,12 +155,11 @@ public struct ListView<Model: Identifiable, Row: View>: View {
     
     private func itemRows(filteredItems: [Model]) -> some View {
         ForEach(filteredItems) { item in
-            Text("")
             row(item)
                 .contentShape(.rect)
                 .applyIf(!listModel.isSelectionMode) { content in
                     content.contextMenu {
-//                        ItemListContextMenu(controller: ContextMenuController(editController: rootModel.editController, model: item))
+                        ItemListContextMenu(controller: menuController, currentSelected: item.id)
                     }
                 }
                 .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))

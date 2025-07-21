@@ -16,6 +16,10 @@ struct EditController {
     let networkModule: NetworkModules = .photo
 }
 
+extension EditController: EditControllable {
+    typealias Model = PhotoDataModel
+}
+
 // MARK: - Edit Photo Data Model Properties
 extension EditController {
     func addNew(modelContext: ModelContext) -> PhotoDataModel {
@@ -37,12 +41,15 @@ extension EditController {
         }
     }
     
-    func delete(model: PhotoDataModel) {
+    func delete(model: any Identifiable) {
+        guard let model = model as? PhotoDataModel else { return }
         let fileUrl = model.fileUrl
-        model.modelContext?.delete(model)
+        let modelContext = model.modelContext
         Task.detached {
             await fileController.fileUrlDataController.delete(fileUrl)
         }
+        modelContext?.delete(model)
+        try? modelContext?.save()
     }
     
     func addSubPhoto(photoId: UUID, model: PhotoDataModel) {

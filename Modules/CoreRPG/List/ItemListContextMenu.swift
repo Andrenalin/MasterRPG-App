@@ -3,22 +3,25 @@
 import CoreExternalRPG
 import SwiftUI
 
+@MainActor
 public protocol ItemListContextMenuControllable {
-    var itemName: String { get }
+    func itemName(currentSelected: UUID?) -> String
 
-    func duplicateItem()
-    func deleteItem()
-    func exportItem() -> any NavigationDestination
-    func generateLink()
+    func duplicateItem(currentSelected: UUID?)
+    func deleteItem(currentSelected: UUID?)
+    func exportItem(currentSelected: UUID?) -> any NavigationDestination
+    func generateLink(currentSelected: UUID?)
 }
 
 public struct ItemListContextMenu: View {
-    public init(controller: any ItemListContextMenuControllable) {
+    public init(controller: any ItemListContextMenuControllable, currentSelected: UUID? = nil) {
         self.controller = controller
+        self.currentSelected = currentSelected
     }
     
     let controller: ItemListContextMenuControllable
-    
+    let currentSelected: UUID?
+
     @Environment(\.navigator) private var navigator
     
     public var body: some View {
@@ -30,12 +33,16 @@ public struct ItemListContextMenu: View {
 }
 
 private extension ItemListContextMenu {
+    var title: String {
+        controller.itemName(currentSelected: currentSelected)
+    }
+
     var duplicateItemView: some View {
         Button {
-            withAnimation { controller.duplicateItem() }
+            withAnimation { controller.duplicateItem(currentSelected: currentSelected) }
         } label: {
             Label {
-                Text("Duplicate \(controller.itemName)", bundle: .module)
+                Text("Duplicate \(title)", bundle: .module)
             } icon: {
                 Image(systemName: "doc.on.doc")
             }
@@ -44,10 +51,10 @@ private extension ItemListContextMenu {
 
     var deleteItemView: some View {
         Button(role: .destructive) {
-            withAnimation { controller.deleteItem() }
+            withAnimation { controller.deleteItem(currentSelected: currentSelected) }
         } label: {
             Label {
-                Text("Delete \(controller.itemName)", bundle: .module)
+                Text("Delete \(title)", bundle: .module)
             } icon: {
                 Image(systemName: "trash")
             }
@@ -56,11 +63,11 @@ private extension ItemListContextMenu {
 
     var exportItemView: some View {
         Button {
-            let route = controller.exportItem()
+            let route = controller.exportItem(currentSelected: currentSelected)
             navigator.navigate(to: route, method: .sheet)
         } label: {
             Label {
-                Text("Export \(controller.itemName)", bundle: .module)
+                Text("Export \(title)", bundle: .module)
             } icon: {
                 Image(systemName: "square.and.arrow.up")
             }
@@ -69,15 +76,13 @@ private extension ItemListContextMenu {
     
     var generateLinkView: some View {
         Button {
-            withAnimation { controller.generateLink() }
+            withAnimation { controller.generateLink(currentSelected: currentSelected) }
         } label: {
             Label {
-                Text("Link for \(controller.itemName)", bundle: .module)
+                Text("Link for \(title)", bundle: .module)
             } icon: {
                 Image(systemName: "link")
             }
         }
     }
-
-
 }

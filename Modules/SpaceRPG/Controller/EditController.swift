@@ -13,7 +13,7 @@ internal import UIKit
 
 struct EditController {
     let fileController: FileController
-    let networkModule: NetworkModules = .photo
+    let networkModule: NetworkModules = .space
 }
 
 // MARK: - Edit Photo Data Model Properties
@@ -25,7 +25,7 @@ extension EditController {
         return newItem
     }
     
-    func copy(model: SpaceDataModel) {
+    func duplicate(model: SpaceDataModel) {
         let newId = UUID()
         guard let actor = model.modelActor() else { return }
         let id = model.id

@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(ListModel.self) private var listModel
     @Environment(PhotoRootModel.self) private var rootModel
     @Environment(SearchModel.self) private var searchModel
         
@@ -18,7 +19,7 @@ struct ListView: View {
             $0.name.localizedStandardContains(searchModel.searchText) ||
             $0.information.localizedStandardContains(searchModel.searchText)
         }
-        CoreRPG.ListView(items: filteredItems, module: .photo) { id in
+        CoreRPG.ListView(editController: rootModel.editController, menuController: menuController, items: filteredItems, module: .photo) { id in
             PhotoRoute.detail(id)
         } row: { model in
             MainRowView(model: model)
@@ -27,6 +28,10 @@ struct ListView: View {
         .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
 #endif
 
+    }
+
+    var menuController: any ItemListContextMenuControllable {
+        ContextMenuMultiController(editController: rootModel.editController, itemController: rootModel.itemController, listModel: listModel)
     }
 
 #if os(macOS)
@@ -128,7 +133,7 @@ struct ListOldView: View {
         Menu {
             selectionButton
             
-            ItemListContextMenu(controller: ContextMenuMultiController(editController: rootModel.editController, itemController: rootModel.itemController, selection: listModel.selection))
+//            ItemListContextMenu(controller: ContextMenuMultiController(editController: rootModel.editController, itemController: rootModel.itemController, selection: listModel.selection))
         } label: {
             Image(systemName: "ellipsis.circle")
         }
@@ -198,11 +203,11 @@ struct ListOldView: View {
         ForEach(filteredItems) { item in
             MainRowView(model: item)
                 .contentShape(.rect)
-                .applyIf(!listModel.isSelectionMode) { content in
-                    content.contextMenu {
-                        ItemListContextMenu(controller: ContextMenuController(editController: rootModel.editController, model: item))
-                    }
-                }
+//                .applyIf(!listModel.isSelectionMode) { content in
+//                    content.contextMenu {
+//                        ItemListContextMenu(controller: ContextMenuController(editController: rootModel.editController, model: item))
+//                    }
+//                }
                 .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
         }
         .onDelete(perform: deleteItems)

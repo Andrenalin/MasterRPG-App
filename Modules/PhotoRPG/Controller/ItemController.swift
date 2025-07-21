@@ -21,8 +21,6 @@ struct ItemController: ItemControllable, Sendable {
         PhotoDataModel.model(modelContext: ModelContext(container), id: id)
     }
 
-    typealias Model = PhotoModel
-    
     func allItemIds() -> [UUID] {
         let modelContext = ModelContext(container)
         let fetchDesc = FetchDescriptor<PhotoDataModel>()

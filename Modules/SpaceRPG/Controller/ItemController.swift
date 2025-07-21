@@ -14,11 +14,13 @@ struct ItemController: ItemControllable {
     }
     
     func itemSync(for id: UUID) -> SpaceModel? {
-        SpaceDataModel.model(modelContext: ModelContext(container), id: id)?.spaceModel
+        modelSync(for: id)?.spaceModel
     }
-    
-    typealias Model = SpaceModel
-    
+
+    func modelSync(for id: UUID) -> SpaceDataModel? {
+        SpaceDataModel.model(modelContext: ModelContext(container), id: id)
+    }
+
     func allItemIds() -> [UUID] {
         let modelContext = ModelContext(container)
         let fetchDesc = FetchDescriptor<SpaceDataModel>()
