@@ -43,9 +43,8 @@ public struct RootView<List: View, Detail: View>: View {
         .onChange(of: tabBarPlacement, initial: true) {
             tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
         }
-        .onChange(of: horizontalSizeClass, initial: true) {
+        .onChange(of: horizontalSizeClass, initial: false) {
             tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
-            listModel.splitList = horizontalSizeClass == .regular
         }
 #else
         rootView

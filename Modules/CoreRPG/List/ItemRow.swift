@@ -26,7 +26,9 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     let thumbnail: Thumbnail
     let additional: Additional
     let actionBar: ActionBar
-    
+
+    @Environment(ListModel.self) private var listModel
+
     public var body: some View {
         let _ = Self._printChanges()
         HStack(spacing: 4) {
@@ -38,16 +40,20 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
             VStack(alignment: .leading, spacing: 4) {
                 NameItemRow(itemId: itemId, name: model[keyPath: nameKeyPath], cacheItemListModel: cacheItemListModel)
 
-                if model[keyPath: tagsKeyPath].count > 4 {
-                    twoLineTagView
-                } else {
-                    allTagsView
+                if listModel.displayMode == .regular {
+                    if model[keyPath: tagsKeyPath].count > 4 {
+                        twoLineTagView
+                    } else {
+                        allTagsView
+                    }
+
+                    actionBar
                 }
-                
-                actionBar
-                
-                DescriptionItemRow(itemId: itemId, description: model[keyPath: descriptionKeyPath], cacheItemListModel: cacheItemListModel)
+                if listModel.displayMode != .compact {
+                    DescriptionItemRow(itemId: itemId, description: model[keyPath: descriptionKeyPath], cacheItemListModel: cacheItemListModel)
+                }
             }
+            .frame(minHeight: 64, alignment: .center)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .fixedSize(horizontal: false, vertical: true)

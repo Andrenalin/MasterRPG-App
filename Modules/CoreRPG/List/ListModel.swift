@@ -10,28 +10,31 @@ public final class ListModel {
         self.listSelection = Set(selection)
         update(selection: Set(selection))
     }
-    
+
+    // MARK: - Selection
     private(set) public var isSelectionMode: Bool
-    var splitList: Bool = false
-    public var listSelection: Set<UUID>
     public var selection: [UUID]
     public var selected: UUID?
+    public var listSelection: Set<UUID>
 
-    public var currentMenuSelection: UUID?
+    // MARK: - Display Mode
+    public enum DisplayMode: Int, Equatable, Hashable, Codable, Sendable {
+        case compact
+        case medium
+        case regular
+    }
 
-    public func resetListSelection() {
+    public var displayMode: DisplayMode = .medium
+}
+
+// MARK: - Selection
+
+public extension ListModel {
+    func resetListSelection() {
         listSelection = []
     }
 
-    public func update(selection: Set<UUID>) {
-        if isSelectionMode {
-            self.selection = Array(selection)
-        } else {
-            selected = selection.first
-        }
-    }
-    
-    public func toogleSelectionMode() {
+    func toogleSelectionMode() {
         isSelectionMode.toggle()
         if isSelectionMode {
             selection = []
@@ -39,5 +42,12 @@ public final class ListModel {
             selection = [selected]
         }
     }
-}
 
+    func update(selection: Set<UUID>) {
+        if isSelectionMode {
+            self.selection = Array(selection)
+        } else {
+            selected = selection.first
+        }
+    }
+}

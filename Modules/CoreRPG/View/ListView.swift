@@ -65,9 +65,25 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
                 }
             }
             .toolbar {
+                if !listModel.isSelectionMode {
+                    ToolbarItem(placement: .secondaryAction) {
+                        selectionButton
+                    }
+                }
+                ToolbarItem(placement: .secondaryAction) {
+                    compactButton
+                }
+                ToolbarItem(placement: .secondaryAction) {
+                    mediumButton
+                }
+
+                ToolbarItem(placement: .secondaryAction) {
+                    regularButton
+                }
+
                 if listModel.isSelectionMode {
                     ToolbarItem(placement: .primaryAction) {
-                        actionMenu
+                        selectionButton
                     }
                 } else {
                     ToolbarItem(placement: .primaryAction) {
@@ -77,10 +93,6 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
                             Label("Add", systemImage: "plus")
                         }
                     }
-                    
-                    ToolbarItem(placement: .primaryAction) {
-                        selectionButton
-                    }
                 }
             }
     }
@@ -88,14 +100,18 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
     @ViewBuilder
     private var actionMenu: some View {
         Menu {
-            selectionButton
-
-            ItemListContextMenu(controller: menuController)
+            if !listModel.isSelectionMode {
+                selectionButton
+                Divider()
+            }
+            compactButton
+            mediumButton
+            regularButton
         } label: {
             Image(systemName: "ellipsis.circle")
         }
     }
-    
+
     private var selectionButton: some View {
         Button {
             listModel.toogleSelectionMode()
@@ -103,10 +119,53 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
             editMode = listModel.isSelectionMode ? .active : .inactive
 #endif
         } label: {
-            Label("Select", systemImage: "checkmark.circle")
+            Label {
+                Text("Select", bundle: .module)
+            } icon: {
+                Image(systemName: "checkmark.circle")
+            }
         }
     }
-    
+
+    private var compactButton: some View {
+        Button {
+            withAnimation { listModel.displayMode = .compact }
+        } label: {
+            Label {
+                Text("Compact", bundle: .module)
+            } icon: {
+                Image(systemName: "list.dash.header.rectangle")
+            }
+        }
+        .tint(listModel.displayMode == .compact ? .accentColor : .primary)
+    }
+
+    private var mediumButton: some View {
+        Button {
+            withAnimation { listModel.displayMode = .medium }
+        } label: {
+            Label {
+                Text("Medium", bundle: .module)
+            } icon: {
+                Image(systemName: "list.bullet.rectangle")
+            }
+        }
+        .tint(listModel.displayMode == .medium ? .accentColor : .primary)
+    }
+
+    private var regularButton: some View {
+        Button {
+            withAnimation { listModel.displayMode = .regular }
+        } label: {
+            Label {
+                Text("Regular", bundle: .module)
+            } icon: {
+                Image(systemName: "list.bullet.below.rectangle")
+            }
+        }
+        .tint(listModel.displayMode == .regular ? .accentColor : .primary)
+    }
+
     @ViewBuilder
     private var toolSelectionButton: some View {
         if listModel.isSelectionMode {
@@ -150,13 +209,11 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
             itemRows(filteredItems: filteredItems)
         }
 #endif
-        
     }
     
     private func itemRows(filteredItems: [Model]) -> some View {
         ForEach(filteredItems) { item in
             row(item)
-                .contentShape(.rect)
                 .applyIf(!listModel.isSelectionMode) { content in
                     content.contextMenu {
                         ItemListContextMenu(controller: menuController, currentSelected: item.id)

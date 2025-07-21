@@ -53,7 +53,7 @@ public struct PlainPhotoView: View {
                 }
             } else {
                 VStack {
-                    placeHolder(size: CGSize(width: 96, height: 96))
+                    placeHolder(size: CGSize(width: widthPlaceHolder, height: heightPlaceHolder))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
@@ -74,6 +74,20 @@ private extension PlainPhotoView {
             .resizable()
             .aspectRatio(contentMode: ratio)
             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+    }
+
+    var heightPlaceHolder: CGFloat {
+        switch size {
+            case .maxWidth: 96
+            case .maxHeightWidth(let width): width == 96 ? 96 : 64
+        }
+    }
+
+    var widthPlaceHolder: CGFloat {
+        switch size {
+            case .maxWidth: 96
+            case .maxHeightWidth(let width): width
+        }
     }
 
     @ViewBuilder

@@ -9,6 +9,7 @@ struct PhotoRootView: View {
     let withoutNavigation: Bool
 
     @SceneStorage("PhotoRoute") private var photoRoute: PhotoRoute?
+    @SceneStorage("PhotoDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
 
     @State private var cacheItemListModel = CacheItemListModel()
     @State private var listModel = ListModel()
@@ -17,7 +18,6 @@ struct PhotoRootView: View {
 
     var body: some View {
         let _ = Self._printChanges()
-        
         RootView(module: .photo, listModel: listModel, withoutNavigation: withoutNavigation, list: {
             ListView()
                 .navigationDestination(for: PhotoRoute.self) { route in
@@ -36,6 +36,12 @@ struct PhotoRootView: View {
         .environment(cacheItemListModel)
         .environment(listModel)
         .environment(searchModel)
+        .onChange(of: displayMode, initial: true) {
+            listModel.displayMode = displayMode
+        }
+        .onChange(of: listModel.displayMode) {
+            displayMode <=> listModel.displayMode
+        }
         .onChange(of: photoRoute, initial: true) {
             if let route = photoRoute {
                 switch route {

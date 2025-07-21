@@ -8,20 +8,29 @@ struct MainRowView: View {
     let model: PhotoDataModel
 
     @Environment(CacheItemListModel.self) private var cacheModel
+    @Environment(ListModel.self) private var listModel
     @Environment(SearchModel.self) private var searchModel
     @Environment(PhotoRootModel.self) private var rootModel
 
     var body: some View {
         let _ = Self._printChanges()
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
-            PlainPhotoView(cacheController: rootModel.cacheController, model: model, size: .maxHeightWidth(96), ratio: .fill, hasRoundedCorners: true, highResolution: false)
+            PlainPhotoView(cacheController: rootModel.cacheController, model: model, size: .maxHeightWidth(width), ratio: .fill, hasRoundedCorners: true, highResolution: false)
         }, tagAdds: {
             CategoryItemRow(category: model.category)
-        }, actionBar: {
         })
 #if !os(tvOS)
         .draggable(LinkData(itemId: model.id, module: .photo, name: model.name))
 #endif
+    }
+
+    var width: CGFloat {
+        switch listModel.displayMode {
+            case .compact: 160
+            case .medium: 128
+            case .regular: 96
+            @unknown default: 96
+        }
     }
 }
 
