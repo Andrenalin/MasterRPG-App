@@ -4,9 +4,6 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
-#if canImport(ImagePlayground)
-import ImagePlayground
-#endif
 
 @Observable
 final class DetailPhotoSelection {
@@ -15,24 +12,23 @@ final class DetailPhotoSelection {
 
 struct DetailView: View {
     let model: PhotoDataModel
-    
+
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
     @Environment(PhotoRootModel.self) private var root
-    
+
     @State var selection = DetailPhotoSelection()
     @State private var isEditing = false
     @State private var showImporter = false
-    @State private var showImagePlayground = false
-    
+
     var body: some View {
         let _ = Self._printChanges()
-        
+
         @Bindable var model = model
         VStack {
             detailView
-            
+
             if model.url != nil {
                 CarouselPhotosView(model: model)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -51,13 +47,13 @@ struct DetailView: View {
             }
         }
         .overlay(alignment: .top) {
-            #if os(iOS)
+#if os(iOS)
             if horizontalSizeClass == .regular {
                 detailEditorView
             }
-            #else
+#else
             detailEditorView
-            #endif
+#endif
         }
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
@@ -74,7 +70,7 @@ struct DetailView: View {
         }
 #endif
     }
-    
+
     private var detailView: some View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
@@ -85,15 +81,15 @@ struct DetailView: View {
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            #if !os(tvOS)
+#if !os(tvOS)
             .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
-            #endif
+#endif
 
             .overlay(alignment: .bottom) {
                 HStack(alignment: .bottom) {
                     DetailOverlayView(model: selection.selectedPhoto ?? model)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    
+
                     toolbarButtons
                 }
                 .padding()
@@ -101,20 +97,18 @@ struct DetailView: View {
             .overlay(alignment: .center) {
                 if model.url == nil {
                     VStack {
-                        GlassButton {
-                            showImagePlayground.toggle()
-                        } label: {
-                            Image(systemName: "gear")
+                        Spacer()
+                        HStack(spacing: 40) { PhotoImporterView(model: model, prominent: true)
                         }
-
-                        PhotoImporterView(model: model)
+                        Spacer()
+                        Spacer()
                     }
                 }
             }
 
         }
     }
-    
+
     private func updatePhoto(url: URL) {
         root.editController.resetPhoto(url: url, in: model)
     }
@@ -136,13 +130,13 @@ struct DetailView: View {
             .animation(.bouncy, value: isEditing)
         }
     }
-    
+
     @ViewBuilder
     private var toolbarButtons: some View {
         VStack(alignment: .center) {
             if model.url != nil {
                 if showImporter {
-                    photoImporterView
+                    PhotoImporterView(model: model, prominent: false)
                 }
                 GlassButton {
                     withAnimation(.bouncy(duration: 0.3)) {
@@ -150,8 +144,6 @@ struct DetailView: View {
                     }
                 } label: {
                     Image(systemName: "photo.badge.plus")
-                        .font(.system(size: 24))
-                        .padding(8)
                 }
                 .animation(.bouncy, value: model.url)
                 .transition(.scale.combined(with: .opacity))
@@ -161,32 +153,8 @@ struct DetailView: View {
                 isEditing = true
             } label: {
                 Image(systemName: "pencil")
-                    .font(.system(size: 24))
-                    .padding(8)
-
             }
         }
-    }
-    
-    @ViewBuilder
-    private var photoImporterView: some View {
-#if !os(tvOS)
-        if #available(iOS 18.1, visionOS 2.4, macOS 15.1, *) {
-            GlassButton {
-                showImagePlayground.toggle()
-            } label: {
-                Image(systemName: "gear")
-            }
-            .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
-                root.editController.resetPhoto(url: url, in: model)
-            }
-        }
-        CameraImporterView(model: model)
-        
-        LibraryImporterView(model: model)
-#endif
-
-        FileImporterView(model: model)
     }
 }
 
@@ -194,8 +162,7 @@ struct DetailView: View {
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [PhotoDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
-    
+
     DetailView(model: models[0])
-        .environment(PhotoRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
 }

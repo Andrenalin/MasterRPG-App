@@ -5,62 +5,95 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
+#if canImport(ImagePlayground)
+import ImagePlayground
+#endif
+
 struct PhotoImporterView: View {
     let model: PhotoDataModel
+    let prominent: Bool
 
     var body: some View {
-        ViewThatFits {
-            HStack(spacing: 40) {
-                contentView
-            }
-
-            VStack(spacing: 40) {
-                contentView
-            }
-        }
+        contentView
+//        ViewThatFits {
+//            HStack(spacing: 40) {
+//                contentView
+//            }
+//
+//            VStack(spacing: 40) {
+//                contentView
+//            }
+//        }
     }
     
     @ViewBuilder
     var contentView: some View {
-        CameraImporterView(model: model, size: 80)
-        FileImporterView(model: model, size: 80)
+        if #available(iOS 18.1, visionOS 2.4, macOS 15.1, *) {
+            ImagePlaygroundImportView(model: model, prominent: prominent)
+        }
+
+        CameraImporterView(model: model, prominent: prominent)
+        FileImporterView(model: model, prominent: prominent)
 #if !os(tvOS)
-        LibraryImporterView(model: model, size: 80)
+        LibraryImporterView(model: model, prominent: prominent)
 #endif
     }
 }
 
+@available(iOS 18.1, visionOS 2.4, macOS 15.1, *)
+struct ImagePlaygroundImportView: View {
+    let model: PhotoDataModel
+    let prominent: Bool
+
+    @Environment(\.supportsImagePlayground) private var supportsImagePlayground
+    @Environment(PhotoRootModel.self) private var root
+    @State private var showImagePlayground = false
+
+    var body: some View {
+        if supportsImagePlayground {
+            GlassButton(isProminent: prominent) {
+                showImagePlayground.toggle()
+            } label: {
+                Image(systemName: "apple.image.playground")
+                    .imageScale(prominent ? .large : .medium)
+            }
+            .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
+                root.editController.resetPhoto(url: url, in: model)
+            }
+        }
+    }
+}
+
 struct CameraImporterView: View {
-    init(model: PhotoDataModel, size: CGFloat = 24) {
+    init(model: PhotoDataModel, prominent: Bool) {
         self.model = model
-        self.size = size
+        self.prominent = prominent
         self.modelActor = model.modelActor()
     }
 
     let model: PhotoDataModel
+    let prominent: Bool
     let modelActor: DataModelActor?
-    let size: CGFloat
-    
+
     @Environment(PhotoRootModel.self) private var root
     
     @State private var showCamera = false
     
     var body: some View {
 #if os(iOS)
-        GlassButton {
-            showCamera.toggle()
-        } label: {
-            Image(systemName: "camera\(showCamera ? ".fill" : "")")
-                .font(.system(size: size))
-                .padding(size / 3)
+        if CaptureImagePicker.isCameraAvailable {
+            GlassButton(isProminent: prominent) {
+                showCamera.toggle()
+            } label: {
+                Image(systemName: "camera\(showCamera ? ".fill" : "")")
+                    .imageScale(prominent ? .large : .medium)
+            }
+            .contentTransition(.symbolEffect(.replace.wholeSymbol))
 
-        }
-        .contentTransition(.symbolEffect(.replace.wholeSymbol))
-        .opacity(CaptureImagePicker.isCameraAvailable ? 1 : 0)
-        
-        .sheet(isPresented: $showCamera) {
-            CaptureImagePicker(shown: $showCamera) { [id = model.id] image in
-                await update(id: id, image: image)
+            .sheet(isPresented: $showCamera) {
+                CaptureImagePicker(shown: $showCamera) { [id = model.id] image in
+                    await update(id: id, image: image)
+                }
             }
         }
 #endif
@@ -74,25 +107,18 @@ struct CameraImporterView: View {
 
 struct FileImporterView: View {
     let model: PhotoDataModel
-    let size: CGFloat
-    
+    let prominent: Bool
+
     @Environment(PhotoRootModel.self) private var root
-    
     @State private var showImporter = false
-    
-    init(model: PhotoDataModel, size: CGFloat = 24) {
-        self.model = model
-        self.size = size
-    }
     
     var body: some View {
 #if !os(tvOS)
-        GlassButton {
+        GlassButton(isProminent: prominent) {
             showImporter.toggle()
         } label: {
             Image(systemName: "folder\(showImporter ? ".fill" : "")")
-                .font(.system(size: size))
-                .padding(size / 3)
+                .imageScale(prominent ? .large : .medium)
         }
         .contentTransition(.symbolEffect(.replace.wholeSymbol))
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
@@ -105,20 +131,20 @@ struct FileImporterView: View {
 
 #if !os(tvOS)
 struct LibraryImporterView: View {
-    init(model: PhotoDataModel, size: CGFloat = 32) {
+    init(model: PhotoDataModel, prominent: Bool) {
         self.model = model
-        self.size = size
+        self.prominent = prominent
         self.modelActor = model.modelActor()
     }
-    
+
     let model: PhotoDataModel
+    let prominent: Bool
     let modelActor: DataModelActor?
-    let size: CGFloat
-    
+
     @Environment(PhotoRootModel.self) private var root
     
     var body: some View {
-        LibraryPhotoPicker(size: size) { [id = model.id] image in
+        LibraryPhotoPicker(prominent: prominent) { [id = model.id] image in
             await update(id: id, image: image)
         }
     }
@@ -138,14 +164,13 @@ struct LibraryImporterView: View {
         Color
             .teal
             .frame(width: 256, height: 256)
-            .overlay(CameraImporterView(model: models[0]), alignment: .bottom)
-            .overlay(FileImporterView(model: models[0]), alignment: .top)
+            .overlay(CameraImporterView(model: models[0], prominent: false), alignment: .bottom)
+            .overlay(FileImporterView(model: models[0], prominent: false), alignment: .top)
 #if !os(tvOS)
-            .overlay(LibraryImporterView(model: models[0]), alignment: .center)
+            .overlay(LibraryImporterView(model: models[0], prominent: false), alignment: .center)
 #endif
 
-        
-        PhotoImporterView(model: models[0])
+        PhotoImporterView(model: models[0], prominent: true)
     }
     .environment(PhotoRootModel(modelContext: modelContext))
 }

@@ -7,7 +7,7 @@ import PhotosUI
 import SwiftUI
 
 struct LibraryPhotoPicker: View {
-    let size: CGFloat
+    let prominent: Bool
     let updateImage: @Sendable (AKImage?) async -> Void
     
     @State private var selectedItem: PhotosPickerItem? = nil
@@ -16,9 +16,13 @@ struct LibraryPhotoPicker: View {
         PhotosPicker(selection: $selectedItem, matching: .images, photoLibrary: .shared()) {
             if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *) {
                 Image(systemName: "photo")
-                    .font(.system(size: size))
-                    .padding(size / 3)
-                    .tint(.primary)
+                    .font(.system(size: 18))
+                    .padding(8)
+                    .imageScale(prominent ? .large : .medium)
+                    .background {
+                        prominent ? Color.accentColor : .clear
+                    }
+                    .tint(prominent ? .white : Color.accentColor)
 #if os(iOS)
                     .hoverEffect(.highlight)
 #endif
@@ -29,9 +33,13 @@ struct LibraryPhotoPicker: View {
             } else {
                 Image(systemName: "photo")
 #if os(iOS) || os(visionOS)
-                    .font(.system(size: size))
-                    .padding(size / 3)
-                    .tint(.primary)
+                    .font(.system(size: 18))
+                    .padding(8)
+                    .imageScale(prominent ? .large : .medium)
+                    .background {
+                        prominent ? Color.accentColor : .clear
+                    }
+                    .tint(prominent ? .white : .primary)
 #if os(iOS)
                     .background(.ultraThinMaterial)
                     .hoverEffect(.highlight)
@@ -53,7 +61,7 @@ struct LibraryPhotoPicker: View {
 }
 
 #Preview {
-    LibraryPhotoPicker(size: 24) { _ in }
+    LibraryPhotoPicker(prominent: true) { _ in }
 }
 
 #endif
