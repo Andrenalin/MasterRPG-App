@@ -10,6 +10,7 @@ struct NameItemRow: View {
     @Environment(SearchModel.self) private var searchModel
 
     var body: some View {
+        let _ = Self._printChanges()
         LinkHighlightTextView(model: linkTextModel)
             .foregroundStyle(.primary)
             .font(.headline)

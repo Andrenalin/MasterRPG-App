@@ -16,6 +16,8 @@ struct PhotoRootView: View {
     @State private var selectionModel = ListSelectionModel<PhotoDataModel>()
 
     var body: some View {
+        let _ = Self._printChanges()
+        
         RootView(module: .photo, listModel: listModel, withoutNavigation: withoutNavigation, list: {
             ListView()
                 .navigationDestination(for: PhotoRoute.self) { route in

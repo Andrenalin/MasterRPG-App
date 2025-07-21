@@ -46,6 +46,8 @@ struct DetailRouteDestinationView: View {
     @Query private var items: [PhotoDataModel]
     
     var body: some View {
+        let _ = Self._printChanges()
+        
         if let item = items.first {
             DetailView(model: item)
         }

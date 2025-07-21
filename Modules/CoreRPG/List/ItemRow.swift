@@ -28,6 +28,7 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     let actionBar: ActionBar
     
     public var body: some View {
+        let _ = Self._printChanges()
         HStack(spacing: 4) {
             VStack(spacing: 0) {
                 thumbnail

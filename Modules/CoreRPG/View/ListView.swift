@@ -1,0 +1,171 @@
+// @copyright André Trettin
+
+import CoreExternalRPG
+import SwiftData
+import SwiftUI
+
+public struct ListView<Model: Identifiable, Row: View>: View {
+    public init(items: [Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (Model) -> Row) {
+        self.items = items
+        self.module = module
+        self.route = route
+        self.row = row
+    }
+    
+    let items: [Model]
+    let module: NetworkModules
+    let route: (UUID) -> any NavigationDestination
+    let row: (Model) -> Row
+    
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.navigator) private var navigator
+    
+    @Environment(CacheItemListModel.self) private var cacheItemListModel
+    @Environment(ListModel.self) private var listModel
+    @Environment(SearchModel.self) private var searchModel
+    
+#if os(iOS) || os(visionOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var editMode: EditMode = .inactive
+#endif
+    
+    public var body: some View {
+        listView(filteredItems: items)
+            .animation(.smooth, value: items.count)
+#if os(iOS) || os(visionOS)
+            .environment(\.editMode, $editMode)
+#endif
+            .scrollIndicatorsFlash(onAppear: true)
+            .scrollIndicatorsFlash(trigger: items.count)
+#if !os(visionOS)
+            .scrollDismissesKeyboard(.immediately)
+#endif
+            .navigationTitle(module.title)
+#if os(macOS)
+            .navigationSplitViewColumnWidth(min: 250, ideal: 350)
+#endif
+            .onChange(of: listModel.listSelection) {
+                guard !listModel.listSelection.isEmpty else { return }
+                listModel.update(selection: listModel.listSelection)
+            }
+            .onChange(of: listModel.selected) {
+                if let id = listModel.selected {
+                    listModel.listSelection <=> Set(arrayLiteral: id)
+                    navigator.navigate(to: route(id), method: .push)
+                } else {
+                    listModel.resetListSelection()
+                }
+            }
+            .toolbar {
+                if listModel.isSelectionMode {
+                    ToolbarItem(placement: .primaryAction) {
+                        actionMenu
+                    }
+                } else {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            addItem()
+                        } label: {
+                            Label("Add", systemImage: "plus")
+                        }
+                    }
+                    
+                    ToolbarItem(placement: .primaryAction) {
+                        selectionButton
+                    }
+                }
+            }
+    }
+    
+    @ViewBuilder
+    private var actionMenu: some View {
+        Menu {
+            selectionButton
+            
+            //ItemListContextMenu(controller: ContextMenuMultiController(editController: rootModel.editController, itemController: rootModel.itemController, selection: listModel.selection))
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
+    }
+    
+    private var selectionButton: some View {
+        Button {
+            listModel.toogleSelectionMode()
+#if os(iOS) || os(visionOS)
+            editMode = listModel.isSelectionMode ? .active : .inactive
+#endif
+        } label: {
+            Label("Select", systemImage: "checkmark.circle")
+        }
+    }
+    
+    @ViewBuilder
+    private var toolSelectionButton: some View {
+        if listModel.isSelectionMode {
+            selectionButton
+                .buttonStyle(.borderedProminent)
+        } else {
+            selectionButton
+        }
+    }
+    
+    private func addItem() {
+//        let newItem = rootModel.editController.addNew(modelContext: modelContext)
+//        withAnimation {
+//            listModel.selected = newItem.id
+//        }
+    }
+    
+    private func deleteItems(offsets: IndexSet) {
+//        withAnimation {
+//            for index in offsets {
+//                rootModel.editController.delete(model: items[index])
+//            }
+//        }
+    }
+    
+    @ViewBuilder
+    private func listView(filteredItems: [Model]) -> some View {
+        @Bindable var listModel = listModel
+#if os(macOS)
+        if listModel.isSelectionMode {
+            List(selection: $listModel.listSelection) {
+                itemRows(filteredItems: filteredItems)
+            }
+            .contextMenu {
+                //ItemListContextMenu(controller: ContextMenuMultiController(editController: rootModel.editController, itemController: rootModel.itemController, selection: listModel.selection))
+            }
+        } else {
+            List(selection: $listModel.selected) {
+                itemRows(filteredItems: filteredItems)
+            }
+        }
+#else
+        List(selection: $listModel.listSelection) {
+            itemRows(filteredItems: filteredItems)
+        }
+#endif
+        
+    }
+    
+    private func itemRows(filteredItems: [Model]) -> some View {
+        ForEach(filteredItems) { item in
+            Text("")
+            row(item)
+                .contentShape(.rect)
+                .applyIf(!listModel.isSelectionMode) { content in
+                    content.contextMenu {
+//                        ItemListContextMenu(controller: ContextMenuController(editController: rootModel.editController, model: item))
+                    }
+                }
+                .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
+        }
+        .onDelete(perform: deleteItems)
+        .deleteDisabled(listModel.isSelectionMode)
+    }
+    
+    var leadingPadding: CGFloat {
+        let value = listModel.isSelectionMode ? 12 : 2
+        return CGFloat(valueFor(iOS: value, macOS: 2, tvOS: value, visionOS: value))
+    }
+}

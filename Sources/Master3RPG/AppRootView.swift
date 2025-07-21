@@ -14,6 +14,8 @@ struct AppRootView: View {
     @Environment(AppModel.self) private var appModel
     
     var body: some View {
+        let _ = Self._printChanges()
+        
         TabNavigation()
             .environment(\.colorScheme, .dark)
             .environment(\.navigator, appModel.navigator)

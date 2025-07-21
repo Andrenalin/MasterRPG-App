@@ -21,6 +21,7 @@ struct MockData: PreviewModifier {
         )
         
         guard try! container.mainContext.fetch(FetchDescriptor<PhotoDataModel>()).isEmpty else {
+            print("*** Empty ***")
             return container
         }
         let photo1 = PhotoDataModel(

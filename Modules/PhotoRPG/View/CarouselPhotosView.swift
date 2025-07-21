@@ -12,6 +12,8 @@ struct CarouselPhotosView: View {
     @Environment(PhotoRootModel.self) private var rootModel
 
     var body: some View {
+        let _ = Self._printChanges()
+
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack {
                 photoView(photo: model, selectedPhoto: nil)

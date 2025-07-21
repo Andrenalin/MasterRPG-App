@@ -10,6 +10,8 @@ public struct CategoryItemRow<Value: CategoryTextRepresentable>: View {
     let category: Value
 
     public var body: some View {
+        let _ = Self._printChanges()
+        
         Text(category.title)
             .rowColoredTag(backgroundColor: Color.accentColor)
             .foregroundStyle(Color.primary)

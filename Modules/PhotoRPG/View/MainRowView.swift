@@ -12,6 +12,7 @@ struct MainRowView: View {
     @Environment(PhotoRootModel.self) private var rootModel
 
     var body: some View {
+        let _ = Self._printChanges()
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
             PlainPhotoView(cacheController: rootModel.cacheController, model: model, size: .maxHeightWidth(96), ratio: .fill, hasRoundedCorners: true, highResolution: false)
         }, tagAdds: {

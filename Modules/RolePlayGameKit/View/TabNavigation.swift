@@ -15,7 +15,6 @@ public struct TabNavigation: View {
     @Namespace private var hoverEffectNameSpace
     @SceneStorage("RootRoute") private var selectedTab: RootRoute = .game
     @State private var tabTitleModel = TabTitleModel()
-    
     @State private var tabSelectedModule: NetworkModules = .game
     
     public var body: some View {
@@ -49,14 +48,6 @@ public struct TabNavigation: View {
             tabSelectedModule = selectedTab.module
         }
     }
-    
-//    private var tabSelectedModule: Binding<NetworkModules> {
-//        Binding {
-//            selectedTab.module
-//        } set: {
-//            try? appModel.externalRouter.route(to: KnownRoutes.route(module: $0, itemId: nil, entryId: nil))
-//        }
-//    }
 }
 
 private extension TabNavigation {
