@@ -8,7 +8,7 @@ struct DetailEditorView: View {
     let model: SpaceDataModel
     let dismiss: () -> Void
     
-    @Environment(SpaceRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var root
     
     // Editor working copy
     @State private var name: String
@@ -132,7 +132,7 @@ struct DetailEditorView: View {
             Spacer()
             
             GlassButton(isProminent: !isEqual) {
-                rootModel.editController.update(model: model, name: name, information: information, category: category, tags: tags)
+                root.editController.update(model: model, name: name, information: information, category: category, tags: tags)
                 dismiss()
             } label: {
                 Image(systemName: "checkmark")

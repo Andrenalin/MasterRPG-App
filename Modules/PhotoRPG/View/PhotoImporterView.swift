@@ -41,7 +41,7 @@ struct CameraImporterView: View {
     let modelActor: DataModelActor?
     let size: CGFloat
     
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(PhotoRootModel.self) private var root
     
     @State private var showCamera = false
     
@@ -68,7 +68,7 @@ struct CameraImporterView: View {
     
     private func update(id: UUID, image: AKImage?) async {
         guard let modelActor else { return }
-        await rootModel.editController.resetPhoto(image: image, id: id, actor: modelActor)
+        await root.editController.resetPhoto(image: image, id: id, actor: modelActor)
     }
 }
 
@@ -76,7 +76,7 @@ struct FileImporterView: View {
     let model: PhotoDataModel
     let size: CGFloat
     
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(PhotoRootModel.self) private var root
     
     @State private var showImporter = false
     
@@ -97,7 +97,7 @@ struct FileImporterView: View {
         .contentTransition(.symbolEffect(.replace.wholeSymbol))
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
             guard let url = try? result.get() else { return }
-            rootModel.editController.resetPhoto(url: url, in: model)
+            root.editController.resetPhoto(url: url, in: model)
         }
 #endif
     }
@@ -115,7 +115,7 @@ struct LibraryImporterView: View {
     let modelActor: DataModelActor?
     let size: CGFloat
     
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(PhotoRootModel.self) private var root
     
     var body: some View {
         LibraryPhotoPicker(size: size) { [id = model.id] image in
@@ -125,7 +125,7 @@ struct LibraryImporterView: View {
     
     private func update(id: UUID, image: AKImage?) async {
         guard let modelActor else { return }
-        await rootModel.editController.resetPhoto(image: image, id: id, actor: modelActor)
+        await root.editController.resetPhoto(image: image, id: id, actor: modelActor)
     }
 }
 #endif

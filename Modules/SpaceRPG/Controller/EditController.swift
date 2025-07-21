@@ -16,6 +16,10 @@ struct EditController {
     let networkModule: NetworkModules = .space
 }
 
+extension EditController: EditControllable {
+    typealias Model = SpaceDataModel
+}
+
 // MARK: - Edit Photo Data Model Properties
 extension EditController {
     func addNew(modelContext: ModelContext) -> SpaceDataModel {
@@ -37,12 +41,15 @@ extension EditController {
         }
     }
     
-    func delete(model: SpaceDataModel) {
+    func delete(model: any Identifiable) {
+        guard let model = model as? SpaceDataModel else { return }
         let fileUrl = model.fileUrl
-        model.modelContext?.delete(model)
+        let modelContext = model.modelContext
         Task.detached {
             await fileController.fileUrlDataController.delete(fileUrl)
         }
+        modelContext?.delete(model)
+        try? modelContext?.save()
     }
     
     func addSubPhoto(photoId: UUID, model: SpaceDataModel) {
@@ -147,26 +154,4 @@ extension EditController {
         let updatedFileUrl = try? await fileController.fileUrlDataController.createNewFileUrl(fileId: id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
-}
-
-extension EditController {
-#if os(macOS)
-    static let importImageTypes = AKImage.imageTypes.compactMap { UTType($0) }
-
-    static func importImageFromProviders(_ itemProviders: [NSItemProvider], completion: @Sendable @escaping (Data?) -> Void) -> Bool {
-        guard let provider = itemProviders.first else { return false }
-        for type in importImageTypes {
-            let typeIdentifier = type.identifier
-            if provider.hasItemConformingToTypeIdentifier(typeIdentifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, _ in
-                    DispatchQueue.main.async {
-                        completion(data)
-                    }
-                }
-                return true
-            }
-        }
-        return false
-    }
-#endif
 }

@@ -9,7 +9,7 @@ struct CarouselPhotosView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(DetailPhotoSelection.self) private var selection
-    @Environment(SpaceRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var root
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -21,7 +21,7 @@ struct CarouselPhotosView: View {
                         photoView(photo: photo, selectedPhoto: photo)
                             .overlay(alignment: .topTrailing) {
                                 GlassButton {
-                                    withAnimation { rootModel.editController.removeSubPhoto(photoId: photo.id, model: model) }
+                                    withAnimation { root.editController.removeSubPhoto(photoId: photo.id, model: model) }
                                 } label: {
                                     Image(systemName: "minus")
                                         .foregroundStyle(.red, .white)
@@ -61,13 +61,13 @@ struct CarouselPhotosView: View {
                 result = false
                 return
             }
-            withAnimation { rootModel.editController.addSubPhoto(photoId: link.itemId, model: model) }
+            withAnimation { root.editController.addSubPhoto(photoId: link.itemId, model: model) }
         }
         return result
     }
     
     func photoView(photo: SpaceDataModel, selectedPhoto: SpaceDataModel?) -> some View {
-        PlainPhotoView(cacheController: rootModel.cacheController, model: photo, highResolution: false)
+        PlainPhotoView(cacheController: root.cacheController, model: photo, highResolution: false)
             .frame(height: 128)
             .onTapGesture {
                 withAnimation { selection.selectedPhoto = selectedPhoto }

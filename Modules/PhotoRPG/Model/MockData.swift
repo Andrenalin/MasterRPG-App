@@ -24,32 +24,32 @@ struct MockData: PreviewModifier {
             print("*** Empty ***")
             return container
         }
-        let photo1 = PhotoDataModel(
+        let model1 = PhotoDataModel(
             id: previewId,
             name: "Mega Nice Photo",
             information: "A lot of information about this photo",
             category: .adventure,
             tags: ["Example", "Title", "Ouside"]
         )
-        container.mainContext.insert(photo1)
+        container.mainContext.insert(model1)
 
-        let photo2 = PhotoDataModel(
+        let model2 = PhotoDataModel(
             id: previewId2,
             name: "Albert",
             information: "The is an example photo and the information is also set here",
             category: .character,
             tags: ["Player", "Mega", "Gnome"]
         )
-        container.mainContext.insert(photo2)
+        container.mainContext.insert(model2)
 
-        let photo3 = PhotoDataModel(
+        let model3 = PhotoDataModel(
             id: previewId3,
             name: "Zauberer",
             information: "A photo of a wizard.",
             category: .adventure,
             tags: ["NPC", "Wizward", "Schwarzmagier"]
         )
-        container.mainContext.insert(photo3)
+        container.mainContext.insert(model3)
 
         return container
     }

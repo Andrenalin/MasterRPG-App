@@ -20,7 +20,7 @@ struct DetailView: View {
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
-    @Environment(SpaceRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var root
     
     @State var selection = DetailPhotoSelection()
     @State private var isEditing = false
@@ -79,10 +79,10 @@ struct DetailView: View {
             ScrollView(showsIndicators: false) {
                 ZStack(alignment: .center) {
                     #if os(tvOS)
-                    PlainPhotoView(cacheController: rootModel.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
+                    PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
                         .stretchy()
     #else
-                    SpaceViewer(root: rootModel, id: selection.selectedPhoto?.id ?? model.id)
+                    SpaceViewer(root: root, id: selection.selectedPhoto?.id ?? model.id)
                     #endif
                 }
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
@@ -119,7 +119,7 @@ struct DetailView: View {
     }
     
     private func updatePhoto(url: URL) {
-        rootModel.editController.resetPhoto(url: url, in: model)
+        root.editController.resetPhoto(url: url, in: model)
     }
 
     @ViewBuilder

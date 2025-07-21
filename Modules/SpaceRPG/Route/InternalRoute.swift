@@ -18,14 +18,14 @@ extension InternalRoute: NavigationDestination {
 struct InternalRouteDestinationView: View {
     let route: InternalRoute
 
-    @Environment(SpaceRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var root
 
     var body: some View {
         switch route {
             case .export(let ids):
-                ExportProgressFile(exportController: rootModel.exportController) {
-                    let exportIds = rootModel.exportController.exporting(ids: Set(ids))
-                    return rootModel.exportController.export(ids: exportIds)
+                ExportProgressFile(exportController: root.exportController) {
+                    let exportIds = root.exportController.exporting(ids: Set(ids))
+                    return root.exportController.export(ids: exportIds)
                 }
                 .presentationDetents([.height(160)])
         }

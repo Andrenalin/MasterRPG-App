@@ -19,7 +19,7 @@ struct DetailView: View {
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(PhotoRootModel.self) private var root
     
     @State var selection = DetailPhotoSelection()
     @State private var isEditing = false
@@ -79,7 +79,7 @@ struct DetailView: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 ZStack(alignment: .center) {
-                    PlainPhotoView(cacheController: rootModel.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
+                    PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
                         .stretchy()
                 }
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
@@ -116,7 +116,7 @@ struct DetailView: View {
     }
     
     private func updatePhoto(url: URL) {
-        rootModel.editController.resetPhoto(url: url, in: model)
+        root.editController.resetPhoto(url: url, in: model)
     }
 
     @ViewBuilder
@@ -178,7 +178,7 @@ struct DetailView: View {
                 Image(systemName: "gear")
             }
             .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
-                rootModel.editController.resetPhoto(url: url, in: model)
+                root.editController.resetPhoto(url: url, in: model)
             }
         }
         CameraImporterView(model: model)

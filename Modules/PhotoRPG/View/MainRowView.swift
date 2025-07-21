@@ -10,12 +10,12 @@ struct MainRowView: View {
     @Environment(CacheItemListModel.self) private var cacheModel
     @Environment(ListModel.self) private var listModel
     @Environment(SearchModel.self) private var searchModel
-    @Environment(PhotoRootModel.self) private var rootModel
+    @Environment(PhotoRootModel.self) private var root
 
     var body: some View {
         let _ = Self._printChanges()
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
-            PlainPhotoView(cacheController: rootModel.cacheController, model: model, size: .maxHeightWidth(width), ratio: .fill, hasRoundedCorners: true, highResolution: false)
+            PlainPhotoView(cacheController: root.cacheController, model: model, size: .maxHeightWidth(width), ratio: .fill, hasRoundedCorners: true, highResolution: false)
         }, tagAdds: {
             CategoryItemRow(category: model.category)
         })

@@ -30,7 +30,7 @@ struct FileImporterView: View {
     let model: SpaceDataModel
     let size: CGFloat
     
-    @Environment(SpaceRootModel.self) private var rootModel
+    @Environment(SpaceRootModel.self) private var root
     
     @State private var showImporter = false
     
@@ -51,7 +51,7 @@ struct FileImporterView: View {
         .contentTransition(.symbolEffect(.replace.wholeSymbol))
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
             guard let url = try? result.get() else { return }
-            rootModel.editController.resetPhoto(url: url, in: model)
+            root.editController.resetPhoto(url: url, in: model)
         }
 #endif
     }
