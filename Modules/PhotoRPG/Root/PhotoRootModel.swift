@@ -7,6 +7,7 @@ import Foundation
 @MainActor @Observable
 public final class PhotoRootModel {
     init(modelContext: ModelContext) {
+        self.modelContext = modelContext
         let fileController = FileController()
         self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
         self.editController = EditController(fileController: fileController)
@@ -16,6 +17,7 @@ public final class PhotoRootModel {
         self.itemController = itemController
     }
 
+    let modelContext: ModelContext
     @ObservationIgnored let cacheController: CacheController
     @ObservationIgnored let editController: EditController
     @ObservationIgnored let exportController: ExportController

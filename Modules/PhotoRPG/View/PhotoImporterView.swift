@@ -172,5 +172,4 @@ struct LibraryImporterView: View {
 
         PhotoImporterView(model: models[0], prominent: true)
     }
-    .environment(PhotoRootModel(modelContext: modelContext))
 }

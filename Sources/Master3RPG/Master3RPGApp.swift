@@ -7,6 +7,7 @@
 
 import AppIntents
 import CoreRPG
+import CoreExternalRPG
 import RolePlayGameKit
 import SwiftUI
 import SwiftData
@@ -33,6 +34,17 @@ struct Master3RPGApp: App {
                 .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
                     handle(userActivity: userActivity)
                 }
+        }
+        .commands {
+#if os(macOS)
+            AboutPanelCommand(title: "Master RPG", credits: "Many thanks to my long running test party: Karsten, Roman and Timo.")
+            ImportFromDevicesCommands()
+#endif
+            SidebarCommands()
+            TextEditingCommands()
+            TextFormattingCommands()
+
+            MenuCommandList(appModel: appModel)
         }
         .modelContainer(appModel.modelContainer)
     }

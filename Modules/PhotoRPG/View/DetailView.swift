@@ -26,17 +26,41 @@ struct DetailView: View {
         let _ = Self._printChanges()
 
         @Bindable var model = model
-        VStack {
-            detailView
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack {
+                    detailView
+                        .id("Header")
+                        .frame(minHeight: 600)
 
-            if model.url != nil {
+#if os(iOS)
+                    if horizontalSizeClass == .regular && isEditing {
+                        DetailEditorView(model: model) {
+                            withAnimation { isEditing = false }
+                        }
+                        .id("Editor")
+                        .transition(.scale)
+                    }
+#endif
+                }
+                .animation(.bouncy, value: isEditing)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .onChange(of: isEditing) {
+                if isEditing {
+                    proxy.scrollTo("Editor", anchor: .bottom)
+                } else {
+                    proxy.scrollTo("Header", anchor: .top)
+                }
+            }
+            if model.url != nil && !isEditing {
                 CarouselPhotosView(model: model)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
                     .environment(selection)
+                    .transition(.move(edge: .bottom))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
 #if !os(tvOS)
         .toolbar(removing: .title)
 #endif
@@ -46,17 +70,31 @@ struct DetailView: View {
                 isEditing = false
             }
         }
-        .overlay(alignment: .top) {
-#if os(iOS)
-            if horizontalSizeClass == .regular {
-                detailEditorView
-            }
-#else
-            detailEditorView
-#endif
-        }
+//        .overlay(alignment: .top) {
+//#if os(iOS)
+//            if horizontalSizeClass == .regular {
+//                detailEditorView
+//            }
+//#else
+//            detailEditorView
+//#endif
+//        }
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
+        .keyboardAvoiding(height: 160)
+//        .safeAreaInset(edge: .bottom, content: {
+//            if isEditing {
+//                DetailEditorView(model: model) {
+//
+//                }
+//                .opacity(0.02)
+//            }
+//        })
+        .inspector(isPresented: $showImporter) {
+            VStack {
+                PhotoImporterView(model: model, prominent: true)
+            }
+        }
 #if os(iOS)
         .applyIf(horizontalSizeClass == .compact) {
             $0.sheet(isPresented: $isEditing) {
@@ -69,17 +107,16 @@ struct DetailView: View {
             }
         }
 #endif
+        .focusedSceneValue(\.selectedPhoto, $model.id)
     }
 
     private var detailView: some View {
-        GeometryReader { proxy in
-            ScrollView(showsIndicators: false) {
+//        GeometryReader { proxy in
                 ZStack(alignment: .center) {
                     PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
                         .stretchy()
                 }
-                .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
-            }
+ //               .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 #if !os(tvOS)
             .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
@@ -98,7 +135,8 @@ struct DetailView: View {
                 if model.url == nil {
                     VStack {
                         Spacer()
-                        HStack(spacing: 40) { PhotoImporterView(model: model, prominent: true)
+                        HStack(spacing: 40) {
+                            PhotoImporterView(model: model, prominent: true)
                         }
                         Spacer()
                         Spacer()
@@ -106,7 +144,7 @@ struct DetailView: View {
                 }
             }
 
-        }
+        //}
     }
 
     private func updatePhoto(url: URL) {
@@ -135,18 +173,30 @@ struct DetailView: View {
     private var toolbarButtons: some View {
         VStack(alignment: .center) {
             if model.url != nil {
-                if showImporter {
-                    PhotoImporterView(model: model, prominent: false)
-                }
-                GlassButton {
-                    withAnimation(.bouncy(duration: 0.3)) {
-                        showImporter.toggle()
+                if #available(iOS 26.0, *) {
+                    PhotoInlineImporterView(model: model)
+                } else {
+                    if showImporter {
+                        PhotoImporterView(model: model, prominent: false)
                     }
-                } label: {
-                    Image(systemName: "photo.badge.plus")
+                    GlassButton {
+                        withAnimation(.bouncy(duration: 0.3)) {
+                            showImporter.toggle()
+                        }
+                    } label: {
+                        Image(systemName: "photo.badge.plus")
+                    }
+                    .animation(.bouncy, value: model.url)
+                    .transition(.scale.combined(with: .opacity))
                 }
-                .animation(.bouncy, value: model.url)
-                .transition(.scale.combined(with: .opacity))
+            }
+
+            GlassButton {
+                withAnimation(.bouncy(duration: 0.3)) {
+                    showImporter.toggle()
+                }
+            } label: {
+                Image(systemName: "link")
             }
 
             GlassButton(isProminent: true) {
