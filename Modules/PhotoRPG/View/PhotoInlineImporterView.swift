@@ -75,7 +75,6 @@ enum PhotoImporterButtonType: String {
     }
 }
 
-@available(iOS 26.0, *)
 struct PhotoInlineImporterView: View {
     init(model: PhotoDataModel) {
         self.model = model
@@ -169,8 +168,6 @@ struct PhotoInlineImporterView: View {
         Color
             .blue
 
-        if #available(iOS 26.0, *) {
-            PhotoInlineImporterView(model: models[0])
-        }
+        PhotoInlineImporterView(model: models[0])
     }
 }

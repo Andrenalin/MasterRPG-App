@@ -6,7 +6,6 @@ import CoreTransferable
 import SwiftUI
 import PDFKit
 
-@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
 struct PhotoEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
@@ -43,7 +42,6 @@ struct PhotoEntity: IndexedEntity {
     }
 }
 
-@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
 extension PhotoEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
@@ -85,7 +83,6 @@ extension PhotoEntity: Transferable {
     }
 }
 
-@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
 @MainActor
 struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: PhotoRootModel
@@ -128,7 +125,6 @@ struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 }
 
-@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
 extension PhotoEntity {
     var sharePreview: SharePreview<Never, Image> {
         SharePreview(name, icon: Image(systemName: "photo"))

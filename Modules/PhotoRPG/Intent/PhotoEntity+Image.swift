@@ -6,7 +6,6 @@ internal import UIKit
 internal import AppKit
 #endif
 
-@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
 extension PhotoEntity {
     var imageRepresentationData: Data {
         get async throws {

@@ -1,0 +1,47 @@
+// @copyright André Trettin
+
+import CoreRPG
+import SwiftData
+import SwiftUI
+
+struct MainRowView: View {
+    let model: AudioDataModel
+
+    @Environment(CacheItemListModel.self) private var cacheModel
+    @Environment(ListModel.self) private var listModel
+    @Environment(SearchModel.self) private var searchModel
+    @Environment(AudioRootModel.self) private var root
+
+    var body: some View {
+        let _ = Self._printChanges()
+        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
+            PlainPhotoView(cacheController: root.cacheController, model: model, size: .maxHeightWidth(width), ratio: .fill, hasRoundedCorners: true, highResolution: false)
+        }, tagAdds: {
+            CategoryItemRow(category: model.category)
+        })
+#if !os(tvOS)
+        .draggable(LinkData(itemId: model.id, module: .photo, name: model.name))
+#endif
+    }
+
+    var width: CGFloat {
+        switch listModel.displayMode {
+            case .compact: 160
+            case .medium: 128
+            case .regular: 96
+            @unknown default: 96
+        }
+    }
+}
+
+#Preview(traits: .mockData) {
+    @Previewable @Query var models: [AudioDataModel]
+    @Previewable @Environment(\.modelContext) var modelContext
+    
+    MainRowView(model: models[0])
+        .environment(AudioRootModel(modelContext: modelContext))
+        .environment(CacheItemListModel())
+        .environment(SearchModel.preview)
+        .environment(DeviceRotationModel())
+}
+

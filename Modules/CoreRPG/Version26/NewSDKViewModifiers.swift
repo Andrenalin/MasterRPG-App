@@ -19,7 +19,6 @@ public enum TabBarMinimizeBehavior26: Hashable, Sendable {
     case never
     
 #if os(iOS)
-    @available(iOS 26.0, *)
     var tabBarMinimizeBehavior: TabBarMinimizeBehavior {
         switch self {
         case .automatic: .automatic
@@ -33,11 +32,7 @@ public enum TabBarMinimizeBehavior26: Hashable, Sendable {
 
 private struct BackgroundExtensionEffect: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, iOS 26.0, tvOS 26.0, watchOS 26.0, visionOS 26.0, *) {
-            content.backgroundExtensionEffect()
-        } else {
-            content
-        }
+        content.backgroundExtensionEffect()
     }
 }
 
@@ -46,11 +41,7 @@ private struct TabBarMinimizeBehavior26ViewModifier: ViewModifier {
     
     func body(content: Content) -> some View {
 #if os(iOS)
-        if #available(iOS 26.0, *) {
-            content.tabBarMinimizeBehavior(behavior.tabBarMinimizeBehavior)
-        } else {
-            content
-        }
+        content.tabBarMinimizeBehavior(behavior.tabBarMinimizeBehavior)
 #else
         content
 #endif

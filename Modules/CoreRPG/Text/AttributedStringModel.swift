@@ -63,24 +63,24 @@ final class AttributedStringModel: Identifiable {
 
 extension AttributedStringModel {
     enum Scope: String, Codable {
-        case recipe
+        //case recipe
         case link
 
         fileprivate var encodingConfiguration: AttributeScopeCodableConfiguration {
             switch self {
-            case .recipe:
-                AttributeScopes.LinkModelAttributes.encodingConfiguration
+//            case .recipe:
+//                AttributeScopes.LinkModelAttributes.encodingConfiguration
             case .link:
-                AttributeScopes.LinkNameAttributes.encodingConfiguration
+                AttributeScopes.CustomAttributes.encodingConfiguration
             }
         }
 
         fileprivate var decodingConfiguration: AttributeScopeCodableConfiguration {
             switch self {
-            case .recipe:
-                AttributeScopes.LinkModelAttributes.decodingConfiguration
+//            case .recipe:
+//                AttributeScopes.LinkModelAttributes.decodingConfiguration
             case .link:
-                AttributeScopes.LinkNameAttributes.decodingConfiguration
+                AttributeScopes.CustomAttributes.decodingConfiguration
             }
         }
     }

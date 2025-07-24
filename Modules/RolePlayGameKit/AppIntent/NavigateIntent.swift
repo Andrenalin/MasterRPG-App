@@ -2,7 +2,6 @@ import AppIntents
 import CoreRPG
 import CoreExternalRPG
 
-@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
 struct NavigateIntent: AppIntent {
     static let title: LocalizedStringResource = "Navigate to Section"
 
@@ -51,7 +50,6 @@ struct NavigateIntent: AppIntent {
     }
 }
 
-@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
 extension NavigateIntent {
     init(navigationOption: NavigationOption) {
         self.navigationOption = navigationOption
@@ -59,6 +57,5 @@ extension NavigateIntent {
 }
 
 #if os(iOS)
-@available(iOS 26.0, macOS 26.0, tvOS 26.0, visionOS 26.0, *)
 extension NavigateIntent: TargetContentProvidingIntent {}
 #endif

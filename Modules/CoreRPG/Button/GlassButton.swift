@@ -14,21 +14,12 @@ public struct GlassButton<Content: View>: View {
     let action: () -> Void
     
     public var body: some View {
-        if #available(iOS 26.0, macOS 26.0, visionOS 26.0, tvOS 26.0, *) {
-            if isProminet {
-                button
-                    .buttonStyle(.glassProminent)
-            } else {
-                button
-                    .buttonStyle(.glass)
-            }
+        if isProminet {
+            button
+                .buttonStyle(.glassProminent)
         } else {
-            Button {
-                action()
-            } label: {
-                label
-            }
-            .buttonStyle(.imageOverlay)
+            button
+                .buttonStyle(.glass)
         }
     }
     

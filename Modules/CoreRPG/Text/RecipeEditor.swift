@@ -2,7 +2,51 @@
 
 import SwiftUI
 
-@available(iOS 26.0, *)
+struct LinkNameAttributes: CodableAttributedStringKey {
+    typealias Value = LinkDataModel.ID
+
+    static let name = "MasterRPG.LinkNameAttributes"
+}
+
+extension AttributeScopes {
+    struct CustomAttributes: AttributeScope {
+        let linkName: LinkNameAttributes
+    }
+}
+
+extension AttributeDynamicLookup {
+    subscript<T: AttributedStringKey>(
+        dynamicMember keyPath: KeyPath<AttributeScopes.CustomAttributes, T>
+    ) -> T {
+        self[T.self]
+    }
+}
+
+struct LinkFormattingDefinition: AttributedTextFormattingDefinition {
+    struct Scope: AttributeScope {
+        let foregroundColor: AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute
+        let backgroundColor: AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute
+        let adaptiveImageGlyph: AttributeScopes.SwiftUIAttributes.AdaptiveImageGlyphAttribute
+        let linkName: LinkNameAttributes
+    }
+
+    var body: some AttributedTextFormattingDefinition<Scope> {
+        LinksAreWhiteBlue()
+    }
+}
+
+struct LinksAreWhiteBlue: AttributedTextValueConstraint {
+    typealias Scope = LinkFormattingDefinition.Scope
+    typealias AttributeKey = AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute
+
+    func constrain(_ container: inout Attributes) {
+        if container.linkName != nil {
+            container.foregroundColor = .blue
+//            container.backgroundColor = .blue
+        }
+    }
+}
+
 struct DescriptionLinkEditor: View {
     @State private var text = AttributedString("Hello")
     @State private var selection = AttributedTextSelection()
@@ -11,23 +55,17 @@ struct DescriptionLinkEditor: View {
         VStack {
             Text(text)
             Divider()
-            Text("Selected: \(text[selection])")
+            Button {
+
+            } label: {
+                Text("Selected: \(text[selection])")
+            }
             Divider()
             TextEditor(text: $text, selection: $selection)
+                .attributedTextFormattingDefinition(LinkFormattingDefinition())
         }
     }
-
-//    private var newIngredientSuggestion: IngredientSuggestion {
-//        let name = text[selection.indices(in: text)] // build error
-//
-//        return IngredientSuggestion(
-//            suggestedName: AttributedString())
-//    }
 }
-
-
-    //            .preference(key: NewIngredientPreferenceKey.self, value: newIngredientSuggestion)
-
 
     //            TextEditor(text: $content.text, selection: $content.selection)
     //                .toolbar {
@@ -89,7 +127,5 @@ struct DescriptionLinkEditor: View {
 //}
 
 #Preview {
-    if #available(iOS 26.0, *) {
-        DescriptionLinkEditor()
-    }
+    DescriptionLinkEditor()
 }

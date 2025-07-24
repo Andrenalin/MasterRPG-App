@@ -156,22 +156,7 @@ struct DetailView: View {
     private var toolbarButtons: some View {
         VStack(alignment: .center) {
             if model.url != nil {
-                if #available(iOS 26.0, *) {
-                    PhotoInlineImporterView(model: model)
-                } else {
-                    if showImporter {
-                        PhotoImporterView(model: model, prominent: false)
-                    }
-                    GlassButton {
-                        withAnimation(.bouncy(duration: 0.3)) {
-                            showImporter.toggle()
-                        }
-                    } label: {
-                        Image(systemName: "photo.badge.plus")
-                    }
-                    .animation(.bouncy, value: model.url)
-                    .transition(.scale.combined(with: .opacity))
-                }
+                PhotoInlineImporterView(model: model)
             }
 
             GlassButton {
