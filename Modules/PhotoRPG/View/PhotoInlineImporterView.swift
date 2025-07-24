@@ -113,7 +113,7 @@ struct PhotoInlineImporterView: View {
                             .frame(width: 50, height: 50)
                             .foregroundColor(.white)
                     }
-                    .glassEffect(.regular.tint(.purple.opacity(0.8)).interactive())
+                    .glassEffect(.regular.tint(Color.accentColor.opacity(0.8)).interactive())
                     .glassEffectID("menu", in: glassNamespace)
                 }
             }.padding(32)
@@ -155,7 +155,7 @@ struct PhotoInlineImporterView: View {
                 .frame(width: 50, height:50)
                 .opacity(isExpanded ? 1 : 0)
         }
-        .glassEffect(.regular.tint(.white.opacity(0.8)).interactive())
+        .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
         .glassEffectID(type.label, in: glassNamespace)
         .offset(type.offset(expanded: isExpanded))
         .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: isExpanded)

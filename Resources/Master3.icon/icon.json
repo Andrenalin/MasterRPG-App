@@ -1,0 +1,39 @@
+{
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:0.00000,0.47843,1.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "D7014@3x.png",
+          "name" : "D7014@3x"
+        },
+        {
+          "image-name" : "Foreground 1.png",
+          "name" : "Foreground 1"
+        },
+        {
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Icon-Light-1024x1024.png",
+          "name" : "Icon-Light-1024x1024"
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

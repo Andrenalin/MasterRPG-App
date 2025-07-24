@@ -6,14 +6,15 @@ import SwiftUI
 
 public struct TabNavigation: View {
     public init() {}
-    
+
+    @AppStorage("MasterRPGCustomization") private var customization: TabViewCustomization
+    @SceneStorage("RootRoute") private var selectedTab: RootRoute = .game
+
     @Environment(AppModel.self) private var appModel
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
-
     @Namespace private var hoverEffectNameSpace
-    @SceneStorage("RootRoute") private var selectedTab: RootRoute = .game
     @State private var tabTitleModel = TabTitleModel()
     @State private var tabSelectedModule: NetworkModules = .game
     
@@ -52,17 +53,64 @@ public struct TabNavigation: View {
 
 private extension TabNavigation {
     func pageTab(for tab: RootRoute) -> Tab<RootRoute, some View, DefaultTabLabel> {
-        Tab(tabTitleModel.titles[tab.module, default: tab.title], systemImage: tab.icon, value: tab) {
+        Tab(tabTitleModel.titles[tab.module, default: tab.title], systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
             tab
         }
     }
     
     var allTabs: some View {
         TabView(selection: $selectedTab) {
-            ForEach(RootRoute.allTabs) { tab in
-                pageTab(for: tab)
+            pageTab(for: .game)
+                .customizationID("Tab.\(NetworkModules.game.token)")
+                .customizationBehavior(.disabled, for: .sidebar, .tabBar)
+
+            pageTab(for: .search)
+                .customizationID("Tab.\(NetworkModules.search.token)")
+
+            TabSection {
+                pageTab(for: .adventures)
+                    .customizationID("Tab.\(NetworkModules.adventure.token)")
+                pageTab(for: .values)
+                    .customizationID("Tab.\(NetworkModules.value.token)")
+                pageTab(for: .maps)
+                    .customizationID("Tab.\(NetworkModules.map.token)")
+            } header: {
+                Text("Library", bundle: .module)
             }
+            .customizationID("Tab.Libaray")
+            .defaultVisibility(.hidden, for: .tabBar)
+
+
+            TabSection {
+                pageTab(for: .pdfs)
+                    .customizationID("Tab.\(NetworkModules.pdf.token)")
+                pageTab(for: .tables)
+                    .customizationID("Tab.\(NetworkModules.table.token)")
+            } header: {
+                Text("References", bundle: .module)
+            }
+            .customizationID("Tab.References")
+            .defaultVisibility(.hidden, for: .tabBar)
+
+            TabSection {
+                pageTab(for: .audios)
+                    .customizationID("Tab.\(NetworkModules.audio.token)")
+                pageTab(for: .dice)
+                    .customizationID("Tab.\(NetworkModules.dice.token)")
+                pageTab(for: .photos)
+                    .customizationID("Tab.\(NetworkModules.photo.token)")
+                pageTab(for: .space)
+                    .customizationID("Tab.\(NetworkModules.space.token)")
+            } header: {
+                Text("Material", bundle: .module)
+            }
+            .customizationID("Tab.Material")
+            .defaultVisibility(.hidden, for: .tabBar)
+
+            pageTab(for: .settings)
+                .customizationID("Tab.\(NetworkModules.setting.token)")
         }
+        .tabViewCustomization($customization)
         .onNavigationReceive(assign: $selectedTab, delay: 0.8)
         .onNavigationRoute(RootRouteRouter(appModel: appModel))
     }

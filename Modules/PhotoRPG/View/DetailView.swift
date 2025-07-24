@@ -70,26 +70,9 @@ struct DetailView: View {
                 isEditing = false
             }
         }
-//        .overlay(alignment: .top) {
-//#if os(iOS)
-//            if horizontalSizeClass == .regular {
-//                detailEditorView
-//            }
-//#else
-//            detailEditorView
-//#endif
-//        }
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
         .keyboardAvoiding(height: 160)
-//        .safeAreaInset(edge: .bottom, content: {
-//            if isEditing {
-//                DetailEditorView(model: model) {
-//
-//                }
-//                .opacity(0.02)
-//            }
-//        })
         .inspector(isPresented: $showImporter) {
             VStack {
                 PhotoImporterView(model: model, prominent: true)
@@ -111,40 +94,40 @@ struct DetailView: View {
     }
 
     private var detailView: some View {
-//        GeometryReader { proxy in
-                ZStack(alignment: .center) {
-                    PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
-                        .stretchy()
-                }
- //               .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ZStack(alignment: .center) {
+            PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
+                .stretchy()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .mask(LinearGradient(
+            gradient: Gradient(colors: [.black, .black, .black, .clear]),
+            startPoint: .top, endPoint: .bottom))
+
 #if !os(tvOS)
-            .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
+        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
 #endif
 
-            .overlay(alignment: .bottom) {
-                HStack(alignment: .bottom) {
-                    DetailOverlayView(model: selection.selectedPhoto ?? model)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .bottom) {
+            HStack(alignment: .bottom) {
+                DetailOverlayView(model: selection.selectedPhoto ?? model)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    toolbarButtons
-                }
-                .padding()
+                toolbarButtons
             }
-            .overlay(alignment: .center) {
-                if model.url == nil {
-                    VStack {
-                        Spacer()
-                        HStack(spacing: 40) {
-                            PhotoImporterView(model: model, prominent: true)
-                        }
-                        Spacer()
-                        Spacer()
+            .padding()
+        }
+        .overlay(alignment: .center) {
+            if model.url == nil {
+                VStack {
+                    Spacer()
+                    HStack(spacing: 40) {
+                        PhotoImporterView(model: model, prominent: true)
                     }
+                    Spacer()
+                    Spacer()
                 }
             }
-
-        //}
+        }
     }
 
     private func updatePhoto(url: URL) {

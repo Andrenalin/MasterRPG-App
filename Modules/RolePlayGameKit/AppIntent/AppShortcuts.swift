@@ -12,13 +12,5 @@ struct AppShortcuts: AppShortcutsProvider {
             shortTitle: "Navigate",
             systemImageName: "arrowshape.forward"
         )
-//        AppShortcut(
-//            intent: ClosestLandmarkIntent(),
-//            phrases: [
-//                "Find closest landmark in \(.applicationName)"
-//            ],
-//            shortTitle: "Find Closest",
-//            systemImageName: "location"
-//        )
     }
 }

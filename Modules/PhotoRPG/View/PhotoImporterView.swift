@@ -15,15 +15,6 @@ struct PhotoImporterView: View {
 
     var body: some View {
         contentView
-//        ViewThatFits {
-//            HStack(spacing: 40) {
-//                contentView
-//            }
-//
-//            VStack(spacing: 40) {
-//                contentView
-//            }
-//        }
     }
     
     @ViewBuilder
@@ -76,7 +67,7 @@ struct CameraImporterView: View {
     let modelActor: DataModelActor?
 
     @Environment(PhotoRootModel.self) private var root
-    
+    @Namespace private var transition
     @State private var showCamera = false
     
     var body: some View {
@@ -88,12 +79,17 @@ struct CameraImporterView: View {
                 Image(systemName: "camera\(showCamera ? ".fill" : "")")
                     .imageScale(prominent ? .large : .medium)
             }
+            .matchedTransitionSource(
+                id: "info", in: transition
+            )
             .contentTransition(.symbolEffect(.replace.wholeSymbol))
-
             .sheet(isPresented: $showCamera) {
                 CaptureImagePicker(shown: $showCamera) { [id = model.id] image in
                     await update(id: id, image: image)
                 }
+                .navigationTransition(
+                    .zoom(sourceID: "info", in: transition)
+                )
             }
         }
 #endif

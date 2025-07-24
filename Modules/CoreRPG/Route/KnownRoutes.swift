@@ -11,6 +11,7 @@ public enum KnownRoutes: NavigationRoutes {
     case maps(UUID?, UUID?)
     case pdfs(UUID?, UUID?)
     case photos(UUID?, UUID?)
+    case search
     case settings
     case spaces(UUID?, UUID?)
     case tables(UUID?, UUID?)
@@ -28,6 +29,7 @@ extension KnownRoutes {
         case .map: .maps(itemId, entryId)
         case .pdf: .pdfs(itemId, entryId)
         case .photo: .photos(itemId, entryId)
+        case .search: .search
         case .setting: .settings
         case .space: .spaces(itemId, entryId)
         case .table: .tables(itemId, entryId)

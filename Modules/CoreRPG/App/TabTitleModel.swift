@@ -13,11 +13,12 @@ public final class TabTitleModel {
 #if os(iOS)
     public func toggleTitles(horizontalSizeClass: UserInterfaceSizeClass?, tabBarPlacement: TabBarPlacement?) {
         NetworkModules.allCases.forEach {
-            if horizontalSizeClass == .compact || tabBarPlacement == .sidebar {
-                titles[$0] = $0.title
-            } else {
-                titles[$0] = ""
-            }
+            titles[$0] = $0.title
+//            if horizontalSizeClass == .compact || tabBarPlacement == .sidebar {
+//                titles[$0] = $0.title
+//            } else {
+//                titles[$0] = ""
+//            }
         }
     }
     #endif
