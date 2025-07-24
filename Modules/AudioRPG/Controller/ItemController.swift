@@ -7,13 +7,13 @@ import SwiftData
 struct ItemController: ItemControllable, Sendable {
     let container: ModelContainer
     
-    func item(for id: UUID) async -> PhotoModel? {
+    func item(for id: UUID) async -> AudioModel? {
         let actor = DataModelActor(modelContainer: container)
         await actor.setup(id: id)
         return await actor.photoModel()
     }
     
-    func itemSync(for id: UUID) -> PhotoModel? {
+    func itemSync(for id: UUID) -> AudioModel? {
         AudioDataModel.model(modelContext: ModelContext(container), id: id)?.photoModel
     }
 

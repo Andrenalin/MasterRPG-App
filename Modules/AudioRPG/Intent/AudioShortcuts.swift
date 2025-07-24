@@ -4,19 +4,19 @@ import CoreRPG
 import AppIntents
 import Foundation
 
-struct PhotoShortcuts: AppShortcutsProvider {
+struct AudioShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
-            intent: OpenPhotoIntent(),
+            intent: OpenAudioIntent(),
             phrases: [
                 "Open in \(.applicationName)",
                 "Show \(\.$target) in \(.applicationName)"
             ],
-            shortTitle: "Open Photo",
-            systemImageName: "photo.on.rectangle.angled"
+            shortTitle: "Open Audio",
+            systemImageName: "music.note.list"
         )
     }
 }
 
-public struct PhotoFrameworkPackage: AppIntentsPackage { }
+public struct AudioFrameworkPackage: AppIntentsPackage { }
 

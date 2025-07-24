@@ -5,7 +5,7 @@ import Foundation
 import Observation
 
 @Observable
-final class AudioModel: Identifiable, @unchecked Sendable {
+public final class AudioModel: Identifiable, @unchecked Sendable {
     init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .music, displayState: Int = 0, fileUrl: FileUrl? = nil, entries: [AudioEntryModel] = []) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
@@ -28,7 +28,7 @@ final class AudioModel: Identifiable, @unchecked Sendable {
         entries_ = entries
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<AudioModel.CodingKeys> = try decoder.container(keyedBy: AudioModel.CodingKeys.self)
 
         self._id = try container.decode(UUID.self, forKey: AudioModel.CodingKeys._id)
@@ -41,48 +41,48 @@ final class AudioModel: Identifiable, @unchecked Sendable {
         self._entries_ = try container.decode(CRDTDataUpdate<[AudioEntryModel]>.self, forKey: AudioModel.CodingKeys._entries_)
     }
 
-    var id: UUID
+    public var id: UUID
 
-    var name: String {
+    public var name: String {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
     var name_: CRDT<String>
 
-    var description: String {
+    public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
     var description_: CRDT<String>
 
-    var tags: [String] {
+    public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
     var tags_: CRDT<[String]>
 
-    var category: ItemListCategory {
+    public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
     var category_: CRDT<ItemListCategory>
 
-    var displayState: Int
+    public var displayState: Int
 
-    var fileUrl: FileUrl? {
+    public var fileUrl: FileUrl? {
         get { fileUrl_.wrappedValue }
         set { fileUrl_.wrappedValue = newValue }
     }
     var fileUrl_: CRDTDataUpdate<FileUrl?>
 
-    var entries: [AudioEntryModel] {
+    public var entries: [AudioEntryModel] {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
     var entries_: CRDTDataUpdate<[AudioEntryModel]>
 
     // only game properties
-    var players: [UUID] = []
+    public var players: [UUID] = []
 }
 
 extension AudioModel {
@@ -92,7 +92,7 @@ extension AudioModel {
 }
 
 extension AudioModel: Comparable {
-    static func < (lhs: AudioModel, rhs: AudioModel) -> Bool {
+    public static func < (lhs: AudioModel, rhs: AudioModel) -> Bool {
         lhs.name < rhs.name
     }
 }
@@ -101,7 +101,7 @@ extension AudioModel: ItemGameReportable {}
 extension AudioModel: ItemLinkRegistable {}
 
 extension AudioModel: ItemDiffComparable {
-    func merge(_ other: AudioModel) -> AudioModel {
+    public func merge(_ other: AudioModel) -> AudioModel {
         AudioModel(
             id: id,
             name: name_.merged(other: other.name_),
@@ -114,7 +114,7 @@ extension AudioModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: AudioModel) -> Bool {
+    public func isSame(_ other: AudioModel) -> Bool {
         name == other.name &&
         description == other.description &&
         tags == other.tags &&
@@ -128,38 +128,38 @@ extension AudioModel: ItemDiffComparable {
         }
     }
     
-    var version: Int {
+    public var version: Int {
         fileUrl_.update.hashValue
     }
 }
 
 extension AudioModel: ItemDuplicatable {
-    func duplicate() -> AudioModel {
+    public func duplicate() -> AudioModel {
         let copyName = duplicateName(from: name)
         return AudioModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() })
     }
 }
 
 extension AudioModel: ItemDataAccessable {
-    static var empty: AudioModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> AudioModel {
+    public static var empty: AudioModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> AudioModel {
         AudioModel(id: id, name: "")
     }
-    static let typeId: NetworkModules = .audio
+    public static let typeId: NetworkModules = .audio
 
-    func copy() -> AudioModel {
+    public func copy() -> AudioModel {
         AudioModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, fileUrl: fileUrl_, entries: entries_)
     }
 
-    func filter(_ filter: String) -> Bool {
+    public func filter(_ filter: String) -> Bool {
         (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
     }
 
-    func isEqual(other: AudioModel) -> Bool {
+    public func isEqual(other: AudioModel) -> Bool {
         self == other
     }
 
-    var isGroupHiddenToggle: Bool {
+    public var isGroupHiddenToggle: Bool {
         get { isGroupHidden }
         set {
             if newValue {
@@ -170,7 +170,7 @@ extension AudioModel: ItemDataAccessable {
         }
     }
 
-    func replace(with model: AudioModel) -> Bool {
+    public func replace(with model: AudioModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_
@@ -182,7 +182,7 @@ extension AudioModel: ItemDataAccessable {
         return true
     }
 
-    subscript(id: UUID) -> AudioEntryModel {
+    public subscript(id: UUID) -> AudioEntryModel {
         get {
             guard let index = entries.firstIndex(where: { $0.id == id }) else { return .empty(id) }
             return entries[index]
@@ -193,11 +193,11 @@ extension AudioModel: ItemDataAccessable {
         }
     }
 
-    func urlAdr(linkNumber: Int, entryId: UUID) -> String {
+    public func urlAdr(linkNumber: Int, entryId: UUID) -> String {
         "\(URL.appScheme)://\(Self.typeId.token)/\(linkNumber)/\(entryId)"
     }
 
-    func urlName(entryId: UUID) -> String {
+    public func urlName(entryId: UUID) -> String {
         let index = entries.firstIndex(where: { $0.audioId == entryId }) ?? -1
         return "\(index + 1): \(name.withoutLink())"
     }
@@ -215,7 +215,7 @@ extension AudioModel: Codable {
         case _entries_
     }
 
-    final func encode(to encoder: Encoder) throws {
+    public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<AudioModel.CodingKeys> = encoder.container(keyedBy: AudioModel.CodingKeys.self)
 
         try container.encode(self._id, forKey: AudioModel.CodingKeys._id)
@@ -230,11 +230,11 @@ extension AudioModel: Codable {
 }
 
 extension AudioModel: Equatable, Hashable {
-    static func == (lhs: AudioModel, rhs: AudioModel) -> Bool {
+    public static func == (lhs: AudioModel, rhs: AudioModel) -> Bool {
         lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     }
 
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

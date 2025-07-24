@@ -8,7 +8,7 @@ import SwiftUI
 struct AudioRootView: View {
     let withoutNavigation: Bool
 
-    @SceneStorage("AudioRoute") private var photoRoute: AudioRoute?
+    @SceneStorage("AudioRoute") private var route: AudioRoute?
     @SceneStorage("AudioDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
 
     @State private var cacheItemListModel = CacheItemListModel()
@@ -16,7 +16,7 @@ struct AudioRootView: View {
     @State private var searchModel = SearchModel()
 
     var body: some View {
-        RootView(module: .audio, listModel: listModel, withoutNavigation: withoutNavigation, list: {
+        RootView(module: AudioDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, list: {
             ListView()
                 .navigationDestination(for: AudioRoute.self) { route in
                     route
@@ -40,8 +40,8 @@ struct AudioRootView: View {
         .onChange(of: listModel.displayMode) {
             displayMode <=> listModel.displayMode
         }
-        .onChange(of: photoRoute, initial: true) {
-            if let route = photoRoute {
+        .onChange(of: route, initial: true) {
+            if let route {
                 switch route {
                     case .detail(let itemId):
                         if listModel.selected != itemId {
@@ -54,9 +54,9 @@ struct AudioRootView: View {
         }
         .onChange(of: listModel.selected) {
             if let itemId = listModel.selected {
-                photoRoute <=> .detail(itemId)
+                route <=> .detail(itemId)
             } else {
-                photoRoute <=> nil
+                route <=> nil
             }
         }
         .onNavigationReceive { (route: AudioRoute, navigator) in

@@ -90,7 +90,7 @@ struct DetailView: View {
             }
         }
 #endif
-        .focusedSceneValue(\.selectedPhoto, $model.id)
+        .focusedSceneValue(\.selectedAudio, $model.id)
     }
 
     private var detailView: some View {

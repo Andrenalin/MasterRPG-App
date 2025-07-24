@@ -6,17 +6,17 @@ import SwiftUI
 import CoreExternalRPG
 
 extension FocusedValues {
-    @Entry var selectedPhoto: Binding<UUID>?
+    @Entry var selectedItem: Binding<UUID>?
 }
 
 #if !os(tvOS)
-public struct PhotoCommands: Commands {
-    public init(root: AudioRootModel, navigator: Navigator) {
+public struct SpaceCommands: Commands {
+    public init(root: SpaceRootModel, navigator: Navigator) {
         self.root = root
         self.navigator = navigator
     }
     
-    let root: AudioRootModel
+    let root: SpaceRootModel
     let navigator: Navigator
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
@@ -33,7 +33,7 @@ public struct PhotoCommands: Commands {
             AddItemButton(root: root, navigator: navigator)
         }
         CommandGroup(before: .textEditing) {
-            if selectedModule == .photo {
+            if selectedModule == SpaceDataModel.typeId {
                 DuplicateItemButton(root: root)
                 Divider()
             }
@@ -52,33 +52,33 @@ struct NavigateButton: View {
 
     var body: some View {
         Button {
-            navigator.perform(route: KnownRoutes.photos(nil, nil))
+            navigator.perform(route: KnownRoutes.spaces(nil, nil))
         } label: {
-            Label { Text("Show Photos", bundle: .module) } icon: { Image(systemName: "eye") }
+            Label { Text("Show Spaces", bundle: .module) } icon: { Image(systemName: "eye") }
         }
         .keyboardShortcut("8", modifiers: [.command])
     }
 }
 
 struct AddItemButton: View {
-    let root: AudioRootModel
+    let root: SpaceRootModel
     let navigator: Navigator
 
     var body: some View {
         Button {
             let item = root.editController.addNew(modelContext: root.modelContext)
-            navigator.perform(route: KnownRoutes.photos(item.id, nil))
+            navigator.perform(route: KnownRoutes.spaces(item.id, nil))
         } label: {
-            Label { Text("New Photo", bundle: .module) } icon: { Image(systemName: "plus") }
+            Label { Text("New Space", bundle: .module) } icon: { Image(systemName: "plus") }
         }
         .keyboardShortcut("8", modifiers: [.command, .control])
     }
 }
 
 struct DuplicateItemButton: View {
-    let root: AudioRootModel
+    let root: SpaceRootModel
 
-    @FocusedBinding(\.selectedPhoto) private var selectedPhoto: UUID?
+    @FocusedBinding(\.selectedItem) private var selectedItem: UUID?
 
     var body: some View {
         Button {
@@ -89,12 +89,12 @@ struct DuplicateItemButton: View {
             Text("Duplicate \(model?.name ?? "")", bundle: .module)
         }
         .keyboardShortcut("D", modifiers: [.command, .shift])
-        .disabled(selectedPhoto == nil)
+        .disabled(selectedItem == nil)
     }
 
-    var model: AudioDataModel? {
-        guard let selectedPhoto else { return nil }
-        return root.itemController.modelSync(for: selectedPhoto)
+    var model: SpaceDataModel? {
+        guard let selectedItem else { return nil }
+        return root.itemController.modelSync(for: selectedItem)
     }
 }
 

@@ -110,7 +110,7 @@ extension AudioDataModel {
 
 extension AudioDataModel: HasPhotoModel {}
 extension AudioDataModel: ItemDataAccessable {
-    public static var typeId: NetworkModules { .photo }
+    public static var typeId: NetworkModules { .audio }
 
     public subscript(id: UUID) -> AudioEntryDataModel {
         get {
@@ -124,9 +124,9 @@ extension AudioDataModel: ItemDataAccessable {
 }
 
 extension AudioDataModel {
-    var photoModel: PhotoModel {
+    var photoModel: AudioModel {
         let entries = entryModels.map { $0.photoEntryModel }
-        return PhotoModel(
+        return AudioModel(
             id: id,
             name: _nameLWW,
             description: _informationLWW,

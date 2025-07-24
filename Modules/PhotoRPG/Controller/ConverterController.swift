@@ -7,18 +7,18 @@ import RPGPhotos
 import SwiftData
 
 public struct ConverterController {
-    public static func insertPhotos(photos: [RPGPhotos.PhotoModel], into modelContext: ModelContext) {
+    public static func insert(items: [RPGPhotos.PhotoModel], into modelContext: ModelContext) {
         let fetchDesc = FetchDescriptor<PhotoDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
 
-        photos.forEach { photo in
-            guard let models, !models.contains(where: { $0.id == photo.id }) else { return }
+        items.forEach { item in
+            guard let models, !models.contains(where: { $0.id == item.id }) else { return }
             
-            let entries = photo.entries.enumerated().map { (index, entry) in
-                PhotoEntryDataModel(id: entry.id, index: Int16(index), parentId: photo.id, photoId: entry.photoId, photo: nil)
+            let entries = item.entries.enumerated().map { (index, entry) in
+                PhotoEntryDataModel(id: entry.id, index: Int16(index), parentId: item.id, photoId: entry.photoId, photo: nil)
             }
             modelContext.insert(
-                PhotoDataModel(id: photo.id, name: photo.name, information: photo.description, category: CoreRPG.ItemListCategory(rawValue: photo.category.rawValue) ?? .adventure, tags: photo.tags, displayState: photo.displayState, degrees: photo.degrees, url: photo.fileUrl?.rawUrl, entries: entries)
+                PhotoDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, degrees: item.degrees, url: item.fileUrl?.rawUrl, entries: entries)
             )
         }
     }

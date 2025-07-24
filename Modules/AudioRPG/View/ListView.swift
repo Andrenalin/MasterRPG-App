@@ -19,35 +19,16 @@ struct ListView: View {
             $0.name.localizedStandardContains(searchModel.searchText) ||
             $0.information.localizedStandardContains(searchModel.searchText)
         }
-        CoreRPG.ListView(editController: root.editController, menuController: menuController, items: filteredItems, module: .photo) { id in
+        CoreRPG.ListView(editController: root.editController, menuController: menuController, items: filteredItems, module: AudioDataModel.typeId) { id in
             AudioRoute.detail(id)
         } row: { model in
             MainRowView(model: model)
         }
-#if os(macOS)
-        .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
-#endif
     }
 
     private var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
-
-#if os(macOS)
-    private func importImage(_ providers: [NSItemProvider]) -> Bool {
-        EditController.importImageFromProviders(providers) { data in
-            guard let data = data else { return }
-            Task { @MainActor in
-                let model = root.editController.addNew(modelContext: modelContext)
-                try? await Task.sleep(for: .seconds(0.5))
-                withAnimation {
-                    root.editController.resetPhoto(data: data, model: model)
-                    listModel.update(selection: [model.id])
-                }
-            }
-        }
-    }
-#endif
 }
 
 #Preview(traits: .mockData) {

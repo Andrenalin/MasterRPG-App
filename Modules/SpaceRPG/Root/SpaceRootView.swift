@@ -8,7 +8,7 @@ import SwiftUI
 struct SpaceRootView: View {
     let withoutNavigation: Bool
 
-    @SceneStorage("SpaceRoute") private var spaceRoute: SpaceRoute?
+    @SceneStorage("SpaceRoute") private var route: SpaceRoute?
     @SceneStorage("SpaceDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
 
     @State private var cacheItemListModel = CacheItemListModel()
@@ -16,7 +16,7 @@ struct SpaceRootView: View {
     @State private var searchModel = SearchModel()
 
     var body: some View {
-        RootView(module: .space, listModel: listModel, withoutNavigation: withoutNavigation, list: {
+        RootView(module: SpaceDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, list: {
             ListView()
                 .navigationDestination(for: SpaceRoute.self) { route in
                     route
@@ -26,7 +26,7 @@ struct SpaceRootView: View {
                             listModel.update(selection: Set())
                         }
                 }
-
+            
         }, detail: {
             if let selected = listModel.selected {
                 SpaceRoute.detail(selected)
@@ -41,13 +41,13 @@ struct SpaceRootView: View {
         .onChange(of: listModel.displayMode) {
             displayMode <=> listModel.displayMode
         }
-        .onChange(of: spaceRoute, initial: true) {
-            if let route = spaceRoute {
+        .onChange(of: route, initial: true) {
+            if let route {
                 switch route {
-                    case .detail(let itemId):
-                        if listModel.selected != itemId {
-                            listModel.update(selection: Set(arrayLiteral: itemId))
-                        }
+                case .detail(let itemId):
+                    if listModel.selected != itemId {
+                        listModel.update(selection: Set(arrayLiteral: itemId))
+                    }
                 }
             } else {
                 listModel.update(selection: Set())
@@ -55,21 +55,22 @@ struct SpaceRootView: View {
         }
         .onChange(of: listModel.selected) {
             if let itemId = listModel.selected {
-                spaceRoute <=> .detail(itemId)
+                route <=> .detail(itemId)
             } else {
-                spaceRoute <=> nil
+                route <=> nil
             }
         }
         .onNavigationReceive { (route: SpaceRoute, navigator) in
             switch route {
-                case .detail(let itemId):
-                    if listModel.selected == itemId {
-                        return .immediately
-                    }
-                    listModel.update(selection: Set(arrayLiteral: itemId))
-                    return .auto
+            case .detail(let itemId):
+                if listModel.selected == itemId {
+                    return .immediately
+                }
+                listModel.update(selection: Set(arrayLiteral: itemId))
+                return .auto
             }
-        }    }
+        }
+    }
 }
 
 #Preview("Embed", traits: .mockData) {

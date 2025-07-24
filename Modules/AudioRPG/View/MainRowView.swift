@@ -13,14 +13,13 @@ struct MainRowView: View {
     @Environment(AudioRootModel.self) private var root
 
     var body: some View {
-        let _ = Self._printChanges()
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
             PlainPhotoView(cacheController: root.cacheController, model: model, size: .maxHeightWidth(width), ratio: .fill, hasRoundedCorners: true, highResolution: false)
         }, tagAdds: {
             CategoryItemRow(category: model.category)
         })
 #if !os(tvOS)
-        .draggable(LinkData(itemId: model.id, module: .photo, name: model.name))
+        .draggable(LinkData(itemId: model.id, module: AudioDataModel.typeId, name: model.name))
 #endif
     }
 

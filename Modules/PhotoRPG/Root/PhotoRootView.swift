@@ -8,7 +8,7 @@ import SwiftUI
 struct PhotoRootView: View {
     let withoutNavigation: Bool
 
-    @SceneStorage("PhotoRoute") private var photoRoute: PhotoRoute?
+    @SceneStorage("PhotoRoute") private var route: PhotoRoute?
     @SceneStorage("PhotoDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
 
     @State private var cacheItemListModel = CacheItemListModel()
@@ -17,7 +17,7 @@ struct PhotoRootView: View {
 
     var body: some View {
         let _ = Self._printChanges()
-        RootView(module: .photo, listModel: listModel, withoutNavigation: withoutNavigation, list: {
+        RootView(module: PhotoDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, list: {
             ListView()
                 .navigationDestination(for: PhotoRoute.self) { route in
                     route
@@ -41,8 +41,8 @@ struct PhotoRootView: View {
         .onChange(of: listModel.displayMode) {
             displayMode <=> listModel.displayMode
         }
-        .onChange(of: photoRoute, initial: true) {
-            if let route = photoRoute {
+        .onChange(of: route, initial: true) {
+            if let route {
                 switch route {
                     case .detail(let itemId):
                         if listModel.selected != itemId {
@@ -55,9 +55,9 @@ struct PhotoRootView: View {
         }
         .onChange(of: listModel.selected) {
             if let itemId = listModel.selected {
-                photoRoute <=> .detail(itemId)
+                route <=> .detail(itemId)
             } else {
-                photoRoute <=> nil
+                route <=> nil
             }
         }
         .onNavigationReceive { (route: PhotoRoute, navigator) in

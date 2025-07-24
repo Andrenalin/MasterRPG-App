@@ -1,7 +1,9 @@
 // @copyright André Trettin
 
+import AudioRPG
 import PhotoRPG
 import SpaceRPG
+import RPGAudios
 import RPGPhotos
 import RPGSpaces
 import SwiftData
@@ -9,10 +11,14 @@ import SwiftData
 struct DBConverter {
     @MainActor
     static func convert(appStore: AppStore, modelContext: ModelContext) async {
+        let audios = appStore.audioRoot.listItems()
+        AudioRPG.ConverterController.insert(items: audios, into: appStore.modelContainer.mainContext)
+
         let photos = appStore.photoRoot.listPhotos()
-        PhotoRPG.ConverterController.insertPhotos(photos: photos, into: appStore.modelContainer.mainContext)
+        PhotoRPG.ConverterController.insert(items: photos, into: appStore.modelContainer.mainContext)
         
-        let items = appStore.spaceRoot.listItems()
-        SpaceRPG.ConverterController.insertSpaces(items: items, into: appStore.modelContainer.mainContext)
+        let spaces = appStore.spaceRoot.listItems()
+        SpaceRPG.ConverterController.insert(items: spaces, into: appStore.modelContainer.mainContext)
+
     }
 }

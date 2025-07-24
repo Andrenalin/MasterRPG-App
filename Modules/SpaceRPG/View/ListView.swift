@@ -18,7 +18,7 @@ struct ListView: View {
             $0.name.localizedStandardContains(searchModel.searchText) ||
             $0.information.localizedStandardContains(searchModel.searchText)
         }
-        CoreRPG.ListView(editController: root.editController, menuController: menuController, items: filteredItems, module: .space) { id in
+        CoreRPG.ListView(editController: root.editController, menuController: menuController, items: filteredItems, module: SpaceDataModel.typeId) { id in
             SpaceRoute.detail(id)
         } row: { model in
             MainRowView(model: model)

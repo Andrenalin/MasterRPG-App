@@ -6,6 +6,7 @@ import SwiftData
 import SwiftUI
 import os.log
 
+import AudioRPG
 import PhotoRPG
 import SpaceRPG
 
@@ -25,6 +26,7 @@ public final class AppModel: Sendable {
     public let deviceRotationModel: DeviceRotationModel
 
     // Module roots
+    public var audioRoot: AudioRootModel
     public var photoRoot: PhotoRootModel
     public var spaceRoot: SpaceRootModel
 
@@ -37,15 +39,23 @@ public final class AppModel: Sendable {
         self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.0", executionDelay: 0.4, verbosity: .info))
         let modelContainer = Self.initModelContainer()
         self.modelContainer = modelContainer
+        self.audioRoot = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
     }
     
     @MainActor
     private static func initModelContainer() -> ModelContainer {
-        let schema = Schema([
-            PhotoDataModel.self, PhotoEntryDataModel.self, SpaceDataModel.self, SpaceEntryDataModel.self,
-        ])
+        let schema = Schema(
+            [
+                AudioDataModel.self,
+                AudioEntryDataModel.self,
+                PhotoDataModel.self,
+                PhotoEntryDataModel.self,
+                SpaceDataModel.self,
+                SpaceEntryDataModel.self,
+            ]
+        )
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
@@ -61,23 +71,15 @@ extension AppModel {
     @MainActor var externalRouter: any NavigationRouting<KnownRoutes> {
         NavigationRouter(navigator) { route in
             switch route {
-            case .adventures:
-                self.navigator.perform(route: KnownRoutes.adventures(nil, nil))
-            case .audios:
-                self.navigator.perform(route: KnownRoutes.audios(nil, nil))
+            case .audios(let itemId, let entryId):
+                self.navigator.perform(route: KnownRoutes.audios(itemId, entryId))
             case .photos(let itemId, let entryId):
                 self.navigator.perform(route: KnownRoutes.photos(itemId, entryId))
+            case .spaces(let itemId, let entryId):
+                self.navigator.perform(route: KnownRoutes.spaces(itemId, entryId))
             default:
                 break
             }
         }
     }
-    
-//    @MainActor
-//    public var routeActions: RouteActions {
-//        RouteActions { [weak self] module, itemId, entryId in
-//            guard module != .none, let itemId else { return }
-//            self?.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: entryId))
-//        }
-//    }
 }

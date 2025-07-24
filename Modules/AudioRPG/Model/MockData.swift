@@ -21,7 +21,6 @@ struct MockData: PreviewModifier {
         )
         
         guard try! container.mainContext.fetch(FetchDescriptor<AudioDataModel>()).isEmpty else {
-            print("*** Empty ***")
             return container
         }
         let model1 = AudioDataModel(

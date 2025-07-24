@@ -6,7 +6,7 @@ import SwiftUI
 import CoreExternalRPG
 
 extension FocusedValues {
-    @Entry var selectedPhoto: Binding<UUID>?
+    @Entry var selectedItem: Binding<UUID>?
 }
 
 #if !os(tvOS)
@@ -33,7 +33,7 @@ public struct PhotoCommands: Commands {
             AddItemButton(root: root, navigator: navigator)
         }
         CommandGroup(before: .textEditing) {
-            if selectedModule == .photo {
+            if selectedModule == PhotoDataModel.typeId {
                 DuplicateItemButton(root: root)
                 Divider()
             }
@@ -78,7 +78,7 @@ struct AddItemButton: View {
 struct DuplicateItemButton: View {
     let root: PhotoRootModel
 
-    @FocusedBinding(\.selectedPhoto) private var selectedPhoto: UUID?
+    @FocusedBinding(\.selectedItem) private var selectedItem: UUID?
 
     var body: some View {
         Button {
@@ -89,12 +89,12 @@ struct DuplicateItemButton: View {
             Text("Duplicate \(model?.name ?? "")", bundle: .module)
         }
         .keyboardShortcut("D", modifiers: [.command, .shift])
-        .disabled(selectedPhoto == nil)
+        .disabled(selectedItem == nil)
     }
 
     var model: PhotoDataModel? {
-        guard let selectedPhoto else { return nil }
-        return root.itemController.modelSync(for: selectedPhoto)
+        guard let selectedItem else { return nil }
+        return root.itemController.modelSync(for: selectedItem)
     }
 }
 

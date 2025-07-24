@@ -21,10 +21,15 @@ struct Master3RPGApp: App {
     init() {
         let data = appModel
         AppDependencyManager.shared.add(dependency: data)
-        let photoRootModel = appModel.photoRoot
-        AppDependencyManager.shared.add(dependency: photoRootModel)
         let navigator = appModel.navigator
         AppDependencyManager.shared.add(dependency: navigator)
+
+        let audioRootModel = appModel.audioRoot
+        AppDependencyManager.shared.add(dependency: audioRootModel)
+        let photoRootModel = appModel.photoRoot
+        AppDependencyManager.shared.add(dependency: photoRootModel)
+        let spaceRootModel = appModel.spaceRoot
+        AppDependencyManager.shared.add(dependency: spaceRootModel)
     }
 
     var body: some Scene {

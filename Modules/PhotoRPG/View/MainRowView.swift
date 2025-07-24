@@ -20,7 +20,7 @@ struct MainRowView: View {
             CategoryItemRow(category: model.category)
         })
 #if !os(tvOS)
-        .draggable(LinkData(itemId: model.id, module: .photo, name: model.name))
+        .draggable(LinkData(itemId: model.id, module: PhotoDataModel.typeId, name: model.name))
 #endif
     }
 

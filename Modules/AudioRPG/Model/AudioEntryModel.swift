@@ -3,7 +3,7 @@
 import CoreRPG
 import Foundation
 
-struct PhotoEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
+struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
     init(id: UUID, photoId: UUID, displayState: Int = 0) {
         self.id = id
         self.photoId = photoId
@@ -16,7 +16,7 @@ struct PhotoEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
     public var displayState: Int = 0
 }
 
-extension PhotoEntryModel: EntryDataAccessable {
+extension AudioEntryModel: EntryDataAccessable {
     public var name: String {
         "Photo"
     }

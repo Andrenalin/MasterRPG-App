@@ -6,11 +6,11 @@ import SwiftUI
 import CoreRPG
 import CoreExternalRPG
 
-struct OpenPhotoIntent: OpenIntent {
-    static let title: LocalizedStringResource = "Open Photo"
+struct OpenAudioIntent: OpenIntent {
+    static let title: LocalizedStringResource = "Open Audio"
 
-    @Parameter(title: "Photo", requestValueDialog: "Which photo?")
-    var target: PhotoEntity
+    @Parameter(title: "Audio", requestValueDialog: "Which audio?")
+    var target: AudioEntity
 
     @Dependency var navigator: Navigator
 
@@ -21,5 +21,5 @@ struct OpenPhotoIntent: OpenIntent {
 }
 
 #if os(iOS)
-extension OpenPhotoIntent: TargetContentProvidingIntent {}
+extension OpenAudioIntent: TargetContentProvidingIntent {}
 #endif

@@ -8,6 +8,7 @@ import SwiftData
 import SwiftUI
 import os.log
 
+import AudioRPG
 import PhotoRPG
 import SpaceRPG
 import RPGAdventures
@@ -36,6 +37,7 @@ public final class AppStore: Sendable {
 
     public let modelContainer: ModelContainer
 
+    public var audioRootModel: AudioRootModel
     public var photoRootModel: PhotoRootModel
     public var spaceRootModel: SpaceRootModel
 
@@ -111,6 +113,7 @@ public final class AppStore: Sendable {
         self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.0", executionDelay: 0.4, verbosity: .info))
         let modelContainer = Self.initModelContainer()
         self.modelContainer = modelContainer
+        self.audioRootModel = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.photoRootModel = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.spaceRootModel = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
     }

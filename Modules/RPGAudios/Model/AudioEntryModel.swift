@@ -3,47 +3,47 @@
 import AndrenalinKit
 import Foundation
 
-struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable {
+public struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable {
     init(id: UUID, audioId: UUID, displayState: Int = 0) {
         self.id = id
         self.audioId = audioId
         self.displayState = displayState
     }
 
-    let id: UUID
-    let audioId: UUID
+    public let id: UUID
+    public let audioId: UUID
 
-    var displayState: Int = 0
+    public var displayState: Int = 0
 }
 
 extension AudioEntryModel: ItemDiffComparable {
-    func merge(_ other: AudioEntryModel) -> AudioEntryModel {
+    public func merge(_ other: AudioEntryModel) -> AudioEntryModel {
         AudioEntryModel(
             id: id,
             audioId: other.audioId
         )
     }
 
-    func isSame(_ other: AudioEntryModel) -> Bool {
+    public func isSame(_ other: AudioEntryModel) -> Bool {
         audioId == other.audioId
     }
 }
 
 extension AudioEntryModel: EntryDataAccessable {
-    var name: String {
+    public var name: String {
         "Track"
     }
     
-    static var empty: AudioEntryModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> AudioEntryModel {
+    public static var empty: AudioEntryModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> AudioEntryModel {
         AudioEntryModel(id: id, audioId: UUID())
     }
 
-    func duplicate() -> AudioEntryModel {
+    public func duplicate() -> AudioEntryModel {
         AudioEntryModel(id: UUID(), audioId: audioId)
     }
     
-    func filter(with search: String) -> Bool {
+    public func filter(with search: String) -> Bool {
         true
     }
 }

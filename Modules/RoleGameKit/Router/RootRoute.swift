@@ -186,8 +186,7 @@ struct RouteRouteDestionationView: View {
             AdventureFactory.rootView(for: appStore.adventureRoot, tabId: tabId)
                 .environment(appStore.adventureRoot)
         case .audios(let tabId):
-            AudioFactory.rootView(for: appStore.audioRoot, tabId: tabId)
-                .environment(appStore.audioRoot)
+            NewAudioRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .dice(let tabId):
             DiceFactory.rootView(for: appStore.diceRoot, tabId: tabId)
                 .environment(appStore.diceRoot)

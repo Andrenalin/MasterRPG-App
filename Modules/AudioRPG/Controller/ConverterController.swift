@@ -3,22 +3,22 @@
 import AndrenalinKit
 import CoreRPG
 import Foundation
-import RPGPhotos
+import RPGAudios
 import SwiftData
 
 public struct ConverterController {
-    public static func insertPhotos(photos: [RPGPhotos.PhotoModel], into modelContext: ModelContext) {
+    public static func insert(items: [RPGAudios.AudioModel], into modelContext: ModelContext) {
         let fetchDesc = FetchDescriptor<AudioDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
 
-        photos.forEach { photo in
-            guard let models, !models.contains(where: { $0.id == photo.id }) else { return }
+        items.forEach { item in
+            guard let models, !models.contains(where: { $0.id == item.id }) else { return }
             
-            let entries = photo.entries.enumerated().map { (index, entry) in
-                AudioEntryDataModel(id: entry.id, index: Int16(index), parentId: photo.id, itemId: entry.photoId, item: nil)
+            let entries = item.entries.enumerated().map { (index, entry) in
+                AudioEntryDataModel(id: entry.id, index: Int16(index), parentId: item.id, itemId: entry.audioId, item: nil)
             }
             modelContext.insert(
-                AudioDataModel(id: photo.id, name: photo.name, information: photo.description, category: CoreRPG.ItemListCategory(rawValue: photo.category.rawValue) ?? .adventure, tags: photo.tags, displayState: photo.displayState, degrees: photo.degrees, url: photo.fileUrl?.rawUrl, entries: entries)
+                AudioDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, url: item.fileUrl?.rawUrl, entries: entries)
             )
         }
     }

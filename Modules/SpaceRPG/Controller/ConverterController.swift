@@ -7,7 +7,7 @@ import RPGSpaces
 import SwiftData
 
 public struct ConverterController {
-    public static func insertSpaces(items: [RPGSpaces.SpaceModel], into modelContext: ModelContext) {
+    public static func insert(items: [RPGSpaces.SpaceModel], into modelContext: ModelContext) {
         let fetchDesc = FetchDescriptor<SpaceDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
 

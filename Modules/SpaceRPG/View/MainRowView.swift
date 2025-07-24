@@ -19,7 +19,7 @@ struct MainRowView: View {
         }, actionBar: {
         })
 #if !os(tvOS)
-        .draggable(LinkData(itemId: model.id, module: .photo, name: model.name))
+        .draggable(LinkData(itemId: model.id, module: SpaceDataModel.typeId, name: model.name))
 #endif
 
     }

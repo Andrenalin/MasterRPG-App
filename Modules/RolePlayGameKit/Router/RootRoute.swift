@@ -2,6 +2,7 @@
 
 import CoreExternalRPG
 import CoreRPG
+import AudioRPG
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
@@ -125,7 +126,7 @@ struct RouteRouteDestionationView: View {
             case .adventures:
                 RootListView(rootRoute: route)
             case .audios:
-                RootListView(rootRoute: route)
+                AudioRootFactory.rootView(withoutNavigation: false)
             case .dice:
                 RootListView(rootRoute: route)
             case .editors:

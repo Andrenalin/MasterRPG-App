@@ -6,7 +6,7 @@ internal import UIKit
 internal import AppKit
 #endif
 
-extension PhotoEntity {
+extension AudioEntity {
     var imageRepresentationData: Data {
         get async throws {
             try await loadAssetData(isThumbnail: false)

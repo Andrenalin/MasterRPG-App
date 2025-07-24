@@ -6,11 +6,11 @@ import CoreTransferable
 import SwiftUI
 import PDFKit
 
-struct PhotoEntity: IndexedEntity {
+struct AudioEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
-            name: LocalizedStringResource("Photo"),
-            numericFormat: "\(placeholder: .int) photos"
+            name: LocalizedStringResource("Audio"),
+            numericFormat: "\(placeholder: .int) audios"
         )
     }
 
@@ -34,15 +34,15 @@ struct PhotoEntity: IndexedEntity {
     var description: String { model.information }
 
     var root: AudioRootModel
-    var model: PhotoModel
+    var model: AudioModel
     
-    init(root: AudioRootModel, model: PhotoModel) {
+    init(root: AudioRootModel, model: AudioModel) {
         self.root = root
         self.model = model
     }
 }
 
-extension PhotoEntity: Transferable {
+extension AudioEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
             let url = URL.documentsDirectory.appending(path: "\(landmark.name).pdf")
@@ -87,45 +87,45 @@ extension PhotoEntity: Transferable {
 struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: AudioRootModel
 
-    func suggestedEntities() async throws -> [PhotoEntity] {
+    func suggestedEntities() async throws -> [AudioEntity] {
         let ids = root.itemController.allItemIds()
-        var results: [PhotoEntity] = []
+        var results: [AudioEntity] = []
         for id in ids {
             guard let model = await root.itemController.item(for: id) else { continue }
-            let entity = PhotoEntity(root: root, model: model)
+            let entity = AudioEntity(root: root, model: model)
             results.append(entity)
         }
         return results
     }
 
-    func entities(for identifiers: [PhotoEntity.ID]) async throws -> [PhotoEntity] {
-        var results: [PhotoEntity] = []
+    func entities(for identifiers: [AudioEntity.ID]) async throws -> [AudioEntity] {
+        var results: [AudioEntity] = []
         for id in identifiers {
             guard let model = await root.itemController.item(for: id) else { continue }
-            let entity = PhotoEntity(root: root, model: model)
+            let entity = AudioEntity(root: root, model: model)
             results.append(entity)
         }
         return results
     }
 
-    func entities(matching: String) async throws -> [PhotoEntity] {
+    func entities(matching: String) async throws -> [AudioEntity] {
         let ids = root.itemController.allItemIds()
-        var results: [PhotoEntity] = []
+        var results: [AudioEntity] = []
         for id in ids {
             guard let model = await root.itemController.item(for: id) else { continue }
             guard model.name.contains(matching) || model.information.contains(matching) else { continue }
-            let entity = PhotoEntity(root: root, model: model)
+            let entity = AudioEntity(root: root, model: model)
             results.append(entity)
         }
         return results
     }
 
-    func allEntities() async throws -> [PhotoEntity] {
+    func allEntities() async throws -> [AudioEntity] {
         try await suggestedEntities()
     }
 }
 
-extension PhotoEntity {
+extension AudioEntity {
     var sharePreview: SharePreview<Never, Image> {
         SharePreview(name, icon: Image(systemName: "photo"))
     }
