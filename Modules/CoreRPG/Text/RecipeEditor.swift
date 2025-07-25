@@ -1,131 +1,147 @@
 // @copyright André Trettin
 
 import SwiftUI
+import SwiftData
+import Foundation
 
-struct LinkNameAttributes: CodableAttributedStringKey {
-    typealias Value = LinkDataModel.ID
+@Model
+final class ContentText: Identifiable {
+    var lastModified: Date
+    @Relationship(deleteRule: .cascade)
+    var links: [LinkDataModel]
 
-    static let name = "MasterRPG.LinkNameAttributes"
-}
+    var content: AttributedString {
+        get { contentModel.value }
+        set {
+            contentModel.value = newValue
+            lastModified = .now
+        }
+    }
 
-extension AttributeScopes {
-    struct CustomAttributes: AttributeScope {
-        let linkName: LinkNameAttributes
+    @Relationship(deleteRule: .cascade)
+    private var contentModel: AttributedStringModel
+
+    init(content: AttributedString, links: [LinkDataModel]) {
+        self.links = links
+        self.lastModified = .now
+        self.contentModel = AttributedStringModel(value: content, scope: .content)
+    }
+
+    convenience init() {
+        self.init(content: "", links: [])
     }
 }
 
-extension AttributeDynamicLookup {
-    subscript<T: AttributedStringKey>(
-        dynamicMember keyPath: KeyPath<AttributeScopes.CustomAttributes, T>
-    ) -> T {
-        self[T.self]
+
+
+@MainActor
+@Observable
+final class EditableContentText: Identifiable {
+    let model: ContentText
+
+    var text: AttributedString {
+        get {
+            // SwiftData periodically saves the recipe while a person types, and
+            // checks for changes to the model from other sources, like changes
+            // from cloud storage. The editor needs to handle situations where
+            // the text in the editor and the text in the SwiftData model
+            // diverge. This code just chooses the newer version of the two. A
+            // real app might compute the difference between the two variants,
+            // attempt to merge them, and ask the user to resolve conflicts
+            // where necessary.
+            if lastModified >= model.lastModified {
+                editedText
+            } else {
+                model.content
+            }
+        }
+        set {
+            model.content = newValue
+            editedText = newValue
+        }
+    }
+
+    private var editedText: AttributedString {
+        didSet {
+            lastModified = .now
+        }
+    }
+    private var lastModified: Date
+
+    var selection: AttributedTextSelection
+
+    init(content: ContentText) {
+        self.model = content
+        self.selection = AttributedTextSelection()
+        self.editedText = model.content
+        self.lastModified = model.lastModified
     }
 }
 
-struct LinkFormattingDefinition: AttributedTextFormattingDefinition {
-    struct Scope: AttributeScope {
-        let foregroundColor: AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute
-        let backgroundColor: AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute
-        let adaptiveImageGlyph: AttributeScopes.SwiftUIAttributes.AdaptiveImageGlyphAttribute
-        let linkName: LinkNameAttributes
-    }
+extension EditableContentText {
+    /// The paragraph format the current selection exhibits.
+    fileprivate var paragraphFormat: ParagraphFormat {
+        get {
+            let containers = selection.attributes(in: text)
+            let formats = containers[\.paragraphFormat]
 
-    var body: some AttributedTextFormattingDefinition<Scope> {
-        LinksAreWhiteBlue()
-    }
-}
-
-struct LinksAreWhiteBlue: AttributedTextValueConstraint {
-    typealias Scope = LinkFormattingDefinition.Scope
-    typealias AttributeKey = AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute
-
-    func constrain(_ container: inout Attributes) {
-        if container.linkName != nil {
-            container.foregroundColor = .blue
-//            container.backgroundColor = .blue
+            return formats.contains(.section) ? .section : .body
+        }
+        set {
+            text.transformAttributes(in: &selection) {
+                $0.paragraphFormat = newValue
+            }
         }
     }
 }
 
+
 struct DescriptionLinkEditor: View {
-    @State private var text = AttributedString("Hello")
-    @State private var selection = AttributedTextSelection()
+    @State var content = EditableContentText(content: ContentText(content: AttributedString("Example ohne Example"), links: []))
 
     var body: some View {
         VStack {
-            Text(text)
+            Text(content.text)
             Divider()
-            Button {
+            Picker("Paragraph Format", selection: $content.paragraphFormat) {
+                Text("Section")
+                    .tag(ParagraphFormat.section)
+                Text("Body")
+                    .tag(ParagraphFormat.body)
+            }
+            .pickerStyle(.inline)
+            .fixedSize()
 
+            Button {
+                addLinks()
             } label: {
-                Text("Selected: \(text[selection])")
+                Text("Selected: \(content.text[content.selection])")
             }
             Divider()
-            TextEditor(text: $text, selection: $selection)
-                .attributedTextFormattingDefinition(LinkFormattingDefinition())
+            TextEditor(text: $content.text, selection: $content.selection)
+                .attributedTextFormattingDefinition(ContentFormattingDefinition(
+                    links: Set(content.model.links.map(\.id))
+                ))
+        }
+    }
+    
+    func addLinks() {
+        let name = content.text[content.selection]
+        let link = LinkDataModel(name: AttributedString(name), sourceId: UUID(), sourceModule: .pdf, destinationId: UUID(), destinationEntryId: nil, destinationModel: .photo)
+        content.model.links.append(link)
+        
+        
+        let ranges = RangeSet(content.text.characters.ranges(of: name.characters))
+
+        content.text.transform(updating: &content.selection) { text in
+            text[ranges].linkContent = link.id
         }
     }
 }
 
-    //            TextEditor(text: $content.text, selection: $content.selection)
-    //                .toolbar {
-    //                    ToolbarItemGroup(placement: .topBarTrailing) {
-    //                        Picker("Paragraph Format", selection: $content.paragraphFormat) {
-    //                            Text("Section")
-    //                                .tag(ParagraphFormat.section)
-    //                            Text("Body")
-    //                                .tag(ParagraphFormat.body)
-    //                        }
-    //                        .pickerStyle(.inline)
-    //                        .fixedSize()
-    //                    }
-    //                }
-
-
-//@MainActor
-//@Observable
-//final class EditableRecipeText: Identifiable {
-//    let model: Recipe
-//
-//    var text: AttributedString {
-//        get {
-//            // SwiftData periodically saves the recipe while a person types, and
-//            // checks for changes to the model from other sources, like changes
-//            // from cloud storage. The editor needs to handle situations where
-//            // the text in the editor and the text in the SwiftData model
-//            // diverge. This code just chooses the newer version of the two. A
-//            // real app might compute the difference between the two variants,
-//            // attempt to merge them, and ask the user to resolve conflicts
-//            // where necessary.
-//            if lastModified >= model.lastModified {
-//                editedText
-//            } else {
-//                model.content
-//            }
-//        }
-//        set {
-//            model.content = newValue
-//            editedText = newValue
-//        }
-//    }
-//
-//    private var editedText: AttributedString {
-//        didSet {
-//            lastModified = .now
-//        }
-//    }
-//    private var lastModified: Date
-//
-//    var selection: AttributedTextSelection
-//
-//    init(recipe: Recipe) {
-//        self.model = recipe
-//        self.selection = AttributedTextSelection()
-//        self.editedText = model.content
-//        self.lastModified = model.lastModified
-//    }
-//}
-
 #Preview {
-    DescriptionLinkEditor()
+    NavigationStack {
+        DescriptionLinkEditor()
+            .toolbarRole(.editor)
+    }
 }
