@@ -43,7 +43,6 @@ struct LinksAreWhite: AttributedTextValueConstraint {
     typealias Scope = ContentFormattingDefinition.Scope
     typealias AttributeKey = AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute
 
-    /// The set of all valid ingredients.
     let links: Set<LinkDataModel.ID>
 
     func constrain(_ container: inout Attributes) {
@@ -59,7 +58,6 @@ struct LinksHaveBlueBacks: AttributedTextValueConstraint {
     typealias Scope = ContentFormattingDefinition.Scope
     typealias AttributeKey = AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute
 
-    /// The set of all valid ingredients.
     let links: Set<LinkDataModel.ID>
 
     func constrain(_ container: inout Attributes) {

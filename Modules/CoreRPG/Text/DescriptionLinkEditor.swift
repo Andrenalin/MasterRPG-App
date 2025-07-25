@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import UIKit
 import SwiftUI
 import SwiftData
 import Foundation
@@ -97,12 +98,19 @@ extension EditableContentText {
 
 
 struct DescriptionLinkEditor: View {
-    @State var content = EditableContentText(content: ContentText(content: AttributedString("Example ohne Example"), links: []))
-
+    @State private var content = EditableContentText(content: ContentText(content: AttributedString("Example ohne Example"), links: []))
+    @State private var model: LinkHighlightTextModel = LinkHighlightTextModel(text: "Example ohne Example")
+    
     var body: some View {
         VStack {
+            
             Text(content.text)
+                .textRenderer(LinkTextRenderer(model: model, style: .yellow.opacity(0.5), elapsedTime: 2, totalDuration: 2))
+                .lineSpacing(4)
             Divider()
+                .onChange(of: content.text) {
+                    model.reset(text: content.text.description)
+                }
             Picker("Paragraph Format", selection: $content.paragraphFormat) {
                 Text("Section")
                     .tag(ParagraphFormat.section)
@@ -129,13 +137,10 @@ struct DescriptionLinkEditor: View {
         let name = content.text[content.selection]
         let link = LinkDataModel(name: AttributedString(name), sourceId: UUID(), sourceModule: .pdf, destinationId: UUID(), destinationEntryId: nil, destinationModel: .photo)
         content.model.links.append(link)
-        
-        
-        let ranges = RangeSet(content.text.characters.ranges(of: name.characters))
+        var updatedName = AttributedString(name)
+        updatedName.linkContent = link.id
 
-        content.text.transform(updating: &content.selection) { text in
-            text[ranges].linkContent = link.id
-        }
+        content.text.replaceSelection(&content.selection, with: updatedName)
     }
 }
 
@@ -143,5 +148,6 @@ struct DescriptionLinkEditor: View {
     NavigationStack {
         DescriptionLinkEditor()
             .toolbarRole(.editor)
+            .navigationTitle("Example")
     }
 }

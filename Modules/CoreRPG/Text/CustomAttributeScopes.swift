@@ -46,10 +46,11 @@ struct ParagraphFormattingAttribute: CodableAttributedStringKey {
 }
 
 /// An attribute for marking text as a reference to a recipe's ingredient.
-struct LinkContentAttribute: CodableAttributedStringKey {
+struct LinkContentAttribute: CodableAttributedStringKey, TextAttribute {
     typealias Value = LinkDataModel.ID
 
-    static let name = "MasterRPG.IngredientAttribute"
+    static let name = "MasterRPG.LinkContentAttribute"
+    static let inheritedByAddedText: Bool = false
 }
 
 extension AttributeDynamicLookup {
