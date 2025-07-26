@@ -40,7 +40,7 @@ public struct PhotoCommands: Commands {
         }
         CommandGroup(before: .sidebar) {
             if selectedModule == PhotoDataModel.typeId {
-                MenuDisplayModeToggle(listModel: root.listModel)
+                MenuDisplayModeToggle(listModel: root.listModel, showSelectionButton: true)
                 Divider()
             }
         }

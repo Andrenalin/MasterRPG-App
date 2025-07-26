@@ -19,6 +19,7 @@ struct MainRowView: View {
         }, tagAdds: {
             CategoryItemRow(category: model.category)
         })
+        .animation(.smooth, value: listModel.displayMode)
 #if !os(tvOS)
         .draggable(LinkData(itemId: model.id, module: PhotoDataModel.typeId, name: model.name))
 #endif

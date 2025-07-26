@@ -66,6 +66,11 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
                     listModel.resetListSelection()
                 }
             }
+#if os(iOS) || os(visionOS)
+            .onChange(of: listModel.isSelectionMode) {
+                editMode = listModel.isSelectionMode ? .active : .inactive
+            }
+#endif
             .toolbar {
 #if os(macOS)
                 ToolbarItem(placement: .secondaryAction) {
@@ -74,7 +79,7 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
 #else
                 if !listModel.isSelectionMode {
                     ToolbarItem(placement: .secondaryAction) {
-                        selectionButton
+                        MenuSelectionButtonView(listModel: listModel)
                     }
                 }
                 ToolbarItem(placement: .secondaryAction) {
@@ -86,11 +91,11 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
                 ToolbarItem(placement: .secondaryAction) {
                     RegularDisplayModeToggle(listModel: listModel)
                 }
-                #endif
+#endif
 
                 if listModel.isSelectionMode {
                     ToolbarItem(placement: .primaryAction) {
-                        selectionButton
+                        MenuSelectionButtonView(listModel: listModel)
                     }
                 } else {
                     ToolbarItem(placement: .primaryAction) {
@@ -107,43 +112,12 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
     @ViewBuilder
     private var actionMenu: some View {
         Menu {
-            if !listModel.isSelectionMode {
-                selectionButton
-                Divider()
-            }
-            CompactDisplayModeToggle(listModel: listModel)
-            MediumDisplayModeToggle(listModel: listModel)
-            RegularDisplayModeToggle(listModel: listModel)
+            MenuDisplayModeToggle(listModel: listModel, showSelectionButton: false)
         } label: {
             Image(systemName: "ellipsis.circle")
         }
     }
 
-    private var selectionButton: some View {
-        Button {
-            listModel.toogleSelectionMode()
-#if os(iOS) || os(visionOS)
-            editMode = listModel.isSelectionMode ? .active : .inactive
-#endif
-        } label: {
-            Label {
-                Text("Select", bundle: .module)
-            } icon: {
-                Image(systemName: "checkmark.circle")
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var toolSelectionButton: some View {
-        if listModel.isSelectionMode {
-            selectionButton
-                .buttonStyle(.borderedProminent)
-        } else {
-            selectionButton
-        }
-    }
-    
     private func addItem() {
         let newItem = editController.addNew(modelContext: modelContext)
         withAnimation {

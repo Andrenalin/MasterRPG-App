@@ -3,27 +3,30 @@
 import SwiftUI
 
 public struct MenuDisplayModeToggle: View {
-    public init(listModel: ListModel) {
+    public init(listModel: ListModel, showSelectionButton: Bool = true) {
         self.listModel = listModel
+        self.showSelectionButton = showSelectionButton
     }
     
     let listModel: ListModel
+    let showSelectionButton: Bool
 
     public var body: some View {
+        if showSelectionButton || !listModel.isSelectionMode {
+            MenuSelectionButtonView(listModel: listModel)
+            Divider()
+        }
+
         CompactDisplayModeToggle(listModel: listModel)
         MediumDisplayModeToggle(listModel: listModel)
         RegularDisplayModeToggle(listModel: listModel)
     }
 }
 
-public struct CompactDisplayModeToggle: View {
-    public init(listModel: ListModel) {
-        self.listModel = listModel
-    }
-    
+struct CompactDisplayModeToggle: View {
     let listModel: ListModel
     
-    public var body: some View {
+    var body: some View {
         @Bindable var listModel = listModel
         Toggle(isOn: $listModel.isCompactDisplayMode) {
             Label {
@@ -32,17 +35,14 @@ public struct CompactDisplayModeToggle: View {
                 Image(systemName: "list.dash.header.rectangle")
             }
         }
+        .keyboardShortcut("C", modifiers: [.command, .shift])
     }
 }
 
 struct MediumDisplayModeToggle: View {
-    public init(listModel: ListModel) {
-        self.listModel = listModel
-    }
-
     let listModel: ListModel
     
-    public var body: some View {
+    var body: some View {
         @Bindable var listModel = listModel
         Toggle(isOn: $listModel.isMediumDisplayMode) {
             Label {
@@ -51,16 +51,14 @@ struct MediumDisplayModeToggle: View {
                 Image(systemName: "list.bullet.rectangle")
             }
         }
+        .keyboardShortcut("M", modifiers: [.command, .shift])
     }
 }
 
-public struct RegularDisplayModeToggle: View {
-    public init(listModel: ListModel) {
-        self.listModel = listModel
-    }
+struct RegularDisplayModeToggle: View {
     let listModel: ListModel
     
-    public var body: some View {
+    var body: some View {
         @Bindable var listModel = listModel
         Toggle(isOn: $listModel.isRegularDisplayMode) {
             Label {
@@ -69,5 +67,6 @@ public struct RegularDisplayModeToggle: View {
                 Image(systemName: "list.bullet.below.rectangle")
             }
         }
+        .keyboardShortcut("R", modifiers: [.command, .shift])
     }
 }
