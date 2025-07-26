@@ -3,6 +3,7 @@
 #if !os(tvOS)
 
 import RolePlayGameKit
+import AudioRPG
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
@@ -22,10 +23,10 @@ struct MenuCommandList: Commands {
             //        MapCommands(root: appStore.mapRoot)
 
             Group {
-                //            AudioCommands(root: appStore.audioRoot)
+                AudioCommands(root: appModel.audioRoot, navigator: appModel.navigator)
                 //            DiceCommands(root: appStore.diceRoot)
                 PhotoCommands(root: appModel.photoRoot, navigator: appModel.navigator)
-                //            SpaceCommands(root: appModel.spaceRoot)
+                SpaceCommands(root: appModel.spaceRoot, navigator: appModel.navigator)
             }
 
             //        WeatherCommands(root: appStore.weatherRoot)

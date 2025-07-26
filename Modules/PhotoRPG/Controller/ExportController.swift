@@ -15,7 +15,7 @@ struct ExportController: Sendable {
     var fileControllable: (any FileControllable)?
     var itemControllable: any ItemControllable
     
-    var networkModule: NetworkModules { .photo }
+    var networkModule: NetworkModules { PhotoDataModel.typeId }
     var version: Int { 2024 }
 }
 

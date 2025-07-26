@@ -73,13 +73,6 @@ struct DetailView: View {
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
         .keyboardAvoiding(height: 160)
-#if !os(visionOS)
-        .inspector(isPresented: $showImporter) {
-            VStack {
-                PhotoImporterView(model: model, prominent: true)
-            }
-        }
-        #endif
 #if os(iOS)
         .applyIf(horizontalSizeClass == .compact) {
             $0.sheet(isPresented: $isEditing) {
@@ -92,7 +85,7 @@ struct DetailView: View {
             }
         }
 #endif
-        .focusedSceneValue(\.selectedAudio, $model.id)
+        .focusedSceneValue(\.selectedItem, $model.id)
     }
 
     private var detailView: some View {
@@ -157,15 +150,7 @@ struct DetailView: View {
     private var toolbarButtons: some View {
         VStack(alignment: .center) {
             if model.url != nil {
-                PhotoInlineImporterView(model: model)
-            }
-
-            GlassButton {
-                withAnimation(.bouncy(duration: 0.3)) {
-                    showImporter.toggle()
-                }
-            } label: {
-                Image(systemName: "link")
+                PhotoImporterView(model: model, prominent: false)
             }
 
             GlassButton(isProminent: true) {

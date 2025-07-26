@@ -39,7 +39,8 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
 
             VStack(alignment: .leading, spacing: 4) {
                 NameItemRow(itemId: itemId, name: model[keyPath: nameKeyPath], cacheItemListModel: cacheItemListModel)
-
+                    .font(.headline)
+                
                 if listModel.displayMode == .regular {
                     if model[keyPath: tagsKeyPath].count > 4 {
                         twoLineTagView
@@ -51,6 +52,9 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
                 }
                 if listModel.displayMode != .compact {
                     DescriptionItemRow(itemId: itemId, description: model[keyPath: descriptionKeyPath], cacheItemListModel: cacheItemListModel)
+                        .foregroundStyle(.secondary)
+                        .font(.footnote)
+                        .lineLimit(3)
                 }
             }
             .frame(minHeight: 64, alignment: .center)

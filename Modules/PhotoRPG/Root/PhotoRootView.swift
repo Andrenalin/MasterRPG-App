@@ -25,6 +25,7 @@ struct PhotoRootView: View {
                 .navigationDestination(for: PhotoRoute.self) { route in
                     route
                         .environment(cacheItemListModel)
+                        .environment(root.searchModel)
                         .onDisappear {
                             listModel.resetListSelection()
                             listModel.update(selection: Set())
@@ -37,7 +38,6 @@ struct PhotoRootView: View {
         }
         .environment(cacheItemListModel)
         .environment(listModel)
-        .environment(root.searchModel)
         .onChange(of: displayMode, initial: true) {
             listModel.displayMode = displayMode
         }
@@ -74,6 +74,7 @@ struct PhotoRootView: View {
                     return .auto
             }
         }
+        .environment(root.searchModel)
     }
 }
 

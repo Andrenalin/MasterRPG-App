@@ -31,7 +31,6 @@ public struct RootView<List: View, Detail: View>: View {
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
     public var body: some View {
-        let _ = Self._printChanges()
 #if os(iOS)
         Group {
             if horizontalSizeClass == .compact {
@@ -40,7 +39,6 @@ public struct RootView<List: View, Detail: View>: View {
                 rootView
             }
         }
-        .ignoresSafeArea(edges: .top)
         .onChange(of: tabBarPlacement, initial: true) {
             tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
         }

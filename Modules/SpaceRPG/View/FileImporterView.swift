@@ -5,27 +5,6 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct PhotoImporterView: View {
-    let model: SpaceDataModel
-
-    var body: some View {
-        ViewThatFits {
-            HStack(spacing: 40) {
-                contentView
-            }
-
-            VStack(spacing: 40) {
-                contentView
-            }
-        }
-    }
-    
-    @ViewBuilder
-    var contentView: some View {
-        FileImporterView(model: model, size: 80)
-    }
-}
-
 struct FileImporterView: View {
     let model: SpaceDataModel
     let size: CGFloat
@@ -49,9 +28,9 @@ struct FileImporterView: View {
                 .padding(size / 3)
         }
         .contentTransition(.symbolEffect(.replace.wholeSymbol))
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.usdz]) { result in
             guard let url = try? result.get() else { return }
-            root.editController.resetPhoto(url: url, in: model)
+            root.editController.resetFile(url: url, in: model)
         }
 #endif
     }
@@ -66,7 +45,6 @@ struct FileImporterView: View {
             .frame(width: 256, height: 256)
             .overlay(FileImporterView(model: models[0]), alignment: .top)
         
-        PhotoImporterView(model: models[0])
     }
     .environment(SpaceRootModel(modelContext: modelContext))
 }

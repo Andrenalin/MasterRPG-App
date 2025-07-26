@@ -143,6 +143,7 @@ struct RouteRouteDestionationView: View {
                 RootListView(rootRoute: route)
             case .photos:
                 PhotoRootFactory.rootView(withoutNavigation: false)
+                  //  .environment(appModel.photoRoot.searchModel)
             case .space:
                 SpaceRootFactory.rootView(withoutNavigation: false)
             case .settings:

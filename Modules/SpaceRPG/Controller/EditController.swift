@@ -13,7 +13,6 @@ internal import UIKit
 
 struct EditController {
     let fileController: FileController
-    let networkModule: NetworkModules = .space
 }
 
 extension EditController: EditControllable {
@@ -105,35 +104,17 @@ extension EditController {
 extension EditController {
     
     // import from file browser
-    func resetPhoto(url: URL?, in model: SpaceDataModel) {
+    func resetFile(url: URL?, in model: SpaceDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id
         Task.detached {
             await actor.setup(id: id)
-            await resetPhoto(url: url, id: id, actor: actor)
+            await resetFile(url: url, id: id, actor: actor)
             await actor.save()
         }
     }
-    
-    func resetPhoto(image: AKImage?, id: UUID, actor: DataModelActor) async {
-        guard let image else { return }
-        let data = image.jpegData(compressionQuality: 0.9)
-        await actor.setup(id: id)
-        await resetPhoto(data: data, id: id, actor: actor)
-        await actor.save()
-    }
-    
-    func resetPhoto(data: Data, model: SpaceDataModel) {
-        guard let actor = model.modelActor() else { return }
-        let id = model.id
-        Task.detached {
-            await actor.setup(id: id)
-            await resetPhoto(data: data, id: id, actor: actor)
-            await actor.save()
-        }
-    }
-    
-    private func resetPhoto(url: URL?, id: UUID, actor: DataModelActor) async {
+
+    private func resetFile(url: URL?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
             await actor.update(url: url)
@@ -147,21 +128,7 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             await actor.update(name: name)
         }
-        let updatedFileUrl = try? await fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: networkModule.token, category: actor.category.title)
-        await actor.update(url: updatedFileUrl?.rawUrl)
-    }
-    
-    private func resetPhoto(data: Data?, id: UUID, actor: DataModelActor) async {
-        await fileController.fileUrlDataController.delete(await actor.fileUrl)
-        await actor.update(url: nil)
-        guard let data else { return }
-        
-        let module = networkModule.token
-        let filePath = await actor.name.isEmpty ? "\(await actor.category.title)/Image-\(id.uuidString).jpg" : "\(await actor.category.title)/\(await actor.name).jpg"
-        var dataFileUrl = FileUrl(fileId: id, url: URL(string: filePath)!, location: .cloud, module: module)
-        dataFileUrl.resetData(data)
-        
-        let updatedFileUrl = try? await fileController.fileUrlDataController.createNewFileUrl(fileId: id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
+        let updatedFileUrl = try? await fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: SpaceDataModel.typeId.token, category: actor.category.title)
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
 }

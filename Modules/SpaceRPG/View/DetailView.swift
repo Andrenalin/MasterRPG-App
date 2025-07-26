@@ -4,15 +4,6 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
-#if canImport(ImagePlayground)
-import ImagePlayground
-#endif
-
-
-@Observable
-final class DetailPhotoSelection {
-    var selectedPhoto: SpaceDataModel?
-}
 
 struct DetailView: View {
     let model: SpaceDataModel
@@ -22,10 +13,9 @@ struct DetailView: View {
 #endif
     @Environment(SpaceRootModel.self) private var root
     
-    @State var selection = DetailPhotoSelection()
+    @State private var selection = GroupItemSelectionModel()
     @State private var isEditing = false
     @State private var showImporter = false
-    @State private var showImagePlayground = false
     
     var body: some View {
         @Bindable var model = model
@@ -45,18 +35,18 @@ struct DetailView: View {
 #endif
         .onChange(of: model.id) {
             withAnimation {
-                selection.selectedPhoto = nil
+                selection.selectedItem = nil
                 isEditing = false
             }
         }
         .overlay(alignment: .top) {
-            #if os(iOS)
+#if os(iOS)
             if horizontalSizeClass == .regular {
                 detailEditorView
             }
-            #else
+#else
             detailEditorView
-            #endif
+#endif
         }
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
@@ -78,24 +68,23 @@ struct DetailView: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 ZStack(alignment: .center) {
-                    #if os(tvOS)
+#if os(tvOS)
                     PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
                         .stretchy()
-    #else
-                    SpaceViewer(root: root, id: selection.selectedPhoto?.id ?? model.id)
-                    #endif
+#else
+                    SpaceViewer(root: root, id: selection.selectedItem?.id ?? model.id)
+#endif
                 }
                 .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            #if !os(tvOS)
+#if !os(tvOS)
             .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
-            #endif
-
+#endif
+            
             .overlay(alignment: .bottom) {
                 HStack(alignment: .bottom) {
-                    DetailOverlayView(model: selection.selectedPhoto ?? model)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    DetailOverlayView(itemId: (selection.selectedItem ?? model).id, model: selection.selectedItem ?? model, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information)
                     
                     toolbarButtons
                 }
@@ -103,25 +92,17 @@ struct DetailView: View {
             }
             .overlay(alignment: .center) {
                 if model.url == nil {
-                    VStack {
-                        GlassButton {
-                            showImagePlayground.toggle()
-                        } label: {
-                            Image(systemName: "gear")
-                        }
-
-                        PhotoImporterView(model: model)
-                    }
+                    FileImporterView(model: model, size: 32)
                 }
             }
-
+            
         }
     }
     
     private func updatePhoto(url: URL) {
-        root.editController.resetPhoto(url: url, in: model)
+        root.editController.resetFile(url: url, in: model)
     }
-
+    
     @ViewBuilder
     private var detailEditorView: some View {
         if isEditing {
@@ -159,14 +140,14 @@ struct DetailView: View {
                 .animation(.bouncy, value: model.url)
                 .transition(.scale.combined(with: .opacity))
             }
-
+            
             GlassButton(isProminent: true) {
                 isEditing = true
             } label: {
                 Image(systemName: "pencil")
                     .font(.system(size: 24))
                     .padding(8)
-
+                
             }
         }
     }

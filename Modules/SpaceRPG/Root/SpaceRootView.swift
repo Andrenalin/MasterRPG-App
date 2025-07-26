@@ -25,12 +25,12 @@ struct SpaceRootView: View {
                 .navigationDestination(for: SpaceRoute.self) { route in
                     route
                         .environment(cacheItemListModel)
+                        .environment(root.searchModel)
                         .onDisappear {
                             listModel.resetListSelection()
                             listModel.update(selection: Set())
                         }
                 }
-            
         } detail: {
             if let selected = listModel.selected {
                 SpaceRoute.detail(selected)

@@ -2,6 +2,7 @@
 
 import CoreExternalRPG
 import CoreRPG
+import AudioRPG
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
@@ -83,7 +84,7 @@ struct ExtendedTabRouteDestionationView: View {
     var body: some View {
         switch route {
             case .audios:
-                RootListView(rootRoute: .audios)
+                AudioRootFactory.rootView(withoutNavigation: true)
             case .dice:
                 RootListView(rootRoute: .dice)
             case .maps:

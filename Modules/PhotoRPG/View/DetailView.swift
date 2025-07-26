@@ -13,7 +13,7 @@ struct DetailView: View {
 #endif
     @Environment(PhotoRootModel.self) private var root
     
-    @State var selection = GroupItemSelectionModel()
+    @State private var selection = GroupItemSelectionModel()
     @State private var isEditing = false
     @State private var showImporter = false
     
@@ -24,7 +24,7 @@ struct DetailView: View {
                 .overlay(alignment: .bottom) {
                     if !isEditing {
                         HStack(alignment: .bottom) {
-                            DetailOverlayView(model: selection.selectedItem ?? model)
+                            DetailOverlayView(itemId: model.id, model: model, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             
                             if model.url != nil {

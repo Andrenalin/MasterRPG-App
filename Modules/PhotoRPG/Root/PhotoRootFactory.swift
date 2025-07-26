@@ -11,5 +11,6 @@ public struct PhotoRootFactory {
 
     public static func rootView(withoutNavigation: Bool) -> some View {
         PhotoRootView(withoutNavigation: withoutNavigation)
+        
     }
 }

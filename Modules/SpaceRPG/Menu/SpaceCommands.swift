@@ -38,12 +38,12 @@ public struct SpaceCommands: Commands {
                 Divider()
             }
         }
-//        CommandGroup(after: .undoRedo) {
-//            if selectedModule == .photo {
-//                UndoButton(root: root)
-//                RedoButton(root: root)
-//            }
-//        }
+        CommandGroup(before: .sidebar) {
+            if selectedModule == SpaceDataModel.typeId {
+                MenuDisplayModeToggle(listModel: root.listModel, showSelectionButton: true)
+                Divider()
+            }
+        }
     }
 }
 
@@ -56,7 +56,7 @@ struct NavigateButton: View {
         } label: {
             Label { Text("Show Spaces", bundle: .module) } icon: { Image(systemName: "eye") }
         }
-        .keyboardShortcut("8", modifiers: [.command])
+        .keyboardShortcut("9", modifiers: [.command])
     }
 }
 
@@ -71,7 +71,7 @@ struct AddItemButton: View {
         } label: {
             Label { Text("New Space", bundle: .module) } icon: { Image(systemName: "plus") }
         }
-        .keyboardShortcut("8", modifiers: [.command, .control])
+        .keyboardShortcut("9", modifiers: [.command, .control])
     }
 }
 
@@ -97,33 +97,5 @@ struct DuplicateItemButton: View {
         return root.itemController.modelSync(for: selectedItem)
     }
 }
-
-//struct UndoButton: View {
-//    let root: PhotoRoot
-//    
-//    var body: some View {
-//        Button {
-//            withAnimation { root.editController(type: .main).undo() }
-//        } label: {
-//            Text("Undo \(root.editController(type: .main).undoTitle)", bundle: .module)
-//        }
-//        .keyboardShortcut("Z", modifiers: [.command])
-//        .disabled(!root.editController(type: .main).canUndo)
-//    }
-//}
-//
-//struct RedoButton: View {
-//    let root: PhotoRoot
-//
-//    var body: some View {
-//        Button {
-//            withAnimation { root.editController(type: .main).redo() }
-//        } label: {
-//            Text("Redo \(root.editController(type: .main).redoTitle)", bundle: .module)
-//        }
-//        .keyboardShortcut("Z", modifiers: [.command, .shift])
-//        .disabled(!root.editController(type: .main).canRedo)
-//    }
-//}
 
 #endif

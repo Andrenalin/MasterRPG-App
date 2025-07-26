@@ -13,7 +13,6 @@ struct MainRowView: View {
     @Environment(PhotoRootModel.self) private var root
 
     var body: some View {
-        let _ = Self._printChanges()
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, isTrailing: true, thumbnail: {
             ThumbnailRowPhotoView(cacheController: root.cacheController, model: model, isTrailing: true)
         }, tagAdds: {
@@ -23,15 +22,6 @@ struct MainRowView: View {
 #if !os(tvOS)
         .draggable(LinkData(itemId: model.id, module: PhotoDataModel.typeId, name: model.name))
 #endif
-    }
-
-    var width: CGFloat {
-        switch listModel.displayMode {
-            case .compact: 160
-            case .medium: 128
-            case .regular: 96
-            @unknown default: 96
-        }
     }
 }
 

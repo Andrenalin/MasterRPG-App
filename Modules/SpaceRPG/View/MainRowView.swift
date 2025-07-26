@@ -8,6 +8,7 @@ struct MainRowView: View {
     let model: SpaceDataModel
 
     @Environment(CacheItemListModel.self) private var cacheModel
+    @Environment(ListModel.self) private var listModel
     @Environment(SearchModel.self) private var searchModel
     @Environment(SpaceRootModel.self) private var root
 
@@ -17,6 +18,7 @@ struct MainRowView: View {
         }, tagAdds: {
             CategoryItemRow(category: model.category)
         })
+        .animation(.smooth, value: listModel.displayMode)
 #if !os(tvOS)
         .draggable(LinkData(itemId: model.id, module: SpaceDataModel.typeId, name: model.name))
 #endif

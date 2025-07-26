@@ -15,7 +15,7 @@ public final class SpaceRootModel {
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
-        self.searchModel = SearchModel(modelContext: modelContext, module: SpaceDataModel.typeId, categoryTags: [.adventure, .map, .value, .weather])
+        self.searchModel = SearchModel(modelContext: modelContext, module: SpaceDataModel.typeId, categoryTags: [.building, .item, .supplement])
     }
 
     let modelContext: ModelContext

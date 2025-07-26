@@ -14,10 +14,7 @@ struct DescriptionItemRow: View {
         Group {
             if !description.isEmpty {
                 LinkHighlightTextView(model: linkTextModel)
-                    .foregroundStyle(.tertiary)
-                    .font(.footnote)
                     .multilineTextAlignment(.leading)
-                    .lineLimit(3)
             }
         }
     }

@@ -13,7 +13,6 @@ struct NameItemRow: View {
         let _ = Self._printChanges()
         LinkHighlightTextView(model: linkTextModel)
             .foregroundStyle(.primary)
-            .font(.headline)
             .lineLimit(1)
     }
 

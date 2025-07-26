@@ -25,6 +25,7 @@ struct AudioRootView: View {
                 .navigationDestination(for: AudioRoute.self) { route in
                     route
                         .environment(cacheItemListModel)
+                        .environment(root.searchModel)
                         .onDisappear {
                             listModel.resetListSelection()
                             listModel.update(selection: Set())

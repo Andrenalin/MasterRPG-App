@@ -13,7 +13,6 @@ internal import UIKit
 
 struct EditController {
     let fileController: FileController
-    let networkModule: NetworkModules = .photo
 }
 
 extension EditController: EditControllable {
@@ -149,7 +148,7 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             await actor.update(name: name)
         }
-        let updatedFileUrl = try? await fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: networkModule.token, category: actor.category.title)
+        let updatedFileUrl = try? await fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: PhotoDataModel.typeId.token, category: actor.category.title)
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
     
@@ -158,7 +157,7 @@ extension EditController {
         await actor.update(url: nil)
         guard let data else { return }
         
-        let module = networkModule.token
+        let module = PhotoDataModel.typeId.token
         let filePath = await actor.name.isEmpty ? "\(await actor.category.title)/Image-\(id.uuidString).jpg" : "\(await actor.category.title)/\(await actor.name).jpg"
         var dataFileUrl = FileUrl(fileId: id, url: URL(string: filePath)!, location: .cloud, module: module)
         dataFileUrl.resetData(data)
