@@ -95,6 +95,7 @@ struct PhotoInlineImporterView: View {
     @State private var showImagePlayground = false
 
     var body: some View {
+#if !os(visionOS)
             GlassEffectContainer {
                 ZStack {
                     button(type: .file)
@@ -112,8 +113,10 @@ struct PhotoInlineImporterView: View {
                             .frame(width: 50, height: 50)
                             .foregroundColor(.white)
                     }
+#if !os(visionOS)
                     .glassEffect(.regular.tint(Color.accentColor.opacity(0.8)).interactive())
                     .glassEffectID("menu", in: glassNamespace)
+#endif
                 }
             }.padding(32)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
@@ -123,12 +126,14 @@ struct PhotoInlineImporterView: View {
         .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
             root.editController.resetPhoto(url: url, in: model)
         }
+#if !os(visionOS)
         .sheet(isPresented: $showCamera) {
             CaptureImagePicker(shown: $showCamera) { [id = model.id] image in
                 await update(id: id, image: image)
             }
         }
-
+#endif
+    #endif
     }
 
     private func update(id: UUID, image: AKImage?) async {
@@ -142,7 +147,7 @@ struct PhotoInlineImporterView: View {
                 case .file:
                     showImporter.toggle()
                 case .library:
-                    showCamera.toggle()
+                    showImporter.toggle()
                 case .camera:
                     showCamera.toggle()
                 case .playground:
@@ -154,8 +159,10 @@ struct PhotoInlineImporterView: View {
                 .frame(width: 50, height:50)
                 .opacity(isExpanded ? 1 : 0)
         }
+#if !os(visionOS)
         .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
         .glassEffectID(type.label, in: glassNamespace)
+#endif
         .offset(type.offset(expanded: isExpanded))
         .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: isExpanded)
     }

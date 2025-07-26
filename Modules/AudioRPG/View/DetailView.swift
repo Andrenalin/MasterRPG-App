@@ -73,11 +73,13 @@ struct DetailView: View {
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
         .keyboardAvoiding(height: 160)
+#if !os(visionOS)
         .inspector(isPresented: $showImporter) {
             VStack {
                 PhotoImporterView(model: model, prominent: true)
             }
         }
+        #endif
 #if os(iOS)
         .applyIf(horizontalSizeClass == .compact) {
             $0.sheet(isPresented: $isEditing) {
@@ -95,8 +97,9 @@ struct DetailView: View {
 
     private var detailView: some View {
         ZStack(alignment: .center) {
-            PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
-                .stretchy()
+            DescriptionLinkEditor()
+//            PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
+//                .stretchy()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .mask(LinearGradient(

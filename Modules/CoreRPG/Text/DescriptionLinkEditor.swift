@@ -97,11 +97,13 @@ extension EditableContentText {
 }
 
 
-struct DescriptionLinkEditor: View {
+public struct DescriptionLinkEditor: View {
+    public init() {}
+    
     @State private var content = EditableContentText(content: ContentText(content: AttributedString("Example ohne Example"), links: []))
     @State private var model: LinkHighlightTextModel = LinkHighlightTextModel(text: "Example ohne Example")
     
-    var body: some View {
+    public var body: some View {
         VStack {
             
             Text(content.text)

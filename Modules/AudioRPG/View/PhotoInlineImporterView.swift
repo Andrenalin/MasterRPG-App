@@ -95,6 +95,7 @@ struct PhotoInlineImporterView: View {
     @State private var showImagePlayground = false
 
     var body: some View {
+#if !os(visionOS)
             GlassEffectContainer {
                 ZStack {
                     button(type: .file)
@@ -123,12 +124,7 @@ struct PhotoInlineImporterView: View {
         .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
             root.editController.resetPhoto(url: url, in: model)
         }
-        .sheet(isPresented: $showCamera) {
-            CaptureImagePicker(shown: $showCamera) { [id = model.id] image in
-                await update(id: id, image: image)
-            }
-        }
-
+#endif
     }
 
     private func update(id: UUID, image: AKImage?) async {
@@ -154,8 +150,10 @@ struct PhotoInlineImporterView: View {
                 .frame(width: 50, height:50)
                 .opacity(isExpanded ? 1 : 0)
         }
+#if !os(visionOS)
         .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
         .glassEffectID(type.label, in: glassNamespace)
+#endif
         .offset(type.offset(expanded: isExpanded))
         .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: isExpanded)
     }

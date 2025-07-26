@@ -16,6 +16,8 @@ public final class ListModel {
     public var selection: [UUID]
     public var selected: UUID?
     public var listSelection: Set<UUID>
+    
+    public var focusSelectedItem: Binding<UUID>?
 
     // MARK: - Display Mode
     public enum DisplayMode: Int, Equatable, Hashable, Codable, Sendable {
@@ -48,6 +50,11 @@ public extension ListModel {
             self.selection = Array(selection)
         } else {
             selected = selection.first
+            if let selected {
+                focusSelectedItem = .constant(selected)
+            } else {
+                focusSelectedItem = nil
+            }
         }
     }
 }

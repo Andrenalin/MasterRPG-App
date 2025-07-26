@@ -78,8 +78,6 @@ struct AddItemButton: View {
 struct DuplicateItemButton: View {
     let root: PhotoRootModel
 
-    @FocusedBinding(\.selectedItem) private var selectedItem: UUID?
-
     var body: some View {
         Button {
             if let model {
@@ -89,11 +87,11 @@ struct DuplicateItemButton: View {
             Text("Duplicate \(model?.name ?? "")", bundle: .module)
         }
         .keyboardShortcut("D", modifiers: [.command, .shift])
-        .disabled(selectedItem == nil)
+        .disabled(root.currentSelectedItemId == nil)
     }
 
     var model: PhotoDataModel? {
-        guard let selectedItem else { return nil }
+        guard let selectedItem = root.currentSelectedItemId else { return nil }
         return root.itemController.modelSync(for: selectedItem)
     }
 }

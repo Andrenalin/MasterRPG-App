@@ -24,7 +24,7 @@ public final class PhotoRootModel {
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: ItemController
     
-    @ObservationIgnored let networkModule: NetworkModules = .photo
+    var currentSelectedItemId: UUID?
 }
 
 extension PhotoRootModel {

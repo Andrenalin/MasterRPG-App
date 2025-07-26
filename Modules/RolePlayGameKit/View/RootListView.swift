@@ -94,6 +94,7 @@ struct DetailView: View {
         }
         .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
+        .backgroundExtensionEffect()
         #if !os(tvOS)
         .toolbar(removing: .title)
         #endif

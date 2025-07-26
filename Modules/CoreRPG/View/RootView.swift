@@ -40,6 +40,7 @@ public struct RootView<List: View, Detail: View>: View {
                 rootView
             }
         }
+        .ignoresSafeArea(edges: .top)
         .onChange(of: tabBarPlacement, initial: true) {
             tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
         }

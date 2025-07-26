@@ -8,6 +8,8 @@ import SwiftUI
 struct PhotoRootView: View {
     let withoutNavigation: Bool
 
+    @Environment(PhotoRootModel.self) private var root
+    
     @SceneStorage("PhotoRoute") private var route: PhotoRoute?
     @SceneStorage("PhotoDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
 
@@ -16,7 +18,6 @@ struct PhotoRootView: View {
     @State private var searchModel = SearchModel()
 
     var body: some View {
-        let _ = Self._printChanges()
         RootView(module: PhotoDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, list: {
             ListView()
                 .navigationDestination(for: PhotoRoute.self) { route in
@@ -54,6 +55,7 @@ struct PhotoRootView: View {
             }
         }
         .onChange(of: listModel.selected) {
+            root.currentSelectedItemId = listModel.selected
             if let itemId = listModel.selected {
                 route <=> .detail(itemId)
             } else {
