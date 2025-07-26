@@ -126,14 +126,14 @@ struct PhotoInlineImporterView: View {
         .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
             root.editController.resetPhoto(url: url, in: model)
         }
-#if !os(visionOS)
+#if os(iOS)
         .sheet(isPresented: $showCamera) {
             CaptureImagePicker(shown: $showCamera) { [id = model.id] image in
                 await update(id: id, image: image)
             }
         }
 #endif
-    #endif
+#endif
     }
 
     private func update(id: UUID, image: AKImage?) async {

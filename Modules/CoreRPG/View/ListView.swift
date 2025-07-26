@@ -32,6 +32,8 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
     @State private var editMode: EditMode = .inactive
 #endif
     
+    @State private var isCompactMode: Bool = false
+    
     public var body: some View {
         listView(filteredItems: items)
             .applyIf(listModel.isSelectionMode) { content in
@@ -65,21 +67,26 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
                 }
             }
             .toolbar {
+#if os(macOS)
+                ToolbarItem(placement: .secondaryAction) {
+                    actionMenu
+                }
+#else
                 if !listModel.isSelectionMode {
                     ToolbarItem(placement: .secondaryAction) {
                         selectionButton
                     }
                 }
                 ToolbarItem(placement: .secondaryAction) {
-                    compactButton
+                    CompactDisplayModeToggle(listModel: listModel)
                 }
                 ToolbarItem(placement: .secondaryAction) {
-                    mediumButton
+                    MediumDisplayModeToggle(listModel: listModel)
                 }
-
                 ToolbarItem(placement: .secondaryAction) {
-                    regularButton
+                    RegularDisplayModeToggle(listModel: listModel)
                 }
+                #endif
 
                 if listModel.isSelectionMode {
                     ToolbarItem(placement: .primaryAction) {
@@ -104,9 +111,9 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
                 selectionButton
                 Divider()
             }
-            compactButton
-            mediumButton
-            regularButton
+            CompactDisplayModeToggle(listModel: listModel)
+            MediumDisplayModeToggle(listModel: listModel)
+            RegularDisplayModeToggle(listModel: listModel)
         } label: {
             Image(systemName: "ellipsis.circle")
         }
@@ -126,46 +133,7 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
             }
         }
     }
-
-    private var compactButton: some View {
-        Button {
-            withAnimation { listModel.displayMode = .compact }
-        } label: {
-            Label {
-                Text("Compact", bundle: .module)
-            } icon: {
-                Image(systemName: "list.dash.header.rectangle")
-            }
-        }
-        .tint(listModel.displayMode == .compact ? .accentColor : .primary)
-    }
-
-    private var mediumButton: some View {
-        Button {
-            withAnimation { listModel.displayMode = .medium }
-        } label: {
-            Label {
-                Text("Medium", bundle: .module)
-            } icon: {
-                Image(systemName: "list.bullet.rectangle")
-            }
-        }
-        .tint(listModel.displayMode == .medium ? .accentColor : .primary)
-    }
-
-    private var regularButton: some View {
-        Button {
-            withAnimation { listModel.displayMode = .regular }
-        } label: {
-            Label {
-                Text("Regular", bundle: .module)
-            } icon: {
-                Image(systemName: "list.bullet.below.rectangle")
-            }
-        }
-        .tint(listModel.displayMode == .regular ? .accentColor : .primary)
-    }
-
+    
     @ViewBuilder
     private var toolSelectionButton: some View {
         if listModel.isSelectionMode {

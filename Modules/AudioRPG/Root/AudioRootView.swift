@@ -16,7 +16,7 @@ struct AudioRootView: View {
     @State private var searchModel = SearchModel()
 
     var body: some View {
-        RootView(module: AudioDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, list: {
+        RootView(module: AudioDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation) {
             ListView()
                 .navigationDestination(for: AudioRoute.self) { route in
                     route
@@ -26,11 +26,11 @@ struct AudioRootView: View {
                             listModel.update(selection: Set())
                         }
                 }
-        }, detail: {
+        } detail: {
             if let selected = listModel.selected {
                 AudioRoute.detail(selected)
             }
-        })
+        }
         .environment(cacheItemListModel)
         .environment(listModel)
         .environment(searchModel)

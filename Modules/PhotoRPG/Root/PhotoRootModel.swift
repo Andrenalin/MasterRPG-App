@@ -24,6 +24,7 @@ public final class PhotoRootModel {
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: ItemController
     
+    let listModel = ListModel()
     var currentSelectedItemId: UUID?
 }
 

@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import UIKit
 import SwiftUI
 import SwiftData
 import Foundation

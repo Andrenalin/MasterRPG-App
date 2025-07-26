@@ -10,7 +10,7 @@ public final class ListModel {
         self.listSelection = Set(selection)
         update(selection: Set(selection))
     }
-
+    
     // MARK: - Selection
     private(set) public var isSelectionMode: Bool
     public var selection: [UUID]
@@ -18,15 +18,39 @@ public final class ListModel {
     public var listSelection: Set<UUID>
     
     public var focusSelectedItem: Binding<UUID>?
-
+    
     // MARK: - Display Mode
     public enum DisplayMode: Int, Equatable, Hashable, Codable, Sendable {
         case compact
         case medium
         case regular
     }
-
+    
     public var displayMode: DisplayMode = .medium
+    
+    public var isCompactDisplayMode: Bool {
+        get { displayMode == .compact }
+        set {
+            guard newValue, displayMode != .compact else { return }
+            displayMode = .compact
+        }
+    }
+    
+    public var isMediumDisplayMode: Bool {
+        get { displayMode == .medium }
+        set {
+            guard newValue, displayMode != .medium else { return }
+            displayMode = .medium
+        }
+    }
+    
+    public var isRegularDisplayMode: Bool {
+        get { displayMode == .regular }
+        set {
+            guard newValue, displayMode != .regular else { return }
+            displayMode = .regular
+        }
+    }
 }
 
 // MARK: - Selection

@@ -14,11 +14,14 @@ struct PhotoRootView: View {
     @SceneStorage("PhotoDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
 
     @State private var cacheItemListModel = CacheItemListModel()
-    @State private var listModel = ListModel()
     @State private var searchModel = SearchModel()
 
+    var listModel: ListModel {
+        root.listModel
+    }
+    
     var body: some View {
-        RootView(module: PhotoDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, list: {
+        RootView(module: PhotoDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation) {
             ListView()
                 .navigationDestination(for: PhotoRoute.self) { route in
                     route
@@ -28,11 +31,11 @@ struct PhotoRootView: View {
                             listModel.update(selection: Set())
                         }
                 }
-        }, detail: {
+        } detail: {
             if let selected = listModel.selected {
                 PhotoRoute.detail(selected)
             }
-        })
+        }
         .environment(cacheItemListModel)
         .environment(listModel)
         .environment(searchModel)

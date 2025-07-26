@@ -16,7 +16,7 @@ struct SpaceRootView: View {
     @State private var searchModel = SearchModel()
 
     var body: some View {
-        RootView(module: SpaceDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, list: {
+        RootView(module: SpaceDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation) {
             ListView()
                 .navigationDestination(for: SpaceRoute.self) { route in
                     route
@@ -27,11 +27,11 @@ struct SpaceRootView: View {
                         }
                 }
             
-        }, detail: {
+        } detail: {
             if let selected = listModel.selected {
                 SpaceRoute.detail(selected)
             }
-        })
+        }
         .environment(cacheItemListModel)
         .environment(listModel)
         .environment(searchModel)

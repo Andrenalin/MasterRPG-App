@@ -62,7 +62,9 @@ private extension TabNavigation {
         TabView(selection: $selectedTab) {
             pageTab(for: .game)
                 .customizationID("Tab.\(NetworkModules.game.token)")
+            #if !os(macOS)
                 .customizationBehavior(.disabled, for: .sidebar, .tabBar)
+            #endif
 
             pageTab(for: .search)
                 .customizationID("Tab.\(NetworkModules.search.token)")
