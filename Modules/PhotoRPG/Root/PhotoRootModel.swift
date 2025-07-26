@@ -15,6 +15,7 @@ public final class PhotoRootModel {
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
+        self.searchModel = SearchModel(modelContext: modelContext, module: PhotoDataModel.typeId, categoryTags: [.adventure, .map, .value, .weather])
     }
 
     let modelContext: ModelContext
@@ -25,6 +26,7 @@ public final class PhotoRootModel {
     @ObservationIgnored let itemController: ItemController
     
     let listModel = ListModel()
+    let searchModel: SearchModel
     var currentSelectedItemId: UUID?
 }
 

@@ -38,7 +38,7 @@ struct ListView: View {
     ManagedNavigationStack {
         ListView()
             .environment(CacheItemListModel())
-            .environment(SearchModel.preview)
+            .environment(SearchModel.preview(modelContext: modelContext, module: AudioDataModel.typeId))
             .environment(DeviceRotationModel())
     }
     .environment(ListModel())

@@ -14,7 +14,6 @@ struct PhotoRootView: View {
     @SceneStorage("PhotoDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
 
     @State private var cacheItemListModel = CacheItemListModel()
-    @State private var searchModel = SearchModel()
 
     var listModel: ListModel {
         root.listModel
@@ -22,7 +21,7 @@ struct PhotoRootView: View {
     
     var body: some View {
         RootView(module: PhotoDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation) {
-            ListView()
+            ListView()            
                 .navigationDestination(for: PhotoRoute.self) { route in
                     route
                         .environment(cacheItemListModel)
@@ -38,7 +37,7 @@ struct PhotoRootView: View {
         }
         .environment(cacheItemListModel)
         .environment(listModel)
-        .environment(searchModel)
+        .environment(root.searchModel)
         .onChange(of: displayMode, initial: true) {
             listModel.displayMode = displayMode
         }

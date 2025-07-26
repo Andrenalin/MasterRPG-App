@@ -17,7 +17,6 @@ struct NewAudioRoute: View {
 
     @State private var cacheModel = CacheItemListModel()
     @State private var deviceRotationModel = DeviceRotationModel()
-    @State private var searchModel = SearchModel()
     @State private var tabTitleModel = TabTitleModel()
 
     @Environment(\.modelContext) private var modelContext
@@ -50,7 +49,6 @@ struct NewPhotoRoute: View {
 
     @State private var cacheModel = CacheItemListModel()
     @State private var deviceRotationModel = DeviceRotationModel()
-    @State private var searchModel = SearchModel()
     @State private var tabTitleModel = TabTitleModel()
 
     @Environment(\.modelContext) private var modelContext
@@ -83,7 +81,6 @@ struct NewSpaceRoute: View {
 
     @State private var cacheModel = CacheItemListModel()
     @State private var deviceRotationModel = DeviceRotationModel()
-    @State private var searchModel = SearchModel()
     @State private var tabTitleModel = TabTitleModel()
 
     @Environment(\.modelContext) private var modelContext

@@ -38,7 +38,7 @@ struct MainRowView: View {
     MainRowView(model: models[0])
         .environment(AudioRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
-        .environment(SearchModel.preview)
+        .environment(SearchModel.preview(modelContext: modelContext, module: AudioDataModel.typeId))
         .environment(DeviceRotationModel())
 }
 

@@ -7,14 +7,18 @@ import SwiftUI
 
 struct AudioRootView: View {
     let withoutNavigation: Bool
+    
+    @Environment(AudioRootModel.self) private var root
 
     @SceneStorage("AudioRoute") private var route: AudioRoute?
     @SceneStorage("AudioDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
 
     @State private var cacheItemListModel = CacheItemListModel()
-    @State private var listModel = ListModel()
-    @State private var searchModel = SearchModel()
 
+    var listModel: ListModel {
+        root.listModel
+    }
+    
     var body: some View {
         RootView(module: AudioDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation) {
             ListView()
@@ -33,7 +37,7 @@ struct AudioRootView: View {
         }
         .environment(cacheItemListModel)
         .environment(listModel)
-        .environment(searchModel)
+        .environment(root.searchModel)
         .onChange(of: displayMode, initial: true) {
             listModel.displayMode = displayMode
         }

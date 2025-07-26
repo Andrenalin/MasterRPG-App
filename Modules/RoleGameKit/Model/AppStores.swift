@@ -46,7 +46,13 @@ public final class AppStore: Sendable {
     @MainActor
     private static func initModelContainer() -> ModelContainer {
         let schema = Schema([
-            PhotoDataModel.self, PhotoEntryDataModel.self, SpaceDataModel.self, SpaceEntryDataModel.self,
+            //TagDataModel.self,
+            AudioDataModel.self,
+            AudioEntryDataModel.self,
+            PhotoDataModel.self,
+            PhotoEntryDataModel.self,
+            SpaceDataModel.self,
+            SpaceEntryDataModel.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
         do {
@@ -113,6 +119,7 @@ public final class AppStore: Sendable {
         self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.0", executionDelay: 0.4, verbosity: .info))
         let modelContainer = Self.initModelContainer()
         self.modelContainer = modelContainer
+        
         self.audioRootModel = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.photoRootModel = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.spaceRootModel = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)

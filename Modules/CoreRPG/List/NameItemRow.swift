@@ -33,7 +33,7 @@ struct NameItemRow: View {
 
 #Preview {
     @Previewable @State var searchText: String = "cool"
-    @Previewable @State var searchModel = SearchModel(searchText: "cool")
+    @Previewable @State var searchModel = SearchModel.preview(search: "cool")
     @Previewable @State var itemId: UUID = UUID(uuidString: "226535FB-F20B-414C-BE4F-5438A77F6181")!
     @Previewable @State var cache = CacheItemListModel()
 

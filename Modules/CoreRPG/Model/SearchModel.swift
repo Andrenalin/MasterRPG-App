@@ -1,30 +1,49 @@
 // @copyright André Trettin
 
+import SwiftData
 import SwiftUI
 
 @MainActor @Observable
 public final class SearchModel: Sendable {
-    public init(searchText: String = "", isSearching: Bool = false, searchToken: ItemListCategory = .all, selectedTokens: [SearchTags] = [], categoryTags: [ItemListCategory] = [.adventure, .character, .photo, .weather], isHiddenItems: Bool = true) {
+    public init(modelContext: ModelContext, module: NetworkModules, searchText: String = "", searchToken: ItemListCategory = .all, selectedTokens: [SearchTags] = [], categoryTags: [ItemListCategory] = [.adventure, .character, .photo, .weather]) {
+        self.modelContext = modelContext
+        self.module = module
         self.searchText = searchText
-        self.isSearching = isSearching
         self.searchToken = searchToken
         self.selectedTokens = selectedTokens
-        self.categoryTags = categoryTags
-        self.isHiddenItems = isHiddenItems
+        self.categoryTags = [ItemListCategory.all] + categoryTags
     }
     
-    public var searchText: String
-    public var isSearching: Bool
-    public var searchToken: ItemListCategory
-    public var selectedTokens: [SearchTags]
+    let modelContext: ModelContext
+    let module: NetworkModules
+    
+    public var searchText: String = ""
+    internal(set) public var searchToken: ItemListCategory
+    internal(set) public var selectedTokens: [SearchTags]
+    var categoryTags: [ItemListCategory]
 
-    public var categoryTags: [ItemListCategory]
-    public var isHiddenItems: Bool = true
+    var searchFieldText: String = ""
+    
+    var filteredTagSuggestions: [SearchTags] {
+        guard searchFieldText.starts(with: "@") else { return [] }
+        let tagSearch = searchFieldText.dropFirst()
+        if !tagSearch.isEmpty {
+            let predicate = #Predicate<TagDataModel>{ tag in tag.module == module.rawValue }
+            let fetchDesc = FetchDescriptor<TagDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.name)])
+            let tags = try? modelContext.fetch(fetchDesc)
+            return tags?.filter { $0.name.localizedCaseInsensitiveContains(tagSearch) }.map { SearchTags(tag: $0.name) } ?? []
+        }
+        return []
+    }
 }
 
 public extension SearchModel {
-    static let preview = SearchModel()
-    static func preview(search: String) -> SearchModel {
-        SearchModel(searchText: search)
+    static func preview(search: String = "") -> SearchModel {
+        let modelContext = ModelContext(try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true)))
+        return SearchModel(modelContext: modelContext, module: .photo, searchText: search)
+    }
+
+    static func preview(modelContext: ModelContext, module: NetworkModules, search: String = "") -> SearchModel {
+        SearchModel(modelContext: modelContext, module: module, searchText: search)
     }
 }

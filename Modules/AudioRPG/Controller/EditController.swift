@@ -49,6 +49,7 @@ extension EditController {
             await fileController.fileUrlDataController.delete(fileUrl)
         }
         modelContext?.delete(model)
+        updateTags(modelContext: modelContext)
         try? modelContext?.save()
     }
     
@@ -88,6 +89,15 @@ extension EditController {
             model.tags = tags
             model.degrees = degrees
         }
+        updateTags(modelContext: model.modelContext)
+    }
+    
+    func updateTags(modelContext: ModelContext?) {
+        guard let modelContext else { return }
+        let fetch = FetchDescriptor<AudioDataModel>()
+        guard let models = try? modelContext.fetch(fetch) else { return }
+        let tags = Set(models.flatMap { $0.tags })
+        TagController.update(tags: tags, in: AudioDataModel.typeId, modelContext: modelContext)
     }
 }
 

@@ -80,14 +80,32 @@ public struct RootView<List: View, Detail: View>: View {
     private var listRoot: some View {
         @Bindable var searchModel = searchModel
         list
-            .searchable(text: $searchModel.searchText, placement: .automatic, prompt: "Search")
+            .searchable(text: $searchModel.searchFieldText, tokens: $searchModel.selectedTokens, placement: .automatic, prompt: Text("Search or use @ for tags", bundle: .module), token: { token in
+                Label(token.tag.prefix(3), systemImage: "tag")
+            })
             .searchScopes($searchModel.searchToken, activation: searchScopeActivition) {
                 ForEach(searchModel.categoryTags) { category in
                     Label(category.title, systemImage: category.icon)
                         .tag(category)
                 }
             }
+            .searchSuggestions {
+                ForEach(searchModel.filteredTagSuggestions) { suggestion in
+                    Button {
+                        withAnimation {
+                            searchModel.selectedTokens.append(suggestion)
+                            searchModel.searchText = ""
+                        }
+                    } label: {
+                        Label(suggestion.tag, systemImage: "tag")
+                    }
+                }
+            }
             .searchPresentationToolbarBehavior(.avoidHidingContent)
+            .onChange(of: searchModel.searchFieldText) {
+                guard searchModel.searchFieldText.starts(with: "@") == false else { return }
+                withAnimation { searchModel.searchText = searchModel.searchFieldText }
+            }
             .onChange(of: searchModel.searchText, initial: true) {
                 cacheItemListModel.reset(search: searchModel.searchText)
             }

@@ -8,12 +8,16 @@ import SwiftUI
 struct SpaceRootView: View {
     let withoutNavigation: Bool
 
+    @Environment(SpaceRootModel.self) private var root
+    
     @SceneStorage("SpaceRoute") private var route: SpaceRoute?
     @SceneStorage("SpaceDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
 
     @State private var cacheItemListModel = CacheItemListModel()
-    @State private var listModel = ListModel()
-    @State private var searchModel = SearchModel()
+
+    var listModel: ListModel {
+        root.listModel
+    }
 
     var body: some View {
         RootView(module: SpaceDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation) {
@@ -34,7 +38,7 @@ struct SpaceRootView: View {
         }
         .environment(cacheItemListModel)
         .environment(listModel)
-        .environment(searchModel)
+        .environment(root.searchModel)
         .onChange(of: displayMode, initial: true) {
             listModel.displayMode = displayMode
         }

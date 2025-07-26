@@ -42,7 +42,7 @@ struct MainRowView: View {
     MainRowView(model: models[0])
         .environment(PhotoRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
-        .environment(SearchModel.preview)
+        .environment(SearchModel.preview(modelContext: modelContext, module: PhotoDataModel.typeId))
         .environment(DeviceRotationModel())
 }
 

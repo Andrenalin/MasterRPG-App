@@ -15,6 +15,7 @@ public final class AudioRootModel {
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
+        self.searchModel = SearchModel(modelContext: modelContext, module: AudioDataModel.typeId, categoryTags: [.adventure, .map, .value, .weather])
     }
 
     let modelContext: ModelContext
@@ -23,8 +24,10 @@ public final class AudioRootModel {
     @ObservationIgnored let exportController: ExportController
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: ItemController
-    
-    @ObservationIgnored let networkModule: NetworkModules = .photo
+        
+    let listModel = ListModel()
+    let searchModel: SearchModel
+    var currentSelectedItemId: UUID?
 }
 
 extension AudioRootModel {

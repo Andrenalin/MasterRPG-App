@@ -16,7 +16,7 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: PhotoDataModel.self,
+            for: PhotoDataModel.self, TagDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         

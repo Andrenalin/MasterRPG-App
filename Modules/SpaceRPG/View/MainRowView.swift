@@ -30,7 +30,7 @@ struct MainRowView: View {
     MainRowView(model: models[0])
         .environment(SpaceRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
-        .environment(SearchModel.preview)
+        .environment(SearchModel.preview(modelContext: modelContext, module: SpaceDataModel.typeId))
         .environment(DeviceRotationModel())
 }
 

@@ -16,7 +16,7 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: AudioDataModel.self,
+            for: AudioDataModel.self, TagDataModel.self, 
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         

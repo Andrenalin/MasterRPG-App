@@ -49,13 +49,14 @@ extension EditController {
             await fileController.fileUrlDataController.delete(fileUrl)
         }
         modelContext?.delete(model)
+        updateTags(modelContext: modelContext)
         try? modelContext?.save()
     }
     
     func addSubPhoto(photoId: UUID, model: SpaceDataModel) {
         model.withTransaction {
             var entries: [SpaceEntryDataModel] = model.entryModels
-
+            
             let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, spaceId: photoId, space: model)
             entries.append(entry)
             model.entryModels = entries
@@ -65,7 +66,7 @@ extension EditController {
             subModel.displayState = DisplayStateMask.totalHidden.rawValue
         }
     }
-
+    
     func removeSubPhoto(photoId: UUID, model: SpaceDataModel) {
         model.withTransaction {
             let entry = model[photoId]
@@ -73,13 +74,13 @@ extension EditController {
             model.entryModels.enumerated().forEach { index, entry in
                 entry.index = Int16(index)
             }
-                        
+            
             guard let modelContext = model.modelContext, let subModel = SpaceDataModel.model(modelContext: modelContext, id: photoId) else { return }
             modelContext.delete(entry)
             subModel.displayState = 0
         }
     }
-
+    
     func update(model: SpaceDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
         model.withTransaction {
             model.reset(name: name)
@@ -87,6 +88,15 @@ extension EditController {
             model.category = category
             model.tags = tags
         }
+        updateTags(modelContext: model.modelContext)
+    }
+    
+    func updateTags(modelContext: ModelContext?) {
+        guard let modelContext else { return }
+        let fetch = FetchDescriptor<SpaceDataModel>()
+        guard let models = try? modelContext.fetch(fetch) else { return }
+        let tags = Set(models.flatMap { $0.tags })
+        TagController.update(tags: tags, in: SpaceDataModel.typeId, modelContext: modelContext)
     }
 }
 
@@ -112,7 +122,7 @@ extension EditController {
         await resetPhoto(data: data, id: id, actor: actor)
         await actor.save()
     }
-
+    
     func resetPhoto(data: Data, model: SpaceDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id
@@ -122,7 +132,7 @@ extension EditController {
             await actor.save()
         }
     }
-
+    
     private func resetPhoto(url: URL?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {

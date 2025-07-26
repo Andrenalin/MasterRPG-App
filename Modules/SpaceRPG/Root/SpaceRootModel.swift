@@ -15,15 +15,19 @@ public final class SpaceRootModel {
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
+        self.searchModel = SearchModel(modelContext: modelContext, module: SpaceDataModel.typeId, categoryTags: [.adventure, .map, .value, .weather])
     }
 
     let modelContext: ModelContext
-    
     @ObservationIgnored let cacheController: CacheController
     @ObservationIgnored let editController: EditController
     @ObservationIgnored let exportController: ExportController
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: ItemController
+    
+    let listModel = ListModel()
+    let searchModel: SearchModel
+    var currentSelectedItemId: UUID?
 }
 
 

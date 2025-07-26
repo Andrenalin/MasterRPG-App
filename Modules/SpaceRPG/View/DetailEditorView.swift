@@ -161,7 +161,7 @@ struct DetailEditorView: View {
     @Previewable @Environment(\.modelContext) var modelContext
     
     DetailEditorView(model: models[0]) { }
-        .environment(SearchModel.preview)
+        .environment(SearchModel.preview(modelContext: modelContext, module: SpaceDataModel.typeId))
         .environment(DeviceRotationModel())
         .environment(SpaceRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())

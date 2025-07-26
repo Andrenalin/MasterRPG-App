@@ -91,8 +91,7 @@ struct ExtendedTabRouteDestionationView: View {
     var body: some View {
         switch route {
             case .audios:
-                AudioFactory.rootExtendedView(for: appStore.audioRoot, tabId: tabId)
-                    .environment(appStore.audioRoot)
+                NewAudioRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .dice:
                 DiceFactory.rootExtendedView(for: appStore.diceRoot, tabId: tabId)
                     .environment(appStore.diceRoot)

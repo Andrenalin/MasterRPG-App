@@ -48,6 +48,7 @@ public final class AppModel: Sendable {
     private static func initModelContainer() -> ModelContainer {
         let schema = Schema(
             [
+                TagDataModel.self,
                 AudioDataModel.self,
                 AudioEntryDataModel.self,
                 PhotoDataModel.self,
