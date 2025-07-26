@@ -3,7 +3,7 @@
 import SwiftUI
 
 public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>: View {
-    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder tagAdds: () -> Additional = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
+    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool, isTrailing: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder tagAdds: () -> Additional = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
         self.itemId = itemId
         self.model = model
         self.cacheItemListModel = cacheItemListModel
@@ -11,6 +11,7 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
         tagsKeyPath = tags
         descriptionKeyPath = description
         self.isSelected = isSelected
+        self.isTrailing = isTrailing
         self.thumbnail = thumbnail()
         additional = tagAdds()
         self.actionBar = actionBar()
@@ -23,6 +24,7 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     let tagsKeyPath: KeyPath<Model, [String]>
     let descriptionKeyPath: KeyPath<Model, String>
     let isSelected: Bool
+    let isTrailing: Bool
     let thumbnail: Thumbnail
     let additional: Additional
     let actionBar: ActionBar
@@ -30,12 +32,10 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     @Environment(ListModel.self) private var listModel
 
     public var body: some View {
-        let _ = Self._printChanges()
         HStack(spacing: 4) {
-            VStack(spacing: 0) {
-                thumbnail
+            if !isTrailing {
+                thumbView
             }
-            .fixedSize(horizontal: true, vertical: false)
 
             VStack(alignment: .leading, spacing: 4) {
                 NameItemRow(itemId: itemId, name: model[keyPath: nameKeyPath], cacheItemListModel: cacheItemListModel)
@@ -55,8 +55,19 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
             }
             .frame(minHeight: 64, alignment: .center)
             .frame(maxWidth: .infinity, alignment: .leading)
+            
+            if isTrailing {
+                thumbView
+            }
         }
         .fixedSize(horizontal: false, vertical: true)
+    }
+    
+    private var thumbView: some View {
+        VStack(spacing: 0) {
+            thumbnail
+        }
+        .fixedSize(horizontal: true, vertical: false)
     }
     
     var tagContent: [String] {

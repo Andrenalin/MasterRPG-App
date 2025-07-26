@@ -14,8 +14,8 @@ struct MainRowView: View {
 
     var body: some View {
         let _ = Self._printChanges()
-        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
-            PlainPhotoView(cacheController: root.cacheController, model: model, size: .maxHeightWidth(width), ratio: .fill, hasRoundedCorners: true, highResolution: false)
+        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, isTrailing: true, thumbnail: {
+            ThumbnailRowPhotoView(cacheController: root.cacheController, model: model, isTrailing: true)
         }, tagAdds: {
             CategoryItemRow(category: model.category)
         })

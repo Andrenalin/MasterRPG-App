@@ -5,11 +5,6 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-@Observable
-final class DetailPhotoSelection {
-    var selectedPhoto: PhotoDataModel?
-}
-
 struct DetailView: View {
     let model: PhotoDataModel
     
@@ -18,7 +13,7 @@ struct DetailView: View {
 #endif
     @Environment(PhotoRootModel.self) private var root
     
-    @State var selection = DetailPhotoSelection()
+    @State var selection = GroupItemSelectionModel()
     @State private var isEditing = false
     @State private var showImporter = false
     
@@ -29,6 +24,7 @@ struct DetailView: View {
             
             bottomView
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.smooth, value: isEditing)
         .animation(.bouncy, value: model.url)
         .ignoresSafeArea(edges: .top)
@@ -44,7 +40,7 @@ struct DetailView: View {
 #endif
         .onChange(of: model.id) {
             withAnimation {
-                selection.selectedPhoto = nil
+                selection.selectedItem = nil
                 isEditing = false
             }
         }
@@ -71,6 +67,7 @@ extension DetailView {
                 ScrollView(showsIndicators: false) {
                     VStack {
                         detailView
+                            .frame(minHeight: 600)
                             .id("Header")
                         
 #if os(iOS)
@@ -109,7 +106,7 @@ extension DetailView {
     }
 
     private var detailView: some View {
-        PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fill)
+        PlainPhotoView(cacheController: root.cacheController, model: selection.selectedItem ?? model, ratio: .fill)
                 .stretchy()
         .mask(LinearGradient(
             gradient: Gradient(colors: [.black, .black, .black, .clear]),
@@ -131,7 +128,7 @@ extension DetailView {
         }
         .overlay(alignment: .bottom) {
             HStack(alignment: .bottom) {
-                DetailOverlayView(model: selection.selectedPhoto ?? model)
+                DetailOverlayView(model: selection.selectedItem ?? model)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
                 toolbarButtons

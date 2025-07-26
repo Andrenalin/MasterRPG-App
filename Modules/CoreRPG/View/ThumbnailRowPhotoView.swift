@@ -1,0 +1,119 @@
+// @copyright André Trettin
+
+import SwiftUI
+
+public struct ThumbnailRowPhotoView: View {
+    public init(cacheController: any ImageCacheControllable, model: any HasPhotoModel, isTrailing: Bool = false) {
+        self.cacheController = cacheController
+        self.model = model
+        self.isTrailing = isTrailing
+    }
+
+    let cacheController: ImageCacheControllable
+    let model: HasPhotoModel
+    let isTrailing: Bool
+
+    @Environment(CacheItemListModel.self) private var cacheItemListModel
+    @Environment(ListModel.self) private var listModel
+
+    @State private var lastFileUrl: FileUrl?
+    @State private var isLoading: Bool = false
+
+    public var body: some View {
+        VStack {
+            if let image = cachedImage {
+                GeometryReader { proxy in
+                    imageView(image: image)
+                        .clipShape(
+                            .rect(
+                                topLeadingRadius: isTrailing ? 0 : 24,
+                                bottomLeadingRadius: isTrailing ? 0 : 24,
+                                bottomTrailingRadius: isTrailing ? 24 : 0,
+                                topTrailingRadius: isTrailing ? 24 : 0
+                            )
+                        )
+                }
+                .frame(width: width)
+            } else {
+                VStack {
+                    placeHolder(size: CGSize(width: widthPlaceHolder, height: heightPlaceHolder))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            }
+        }
+        .onChange(of: model.fileUrl, initial: true) {
+            initImage()
+        }
+    }
+}
+
+private extension ThumbnailRowPhotoView {
+    var width: CGFloat {
+        switch listModel.displayMode {
+            case .compact: 160
+            case .medium: 128
+            case .regular: 96
+            @unknown default: 96
+        }
+    }
+    
+    var cachedImage: AKImage? {
+        cacheItemListModel.imageCache(cacheType: .thumbnail, itemId: model.id)
+    }
+
+    func imageView(image: AKImage) -> some View {
+        Image(akImage: image)
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+    }
+
+    var heightPlaceHolder: CGFloat {
+        width == 96 ? 96 : 64
+    }
+
+    var widthPlaceHolder: CGFloat {
+        width
+    }
+
+    @ViewBuilder
+    func placeHolder(size: CGSize) -> some View {
+        if isLoading {
+            ProgressView()
+                .controlSize(.extraLarge)
+                .tint(Color.accentColor)
+        } else {
+            Image(systemName: model.fileUrl == nil ? "photo" : "photo.badge.arrow.down")
+                .font(.system(size: 32))
+                .frame(width: size.width, height: size.height)
+                .overlay {
+                    if isTrailing {
+                        UnevenRoundedRectangle(bottomTrailingRadius: 24, topTrailingRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
+                    } else {
+                        UnevenRoundedRectangle(topLeadingRadius: 24, bottomLeadingRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
+                    }
+                }
+        }
+    }
+
+    func initImage() {
+        guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage == nil) else { return }
+        isLoading = true
+        lastFileUrl = model.fileUrl
+        loadImage()
+    }
+
+    func loadImage() {
+        Task { @MainActor in
+            let fileId = model.id
+            let fileUrl = model.fileUrl
+            let loaderTask = Task.detached(priority: .userInitiated) {
+                await cacheController.thumbnailId(for: fileId, with: fileUrl)
+            }
+            _ = await loaderTask.result
+            let newImage = await cacheController.thumbnail(for: fileId)
+            withAnimation { cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: fileId, image: newImage) }
+            isLoading = false
+        }
+    }
+}
