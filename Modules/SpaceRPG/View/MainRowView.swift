@@ -13,15 +13,13 @@ struct MainRowView: View {
 
     var body: some View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
-            PlainPhotoView(cacheController: root.cacheController, model: model, size: .maxHeightWidth(96), ratio: .fill, hasRoundedCorners: true, highResolution: false)
+            ThumbnailRowPhotoView(cacheController: root.cacheController, model: model)
         }, tagAdds: {
             CategoryItemRow(category: model.category)
-        }, actionBar: {
         })
 #if !os(tvOS)
         .draggable(LinkData(itemId: model.id, module: SpaceDataModel.typeId, name: model.name))
 #endif
-
     }
 }
 

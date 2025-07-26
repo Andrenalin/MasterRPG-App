@@ -13,9 +13,7 @@ struct MainRowView: View {
     @Environment(AudioRootModel.self) private var root
 
     var body: some View {
-        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
-            PlainPhotoView(cacheController: root.cacheController, model: model, size: .maxHeightWidth(width), ratio: .fill, hasRoundedCorners: true, highResolution: false)
-        }, tagAdds: {
+        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, tagAdds: {
             CategoryItemRow(category: model.category)
         })
 #if !os(tvOS)

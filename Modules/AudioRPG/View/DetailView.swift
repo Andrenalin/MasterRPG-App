@@ -98,8 +98,6 @@ struct DetailView: View {
     private var detailView: some View {
         ZStack(alignment: .center) {
             DescriptionLinkEditor()
-//            PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
-//                .stretchy()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .mask(LinearGradient(

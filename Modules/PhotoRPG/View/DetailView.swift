@@ -21,6 +21,20 @@ struct DetailView: View {
         VStack(spacing: 0) {
             contentView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .bottom) {
+                    if !isEditing {
+                        HStack(alignment: .bottom) {
+                            DetailOverlayView(model: selection.selectedItem ?? model)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            if model.url != nil {
+                                toolbarButtons
+                            }
+                        }
+                        .padding()
+                        .transition(.slide)
+                    }
+                }
             
             bottomView
         }
@@ -106,8 +120,8 @@ extension DetailView {
     }
 
     private var detailView: some View {
-        PlainPhotoView(cacheController: root.cacheController, model: selection.selectedItem ?? model, ratio: .fill)
-                .stretchy()
+        PlainPhotoView(cacheController: root.cacheController, model: selection.selectedItem ?? model)
+            .stretchy()
         .mask(LinearGradient(
             gradient: Gradient(colors: [.black, .black, .black, .clear]),
             startPoint: .top, endPoint: .bottom))
@@ -125,15 +139,6 @@ extension DetailView {
                     Spacer()
                 }
             }
-        }
-        .overlay(alignment: .bottom) {
-            HStack(alignment: .bottom) {
-                DetailOverlayView(model: selection.selectedItem ?? model)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                toolbarButtons
-            }
-            .padding()
         }
     }
 

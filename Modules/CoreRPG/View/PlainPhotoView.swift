@@ -8,25 +8,14 @@ public protocol HasPhotoModel: Observable {
 }
 
 public struct PlainPhotoView: View {
-    public enum SizeType {
-        case maxWidth
-        case maxHeightWidth(CGFloat)
-    }
-
-    public init(cacheController: any ImageCacheControllable, model: any HasPhotoModel, size: SizeType = .maxWidth, ratio: ContentMode = .fit, hasRoundedCorners: Bool = false, highResolution: Bool = true) {
+    public init(cacheController: any ImageCacheControllable, model: any HasPhotoModel, highResolution: Bool = true) {
         self.cacheController = cacheController
         self.model = model
-        self.size = size
-        self.ratio = ratio
-        self.hasRoundedCorners = hasRoundedCorners
         self.highResolution = highResolution
     }
 
     let cacheController: ImageCacheControllable
     let model: HasPhotoModel
-    let size: SizeType
-    let ratio: ContentMode
-    let hasRoundedCorners: Bool
     let highResolution: Bool
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
@@ -35,25 +24,17 @@ public struct PlainPhotoView: View {
     @State private var isLoading: Bool = false
 
     public var body: some View {
-        let _ = Self._printChanges()
-        
+//        .scaleEffect(scale)
+//        .gesture(MagnifyGesture().onChanged({ value in
+//            scale = value.magnification
+//        }))
+
         VStack {
             if let image = cachedImage {
-                switch size {
-                    case .maxHeightWidth(let width):
-                        GeometryReader { proxy in
-                            imageView(image: image)
-                                .clipShape(.rect(topLeadingRadius: 24, bottomLeadingRadius: 24))
-                        }
-                        .frame(width: width)
-                    case .maxWidth:
-                        imageView(image: image)
-                            .clipped()
-                            .backgroundExtensionEffect26()
-                }
+                imageView(image: image)
             } else {
                 VStack {
-                    placeHolder(size: CGSize(width: widthPlaceHolder, height: heightPlaceHolder))
+                    placeHolder(size: CGSize(width: 96, height: 96))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
@@ -72,22 +53,8 @@ private extension PlainPhotoView {
     func imageView(image: AKImage) -> some View {
         Image(akImage: image)
             .resizable()
-            .aspectRatio(contentMode: ratio)
+            .aspectRatio(contentMode: .fit)
             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-    }
-
-    var heightPlaceHolder: CGFloat {
-        switch size {
-            case .maxWidth: 96
-            case .maxHeightWidth(let width): width == 96 ? 96 : 64
-        }
-    }
-
-    var widthPlaceHolder: CGFloat {
-        switch size {
-            case .maxWidth: 96
-            case .maxHeightWidth(let width): width
-        }
     }
 
     @ViewBuilder
@@ -101,11 +68,7 @@ private extension PlainPhotoView {
                 .font(.system(size: 32))
                 .frame(width: size.width, height: size.height)
                 .overlay {
-                    if hasRoundedCorners {
-                        UnevenRoundedRectangle(topLeadingRadius: 24, bottomLeadingRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
-                    } else {
-                        RoundedRectangle(cornerRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
-                    }
+                    RoundedRectangle(cornerRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
                 }
         }
     }
