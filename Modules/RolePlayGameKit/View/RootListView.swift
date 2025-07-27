@@ -23,11 +23,14 @@ struct RootListView: View {
             ListView(rootRoute: rootRoute)
                 .environment(selectionModel)
         } detail: {
-            if let selected = selectionModel.selectedItem {
-                DetailView(item: selected)
-            } else {
-                ContentUnavailableView(rootRoute.title, image: rootRoute.icon)
+            Group {
+                if let selected = selectionModel.selectedItem {
+                    DetailView(item: selected)
+                } else {
+                    ContentUnavailableView(rootRoute.title, image: rootRoute.icon)
+                }
             }
+            .frame(maxWidth: .infinity)
         }
         .ignoresSafeArea(edges: .top)
 #if os(iOS)
@@ -56,9 +59,11 @@ struct ListView: View {
             model.selectedItem = items.first { $0.id == selected }
         }
         .navigationTitle(rootRoute.title)
+        .frame(minWidth: 250, idealWidth: 350, maxWidth: 450)
 #if os(macOS)
-        .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+        .navigationSplitViewColumnWidth(min: 250, ideal: 350, max: 450)
 #endif
+
     }
 }
 

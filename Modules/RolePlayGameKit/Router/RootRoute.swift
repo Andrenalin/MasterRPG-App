@@ -25,39 +25,39 @@ public enum RootRoute: Hashable, Codable {
     
     public init(networkModule: NetworkModules) {
         switch networkModule {
-            case .photo: self = .photos
-            case .map: self = .maps
-            case .table: self = .tables
-            case .adventure: self = .adventures
-            case .dice: self = .dice
-            case .value: self = .values
-            case .weather: self = .weathers
-            case .audio: self = .audios
-            case .pdf: self = .pdfs
-            case .space: self = .space
-            case .setting: self = .settings
-            case .editor: self = .editors
-            case .search: self = .search
-            default: self = .game
+        case .photo: self = .photos
+        case .map: self = .maps
+        case .table: self = .tables
+        case .adventure: self = .adventures
+        case .dice: self = .dice
+        case .value: self = .values
+        case .weather: self = .weathers
+        case .audio: self = .audios
+        case .pdf: self = .pdfs
+        case .space: self = .space
+        case .setting: self = .settings
+        case .editor: self = .editors
+        case .search: self = .search
+        default: self = .game
         }
     }
     
     public var module: NetworkModules {
         switch self {
-            case .game: .game
-            case .values: .value
-            case .adventures: .adventure
-            case .maps: .map
-            case .tables: .table
-            case .photos: .photo
-            case .weathers: .weather
-            case .dice: .dice
-            case .audios: .audio
-            case .pdfs: .pdf
-            case .settings: .setting
-            case .editors: .editor
-            case .space: .space
-            case .search: .search
+        case .game: .game
+        case .values: .value
+        case .adventures: .adventure
+        case .maps: .map
+        case .tables: .table
+        case .photos: .photo
+        case .weathers: .weather
+        case .dice: .dice
+        case .audios: .audio
+        case .pdfs: .pdf
+        case .settings: .setting
+        case .editors: .editor
+        case .space: .space
+        case .search: .search
         }
     }
 }
@@ -69,21 +69,21 @@ extension RootRoute: RawRepresentable {
     
     public init?(rawValue: String) {
         switch rawValue {
-            case NetworkModules.adventure.token: self = .adventures
-            case NetworkModules.audio.token: self = .audios
-            case NetworkModules.dice.token: self = .dice
-            case NetworkModules.editor.token: self = .editors
-            case NetworkModules.game.token: self = .game
-            case NetworkModules.map.token: self = .maps
-            case NetworkModules.pdf.token: self = .pdfs
-            case NetworkModules.photo.token: self = .photos
-            case NetworkModules.setting.token: self = .settings
-            case NetworkModules.space.token: self = .space
-            case NetworkModules.table.token: self = .tables
-            case NetworkModules.value.token: self = .values
-            case NetworkModules.weather.token: self = .weathers
-            case NetworkModules.search.token: self = .search
-            default: self = .game
+        case NetworkModules.adventure.token: self = .adventures
+        case NetworkModules.audio.token: self = .audios
+        case NetworkModules.dice.token: self = .dice
+        case NetworkModules.editor.token: self = .editors
+        case NetworkModules.game.token: self = .game
+        case NetworkModules.map.token: self = .maps
+        case NetworkModules.pdf.token: self = .pdfs
+        case NetworkModules.photo.token: self = .photos
+        case NetworkModules.setting.token: self = .settings
+        case NetworkModules.space.token: self = .space
+        case NetworkModules.table.token: self = .tables
+        case NetworkModules.value.token: self = .values
+        case NetworkModules.weather.token: self = .weathers
+        case NetworkModules.search.token: self = .search
+        default: self = .game
         }
     }
 }
@@ -123,39 +123,42 @@ struct RouteRouteDestionationView: View {
     
     var body: some View {
         switch route {
-            case .adventures:
-                RootListView(rootRoute: route)
-            case .audios:
-                AudioRootFactory.rootView(withoutNavigation: false)
-            case .dice:
-                RootListView(rootRoute: route)
-            case .editors:
+        case .adventures:
+            RootListView(rootRoute: route)
+        case .audios:
+            AudioRootFactory.rootView(withoutNavigation: false)
+        case .dice:
+            RootListView(rootRoute: route)
+        case .editors:
 #if os(visionOS)
-                EmptyView()
+            EmptyView()
 #else
-                ExtendedTabBar()
+            ExtendedTabBar()
 #endif
-            case .game:
-                RootListView(rootRoute: route)
-            case .maps:
-                RootListView(rootRoute: route)
-            case .pdfs:
-                RootListView(rootRoute: route)
-            case .photos:
-                PhotoRootFactory.rootView(withoutNavigation: false)
-                  //  .environment(appModel.photoRoot.searchModel)
-            case .space:
-                SpaceRootFactory.rootView(withoutNavigation: false)
-            case .settings:
-                Text("Coming soon")
-            case .tables:
-                RootListView(rootRoute: route)
-            case .values:
-                RootListView(rootRoute: route)
-            case .weathers:
-                RootListView(rootRoute: route)
-            case .search:
-                Text("Coming soon")
+        case .game:
+            RootListView(rootRoute: route)
+        case .maps:
+            RootListView(rootRoute: route)
+        case .pdfs:
+            RootListView(rootRoute: route)
+        case .photos:
+            PhotoRootFactory.rootView(withoutNavigation: false)
+        case .space:
+            SpaceRootFactory.rootView(withoutNavigation: false)
+        case .settings:
+            VStack {
+                Text("\(route.title) Coming soon")
+                    .font(.largeTitle)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .tables:
+            RootListView(rootRoute: route)
+        case .values:
+            RootListView(rootRoute: route)
+        case .weathers:
+            RootListView(rootRoute: route)
+        case .search:
+            RootListView(rootRoute: route)
         }
     }
 }

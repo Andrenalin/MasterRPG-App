@@ -36,6 +36,7 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
     
     public var body: some View {
         listView(filteredItems: items)
+            .frame(minWidth: 250, idealWidth: 350, maxWidth: 450)
             .applyIf(listModel.isSelectionMode) { content in
                 content.contextMenu(forSelectionType: Model.ID.self) { selectedItemIDs in
                     ItemListContextMenu(controller: menuController)
@@ -51,9 +52,6 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
             .scrollDismissesKeyboard(.immediately)
 #endif
             .navigationTitle(module.title)
-#if os(macOS)
-            .navigationSplitViewColumnWidth(min: 250, ideal: 350)
-#endif
             .onChange(of: listModel.listSelection) {
                 guard !listModel.listSelection.isEmpty else { return }
                 listModel.update(selection: listModel.listSelection)

@@ -3,6 +3,7 @@
 import CoreRPG
 import RolePlayGameKit
 
+import AudioRPG
 import PhotoRPG
 import SpaceRPG
 
@@ -32,6 +33,6 @@ struct AppRootView: View {
 
 #Preview {
     AppRootView()
-        .modelContainer(for: [PhotoDataModel.self, PhotoEntryDataModel.self, SpaceDataModel.self, SpaceEntryDataModel.self], inMemory: true)
+        .modelContainer(for: [TagDataModel.self, AudioDataModel.self, PhotoDataModel.self, SpaceDataModel.self], inMemory: true)
         .environment(AppModel())
 }

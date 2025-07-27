@@ -14,7 +14,7 @@ public struct TabNavigation: View {
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
-    @Namespace private var hoverEffectNameSpace
+    
     @State private var tabTitleModel = TabTitleModel()
     @State private var tabSelectedModule: NetworkModules = .game
     
@@ -23,7 +23,7 @@ public struct TabNavigation: View {
 
         Group {
 #if os(macOS)
-            allTabs
+            allMacTabs
 #elseif os(visionOS)
             allCustomTabs
 #else
@@ -38,7 +38,8 @@ public struct TabNavigation: View {
         .tabBarMinimizeBehavior26(.onScrollDown)
 #endif
 #if os(macOS)
-        .tabViewStyle(.tabBarOnly)
+        .tabViewStyle(.grouped)
+        //.frame(minWidth: 220, maxWidth: 300)
 #else
         .tabViewStyle(.sidebarAdaptable)
 #endif
@@ -57,6 +58,25 @@ private extension TabNavigation {
             tab
         }
     }
+
+    func pageMacTab(for tab: RootRoute) -> Tab<RootRoute, some View, DefaultTabLabel> {
+        Tab(tabTitleModel.titles[tab.module, default: tab.title], systemImage: tab.icon, value: tab) {
+            tab
+        }
+    }
+
+    var allMacTabs: some View {
+        TabView(selection: $selectedTab) {
+            pageTab(for: .game)
+
+            ForEach(RootRoute.allTabs) { tab in
+                pageMacTab(for: tab)
+            }
+        }
+        .onNavigationReceive(assign: $selectedTab, delay: 0.8)
+        .onNavigationRoute(RootRouteRouter(appModel: appModel))
+    }
+
     
     var allTabs: some View {
         TabView(selection: $selectedTab) {
@@ -113,6 +133,10 @@ private extension TabNavigation {
                 .customizationID("Tab.\(NetworkModules.setting.token)")
         }
         .tabViewCustomization($customization)
+#if os(macOS)
+        // Enforce minimum sidebar width on macOS
+        .frame(minWidth: 220)
+#endif
         .onNavigationReceive(assign: $selectedTab, delay: 0.8)
         .onNavigationRoute(RootRouteRouter(appModel: appModel))
     }
