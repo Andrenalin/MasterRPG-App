@@ -24,14 +24,19 @@ public struct ThumbnailRowPhotoView: View {
             if let image = cachedImage {
                 GeometryReader { proxy in
                     imageView(image: image)
+                    #if os(macOS)
+                        .clipShape(.rect(cornerRadius: 24, style: .continuous))
+                    #else
                         .clipShape(
                             .rect(
                                 topLeadingRadius: isTrailing ? 0 : 24,
                                 bottomLeadingRadius: isTrailing ? 0 : 24,
                                 bottomTrailingRadius: isTrailing ? 24 : 0,
-                                topTrailingRadius: isTrailing ? 24 : 0
+                                topTrailingRadius: isTrailing ? 24 : 0,
+                                style: .continuous
                             )
                         )
+                    #endif
                 }
                 .frame(width: width)
             } else {
@@ -87,11 +92,15 @@ private extension ThumbnailRowPhotoView {
                 .font(.system(size: 32))
                 .frame(width: size.width, height: size.height)
                 .overlay {
+#if os(macOS)
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+#else
                     if isTrailing {
                         UnevenRoundedRectangle(bottomTrailingRadius: 24, topTrailingRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
                     } else {
                         UnevenRoundedRectangle(topLeadingRadius: 24, bottomLeadingRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
                     }
+#endif
                 }
         }
     }

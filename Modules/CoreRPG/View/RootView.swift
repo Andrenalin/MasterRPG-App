@@ -72,9 +72,6 @@ public struct RootView<List: View, Detail: View>: View {
                 detail
             }
         }
-#if os(macOS)
-        .navigationSplitViewColumnWidth(min: 250, ideal: 350, max: 450)
-#endif
     }
     
     @ViewBuilder

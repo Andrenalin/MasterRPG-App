@@ -60,10 +60,6 @@ struct ListView: View {
         }
         .navigationTitle(rootRoute.title)
         .frame(minWidth: 250, idealWidth: 350, maxWidth: 450)
-#if os(macOS)
-        .navigationSplitViewColumnWidth(min: 250, ideal: 350, max: 450)
-#endif
-
     }
 }
 

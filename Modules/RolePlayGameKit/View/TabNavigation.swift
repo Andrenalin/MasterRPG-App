@@ -38,8 +38,7 @@ public struct TabNavigation: View {
         .tabBarMinimizeBehavior26(.onScrollDown)
 #endif
 #if os(macOS)
-        .tabViewStyle(.grouped)
-        //.frame(minWidth: 220, maxWidth: 300)
+        .tabViewStyle(.sidebarAdaptable)
 #else
         .tabViewStyle(.sidebarAdaptable)
 #endif
@@ -70,7 +69,7 @@ private extension TabNavigation {
             pageTab(for: .game)
 
             ForEach(RootRoute.allTabs) { tab in
-                pageMacTab(for: tab)
+                pageTab(for: tab)
             }
         }
         .onNavigationReceive(assign: $selectedTab, delay: 0.8)
