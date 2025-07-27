@@ -22,7 +22,7 @@ extension EditController: EditControllable {
 // MARK: - Edit Photo Data Model Properties
 extension EditController {
     func addNew(modelContext: ModelContext) -> SpaceDataModel {
-        let newItem = SpaceDataModel(name: "", information: "", category: .adventure, tags: [])
+        let newItem = SpaceDataModel.newItem
         modelContext.insert(newItem)
         try? modelContext.save()
         return newItem

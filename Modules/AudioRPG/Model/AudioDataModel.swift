@@ -124,7 +124,11 @@ extension AudioDataModel: ItemDataAccessable {
 }
 
 extension AudioDataModel {
-    var photoModel: AudioModel {
+    static var newItem: AudioDataModel {
+        AudioDataModel(name: "", information: "", category: .music, tags: [])
+    }
+    
+    var itemModel: AudioModel {
         let entries = entryModels.map { $0.photoEntryModel }
         return AudioModel(
             id: id,

@@ -58,7 +58,7 @@ actor DataModelActor {
     }
     
     func photoModel() -> PhotoModel {
-        model.photoModel
+        model.itemModel
     }
     
     func save() {

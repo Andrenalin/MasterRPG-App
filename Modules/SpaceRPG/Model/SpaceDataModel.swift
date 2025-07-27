@@ -121,6 +121,10 @@ extension SpaceDataModel: ItemDataAccessable {
 }
 
 extension SpaceDataModel {
+    static var newItem: SpaceDataModel {
+        SpaceDataModel(name: "", information: "", category: .building, tags: [])
+    }
+    
     var spaceModel: SpaceModel {
         let entries = entryModels.map { $0.spaceEntryModel }
         return SpaceModel(

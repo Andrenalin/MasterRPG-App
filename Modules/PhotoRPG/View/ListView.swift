@@ -4,6 +4,7 @@ import CoreExternalRPG
 import CoreRPG
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -25,6 +26,9 @@ struct ListView: View {
                 ContentUnavailableView.search
             }
         }
+#if !os(tvOS)
+        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: EditController.importImageTypes, updateFile: updateFile))
+#endif
 #if os(macOS)
         .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
 #endif
@@ -50,8 +54,19 @@ struct ListView: View {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
 
+    private func updateFile(url: URL) {
+        Task { @MainActor in
+            let model = root.editController.addNew(modelContext: modelContext)
+            try? await Task.sleep(for: .seconds(0.5))
+            withAnimation {
+                root.editController.resetFile(url: url, in: model)
+                listModel.update(selection: [model.id])
+            }
+        }
+    }
+
 #if os(macOS)
-    private func importImage(_ providers: [NSItemProvider]) -> Bool {
+    nonisolated private func importImage(_ providers: [NSItemProvider]) -> Bool {
         EditController.importImageFromProviders(providers) { data in
             guard let data = data else { return }
             Task { @MainActor in

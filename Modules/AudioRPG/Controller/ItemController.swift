@@ -14,7 +14,7 @@ struct ItemController: ItemControllable, Sendable {
     }
     
     func itemSync(for id: UUID) -> AudioModel? {
-        AudioDataModel.model(modelContext: ModelContext(container), id: id)?.photoModel
+        AudioDataModel.model(modelContext: ModelContext(container), id: id)?.itemModel
     }
 
     func modelSync(for id: UUID) -> AudioDataModel? {

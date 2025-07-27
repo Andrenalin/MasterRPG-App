@@ -13,7 +13,6 @@ internal import UIKit
 
 struct EditController {
     let fileController: FileController
-    let networkModule: NetworkModules = .photo
 }
 
 extension EditController: EditControllable {
@@ -23,7 +22,7 @@ extension EditController: EditControllable {
 // MARK: - Edit Photo Data Model Properties
 extension EditController {
     func addNew(modelContext: ModelContext) -> AudioDataModel {
-        let newItem = AudioDataModel(name: "", information: "", category: .adventure, tags: [])
+        let newItem = AudioDataModel.newItem
         modelContext.insert(newItem)
         try? modelContext.save()
         return newItem
@@ -148,7 +147,7 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             await actor.update(name: name)
         }
-        let updatedFileUrl = try? await fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: networkModule.token, category: actor.category.title)
+        let updatedFileUrl = try? await fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: AudioDataModel.typeId.token, category: actor.category.title)
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
     
@@ -157,7 +156,7 @@ extension EditController {
         await actor.update(url: nil)
         guard let data else { return }
         
-        let module = networkModule.token
+        let module = AudioDataModel.typeId.token
         let filePath = await actor.name.isEmpty ? "\(await actor.category.title)/Image-\(id.uuidString).jpg" : "\(await actor.category.title)/\(await actor.name).jpg"
         var dataFileUrl = FileUrl(fileId: id, url: URL(string: filePath)!, location: .cloud, module: module)
         dataFileUrl.resetData(data)

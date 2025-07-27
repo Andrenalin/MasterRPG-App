@@ -124,7 +124,11 @@ extension PhotoDataModel: ItemDataAccessable {
 }
 
 extension PhotoDataModel {
-    var photoModel: PhotoModel {
+    static var newItem: PhotoDataModel {
+        PhotoDataModel(name: "", information: "", category: .adventure, tags: [])
+    }
+    
+    var itemModel: PhotoModel {
         let entries = entryModels.map { $0.photoEntryModel }
         return PhotoModel(
             id: id,

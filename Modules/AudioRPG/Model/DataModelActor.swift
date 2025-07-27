@@ -58,7 +58,7 @@ actor DataModelActor {
     }
     
     func photoModel() -> AudioModel {
-        model.photoModel
+        model.itemModel
     }
     
     func save() {

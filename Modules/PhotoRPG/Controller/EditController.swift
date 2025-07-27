@@ -22,7 +22,7 @@ extension EditController: EditControllable {
 // MARK: - Edit Photo Data Model Properties
 extension EditController {
     func addNew(modelContext: ModelContext) -> PhotoDataModel {
-        let newItem = PhotoDataModel(name: "", information: "", category: .adventure, tags: [])
+        let newItem = PhotoDataModel.newItem
         modelContext.insert(newItem)
         try? modelContext.save()
         return newItem
@@ -171,6 +171,7 @@ extension EditController {
 #if os(macOS)
     static let importImageTypes = AKImage.imageTypes.compactMap { UTType($0) }
 
+    nonisolated
     static func importImageFromProviders(_ itemProviders: [NSItemProvider], completion: @Sendable @escaping (Data?) -> Void) -> Bool {
         guard let provider = itemProviders.first else { return false }
         for type in importImageTypes {
