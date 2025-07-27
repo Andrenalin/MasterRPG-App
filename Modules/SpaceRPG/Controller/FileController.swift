@@ -5,6 +5,9 @@ import Foundation
 import UniformTypeIdentifiers
 
 struct FileController: Sendable {
+    static var fileTypes: [UTType] { [.usdz] }
+    static var filenameExtension: String { "usdz" }
+    
     private var _fileUrlDataController: FileUrlDataController?
     
     var fileUrlDataController: FileUrlDataController {
@@ -13,7 +16,7 @@ struct FileController: Sendable {
     
     @MainActor
     init() {
-        _fileUrlDataController = FileUrlDataController(moduleFolder: SpaceDataModel.typeId.token, fileTypes: [.usdz], filenameExtension: "usdz", fileUrlAccess: self)
+        _fileUrlDataController = FileUrlDataController(moduleFolder: SpaceDataModel.typeId.token, fileTypes: FileController.fileTypes, filenameExtension: FileController.filenameExtension, fileUrlAccess: self)
     }
 
     func moveFiles() async throws {

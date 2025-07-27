@@ -15,21 +15,32 @@ struct DetailView: View {
     
     @State private var selection = GroupItemSelectionModel()
     @State private var isEditing = false
-    @State private var showImporter = false
     
     var body: some View {
-        @Bindable var model = model
-        VStack {
-            detailView
+        VStack(spacing: 0) {
+            contentView
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .bottom) {
+                    if !isEditing {
+                        HStack(alignment: .bottom) {
+                            DetailOverlayView(itemId: model.id, model: model, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            if model.url != nil {
+                                toolbarButtons
+                            }
+                        }
+                        .padding()
+                        .transition(.slide)
+                    }
+                }
             
-            if model.url != nil {
-                CarouselPhotosView(model: model)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .environment(selection)
-            }
+            bottomView
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(.smooth, value: isEditing)
+        .animation(.bouncy, value: model.url)
+        .ignoresSafeArea(edges: .top)
 #if !os(tvOS)
         .toolbar(removing: .title)
 #endif
@@ -39,17 +50,6 @@ struct DetailView: View {
                 isEditing = false
             }
         }
-        .overlay(alignment: .top) {
-#if os(iOS)
-            if horizontalSizeClass == .regular {
-                detailEditorView
-            }
-#else
-            detailEditorView
-#endif
-        }
-        .ignoresSafeArea(.keyboard)
-        .ignoresSafeArea(edges: .top)
 #if os(iOS)
         .applyIf(horizontalSizeClass == .compact) {
             $0.sheet(isPresented: $isEditing) {
@@ -63,46 +63,87 @@ struct DetailView: View {
         }
 #endif
     }
-    
-    private var detailView: some View {
-        GeometryReader { proxy in
-            ScrollView(showsIndicators: false) {
-                ZStack(alignment: .center) {
-#if os(tvOS)
-                    PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
-                        .stretchy()
-#else
-                    SpaceViewer(root: root, id: selection.selectedItem?.id ?? model.id)
+}
+
+extension DetailView {
+    @ViewBuilder
+    var contentView: some View {
+        GeometryReader { geometry in
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack {
+                        detailView
+                            .frame(minHeight: 600)
+                            .id("Header")
+                        
+#if os(iOS)
+                        if horizontalSizeClass == .regular && isEditing {
+                            DetailEditorView(model: model) {
+                                withAnimation { isEditing = false }
+                            }
+                            .id("Editor")
+                            .transition(.slide)
+                        }
 #endif
+                    }
+                    .onChange(of: isEditing) {
+                        if isEditing {
+                            proxy.scrollTo("Editor", anchor: .top)
+                        } else {
+                            proxy.scrollTo("Header", anchor: .top)
+                        }
+                    }
                 }
-                .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
+                .ignoresSafeArea(edges: .top)
+                .frame(height: geometry.size.height)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-#if !os(tvOS)
-            .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
-#endif
-            
-            .overlay(alignment: .bottom) {
-                HStack(alignment: .bottom) {
-                    DetailOverlayView(itemId: (selection.selectedItem ?? model).id, model: selection.selectedItem ?? model, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information)
-                    
-                    toolbarButtons
-                }
-                .padding()
-            }
-            .overlay(alignment: .center) {
-                if model.url == nil {
-                    FileImporterView(model: model, size: 32)
-                }
-            }
-            
         }
     }
     
-    private func updatePhoto(url: URL) {
+    @ViewBuilder
+    var bottomView: some View {
+        if model.url != nil && !isEditing {
+            CarouselPhotosView(model: model)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .environment(selection)
+                .transition(.move(edge: .bottom))
+        }
+    }
+
+    private var detailView: some View {
+        Group {
+#if os(tvOS)
+            PlainPhotoView(cacheController: root.cacheController, model: selection.selectedPhoto ?? model, ratio: .fit)
+                .stretchy()
+#else
+            SpaceViewer(root: root, id: selection.selectedItem?.id ?? model.id)
+#endif
+        }
+        .mask(LinearGradient(
+            gradient: Gradient(colors: [.black, .black, .black, .clear]),
+            startPoint: .top, endPoint: .bottom))
+#if !os(tvOS)
+        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
+#endif
+        .overlay(alignment: .center) {
+            if model.url == nil {
+                VStack {
+                    Spacer()
+                    HStack(spacing: 40) {
+                        FileImporterView(model: model, prominent: true)
+                    }
+                    Spacer()
+                    Spacer()
+                }
+            }
+        }
+    }
+
+    private func updateFile(url: URL) {
         root.editController.resetFile(url: url, in: model)
     }
-    
+
     @ViewBuilder
     private var detailEditorView: some View {
         if isEditing {
@@ -120,41 +161,20 @@ struct DetailView: View {
             .animation(.bouncy, value: isEditing)
         }
     }
-    
+
     @ViewBuilder
     private var toolbarButtons: some View {
         VStack(alignment: .center) {
             if model.url != nil {
-                if showImporter {
-                    photoImporterView
-                }
-                GlassButton {
-                    withAnimation(.bouncy(duration: 0.3)) {
-                        showImporter.toggle()
-                    }
-                } label: {
-                    Image(systemName: "photo.badge.plus")
-                        .font(.system(size: 24))
-                        .padding(8)
-                }
-                .animation(.bouncy, value: model.url)
-                .transition(.scale.combined(with: .opacity))
+                FileImporterView(model: model, prominent: false)
             }
-            
+
             GlassButton(isProminent: true) {
                 isEditing = true
             } label: {
                 Image(systemName: "pencil")
-                    .font(.system(size: 24))
-                    .padding(8)
-                
             }
         }
-    }
-    
-    @ViewBuilder
-    private var photoImporterView: some View {
-        FileImporterView(model: model)
     }
 }
 

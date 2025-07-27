@@ -106,35 +106,35 @@ extension EditController {
 extension EditController {
     
     // import from file browser
-    func resetPhoto(url: URL?, in model: PhotoDataModel) {
+    func resetFile(url: URL?, in model: PhotoDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id
         Task.detached {
             await actor.setup(id: id)
-            await resetPhoto(url: url, id: id, actor: actor)
+            await resetFile(url: url, id: id, actor: actor)
             await actor.save()
         }
     }
     
-    func resetPhoto(image: AKImage?, id: UUID, actor: DataModelActor) async {
+    func resetFile(image: AKImage?, id: UUID, actor: DataModelActor) async {
         guard let image else { return }
         let data = image.jpegData(compressionQuality: 0.9)
         await actor.setup(id: id)
-        await resetPhoto(data: data, id: id, actor: actor)
+        await resetFile(data: data, id: id, actor: actor)
         await actor.save()
     }
 
-    func resetPhoto(data: Data, model: PhotoDataModel) {
+    func resetFile(data: Data, model: PhotoDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id
         Task.detached {
             await actor.setup(id: id)
-            await resetPhoto(data: data, id: id, actor: actor)
+            await resetFile(data: data, id: id, actor: actor)
             await actor.save()
         }
     }
 
-    private func resetPhoto(url: URL?, id: UUID, actor: DataModelActor) async {
+    private func resetFile(url: URL?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
             await actor.update(url: url)
@@ -152,7 +152,7 @@ extension EditController {
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
     
-    private func resetPhoto(data: Data?, id: UUID, actor: DataModelActor) async {
+    private func resetFile(data: Data?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         await actor.update(url: nil)
         guard let data else { return }
@@ -162,7 +162,7 @@ extension EditController {
         var dataFileUrl = FileUrl(fileId: id, url: URL(string: filePath)!, location: .cloud, module: module)
         dataFileUrl.resetData(data)
         
-        let updatedFileUrl = try? await fileController.fileUrlDataController.createNewFileUrl(fileId: id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
+        let updatedFileUrl = try? await fileController.fileUrlDataController.createNewFileUrl(fileId: id, unconvertedFileUrl: dataFileUrl, pathExtension: FileController.filenameExtension)
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
 }

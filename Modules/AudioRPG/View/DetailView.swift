@@ -98,7 +98,7 @@ struct DetailView: View {
             startPoint: .top, endPoint: .bottom))
 
 #if !os(tvOS)
-        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
+        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updatePhoto))
 #endif
 
         .overlay(alignment: .bottom) {

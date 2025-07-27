@@ -35,7 +35,7 @@ struct FileImporterView: View {
                 .imageScale(prominent ? .large : .medium)
         }
         .contentTransition(.symbolEffect(.replace.wholeSymbol))
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: FileController.fileTypes) { result in
             guard let url = try? result.get() else { return }
             root.editController.resetPhoto(url: url, in: model)
         }

@@ -46,7 +46,7 @@ struct ImagePlaygroundImportView: View {
                     .imageScale(prominent ? .large : .medium)
             }
             .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
-                root.editController.resetPhoto(url: url, in: model)
+                root.editController.resetFile(url: url, in: model)
             }
         }
     }
@@ -94,7 +94,7 @@ struct CameraImporterView: View {
     
     private func update(id: UUID, image: AKImage?) async {
         guard let modelActor else { return }
-        await root.editController.resetPhoto(image: image, id: id, actor: modelActor)
+        await root.editController.resetFile(image: image, id: id, actor: modelActor)
     }
 }
 
@@ -112,11 +112,11 @@ struct FileImporterView: View {
         } label: {
             Image(systemName: "folder\(showImporter ? ".fill" : "")")
                 .imageScale(prominent ? .large : .medium)
+                .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
         }
-        .contentTransition(.symbolEffect(.replace.wholeSymbol))
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: FileController.fileTypes) { result in
             guard let url = try? result.get() else { return }
-            root.editController.resetPhoto(url: url, in: model)
+            root.editController.resetFile(url: url, in: model)
         }
 #endif
     }
@@ -144,7 +144,7 @@ struct LibraryImporterView: View {
     
     private func update(id: UUID, image: AKImage?) async {
         guard let modelActor else { return }
-        await root.editController.resetPhoto(image: image, id: id, actor: modelActor)
+        await root.editController.resetFile(image: image, id: id, actor: modelActor)
     }
 }
 #endif

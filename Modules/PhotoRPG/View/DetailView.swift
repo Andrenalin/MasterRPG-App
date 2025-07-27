@@ -126,7 +126,7 @@ extension DetailView {
             gradient: Gradient(colors: [.black, .black, .black, .clear]),
             startPoint: .top, endPoint: .bottom))
 #if !os(tvOS)
-        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: [.image], updateFile: updatePhoto))
+        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
 #endif
         .overlay(alignment: .center) {
             if model.url == nil {
@@ -142,8 +142,8 @@ extension DetailView {
         }
     }
 
-    private func updatePhoto(url: URL) {
-        root.editController.resetPhoto(url: url, in: model)
+    private func updateFile(url: URL) {
+        root.editController.resetFile(url: url, in: model)
     }
 
     @ViewBuilder

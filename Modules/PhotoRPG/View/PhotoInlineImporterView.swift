@@ -119,12 +119,12 @@ struct PhotoInlineImporterView: View {
 #endif
                 }
             }.padding(32)
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.image]) { result in
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: FileController.fileTypes) { result in
             guard let url = try? result.get() else { return }
-            root.editController.resetPhoto(url: url, in: model)
+            root.editController.resetFile(url: url, in: model)
         }
         .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
-            root.editController.resetPhoto(url: url, in: model)
+            root.editController.resetFile(url: url, in: model)
         }
 #if os(iOS)
         .sheet(isPresented: $showCamera) {
@@ -138,7 +138,7 @@ struct PhotoInlineImporterView: View {
 
     private func update(id: UUID, image: AKImage?) async {
         guard let modelActor else { return }
-        await root.editController.resetPhoto(image: image, id: id, actor: modelActor)
+        await root.editController.resetFile(image: image, id: id, actor: modelActor)
     }
 
     private func button(type: PhotoImporterButtonType) -> some View {

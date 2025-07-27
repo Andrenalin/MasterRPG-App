@@ -58,7 +58,7 @@ struct ListView: View {
                 let model = root.editController.addNew(modelContext: modelContext)
                 try? await Task.sleep(for: .seconds(0.5))
                 withAnimation {
-                    root.editController.resetPhoto(data: data, model: model)
+                    root.editController.resetFile(data: data, model: model)
                     listModel.update(selection: [model.id])
                 }
             }
