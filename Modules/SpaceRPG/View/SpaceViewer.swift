@@ -185,15 +185,15 @@ struct SpaceViewerOld: View {
 //                }
 //#else
 //
-                Toggle(isOn: $canDrag) {
-                    Label {
-                        Text("Move", bundle: .module)
-                    } icon: {
-                        Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
-                    }
-                }
-                .frame(maxWidth: 200)
-                .padding()
+//                Toggle(isOn: $canDrag) {
+//                    Label {
+//                        Text("Move", bundle: .module)
+//                    } icon: {
+//                        Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
+//                    }
+//                }
+//                .frame(maxWidth: 200)
+//                .padding()
 //#endif
             }
         }
