@@ -47,7 +47,7 @@ extension CacheController: ImageCacheControllable {
             await createImage(for: itemId, fileUrl: fileUrl)
         }
         guard let image = await imageCacheController.object(for: itemId) else { return }
-        let thumbnail = image.resize(to: CGSize(width: 64, height: 64), topAligned: true)
+        let thumbnail = await image.resize(to: CGSize(width: 64, height: 64), topAligned: true)
         if let thumbnail {
             await thumbnailCacheController.setObject(thumbnail, for: itemId)
         }

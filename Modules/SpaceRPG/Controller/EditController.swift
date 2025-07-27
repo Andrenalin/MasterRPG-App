@@ -100,9 +100,9 @@ extension EditController {
 }
 
 
-// MARK: - Photo image editor
+// MARK: - File editor
 extension EditController {
-    
+
     // import from file browser
     func resetFile(url: URL?, in model: SpaceDataModel) {
         guard let actor = model.modelActor() else { return }

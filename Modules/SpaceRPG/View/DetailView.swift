@@ -118,6 +118,7 @@ extension DetailView {
                 .stretchy()
 #else
             SpaceViewer(root: root, id: selection.selectedItem?.id ?? model.id)
+                .id(selection.selectedItem?.id ?? model.id)
 #endif
         }
         .mask(LinearGradient(

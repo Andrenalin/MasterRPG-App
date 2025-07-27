@@ -4,6 +4,7 @@ import CoreExternalRPG
 import CoreRPG
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -19,6 +20,9 @@ struct ListView: View {
         } row: { model in
             MainRowView(model: model)
         }
+#if !os(tvOS)
+        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
+#endif
     }
     
     private var filteredItems: [SpaceDataModel] {
@@ -39,6 +43,17 @@ struct ListView: View {
 
     private var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
+    }
+    
+    private func updateFile(url: URL) {
+        Task { @MainActor in
+            let model = root.editController.addNew(modelContext: modelContext)
+            try? await Task.sleep(for: .seconds(0.5))
+            withAnimation {
+                root.editController.resetFile(url: url, in: model)
+                listModel.update(selection: [model.id])
+            }
+        }
     }
 }
 

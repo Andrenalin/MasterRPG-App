@@ -15,19 +15,13 @@ struct ListView: View {
     @Query(filter: #Predicate<PhotoDataModel>{ $0.displayState == 0 }, sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
     
     var body: some View {
-        let _ = Self._printChanges()
         CoreRPG.ListView(editController: root.editController, menuController: menuController, items: filteredItems, module: PhotoDataModel.typeId) { id in
             PhotoRoute.detail(id)
         } row: { model in
             MainRowView(model: model)
         }
-        .overlay {
-            if filteredItems.isEmpty && !searchModel.searchText.isEmpty {
-                ContentUnavailableView.search
-            }
-        }
 #if !os(tvOS)
-        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: EditController.importImageTypes, updateFile: updateFile))
+        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
 #endif
 #if os(macOS)
         .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))

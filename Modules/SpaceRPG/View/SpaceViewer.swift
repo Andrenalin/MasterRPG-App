@@ -10,12 +10,45 @@ struct SpaceViewer: View {
     let root: SpaceRootModel
     let id: UUID
     
+    var body: some View {
+        #if os(visionOS)
+        SpaceViewerOld(root: root, id: id)
+//        SpaceVisionViewer(id: id)
+        #else
+        SpaceViewerOld(root: root, id: id)
+        #endif
+    }
+}
+
+#if os(visionOS)
+struct SpaceVisionViewer: View {
+    let id: UUID
+    
+    @Environment(SpaceRootModel.self) private var root
     @State private var url: URL?
     
     var body: some View {
-        SpaceViewerOld(root: root, id: id)
+        VStack {
+            Text("Here and url = \(url)")
+            if let url {
+            Model3D(url: url) { model in
+                model.resizable()
+            } placeholder: {
+                ProgressView()
+            }
+            .scaledToFit3D()
+            }
+        }
+        .onAppear {
+            Task {
+                url = await root.loadableUrl(for: id)
+                print(url)
+                url?.startAccessingSecurityScopedResource()
+            }
+        }
     }
 }
+#endif
 
 
 struct SpaceViewerOld: View {
@@ -48,7 +81,7 @@ struct SpaceViewerOld: View {
 
     var body: some View {
         GeometryReader { proxy in
-            ZStack(alignment: .bottomLeading) {
+            ZStack(alignment: .leading) {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .progressViewStyle(.circular)
@@ -63,6 +96,17 @@ struct SpaceViewerOld: View {
                         let _ = url.startAccessingSecurityScopedResource()
 
                         let objectEntity = try await Entity(contentsOf: url, withName: "3DMaster")
+                        
+                        #if os(visionOS)
+                         content.add(objectEntity)
+                         ManipulationComponent.configureEntity(
+                            objectEntity,
+                           hoverEffect: .spotlight(.init(color: .purple)),
+                           allowedInputTypes: .all,
+                           collisionShapes: []
+                         )
+                        
+                        #endif
                         self.objectEntity = objectEntity
 
 #if os(visionOS)
@@ -104,41 +148,43 @@ struct SpaceViewerOld: View {
                         .init(angle: yaw, axis: .upward)
                     nameEntity.setPosition([0, 2, 0], relativeTo: objectEntity)
                 }
-                .installGestures(canDrag)
+//                //.manipulable(inertia: .high)
+//                //.realityViewLayoutBehavior(.centered)
+//                //                .installGestures(canDrag)
                 #if !os(visionOS)
                 .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: canDrag)
                 #endif
 
-#if os(visionOS)
-                RealityView { content, attachments in
-                    guard let nameBarView = attachments.entity(for: "NameBarView") else {
-                        return
-                    }
-                    nameBarView.setPosition([0, 2, 2], relativeTo: rootEntity)
-                    nameEntity = nameBarView
-                    rootEntity.addChild(nameBarView)
-                    content.add(nameBarView)
-                } attachments: {
-                    Attachment(id: "NameBarView") {
-                        Button {
-                            //windowStateModel.spaceImmersiveView = false
-                            Task {
-                                await dismissImmersiveSpace()
-                            }
-                        } label: {
-                            Label {
-                                Text(root.itemController.itemSync(for: id)?.name ?? "Unknown")
-                            } icon: {
-                                Image(systemName: "xmark")
-                            }
-                        }
-                        .frame(width: 250, height: 60, alignment: .center)
-                        .padding(20)
-                        .glassBackgroundEffect()
-                    }
-                }
-#else
-
+//#if os(visionOS)
+//                RealityView { content, attachments in
+//                    guard let nameBarView = attachments.entity(for: "NameBarView") else {
+//                        return
+//                    }
+//                    nameBarView.setPosition([0, 2, 2], relativeTo: rootEntity)
+//                    nameEntity = nameBarView
+//                    rootEntity.addChild(nameBarView)
+//                    content.add(nameBarView)
+//                } attachments: {
+//                    Attachment(id: "NameBarView") {
+//                        Button {
+//                            //windowStateModel.spaceImmersiveView = false
+//                            Task {
+//                                await dismissImmersiveSpace()
+//                            }
+//                        } label: {
+//                            Label {
+//                                Text(root.itemController.itemSync(for: id)?.name ?? "Unknown")
+//                            } icon: {
+//                                Image(systemName: "xmark")
+//                            }
+//                        }
+//                        .frame(width: 250, height: 60, alignment: .center)
+//                        .padding(20)
+//                        .glassBackgroundEffect()
+//                    }
+//                }
+//#else
+//
                 Toggle(isOn: $canDrag) {
                     Label {
                         Text("Move", bundle: .module)
@@ -148,7 +194,7 @@ struct SpaceViewerOld: View {
                 }
                 .frame(maxWidth: 200)
                 .padding()
-#endif
+//#endif
             }
         }
     }
