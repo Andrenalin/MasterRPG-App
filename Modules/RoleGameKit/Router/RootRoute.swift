@@ -202,8 +202,7 @@ struct RouteRouteDestionationView: View {
             MapFactory.rootView(for: appStore.mapRoot, tabId: tabId)
                 .environment(appStore.mapRoot)
         case .pdfs(let tabId):
-            PdfFactory.rootView(for: appStore.pdfRoot, tabId: tabId)
-                .environment(appStore.pdfRoot)
+            NewPdfRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .photos(let tabId):
             NewPhotoRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .space(let tabId):

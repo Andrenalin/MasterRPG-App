@@ -4,6 +4,7 @@
 
 import RolePlayGameKit
 import AudioRPG
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
@@ -16,7 +17,7 @@ struct MenuCommandList: Commands {
             //        Group {
             //            AdventureCommands(root: appStore.adventureRoot)
             //            ValueCommands(root: appStore.valueRoot)
-            //            PdfCommands(root: appStore.pdfRoot)
+            PdfCommands(root: appModel.pdfRoot, navigator: appModel.navigator)
             //            TableCommands(root: appStore.tableRoot)
             //        }
             //

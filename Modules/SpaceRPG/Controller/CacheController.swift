@@ -57,6 +57,4 @@ extension CacheController: ImageCacheControllable {
 #endif
         return nil
     }
-
 }
-

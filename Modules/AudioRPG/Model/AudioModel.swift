@@ -4,14 +4,13 @@ import CoreRPG
 import Foundation
 
 struct AudioModel: Identifiable, Sendable {
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, degrees: CRDT<Double>, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[AudioEntryModel]>) {
+    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[AudioEntryModel]>) {
         self.id = id
         name_ = name
         description_ = description
         tags_ = tags
         category_ = category
         self.displayState = displayState
-        degrees_ = degrees
         fileUrl_ = fileUrl
         entries_ = entries
     }
@@ -25,7 +24,6 @@ struct AudioModel: Identifiable, Sendable {
         self.tags_ = try container.decode(CRDT<[String]>.self, forKey: AudioModel.CodingKeys._tags_)
         self.category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: AudioModel.CodingKeys._category_)
         self.displayState = try container.decode(Int.self, forKey: AudioModel.CodingKeys._displayState)
-        self.degrees_ = try container.decode(CRDT<Double>.self, forKey: AudioModel.CodingKeys._degrees_)
         self.fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: AudioModel.CodingKeys._fileUrl_)
         self.entries_ = try container.decode(CRDTDataUpdate<[AudioEntryModel]>.self, forKey: AudioModel.CodingKeys._entries_)
     }
@@ -58,12 +56,6 @@ struct AudioModel: Identifiable, Sendable {
 
     public var displayState: Int
 
-    public var degrees: Double {
-        get { degrees_.wrappedValue }
-        set { degrees_.wrappedValue = newValue }
-    }
-    var degrees_: CRDT<Double>
-
     public var fileUrl: FileUrl? {
         get { fileUrl_.wrappedValue }
         set { fileUrl_.wrappedValue = newValue }
@@ -85,7 +77,6 @@ extension AudioModel: Codable {
         case _tags_
         case _category_
         case _displayState
-        case _degrees_
         case _fileUrl_
         case _entries_
     }
@@ -99,7 +90,6 @@ extension AudioModel: Codable {
         try container.encode(self.tags_, forKey: AudioModel.CodingKeys._tags_)
         try container.encode(self.category_, forKey: AudioModel.CodingKeys._category_)
         try container.encode(self.displayState, forKey: AudioModel.CodingKeys._displayState)
-        try container.encode(self.degrees_, forKey: AudioModel.CodingKeys._degrees_)
         try container.encode(self.fileUrl_, forKey: AudioModel.CodingKeys._fileUrl_)
         try container.encode(self.entries_, forKey: AudioModel.CodingKeys._entries_)
     }
@@ -107,7 +97,7 @@ extension AudioModel: Codable {
 
 extension AudioModel: ItemDataAccessable {
     static var typeId: NetworkModules {
-        .photo
+        .audio
     }
     
     var entryModels: [AudioEntryModel] {

@@ -3,6 +3,7 @@
 import CoreExternalRPG
 import CoreRPG
 import AudioRPG
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
@@ -140,7 +141,7 @@ struct RouteRouteDestionationView: View {
         case .maps:
             RootListView(rootRoute: route)
         case .pdfs:
-            RootListView(rootRoute: route)
+            PdfRootFactory.rootView(withoutNavigation: false)
         case .photos:
             PhotoRootFactory.rootView(withoutNavigation: false)
         case .space:

@@ -9,6 +9,7 @@ import SwiftUI
 import os.log
 
 import AudioRPG
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import RPGAdventures
@@ -38,6 +39,7 @@ public final class AppStore: Sendable {
     public let modelContainer: ModelContainer
 
     public var audioRootModel: AudioRootModel
+    public var pdfRootModel: PdfRootModel
     public var photoRootModel: PhotoRootModel
     public var spaceRootModel: SpaceRootModel
 
@@ -49,6 +51,8 @@ public final class AppStore: Sendable {
             //TagDataModel.self,
             AudioDataModel.self,
             AudioEntryDataModel.self,
+            PdfDataModel.self,
+            PdfEntryDataModel.self,
             PhotoDataModel.self,
             PhotoEntryDataModel.self,
             SpaceDataModel.self,
@@ -121,6 +125,7 @@ public final class AppStore: Sendable {
         self.modelContainer = modelContainer
         
         self.audioRootModel = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.pdfRootModel = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.photoRootModel = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.spaceRootModel = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
     }

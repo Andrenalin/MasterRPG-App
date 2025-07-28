@@ -13,7 +13,7 @@ import QuickLookThumbnailing
 #endif
 
 @Observable
-final class PdfModel: Identifiable, @unchecked Sendable {
+public final class PdfModel: Identifiable, @unchecked Sendable {
     init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, fileUrl: FileUrl? = nil, entries: [PdfEntryModel] = []) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
@@ -36,7 +36,7 @@ final class PdfModel: Identifiable, @unchecked Sendable {
         entries_ = entries
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<PdfModel.CodingKeys> = try decoder.container(keyedBy: PdfModel.CodingKeys.self)
 
         self._id = try container.decode(UUID.self, forKey: PdfModel.CodingKeys._id)
@@ -49,57 +49,53 @@ final class PdfModel: Identifiable, @unchecked Sendable {
         self._entries_ = try container.decode(CRDTDataUpdate<[PdfEntryModel]>.self, forKey: PdfModel.CodingKeys._entries_)
     }
 
-    var id: UUID
+    public var id: UUID
 
-    var name: String {
+    public var name: String {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
     var name_: CRDT<String>
 
-    var description: String {
+    public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
     var description_: CRDT<String>
 
-    var tags: [String] {
+    public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
     var tags_: CRDT<[String]>
 
-    var category: ItemListCategory {
+    public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
     var category_: CRDT<ItemListCategory>
 
-    var displayState: Int
+    public var displayState: Int
 
-    var fileUrl: FileUrl? {
+    public var fileUrl: FileUrl? {
         get { fileUrl_.wrappedValue }
         set { fileUrl_.wrappedValue = newValue }
     }
-    var fileUrl_: CRDTDataUpdate<FileUrl?> {
-        willSet {
-            //ItemController.sharedThumbnailCache.removeObject(for: id)
-        }
-    }
+    public var fileUrl_: CRDTDataUpdate<FileUrl?>
 
-    var entries: [PdfEntryModel] {
+    public var entries: [PdfEntryModel] {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
-    var entries_: CRDTDataUpdate<[PdfEntryModel]>
+    public var entries_: CRDTDataUpdate<[PdfEntryModel]>
 }
 
 extension PdfModel: Comparable {
-    var hasPdf: Bool {
+    public var hasPdf: Bool {
         fileUrl != nil
     }
 
-    static func < (lhs: PdfModel, rhs: PdfModel) -> Bool {
+    public static func < (lhs: PdfModel, rhs: PdfModel) -> Bool {
         lhs.name < rhs.name
     }
 }
@@ -107,7 +103,7 @@ extension PdfModel: Comparable {
 extension PdfModel:  ItemLinkRegistable {}
 
 extension PdfModel: ItemDiffComparable {
-    func merge(_ other: PdfModel) -> PdfModel {
+    public func merge(_ other: PdfModel) -> PdfModel {
         PdfModel(
             id: id,
             name: name_.merged(other: other.name_),
@@ -120,7 +116,7 @@ extension PdfModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: PdfModel) -> Bool {
+    public func isSame(_ other: PdfModel) -> Bool {
         name == other.name &&
         description == other.description &&
         tags == other.tags &&
@@ -134,38 +130,38 @@ extension PdfModel: ItemDiffComparable {
         }
     }
     
-    var version: Int {
+    public var version: Int {
         fileUrl_.update.hashValue
     }
 }
 
 extension PdfModel: ItemDuplicatable {
-    func duplicate() -> PdfModel {
+    public func duplicate() -> PdfModel {
         let copyName = duplicateName(from: name)
         return PdfModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() })
     }
 }
 
 extension PdfModel: ItemDataAccessable {
-    static var empty: PdfModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> PdfModel {
+    public static var empty: PdfModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> PdfModel {
         PdfModel(id: id, name: "")
     }
-    static let typeId: NetworkModules = .pdf
+    public static let typeId: NetworkModules = .pdf
 
-    func copy() -> PdfModel {
+    public func copy() -> PdfModel {
         PdfModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, fileUrl: fileUrl_, entries: entries_)
     }
 
-    func filter(_ filter: String) -> Bool {
+    public func filter(_ filter: String) -> Bool {
         (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
     }
 
-    func isEqual(other: PdfModel) -> Bool {
+    public func isEqual(other: PdfModel) -> Bool {
         self == other
     }
 
-    var isGroupHiddenToggle: Bool {
+    public var isGroupHiddenToggle: Bool {
         get { isGroupHidden }
         set {
             if newValue {
@@ -176,7 +172,7 @@ extension PdfModel: ItemDataAccessable {
         }
     }
 
-    func replace(with model: PdfModel) -> Bool {
+    public func replace(with model: PdfModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_
@@ -188,7 +184,7 @@ extension PdfModel: ItemDataAccessable {
         return true
     }
 
-    subscript(id: UUID) -> PdfEntryModel {
+    public subscript(id: UUID) -> PdfEntryModel {
         get {
             guard let index = entries.firstIndex(where: { $0.id == id }) else { return .empty(id) }
             return entries[index]
@@ -212,7 +208,7 @@ extension PdfModel: Codable {
         case _entries_
     }
 
-    final func encode(to encoder: Encoder) throws {
+    public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<PdfModel.CodingKeys> = encoder.container(keyedBy: PdfModel.CodingKeys.self)
 
         try container.encode(self._id, forKey: PdfModel.CodingKeys._id)
@@ -227,11 +223,11 @@ extension PdfModel: Codable {
 }
 
 extension PdfModel: Equatable, Hashable {
-    static func == (lhs: PdfModel, rhs: PdfModel) -> Bool {
+    public static func == (lhs: PdfModel, rhs: PdfModel) -> Bool {
         lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     }
 
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

@@ -22,6 +22,7 @@ struct AppRootView: View {
             .environment(\.navigator, appModel.navigator)
             .environment(appModel.deviceRotationModel)
             .environment(appModel.audioRoot)
+            .environment(appModel.pdfRoot)
             .environment(appModel.photoRoot)
             .environment(appModel.spaceRoot)
             .frame(minWidth: 375.0, minHeight: 600.0)

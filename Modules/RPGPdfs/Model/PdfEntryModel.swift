@@ -4,7 +4,7 @@ import AndrenalinKit
 import Foundation
 internal import CoreGraphics
 
-struct PdfEntryModel: Identifiable, Equatable, Hashable, Codable {
+public struct PdfEntryModel: Identifiable, Equatable, Hashable, Codable {
     init(id: UUID, name: String, content: String, pageNumber: String, bounds: CGRect, displayState: Int = 0) {
         self.id = id
         self.name = name
@@ -23,14 +23,14 @@ struct PdfEntryModel: Identifiable, Equatable, Hashable, Codable {
         self.displayState = displayState
     }
 
-    let id: UUID
-    @CRDT var name: String
-    @CRDT var content: String
-    var pageLabel: String
-    var bounds: CGRect
-    var displayState: Int = 0
+    public let id: UUID
+    @CRDT public var name: String
+    @CRDT public var content: String
+    public var pageLabel: String
+    public var bounds: CGRect
+    public var displayState: Int = 0
     
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(name)
         hasher.combine(content)
@@ -39,30 +39,30 @@ struct PdfEntryModel: Identifiable, Equatable, Hashable, Codable {
 }
 
 extension PdfEntryModel: EntryDataAccessable {    
-    static var empty: PdfEntryModel { empty(UUID()) }
+    public static var empty: PdfEntryModel { empty(UUID()) }
 
     static func empty(_ id: UUID) -> PdfEntryModel {
         PdfEntryModel(id: id, name: "", content: "", pageNumber: "", bounds: .zero)
     }
 
-    func duplicate() -> PdfEntryModel {
+    public func duplicate() -> PdfEntryModel {
         PdfEntryModel(id: UUID(), name: self.name, content: content, pageNumber: pageLabel, bounds: bounds, displayState: displayState)
     }
 
-    func filter(_ filter: String, selectedTags _: [TagFilterSelection]) -> Bool {
+    public func filter(_ filter: String, selectedTags _: [TagFilterSelection]) -> Bool {
         filter.isEmpty || name.localizedCaseInsensitiveContains(filter) ||
         content.localizedCaseInsensitiveContains(filter)
     }
     
-    func filter(with search: String) -> Bool {
+    public func filter(with search: String) -> Bool {
         true
     }
     
-    func linkContent() -> String { content }
+    public func linkContent() -> String { content }
 }
 
 extension PdfEntryModel: ItemDiffComparable {
-    func merge(_ other: PdfEntryModel) -> PdfEntryModel {
+    public func merge(_ other: PdfEntryModel) -> PdfEntryModel {
         PdfEntryModel(
             id: id,
             name: $name.merged(other: other.$name),
@@ -73,7 +73,7 @@ extension PdfEntryModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: PdfEntryModel) -> Bool {
+    public func isSame(_ other: PdfEntryModel) -> Bool {
         name == other.name &&
         content == other.content &&
         pageLabel == other.pageLabel &&
@@ -82,7 +82,7 @@ extension PdfEntryModel: ItemDiffComparable {
 }
 
 extension PdfEntryModel {
-    static func createEntry(content: String, page: String, bounds: CGRect) -> PdfEntryModel {
+    public static func createEntry(content: String, page: String, bounds: CGRect) -> PdfEntryModel {
         let name = String(content.split(separator: " ").first ?? "Unnamed")
         let entry = PdfEntryModel(id: UUID(), name: name, content: content, pageNumber: page, bounds: bounds)
         return entry

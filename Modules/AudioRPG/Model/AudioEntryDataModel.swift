@@ -30,7 +30,7 @@ extension AudioEntryDataModel: EntryDataAccessable {
 }
 
 extension AudioEntryDataModel {
-    var photoEntryModel: AudioEntryModel {
+    var entryModel: AudioEntryModel {
         AudioEntryModel(id: id, photoId: itemId ?? UUID())
     }
 }

@@ -3,6 +3,7 @@
 import CoreExternalRPG
 import CoreRPG
 import AudioRPG
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
@@ -90,7 +91,7 @@ struct ExtendedTabRouteDestionationView: View {
             case .maps:
                 RootListView(rootRoute: .maps)
             case .pdfs:
-                RootListView(rootRoute: .pdfs)
+                PdfRootFactory.rootView(withoutNavigation: true)
             case .photos:
                 PhotoRootFactory.rootView(withoutNavigation: true)
             case .space:

@@ -3,9 +3,11 @@
 import CoreRPG
 import Foundation
 import AudioRPG
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import RPGAudios
+import RPGPdfs
 import RPGPhotos
 import RPGSpaces
 import SwiftUI
@@ -42,6 +44,37 @@ struct NewAudioRoute: View {
     }
 }
 
+struct NewPdfRoute: View {
+    let appStore: AppStore
+    let tabId: UUID
+    let isExtended: Bool
+
+    @State private var cacheModel = CacheItemListModel()
+    @State private var deviceRotationModel = DeviceRotationModel()
+    @State private var tabTitleModel = TabTitleModel()
+
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        if appStore.isNewUICode {
+            PdfRootFactory.rootView(withoutNavigation: isExtended)
+                .environment(deviceRotationModel)
+                .environment(tabTitleModel)
+                .task {
+                    try? await Task.sleep(for: .seconds(3))
+                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
+                }
+        } else {
+            if isExtended {
+                PdfFactory.rootExtendedView(for: appStore.pdfRoot, tabId: tabId)
+                    .environment(appStore.pdfRoot)
+            } else {
+                PdfFactory.rootView(for: appStore.pdfRoot, tabId: tabId)
+                    .environment(appStore.pdfRoot)
+            }
+        }
+    }
+}
 struct NewPhotoRoute: View {
     let appStore: AppStore
     let tabId: UUID

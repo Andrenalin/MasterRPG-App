@@ -227,7 +227,7 @@ public extension PhotoRoot {
     }
 
     @MainActor
-    func listPhotos() -> [PhotoModel] {
+    func listItems() -> [PhotoModel] {
         itemController.itemDataModel.items.map {
             itemController.itemOrEmpty(for: $0)
         }

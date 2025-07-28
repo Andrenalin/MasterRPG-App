@@ -30,7 +30,7 @@ extension PhotoEntryDataModel: EntryDataAccessable {
 }
 
 extension PhotoEntryDataModel {
-    var photoEntryModel: PhotoEntryModel {
+    var entryModel: PhotoEntryModel {
         PhotoEntryModel(id: id, photoId: photoId ?? UUID())
     }
 }

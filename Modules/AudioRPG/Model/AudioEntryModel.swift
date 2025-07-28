@@ -18,6 +18,6 @@ struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
 
 extension AudioEntryModel: EntryDataAccessable {
     public var name: String {
-        "Photo"
+        "Audio"
     }
 }
