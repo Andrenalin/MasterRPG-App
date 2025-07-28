@@ -13,7 +13,6 @@ public final class AudioDataModel {
         category: ItemListCategory = .music,
         tags: [String] = [],
         displayState: Int = 0,
-        degrees: Double = 0,
         url: URL? = nil,
         entries: [AudioEntryDataModel] = []
     ) {
@@ -23,7 +22,6 @@ public final class AudioDataModel {
         self.category = category
         self.tags = tags
         self.displayState = displayState
-        self.degrees = degrees
         self.url = url
         self.entries = entries
     }
@@ -39,7 +37,6 @@ public final class AudioDataModel {
     public var tags: [String] = []
     public var displayState: Int = 0
     
-    public var degrees: Double = 0
     var url: URL?
     public var fileUrl: FileUrl? {
         guard let url else { return nil }

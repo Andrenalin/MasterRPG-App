@@ -16,7 +16,7 @@ struct FileController: Sendable {
     
     @MainActor
     init() {
-        _fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.photo.token, fileTypes: FileController.fileTypes, filenameExtension: FileController.filenameExtension, fileUrlAccess: self)
+        _fileUrlDataController = FileUrlDataController(moduleFolder: AudioDataModel.typeId.token, fileTypes: FileController.fileTypes, filenameExtension: FileController.filenameExtension, fileUrlAccess: self)
     }
 
     func moveFiles() async throws {

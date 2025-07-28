@@ -80,13 +80,12 @@ extension EditController {
         }
     }
 
-    func update(model: AudioDataModel, name: String, information: String, category: ItemListCategory, tags: [String], degrees: Double) {
+    func update(model: AudioDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
         model.withTransaction {
             model.reset(name: name)
             model.reset(information: information)
             model.category = category
             model.tags = tags
-            model.degrees = degrees
         }
         updateTags(modelContext: model.modelContext)
     }
@@ -105,35 +104,27 @@ extension EditController {
 extension EditController {
     
     // import from file browser
-    func resetPhoto(url: URL?, in model: AudioDataModel) {
+    func resetFile(url: URL?, in model: AudioDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id
         Task.detached {
             await actor.setup(id: id)
-            await resetPhoto(url: url, id: id, actor: actor)
+            await resetFile(url: url, id: id, actor: actor)
             await actor.save()
         }
     }
     
-    func resetPhoto(image: AKImage?, id: UUID, actor: DataModelActor) async {
-        guard let image else { return }
-        let data = image.jpegData(compressionQuality: 0.9)
-        await actor.setup(id: id)
-        await resetPhoto(data: data, id: id, actor: actor)
-        await actor.save()
-    }
-
-    func resetPhoto(data: Data, model: AudioDataModel) {
+    func resetFile(data: Data, model: AudioDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id
         Task.detached {
             await actor.setup(id: id)
-            await resetPhoto(data: data, id: id, actor: actor)
+            await resetFile(data: data, id: id, actor: actor)
             await actor.save()
         }
     }
 
-    private func resetPhoto(url: URL?, id: UUID, actor: DataModelActor) async {
+    private func resetFile(url: URL?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
             await actor.update(url: url)
@@ -151,7 +142,7 @@ extension EditController {
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
     
-    private func resetPhoto(data: Data?, id: UUID, actor: DataModelActor) async {
+    private func resetFile(data: Data?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         await actor.update(url: nil)
         guard let data else { return }

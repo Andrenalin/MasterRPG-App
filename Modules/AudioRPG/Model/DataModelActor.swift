@@ -49,7 +49,6 @@ actor DataModelActor {
             category: model.category,
             tags: model.tags,
             displayState: 0,
-            degrees: model.degrees,
             url: url,
             entries: []
         )

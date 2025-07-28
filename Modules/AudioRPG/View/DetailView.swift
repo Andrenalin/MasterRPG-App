@@ -98,7 +98,7 @@ struct DetailView: View {
             startPoint: .top, endPoint: .bottom))
 
 #if !os(tvOS)
-        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updatePhoto))
+        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
 #endif
 
         .overlay(alignment: .bottom) {
@@ -115,7 +115,7 @@ struct DetailView: View {
                 VStack {
                     Spacer()
                     HStack(spacing: 40) {
-                        PhotoImporterView(model: model, prominent: true)
+                        FileImporterView(model: model, prominent: true)
                     }
                     Spacer()
                     Spacer()
@@ -124,8 +124,8 @@ struct DetailView: View {
         }
     }
 
-    private func updatePhoto(url: URL) {
-        root.editController.resetPhoto(url: url, in: model)
+    private func updateFile(url: URL) {
+        root.editController.resetFile(url: url, in: model)
     }
 
     @ViewBuilder
@@ -150,7 +150,7 @@ struct DetailView: View {
     private var toolbarButtons: some View {
         VStack(alignment: .center) {
             if model.url != nil {
-                PhotoImporterView(model: model, prominent: false)
+                FileImporterView(model: model, prominent: false)
             }
 
             GlassButton(isProminent: true) {
