@@ -8,4 +8,7 @@ public protocol EditControllable {
 
     func addNew(modelContext: ModelContext) -> Model
     func delete(model: any Identifiable)
+    
+    func update(model: Model, name: String, information: String, category: ItemListCategory, tags: [String])
+    func resetFile(url: URL?, in model: Model)
 }

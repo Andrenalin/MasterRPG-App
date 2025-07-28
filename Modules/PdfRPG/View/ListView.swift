@@ -23,9 +23,6 @@ struct ListView: View {
 #if !os(tvOS)
         .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
 #endif
-#if os(macOS)
-        .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
-#endif
     }
 
     private var filteredItems: [PdfDataModel] {
@@ -58,22 +55,6 @@ struct ListView: View {
             }
         }
     }
-
-#if os(macOS)
-    nonisolated private func importImage(_ providers: [NSItemProvider]) -> Bool {
-        EditController.importImageFromProviders(providers) { data in
-            guard let data = data else { return }
-            Task { @MainActor in
-                let model = root.editController.addNew(modelContext: modelContext)
-                try? await Task.sleep(for: .seconds(0.5))
-                withAnimation {
-                    root.editController.resetFile(data: data, model: model)
-                    listModel.update(selection: [model.id])
-                }
-            }
-        }
-    }
-#endif
 }
 
 #Preview(traits: .mockData) {

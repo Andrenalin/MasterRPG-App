@@ -80,6 +80,10 @@ extension EditController {
         }
     }
 
+    func update(model: PhotoDataModel, name: String, information: String, category: CoreRPG.ItemListCategory, tags: [String]) {
+        update(model: model, name: name, information: information, category: category, tags: tags, degrees: model.degrees)
+    }
+
     func update(model: PhotoDataModel, name: String, information: String, category: ItemListCategory, tags: [String], degrees: Double) {
         model.withTransaction {
             model.reset(name: name)
