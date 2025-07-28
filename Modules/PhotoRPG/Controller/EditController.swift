@@ -155,7 +155,7 @@ extension EditController {
         guard let data else { return }
         
         let module = PhotoDataModel.typeId.token
-        let filePath = await actor.name.isEmpty ? "\(await actor.category.title)/Image-\(id.uuidString).jpg" : "\(await actor.category.title)/\(await actor.name).jpg"
+        let filePath = await actor.name.isEmpty ? "\(await actor.category.title)/Image-\(id.uuidString).\(FileController.filenameExtension)" : "\(await actor.category.title)/\(await actor.name).\(FileController.filenameExtension)"
         var dataFileUrl = FileUrl(fileId: id, url: URL(string: filePath)!, location: .cloud, module: module)
         dataFileUrl.resetData(data)
         

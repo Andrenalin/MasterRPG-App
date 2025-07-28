@@ -5,168 +5,124 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-@Observable
-final class DetailPhotoSelection {
-    var selectedPhoto: AudioDataModel?
-}
-
 struct DetailView: View {
     let model: AudioDataModel
-
+    
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
     @Environment(AudioRootModel.self) private var root
-
-    @State var selection = DetailPhotoSelection()
+    
+    @State private var selection = GroupItemSelectionModel()
     @State private var isEditing = false
-    @State private var showImporter = false
-
+    
     var body: some View {
-        let _ = Self._printChanges()
-
-        @Bindable var model = model
-        ScrollViewReader { proxy in
-            ScrollView(showsIndicators: false) {
-                VStack {
-                    detailView
-                        .id("Header")
-                        .frame(minHeight: 600)
-
-#if os(iOS)
-                    if horizontalSizeClass == .regular && isEditing {
-                        DetailEditorView(model: model) {
-                            withAnimation { isEditing = false }
-                        }
-                        .id("Editor")
-                        .transition(.scale)
-                    }
-#endif
-                }
-                .animation(.bouncy, value: isEditing)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .onChange(of: isEditing) {
-                if isEditing {
-                    proxy.scrollTo("Editor", anchor: .bottom)
-                } else {
-                    proxy.scrollTo("Header", anchor: .top)
-                }
-            }
-            if model.url != nil && !isEditing {
-                CarouselPhotosView(model: model)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .environment(selection)
-                    .transition(.move(edge: .bottom))
-            }
+        ZStack(alignment: .top) {
+            initialFileImporterView
+            
+            contentView
+                .padding()
         }
-#if !os(tvOS)
-        .toolbar(removing: .title)
-#endif
+        .animation(.bouncy, value: model.url)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id) {
             withAnimation {
-                selection.selectedPhoto = nil
+                selection.selectedItem = nil
                 isEditing = false
             }
         }
-        .ignoresSafeArea(.keyboard)
-        .ignoresSafeArea(edges: .top)
-        .keyboardAvoiding(height: 160)
-#if os(iOS)
-        .applyIf(horizontalSizeClass == .compact) {
-            $0.sheet(isPresented: $isEditing) {
-                DetailEditorView(model: model) {
-                    withAnimation { isEditing = false }
-                }
-                .presentationContentInteraction(.resizes)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-            }
+        .onChange(of: model.fileUrl) { oldValue, newValue in
+            guard oldValue == nil else { return }
+            withAnimation { isEditing = true }
         }
-#endif
-        .focusedSceneValue(\.selectedItem, $model.id)
-    }
-
-    private var detailView: some View {
-        ZStack(alignment: .center) {
-            DescriptionLinkEditor()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .mask(LinearGradient(
-            gradient: Gradient(colors: [.black, .black, .black, .clear]),
-            startPoint: .top, endPoint: .bottom))
-
 #if !os(tvOS)
         .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
 #endif
-
-        .overlay(alignment: .bottom) {
-            HStack(alignment: .bottom) {
-                DetailOverlayView(model: selection.selectedPhoto ?? model)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                toolbarButtons
+        .sheet(isPresented: $isEditing) {
+            DetailEditorView(model: model) {
+                withAnimation { isEditing = false }
             }
             .padding()
+            .presentationContentInteraction(.resizes)
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
-        .overlay(alignment: .center) {
-            if model.url == nil {
-                VStack {
-                    Spacer()
-                    HStack(spacing: 40) {
-                        FileImporterView(model: model, prominent: true)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                if model.url != nil {
+                    FileImporterView(model: model, prominent: false)
+                }
+            }
+            
+            ToolbarItem(placement: .primaryAction) {
+                if model.url != nil {
+                    Button {
+                        withAnimation { isEditing = true }
+                    } label: {
+                        Image(systemName: "pencil")
                     }
-                    Spacer()
-                    Spacer()
                 }
             }
         }
+        .toolbarRole(.editor)
+    }
+
+    @ViewBuilder
+    var initialFileImporterView: some View {
+        ZStack {
+            Color.clear
+
+            FileImporterView(model: model, prominent: true)
+        }
+        .opacity(model.fileUrl == nil ? 1 : 0)
+        .transition(.scale)
+    }
+
+    @ViewBuilder
+    var contentView: some View {
+        VStack(spacing: 0) {
+            DetailOverlayView(itemId: model.id, model: model, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information)
+            
+        }
+        .opacity(model.fileUrl != nil ? 1 : 0)
+        .transition(.scale)
     }
 
     private func updateFile(url: URL) {
         root.editController.resetFile(url: url, in: model)
     }
-
+    
     @ViewBuilder
     private var detailEditorView: some View {
-        if isEditing {
-            DetailEditorView(model: model) {
-                withAnimation { isEditing = false }
-            }
-            .id(model.id)
-            .background {
-                RoundedRectangle(cornerRadius: 24).fill(.thickMaterial)
-            }
-            .frame(minWidth: 320, alignment: .center)
-            .padding(40)
-            .offset(y: 128)
-            .transition(.scale)
-            .animation(.bouncy, value: isEditing)
+        DetailEditorView(model: model) {
+            withAnimation {  }
         }
+        .id(model.id)
+        .background {
+            RoundedRectangle(cornerRadius: 24).fill(.thickMaterial)
+        }
+        .frame(minWidth: 320, alignment: .center)
+        .padding(.horizontal, editorMargin)
+        .transition(.scale)
     }
-
-    @ViewBuilder
-    private var toolbarButtons: some View {
-        VStack(alignment: .center) {
-            if model.url != nil {
-                FileImporterView(model: model, prominent: false)
-            }
-
-            GlassButton(isProminent: true) {
-                isEditing = true
-            } label: {
-                Image(systemName: "pencil")
-            }
+    
+    private var editorMargin: CGFloat {
+#if os(iOS)
+        if horizontalSizeClass == .compact {
+            0
+        } else {
+            40
         }
+#else
+        40
+#endif
     }
 }
-
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [AudioDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
-
+    
     DetailView(model: models[0])
         .environment(CacheItemListModel())
 }

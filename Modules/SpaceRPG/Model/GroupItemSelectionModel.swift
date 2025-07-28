@@ -6,4 +6,3 @@ import SwiftUI
 final class GroupItemSelectionModel {
     var selectedItem: SpaceDataModel?
 }
-

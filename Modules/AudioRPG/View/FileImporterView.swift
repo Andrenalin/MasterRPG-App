@@ -14,12 +14,24 @@ struct FileImporterView: View {
     
     var body: some View {
 #if !os(tvOS)
-        GlassButton(isProminent: prominent) {
-            showImporter.toggle()
-        } label: {
-            Image(systemName: "folder\(showImporter ? ".fill" : "")")
-                .imageScale(prominent ? .large : .medium)
-                .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+        Group {
+            if prominent {
+                GlassButton(isProminent: prominent) {
+                    showImporter.toggle()
+                } label: {
+                    Image(systemName: "folder\(showImporter ? ".fill" : "")")
+                        .imageScale(prominent ? .large : .medium)
+                        .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                }
+            } else {
+                Button {
+                    withAnimation { showImporter.toggle() }
+                } label: {
+                    Image(systemName: "folder\(showImporter ? ".fill" : "")")
+                        .imageScale(prominent ? .large : .medium)
+                        .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                }
+            }
         }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: FileController.fileTypes) { result in
             guard let url = try? result.get() else { return }

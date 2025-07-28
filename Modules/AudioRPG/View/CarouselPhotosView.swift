@@ -8,7 +8,7 @@ struct CarouselPhotosView: View {
     var model: AudioDataModel
 
     @Environment(\.modelContext) private var modelContext
-    @Environment(DetailPhotoSelection.self) private var selection
+    @Environment(GroupItemSelectionModel.self) private var selection
     @Environment(AudioRootModel.self) private var root
 
     var body: some View {
@@ -72,13 +72,13 @@ struct CarouselPhotosView: View {
         PlainPhotoView(cacheController: root.cacheController, model: photo, highResolution: false)
             .frame(height: 128)
             .onTapGesture {
-                withAnimation { selection.selectedPhoto = selectedPhoto }
+                withAnimation { selection.selectedItem = selectedPhoto }
             }
             .clipShape(.rect(cornerRadius: 20, style: .continuous))
             .overlay {
                 if photo.url != nil {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(selection.selectedPhoto?.id == selectedPhoto?.id ? Color.accentColor : Color.clear, lineWidth: 4)
+                        .stroke(selection.selectedItem?.id == selectedPhoto?.id ? Color.accentColor : Color.clear, lineWidth: 4)
                 }
             }
 #if !os(tvOS)
@@ -96,7 +96,7 @@ struct CarouselPhotosView: View {
     @Previewable @Environment(\.modelContext) var modelContext
 
     CarouselPhotosView(model: models[0])
-        .environment(DetailPhotoSelection())
+        .environment(GroupItemSelectionModel())
         .environment(AudioRootModel(modelContext: modelContext))
         .environment(CacheItemListModel())
 }
