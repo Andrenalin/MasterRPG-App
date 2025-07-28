@@ -19,7 +19,7 @@ extension EditController: EditControllable {
     typealias Model = PhotoDataModel
 }
 
-// MARK: - Edit Photo Data Model Properties
+// MARK: - Edit Data Model Properties
 extension EditController {
     func addNew(modelContext: ModelContext) -> PhotoDataModel {
         let newItem = PhotoDataModel.newItem
@@ -101,11 +101,8 @@ extension EditController {
     }
 }
 
-
-// MARK: - Photo image editor
+// MARK: - File Editor
 extension EditController {
-    
-    // import from file browser
     func resetFile(url: URL?, in model: PhotoDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id

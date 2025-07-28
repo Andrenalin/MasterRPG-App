@@ -19,7 +19,7 @@ extension EditController: EditControllable {
     typealias Model = SpaceDataModel
 }
 
-// MARK: - Edit Photo Data Model Properties
+// MARK: - Edit Data Model Properties
 extension EditController {
     func addNew(modelContext: ModelContext) -> SpaceDataModel {
         let newItem = SpaceDataModel.newItem
@@ -99,11 +99,8 @@ extension EditController {
     }
 }
 
-
 // MARK: - File editor
 extension EditController {
-
-    // import from file browser
     func resetFile(url: URL?, in model: SpaceDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id

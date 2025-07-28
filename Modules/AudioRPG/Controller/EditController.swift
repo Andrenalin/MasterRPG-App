@@ -19,7 +19,7 @@ extension EditController: EditControllable {
     typealias Model = AudioDataModel
 }
 
-// MARK: - Edit Photo Data Model Properties
+// MARK: - Edit Data Model Properties
 extension EditController {
     func addNew(modelContext: ModelContext) -> AudioDataModel {
         let newItem = AudioDataModel.newItem
@@ -99,11 +99,8 @@ extension EditController {
     }
 }
 
-
-// MARK: - Photo image editor
+// MARK: - File Editor
 extension EditController {
-    
-    // import from file browser
     func resetFile(url: URL?, in model: AudioDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id
@@ -114,16 +111,6 @@ extension EditController {
         }
     }
     
-    func resetFile(data: Data, model: AudioDataModel) {
-        guard let actor = model.modelActor() else { return }
-        let id = model.id
-        Task.detached {
-            await actor.setup(id: id)
-            await resetFile(data: data, id: id, actor: actor)
-            await actor.save()
-        }
-    }
-
     private func resetFile(url: URL?, id: UUID, actor: DataModelActor) async {
         await fileController.fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
@@ -141,40 +128,4 @@ extension EditController {
         let updatedFileUrl = try? await fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: AudioDataModel.typeId.token, category: actor.category.title)
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
-    
-    private func resetFile(data: Data?, id: UUID, actor: DataModelActor) async {
-        await fileController.fileUrlDataController.delete(await actor.fileUrl)
-        await actor.update(url: nil)
-        guard let data else { return }
-        
-        let module = AudioDataModel.typeId.token
-        let filePath = await actor.name.isEmpty ? "\(await actor.category.title)/Image-\(id.uuidString).jpg" : "\(await actor.category.title)/\(await actor.name).jpg"
-        var dataFileUrl = FileUrl(fileId: id, url: URL(string: filePath)!, location: .cloud, module: module)
-        dataFileUrl.resetData(data)
-        
-        let updatedFileUrl = try? await fileController.fileUrlDataController.createNewFileUrl(fileId: id, unconvertedFileUrl: dataFileUrl, pathExtension: FileController.filenameExtension)
-        await actor.update(url: updatedFileUrl?.rawUrl)
-    }
-}
-
-extension EditController {
-#if os(macOS)
-    static let importImageTypes = AKImage.imageTypes.compactMap { UTType($0) }
-
-    static func importImageFromProviders(_ itemProviders: [NSItemProvider], completion: @Sendable @escaping (Data?) -> Void) -> Bool {
-        guard let provider = itemProviders.first else { return false }
-        for type in importImageTypes {
-            let typeIdentifier = type.identifier
-            if provider.hasItemConformingToTypeIdentifier(typeIdentifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, _ in
-                    DispatchQueue.main.async {
-                        completion(data)
-                    }
-                }
-                return true
-            }
-        }
-        return false
-    }
-#endif
 }
