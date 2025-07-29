@@ -9,6 +9,7 @@ struct PdfRootView: View {
     let withoutNavigation: Bool
 
     @Environment(PdfRootModel.self) private var root
+    @Environment(DeviceRotationModel.self) private var deviceRotationModel
     
     @SceneStorage("PdfRoute") private var route: PdfRoute?
     @SceneStorage("PdfDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
@@ -25,6 +26,7 @@ struct PdfRootView: View {
                 .navigationDestination(for: PdfRoute.self) { route in
                     route
                         .environment(cacheItemListModel)
+                        .environment(deviceRotationModel)
                         .environment(root.searchModel)
                         .onDisappear {
                             listModel.resetListSelection()

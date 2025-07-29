@@ -9,6 +9,7 @@ struct PhotoRootView: View {
     let withoutNavigation: Bool
 
     @Environment(PhotoRootModel.self) private var root
+    @Environment(DeviceRotationModel.self) private var deviceRotationModel
     
     @SceneStorage("PhotoRoute") private var route: PhotoRoute?
     @SceneStorage("PhotoDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
@@ -25,6 +26,7 @@ struct PhotoRootView: View {
                 .navigationDestination(for: PhotoRoute.self) { route in
                     route
                         .environment(cacheItemListModel)
+                        .environment(deviceRotationModel)
                         .environment(root.searchModel)
                         .onDisappear {
                             listModel.resetListSelection()

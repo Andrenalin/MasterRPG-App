@@ -108,7 +108,7 @@ extension PdfDataModel {
 
 extension PdfDataModel: HasPhotoModel {}
 extension PdfDataModel: ItemDataAccessable {
-    public static var typeId: NetworkModules { .photo }
+    public static var typeId: NetworkModules { .pdf }
 
     public subscript(id: UUID) -> PdfEntryDataModel {
         get {

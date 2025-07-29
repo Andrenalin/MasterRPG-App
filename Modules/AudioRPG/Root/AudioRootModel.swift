@@ -28,6 +28,8 @@ public final class AudioRootModel {
     let listModel = ListModel()
     let searchModel: SearchModel
     var currentSelectedItemId: UUID?
+    
+    public let audioPlayerModel = AudioPlayerModel()
 }
 
 extension AudioRootModel {

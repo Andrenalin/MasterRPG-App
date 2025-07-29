@@ -37,6 +37,7 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
     public var body: some View {
         listView(filteredItems: items)
             .frame(minWidth: 250, idealWidth: 350, maxWidth: 450)
+            .listStyle(.plain)
             .overlay {
                 if items.isEmpty && !searchModel.searchText.isEmpty {
                     ContentUnavailableView.search

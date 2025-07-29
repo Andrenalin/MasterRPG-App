@@ -59,7 +59,7 @@ struct CarouselPhotosView: View {
     private func addLinks(links: [LinkData]) -> Bool {
         var result = true
         links.forEach { link in
-            guard link.module == .photo else {
+            guard link.module == PdfDataModel.typeId else {
                 result = false
                 return
             }

@@ -51,9 +51,7 @@ struct DetailRouteDestinationView: View {
         let _ = Self._printChanges()
         
         if let item = items.first {
-            FileDetailEditorView(model: item, editController: root.editController, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information, urlKeypath: \.url, fileTypes: FileController.fileTypes) {
-                FileImporterView(model: item, prominent: true)
-            }
+            DetailView(model: item)
         }
     }
 }

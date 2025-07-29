@@ -14,6 +14,8 @@ struct ExtendedTabBar: View {
 
     @Namespace private var zoomNamespace
 
+    @State private var tabSelectedModule: NetworkModules = .game
+
     var body: some View {
         ManagedNavigationStack(scene: "ExtendedTabBar") { navigator in
             ScrollView {
@@ -48,6 +50,11 @@ struct ExtendedTabBar: View {
                 return .auto
             }
             .onNavigationRoute(RootFiveRouteRouter(appModel: appModel))
+            .onChange(of: currentModule, initial: true) {
+                guard let currentModule else { return }
+                tabSelectedModule = currentModule.module
+            }
+            .focusedSceneValue(\.selectedModule, $tabSelectedModule)
         }
     }
 }

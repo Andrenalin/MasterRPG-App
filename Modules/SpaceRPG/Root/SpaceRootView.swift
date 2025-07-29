@@ -9,7 +9,8 @@ struct SpaceRootView: View {
     let withoutNavigation: Bool
 
     @Environment(SpaceRootModel.self) private var root
-    
+    @Environment(DeviceRotationModel.self) private var deviceRotationModel
+
     @SceneStorage("SpaceRoute") private var route: SpaceRoute?
     @SceneStorage("SpaceDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
 
@@ -25,6 +26,7 @@ struct SpaceRootView: View {
                 .navigationDestination(for: SpaceRoute.self) { route in
                     route
                         .environment(cacheItemListModel)
+                        .environment(deviceRotationModel)
                         .environment(root.searchModel)
                         .onDisappear {
                             listModel.resetListSelection()

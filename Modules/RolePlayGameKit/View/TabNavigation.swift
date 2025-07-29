@@ -2,6 +2,7 @@
 
 import CoreExternalRPG
 import CoreRPG
+import AudioRPG
 import SwiftUI
 
 public struct TabNavigation: View {
@@ -36,6 +37,11 @@ public struct TabNavigation: View {
         }
 #if os(iOS)
         .tabBarMinimizeBehavior26(.onScrollDown)
+        .tabViewBottomAccessory {
+            if horizontalSizeClass == .compact && appModel.audioRoot.audioPlayerModel.isPlaying {
+                AudioPlayerMiniBarView()
+            }
+        }
 #endif
 #if os(macOS)
         .tabViewStyle(.sidebarAdaptable)
@@ -46,6 +52,7 @@ public struct TabNavigation: View {
         .focusedSceneValue(\.selectedModule, $tabSelectedModule)
         .onNavigationOpenURL(RootURLHandler(appModel: appModel))
         .onChange(of: selectedTab, initial: true) {
+            guard selectedTab != .editors else { return }
             tabSelectedModule = selectedTab.module
         }
     }

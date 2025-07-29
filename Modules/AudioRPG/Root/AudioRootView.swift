@@ -9,6 +9,7 @@ struct AudioRootView: View {
     let withoutNavigation: Bool
     
     @Environment(AudioRootModel.self) private var root
+    @Environment(DeviceRotationModel.self) private var deviceRotationModel
 
     @SceneStorage("AudioRoute") private var route: AudioRoute?
     @SceneStorage("AudioDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
@@ -25,6 +26,7 @@ struct AudioRootView: View {
                 .navigationDestination(for: AudioRoute.self) { route in
                     route
                         .environment(cacheItemListModel)
+                        .environment(deviceRotationModel)
                         .environment(root.searchModel)
                         .onDisappear {
                             listModel.resetListSelection()
