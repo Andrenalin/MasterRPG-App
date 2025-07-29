@@ -8,14 +8,14 @@ import RealityKit
 
 struct SpaceViewer: View {
     let root: SpaceRootModel
-    let id: UUID
+    let model: SpaceDataModel
     
     var body: some View {
         #if os(visionOS)
-        SpaceViewerOld(root: root, id: id)
+        SpaceViewerOld(root: root, model: model)
 //        SpaceVisionViewer(id: id)
         #else
-        SpaceViewerOld(root: root, id: id)
+        SpaceViewerOld(root: root, model: model)
         #endif
     }
 }
@@ -53,7 +53,7 @@ struct SpaceVisionViewer: View {
 
 struct SpaceViewerOld: View {
     let root: SpaceRootModel
-    let id: UUID
+    let model: SpaceDataModel
 
     var animatableData: AnimatablePair<Float, Float> {
         get {
@@ -87,10 +87,9 @@ struct SpaceViewerOld: View {
                     .progressViewStyle(.circular)
                     .opacity(hasLoaded ? 0 : 1)
 
-
                 RealityView { content in
                     do {
-                        guard let url = await root.loadableUrl(for: id) else { return }
+                        guard let url = await root.loadableUrl(for: model.id) else { return }
 
                         defer { url.stopAccessingSecurityScopedResource() }
                         let _ = url.startAccessingSecurityScopedResource()

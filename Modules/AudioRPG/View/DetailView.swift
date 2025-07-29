@@ -1,14 +1,15 @@
-// Copy
+// @copyright André Trettin
+
 import CoreRPG
 import SwiftData
 import SwiftUI
 
 struct DetailView: View {
     let model: AudioDataModel
-
-    #if os(iOS)
+    
+#if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    #endif
+#endif
     
     @Environment(AudioRootModel.self) private var root
     
@@ -21,7 +22,7 @@ struct DetailView: View {
             } editor: {
                 HStack {
                     Text(model.url?.absoluteString ?? "No file is set")
-                                        
+                    
                     Button {
                         Task {
                             await root.audioController.add(audio: [model.itemModel], replace: true)
@@ -34,7 +35,7 @@ struct DetailView: View {
                     .disabled(model.url == nil)
                 }
             }
-      
+            
             if shouldShowBottomBar {
                 VStack {
                     AudioPlayerBarView()
@@ -57,7 +58,7 @@ struct DetailView: View {
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [AudioDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
-
+    
     DetailView(model: models[0])
         .environment(CacheItemListModel())
 }
