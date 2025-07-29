@@ -4,8 +4,8 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-public struct FileDetailEditorView<Model: Identifiable, EditController: EditControllable, Importer: View>: View where Model.ID == UUID, Model == EditController.Model {
-    public init(model: Model, editController: EditController, nameKeyPath: KeyPath<Model, String>, categoryKeyPath: KeyPath<Model, ItemListCategory>, tagsKeyPath: KeyPath<Model, [String]>, descriptionKeyPath: KeyPath<Model, String>, urlKeypath: KeyPath<Model, URL?>, fileTypes: [UTType], @ViewBuilder importer: () -> Importer) {
+public struct FileDetailEditorView<Model: Identifiable, EditController: EditControllable, Importer: View, Editor: View>: View where Model.ID == UUID, Model == EditController.Model {
+    public init(model: Model, editController: EditController, nameKeyPath: KeyPath<Model, String>, categoryKeyPath: KeyPath<Model, ItemListCategory>, tagsKeyPath: KeyPath<Model, [String]>, descriptionKeyPath: KeyPath<Model, String>, urlKeypath: KeyPath<Model, URL?>, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder editor: () -> Editor) {
         self.model = model
         self.editController = editController
         self.nameKeyPath = nameKeyPath
@@ -15,6 +15,7 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
         self.urlKeyPath = urlKeypath
         self.fileTypes = fileTypes
         self.importer = importer()
+        self.editor = editor()
         self.cacheItemListModel = CacheItemListModel()
     }
     
@@ -27,6 +28,7 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
     let urlKeyPath: KeyPath<Model, URL?>
     let fileTypes: [UTType]
     let importer: Importer
+    let editor: Editor
     let cacheItemListModel: CacheItemListModel
 
 #if os(iOS)
@@ -97,6 +99,7 @@ private extension FileDetailEditorView {
         VStack(spacing: 0) {
             DetailOverlayView(itemId: model.id, model: model, nameKeyPath: nameKeyPath, categoryKeyPath: categoryKeyPath, tagsKeyPath: tagsKeyPath, descriptionKeyPath: descriptionKeyPath)
             
+            editor            
         }
         .opacity(model[keyPath: urlKeyPath] != nil ? 1 : 0)
         .transition(.scale)

@@ -3,13 +3,11 @@
 import SwiftUI
 
 public struct AudioPlayerMiniBarView: View {
-    public init() {
-    }
-    
-    // Mocked state for preview/demo
-    @State private var isPlaying = false
+    public init() {}
+
+    @Environment(AudioRootModel.self) private var root
     @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
-    
+
     public var body: some View {
         HStack(spacing: 8) {
             musicArtTitleTimeline
@@ -25,23 +23,26 @@ public struct AudioPlayerMiniBarView: View {
 
 private extension AudioPlayerMiniBarView {
     var playbackControls: some View {
-        HStack(spacing: 24) {
+        HStack(spacing: 12) {
             Button {
-                isPlaying.toggle()
+                withAnimation { root.audioController.togglePlay() }
             } label: {
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                Image(systemName: root.audioPlayerModel.isPlaying ? "pause.fill" : "play.fill")
+                    .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
                     .font(.title2)
                     .padding(8)
                     .background(.regularMaterial, in: Circle())
             }
+            .disabled(!root.audioPlayerModel.playList.isEmpty)
             
             if tabViewBottomAccessoryPlacement != .inline {
                 Button {
-                    // Next action
+                    withAnimation { root.audioController.skipToCurrentItem(offsetBy: 1) }
                 } label: {
                     Image(systemName: "forward.fill")
                         .font(.title3)
                 }
+                .disabled(!root.audioPlayerModel.hasNext)
             }
         }
         .buttonStyle(.plain)
@@ -60,17 +61,24 @@ private extension AudioPlayerMiniBarView {
                             .foregroundStyle(.secondary)
                     )
                     .shadow(radius: 2, y: 1)
+                    .onTapGesture {
+                        withAnimation { root.audioPlayerModel.showPlayerToolBar = false }
+                    }
             }
             // Song Info
             VStack(alignment: .leading, spacing: 2) {
-                Text("Song Title")
+                Text(currentItem?.title ?? "")
                     .font(.headline).bold()
-                Text("Artist Name")
+                Text(currentItem?.artist ?? "")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+    
+    var currentItem: PlaylistItem? {
+        root.audioPlayerModel.currentItem
     }
 }
 

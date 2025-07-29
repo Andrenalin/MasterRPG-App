@@ -18,13 +18,21 @@ struct DetailView: View {
             
             FileDetailEditorView(model: model, editController: root.editController, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information, urlKeypath: \.url, fileTypes: FileController.fileTypes) {
                 FileImporterView(model: model, prominent: true)
-            }
-
-            Button {
-                root.audioPlayerModel.isPlaying.toggle()
-            } label: {
-                Image(systemName: "play")
-                    .font(.largeTitle)
+            } editor: {
+                HStack {
+                    Text(model.url?.absoluteString ?? "No file is set")
+                                        
+                    Button {
+                        Task {
+                            await root.audioController.add(audio: [model.itemModel], replace: true)
+                            root.audioController.togglePlay(id: model.id)
+                        }
+                    } label: {
+                        Image(systemName: "play")
+                            .font(.largeTitle)
+                    }
+                    .disabled(model.url == nil)
+                }
             }
       
             if shouldShowBottomBar {
@@ -35,15 +43,6 @@ struct DetailView: View {
                 .frame(maxHeight: .infinity, alignment: .bottom)
             }
         }
-        .tabViewBottomAccessory {
-            AudioPlayerMiniBarView()
-        }
-
-//        .applyIf(!shouldShowBottomBar) {
-//            $0.tabViewBottomAccessory {
-//                AudioPlayerMiniBarView()
-//            }
-//        }
     }
     
     var shouldShowBottomBar: Bool {

@@ -38,7 +38,7 @@ public struct TabNavigation: View {
 #if os(iOS)
         .tabBarMinimizeBehavior26(.onScrollDown)
         .tabViewBottomAccessory {
-            if horizontalSizeClass == .compact && appModel.audioRoot.audioPlayerModel.isPlaying {
+            if horizontalSizeClass == .compact && appModel.audioRoot.audioPlayerModel.showPlayerToolBar {
                 AudioPlayerMiniBarView()
             }
         }

@@ -1,0 +1,309 @@
+// @copyright André Trettin
+
+import CoreRPG
+import Combine
+import Foundation
+import OSLog
+import AVFoundation
+
+final class AudioController {
+    @MainActor
+    init(fileController: FileController, model: AudioPlayerModel) {
+        self.fileController = fileController
+        self.model = model
+    }
+    
+    let fileController: FileController
+    let model: AudioPlayerModel
+}
+ 
+// MARK: - Player controls
+
+extension AudioController {
+    @MainActor
+    func play() {
+        model.player.play()
+    }
+
+    @MainActor
+    func pause() {
+        model.player.pause()
+    }
+    
+    @MainActor
+    func toggle() {
+        if model.isPlaying {
+            pause()
+        } else {
+            if model.isPlaybackComplete, let id = model.currentId {
+                Task { @MainActor in
+                    await preparePlay(id: id)
+                }
+            } else {
+                play()
+            }
+        }
+    }
+    
+    @MainActor
+    func togglePlay(id: UUID? = nil) {
+        if let id, id != model.currentId {
+            if model.isPlaying {
+                pause()
+            }
+            model.set(currentId: id)
+            Task { @MainActor in
+                await preparePlay(id: id)
+            }
+            return
+        }
+        toggle()
+    }
+    
+    @MainActor
+    func skipToCurrentItem(offsetBy offset: Int) {
+        guard let currentIndex = model.currentIndex else { return }
+        let newIndex = currentIndex + offset
+        guard newIndex >= 0 && newIndex < model.playList.count else { return }
+        let newId = model.playList[newIndex].id
+        togglePlay(id: newId)
+    }
+
+    func skip(to offset: TimeInterval) {
+        Task {
+            await model.player.seek(to: CMTime(seconds: offset, preferredTimescale: CMTimeScale(1)))
+        }
+    }
+
+    @MainActor
+    func skip(by distance: TimeInterval) {
+        let offset = model.currentTime + Double(distance)
+        skip(to: offset)
+    }
+}
+
+// MARK: - Playlist
+
+extension AudioController {
+    func add(audio models: [AudioModel], replace: Bool = false) async {
+        if replace {
+            let resetTask = Task { @MainActor in
+                model.playList = []
+                model.isPlaybackComplete = false
+            }
+            _ = await resetTask.result
+        }
+        
+        for item in models {
+            let loader = Task.detached { [weak self] in
+                return await self?.audioAsset(for: item)
+            }
+            let loaderTask = Task { @MainActor in
+                guard let playItem = await loader.value else { return }
+                model.playList.append(playItem)
+            }
+            _ = await loaderTask.result
+        }
+    }
+    
+    private func audioAsset(for item: AudioModel) async -> PlaylistItem? {
+        guard let fileUrl = item.fileUrl else { return nil }
+
+        var audioAsset: PlaylistItem? = nil
+        do {
+            _ = await fileController.fileUrlDataController.fileDownloaded(for: fileUrl)
+            audioAsset = try await fileController.fileUrlDataController.url(for: fileUrl) { url -> PlaylistItem? in
+                guard let url else { return nil }
+                let data = try Data(contentsOf: url)
+                let fileExtension = url.pathExtension
+                let tempUrl = URL.temporaryDirectory.appending(path: item.id.uuidString).appendingPathExtension(fileExtension)
+                try data.write(to: tempUrl)
+                let asset = AVURLAsset(url: tempUrl)
+                let duration = try await asset.load(.duration)
+                let description = item.description.isEmpty ? "MasterRPG" : item.description
+                return PlaylistItem(id: item.id, url: asset.url, title: item.name, artist: description, duration: duration)
+            }
+        } catch {
+            Logger.audioController.error("Cannot read audio from file url: \(error.localizedDescription, privacy: .public)")
+        }
+
+        do {
+            if audioAsset == nil, let data = fileUrl.data {
+                let tempUrl = URL.temporaryDirectory.appending(path: item.id.uuidString).appendingPathExtension(FileController.filenameExtension)
+                try data.write(to: tempUrl)
+                let asset = AVURLAsset(url: tempUrl)
+                let duration = try await asset.load(.duration)
+                let description = item.description.isEmpty ? "MasterRPG" : item.description
+                return PlaylistItem(id: item.id, url: asset.url, title: item.name, artist: description, duration: duration)
+            }
+        } catch {
+            Logger.audioController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")
+        }
+        return audioAsset
+    }
+}
+
+extension AudioController {
+    @MainActor
+    func preparePlay(id: UUID) async {
+        initAudioSessionEngine()
+        if model.currentId != id {
+            model.set(currentId: id)
+        }
+        await replaceCurrentItem()
+        play()
+    }
+    
+    func replaceCurrentItem() async {
+        guard let currentItem = await model.currentItem, let index = await model.currentIndex else { return }
+
+        let playerItem = AVPlayerItem(url: currentItem.url)
+        await model.player.replaceCurrentItem(with: playerItem)
+        await MediaPlayerCoordinator.handleItemChange(item: currentItem, index: index, count: model.playList.count)
+        Task { @MainActor in
+            Logger.audioController.debug("🎧 \(currentItem.title, privacy: .public) -> \(currentItem.artist, privacy: .public)  enqueued for playback.")
+        }
+    }
+}
+
+private extension AudioController {
+    @MainActor func initAudioSessionEngine() {
+        guard !model.isInitialized else { return }
+        let session = AudioPlayerSession(delegate: self)
+        session.initSession()
+        model.audioSession = session
+        
+        //model.coordinator = AudioListenerCoordinator(playbackCoordinator: model.player.playbackCoordinator)
+        
+        MediaPlayerCoordinator.handleRemoteCommands(using: self)
+        
+        observePlayback()
+        model.player.volume = model.volume
+        model.isInitialized = true
+    }
+    
+    @MainActor func observePlayback() {
+        guard model.subscriptions.isEmpty else { return }
+
+        var subscriptions: Set<AnyCancellable> = []
+        model.player.publisher(for: \.timeControlStatus)
+            .receive(on: DispatchQueue.main)
+            .removeDuplicates()
+            .sink { [weak self] status in
+                self?.model.isPlaying = status == .playing
+            }
+            .store(in: &subscriptions)
+
+        var notifications: Set<AnyCancellable> = []
+        NotificationCenter.default
+            .publisher(for: .AVPlayerItemDidPlayToEndTime)
+            .receive(on: DispatchQueue.main)
+            .map { _ in true }
+            .sink { isPlaybackComplete in
+                // we could do a reset or something else
+                // maybe shutdown the audio session?
+            }
+            .store(in: &notifications)
+
+        model.add(subscriptions: subscriptions)
+        model.add(subscriptions: notifications)
+        
+        addTimeObserver()
+    }
+
+    @MainActor private func addTimeObserver() {
+        removeTimeObserver()
+        let timeInterval = CMTime(value: 1, timescale: 1)
+        model.timeObserver = model.player.addPeriodicTimeObserver(forInterval: timeInterval, queue: .main) { [weak self] time in
+            Task { @MainActor in
+                self?.updateCurrentTime(time: time)
+            }
+        }
+    }
+
+    @MainActor private func updateCurrentTime(time: CMTime) {
+        guard let duration = model.player.currentItem?.duration else { return }
+        model.playerTime = PlayerTime(elapsedTime: time.seconds, remainingTime: duration.seconds - time.seconds)
+
+        MediaPlayerCoordinator.handlePlaybackChange(playing: model.isPlaying, rate: model.player.rate, position: time.seconds, duration: duration.seconds)
+        if duration.seconds - time.seconds < 1 {
+            resetPlaylist(complete: true)
+        }
+    }
+    
+    @MainActor private func removeTimeObserver() {
+        guard let timeObserver = model.timeObserver else { return }
+        model.player.removeTimeObserver(timeObserver)
+        model.timeObserver = nil
+    }
+
+    @MainActor func resetPlaylist(complete: Bool) {
+        guard let currentIndex = model.currentIndex else { return }
+        if currentIndex < model.playList.count - 1 {
+            togglePlay(id: model.playList[currentIndex + 1].id)
+        } else if model.repeatPlayList, model.playList.count > 1 {
+            togglePlay(id: model.playList[0].id)
+        } else {
+            model.isPlaybackComplete = complete
+        }
+    }
+}
+
+// MARK: - AudioPlayerSessionDelegate
+
+extension AudioController: AudioPlayerSessionDelegate {
+    @MainActor func routeChanged() {
+        if model.isPlaying {
+            pause()
+        }
+    }
+
+    @MainActor func beginInterruption() -> Bool {
+        if model.isPlaying {
+            pause()
+            return true
+        }
+        return false
+    }
+
+    @MainActor func endInterruption(wasPlaying: Bool) {
+        if wasPlaying {
+            togglePlay()
+        }
+    }
+
+    @MainActor
+    func resetMediaService() {
+        model.isInitialized = false
+        initAudioSessionEngine()
+    }
+}
+
+// MARK: - RemoteCommandHandler
+
+extension AudioController: RemoteCommandHandler {
+    func performRemoteCommand(_ command: RemoteCommand) {
+        Task { @MainActor in
+            switch command {
+            case .pause:
+                pause()
+            case .play:
+                play()
+            case .nextTrack:
+                skipToCurrentItem(offsetBy: 1)
+            case .previousTrack:
+                skipToCurrentItem(offsetBy: -1)
+            case .skipForward(let distance):
+                skip(by: distance)
+            case .skipBackward(let distance):
+                skip(by: -distance)
+            case .changePlaybackPosition(let offset):
+                skip(to: offset)
+            }
+        }
+    }
+}
+
+extension Logger {
+    static let audioController = Logger(subsystem: subsystem, category: "AudioController")
+}

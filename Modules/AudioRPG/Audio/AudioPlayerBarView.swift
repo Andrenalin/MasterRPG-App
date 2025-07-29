@@ -3,11 +3,8 @@
 import SwiftUI
 
 struct AudioPlayerBarView: View {
-    // Mocked state for preview/demo
-    @State private var isPlaying = false
-    @State private var progress: Double = 0.4
-    @State private var volume: Double = 0.7
-    
+    @Environment(AudioRootModel.self) private var root
+            
     var body: some View {
         HStack(spacing: 16) {
             playbackControls
@@ -35,25 +32,31 @@ private extension AudioPlayerBarView {
     var playbackControls: some View {
         HStack(spacing: 24) {
             Button {
-                // Previous action
+                withAnimation { root.audioController.skipToCurrentItem(offsetBy: -1) }
             } label: {
                 Image(systemName: "backward.fill")
                     .font(.title3)
             }
+            .disabled(!root.audioPlayerModel.hasPrev)
+            
             Button {
-                isPlaying.toggle()
+                withAnimation { root.audioController.togglePlay() }
             } label: {
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                Image(systemName: root.audioPlayerModel.isPlaying ? "pause.fill" : "play.fill")
+                    .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
                     .font(.title2)
                     .padding(8)
                     .background(.regularMaterial, in: Circle())
             }
+            .disabled(!root.audioPlayerModel.playList.isEmpty)
+            
             Button {
-                // Next action
+                withAnimation { root.audioController.skipToCurrentItem(offsetBy: 1) }
             } label: {
                 Image(systemName: "forward.fill")
                     .font(.title3)
             }
+            .disabled(!root.audioPlayerModel.hasNext)
         }
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
@@ -74,27 +77,29 @@ private extension AudioPlayerBarView {
                 
                 // Song Info
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Song Title")
+                    Text(currentItem?.title ?? "")
                         .font(.headline).bold()
-                    Text("Artist Name")
+                    Text(currentItem?.artist ?? "")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }.overlay {
                 HStack {
-                    Text("1:13")
+                    Text(root.audioPlayerModel.playerTime.elapsedText)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .monospacedDigit()
                     Spacer(minLength: 0)
-                    Text("3:25")
+                    Text(root.audioPlayerModel.playerTime.remainingText)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .monospacedDigit()
                 }
                 .opacity(0)
             }
                  
-            ProgressView(value: progress, total: 1.0)
+            ProgressView(value: root.audioPlayerModel.currentTime, total: root.audioPlayerModel.playerTime.totalDuration)
                 .progressViewStyle(.linear)
         }
     }
@@ -106,6 +111,10 @@ private extension AudioPlayerBarView {
             Image(systemName: "speaker.wave.2.fill")
                 .font(.title3)
         }
+    }
+    
+    var currentItem: PlaylistItem? {
+        root.audioPlayerModel.currentItem
     }
 }
 

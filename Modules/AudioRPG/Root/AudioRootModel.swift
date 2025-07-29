@@ -8,7 +8,10 @@ import Foundation
 public final class AudioRootModel {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
+        let audioPlayerModel = AudioPlayerModel()
+        self.audioPlayerModel = audioPlayerModel
         let fileController = FileController()
+        self.audioController = AudioController(fileController: fileController, model: audioPlayerModel)
         self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
         self.editController = EditController(fileController: fileController)
         let itemController = ItemController(container: modelContext.container)
@@ -19,6 +22,7 @@ public final class AudioRootModel {
     }
 
     let modelContext: ModelContext
+    @ObservationIgnored let audioController: AudioController
     @ObservationIgnored let cacheController: CacheController
     @ObservationIgnored let editController: EditController
     @ObservationIgnored let exportController: ExportController
@@ -29,7 +33,7 @@ public final class AudioRootModel {
     let searchModel: SearchModel
     var currentSelectedItemId: UUID?
     
-    public let audioPlayerModel = AudioPlayerModel()
+    public let audioPlayerModel: AudioPlayerModel
 }
 
 extension AudioRootModel {

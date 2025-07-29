@@ -54,6 +54,16 @@ struct Master3RPGApp: App {
             MenuCommandList(appModel: appModel)
         }
         .modelContainer(appModel.modelContainer)
+        
+
+#if os(macOS)
+        MenuBarExtra() {
+            MenuBarView(audioRoot: appModel.audioRoot)
+        } label: {
+            Label("MasterRPG", systemImage: "music.note.list")
+        }
+        .menuBarExtraStyle(.window)
+#endif
     }
     
     func handle(userActivity: NSUserActivity) {
