@@ -117,13 +117,17 @@ private extension FileDetailEditorView where Inside == EmptyView {
 private extension FileDetailEditorView {
     @ViewBuilder
     var contentView: some View {
-        inside
-            .overlay(alignment: .bottom) {
-                DetailOverlayView(itemId: model.id, model: model, nameKeyPath: nameKeyPath, categoryKeyPath: categoryKeyPath, tagsKeyPath: tagsKeyPath, descriptionKeyPath: descriptionKeyPath)
-                    .padding()
-            }
-            .opacity(model[keyPath: urlKeyPath] != nil ? 1 : 0)
-            .transition(.scale)
+        VStack(spacing: 8) {
+            inside
+                .overlay(alignment: .bottom) {
+                    DetailOverlayView(itemId: model.id, model: model, nameKeyPath: nameKeyPath, categoryKeyPath: categoryKeyPath, tagsKeyPath: tagsKeyPath, descriptionKeyPath: descriptionKeyPath)
+                        .padding()
+                }
+                .opacity(model[keyPath: urlKeyPath] != nil ? 1 : 0)
+                .transition(.scale)
+            
+            editor
+        }
     }
 
     private func updateFile(url: URL) {

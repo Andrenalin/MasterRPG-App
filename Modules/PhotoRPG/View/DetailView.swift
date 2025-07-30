@@ -13,37 +13,64 @@ struct DetailView: View {
     @State private var selection = GroupItemSelectionModel()
     
     var body: some View {
-        VStack {
-            ZStack(alignment: .top) {
-                Color.clear
+        ZStack(alignment: .top) {
+            backgroundHeader
+            VStack {
+                @Bindable var model = model
+                ZStack(alignment: .top) {
+                    Color.clear
+                    
+                    FileDetailEditorView(model: model, editController: root.editController, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information, urlKeypath: \.url, fileTypes: FileController.fileTypes) {
+                        VStack {
+                            PhotoImporterView(model: model, prominent: true)
+                        }
+                    } inside: {
+                        contentView
+                    } editor: {
+                        Picker("Degrees", selection: $model.degrees) {
+                            Text("0°").tag(0.0)
+                            Text("90°").tag(90.0)
+                            Text("180°").tag(180.0)
+                            Text("270°").tag(270.0)
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal)
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        PhotoInlineImporterView(model: model)
+                            .padding()
+                    }
+                }
                 
-                FileDetailEditorView(model: model, editController: root.editController, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information, urlKeypath: \.url, fileTypes: FileController.fileTypes) {
-                    PhotoImporterView(model: model, prominent: true)
-                } inside: {
-                    contentView
-                }
-                .overlay(alignment: .bottomTrailing) {
-                    PhotoInlineImporterView(model: model)
-                        .padding()
-                }
+                bottomView
             }
-            
-            bottomView
+            .ignoresSafeArea(edges: .top)
         }
+    }
+    
+    var backgroundHeader: some View {
+        ScrollView(showsIndicators: false) {
+            LazyVStack(alignment: .leading, spacing: 8) {
+                detailView
+            }
+        }
+        .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .top)
+        .backgroundExtensionEffect()
     }
     
     var contentView: some View {
         GeometryReader { geometry in
-            ScrollViewReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    VStack {
-                        detailView
-                            .frame(minHeight: 600)
-                    }
-                }
-                .frame(height: geometry.size.height)
-            }
+            Color.clear
+//            ScrollView(showsIndicators: false) {
+//                VStack {
+//                    detailView
+//                        .frame(minHeight: 600)
+//                }
+//                .scrollClipDisabled(true)
+//            }
+            .frame(height: geometry.size.height)
         }
         .mask(LinearGradient(
             gradient: Gradient(colors: [.black, .black, .black, .clear]),
