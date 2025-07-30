@@ -25,7 +25,6 @@ public final class ListModel {
         case medium
         case regular
     }
-    
     public var displayMode: DisplayMode = .medium
     
     public var isCompactDisplayMode: Bool {
@@ -35,7 +34,6 @@ public final class ListModel {
             displayMode = .compact
         }
     }
-    
     public var isMediumDisplayMode: Bool {
         get { displayMode == .medium }
         set {
@@ -43,12 +41,33 @@ public final class ListModel {
             displayMode = .medium
         }
     }
-    
     public var isRegularDisplayMode: Bool {
         get { displayMode == .regular }
         set {
             guard newValue, displayMode != .regular else { return }
             displayMode = .regular
+        }
+    }
+    
+    // MARK: - List Mode
+    public enum ListMode: Int, Equatable, Hashable, Codable, Sendable {
+        case list
+        case folder
+    }
+    public var listMode: ListMode = .list
+
+    public var isListMode: Bool {
+        get { listMode == .list }
+        set {
+            guard newValue, listMode != .list else { return }
+            listMode = .list
+        }
+    }
+    public var isFolderMode: Bool {
+        get { listMode == .folder }
+        set {
+            guard newValue, listMode != .folder else { return }
+            listMode = .folder
         }
     }
 }

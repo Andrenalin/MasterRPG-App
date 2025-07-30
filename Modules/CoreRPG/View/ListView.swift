@@ -37,7 +37,6 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
     public var body: some View {
         listView(filteredItems: items)
             .frame(minWidth: 250, idealWidth: 350, maxWidth: 450)
-            .listStyle(.plain)
             .overlay {
                 if items.isEmpty && !searchModel.searchText.isEmpty {
                     ContentUnavailableView.search
@@ -81,22 +80,23 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
                     actionMenu
                 }
 #else
-                if !listModel.isSelectionMode {
-                    ToolbarItem(placement: .secondaryAction) {
+                ToolbarItemGroup(placement: .secondaryAction) {
+                    if !listModel.isSelectionMode {
                         MenuSelectionButtonView(listModel: listModel)
+                        Divider()
+                    }
+                    ControlGroup {
+                        CompactDisplayModeToggle(listModel: listModel)
+                        MediumDisplayModeToggle(listModel: listModel)
+                        RegularDisplayModeToggle(listModel: listModel)
+                    }
+                    ControlGroup {
+                        ListModeToggle(listModel: listModel)
+                        FolderModeToggle(listModel: listModel)
                     }
                 }
-                ToolbarItem(placement: .secondaryAction) {
-                    CompactDisplayModeToggle(listModel: listModel)
-                }
-                ToolbarItem(placement: .secondaryAction) {
-                    MediumDisplayModeToggle(listModel: listModel)
-                }
-                ToolbarItem(placement: .secondaryAction) {
-                    RegularDisplayModeToggle(listModel: listModel)
-                }
 #endif
-
+                
                 if listModel.isSelectionMode {
                     ToolbarItem(placement: .primaryAction) {
                         MenuSelectionButtonView(listModel: listModel)
@@ -121,7 +121,7 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
             Image(systemName: "ellipsis.circle")
         }
     }
-
+    
     private func addItem() {
         let newItem = editController.addNew(modelContext: modelContext)
         withAnimation {

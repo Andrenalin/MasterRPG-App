@@ -10,6 +10,7 @@ public protocol CategoryTextRepresentable: Equatable, Hashable, Identifiable {
 public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTextRepresentable, Sendable {
     case all = 0
     case hide = 1
+    case folder = 2
 
     // Module names
     case adventure = 1000
@@ -57,6 +58,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
         switch self {
         case .all: "All"
         case .hide: "Hide"
+        case .folder: "Folder"
 
         case .adventure: "Adventure"
         case .audio:"Audio"
@@ -94,6 +96,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
         switch self {
         case .all: "list.bullet"
         case .hide: "eye.slash"
+        case .folder: "folder"
             
         case .game: "person.2.wave.2"
         case .photo: "photo.on.rectangle.angled"

@@ -20,6 +20,41 @@ public struct MenuDisplayModeToggle: View {
         CompactDisplayModeToggle(listModel: listModel)
         MediumDisplayModeToggle(listModel: listModel)
         RegularDisplayModeToggle(listModel: listModel)
+        Divider()
+        ListModeToggle(listModel: listModel)
+        FolderModeToggle(listModel: listModel)
+    }
+}
+
+struct ListModeToggle: View {
+    let listModel: ListModel
+    
+    var body: some View {
+        @Bindable var listModel = listModel
+        Toggle(isOn: $listModel.isListMode) {
+            Label {
+                Text("All", bundle: .module)
+            } icon: {
+                Image(systemName: "list.bullet")
+            }
+        }
+        .keyboardShortcut("A", modifiers: [.command, .shift])
+    }
+}
+
+struct FolderModeToggle: View {
+    let listModel: ListModel
+    
+    var body: some View {
+        @Bindable var listModel = listModel
+        Toggle(isOn: $listModel.isFolderMode) {
+            Label {
+                Text("Folder", bundle: .module)
+            } icon: {
+                Image(systemName: "folder")
+            }
+        }
+        .keyboardShortcut("F", modifiers: [.command, .shift])
     }
 }
 

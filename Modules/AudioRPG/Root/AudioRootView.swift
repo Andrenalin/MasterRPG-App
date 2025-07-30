@@ -13,6 +13,7 @@ struct AudioRootView: View {
 
     @SceneStorage("AudioRoute") private var route: AudioRoute?
     @SceneStorage("AudioDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
+    @SceneStorage("AudioListModel") private var listMode: ListModel.ListMode = .list
 
     @State private var cacheItemListModel = CacheItemListModel()
 
@@ -42,10 +43,16 @@ struct AudioRootView: View {
         .environment(listModel)
         .environment(root.searchModel)
         .onChange(of: displayMode, initial: true) {
-            listModel.displayMode = displayMode
+            listModel.displayMode <=> displayMode
         }
         .onChange(of: listModel.displayMode) {
             displayMode <=> listModel.displayMode
+        }
+        .onChange(of: listMode, initial: true) {
+            listModel.listMode <=> listMode
+        }
+        .onChange(of: listModel.listMode) {
+            listMode <=> listModel.listMode
         }
         .onChange(of: route, initial: true) {
             if let route {

@@ -30,6 +30,9 @@ struct ListView: View {
 
     private var filteredItems: [AudioDataModel] {
         var filtered = items
+        if listModel.listMode == .folder {
+            filtered = filtered.filter { $0.category == .playlist || $0.category == .folder }
+        }
         if searchModel.searchToken != ItemListCategory.all {
             filtered = filtered.filter { $0.category == searchModel.searchToken }
         }
