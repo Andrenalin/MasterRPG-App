@@ -66,7 +66,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     
     public var icon: String {
         switch self {
-        case .game: "person.2.wave.2"
+        case .game: "person.2"
         case .photo: "photo.on.rectangle.angled"
         case .value: "list.bullet.rectangle"
         case .adventure: "wand.and.stars"

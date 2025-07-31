@@ -91,7 +91,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
         case .all: "list.bullet"
         case .hide: "eye.slash"
             
-        case .game: "person.2.wave.2"
+        case .game: "person.2"
         case .photo: "photo.on.rectangle.angled"
         case .value: "list.bullet.rectangle"
         case .adventure: "wand.and.stars"

@@ -146,7 +146,7 @@ struct GameToolBar: View {
         Button {
             withAnimation { model.isStreaming.toggle() }
         } label: {
-            Image(systemName: "person.2.wave.2\(model.isStreaming ? ".fill" : "")")
+            Image(systemName: "person.2\(model.isStreaming ? ".fill" : ".slash")")
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .frame(height: 24)
         }

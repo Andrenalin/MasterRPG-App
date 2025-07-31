@@ -13,10 +13,8 @@ struct MainRowView: View {
     @Environment(SpaceRootModel.self) private var root
 
     var body: some View {
-        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, thumbnail: {
+        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, category: \.category, tags: \.tags, description: \.information, thumbnail: {
             ThumbnailRowPhotoView(cacheController: root.cacheController, model: model)
-        }, tagAdds: {
-            CategoryItemRow(category: model.category)
         })
         .animation(.smooth, value: listModel.displayMode)
 #if !os(tvOS)

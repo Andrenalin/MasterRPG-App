@@ -34,7 +34,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
     case music = 3000
     case playlist = 3001
     case sound = 3002
-
+    
     // Map
     case dungeon = 4000
     case building = 4001
@@ -49,6 +49,8 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
     case gameMaster = 6002
     case monster = 6003
 
+    // Photo
+    case collection = 7000
 
     public var id: Int {
         rawValue
@@ -64,6 +66,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
         case .audio:"Audio"
         case .building:"Building"
         case .campaign:"Campaign"
+        case .collection:"Collection"
         case .character:"Character"
         case .dice:"Dice"
         case .dungeon:"Dungeon"
@@ -97,8 +100,10 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
         case .all: "list.bullet"
         case .hide: "eye.slash"
         case .folder: "folder"
-            
-        case .game: "person.2.wave.2"
+        case .collection:"rectangle.stack"
+        case .playlist:"play.square.stack"
+
+        case .game: "person.2"
         case .photo: "photo.on.rectangle.angled"
         case .value: "list.bullet.rectangle"
         case .adventure: "wand.and.stars"
@@ -108,6 +113,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
         case .dice: "dice"
         case .audio: "music.note.list"
         case .pdf: "books.vertical"
+            
         default: "exclamationmark.triangle"
         }
     }

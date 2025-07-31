@@ -33,12 +33,12 @@ struct ListModeToggle: View {
         @Bindable var listModel = listModel
         Toggle(isOn: $listModel.isListMode) {
             Label {
-                Text("All", bundle: .module)
+                Text("List", bundle: .module)
             } icon: {
                 Image(systemName: "list.bullet")
             }
         }
-        .keyboardShortcut("A", modifiers: [.command, .shift])
+        .keyboardShortcut("L", modifiers: [.command, .shift])
     }
 }
 

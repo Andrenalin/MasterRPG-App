@@ -42,7 +42,7 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
         ),
         NavigationOption.game: DisplayRepresentation(
             title: "Game",
-            image: .init(systemName: "person.2.wave.2")
+            image: .init(systemName: "person.2")
         ),
         NavigationOption.map: DisplayRepresentation(
             title: "Map",
@@ -95,7 +95,7 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
     
     var symbolName: String {
         switch self {
-            case .game: "person.2.wave.2"
+            case .game: "person.2"
             case .photo: "photo.on.rectangle.angled"
             case .character: "list.bullet.rectangle"
             case .adventure: "wand.and.stars"

@@ -13,21 +13,11 @@ struct MainRowView: View {
     @Environment(AudioRootModel.self) private var root
 
     var body: some View {
-        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, tagAdds: {
-            CategoryItemRow(category: model.category)
-        })
+        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, category: \.category, tags: \.tags, description: \.information, isSelected: false, folderIcon: ItemListCategory.playlist.icon)
+            .animation(.smooth, value: listModel.displayMode)
 #if !os(tvOS)
-        .draggable(LinkData(itemId: model.id, module: AudioDataModel.typeId, name: model.name))
+            .draggable(LinkData(itemId: model.id, module: AudioDataModel.typeId, name: model.name))
 #endif
-    }
-
-    var width: CGFloat {
-        switch listModel.displayMode {
-            case .compact: 160
-            case .medium: 128
-            case .regular: 96
-            @unknown default: 96
-        }
     }
 }
 

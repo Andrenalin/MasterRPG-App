@@ -81,18 +81,12 @@ public struct RootView<List: View, Detail: View>: View {
             .searchable(text: $searchModel.searchFieldText, tokens: $searchModel.selectedTokens, placement: .automatic, prompt: Text("Search or use @ for tags", bundle: .module), token: { token in
                 Label(token.tag.prefix(3), systemImage: "tag")
             })
-            .searchScopes($searchModel.searchToken, activation: searchScopeActivition) {
-                ForEach(searchModel.categoryTags) { category in
-                    Label(category.title, systemImage: category.icon)
-                        .tag(category)
-                }
-            }
             .searchSuggestions {
                 ForEach(searchModel.filteredTagSuggestions) { suggestion in
                     Button {
                         withAnimation {
                             searchModel.selectedTokens.append(suggestion)
-                            searchModel.searchText = ""
+                            searchModel.searchFieldText = ""
                         }
                     } label: {
                         Label(suggestion.tag, systemImage: "tag")

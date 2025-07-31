@@ -13,10 +13,8 @@ struct MainRowView: View {
     @Environment(PdfRootModel.self) private var root
 
     var body: some View {
-        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, tags: \.tags, description: \.information, isSelected: false, isTrailing: true, thumbnail: {
+        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, category: \.category, tags: \.tags, description: \.information, isTrailing: true, thumbnail: {
             ThumbnailRowPhotoView(cacheController: root.cacheController, model: model, isTrailing: true)
-        }, tagAdds: {
-            CategoryItemRow(category: model.category)
         })
         .animation(.smooth, value: listModel.displayMode)
 #if !os(tvOS)

@@ -2,18 +2,19 @@
 
 import SwiftUI
 
-public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>: View {
-    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool, isTrailing: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder tagAdds: () -> Additional = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
+public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
+    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool = false, isTrailing: Bool = false, folderIcon: String = "folder", @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
         self.itemId = itemId
         self.model = model
         self.cacheItemListModel = cacheItemListModel
-        nameKeyPath = name
-        tagsKeyPath = tags
-        descriptionKeyPath = description
+        self.nameKeyPath = name
+        self.categoryKeyPath = category
+        self.tagsKeyPath = tags
+        self.descriptionKeyPath = description
         self.isSelected = isSelected
         self.isTrailing = isTrailing
+        self.folderIcon = folderIcon
         self.thumbnail = thumbnail()
-        additional = tagAdds()
         self.actionBar = actionBar()
     }
     
@@ -21,22 +22,23 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     let model: Model
     let cacheItemListModel: CacheItemListModel
     let nameKeyPath: KeyPath<Model, String>
+    let categoryKeyPath: KeyPath<Model, ItemListCategory>
     let tagsKeyPath: KeyPath<Model, [String]>
     let descriptionKeyPath: KeyPath<Model, String>
     let isSelected: Bool
     let isTrailing: Bool
+    let folderIcon: String
     let thumbnail: Thumbnail
-    let additional: Additional
     let actionBar: ActionBar
-
+    
     @Environment(ListModel.self) private var listModel
-
+    
     public var body: some View {
         HStack(spacing: 4) {
             if !isTrailing {
                 thumbView
             }
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 NameItemRow(itemId: itemId, name: model[keyPath: nameKeyPath], cacheItemListModel: cacheItemListModel)
                     .font(.headline)
@@ -47,7 +49,7 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
                     } else {
                         allTagsView
                     }
-
+                    
                     actionBar
                 }
                 if listModel.displayMode != .compact {
@@ -66,10 +68,17 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
         }
         .fixedSize(horizontal: false, vertical: true)
     }
-    
-    private var thumbView: some View {
+}
+
+private extension ItemRow {
+    var thumbView: some View {
         VStack(spacing: 0) {
-            thumbnail
+            if model[keyPath: categoryKeyPath] == .folder {
+                Image(systemName: folderIcon)
+                    .font(.largeTitle)
+            } else {
+                thumbnail
+            }
         }
         .fixedSize(horizontal: true, vertical: false)
     }
@@ -80,7 +89,9 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     
     var allTagsView: some View {
         HStack(spacing: 4) {
-            additional
+            if model[keyPath: categoryKeyPath] != .folder {
+                CategoryItemRow(category: model[keyPath: categoryKeyPath])
+            }
             
             TagItemRow(tags: tagContent)
         }
@@ -105,7 +116,9 @@ public struct ItemRow<Model, Thumbnail: View, Additional: View, ActionBar: View>
     var twoLineTagView: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
-                additional
+                if model[keyPath: categoryKeyPath] != .folder {
+                    CategoryItemRow(category: model[keyPath: categoryKeyPath])
+                }
                 TagItemRow(tags: tagFirstContent)
             }
             

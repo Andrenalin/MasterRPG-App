@@ -12,20 +12,29 @@ struct NameItemRow: View {
     var body: some View {
         let _ = Self._printChanges()
         LinkHighlightTextView(model: linkTextModel)
-            .foregroundStyle(.primary)
+            .foregroundStyle(name.isEmpty ? .secondary : .primary)
             .lineLimit(1)
     }
 
     private var linkTextModel: LinkHighlightTextModel {
+        let nameText = name.isEmpty ? nameNotSet : name.markDownText()
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .name, itemId: itemId) else {
-            let model = LinkHighlightTextModel(text: name.markDownText(), highlightedText: searchModel.searchText)
+            let model = LinkHighlightTextModel(text: nameText, highlightedText: searchModel.searchText)
             cacheItemListModel.setItemLink(cacheType: .name, itemId: itemId, linkModel: model)
             return model
         }
-        if name.markDownText() != linkModel.text {
-            linkModel.reset(text: name.markDownText())
+        if nameText != linkModel.text {
+            linkModel.reset(text: nameText)
         }
         return linkModel
+    }
+    
+    private var nameNotSetResource: LocalizedStringResource {
+        "Name not yet set"
+    }
+    
+    public var nameNotSet: String {
+        String(localized: nameNotSetResource).localizedString
     }
 }
 
