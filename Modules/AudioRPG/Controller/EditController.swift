@@ -49,36 +49,49 @@ extension EditController {
         Task.detached {
             await fileController.fileUrlDataController.delete(fileUrl)
         }
+        model.entryModels.forEach { entry in
+            if let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.itemId) {
+                if model.category == .folder {
+                    entryItem.parentId = model.parentId
+                }
+                entryItem.displayState = 0
+            }
+        }
         modelContext?.delete(model)
         updateTags(modelContext: modelContext)
         try? modelContext?.save()
     }
     
-    func addSubPhoto(photoId: UUID, model: AudioDataModel) {
+    func addItem(itemId: UUID, in model: AudioDataModel) {
+        guard itemId != model.id else { return }
         model.withTransaction { modelContext in
+            guard let item = AudioDataModel.model(modelContext: modelContext, id: itemId) else { return }
+            
             var entries: [AudioEntryDataModel] = model.entryModels
-
-            let entry = AudioEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: photoId, item: model)
+            let entry = AudioEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: itemId, item: model)
             entries.append(entry)
             model.entryModels = entries
-            
-            guard let subModel = AudioDataModel.model(modelContext: modelContext, id: photoId) else { return }
             modelContext.insert(entry)
-            subModel.displayState = DisplayStateMask.totalHidden.rawValue
+            if model.category == .folder {
+                item.parentId = model.id
+            }
         }
     }
 
-    func removeSubPhoto(photoId: UUID, model: AudioDataModel) {
+    func removeItem(itemId: UUID, model: AudioDataModel) {
         model.withTransaction { modelContext in
-            let entry = model[photoId]
-            model.entryModels.removeAll(where: { $0.itemId == photoId })
+            guard let item = AudioDataModel.model(modelContext: modelContext, id: itemId) else { return }
+            
+            let entry = model[itemId]
+            model.entryModels.removeAll(where: { $0.itemId == itemId })
             model.entryModels.enumerated().forEach { index, entry in
                 entry.index = Int16(index)
             }
-                        
-            guard let subModel = AudioDataModel.model(modelContext: modelContext, id: photoId) else { return }
             modelContext.delete(entry)
-            subModel.displayState = 0
+            if model.category == .folder {
+                item.parentId = nil
+            }
+            item.displayState = 0
         }
     }
 

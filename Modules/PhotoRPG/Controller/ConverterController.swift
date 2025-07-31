@@ -18,7 +18,7 @@ public struct ConverterController {
                 PhotoEntryDataModel(id: entry.id, index: Int16(index), parentId: item.id, photoId: entry.photoId, photo: nil)
             }
             modelContext.insert(
-                PhotoDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, degrees: item.degrees, url: item.fileUrl?.rawUrl, entries: entries)
+                PhotoDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, url: item.fileUrl?.rawUrl, entries: entries, degrees: item.degrees)
             )
         }
     }

@@ -13,11 +13,18 @@ struct MainRowView: View {
     @Environment(AudioRootModel.self) private var root
 
     var body: some View {
-        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, category: \.category, tags: \.tags, description: \.information, isSelected: false, folderIcon: ItemListCategory.playlist.icon)
+        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, category: \.category, tags: \.tags, description: \.information, isSelected: false, collectionCategory: ItemListCategory.playlist)
             .animation(.smooth, value: listModel.displayMode)
 #if !os(tvOS)
             .draggable(LinkData(itemId: model.id, module: AudioDataModel.typeId, name: model.name))
 #endif
+    }
+    
+    private func addLinks(links: [LinkData]) {
+        links.forEach { link in
+            guard link.module == AudioDataModel.typeId else { return }
+            withAnimation { root.editController.addItem(itemId: link.itemId, in: model) }
+        }
     }
 }
 

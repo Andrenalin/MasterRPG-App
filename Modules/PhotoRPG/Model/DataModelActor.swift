@@ -49,9 +49,10 @@ actor DataModelActor {
             category: model.category,
             tags: model.tags,
             displayState: 0,
-            degrees: model.degrees,
+            parentId: model.parentId,
             url: url,
-            entries: []
+            entries: [],
+            degrees: model.degrees
         )
 
         modelContext.insert(newModel)

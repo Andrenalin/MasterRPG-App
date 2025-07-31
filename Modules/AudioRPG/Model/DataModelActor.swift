@@ -49,6 +49,7 @@ actor DataModelActor {
             category: model.category,
             tags: model.tags,
             displayState: 0,
+            parentId: model.parentId,
             url: url,
             entries: []
         )

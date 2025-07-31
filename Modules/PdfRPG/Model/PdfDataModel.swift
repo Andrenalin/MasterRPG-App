@@ -13,7 +13,7 @@ public final class PdfDataModel {
         category: ItemListCategory = .adventure,
         tags: [String] = [],
         displayState: Int = 0,
-        degrees: Double = 0,
+        parentId: UUID? = nil,
         url: URL? = nil,
         entries: [PdfEntryDataModel] = []
     ) {
@@ -23,6 +23,7 @@ public final class PdfDataModel {
         self.category = category
         self.tags = tags
         self.displayState = displayState
+        self.parentId = parentId
         self.url = url
         self.entries = entries
     }
@@ -37,7 +38,7 @@ public final class PdfDataModel {
     public var category: ItemListCategory = ItemListCategory.adventure
     public var tags: [String] = []
     public var displayState: Int = 0
-    
+    public var parentId: UUID? = nil
     var url: URL?
     public var fileUrl: FileUrl? {
         guard let url else { return nil }
@@ -63,6 +64,10 @@ extension PdfDataModel {
             return entry
         }
         return PdfEntryDataModel(id: id)
+    }
+    
+    var specialCategory: Bool {
+        category == .folder || category == .collection
     }
 }
 

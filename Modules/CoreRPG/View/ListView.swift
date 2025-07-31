@@ -140,8 +140,11 @@ public struct ListView<Model: Identifiable, EditController: EditControllable, Ro
     }
     
     private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
+        for index in offsets {
+            if items[index].id == listModel.selected {
+                listModel.update(selection: Set())
+            }
+            Task { @MainActor in
                 editController.delete(model: items[index])
             }
         }
@@ -179,6 +182,11 @@ public struct ListView<Model: Identifiable, EditController: EditControllable, Ro
         }
         .onDelete(perform: deleteItems)
         .deleteDisabled(listModel.isSelectionMode)
+#if !os(tvOS)
+        .dropDestination(for: LinkData.self, isEnabled: true) { items, _ in
+            //addLinks(links: items)
+        }
+#endif
     }
     
     var leadingPadding: CGFloat {

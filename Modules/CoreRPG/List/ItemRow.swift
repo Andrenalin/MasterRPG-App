@@ -3,7 +3,7 @@
 import SwiftUI
 
 public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
-    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool = false, isTrailing: Bool = false, folderIcon: String = "folder", @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
+    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool = false, isTrailing: Bool = false, collectionCategory: ItemListCategory? = nil, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
         self.itemId = itemId
         self.model = model
         self.cacheItemListModel = cacheItemListModel
@@ -13,7 +13,7 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
         self.descriptionKeyPath = description
         self.isSelected = isSelected
         self.isTrailing = isTrailing
-        self.folderIcon = folderIcon
+        self.collectionCategory = collectionCategory
         self.thumbnail = thumbnail()
         self.actionBar = actionBar()
     }
@@ -27,7 +27,7 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
     let descriptionKeyPath: KeyPath<Model, String>
     let isSelected: Bool
     let isTrailing: Bool
-    let folderIcon: String
+    let collectionCategory: ItemListCategory?
     let thumbnail: Thumbnail
     let actionBar: ActionBar
     
@@ -73,8 +73,8 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
 private extension ItemRow {
     var thumbView: some View {
         VStack(spacing: 0) {
-            if model[keyPath: categoryKeyPath] == .folder {
-                Image(systemName: folderIcon)
+            if model[keyPath: categoryKeyPath] == .folder || model[keyPath: categoryKeyPath] == collectionCategory {
+                Image(systemName: model[keyPath: categoryKeyPath].icon)
                     .font(.largeTitle)
             } else {
                 thumbnail
@@ -89,7 +89,7 @@ private extension ItemRow {
     
     var allTagsView: some View {
         HStack(spacing: 4) {
-            if model[keyPath: categoryKeyPath] != .folder {
+            if model[keyPath: categoryKeyPath] != .folder && model[keyPath: categoryKeyPath] != collectionCategory {
                 CategoryItemRow(category: model[keyPath: categoryKeyPath])
             }
             
@@ -116,7 +116,7 @@ private extension ItemRow {
     var twoLineTagView: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
-                if model[keyPath: categoryKeyPath] != .folder {
+                if model[keyPath: categoryKeyPath] != .folder && model[keyPath: categoryKeyPath] != collectionCategory {
                     CategoryItemRow(category: model[keyPath: categoryKeyPath])
                 }
                 TagItemRow(tags: tagFirstContent)

@@ -4,14 +4,15 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct FileDetailEditorView<Model: Identifiable, EditController: EditControllable, Importer: View, Inside: View, Editor: View>: View where Model.ID == UUID, Model == EditController.Model {
-    public init(model: Model, editController: EditController, nameKeyPath: KeyPath<Model, String>, categoryKeyPath: KeyPath<Model, ItemListCategory>, tagsKeyPath: KeyPath<Model, [String]>, descriptionKeyPath: KeyPath<Model, String>, urlKeypath: KeyPath<Model, URL?>, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder inside: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init) {
+    public init(model: Model, editController: EditController, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, url: KeyPath<Model, URL?>, specialCategory: KeyPath<Model, Bool>, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder inside: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init) {
         self.model = model
         self.editController = editController
-        self.nameKeyPath = nameKeyPath
-        self.categoryKeyPath = categoryKeyPath
-        self.tagsKeyPath = tagsKeyPath
-        self.descriptionKeyPath = descriptionKeyPath
-        self.urlKeyPath = urlKeypath
+        self.name = name
+        self.category = category
+        self.tags = tags
+        self.description = description
+        self.url = url
+        self.specialCategory = specialCategory
         self.fileTypes = fileTypes
         self.importer = importer()
         self.inside = inside()
@@ -20,14 +21,15 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
         self.cacheItemListModel = CacheItemListModel()
     }
 
-    public init(model: Model, editController: EditController, nameKeyPath: KeyPath<Model, String>, categoryKeyPath: KeyPath<Model, ItemListCategory>, tagsKeyPath: KeyPath<Model, [String]>, descriptionKeyPath: KeyPath<Model, String>, urlKeypath: KeyPath<Model, URL?>, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder editor: () -> Editor = EmptyView.init) where Inside == EmptyView {
+    public init(model: Model, editController: EditController, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, url: KeyPath<Model, URL?>, specialCategory: KeyPath<Model, Bool>, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder editor: () -> Editor = EmptyView.init) where Inside == EmptyView {
         self.model = model
         self.editController = editController
-        self.nameKeyPath = nameKeyPath
-        self.categoryKeyPath = categoryKeyPath
-        self.tagsKeyPath = tagsKeyPath
-        self.descriptionKeyPath = descriptionKeyPath
-        self.urlKeyPath = urlKeypath
+        self.name = name
+        self.category = category
+        self.tags = tags
+        self.description = description
+        self.url = url
+        self.specialCategory = specialCategory
         self.fileTypes = fileTypes
         self.importer = importer()
         self.inside = EmptyView()
@@ -38,11 +40,12 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
 
     let model: Model
     let editController: EditController
-    let nameKeyPath: KeyPath<Model, String>
-    let categoryKeyPath: KeyPath<Model, ItemListCategory>
-    let tagsKeyPath: KeyPath<Model, [String]>
-    let descriptionKeyPath: KeyPath<Model, String>
-    let urlKeyPath: KeyPath<Model, URL?>
+    let name: KeyPath<Model, String>
+    let category: KeyPath<Model, ItemListCategory>
+    let tags: KeyPath<Model, [String]>
+    let description: KeyPath<Model, String>
+    let url: KeyPath<Model, URL?>
+    let specialCategory: KeyPath<Model, Bool>
     let fileTypes: [UTType]
     let importer: Importer
     let inside: Inside
@@ -64,27 +67,29 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
             
             contentView
         }
-        .animation(.default, value: model[keyPath: urlKeyPath])
+        .animation(.default, value: model[keyPath: url])
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id) { oldId, newId in
-            guard model[keyPath: urlKeyPath] != nil else {
-                if model[keyPath: categoryKeyPath] == .folder && model[keyPath: nameKeyPath].isEmpty {
+            guard model[keyPath: url] != nil else {
+                if model[keyPath: category] == .folder && model[keyPath: name].isEmpty {
                     withAnimation { isEditing = true }
                 }
                 return
             }
             itemIdHasUrl = model.id
         }
-        .onChange(of: model[keyPath: urlKeyPath]) { oldValue, newValue in
+        .onChange(of: model[keyPath: url]) { oldValue, newValue in
             guard oldValue == nil else { return }
             guard itemIdHasUrl != model.id else { return }
             withAnimation { isEditing = true }
         }
 #if !os(tvOS)
-        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
+        .applyIf(model[keyPath: category] != .folder) {
+            $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
+        }
 #endif
         .sheet(isPresented: $isEditing) {
-            DetailItemEditorView(model: model, editController: editController, nameKeyPath: nameKeyPath, categoryKeyPath: categoryKeyPath, tagsKeyPath: tagsKeyPath, descriptionKeyPath: descriptionKeyPath)
+            DetailItemEditorView(model: model, editController: editController, nameKeyPath: name, categoryKeyPath: category, tagsKeyPath: tags, descriptionKeyPath: description)
             
                 .presentationContentInteraction(.resizes)
                 .presentationDetents([.medium, .large])
@@ -92,7 +97,7 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                if model[keyPath: urlKeyPath] != nil || model[keyPath: categoryKeyPath] == .folder {
+                if model[keyPath: url] != nil || model[keyPath: specialCategory] {
                     Button {
                         withAnimation { isEditing = true }
                     } label: {
@@ -118,7 +123,7 @@ private extension FileDetailEditorView {
                         .stroke(Color.accentColor, lineWidth: 2)
                 }
         }
-        .opacity(model[keyPath: urlKeyPath] == nil && model[keyPath: categoryKeyPath] != .folder ? 1 : 0)
+        .opacity(model[keyPath: url] == nil && !model[keyPath: specialCategory] ? 1 : 0)
         .transition(.scale)
     }
     
@@ -136,12 +141,12 @@ private extension FileDetailEditorView {
     @ViewBuilder
     var contentWithoutInsideView: some View {
         VStack(spacing: 0) {
-            DetailOverlayView(itemId: model.id, model: model, nameKeyPath: nameKeyPath, categoryKeyPath: categoryKeyPath, tagsKeyPath: tagsKeyPath, descriptionKeyPath: descriptionKeyPath)
+            DetailOverlayView(itemId: model.id, model: model, nameKeyPath: name, categoryKeyPath: category, tagsKeyPath: tags, descriptionKeyPath: description)
             
             editor            
         }
         .padding()
-        .opacity(model[keyPath: urlKeyPath] != nil || model[keyPath: categoryKeyPath] == .folder ? 1 : 0)
+        .opacity(model[keyPath: url] != nil || model[keyPath: specialCategory] ? 1 : 0)
         .transition(.scale)
     }
 
@@ -150,10 +155,10 @@ private extension FileDetailEditorView {
         VStack(spacing: 8) {
             inside
                 .overlay(alignment: .bottom) {
-                    DetailOverlayView(itemId: model.id, model: model, nameKeyPath: nameKeyPath, categoryKeyPath: categoryKeyPath, tagsKeyPath: tagsKeyPath, descriptionKeyPath: descriptionKeyPath)
+                    DetailOverlayView(itemId: model.id, model: model, nameKeyPath: name, categoryKeyPath: category, tagsKeyPath: tags, descriptionKeyPath: description)
                         .padding()
                 }
-                .opacity(model[keyPath: urlKeyPath] != nil || model[keyPath: categoryKeyPath] == .folder ? 1 : 0)
+                .opacity(model[keyPath: url] != nil || model[keyPath: specialCategory] ? 1 : 0)
                 .transition(.scale)
             
             editor

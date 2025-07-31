@@ -13,9 +13,10 @@ public final class PhotoDataModel {
         category: ItemListCategory = .adventure,
         tags: [String] = [],
         displayState: Int = 0,
-        degrees: Double = 0,
+        parentId: UUID? = nil,
         url: URL? = nil,
-        entries: [PhotoEntryDataModel] = []
+        entries: [PhotoEntryDataModel] = [],
+        degrees: Double = 0
     ) {
         self.id = id
         self.name = name
@@ -23,9 +24,10 @@ public final class PhotoDataModel {
         self.category = category
         self.tags = tags
         self.displayState = displayState
-        self.degrees = degrees
+        self.parentId = parentId
         self.url = url
         self.entries = entries
+        self.degrees = degrees
     }
     
     @Attribute(.preserveValueOnDeletion)
@@ -38,14 +40,15 @@ public final class PhotoDataModel {
     public var category: ItemListCategory = ItemListCategory.adventure
     public var tags: [String] = []
     public var displayState: Int = 0
-    
-    public var degrees: Double = 0
+    public var parentId: UUID? = nil
     var url: URL?
     public var fileUrl: FileUrl? {
         guard let url else { return nil }
         return FileUrl(fileId: id, url: url, location: .cloud, module: PhotoDataModel.typeId.token)
     }
     
+    public var degrees: Double = 0
+
     @Relationship(deleteRule: .cascade) private var entries: [PhotoEntryDataModel]? = []
 }
 
@@ -65,6 +68,10 @@ extension PhotoDataModel {
             return entry
         }
         return PhotoEntryDataModel(id: id)
+    }
+    
+    var specialCategory: Bool {
+        category == .folder || category == .collection
     }
 }
 

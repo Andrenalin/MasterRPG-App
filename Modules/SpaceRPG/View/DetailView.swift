@@ -13,7 +13,7 @@ struct DetailView: View {
         ZStack(alignment: .top) {
             Color.clear
             
-            FileDetailEditorView(model: model, editController: root.editController, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information, urlKeypath: \.url, fileTypes: FileController.fileTypes) {
+            FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
                 FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
             } inside: {
                 contentView

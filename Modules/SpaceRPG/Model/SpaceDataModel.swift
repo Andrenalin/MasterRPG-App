@@ -13,6 +13,7 @@ public final class SpaceDataModel {
         category: ItemListCategory = .building,
         tags: [String] = [],
         displayState: Int = 0,
+        parentId: UUID? = nil,
         url: URL? = nil,
         entries: [SpaceEntryDataModel]? = nil
     ) {
@@ -22,6 +23,7 @@ public final class SpaceDataModel {
         self.category = category
         self.tags = tags
         self.displayState = displayState
+        self.parentId = parentId
         self.url = url
         self.entries = entries
     }
@@ -36,7 +38,7 @@ public final class SpaceDataModel {
     public var category: ItemListCategory = ItemListCategory.adventure
     public var tags: [String] = []
     public var displayState: Int = 0
-    
+    public var parentId: UUID? = nil
     var url: URL?
     public var fileUrl: FileUrl? {
         guard let url else { return nil }
@@ -62,6 +64,10 @@ extension SpaceDataModel {
             return entry
         }
         return SpaceEntryDataModel(id: id)
+    }
+    
+    var specialCategory: Bool {
+        category == .folder || category == .collection
     }
 }
 

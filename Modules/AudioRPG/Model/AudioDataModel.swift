@@ -13,6 +13,7 @@ public final class AudioDataModel {
         category: ItemListCategory = .music,
         tags: [String] = [],
         displayState: Int = 0,
+        parentId: UUID? = nil,
         url: URL? = nil,
         entries: [AudioEntryDataModel] = []
     ) {
@@ -22,6 +23,7 @@ public final class AudioDataModel {
         self.category = category
         self.tags = tags
         self.displayState = displayState
+        self.parentId = parentId
         self.url = url
         self.entries = entries
     }
@@ -36,6 +38,7 @@ public final class AudioDataModel {
     public var category: ItemListCategory = ItemListCategory.adventure
     public var tags: [String] = []
     public var displayState: Int = 0
+    public var parentId: UUID? = nil
     
     var url: URL?
     public var fileUrl: FileUrl? {
@@ -65,12 +68,26 @@ extension AudioDataModel {
     }
     
     var hasAudio: Bool {
-        guard category == .folder else { return url != nil }
-        guard let entries else { return false }
-        return entries.first { entry in
+        guard category == .folder || category == .playlist else { return url != nil }
+        return entryModels.first { entry in
             guard let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.itemId) else { return false }
             return entryItem.hasAudio
         } != nil
+    }
+    
+    var specialCategory: Bool {
+        category == .folder || category == .playlist
+    }
+    
+    var audioList: [AudioModel] {
+        guard category == .folder || category == .playlist else { return url == nil ? [] : [itemModel] }
+        var list: [AudioModel] = []
+        entryModels.forEach { entry in
+            if let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.itemId) {
+                list.append(contentsOf: entryItem.audioList)
+            }
+        }
+        return list
     }
 }
 

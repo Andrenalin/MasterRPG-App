@@ -11,6 +11,9 @@ public final class ListModel {
         update(selection: Set(selection))
     }
     
+    // MARK: - List navigation
+    public var selectedParentId: UUID?
+    
     // MARK: - Selection
     private(set) public var isSelectionMode: Bool
     public var selection: [UUID]
