@@ -66,7 +66,7 @@ struct AddItemButton: View {
 
     var body: some View {
         Button {
-            let item = root.editController.addNew(modelContext: root.modelContext)
+            let item = root.editController.addNew(modelContext: root.modelContext, listMode: .list)
             navigator.perform(route: KnownRoutes.spaces(item.id, nil))
         } label: {
             Label { Text("New Space", bundle: .module) } icon: { Image(systemName: "plus") }

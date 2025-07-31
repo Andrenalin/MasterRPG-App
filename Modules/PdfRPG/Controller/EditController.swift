@@ -21,8 +21,11 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
-    func addNew(modelContext: ModelContext) -> PdfDataModel {
+    func addNew(modelContext: ModelContext, listMode: ListModel.ListMode) -> PdfDataModel {
         let newItem = PdfDataModel.newItem
+        if listMode == .folder {
+            newItem.category = .folder
+        }
         modelContext.insert(newItem)
         try? modelContext.save()
         return newItem
@@ -40,8 +43,7 @@ extension EditController {
         }
     }
     
-    func delete(model: any Identifiable) {
-        guard let model = model as? PdfDataModel else { return }
+    func delete(model: PdfDataModel) {
         let fileUrl = model.fileUrl
         let modelContext = model.modelContext
         Task.detached {

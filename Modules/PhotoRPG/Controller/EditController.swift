@@ -21,8 +21,11 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
-    func addNew(modelContext: ModelContext) -> PhotoDataModel {
+    func addNew(modelContext: ModelContext, listMode: ListModel.ListMode) -> PhotoDataModel {
         let newItem = PhotoDataModel.newItem
+        if listMode == .folder {
+            newItem.category = .folder
+        }
         modelContext.insert(newItem)
         try? modelContext.save()
         return newItem
@@ -40,8 +43,7 @@ extension EditController {
         }
     }
     
-    func delete(model: any Identifiable) {
-        guard let model = model as? PhotoDataModel else { return }
+    func delete(model: PhotoDataModel) {
         let fileUrl = model.fileUrl
         let modelContext = model.modelContext
         Task.detached {

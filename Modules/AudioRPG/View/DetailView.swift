@@ -18,10 +18,17 @@ struct DetailView: View {
             Color.clear
             
             FileDetailEditorView(model: model, editController: root.editController, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information, urlKeypath: \.url, fileTypes: FileController.fileTypes) {
-                FileImporterView(model: model, prominent: true)
+                FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
             } editor: {
                 HStack {
-                    Text(model.url?.absoluteString ?? "No file is set")
+                    HStack {
+                        FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes, isProminent: false)
+                        
+                        Text(model.url?.absoluteString ?? "No file is set")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                    }
+                    .opacity(model.category == .folder ? 0 : 1)
                     
                     Button {
                         Task {
@@ -32,8 +39,9 @@ struct DetailView: View {
                         Image(systemName: "play")
                             .font(.largeTitle)
                     }
-                    .disabled(model.url == nil)
+                    .disabled(model.hasAudio)
                 }
+                .padding()
             }
             
             if shouldShowBottomBar {

@@ -66,7 +66,7 @@ struct AddItemButton: View {
 
     var body: some View {
         Button {
-            let item = root.editController.addNew(modelContext: root.modelContext)
+            let item = root.editController.addNew(modelContext: root.modelContext, listMode: .list)
             navigator.perform(route: KnownRoutes.photos(item.id, nil))
         } label: {
             Label { Text("New Pdf", bundle: .module) } icon: { Image(systemName: "plus") }

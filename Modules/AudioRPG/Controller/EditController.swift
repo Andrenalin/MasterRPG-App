@@ -21,9 +21,12 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
-    func addNew(modelContext: ModelContext) -> AudioDataModel {
+    func addNew(modelContext: ModelContext, listMode: ListModel.ListMode) -> AudioDataModel {
         let newItem = AudioDataModel.newItem
         modelContext.insert(newItem)
+        if listMode == .folder {
+            newItem.category = .folder
+        }
         try? modelContext.save()
         return newItem
     }
@@ -40,8 +43,7 @@ extension EditController {
         }
     }
     
-    func delete(model: any Identifiable) {
-        guard let model = model as? AudioDataModel else { return }
+    func delete(model: AudioDataModel) {
         let fileUrl = model.fileUrl
         let modelContext = model.modelContext
         Task.detached {
@@ -53,35 +55,35 @@ extension EditController {
     }
     
     func addSubPhoto(photoId: UUID, model: AudioDataModel) {
-        model.withTransaction {
+        model.withTransaction { modelContext in
             var entries: [AudioEntryDataModel] = model.entryModels
 
             let entry = AudioEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: photoId, item: model)
             entries.append(entry)
             model.entryModels = entries
             
-            guard let modelContext = model.modelContext, let subModel = AudioDataModel.model(modelContext: modelContext, id: photoId) else { return }
+            guard let subModel = AudioDataModel.model(modelContext: modelContext, id: photoId) else { return }
             modelContext.insert(entry)
             subModel.displayState = DisplayStateMask.totalHidden.rawValue
         }
     }
 
     func removeSubPhoto(photoId: UUID, model: AudioDataModel) {
-        model.withTransaction {
+        model.withTransaction { modelContext in
             let entry = model[photoId]
             model.entryModels.removeAll(where: { $0.itemId == photoId })
             model.entryModels.enumerated().forEach { index, entry in
                 entry.index = Int16(index)
             }
                         
-            guard let modelContext = model.modelContext, let subModel = AudioDataModel.model(modelContext: modelContext, id: photoId) else { return }
+            guard let subModel = AudioDataModel.model(modelContext: modelContext, id: photoId) else { return }
             modelContext.delete(entry)
             subModel.displayState = 0
         }
     }
 
     func update(model: AudioDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
-        model.withTransaction {
+        model.withTransaction { modelContext in
             model.reset(name: name)
             model.reset(information: information)
             model.category = category

@@ -24,7 +24,7 @@ public final class AudioEntryDataModel {
 
 extension AudioEntryDataModel: EntryDataAccessable {
     public var name: String {
-        guard let modelContext, let itemId, let entryPhoto = AudioDataModel.model(modelContext: modelContext, id: itemId) else { return "Name unknown" }
+        guard let entryPhoto = AudioDataModel.model(modelContext: modelContext, id: itemId) else { return "Name unknown" }
         return entryPhoto.name
     }        
 }

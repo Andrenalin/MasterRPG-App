@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -68,7 +67,12 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
         .animation(.default, value: model[keyPath: urlKeyPath])
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id) { oldId, newId in
-            guard model[keyPath: urlKeyPath] != nil else { return }
+            guard model[keyPath: urlKeyPath] != nil else {
+                if model[keyPath: categoryKeyPath] == .folder && model[keyPath: nameKeyPath].isEmpty {
+                    withAnimation { isEditing = true }
+                }
+                return
+            }
             itemIdHasUrl = model.id
         }
         .onChange(of: model[keyPath: urlKeyPath]) { oldValue, newValue in
@@ -88,7 +92,7 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                if model[keyPath: urlKeyPath] != nil {
+                if model[keyPath: urlKeyPath] != nil || model[keyPath: categoryKeyPath] == .folder {
                     Button {
                         withAnimation { isEditing = true }
                     } label: {
@@ -108,8 +112,13 @@ private extension FileDetailEditorView {
             Color.clear
             
             importer
+                .padding(32)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.accentColor, lineWidth: 2)
+                }
         }
-        .opacity(model[keyPath: urlKeyPath] == nil ? 1 : 0)
+        .opacity(model[keyPath: urlKeyPath] == nil && model[keyPath: categoryKeyPath] != .folder ? 1 : 0)
         .transition(.scale)
     }
     
@@ -132,7 +141,7 @@ private extension FileDetailEditorView {
             editor            
         }
         .padding()
-        .opacity(model[keyPath: urlKeyPath] != nil ? 1 : 0)
+        .opacity(model[keyPath: urlKeyPath] != nil || model[keyPath: categoryKeyPath] == .folder ? 1 : 0)
         .transition(.scale)
     }
 
@@ -144,7 +153,7 @@ private extension FileDetailEditorView {
                     DetailOverlayView(itemId: model.id, model: model, nameKeyPath: nameKeyPath, categoryKeyPath: categoryKeyPath, tagsKeyPath: tagsKeyPath, descriptionKeyPath: descriptionKeyPath)
                         .padding()
                 }
-                .opacity(model[keyPath: urlKeyPath] != nil ? 1 : 0)
+                .opacity(model[keyPath: urlKeyPath] != nil || model[keyPath: categoryKeyPath] == .folder ? 1 : 0)
                 .transition(.scale)
             
             editor

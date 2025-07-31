@@ -4,8 +4,8 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == UUID {
-    public init(editController: any EditControllable, menuController: any ItemListContextMenuControllable, items: [Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (Model) -> Row) {
+public struct ListView<Model: Identifiable, EditController: EditControllable, Row: View>: View where Model.ID == UUID, Model == EditController.Model {
+    public init(editController: EditController, menuController: any ItemListContextMenuControllable, items: [Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (Model) -> Row) {
         self.editController = editController
         self.menuController = menuController
         self.items = items
@@ -13,7 +13,7 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
         self.route = route
         self.row = row
     }
-    let editController: any EditControllable
+    let editController: EditController
     let menuController: ItemListContextMenuControllable
     let items: [Model]
     let module: NetworkModules
@@ -83,7 +83,9 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
                 ToolbarItemGroup(placement: .secondaryAction) {
                     if !listModel.isSelectionMode {
                         MenuSelectionButtonView(listModel: listModel)
-                        Divider()
+                    }
+                    ControlGroup {
+                        addItemButton(asFolder: true)
                     }
                     ControlGroup {
                         CompactDisplayModeToggle(listModel: listModel)
@@ -103,11 +105,7 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
                     }
                 } else {
                     ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            addItem()
-                        } label: {
-                            Label("Add", systemImage: "plus")
-                        }
+                        addItemButton(asFolder: false)
                     }
                 }
             }
@@ -122,8 +120,20 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
         }
     }
     
-    private func addItem() {
-        let newItem = editController.addNew(modelContext: modelContext)
+    private func addItemButton(asFolder: Bool = false) -> some View {
+        Button {
+            addItem(asFolder)
+        } label: {
+            Label {
+                Text("Add\(asFolder ? " folder" : "")", bundle: .module)
+            } icon: {
+                Image(systemName: asFolder ? "folder.badge.plus" : "plus")
+            }
+        }
+    }
+    
+    private func addItem(_ asFolder: Bool) {
+        let newItem = editController.addNew(modelContext: modelContext, listMode: asFolder ? .folder : .list)
         withAnimation {
             listModel.selected = newItem.id
         }
@@ -172,7 +182,7 @@ public struct ListView<Model: Identifiable, Row: View>: View where Model.ID == U
     }
     
     var leadingPadding: CGFloat {
-        let value = listModel.isSelectionMode ? 12 : 2
-        return CGFloat(valueFor(iOS: value, macOS: 2, tvOS: value, visionOS: value))
+        let value = listModel.isSelectionMode ? 12 : 8
+        return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
     }
 }

@@ -63,6 +63,15 @@ extension AudioDataModel {
         }
         return AudioEntryDataModel(id: id)
     }
+    
+    var hasAudio: Bool {
+        guard category == .folder else { return url != nil }
+        guard let entries else { return false }
+        return entries.first { entry in
+            guard let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.itemId) else { return false }
+            return entryItem.hasAudio
+        } != nil
+    }
 }
 
 extension AudioDataModel {
@@ -78,8 +87,8 @@ extension AudioDataModel {
 }
 
 extension AudioDataModel {
-    static func model(modelContext: ModelContext, id: UUID?) -> AudioDataModel? {
-        guard let id else { return nil }
+    static func model(modelContext: ModelContext?, id: UUID?) -> AudioDataModel? {
+        guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<AudioDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
         return models?.first { $0.id == id }
@@ -90,17 +99,15 @@ extension AudioDataModel {
         return DataModelActor(modelContainer: container)
     }
 
-    func withTransaction(_ transaction: () -> Void) {
+    func withTransaction(_ transaction: (ModelContext) -> Void) {
         if let modelContext {
             do {
                 try modelContext.transaction {
-                    transaction()
+                    transaction(modelContext)
                 }
             } catch {
                 modelContext.rollback()
             }
-        } else {
-            transaction()
         }
     }
 }

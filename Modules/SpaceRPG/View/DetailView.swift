@@ -14,12 +14,12 @@ struct DetailView: View {
             Color.clear
             
             FileDetailEditorView(model: model, editController: root.editController, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information, urlKeypath: \.url, fileTypes: FileController.fileTypes) {
-                FileImporterView(model: model, prominent: true)
+                FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
             } inside: {
                 contentView
             }
             .overlay(alignment: .bottomTrailing) {
-                FileImporterView(model: model, prominent: false)
+                FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes, isProminent: false)
             }
         }
     }
