@@ -84,8 +84,8 @@ extension SpaceDataModel {
 }
 
 extension SpaceDataModel {
-    static func model(modelContext: ModelContext, id: UUID?) -> SpaceDataModel? {
-        guard let id else { return nil }
+    static func model(modelContext: ModelContext?, id: UUID?) -> SpaceDataModel? {
+        guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<SpaceDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
         return models?.first { $0.id == id }
@@ -123,6 +123,16 @@ extension SpaceDataModel: ItemDataAccessable {
             guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
             entryModels[index] = newValue
         }
+    }
+}
+
+extension SpaceDataModel: ListItemFolderable {
+    public var isFolder: Bool {
+        category == .folder
+    }
+    public var subItems: [SpaceDataModel] {
+        guard isFolder else { return [] }
+        return entryModels.compactMap { SpaceDataModel.model(modelContext: modelContext, id: $0.itemId) }
     }
 }
 

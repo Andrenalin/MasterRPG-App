@@ -126,6 +126,16 @@ extension PdfDataModel: ItemDataAccessable {
     }
 }
 
+extension PdfDataModel: ListItemFolderable {
+    public var isFolder: Bool {
+        category == .folder
+    }
+    public var subItems: [PdfDataModel] {
+        guard isFolder else { return [] }
+        return []
+    }
+}
+
 extension PdfDataModel {
     static var newItem: PdfDataModel {
         PdfDataModel(name: "", information: "", category: .adventure, tags: [])

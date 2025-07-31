@@ -7,10 +7,10 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
         self.itemId = itemId
         self.model = model
         self.cacheItemListModel = cacheItemListModel
-        self.nameKeyPath = name
-        self.categoryKeyPath = category
-        self.tagsKeyPath = tags
-        self.descriptionKeyPath = description
+        self.name = name
+        self.category = category
+        self.tags = tags
+        self.description = description
         self.isSelected = isSelected
         self.isTrailing = isTrailing
         self.collectionCategory = collectionCategory
@@ -21,10 +21,10 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
     let itemId: UUID
     let model: Model
     let cacheItemListModel: CacheItemListModel
-    let nameKeyPath: KeyPath<Model, String>
-    let categoryKeyPath: KeyPath<Model, ItemListCategory>
-    let tagsKeyPath: KeyPath<Model, [String]>
-    let descriptionKeyPath: KeyPath<Model, String>
+    let name: KeyPath<Model, String>
+    let category: KeyPath<Model, ItemListCategory>
+    let tags: KeyPath<Model, [String]>
+    let description: KeyPath<Model, String>
     let isSelected: Bool
     let isTrailing: Bool
     let collectionCategory: ItemListCategory?
@@ -40,11 +40,11 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                NameItemRow(itemId: itemId, name: model[keyPath: nameKeyPath], cacheItemListModel: cacheItemListModel)
+                NameItemRow(itemId: itemId, name: model[keyPath: name], cacheItemListModel: cacheItemListModel)
                     .font(.headline)
                 
                 if listModel.displayMode == .regular {
-                    if model[keyPath: tagsKeyPath].count > 4 {
+                    if model[keyPath: tags].count > 4 {
                         twoLineTagView
                     } else {
                         allTagsView
@@ -53,7 +53,7 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
                     actionBar
                 }
                 if listModel.displayMode != .compact {
-                    DescriptionItemRow(itemId: itemId, description: model[keyPath: descriptionKeyPath], cacheItemListModel: cacheItemListModel)
+                    DescriptionItemRow(itemId: itemId, description: model[keyPath: description], cacheItemListModel: cacheItemListModel)
                         .foregroundStyle(.secondary)
                         .font(.footnote)
                         .lineLimit(3)
@@ -73,9 +73,23 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
 private extension ItemRow {
     var thumbView: some View {
         VStack(spacing: 0) {
-            if model[keyPath: categoryKeyPath] == .folder || model[keyPath: categoryKeyPath] == collectionCategory {
-                Image(systemName: model[keyPath: categoryKeyPath].icon)
-                    .font(.largeTitle)
+            if model[keyPath: category] == .folder || model[keyPath: category] == collectionCategory {
+                HStack {
+                    if model[keyPath: category] == .folder {
+                        Image(systemName: (listModel.subItemModels[itemId]?.isOpen ?? false) ? "chevron.down" : "chevron.right")
+                            .imageScale(.small)
+                    }
+                    
+                    Image(systemName: model[keyPath: category].icon)
+                        .font(.title)
+                        .contentShape(.rect)
+                        .onTapGesture {
+                            guard model[keyPath: category] == .folder else { return }
+                            let subModel = listModel.subItemModels[itemId, default: ListSubItemModel(id: itemId)]
+                            subModel.isOpen.toggle()
+                            withAnimation { listModel.subItemModels[itemId] = subModel }
+                        }
+                }
             } else {
                 thumbnail
             }
@@ -84,13 +98,13 @@ private extension ItemRow {
     }
     
     var tagContent: [String] {
-        model[keyPath: tagsKeyPath]
+        model[keyPath: tags]
     }
     
     var allTagsView: some View {
         HStack(spacing: 4) {
-            if model[keyPath: categoryKeyPath] != .folder && model[keyPath: categoryKeyPath] != collectionCategory {
-                CategoryItemRow(category: model[keyPath: categoryKeyPath])
+            if model[keyPath: category] != .folder && model[keyPath: category] != collectionCategory {
+                CategoryItemRow(category: model[keyPath: category])
             }
             
             TagItemRow(tags: tagContent)
@@ -116,8 +130,8 @@ private extension ItemRow {
     var twoLineTagView: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
-                if model[keyPath: categoryKeyPath] != .folder && model[keyPath: categoryKeyPath] != collectionCategory {
-                    CategoryItemRow(category: model[keyPath: categoryKeyPath])
+                if model[keyPath: category] != .folder && model[keyPath: category] != collectionCategory {
+                    CategoryItemRow(category: model[keyPath: category])
                 }
                 TagItemRow(tags: tagFirstContent)
             }

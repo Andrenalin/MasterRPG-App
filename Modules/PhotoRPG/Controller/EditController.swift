@@ -58,7 +58,7 @@ extension EditController {
         model.withTransaction {
             var entries: [PhotoEntryDataModel] = model.entryModels
 
-            let entry = PhotoEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, photoId: photoId, photo: model)
+            let entry = PhotoEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: photoId, item: model)
             entries.append(entry)
             model.entryModels = entries
             
@@ -71,7 +71,7 @@ extension EditController {
     func removeSubPhoto(photoId: UUID, model: PhotoDataModel) {
         model.withTransaction {
             let entry = model[photoId]
-            model.entryModels.removeAll(where: { $0.photoId == photoId })
+            model.entryModels.removeAll(where: { $0.itemId == photoId })
             model.entryModels.enumerated().forEach { index, entry in
                 entry.index = Int16(index)
             }

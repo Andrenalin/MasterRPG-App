@@ -12,6 +12,7 @@ struct DetailView: View {
 #endif
     
     @Environment(AudioRootModel.self) private var root
+    @Environment(ListModel.self) private var listModel
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -82,7 +83,7 @@ private extension DetailView {
     }
     
     var playlistView: some View {
-        List {
+        VStack {
             if model.entryModels.isEmpty {
                 HStack {
                     Text("Drop audio here to add to the playlist")
@@ -100,20 +101,31 @@ private extension DetailView {
                 .frame(maxWidth: .infinity)
             }
             
-            ForEach(model.entryModels) { entry in
-                if let model = AudioDataModel.model(modelContext: model.modelContext, id: entry.itemId) {
-                    MainRowView(model: model)
-                }
+            CoreRPG.ListView(editController: root.editController, menuController: menuController, items: model.subItems, module: AudioDataModel.typeId) { id in
+                AudioRoute.detail(id)
+            } row: { model in
+                MainRowView(model: model)
             }
-#if !os(tvOS)
-            .dropDestination(for: LinkData.self, isEnabled: model.specialCategory) { items, session in
-                guard !items.isEmpty else { return }
-                addLinks(links: items)
-            }
-#endif
         }
+//        ForEach(model.entryModels) { entry in
+//                if let model = AudioDataModel.model(modelContext: model.modelContext, id: entry.itemId) {
+//                    MainRowView(model: model)
+//                }
+//            }
+//#if !os(tvOS)
+//            .dropDestination(for: LinkData.self, isEnabled: model.specialCategory) { items, session in
+//                guard !items.isEmpty else { return }
+//                addLinks(links: items)
+//            }
+//#endif
+//        }
         
     }
+    
+    private var menuController: any ItemListContextMenuControllable {
+        ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
+    }
+
 }
 
 #Preview(traits: .mockData) {

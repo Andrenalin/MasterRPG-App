@@ -144,6 +144,16 @@ extension AudioDataModel: ItemDataAccessable {
     }
 }
 
+extension AudioDataModel: ListItemFolderable {
+    public var isFolder: Bool {
+        category == .folder
+    }
+    public var subItems: [AudioDataModel] {
+        guard isFolder else { return [] }
+        return entryModels.compactMap { AudioDataModel.model(modelContext: modelContext, id: $0.itemId) }
+    }
+}
+
 extension AudioDataModel {
     static var newItem: AudioDataModel {
         AudioDataModel(name: "", information: "", category: .music, tags: [])

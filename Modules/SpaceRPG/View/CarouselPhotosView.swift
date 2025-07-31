@@ -17,7 +17,7 @@ struct CarouselPhotosView: View {
                 photoView(photo: model, selectedPhoto: nil)
 
                 ForEach(model.entryModels) { entry in
-                    if let photo = SpaceDataModel.model(modelContext: modelContext, id: entry.spaceId) {
+                    if let photo = SpaceDataModel.model(modelContext: modelContext, id: entry.itemId) {
                         photoView(photo: photo, selectedPhoto: photo)
                             .overlay(alignment: .topTrailing) {
                                 GlassButton {

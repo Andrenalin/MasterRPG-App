@@ -28,6 +28,7 @@ struct AudioRootView: View {
                     route
                         .environment(cacheItemListModel)
                         .environment(deviceRotationModel)
+                        .environment(listModel)
                         .environment(root.searchModel)
                         .onDisappear {
                             listModel.resetListSelection()

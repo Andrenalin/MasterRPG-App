@@ -4,7 +4,13 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct ListView<Model: Identifiable, EditController: EditControllable, Row: View>: View where Model.ID == UUID, Model == EditController.Model {
+public protocol ListItemFolderable: Identifiable {
+    associatedtype Model = ListItemFolderable
+    var isFolder: Bool { get }
+    var subItems: [Model] { get }
+}
+
+public struct ListView<Model: ListItemFolderable, EditController: EditControllable, Row: View>: View where Model.ID == UUID, Model == EditController.Model {
     public init(editController: EditController, menuController: any ItemListContextMenuControllable, items: [Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (Model) -> Row) {
         self.editController = editController
         self.menuController = menuController
@@ -35,7 +41,7 @@ public struct ListView<Model: Identifiable, EditController: EditControllable, Ro
     @State private var isCompactMode: Bool = false
     
     public var body: some View {
-        listView(filteredItems: items)
+        listView(filteredItems: totalItems(items: items))
             .frame(minWidth: 250, idealWidth: 350, maxWidth: 450)
             .overlay {
                 if items.isEmpty && !searchModel.searchText.isEmpty {
@@ -192,5 +198,16 @@ public struct ListView<Model: Identifiable, EditController: EditControllable, Ro
     var leadingPadding: CGFloat {
         let value = listModel.isSelectionMode ? 12 : 8
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
+    }
+    
+    func totalItems(items: [Model]) -> [Model] {
+        var total: [Model] = []
+        items.forEach { item in
+            total.append(item)
+            if item.isFolder && listModel.subItemModels[item.id]?.isOpen ?? false {
+                total.append(contentsOf: totalItems(items: item.subItems as? [Model] ?? []))
+            }
+        }
+        return total
     }
 }

@@ -13,6 +13,7 @@ public final class ListModel {
     
     // MARK: - List navigation
     public var selectedParentId: UUID?
+    var subItemModels: [UUID: ListSubItemModel] = [:]
     
     // MARK: - Selection
     private(set) public var isSelectionMode: Bool
@@ -103,4 +104,16 @@ public extension ListModel {
             }
         }
     }
+}
+
+
+@Observable
+final class ListSubItemModel {
+    init(id: UUID, isOpen: Bool = false) {
+        self.id = id
+        self.isOpen = isOpen
+    }
+    
+    var id: UUID
+    var isOpen: Bool
 }

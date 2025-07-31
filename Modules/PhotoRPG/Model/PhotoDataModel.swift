@@ -88,8 +88,8 @@ extension PhotoDataModel {
 }
 
 extension PhotoDataModel {
-    static func model(modelContext: ModelContext, id: UUID?) -> PhotoDataModel? {
-        guard let id else { return nil }
+    static func model(modelContext: ModelContext?, id: UUID?) -> PhotoDataModel? {
+        guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<PhotoDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
         return models?.first { $0.id == id }
@@ -129,6 +129,17 @@ extension PhotoDataModel: ItemDataAccessable {
         }
     }
 }
+
+extension PhotoDataModel: ListItemFolderable {
+    public var isFolder: Bool {
+        category == .folder
+    }
+    public var subItems: [PhotoDataModel] {
+        guard isFolder else { return [] }
+        return entryModels.compactMap { PhotoDataModel.model(modelContext: modelContext, id: $0.itemId) }
+    }
+}
+
 
 extension PhotoDataModel {
     static var newItem: PhotoDataModel {
