@@ -54,8 +54,15 @@ extension EditController {
         try? modelContext?.save()
     }
     
+    func move(model: PdfDataModel, to folder: PdfDataModel) {
+        guard model.id != folder.id else { return }
+        model.withTransaction { modelContext in
+            model.parentId = folder.id
+        }
+    }
+    
     func addSubPhoto(photoId: UUID, model: PdfDataModel) {
-        model.withTransaction {
+//      model.withTransaction { modelContext in
 //            var entries: [PdfEntryDataModel] = model.entryModels
 //
 //            let entry = PdfEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, photoId: photoId, photo: model)
@@ -65,11 +72,11 @@ extension EditController {
 //            guard let modelContext = model.modelContext, let subModel = PdfDataModel.model(modelContext: modelContext, id: photoId) else { return }
 //            modelContext.insert(entry)
 //            subModel.displayState = DisplayStateMask.totalHidden.rawValue
-        }
+//        }
     }
 
     func removeSubPhoto(photoId: UUID, model: PdfDataModel) {
-        model.withTransaction {
+//        model.withTransaction { modelContext in
 //            let entry = model[photoId]
 //            model.entryModels.removeAll(where: { $0.photoId == photoId })
 //            model.entryModels.enumerated().forEach { index, entry in
@@ -79,11 +86,11 @@ extension EditController {
 //            guard let modelContext = model.modelContext, let subModel = PdfDataModel.model(modelContext: modelContext, id: photoId) else { return }
 //            modelContext.delete(entry)
 //            subModel.displayState = 0
-        }
+//        }
     }
 
     func update(model: PdfDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
-        model.withTransaction {
+        model.withTransaction { modelContext in
             model.reset(name: name)
             model.reset(information: information)
             model.category = category

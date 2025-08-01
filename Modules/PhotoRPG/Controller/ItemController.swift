@@ -33,4 +33,12 @@ struct ItemController: ItemControllable, Sendable {
         await actor.setup(id: id)
         return await actor.fileUrl
     }
+    
+    func folders(for parentId: UUID?) -> [PhotoDataModel] {
+        let modelContext = ModelContext(container)
+        let predicate = #Predicate<PhotoDataModel> { $0.parentId == parentId }
+        let fetchDesc = FetchDescriptor<PhotoDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.name)])
+        guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
+        return models.filter { $0.category == .folder }
+    }
 }

@@ -96,17 +96,15 @@ extension PdfDataModel {
         return DataModelActor(modelContainer: container)
     }
 
-    func withTransaction(_ transaction: () -> Void) {
+    func withTransaction(_ transaction: (ModelContext) -> Void) {
         if let modelContext {
             do {
                 try modelContext.transaction {
-                    transaction()
+                    transaction(modelContext)
                 }
             } catch {
                 modelContext.rollback()
             }
-        } else {
-            transaction()
         }
     }
 }

@@ -3,14 +3,35 @@
 import CoreExternalRPG
 import SwiftUI
 
+public struct FolderRepresentable: Identifiable {
+    public init(id: UUID, name: String) {
+        self.id = id
+        self.name = name.isEmpty ? String(localized: FolderRepresentable.untitledName).localizedString : name
+    }
+    
+    public var id: UUID
+    public var name: String
+    
+    static private var untitledName: LocalizedStringResource {
+        "Untitled"
+    }
+}
+
 @MainActor
 public protocol ItemListContextMenuControllable {
     func itemName(currentSelected: UUID?) -> String
-
+    var collectionIcon: String { get }
+    
     func duplicateItem(currentSelected: UUID?)
     func deleteItem(currentSelected: UUID?)
     func exportItem(currentSelected: UUID?) -> any NavigationDestination
     func generateLink(currentSelected: UUID?)
+    
+    func folderItems(currentSelected: UUID?) -> [FolderRepresentable]
+    func moveItem(currentSelected: UUID?, to folder: FolderRepresentable)
+    func collectionItems(currentSelected: UUID?) -> [FolderRepresentable]
+    func addItem(currentSelected: UUID?, to folder: FolderRepresentable)
+
 }
 
 public struct ItemListContextMenu: View {
@@ -26,8 +47,12 @@ public struct ItemListContextMenu: View {
     
     public var body: some View {
         duplicateItemView
+        moveItemView
+        addItemView
+        Divider()
         exportItemView
         generateLinkView
+        Divider()
         deleteItemView
     }
 }
@@ -82,6 +107,50 @@ private extension ItemListContextMenu {
                 Text("Link for \(title)", bundle: .module)
             } icon: {
                 Image(systemName: "link")
+            }
+        }
+    }
+    
+    var moveItemView: some View {
+        Menu {
+            ForEach(controller.folderItems(currentSelected: currentSelected)) { folder in
+                Button {
+                    controller.moveItem(currentSelected: currentSelected, to: folder)
+                } label: {
+                    Label {
+                        Text(folder.name)
+                    } icon: {
+                        Image(systemName: "folder")
+                    }
+                }
+            }
+        } label: {
+            Label {
+                Text("Move \(title) into", bundle: .module)
+            } icon: {
+                Image(systemName: "folder")
+            }
+        }
+    }
+
+    var addItemView: some View {
+        Menu {
+            ForEach(controller.collectionItems(currentSelected: currentSelected)) { folder in
+                Button {
+                    controller.addItem(currentSelected: currentSelected, to: folder)
+                } label: {
+                    Label {
+                        Text(folder.name)
+                    } icon: {
+                        Image(systemName: controller.collectionIcon)
+                    }
+                }
+            }
+        } label: {
+            Label {
+                Text("Add \(title) into", bundle: .module)
+            } icon: {
+                Image(systemName: controller.collectionIcon)
             }
         }
     }

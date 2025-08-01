@@ -33,4 +33,12 @@ struct ItemController: ItemControllable {
         await actor.setup(id: id)
         return await actor.fileUrl
     }
+    
+    func folders(for parentId: UUID?) -> [SpaceDataModel] {
+        let modelContext = ModelContext(container)
+        let predicate = #Predicate<SpaceDataModel> { $0.parentId == parentId }
+        let fetchDesc = FetchDescriptor<SpaceDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.name)])
+        guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
+        return models.filter { $0.category == .folder }
+    }
 }

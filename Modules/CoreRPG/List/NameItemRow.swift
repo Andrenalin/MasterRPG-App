@@ -30,7 +30,7 @@ struct NameItemRow: View {
     }
     
     private var nameNotSetResource: LocalizedStringResource {
-        "Name not yet set"
+        "Untitled"
     }
     
     public var nameNotSet: String {

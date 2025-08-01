@@ -54,29 +54,36 @@ extension EditController {
         try? modelContext?.save()
     }
     
+    func move(model: PhotoDataModel, to folder: PhotoDataModel) {
+        guard model.id != folder.id else { return }
+        model.withTransaction { modelContext in
+            model.parentId = folder.id
+        }
+    }
+    
     func addSubPhoto(photoId: UUID, model: PhotoDataModel) {
-        model.withTransaction {
+        model.withTransaction { modelContext in
             var entries: [PhotoEntryDataModel] = model.entryModels
 
             let entry = PhotoEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: photoId, item: model)
             entries.append(entry)
             model.entryModels = entries
             
-            guard let modelContext = model.modelContext, let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
+            guard let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
             modelContext.insert(entry)
             subModel.displayState = DisplayStateMask.totalHidden.rawValue
         }
     }
 
     func removeSubPhoto(photoId: UUID, model: PhotoDataModel) {
-        model.withTransaction {
+        model.withTransaction { modelContext in
             let entry = model[photoId]
             model.entryModels.removeAll(where: { $0.itemId == photoId })
             model.entryModels.enumerated().forEach { index, entry in
                 entry.index = Int16(index)
             }
                         
-            guard let modelContext = model.modelContext, let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
+            guard let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
             modelContext.delete(entry)
             subModel.displayState = 0
         }
@@ -87,7 +94,7 @@ extension EditController {
     }
 
     func update(model: PhotoDataModel, name: String, information: String, category: ItemListCategory, tags: [String], degrees: Double) {
-        model.withTransaction {
+        model.withTransaction { modelContext in
             model.reset(name: name)
             model.reset(information: information)
             model.category = category
