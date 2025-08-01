@@ -54,13 +54,39 @@ extension EditController {
         try? modelContext?.save()
     }
     
-    func move(model: PdfDataModel, to folder: PdfDataModel) {
-        guard model.id != folder.id else { return }
+    func addItem(itemId: UUID, in model: PdfDataModel) {
+        guard itemId != model.id else { return }
         model.withTransaction { modelContext in
-            model.parentId = folder.id
+            guard let item = PdfDataModel.model(modelContext: modelContext, id: itemId) else { return }
+            
+            var entries: [PdfEntryDataModel] = model.entryModels
+            let entry = PdfEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: itemId, item: model)
+            entries.append(entry)
+            model.entryModels = entries
+            modelContext.insert(entry)
+            if model.category == .folder {
+                item.parentId = model.id
+            }
         }
     }
-    
+
+    func removeItem(itemId: UUID, model: PdfDataModel) {
+        model.withTransaction { modelContext in
+            guard let item = PdfDataModel.model(modelContext: modelContext, id: itemId) else { return }
+            
+            let entry = model[itemId]
+            model.entryModels.removeAll(where: { $0.itemId == itemId })
+            model.entryModels.enumerated().forEach { index, entry in
+                entry.index = Int16(index)
+            }
+            modelContext.delete(entry)
+            if model.category == .folder {
+                item.parentId = nil
+            }
+            item.displayState = 0
+        }
+    }
+
     func addSubPhoto(photoId: UUID, model: PdfDataModel) {
 //      model.withTransaction { modelContext in
 //            var entries: [PdfEntryDataModel] = model.entryModels

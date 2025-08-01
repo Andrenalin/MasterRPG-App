@@ -15,7 +15,8 @@ public final class PdfDataModel {
         displayState: Int = 0,
         parentId: UUID? = nil,
         url: URL? = nil,
-        entries: [PdfEntryDataModel] = []
+        entries: [PdfEntryDataModel] = [],
+        bookmarks: [PdfBookmarkDataModel] = []
     ) {
         self.id = id
         self.name = name
@@ -26,6 +27,7 @@ public final class PdfDataModel {
         self.parentId = parentId
         self.url = url
         self.entries = entries
+        self.bookmarks = bookmarks
     }
     
     @Attribute(.preserveValueOnDeletion)
@@ -46,6 +48,7 @@ public final class PdfDataModel {
     }
     
     @Relationship(deleteRule: .cascade) private var entries: [PdfEntryDataModel]? = []
+    @Relationship(deleteRule: .cascade) private var bookmarks: [PdfBookmarkDataModel]? = []
 }
 
 extension PdfDataModel {
@@ -65,7 +68,24 @@ extension PdfDataModel {
         }
         return PdfEntryDataModel(id: id)
     }
-    
+
+    public var bookmarksModels: [PdfBookmarkDataModel] {
+        get {
+            guard let all = bookmarks else { return [] }
+            return all.sorted { $0.index < $1.index }
+        }
+        set {
+            bookmarks = newValue
+        }
+    }
+
+    func bookmarkOrNew(for id: UUID) -> PdfBookmarkDataModel {
+        if let entry = bookmarksModels.first(where: { $0.id == id }) {
+            return entry
+        }
+        return PdfBookmarkDataModel(id: id)
+    }
+
     var specialCategory: Bool {
         category == .folder || category == .collection
     }
@@ -84,8 +104,8 @@ extension PdfDataModel {
 }
 
 extension PdfDataModel {
-    static func model(modelContext: ModelContext, id: UUID?) -> PdfDataModel? {
-        guard let id else { return nil }
+    static func model(modelContext: ModelContext?, id: UUID?) -> PdfDataModel? {
+        guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<PdfDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
         return models?.first { $0.id == id }

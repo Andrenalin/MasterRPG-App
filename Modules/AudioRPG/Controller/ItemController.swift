@@ -34,11 +34,11 @@ struct ItemController: ItemControllable, Sendable {
         return await actor.fileUrl
     }
     
-    func folders(for parentId: UUID?) -> [AudioDataModel] {
+    func collections(isFolder: Bool, in parentId: UUID?) -> [AudioDataModel] {
         let modelContext = ModelContext(container)
         let predicate = #Predicate<AudioDataModel> { $0.parentId == parentId }
         let fetchDesc = FetchDescriptor<AudioDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.name)])
         guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
-        return models.filter { $0.category == .folder }
+        return models.filter { $0.category == (isFolder ? .folder : .playlist) }
     }
 }

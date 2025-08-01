@@ -4,8 +4,40 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-@Model 
+@Model
 public final class PdfEntryDataModel {
+    init(id: UUID = UUID(), index: Int16 = 0, parentId: UUID? = nil, itemId: UUID? = nil, item: PdfDataModel? = nil) {
+        self.id = id
+        self.index = index
+        self.parentId = parentId
+        self.itemId = itemId
+        self.item = item
+    }
+    
+    @Attribute(.preserveValueOnDeletion)
+    public var id: UUID = UUID()
+    var index: Int16 = 0
+    var parentId: UUID?
+    var itemId: UUID?
+    var item: PdfDataModel?
+}
+
+extension PdfEntryDataModel: EntryDataAccessable {
+    public var name: String {
+        guard let entry = PdfDataModel.model(modelContext: modelContext, id: itemId) else { return "Name unknown" }
+        return entry.name
+    }
+}
+
+extension PdfEntryDataModel {
+    var entryModel: PdfEntryModel {
+        PdfEntryModel(id: id)
+    }
+}
+
+
+@Model
+public final class PdfBookmarkDataModel {
     init(id: UUID = UUID(), index: Int16 = 0, name: String = "", content: String = "", bounds: String = "", pageLabel: String = "", parent: PdfDataModel? = nil) {
         self.id = id
         self.index = index
@@ -26,9 +58,9 @@ public final class PdfEntryDataModel {
     var parent: PdfDataModel?
 }
 
-extension PdfEntryDataModel: EntryDataAccessable {}
+extension PdfBookmarkDataModel: EntryDataAccessable {}
 
-extension PdfEntryDataModel {
+extension PdfBookmarkDataModel {
     var entryModel: PdfEntryModel {
         PdfEntryModel(id: id)
     }

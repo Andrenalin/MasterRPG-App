@@ -16,6 +16,8 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
     let itemController: ItemController
     let listModel: ListModel
 
+    var collectionIcon: String = ItemListCategory.playlist.icon
+
     func selection(currentSelected: UUID?) -> [UUID] {
         guard let currentSelected else { return listModel.selection }
         return [currentSelected]
@@ -73,16 +75,32 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
     func folderItems(currentSelected: UUID?) -> [CoreRPG.FolderRepresentable] {
         let selection = selection(currentSelected: currentSelected)
         guard let itemId = selection.first, let model = itemController.modelSync(for: itemId) else { return [] }
-        let folders = itemController.folders(for: model.parentId)
+        let folders = itemController.collections(isFolder: true, in: model.parentId)
         return folders.map { FolderRepresentable(id: $0.id, name: $0.name) }
     }
     
     func moveItem(currentSelected: UUID?, to folder: FolderRepresentable) {
         let selection = selection(currentSelected: currentSelected)
+        guard let folder = itemController.modelSync(for: folder.id) else { return }
         for itemId in selection {
             guard let model = itemController.modelSync(for: itemId) else { continue }
-            guard let folder = itemController.modelSync(for: folder.id) else { continue }
             editController.addItem(itemId: model.id, in: folder)
+        }
+    }
+    
+    func collectionItems(currentSelected: UUID?) -> [FolderRepresentable] {
+        let selection = selection(currentSelected: currentSelected)
+        guard let itemId = selection.first, let model = itemController.modelSync(for: itemId) else { return [] }
+        let folders = itemController.collections(isFolder: false, in: model.parentId)
+        return folders.map { FolderRepresentable(id: $0.id, name: $0.name) }
+    }
+    
+    func addItem(currentSelected: UUID?, to folder: FolderRepresentable) {
+        let selection = selection(currentSelected: currentSelected)
+        guard let collection = itemController.modelSync(for: folder.id) else { return }
+        for itemId in selection {
+            guard let model = itemController.modelSync(for: itemId) else { continue }
+            editController.addItem(itemId: model.id, in: collection)
         }
     }
 }

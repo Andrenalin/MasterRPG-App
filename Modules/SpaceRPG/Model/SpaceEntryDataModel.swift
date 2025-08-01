@@ -6,11 +6,11 @@ import SwiftData
 
 @Model
 public final class SpaceEntryDataModel {
-    init(id: UUID = UUID(), index: Int16 = 0, parentId: UUID? = nil, itemId: UUID? = nil, space: SpaceDataModel? = nil) {
+    init(id: UUID = UUID(), index: Int16 = 0, parentId: UUID? = nil, itemId: UUID? = nil, item: SpaceDataModel? = nil) {
         self.id = id
         self.index = index
         self.itemId = itemId
-        self.space = space
+        self.space = item
     }
     
     public var id: UUID = UUID()

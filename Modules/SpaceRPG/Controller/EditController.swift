@@ -54,19 +54,45 @@ extension EditController {
         try? modelContext?.save()
     }
     
-    func move(model: SpaceDataModel, to folder: SpaceDataModel) {
-        guard model.id != folder.id else { return }
+    func addItem(itemId: UUID, in model: SpaceDataModel) {
+        guard itemId != model.id else { return }
         model.withTransaction { modelContext in
-            model.parentId = folder.id
+            guard let item = SpaceDataModel.model(modelContext: modelContext, id: itemId) else { return }
             
+            var entries: [SpaceEntryDataModel] = model.entryModels
+            let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: itemId, item: model)
+            entries.append(entry)
+            model.entryModels = entries
+            modelContext.insert(entry)
+            if model.category == .folder {
+                item.parentId = model.id
+            }
         }
     }
+
+    func removeItem(itemId: UUID, model: SpaceDataModel) {
+        model.withTransaction { modelContext in
+            guard let item = SpaceDataModel.model(modelContext: modelContext, id: itemId) else { return }
+            
+            let entry = model[itemId]
+            model.entryModels.removeAll(where: { $0.itemId == itemId })
+            model.entryModels.enumerated().forEach { index, entry in
+                entry.index = Int16(index)
+            }
+            modelContext.delete(entry)
+            if model.category == .folder {
+                item.parentId = nil
+            }
+            item.displayState = 0
+        }
+    }
+
 
     func addSubPhoto(photoId: UUID, model: SpaceDataModel) {
         model.withTransaction { modelContext in
             var entries: [SpaceEntryDataModel] = model.entryModels
             
-            let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: photoId, space: model)
+            let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: photoId, item: model)
             entries.append(entry)
             model.entryModels = entries
             
