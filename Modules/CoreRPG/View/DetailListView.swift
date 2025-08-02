@@ -135,6 +135,7 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
     private func addItem(for type: EditControllerAddType) {
         let newItem = editController.addNew(modelContext: modelContext, type: type)
         withAnimation {
+            editController.addItem(itemId: newItem.id, in: modelContext, parentId: listModel.selectedParentId, folderId:  listModel.lastFolderId)
             listModel.selected = newItem.id
         }
     }

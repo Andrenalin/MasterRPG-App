@@ -26,7 +26,7 @@ struct MainRowView: View {
     private func addLinks(links: [LinkData]) {
         links.forEach { link in
             guard link.module == AudioDataModel.typeId else { return }
-            withAnimation { root.editController.addItem(itemId: link.itemId, in: model) }
+            withAnimation { root.editController.addItem(itemId: link.itemId, in: model, folderId: listModel.lastFolderId) }
         }
         
     }

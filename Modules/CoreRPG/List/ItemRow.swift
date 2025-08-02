@@ -92,6 +92,8 @@ private extension ItemRow {
         if model[keyPath: category] == .folder {
             Image(systemName: (listModel.subItemModels[itemId]?.isOpen ?? false) ? "chevron.down" : "chevron.right")
                 .imageScale(.small)
+                .padding(.trailing)
+                .foregroundStyle((listModel.subItemModels[itemId]?.isOpen ?? false) ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
                     guard model[keyPath: category] == .folder else { return }

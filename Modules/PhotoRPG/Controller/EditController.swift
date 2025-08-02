@@ -51,12 +51,25 @@ extension EditController {
         Task.detached {
             await fileController.fileUrlDataController.delete(fileUrl)
         }
-        modelContext?.delete(model)
+        model.entryModels.forEach { entry in
+            if let entryItem = PhotoDataModel.model(modelContext: modelContext, id: entry.itemId) {
+                if model.category == .folder {
+                    entryItem.parentId = model.parentId
+                }
+                entryItem.displayState = 0
+            }
+        }
+        model.displayState = 2
         updateTags(modelContext: modelContext)
         try? modelContext?.save()
     }
     
-    func addItem(itemId: UUID, in model: PhotoDataModel) {
+    func addItem(itemId: UUID, in modelContext: ModelContext, parentId: UUID?, folderId: UUID?) {
+        guard let model = PhotoDataModel.model(modelContext: modelContext, id: parentId) else { return }
+        addItem(itemId: itemId, in: model, folderId: folderId)
+    }
+    
+    func addItem(itemId: UUID, in model: PhotoDataModel, folderId: UUID?) {
         guard itemId != model.id else { return }
         model.withTransaction { modelContext in
             guard let item = PhotoDataModel.model(modelContext: modelContext, id: itemId) else { return }
@@ -68,6 +81,8 @@ extension EditController {
             modelContext.insert(entry)
             if model.category == .folder {
                 item.parentId = model.id
+            } else {
+                item.parentId = folderId
             }
         }
     }

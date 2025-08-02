@@ -41,6 +41,8 @@ public protocol EditControllable {
     @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> Model
     func delete(model: Model)
     
+    func addItem(itemId: UUID, in modelContext: ModelContext, parentId: UUID?, folderId: UUID?)
+
     func update(model: Model, name: String, information: String, category: ItemListCategory, tags: [String])
     func resetFile(url: URL?, in model: Model)
 }

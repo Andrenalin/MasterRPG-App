@@ -11,8 +11,9 @@ public final class ListModel {
         update(selection: Set(selection))
     }
     
-    public init(listModel: ListModel, parentId: UUID) {
+    public init(listModel: ListModel, parentId: UUID, lastFolderId: UUID?) {
         self.selectedParentId = parentId
+        self.lastFolderId = lastFolderId
         self.isSelectionMode = false
         self.selection = []
         self.listSelection = []
@@ -22,6 +23,7 @@ public final class ListModel {
     
     // MARK: - List navigation
     public var selectedParentId: UUID?
+    public var lastFolderId: UUID?
     var subItemModels: [UUID: ListSubItemModel] = [:]
     
     // MARK: - Selection

@@ -69,13 +69,12 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
         }
         .animation(.default, value: model[keyPath: url])
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onChange(of: model[keyPath: name], initial: true) {
+            guard model[keyPath: name].isEmpty && (model[keyPath: url] != nil || model[keyPath: specialCategory]) else { return }
+            withAnimation { isEditing = true }
+        }
         .onChange(of: model.id) { oldId, newId in
-            guard model[keyPath: url] != nil else {
-                if model[keyPath: category] == .folder && model[keyPath: name].isEmpty {
-                    withAnimation { isEditing = true }
-                }
-                return
-            }
+            guard model[keyPath: url] != nil else { return }
             itemIdHasUrl = model.id
         }
         .onChange(of: model[keyPath: url]) { oldValue, newValue in
@@ -106,7 +105,6 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
                 }
             }
         }
-        .toolbarRole(.editor)
     }
 }
 

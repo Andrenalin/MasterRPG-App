@@ -84,7 +84,7 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
         guard let folder = itemController.modelSync(for: folder.id) else { return }
         for itemId in selection {
             guard let model = itemController.modelSync(for: itemId) else { continue }
-            editController.addItem(itemId: model.id, in: folder)
+            editController.addItem(itemId: model.id, in: folder, folderId: folder.id)
         }
     }
     
@@ -100,7 +100,7 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
         guard let collection = itemController.modelSync(for: folder.id) else { return }
         for itemId in selection {
             guard let model = itemController.modelSync(for: itemId) else { continue }
-            editController.addItem(itemId: model.id, in: collection)
+            editController.addItem(itemId: model.id, in: collection, folderId: nil)
         }
     }
 }

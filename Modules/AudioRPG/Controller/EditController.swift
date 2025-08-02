@@ -59,16 +59,21 @@ extension EditController {
                 entryItem.displayState = 0
             }
         }
-        modelContext?.delete(model)
+        model.displayState = 2
         updateTags(modelContext: modelContext)
         try? modelContext?.save()
     }
+    
+    func addItem(itemId: UUID, in modelContext: ModelContext, parentId: UUID?, folderId: UUID?) {
+        guard let model = AudioDataModel.model(modelContext: modelContext, id: parentId) else { return }
+        addItem(itemId: itemId, in: model, folderId: folderId)
+    }
         
-    func addItem(itemId: UUID, in model: AudioDataModel) {
+    func addItem(itemId: UUID, in model: AudioDataModel, folderId: UUID?) {
         guard itemId != model.id else { return }
         model.withTransaction { modelContext in
             guard let item = AudioDataModel.model(modelContext: modelContext, id: itemId) else { return }
-            
+            print("add \(item.name) into \(model.name)")
             var entries: [AudioEntryDataModel] = model.entryModels
             let entry = AudioEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: itemId, item: model)
             entries.append(entry)
@@ -76,6 +81,8 @@ extension EditController {
             modelContext.insert(entry)
             if model.category == .folder {
                 item.parentId = model.id
+            } else {
+                item.parentId = folderId
             }
         }
     }
