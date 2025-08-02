@@ -11,6 +11,15 @@ public final class ListModel {
         update(selection: Set(selection))
     }
     
+    public init(listModel: ListModel, parentId: UUID) {
+        self.selectedParentId = parentId
+        self.isSelectionMode = false
+        self.selection = []
+        self.listSelection = []
+        self.displayMode = listModel.displayMode
+        self.listMode = .folder
+    }
+    
     // MARK: - List navigation
     public var selectedParentId: UUID?
     var subItemModels: [UUID: ListSubItemModel] = [:]
@@ -21,7 +30,7 @@ public final class ListModel {
     public var selected: UUID?
     public var listSelection: Set<UUID>
     
-    public var focusSelectedItem: Binding<UUID>?
+    //public var focusSelectedItem: Binding<UUID>?
     
     // MARK: - Display Mode
     public enum DisplayMode: Int, Equatable, Hashable, Codable, Sendable {
@@ -73,7 +82,7 @@ public final class ListModel {
             guard newValue, listMode != .folder else { return }
             listMode = .folder
         }
-    }
+    }    
 }
 
 // MARK: - Selection
@@ -97,11 +106,11 @@ public extension ListModel {
             self.selection = Array(selection)
         } else {
             selected = selection.first
-            if let selected {
-                focusSelectedItem = .constant(selected)
-            } else {
-                focusSelectedItem = nil
-            }
+//            if let selected {
+//                focusSelectedItem = .constant(selected)
+//            } else {
+//                focusSelectedItem = nil
+//            }
         }
     }
 }

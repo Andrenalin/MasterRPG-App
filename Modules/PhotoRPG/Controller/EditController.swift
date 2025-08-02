@@ -21,10 +21,12 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
-    func addNew(modelContext: ModelContext, listMode: ListModel.ListMode) -> PhotoDataModel {
+    @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> PhotoDataModel {
         let newItem = PhotoDataModel.newItem
-        if listMode == .folder {
+        if type == .folder {
             newItem.category = .folder
+        } else if type == .collection {
+            newItem.category = PhotoDataModel.collectionCategory
         }
         modelContext.insert(newItem)
         try? modelContext.save()

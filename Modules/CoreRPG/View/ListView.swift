@@ -5,9 +5,11 @@ import SwiftData
 import SwiftUI
 
 public protocol ListItemFolderable: Identifiable {
-    associatedtype Model = ListItemFolderable
     var isFolder: Bool { get }
-    var subItems: [Model] { get }
+    var subItems: [Self] { get }
+    
+    @MainActor static var dropItem: Self { get }
+    @MainActor static var collectionCategory: ItemListCategory { get }
 }
 
 public struct ListView<Model: ListItemFolderable, EditController: EditControllable, Row: View>: View where Model.ID == UUID, Model == EditController.Model {
@@ -37,8 +39,6 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var editMode: EditMode = .inactive
 #endif
-    
-    @State private var isCompactMode: Bool = false
     
     public var body: some View {
         listView(filteredItems: totalItems(items: items))
@@ -87,31 +87,16 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
                 }
 #else
                 ToolbarItemGroup(placement: .secondaryAction) {
-                    if !listModel.isSelectionMode {
-                        MenuSelectionButtonView(listModel: listModel)
-                    }
-                    ControlGroup {
-                        addItemButton(asFolder: true)
-                    }
-                    ControlGroup {
-                        CompactDisplayModeToggle(listModel: listModel)
-                        MediumDisplayModeToggle(listModel: listModel)
-                        RegularDisplayModeToggle(listModel: listModel)
-                    }
-                    ControlGroup {
-                        ListModeToggle(listModel: listModel)
-                        FolderModeToggle(listModel: listModel)
-                    }
+                    secondaryActionMenu
                 }
 #endif
-                
                 if listModel.isSelectionMode {
                     ToolbarItem(placement: .primaryAction) {
                         MenuSelectionButtonView(listModel: listModel)
                     }
                 } else {
                     ToolbarItem(placement: .primaryAction) {
-                        addItemButton(asFolder: false)
+                        addItemButton(for: .item)
                     }
                 }
             }
@@ -126,20 +111,40 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
         }
     }
     
-    private func addItemButton(asFolder: Bool = false) -> some View {
+    @ViewBuilder
+    private var secondaryActionMenu: some View {
+        if !listModel.isSelectionMode {
+            MenuSelectionButtonView(listModel: listModel)
+        }
+        ControlGroup {
+            addItemButton(for: .folder)
+            addItemButton(for: .collection)
+        }
+        ControlGroup {
+            CompactDisplayModeToggle(listModel: listModel)
+            MediumDisplayModeToggle(listModel: listModel)
+            RegularDisplayModeToggle(listModel: listModel)
+        }
+        ControlGroup {
+            ListModeToggle(listModel: listModel)
+            FolderModeToggle(listModel: listModel)
+        }
+    }
+    
+    private func addItemButton(for type: EditControllerAddType) -> some View {
         Button {
-            addItem(asFolder)
+            addItem(for: type)
         } label: {
             Label {
-                Text("Add\(asFolder ? " folder" : "")", bundle: .module)
+                Text(type.title)
             } icon: {
-                Image(systemName: asFolder ? "folder.badge.plus" : "plus")
+                Image(systemName: type.icon(collection: Model.collectionCategory.icon))
             }
         }
     }
     
-    private func addItem(_ asFolder: Bool) {
-        let newItem = editController.addNew(modelContext: modelContext, listMode: asFolder ? .folder : .list)
+    private func addItem(for type: EditControllerAddType) {
+        let newItem = editController.addNew(modelContext: modelContext, type: type)
         withAnimation {
             listModel.selected = newItem.id
         }
@@ -188,11 +193,6 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
         }
         .onDelete(perform: deleteItems)
         .deleteDisabled(listModel.isSelectionMode)
-#if !os(tvOS)
-        .dropDestination(for: LinkData.self, isEnabled: true) { items, _ in
-            //addLinks(links: items)
-        }
-#endif
     }
     
     var leadingPadding: CGFloat {
@@ -205,7 +205,7 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
         items.forEach { item in
             total.append(item)
             if item.isFolder && listModel.subItemModels[item.id]?.isOpen ?? false {
-                total.append(contentsOf: totalItems(items: item.subItems as? [Model] ?? []))
+                total.append(contentsOf: totalItems(items: item.subItems))
             }
         }
         return total

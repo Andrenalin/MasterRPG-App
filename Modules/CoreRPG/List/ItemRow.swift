@@ -34,7 +34,9 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
     @Environment(ListModel.self) private var listModel
     
     public var body: some View {
-        HStack(spacing: 4) {
+        HStack(alignment: .center, spacing: 4) {
+            specialCategoryIcon
+            
             if !isTrailing {
                 thumbView
             }
@@ -65,34 +67,44 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
             if isTrailing {
                 thumbView
             }
+            
+            specialCategoryFolderIndicator
         }
         .fixedSize(horizontal: false, vertical: true)
     }
 }
 
 private extension ItemRow {
+    var isSpecialCategory: Bool {
+        model[keyPath: category] == .folder || model[keyPath: category] == .drop || model[keyPath: category] == collectionCategory
+    }
+    
+    @ViewBuilder
+    var specialCategoryIcon: some View {
+        if isSpecialCategory {
+            Image(systemName: model[keyPath: category].icon)
+                .font(.title)
+        }
+    }
+
+    @ViewBuilder
+    var specialCategoryFolderIndicator: some View {
+        if model[keyPath: category] == .folder {
+            Image(systemName: (listModel.subItemModels[itemId]?.isOpen ?? false) ? "chevron.down" : "chevron.right")
+                .imageScale(.small)
+                .contentShape(.rect)
+                .onTapGesture {
+                    guard model[keyPath: category] == .folder else { return }
+                    let subModel = listModel.subItemModels[itemId, default: ListSubItemModel(id: itemId)]
+                    subModel.isOpen.toggle()
+                    withAnimation { listModel.subItemModels[itemId] = subModel }
+                }
+        }
+    }
+
     var thumbView: some View {
         VStack(spacing: 0) {
-            if model[keyPath: category] == .folder || model[keyPath: category] == collectionCategory {
-                HStack {
-                    if model[keyPath: category] == .folder {
-                        Image(systemName: (listModel.subItemModels[itemId]?.isOpen ?? false) ? "chevron.down" : "chevron.right")
-                            .imageScale(.small)
-                    }
-                    
-                    Image(systemName: model[keyPath: category].icon)
-                        .font(.title)
-                        .contentShape(.rect)
-                        .onTapGesture {
-                            guard model[keyPath: category] == .folder else { return }
-                            let subModel = listModel.subItemModels[itemId, default: ListSubItemModel(id: itemId)]
-                            subModel.isOpen.toggle()
-                            withAnimation { listModel.subItemModels[itemId] = subModel }
-                        }
-                }
-            } else {
-                thumbnail
-            }
+            thumbnail
         }
         .fixedSize(horizontal: true, vertical: false)
     }

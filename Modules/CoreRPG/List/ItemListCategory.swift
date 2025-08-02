@@ -10,7 +10,16 @@ public protocol CategoryTextRepresentable: Equatable, Hashable, Identifiable {
 public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTextRepresentable, Sendable {
     case all = 0
     case hide = 1
+    
+    // structure
     case folder = 2
+    case drop = 3
+    
+    // collections
+    case album = 7000
+    case playlist = 3001
+    case bookshelf = 7001
+    case models = 7002
 
     // Module names
     case adventure = 1000
@@ -32,7 +41,6 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
 
     // Audio
     case music = 3000
-    case playlist = 3001
     case sound = 3002
     
     // Map
@@ -49,8 +57,6 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
     case gameMaster = 6002
     case monster = 6003
 
-    // Photo
-    case collection = 7000
 
     public var id: Int {
         rawValue
@@ -61,33 +67,36 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
         case .all: "All"
         case .hide: "Hide"
         case .folder: "Folder"
+        case .drop: "Drop"
 
         case .adventure: "Adventure"
-        case .audio:"Audio"
-        case .building:"Building"
-        case .campaign:"Campaign"
-        case .collection:"Collection"
-        case .character:"Character"
-        case .dice:"Dice"
-        case .dungeon:"Dungeon"
-        case .game:"Game"
-        case .gameMaster:"Game Master"
-        case .generator:"Generator"
-        case .item:"Item"
-        case .loot:"Loot"
-        case .map:"Map"
-        case .monster:"Monster"
-        case .music:"Music"
-        case .pdf:"Pdf"
-        case .photo:"Photo"            
-        case .playlist:"Playlist"
-        case .rules:"Rules"
-        case .scenario:"Scenario"
-        case .sound:"Sound"
-        case .supplement:"Supplement"
-        case .table:"Table"
-        case .value:"Character"
-        case .weather:"Weather"
+        case .album: "Album"
+        case .audio: "Audio"
+        case .bookshelf: "Bookshelf"
+        case .building: "Building"
+        case .campaign: "Campaign"
+        case .character: "Character"
+        case .dice: "Dice"
+        case .dungeon: "Dungeon"
+        case .game: "Game"
+        case .gameMaster: "Game Master"
+        case .generator: "Generator"
+        case .item: "Item"
+        case .loot: "Loot"
+        case .map: "Map"
+        case .models: "Models"
+        case .monster: "Monster"
+        case .music: "Music"
+        case .playlist: "Playlist"
+        case .pdf: "Pdf"
+        case .photo: "Photo"
+        case .rules: "Rules"
+        case .scenario: "Scenario"
+        case .sound: "Sound"
+        case .supplement: "Supplement"
+        case .table: "Table"
+        case .value: "Character"
+        case .weather: "Weather"
         }
     }
     
@@ -100,8 +109,11 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
         case .all: "list.bullet"
         case .hide: "eye.slash"
         case .folder: "folder"
-        case .collection:"rectangle.stack"
+        case .drop: "square.and.arrow.down.on.square"
+        case .album:"rectangle.stack"
         case .playlist:"play.square.stack"
+        case .bookshelf:"books.vertical"
+        case .models: "square.3.layers.3d.down.right"
 
         case .game: "person.2"
         case .photo: "photo.on.rectangle.angled"
@@ -112,7 +124,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
         case .weather: "cloud.bolt.rain"
         case .dice: "dice"
         case .audio: "music.note.list"
-        case .pdf: "books.vertical"
+        case .pdf: "apple.books.pages"
             
         default: "exclamationmark.triangle"
         }

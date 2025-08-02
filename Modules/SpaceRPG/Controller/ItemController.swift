@@ -34,11 +34,11 @@ struct ItemController: ItemControllable {
         return await actor.fileUrl
     }
     
-    func collections(isFolder: Bool, in parentId: UUID?) -> [SpaceDataModel] {
+    @MainActor func collections(isFolder: Bool, in parentId: UUID?) -> [SpaceDataModel] {
         let modelContext = ModelContext(container)
         let predicate = #Predicate<SpaceDataModel> { $0.parentId == parentId }
         let fetchDesc = FetchDescriptor<SpaceDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.name)])
         guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
-        return models.filter { $0.category == (isFolder ? .folder : .collection) }
+        return models.filter { $0.category == (isFolder ? .folder : SpaceDataModel.collectionCategory) }
     }
 }

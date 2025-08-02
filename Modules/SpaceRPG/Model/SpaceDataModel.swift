@@ -66,8 +66,8 @@ extension SpaceDataModel {
         return SpaceEntryDataModel(id: id)
     }
     
-    var specialCategory: Bool {
-        category == .folder || category == .collection
+    @MainActor var specialCategory: Bool {
+        category == .folder || category == SpaceDataModel.collectionCategory
     }
 }
 
@@ -132,6 +132,8 @@ extension SpaceDataModel: ListItemFolderable {
         guard isFolder else { return [] }
         return entryModels.compactMap { SpaceDataModel.model(modelContext: modelContext, id: $0.itemId) }
     }
+    @MainActor public static let dropItem: SpaceDataModel = SpaceDataModel(id: UUID(), name: "Drop Space", information: "Add Space to a folder or collection", category: .drop)
+    @MainActor public static var collectionCategory: ItemListCategory = .models
 }
 
 extension SpaceDataModel {

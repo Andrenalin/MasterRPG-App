@@ -16,7 +16,7 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
     let itemController: ItemController
     let listModel: ListModel
 
-    var collectionIcon: String = ItemListCategory.collection.icon
+    var collectionIcon: String = PdfDataModel.collectionCategory.icon
     
     func selection(currentSelected: UUID?) -> [UUID] {
         guard let currentSelected else { return listModel.selection }

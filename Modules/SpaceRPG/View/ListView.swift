@@ -47,7 +47,7 @@ struct ListView: View {
     
     private func updateFile(url: URL) {
         Task { @MainActor in
-            let model = root.editController.addNew(modelContext: modelContext, listMode: .list)
+            let model = root.editController.addNew(modelContext: modelContext, type: .item)
             try? await Task.sleep(for: .seconds(0.5))
             withAnimation {
                 root.editController.resetFile(url: url, in: model)

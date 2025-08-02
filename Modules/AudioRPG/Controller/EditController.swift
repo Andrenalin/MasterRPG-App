@@ -21,11 +21,13 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
-    func addNew(modelContext: ModelContext, listMode: ListModel.ListMode) -> AudioDataModel {
+    @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> AudioDataModel {
         let newItem = AudioDataModel.newItem
         modelContext.insert(newItem)
-        if listMode == .folder {
+        if type == .folder {
             newItem.category = .folder
+        } else if type == .collection {
+            newItem.category = AudioDataModel.collectionCategory
         }
         try? modelContext.save()
         return newItem

@@ -70,8 +70,8 @@ extension PhotoDataModel {
         return PhotoEntryDataModel(id: id)
     }
     
-    var specialCategory: Bool {
-        category == .folder || category == .collection
+    @MainActor var specialCategory: Bool {
+        category == .folder || category == PhotoDataModel.collectionCategory
     }
 }
 
@@ -136,6 +136,9 @@ extension PhotoDataModel: ListItemFolderable {
         guard isFolder else { return [] }
         return entryModels.compactMap { PhotoDataModel.model(modelContext: modelContext, id: $0.itemId) }
     }
+    
+    @MainActor public static let dropItem: PhotoDataModel = PhotoDataModel(id: UUID(), name: "Drop Photo", information: "Add Photo to a folder or album", category: .drop)
+    @MainActor public static var collectionCategory: ItemListCategory = .album
 }
 
 

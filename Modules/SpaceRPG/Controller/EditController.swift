@@ -21,10 +21,12 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
-    func addNew(modelContext: ModelContext, listMode: ListModel.ListMode) -> SpaceDataModel {
+    @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> SpaceDataModel {
         let newItem = SpaceDataModel.newItem
-        if listMode == .folder {
+        if type == .folder {
             newItem.category = .folder
+        } else if type == .collection {
+            newItem.category = SpaceDataModel.collectionCategory
         }
         modelContext.insert(newItem)
         try? modelContext.save()

@@ -34,11 +34,11 @@ struct ItemController: ItemControllable, Sendable {
         return await actor.fileUrl
     }
     
-    func collections(isFolder: Bool, in parentId: UUID?) -> [PdfDataModel] {
+    @MainActor func collections(isFolder: Bool, in parentId: UUID?) -> [PdfDataModel] {
         let modelContext = ModelContext(container)
         let predicate = #Predicate<PdfDataModel> { $0.parentId == parentId }
         let fetchDesc = FetchDescriptor<PdfDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.name)])
         guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
-        return models.filter { $0.category == (isFolder ? .folder : .collection) }
+        return models.filter { $0.category == (isFolder ? .folder : PdfDataModel.collectionCategory) }
     }
 }

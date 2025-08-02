@@ -86,8 +86,9 @@ extension PdfDataModel {
         return PdfBookmarkDataModel(id: id)
     }
 
+    @MainActor
     var specialCategory: Bool {
-        category == .folder || category == .collection
+        category == .folder || category == PdfDataModel.collectionCategory
     }
 }
 
@@ -152,6 +153,8 @@ extension PdfDataModel: ListItemFolderable {
         guard isFolder else { return [] }
         return []
     }
+    @MainActor public static let dropItem: PdfDataModel = PdfDataModel(id: UUID(), name: "Drop Pdf", information: "Add Pdf to a folder or collection", category: .drop)
+    @MainActor public static var collectionCategory: ItemListCategory = .bookshelf
 }
 
 extension PdfDataModel {

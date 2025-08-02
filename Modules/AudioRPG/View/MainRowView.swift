@@ -16,6 +16,9 @@ struct MainRowView: View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, category: \.category, tags: \.tags, description: \.information, isSelected: false, collectionCategory: ItemListCategory.playlist)
             .animation(.smooth, value: listModel.displayMode)
 #if !os(tvOS)
+            .dropDestination(for: LinkData.self) { items, _ in
+                addLinks(links: items)
+            }
             .draggable(LinkData(itemId: model.id, module: AudioDataModel.typeId, name: model.name))
 #endif
     }
@@ -25,6 +28,7 @@ struct MainRowView: View {
             guard link.module == AudioDataModel.typeId else { return }
             withAnimation { root.editController.addItem(itemId: link.itemId, in: model) }
         }
+        
     }
 }
 
