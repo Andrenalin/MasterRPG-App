@@ -5,6 +5,9 @@ import Foundation
 import SwiftData
 
 struct ItemController: ItemControllable {
+    typealias Model = SpaceDataModel
+    typealias ExchangeModel = SpaceModel
+
     let container: ModelContainer
     
     func item(for id: UUID) async -> SpaceModel? {
@@ -13,32 +16,9 @@ struct ItemController: ItemControllable {
         return await actor.spaceModel()
     }
     
-    func itemSync(for id: UUID) -> SpaceModel? {
-        modelSync(for: id)?.spaceModel
-    }
-
-    func modelSync(for id: UUID) -> SpaceDataModel? {
-        SpaceDataModel.model(modelContext: ModelContext(container), id: id)
-    }
-
-    func allItemIds() -> [UUID] {
-        let modelContext = ModelContext(container)
-        let fetchDesc = FetchDescriptor<SpaceDataModel>()
-        guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
-        return models.map { $0.id }
-    }
-    
     func fileUrl(for id: UUID) async -> FileUrl? {
         let actor = DataModelActor(modelContainer: container)
         await actor.setup(id: id)
         return await actor.fileUrl
-    }
-    
-    @MainActor func collections(isFolder: Bool, in parentId: UUID?) -> [SpaceDataModel] {
-        let modelContext = ModelContext(container)
-        let predicate = #Predicate<SpaceDataModel> { $0.parentId == parentId }
-        let fetchDesc = FetchDescriptor<SpaceDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.name)])
-        guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
-        return models.filter { $0.category == (isFolder ? .folder : SpaceDataModel.collectionCategory) }
     }
 }

@@ -3,8 +3,8 @@
 import CoreRPG
 import Foundation
 
-struct SpaceModel: Identifiable, Sendable {
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[SpaceEntryModel]>) {
+public struct SpaceModel: Identifiable, Sendable {
+    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[SpaceEntryModel]>) {
         self.id = id
         name_ = name
         description_ = description
@@ -96,28 +96,31 @@ extension SpaceModel: Codable {
 }
 
 extension SpaceModel: ItemDataAccessable {
-    static var typeId: NetworkModules {
+    public static var typeId: NetworkModules {
         .space
     }
-    
-    var entryModels: [SpaceEntryModel] {
+    public var entryModels: [SpaceEntryModel] {
         get { entries }
         set(newValue) { entries = newValue }
     }
-
-    var information: String {
-        get {
-            description
-        }
-        set(newValue) {
-            description = newValue
-        }
+    public var information: String {
+        get { description }
+        set(newValue) { description = newValue }
+    }
+    public var url: URL? {
+        get { nil }
+        set(newValue) {}
+    }
+    public var parentId: UUID? {
+        get { nil }
+        set(newValue) {}
     }
     
-    subscript(id: UUID) -> SpaceEntryModel {
-        get {
-            entries.first(where: { $0.id == id }) ?? SpaceEntryModel(id: id, spaceId: UUID())
-        }
+    public func reset(name: String) {}
+    public func reset(information: String) {}
+    public func reset(url: URL?) {}
+    public subscript(id: UUID) -> SpaceEntryModel {
+        get { entries.first(where: { $0.id == id }) ?? SpaceEntryModel(id: id, itemId: UUID()) }
         set(newValue) {}
     }
 }

@@ -73,7 +73,6 @@ extension EditController {
         guard itemId != model.id else { return }
         model.withTransaction { modelContext in
             guard let item = AudioDataModel.model(modelContext: modelContext, id: itemId) else { return }
-            print("add \(item.name) into \(model.name)")
             var entries: [AudioEntryDataModel] = model.entryModels
             let entry = AudioEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: itemId, item: model)
             entries.append(entry)

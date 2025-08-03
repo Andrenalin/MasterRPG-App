@@ -3,8 +3,8 @@
 import CoreRPG
 import Foundation
 
-struct PhotoModel: Identifiable, Sendable {
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, degrees: CRDT<Double>, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[PhotoEntryModel]>) {
+public struct PhotoModel: Identifiable, Sendable {
+    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, degrees: CRDT<Double>, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[PhotoEntryModel]>) {
         self.id = id
         name_ = name
         description_ = description
@@ -106,28 +106,31 @@ extension PhotoModel: Codable {
 }
 
 extension PhotoModel: ItemDataAccessable {
-    static var typeId: NetworkModules {
+    public static var typeId: NetworkModules {
         .photo
     }
-    
-    var entryModels: [PhotoEntryModel] {
+    public var entryModels: [PhotoEntryModel] {
         get { entries }
         set(newValue) { entries = newValue }
     }
-
-    var information: String {
-        get {
-            description
-        }
-        set(newValue) {
-            description = newValue
-        }
+    public var information: String {
+        get { description }
+        set(newValue) { description = newValue }
     }
-        
-    subscript(id: UUID) -> PhotoEntryModel {
-        get {
-            entries.first(where: { $0.id == id }) ?? PhotoEntryModel(id: id, photoId: UUID())
-        }
+    public var url: URL? {
+        get { nil }
+        set(newValue) {}
+    }
+    public var parentId: UUID? {
+        get { nil }
+        set(newValue) {}
+    }
+    
+    public func reset(name: String) {}
+    public func reset(information: String) {}
+    public func reset(url: URL?) {}
+    public subscript(id: UUID) -> PhotoEntryModel {
+        get { entries.first(where: { $0.id == id }) ?? PhotoEntryModel(id: id, itemId: UUID()) }
         set(newValue) {}
     }
 }

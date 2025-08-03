@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import AppIntents
+import CoreRPG
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI

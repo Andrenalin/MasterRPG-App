@@ -1,6 +1,15 @@
 // @copyright André Trettin
 
 import Foundation
+import SwiftData
+
+public protocol ItemDataModel: Identifiable, Equatable {
+    associatedtype Model: Observable, PersistentModel
+    associatedtype ExchangeModel
+    
+    static func model(modelContext: ModelContext?, id: UUID?) -> Self?
+    var itemModel: ExchangeModel { get }
+}
 
 public protocol EntryDataAccessable {
     var id: UUID { get }
@@ -19,6 +28,13 @@ public protocol ItemDataAccessable {
     var tags: [String] { get set }
     var displayState: Int { get }
     var entryModels: [Entry] { get set }
+    var url: URL? { get set }
+    var fileUrl: FileUrl? { get }
+    var parentId: UUID? { get set }
+
+    func reset(name: String)
+    func reset(information: String)
+    func reset(url: URL?)
 
     subscript(id: UUID) -> Entry { get set }
 

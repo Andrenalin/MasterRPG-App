@@ -3,8 +3,8 @@
 import CoreRPG
 import Foundation
 
-struct PdfModel: Identifiable, Sendable {
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[PdfEntryModel]>) {
+public struct PdfModel: Identifiable, Sendable {
+    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[PdfEntryModel]>) {
         self.id = id
         name_ = name
         description_ = description
@@ -96,28 +96,31 @@ extension PdfModel: Codable {
 }
 
 extension PdfModel: ItemDataAccessable {
-    static var typeId: NetworkModules {
+    public static var typeId: NetworkModules {
         .pdf
     }
-    
-    var entryModels: [PdfEntryModel] {
+    public var entryModels: [PdfEntryModel] {
         get { entries }
         set(newValue) { entries = newValue }
     }
-
-    var information: String {
-        get {
-            description
-        }
-        set(newValue) {
-            description = newValue
-        }
+    public var information: String {
+        get { description }
+        set(newValue) { description = newValue }
     }
-        
-    subscript(id: UUID) -> PdfEntryModel {
-        get {
-            entries.first(where: { $0.id == id }) ?? PdfEntryModel(id: id)
-        }
+    public var url: URL? {
+        get { nil }
+        set(newValue) {}
+    }
+    public var parentId: UUID? {
+        get { nil }
+        set(newValue) {}
+    }
+    
+    public func reset(name: String) {}
+    public func reset(information: String) {}
+    public func reset(url: URL?) {}
+    public subscript(id: UUID) -> PdfEntryModel {
+        get { entries.first(where: { $0.id == id }) ?? PdfEntryModel(id: id) }
         set(newValue) {}
     }
 }

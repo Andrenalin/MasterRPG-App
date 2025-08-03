@@ -1,12 +1,39 @@
 // @copyright André Trettin
 
 import Foundation
+import SwiftData
 
-public protocol ItemControllable: Sendable  {
-    associatedtype Model: ItemDataAccessable & Codable
+public protocol ItemControllable: Sendable where ExchangeModel == Model.ExchangeModel {
+    associatedtype Model: ItemDataAccessable, ItemDataModel, ListItemFolderable, PersistentModel
+    associatedtype ExchangeModel: ItemDataAccessable, Codable
     
-    func allItemIds() -> [UUID]
-    func item(for: UUID) async -> Model?
-    func itemSync(for: UUID) -> Model?
+    var container: ModelContainer { get }
+    
+    func item(for: UUID) async -> ExchangeModel?
     func fileUrl(for: UUID) async -> FileUrl?
+}
+
+public extension ItemControllable {
+    func allItemIds() -> [UUID] {
+        let modelContext = ModelContext(container)
+        let fetchDesc = FetchDescriptor<Model>()
+        guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
+        return models.map { $0.id }
+    }
+    
+    func itemSync(for id: UUID) -> ExchangeModel? {
+        Model.model(modelContext: ModelContext(container), id: id)?.itemModel
+    }
+
+    func modelSync(for id: UUID) -> Model? {
+        Model.model(modelContext: ModelContext(container), id: id)
+    }
+
+    @MainActor func collections(isFolder: Bool, in parentId: UUID?) -> [Model] {
+        let modelContext = ModelContext(container)
+        let predicate = #Predicate<Model> { $0.parentId == parentId && $0.displayState == 0 }
+        let fetchDesc = FetchDescriptor<Model>(predicate: predicate, sortBy: [SortDescriptor(\.name)])
+        guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
+        return models.filter { $0.category == (isFolder ? .folder : Model.collectionCategory) }
+    }
 }

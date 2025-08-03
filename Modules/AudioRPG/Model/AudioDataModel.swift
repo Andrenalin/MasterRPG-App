@@ -39,8 +39,7 @@ public final class AudioDataModel {
     public var tags: [String] = []
     public var displayState: Int = 0
     public var parentId: UUID? = nil
-    
-    var url: URL?
+    public var url: URL?
     public var fileUrl: FileUrl? {
         guard let url else { return nil }
         return FileUrl(fileId: id, url: url, location: .cloud, module: AudioDataModel.typeId.token)
@@ -67,16 +66,16 @@ extension AudioDataModel {
         return AudioEntryDataModel(id: id)
     }
     
+    @MainActor var specialCategory: Bool {
+        category == .folder || category == AudioDataModel.collectionCategory
+    }
+    
     var hasAudio: Bool {
         guard category == .folder || category == .playlist else { return url != nil }
         return entryModels.first { entry in
             guard let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.itemId) else { return false }
             return entryItem.hasAudio
         } != nil
-    }
-    
-    var specialCategory: Bool {
-        category == .folder || category == .playlist
     }
     
     var audioList: [AudioModel] {
@@ -92,19 +91,23 @@ extension AudioDataModel {
 }
 
 extension AudioDataModel {
-    func reset(name: String) {
+    public func reset(name: String) {
         _nameLWW.wrappedValue = name
         self.name = name
     }
     
-    func reset(information: String) {
+    public func reset(information: String) {
         _informationLWW.wrappedValue = information
         self.information = information
+    }
+    
+    public func reset(url: URL?) {
+        self.url = url
     }
 }
 
 extension AudioDataModel {
-    static func model(modelContext: ModelContext?, id: UUID?) -> AudioDataModel? {
+    public static func model(modelContext: ModelContext?, id: UUID?) -> AudioDataModel? {
         guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<AudioDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
@@ -132,11 +135,8 @@ extension AudioDataModel {
 extension AudioDataModel: HasPhotoModel {}
 extension AudioDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .audio }
-
     public subscript(id: UUID) -> AudioEntryDataModel {
-        get {
-            entryModels.first(where: { $0.id == id }) ?? AudioEntryDataModel(id: id)
-        }
+        get { entryModels.first(where: { $0.id == id }) ?? AudioEntryDataModel(id: id) }
         set(newValue) {
             guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
             entryModels[index] = newValue
@@ -148,7 +148,7 @@ extension AudioDataModel: ListItemFolderable {
     public var isFolder: Bool {
         category == .folder
     }
-    public var subItems: [AudioDataModel] {
+    @MainActor public var subItems: [AudioDataModel] {
         guard specialCategory else { return [] }
         return entryModels.compactMap {
             let model = AudioDataModel.model(modelContext: modelContext, id: $0.itemId)
@@ -159,12 +159,17 @@ extension AudioDataModel: ListItemFolderable {
     @MainActor public static var collectionCategory: ItemListCategory = .playlist
 }
 
+extension AudioDataModel: ItemDataModel {
+    public typealias Model = AudioDataModel
+    public typealias ExchangeModel = AudioModel
+}
+
 extension AudioDataModel {
     static var newItem: AudioDataModel {
         AudioDataModel(name: "", information: "", category: .music, tags: [])
     }
     
-    var itemModel: AudioModel {
+    public var itemModel: AudioModel {
         let entries = entryModels.map { $0.entryModel }
         return AudioModel(
             id: id,

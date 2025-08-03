@@ -57,7 +57,7 @@ actor DataModelActor {
         modelContext.insert(newModel)
     }
     
-    func photoModel() -> AudioModel {
+    func itemModel() -> AudioModel {
         model.itemModel
     }
     

@@ -41,7 +41,7 @@ public final class PdfDataModel {
     public var tags: [String] = []
     public var displayState: Int = 0
     public var parentId: UUID? = nil
-    var url: URL?
+    public var url: URL?
     public var fileUrl: FileUrl? {
         guard let url else { return nil }
         return FileUrl(fileId: id, url: url, location: .cloud, module: PdfDataModel.typeId.token)
@@ -86,26 +86,29 @@ extension PdfDataModel {
         return PdfBookmarkDataModel(id: id)
     }
 
-    @MainActor
-    var specialCategory: Bool {
+    @MainActor var specialCategory: Bool {
         category == .folder || category == PdfDataModel.collectionCategory
     }
 }
 
 extension PdfDataModel {
-    func reset(name: String) {
+    public func reset(name: String) {
         _nameLWW.wrappedValue = name
         self.name = name
     }
     
-    func reset(information: String) {
+    public func reset(information: String) {
         _informationLWW.wrappedValue = information
         self.information = information
+    }
+    
+    public func reset(url: URL?) {
+        self.url = url
     }
 }
 
 extension PdfDataModel {
-    static func model(modelContext: ModelContext?, id: UUID?) -> PdfDataModel? {
+    public static func model(modelContext: ModelContext?, id: UUID?) -> PdfDataModel? {
         guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<PdfDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
@@ -133,11 +136,8 @@ extension PdfDataModel {
 extension PdfDataModel: HasPhotoModel {}
 extension PdfDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .pdf }
-
     public subscript(id: UUID) -> PdfEntryDataModel {
-        get {
-            entryModels.first(where: { $0.id == id }) ?? PdfEntryDataModel(id: id)
-        }
+        get { entryModels.first(where: { $0.id == id }) ?? PdfEntryDataModel(id: id) }
         set(newValue) {
             guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
             entryModels[index] = newValue
@@ -149,12 +149,20 @@ extension PdfDataModel: ListItemFolderable {
     public var isFolder: Bool {
         category == .folder
     }
-    public var subItems: [PdfDataModel] {
-        guard isFolder else { return [] }
-        return []
+    @MainActor public var subItems: [PdfDataModel] {
+        guard specialCategory else { return [] }
+        return entryModels.compactMap {
+            let model = PdfDataModel.model(modelContext: modelContext, id: $0.itemId)
+            return model?.displayState == 0 ? model : nil
+        }
     }
     @MainActor public static let dropItem: PdfDataModel = PdfDataModel(id: UUID(), name: "Drop Pdf", information: "Add Pdf to a folder or collection", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .bookshelf
+}
+
+extension PdfDataModel: ItemDataModel {
+    public typealias Model = PdfDataModel
+    public typealias ExchangeModel = PdfModel
 }
 
 extension PdfDataModel {
@@ -162,7 +170,7 @@ extension PdfDataModel {
         PdfDataModel(name: "", information: "", category: .adventure, tags: [])
     }
     
-    var itemModel: PdfModel {
+    public var itemModel: PdfModel {
         let entries = entryModels.map { $0.entryModel }
         return PdfModel(
             id: id,

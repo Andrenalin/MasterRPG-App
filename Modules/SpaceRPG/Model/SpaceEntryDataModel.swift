@@ -29,6 +29,6 @@ extension SpaceEntryDataModel: EntryDataAccessable {
 
 extension SpaceEntryDataModel {
     var entryModel: SpaceEntryModel {
-        SpaceEntryModel(id: id, spaceId: itemId ?? UUID())
+        SpaceEntryModel(id: id, itemId: itemId ?? UUID())
     }
 }

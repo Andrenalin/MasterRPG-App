@@ -5,6 +5,7 @@ import CoreSpotlight
 import CoreTransferable
 import SwiftUI
 import PDFKit
+import CoreRPG
 
 struct PdfEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {

@@ -3,15 +3,15 @@
 import CoreRPG
 import Foundation
 
-struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
-    init(id: UUID, photoId: UUID, displayState: Int = 0) {
+public struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
+    public init(id: UUID, itemId: UUID, displayState: Int = 0) {
         self.id = id
-        self.photoId = photoId
+        self.itemId = itemId
         self.displayState = displayState
     }
 
     public let id: UUID
-    public let photoId: UUID
+    public let itemId: UUID
 
     public var displayState: Int = 0
 }

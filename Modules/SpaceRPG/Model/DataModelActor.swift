@@ -58,7 +58,7 @@ actor DataModelActor {
     }
     
     func spaceModel() -> SpaceModel {
-        model.spaceModel
+        model.itemModel
     }
     
     func save() {

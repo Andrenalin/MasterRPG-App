@@ -39,7 +39,7 @@ public final class SpaceDataModel {
     public var tags: [String] = []
     public var displayState: Int = 0
     public var parentId: UUID? = nil
-    var url: URL?
+    public var url: URL?
     public var fileUrl: FileUrl? {
         guard let url else { return nil }
         return FileUrl(fileId: id, url: url, location: .cloud, module: SpaceDataModel.typeId.token)
@@ -72,19 +72,22 @@ extension SpaceDataModel {
 }
 
 extension SpaceDataModel {
-    func reset(name: String) {
+    public func reset(name: String) {
         _nameLWW.wrappedValue = name
         self.name = name
     }
     
-    func reset(information: String) {
+    public func reset(information: String) {
         _informationLWW.wrappedValue = information
         self.information = information
+    }
+    public func reset(url: URL?) {
+        self.url = url
     }
 }
 
 extension SpaceDataModel {
-    static func model(modelContext: ModelContext?, id: UUID?) -> SpaceDataModel? {
+    public static func model(modelContext: ModelContext?, id: UUID?) -> SpaceDataModel? {
         guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<SpaceDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
@@ -112,11 +115,8 @@ extension SpaceDataModel {
 extension SpaceDataModel: HasPhotoModel {}
 extension SpaceDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .space }
-
     public subscript(id: UUID) -> SpaceEntryDataModel {
-        get {
-            entryModels.first(where: { $0.id == id }) ?? SpaceEntryDataModel(id: id)
-        }
+        get { entryModels.first(where: { $0.id == id }) ?? SpaceEntryDataModel(id: id) }
         set(newValue) {
             guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
             entryModels[index] = newValue
@@ -128,12 +128,20 @@ extension SpaceDataModel: ListItemFolderable {
     public var isFolder: Bool {
         category == .folder
     }
-    public var subItems: [SpaceDataModel] {
-        guard isFolder else { return [] }
-        return entryModels.compactMap { SpaceDataModel.model(modelContext: modelContext, id: $0.itemId) }
+    @MainActor public var subItems: [SpaceDataModel] {
+        guard specialCategory else { return [] }
+        return entryModels.compactMap {
+            let model = SpaceDataModel.model(modelContext: modelContext, id: $0.itemId)
+            return model?.displayState == 0 ? model : nil
+        }
     }
     @MainActor public static let dropItem: SpaceDataModel = SpaceDataModel(id: UUID(), name: "Drop Space", information: "Add Space to a folder or collection", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .models
+}
+
+extension SpaceDataModel: ItemDataModel {
+    public typealias Model = SpaceDataModel
+    public typealias ExchangeModel = SpaceModel
 }
 
 extension SpaceDataModel {
@@ -141,7 +149,7 @@ extension SpaceDataModel {
         SpaceDataModel(name: "", information: "", category: .building, tags: [])
     }
     
-    var spaceModel: SpaceModel {
+    public var itemModel: SpaceModel {
         let entries = entryModels.map { $0.entryModel }
         return SpaceModel(
             id: id,

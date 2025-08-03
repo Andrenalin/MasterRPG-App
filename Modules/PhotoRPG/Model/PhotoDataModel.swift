@@ -41,7 +41,7 @@ public final class PhotoDataModel {
     public var tags: [String] = []
     public var displayState: Int = 0
     public var parentId: UUID? = nil
-    var url: URL?
+    public var url: URL?
     public var fileUrl: FileUrl? {
         guard let url else { return nil }
         return FileUrl(fileId: id, url: url, location: .cloud, module: PhotoDataModel.typeId.token)
@@ -76,19 +76,23 @@ extension PhotoDataModel {
 }
 
 extension PhotoDataModel {
-    func reset(name: String) {
+    public func reset(name: String) {
         _nameLWW.wrappedValue = name
         self.name = name
     }
     
-    func reset(information: String) {
+    public func reset(information: String) {
         _informationLWW.wrappedValue = information
         self.information = information
+    }
+    
+    public func reset(url: URL?) {
+        self.url = url
     }
 }
 
 extension PhotoDataModel {
-    static func model(modelContext: ModelContext?, id: UUID?) -> PhotoDataModel? {
+    public static func model(modelContext: ModelContext?, id: UUID?) -> PhotoDataModel? {
         guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<PhotoDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
@@ -141,13 +145,17 @@ extension PhotoDataModel: ListItemFolderable {
     @MainActor public static var collectionCategory: ItemListCategory = .album
 }
 
+extension PhotoDataModel: ItemDataModel {
+    public typealias Model = PhotoDataModel
+    public typealias ExchangeModel = PhotoModel
+}
 
 extension PhotoDataModel {
     static var newItem: PhotoDataModel {
         PhotoDataModel(name: "", information: "", category: .adventure, tags: [])
     }
     
-    var itemModel: PhotoModel {
+    public var itemModel: PhotoModel {
         let entries = entryModels.map { $0.entryModel }
         return PhotoModel(
             id: id,

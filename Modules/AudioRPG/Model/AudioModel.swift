@@ -3,7 +3,7 @@
 import CoreRPG
 import Foundation
 
-struct AudioModel: Identifiable, Sendable {
+public struct AudioModel: Identifiable, Sendable {
     init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[AudioEntryModel]>) {
         self.id = id
         name_ = name
@@ -96,28 +96,31 @@ extension AudioModel: Codable {
 }
 
 extension AudioModel: ItemDataAccessable {
-    static var typeId: NetworkModules {
+    public static var typeId: NetworkModules {
         .audio
     }
-    
-    var entryModels: [AudioEntryModel] {
+    public var entryModels: [AudioEntryModel] {
         get { entries }
         set(newValue) { entries = newValue }
     }
-
-    var information: String {
-        get {
-            description
-        }
-        set(newValue) {
-            description = newValue
-        }
+    public var information: String {
+        get { description }
+        set(newValue) { description = newValue }
     }
-        
-    subscript(id: UUID) -> AudioEntryModel {
-        get {
-            entries.first(where: { $0.id == id }) ?? AudioEntryModel(id: id, photoId: UUID())
-        }
+    public var url: URL? {
+        get { nil }
+        set(newValue) {}
+    }
+    public var parentId: UUID? {
+        get { nil }
+        set(newValue) {}
+    }
+    
+    public func reset(name: String) {}
+    public func reset(information: String) {}
+    public func reset(url: URL?) {}
+    public subscript(id: UUID) -> AudioEntryModel {
+        get { entries.first(where: { $0.id == id }) ?? AudioEntryModel(id: id, itemId: UUID()) }
         set(newValue) {}
     }
 }
