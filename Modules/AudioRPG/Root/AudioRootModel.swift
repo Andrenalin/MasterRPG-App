@@ -13,7 +13,7 @@ public final class AudioRootModel {
         let fileController = FileController()
         self.audioController = AudioController(fileController: fileController, model: audioPlayerModel)
         self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
-        self.editController = EditController(fileController: fileController)
+        self.editController = EditController(fileUrlDataController: fileController.fileUrlDataController)
         let itemController = ItemController(container: modelContext.container)
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController

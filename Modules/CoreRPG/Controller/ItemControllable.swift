@@ -4,7 +4,7 @@ import Foundation
 import SwiftData
 
 public protocol ItemControllable: Sendable where ExchangeModel == Model.ExchangeModel {
-    associatedtype Model: ItemDataAccessable, ItemDataModel, ListItemFolderable, PersistentModel
+    associatedtype Model: ItemDataAccessable, ItemDataModelable, ListItemFolderable, PersistentModel
     associatedtype ExchangeModel: ItemDataAccessable, Codable
     
     var container: ModelContainer { get }

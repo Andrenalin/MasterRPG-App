@@ -117,18 +117,6 @@ extension PhotoModel: ItemDataAccessable {
         get { description }
         set(newValue) { description = newValue }
     }
-    public var url: URL? {
-        get { nil }
-        set(newValue) {}
-    }
-    public var parentId: UUID? {
-        get { nil }
-        set(newValue) {}
-    }
-    
-    public func reset(name: String) {}
-    public func reset(information: String) {}
-    public func reset(url: URL?) {}
     public subscript(id: UUID) -> PhotoEntryModel {
         get { entries.first(where: { $0.id == id }) ?? PhotoEntryModel(id: id, itemId: UUID()) }
         set(newValue) {}

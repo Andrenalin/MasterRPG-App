@@ -3,19 +3,6 @@
 import Foundation
 import SwiftData
 
-public protocol ItemDataModel: Identifiable, Equatable {
-    associatedtype Model: Observable, PersistentModel
-    associatedtype ExchangeModel
-    
-    static func model(modelContext: ModelContext?, id: UUID?) -> Self?
-    var itemModel: ExchangeModel { get }
-}
-
-public protocol EntryDataAccessable {
-    var id: UUID { get }
-    var name: String { get }
-}
-
 public protocol ItemDataAccessable {
     associatedtype Entry: EntryDataAccessable, Identifiable, Equatable
     
@@ -33,6 +20,8 @@ public protocol ItemDataAccessable {
     var parentId: UUID? { get set }
 
     func reset(name: String)
+    func reset(category: ItemListCategory)
+    func reset(displayState: Int)
     func reset(information: String)
     func reset(url: URL?)
 
@@ -92,4 +81,20 @@ func url(linkNumber: Int) -> String {
 func url(linkNumber: Int, entryId: UUID) -> String {
     "[\(urlName(entryId: entryId))](\(urlAdr(linkNumber: linkNumber, entryId: entryId)))"
 }
+}
+
+public extension ItemDataAccessable {
+    var url: URL? {
+        get { nil }
+        set(newValue) {}
+    }
+    var parentId: UUID? {
+        get { nil }
+        set(newValue) {}
+    }
+    func reset(name: String) {}
+    func reset(category: ItemListCategory) {}
+    func reset(displayState: Int) {}
+    func reset(information: String) {}
+    func reset(url: URL?) {}
 }

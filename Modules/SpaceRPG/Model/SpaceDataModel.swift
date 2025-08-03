@@ -72,21 +72,6 @@ extension SpaceDataModel {
 }
 
 extension SpaceDataModel {
-    public func reset(name: String) {
-        _nameLWW.wrappedValue = name
-        self.name = name
-    }
-    
-    public func reset(information: String) {
-        _informationLWW.wrappedValue = information
-        self.information = information
-    }
-    public func reset(url: URL?) {
-        self.url = url
-    }
-}
-
-extension SpaceDataModel {
     public static func model(modelContext: ModelContext?, id: UUID?) -> SpaceDataModel? {
         guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<SpaceDataModel>()
@@ -122,6 +107,23 @@ extension SpaceDataModel: ItemDataAccessable {
             entryModels[index] = newValue
         }
     }
+    public func reset(name: String) {
+        _nameLWW.wrappedValue = name
+        self.name = name
+    }
+    public func reset(category: ItemListCategory) {
+        self.category = category
+    }
+    public func reset(displayState: Int) {
+        self.displayState = displayState
+    }
+    public func reset(information: String) {
+        _informationLWW.wrappedValue = information
+        self.information = information
+    }
+    public func reset(url: URL?) {
+        self.url = url
+    }
 }
 
 extension SpaceDataModel: ListItemFolderable {
@@ -131,7 +133,7 @@ extension SpaceDataModel: ListItemFolderable {
     @MainActor public var subItems: [SpaceDataModel] {
         guard specialCategory else { return [] }
         return entryModels.compactMap {
-            let model = SpaceDataModel.model(modelContext: modelContext, id: $0.itemId)
+            let model = SpaceDataModel.model(modelContext: modelContext, id: $0.childId)
             return model?.displayState == 0 ? model : nil
         }
     }
@@ -139,13 +141,13 @@ extension SpaceDataModel: ListItemFolderable {
     @MainActor public static var collectionCategory: ItemListCategory = .models
 }
 
-extension SpaceDataModel: ItemDataModel {
+extension SpaceDataModel: ItemDataModelable {
     public typealias Model = SpaceDataModel
     public typealias ExchangeModel = SpaceModel
 }
 
 extension SpaceDataModel {
-    static var newItem: SpaceDataModel {
+    public static var newItem: SpaceDataModel {
         SpaceDataModel(name: "", information: "", category: .building, tags: [])
     }
     

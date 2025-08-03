@@ -92,22 +92,6 @@ extension PdfDataModel {
 }
 
 extension PdfDataModel {
-    public func reset(name: String) {
-        _nameLWW.wrappedValue = name
-        self.name = name
-    }
-    
-    public func reset(information: String) {
-        _informationLWW.wrappedValue = information
-        self.information = information
-    }
-    
-    public func reset(url: URL?) {
-        self.url = url
-    }
-}
-
-extension PdfDataModel {
     public static func model(modelContext: ModelContext?, id: UUID?) -> PdfDataModel? {
         guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<PdfDataModel>()
@@ -143,6 +127,23 @@ extension PdfDataModel: ItemDataAccessable {
             entryModels[index] = newValue
         }
     }
+    public func reset(name: String) {
+        _nameLWW.wrappedValue = name
+        self.name = name
+    }
+    public func reset(category: ItemListCategory) {
+        self.category = category
+    }
+    public func reset(displayState: Int) {
+        self.displayState = displayState
+    }
+    public func reset(information: String) {
+        _informationLWW.wrappedValue = information
+        self.information = information
+    }
+    public func reset(url: URL?) {
+        self.url = url
+    }
 }
 
 extension PdfDataModel: ListItemFolderable {
@@ -152,7 +153,7 @@ extension PdfDataModel: ListItemFolderable {
     @MainActor public var subItems: [PdfDataModel] {
         guard specialCategory else { return [] }
         return entryModels.compactMap {
-            let model = PdfDataModel.model(modelContext: modelContext, id: $0.itemId)
+            let model = PdfDataModel.model(modelContext: modelContext, id: $0.childId)
             return model?.displayState == 0 ? model : nil
         }
     }
@@ -160,13 +161,13 @@ extension PdfDataModel: ListItemFolderable {
     @MainActor public static var collectionCategory: ItemListCategory = .bookshelf
 }
 
-extension PdfDataModel: ItemDataModel {
+extension PdfDataModel: ItemDataModelable {
     public typealias Model = PdfDataModel
     public typealias ExchangeModel = PdfModel
 }
 
 extension PdfDataModel {
-    static var newItem: PdfDataModel {
+    public static var newItem: PdfDataModel {
         PdfDataModel(name: "", information: "", category: .adventure, tags: [])
     }
     

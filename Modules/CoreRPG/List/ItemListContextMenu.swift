@@ -3,37 +3,6 @@
 import CoreExternalRPG
 import SwiftUI
 
-public struct FolderRepresentable: Identifiable {
-    public init(id: UUID, name: String) {
-        self.id = id
-        self.name = name.isEmpty ? String(localized: FolderRepresentable.untitledName).localizedString : name
-    }
-    
-    public var id: UUID
-    public var name: String
-    
-    static private var untitledName: LocalizedStringResource {
-        "Untitled"
-    }
-}
-
-@MainActor
-public protocol ItemListContextMenuControllable {
-    func itemName(currentSelected: UUID?) -> String
-    var collectionIcon: String { get }
-    
-    func duplicateItem(currentSelected: UUID?)
-    func deleteItem(currentSelected: UUID?)
-    func exportItem(currentSelected: UUID?) -> any NavigationDestination
-    func generateLink(currentSelected: UUID?)
-    
-    func folderItems(currentSelected: UUID?) -> [FolderRepresentable]
-    func moveItem(currentSelected: UUID?, to folder: FolderRepresentable)
-    func collectionItems(currentSelected: UUID?) -> [FolderRepresentable]
-    func addItem(currentSelected: UUID?, to folder: FolderRepresentable)
-
-}
-
 public struct ItemListContextMenu: View {
     public init(controller: any ItemListContextMenuControllable, currentSelected: UUID? = nil) {
         self.controller = controller

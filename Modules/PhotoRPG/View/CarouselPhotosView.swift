@@ -19,7 +19,7 @@ struct CarouselPhotosView: View {
                 photoView(photo: model, selectedPhoto: nil)
 
                 ForEach(model.entryModels) { entry in
-                    if let photo = PhotoDataModel.model(modelContext: modelContext, id: entry.itemId) {
+                    if let photo = PhotoDataModel.model(modelContext: modelContext, id: entry.childId) {
                         photoView(photo: photo, selectedPhoto: photo)
                             .overlay(alignment: .topTrailing) {
                                 GlassButton {

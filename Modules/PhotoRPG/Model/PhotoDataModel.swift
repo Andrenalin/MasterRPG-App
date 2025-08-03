@@ -76,22 +76,6 @@ extension PhotoDataModel {
 }
 
 extension PhotoDataModel {
-    public func reset(name: String) {
-        _nameLWW.wrappedValue = name
-        self.name = name
-    }
-    
-    public func reset(information: String) {
-        _informationLWW.wrappedValue = information
-        self.information = information
-    }
-    
-    public func reset(url: URL?) {
-        self.url = url
-    }
-}
-
-extension PhotoDataModel {
     public static func model(modelContext: ModelContext?, id: UUID?) -> PhotoDataModel? {
         guard let modelContext, let id else { return nil }
         let fetchDesc = FetchDescriptor<PhotoDataModel>()
@@ -120,7 +104,6 @@ extension PhotoDataModel {
 extension PhotoDataModel: HasPhotoModel {}
 extension PhotoDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .photo }
-
     public subscript(id: UUID) -> PhotoEntryDataModel {
         get {
             entryModels.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id)
@@ -130,6 +113,23 @@ extension PhotoDataModel: ItemDataAccessable {
             entryModels[index] = newValue
         }
     }
+    public func reset(name: String) {
+        _nameLWW.wrappedValue = name
+        self.name = name
+    }
+    public func reset(category: ItemListCategory) {
+        self.category = category
+    }
+    public func reset(displayState: Int) {
+        self.displayState = displayState
+    }
+    public func reset(information: String) {
+        _informationLWW.wrappedValue = information
+        self.information = information
+    }
+    public func reset(url: URL?) {
+        self.url = url
+    }
 }
 
 extension PhotoDataModel: ListItemFolderable {
@@ -137,21 +137,23 @@ extension PhotoDataModel: ListItemFolderable {
         category == .folder
     }
     public var subItems: [PhotoDataModel] {
-        guard isFolder else { return [] }
-        return entryModels.compactMap { PhotoDataModel.model(modelContext: modelContext, id: $0.itemId) }
+        guard specialCategory else { return [] }
+        return entryModels.compactMap {
+            let model = PhotoDataModel.model(modelContext: modelContext, id: $0.childId)
+            return model?.displayState == 0 ? model : nil
+        }
     }
-    
     @MainActor public static let dropItem: PhotoDataModel = PhotoDataModel(id: UUID(), name: "Drop Photo", information: "Add Photo to a folder or album", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .album
 }
 
-extension PhotoDataModel: ItemDataModel {
+extension PhotoDataModel: ItemDataModelable {
     public typealias Model = PhotoDataModel
     public typealias ExchangeModel = PhotoModel
 }
 
 extension PhotoDataModel {
-    static var newItem: PhotoDataModel {
+    public static var newItem: PhotoDataModel {
         PhotoDataModel(name: "", information: "", category: .adventure, tags: [])
     }
     

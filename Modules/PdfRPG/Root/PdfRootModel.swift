@@ -10,7 +10,7 @@ public final class PdfRootModel {
         self.modelContext = modelContext
         let fileController = FileController()
         self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
-        self.editController = EditController(fileController: fileController)
+        self.editController = EditController(fileUrlDataController: fileController.fileUrlDataController)
         let itemController = ItemController(container: modelContext.container)
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController

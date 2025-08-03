@@ -6,29 +6,29 @@ import SwiftData
 
 @Model
 public final class SpaceEntryDataModel {
-    init(id: UUID = UUID(), index: Int16 = 0, parentId: UUID? = nil, itemId: UUID? = nil, item: SpaceDataModel? = nil) {
+    init(id: UUID = UUID(), index: Int16 = 0, parentId: UUID? = nil, childId: UUID? = nil, item: SpaceDataModel? = nil) {
         self.id = id
         self.index = index
-        self.itemId = itemId
+        self.childId = childId
         self.space = item
     }
     
     public var id: UUID = UUID()
     var index: Int16 = 0
-    var parentId: UUID?
-    var itemId: UUID?
+    public var parentId: UUID?
+    public var childId: UUID?
     var space: SpaceDataModel?
 }
 
 extension SpaceEntryDataModel: EntryDataAccessable {
     public var name: String {
-        guard let modelContext, let itemId, let entrySpace = SpaceDataModel.model(modelContext: modelContext, id: itemId) else { return "Name unknown" }
+        guard let entrySpace = SpaceDataModel.model(modelContext: modelContext, id: childId) else { return "Name unknown" }
         return entrySpace.name
     }
 }
 
 extension SpaceEntryDataModel {
     var entryModel: SpaceEntryModel {
-        SpaceEntryModel(id: id, itemId: itemId ?? UUID())
+        SpaceEntryModel(id: id, itemId: childId ?? UUID())
     }
 }

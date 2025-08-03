@@ -3,41 +3,11 @@
 import Foundation
 import SwiftData
 
-public enum EditControllerAddType {
-    case item
-    case folder
-    case collection
-    
-    var title: String {
-        String(localized: localizedTitle).localizedString
-    }
-    
-    private var localizedTitle: LocalizedStringResource {
-        switch self {
-        case .item:
-            return "Add Item"
-        case .folder:
-            return "Add Folder"
-        case .collection:
-            return "Add Collection"
-        }
-    }
-    
-    func icon(collection: String) -> String {
-        switch self {
-        case .item:
-            return "plus"
-        case .folder:
-            return "folder.badge.plus"
-        case .collection:
-            return collection
-        }
-    }
-}
+public protocol EditControllable: Sendable {
+    associatedtype Model: ItemDataAccessable, ItemDataModelable, ListItemFolderable, PersistentModel
 
-public protocol EditControllable {
-    associatedtype Model: Identifiable where Model.ID == UUID
-
+    var fileUrlDataController: FileUrlDataController { get }
+    
     @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> Model
     func delete(model: Model)
     
@@ -45,4 +15,39 @@ public protocol EditControllable {
 
     func update(model: Model, name: String, information: String, category: ItemListCategory, tags: [String])
     func resetFile(url: URL?, in model: Model)
+}
+
+
+public extension EditControllable {
+    @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> Model {
+        let newItem = Model.newItem
+        modelContext.insert(newItem)
+        if type == .folder {
+            newItem.reset(category: .folder)
+        } else if type == .collection {
+            newItem.reset(category: Model.collectionCategory)
+        }
+        try? modelContext.save()
+        return newItem
+    }
+    
+    func delete(model: Model) {
+        let fileUrl = model.fileUrl
+        let modelContext = model.modelContext
+        Task.detached {
+            await fileUrlDataController.delete(fileUrl)
+        }
+        model.entryModels.forEach { entry in
+            if var entryItem = Model.model(modelContext: modelContext, id: entry.childId) {
+                if model.category == .folder {
+                    entryItem.parentId = model.parentId
+                }
+                entryItem.reset(displayState: 0)
+            }
+        }
+        model.reset(displayState: 2)
+        //updateTags(modelContext: modelContext)
+        try? modelContext?.save()
+    }
+
 }

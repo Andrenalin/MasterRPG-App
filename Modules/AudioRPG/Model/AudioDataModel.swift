@@ -73,7 +73,7 @@ extension AudioDataModel {
     var hasAudio: Bool {
         guard category == .folder || category == .playlist else { return url != nil }
         return entryModels.first { entry in
-            guard let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.itemId) else { return false }
+            guard let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.childId) else { return false }
             return entryItem.hasAudio
         } != nil
     }
@@ -82,27 +82,11 @@ extension AudioDataModel {
         guard category == .folder || category == .playlist else { return url == nil ? [] : [itemModel] }
         var list: [AudioModel] = []
         entryModels.forEach { entry in
-            if let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.itemId) {
+            if let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.childId) {
                 list.append(contentsOf: entryItem.audioList)
             }
         }
         return list
-    }
-}
-
-extension AudioDataModel {
-    public func reset(name: String) {
-        _nameLWW.wrappedValue = name
-        self.name = name
-    }
-    
-    public func reset(information: String) {
-        _informationLWW.wrappedValue = information
-        self.information = information
-    }
-    
-    public func reset(url: URL?) {
-        self.url = url
     }
 }
 
@@ -142,6 +126,23 @@ extension AudioDataModel: ItemDataAccessable {
             entryModels[index] = newValue
         }
     }
+    public func reset(name: String) {
+        _nameLWW.wrappedValue = name
+        self.name = name
+    }
+    public func reset(category: ItemListCategory) {
+        self.category = category
+    }
+    public func reset(displayState: Int) {
+        self.displayState = displayState
+    }
+    public func reset(information: String) {
+        _informationLWW.wrappedValue = information
+        self.information = information
+    }
+    public func reset(url: URL?) {
+        self.url = url
+    }
 }
 
 extension AudioDataModel: ListItemFolderable {
@@ -151,7 +152,7 @@ extension AudioDataModel: ListItemFolderable {
     @MainActor public var subItems: [AudioDataModel] {
         guard specialCategory else { return [] }
         return entryModels.compactMap {
-            let model = AudioDataModel.model(modelContext: modelContext, id: $0.itemId)
+            let model = AudioDataModel.model(modelContext: modelContext, id: $0.childId)
             return model?.displayState == 0 ? model : nil
         }
     }
@@ -159,13 +160,13 @@ extension AudioDataModel: ListItemFolderable {
     @MainActor public static var collectionCategory: ItemListCategory = .playlist
 }
 
-extension AudioDataModel: ItemDataModel {
+extension AudioDataModel: ItemDataModelable {
     public typealias Model = AudioDataModel
     public typealias ExchangeModel = AudioModel
 }
 
 extension AudioDataModel {
-    static var newItem: AudioDataModel {
+    public static var newItem: AudioDataModel {
         AudioDataModel(name: "", information: "", category: .music, tags: [])
     }
     

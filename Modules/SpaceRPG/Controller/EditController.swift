@@ -12,7 +12,7 @@ internal import UIKit
 #endif
 
 struct EditController {
-    let fileController: FileController
+    let fileUrlDataController: FileUrlDataController
 }
 
 extension EditController: EditControllable {
@@ -39,7 +39,7 @@ extension EditController {
         let id = model.id
         Task.detached {
             await actor.setup(id: id)
-            let fileUrl = try? await fileController.fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newId)
+            let fileUrl = try? await fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newId)
             await actor.duplicate(url: fileUrl?.rawUrl)
             await actor.save()
         }
@@ -49,10 +49,10 @@ extension EditController {
         let fileUrl = model.fileUrl
         let modelContext = model.modelContext
         Task.detached {
-            await fileController.fileUrlDataController.delete(fileUrl)
+            await fileUrlDataController.delete(fileUrl)
         }
         model.entryModels.forEach { entry in
-            if let entryItem = SpaceDataModel.model(modelContext: modelContext, id: entry.itemId) {
+            if let entryItem = SpaceDataModel.model(modelContext: modelContext, id: entry.childId) {
                 if model.category == .folder {
                     entryItem.parentId = model.parentId
                 }
@@ -75,7 +75,7 @@ extension EditController {
             guard let item = SpaceDataModel.model(modelContext: modelContext, id: itemId) else { return }
             
             var entries: [SpaceEntryDataModel] = model.entryModels
-            let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: itemId, item: model)
+            let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, childId: itemId, item: model)
             entries.append(entry)
             model.entryModels = entries
             modelContext.insert(entry)
@@ -92,7 +92,7 @@ extension EditController {
             guard let item = SpaceDataModel.model(modelContext: modelContext, id: itemId) else { return }
             
             let entry = model[itemId]
-            model.entryModels.removeAll(where: { $0.itemId == itemId })
+            model.entryModels.removeAll(where: { $0.childId == itemId })
             model.entryModels.enumerated().forEach { index, entry in
                 entry.index = Int16(index)
             }
@@ -109,7 +109,7 @@ extension EditController {
         model.withTransaction { modelContext in
             var entries: [SpaceEntryDataModel] = model.entryModels
             
-            let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: photoId, item: model)
+            let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, childId: photoId, item: model)
             entries.append(entry)
             model.entryModels = entries
             
@@ -122,7 +122,7 @@ extension EditController {
     func removeSubPhoto(photoId: UUID, model: SpaceDataModel) {
         model.withTransaction { modelContext in
             let entry = model[photoId]
-            model.entryModels.removeAll(where: { $0.itemId == photoId })
+            model.entryModels.removeAll(where: { $0.childId == photoId })
             model.entryModels.enumerated().forEach { index, entry in
                 entry.index = Int16(index)
             }
@@ -165,7 +165,7 @@ extension EditController {
     }
 
     private func resetFile(url: URL?, id: UUID, actor: DataModelActor) async {
-        await fileController.fileUrlDataController.delete(await actor.fileUrl)
+        await fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
             await actor.update(url: url)
             return
@@ -178,7 +178,7 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             await actor.update(name: name)
         }
-        let updatedFileUrl = try? await fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: SpaceDataModel.typeId.token, category: actor.category.title)
+        let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: id, url: url, module: SpaceDataModel.typeId.token, category: actor.category.title)
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
 }

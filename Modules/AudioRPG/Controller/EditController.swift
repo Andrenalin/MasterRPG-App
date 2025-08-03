@@ -12,7 +12,7 @@ internal import UIKit
 #endif
 
 struct EditController {
-    let fileController: FileController
+    let fileUrlDataController: FileUrlDataController
 }
 
 extension EditController: EditControllable {
@@ -21,25 +21,13 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
-    @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> AudioDataModel {
-        let newItem = AudioDataModel.newItem
-        modelContext.insert(newItem)
-        if type == .folder {
-            newItem.category = .folder
-        } else if type == .collection {
-            newItem.category = AudioDataModel.collectionCategory
-        }
-        try? modelContext.save()
-        return newItem
-    }
-    
     func duplicate(model: AudioDataModel) {
         let newId = UUID()
         guard let actor = model.modelActor() else { return }
         let id = model.id
         Task.detached {
             await actor.setup(id: id)
-            let fileUrl = try? await fileController.fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newId)
+            let fileUrl = try? await fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newId)
             await actor.duplicate(url: fileUrl?.rawUrl)
             await actor.save()
         }
@@ -49,10 +37,10 @@ extension EditController {
         let fileUrl = model.fileUrl
         let modelContext = model.modelContext
         Task.detached {
-            await fileController.fileUrlDataController.delete(fileUrl)
+            await fileUrlDataController.delete(fileUrl)
         }
         model.entryModels.forEach { entry in
-            if let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.itemId) {
+            if let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.childId) {
                 if model.category == .folder {
                     entryItem.parentId = model.parentId
                 }
@@ -74,7 +62,7 @@ extension EditController {
         model.withTransaction { modelContext in
             guard let item = AudioDataModel.model(modelContext: modelContext, id: itemId) else { return }
             var entries: [AudioEntryDataModel] = model.entryModels
-            let entry = AudioEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, itemId: itemId, item: model)
+            let entry = AudioEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, childId: itemId, item: model)
             entries.append(entry)
             model.entryModels = entries
             modelContext.insert(entry)
@@ -91,7 +79,7 @@ extension EditController {
             guard let item = AudioDataModel.model(modelContext: modelContext, id: itemId) else { return }
             
             let entry = model[itemId]
-            model.entryModels.removeAll(where: { $0.itemId == itemId })
+            model.entryModels.removeAll(where: { $0.childId == itemId })
             model.entryModels.enumerated().forEach { index, entry in
                 entry.index = Int16(index)
             }
@@ -135,7 +123,7 @@ extension EditController {
     }
     
     private func resetFile(url: URL?, id: UUID, actor: DataModelActor) async {
-        await fileController.fileUrlDataController.delete(await actor.fileUrl)
+        await fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
             await actor.update(url: url)
             return
@@ -148,7 +136,7 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             await actor.update(name: name)
         }
-        let updatedFileUrl = try? await fileController.fileUrlDataController.createFileUrl(fileId: id, url: url, module: AudioDataModel.typeId.token, category: actor.category.title)
+        let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: id, url: url, module: AudioDataModel.typeId.token, category: actor.category.title)
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
 }
