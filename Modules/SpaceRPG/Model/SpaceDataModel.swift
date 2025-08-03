@@ -84,7 +84,7 @@ extension SpaceDataModel {
         return DataModelActor(modelContainer: container)
     }
 
-    func withTransaction(_ transaction: (ModelContext) -> Void) {
+    public func withTransaction(_ transaction: (ModelContext) -> Void) {
         if let modelContext {
             do {
                 try modelContext.transaction {
@@ -117,9 +117,15 @@ extension SpaceDataModel: ItemDataAccessable {
     public func reset(displayState: Int) {
         self.displayState = displayState
     }
+    public func reset(entries: [SpaceEntryDataModel]) {
+        self.entryModels = entries
+    }
     public func reset(information: String) {
         _informationLWW.wrappedValue = information
         self.information = information
+    }
+    public func reset(tags: [String]) {
+        self.tags = tags
     }
     public func reset(url: URL?) {
         self.url = url

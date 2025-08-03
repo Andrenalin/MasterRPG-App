@@ -21,6 +21,10 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
+    func createNewEntry(in model: AudioDataModel, childId: UUID) -> AudioEntryDataModel {
+        AudioEntryDataModel(id: UUID(), index: model.entryModels.count, parentId: model.id, childId: childId, item: model)
+    }
+    
     func duplicate(model: AudioDataModel) {
         let newId = UUID()
         guard let actor = model.modelActor() else { return }
@@ -31,82 +35,6 @@ extension EditController {
             await actor.duplicate(url: fileUrl?.rawUrl)
             await actor.save()
         }
-    }
-    
-    func delete(model: AudioDataModel) {
-        let fileUrl = model.fileUrl
-        let modelContext = model.modelContext
-        Task.detached {
-            await fileUrlDataController.delete(fileUrl)
-        }
-        model.entryModels.forEach { entry in
-            if let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.childId) {
-                if model.category == .folder {
-                    entryItem.parentId = model.parentId
-                }
-                entryItem.displayState = 0
-            }
-        }
-        model.displayState = 2
-        updateTags(modelContext: modelContext)
-        try? modelContext?.save()
-    }
-    
-    func addItem(itemId: UUID, in modelContext: ModelContext, parentId: UUID?, folderId: UUID?) {
-        guard let model = AudioDataModel.model(modelContext: modelContext, id: parentId) else { return }
-        addItem(itemId: itemId, in: model, folderId: folderId)
-    }
-        
-    func addItem(itemId: UUID, in model: AudioDataModel, folderId: UUID?) {
-        guard itemId != model.id else { return }
-        model.withTransaction { modelContext in
-            guard let item = AudioDataModel.model(modelContext: modelContext, id: itemId) else { return }
-            var entries: [AudioEntryDataModel] = model.entryModels
-            let entry = AudioEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, childId: itemId, item: model)
-            entries.append(entry)
-            model.entryModels = entries
-            modelContext.insert(entry)
-            if model.category == .folder {
-                item.parentId = model.id
-            } else {
-                item.parentId = folderId
-            }
-        }
-    }
-
-    func removeItem(itemId: UUID, model: AudioDataModel) {
-        model.withTransaction { modelContext in
-            guard let item = AudioDataModel.model(modelContext: modelContext, id: itemId) else { return }
-            
-            let entry = model[itemId]
-            model.entryModels.removeAll(where: { $0.childId == itemId })
-            model.entryModels.enumerated().forEach { index, entry in
-                entry.index = Int16(index)
-            }
-            modelContext.delete(entry)
-            if model.category == .folder {
-                item.parentId = nil
-            }
-            item.displayState = 0
-        }
-    }
-
-    func update(model: AudioDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
-        model.withTransaction { modelContext in
-            model.reset(name: name)
-            model.reset(information: information)
-            model.category = category
-            model.tags = tags
-        }
-        updateTags(modelContext: model.modelContext)
-    }
-    
-    func updateTags(modelContext: ModelContext?) {
-        guard let modelContext else { return }
-        let fetch = FetchDescriptor<AudioDataModel>()
-        guard let models = try? modelContext.fetch(fetch) else { return }
-        let tags = Set(models.flatMap { $0.tags })
-        TagController.update(tags: tags, in: AudioDataModel.typeId, modelContext: modelContext)
     }
 }
 

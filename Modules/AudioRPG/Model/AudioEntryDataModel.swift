@@ -6,7 +6,7 @@ import SwiftData
 
 @Model 
 public final class AudioEntryDataModel {
-    init(id: UUID = UUID(), index: Int16 = 0, parentId: UUID? = nil, childId: UUID? = nil, item: AudioDataModel? = nil) {
+    init(id: UUID = UUID(), index: Int = 0, parentId: UUID? = nil, childId: UUID? = nil, item: AudioDataModel? = nil) {
         self.id = id
         self.index = index
         self.parentId = parentId
@@ -16,7 +16,7 @@ public final class AudioEntryDataModel {
     
     @Attribute(.preserveValueOnDeletion)
     public var id: UUID = UUID()
-    var index: Int16 = 0
+    public var index: Int = 0
     public var parentId: UUID?
     public var childId: UUID?
     var item: AudioDataModel?

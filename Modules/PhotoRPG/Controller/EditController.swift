@@ -21,6 +21,10 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
+    func createNewEntry(in model: PhotoDataModel, childId: UUID) -> PhotoEntryDataModel {
+        PhotoEntryDataModel(id: UUID(), index: model.entryModels.count, parentId: model.id, childId: childId, item: model)
+    }
+    
     func duplicate(model: PhotoDataModel) {
         let newId = UUID()
         guard let actor = model.modelActor() else { return }
@@ -33,70 +37,11 @@ extension EditController {
         }
     }
     
-    func delete(model: PhotoDataModel) {
-        let fileUrl = model.fileUrl
-        let modelContext = model.modelContext
-        Task.detached {
-            await fileUrlDataController.delete(fileUrl)
-        }
-        model.entryModels.forEach { entry in
-            if let entryItem = PhotoDataModel.model(modelContext: modelContext, id: entry.childId) {
-                if model.category == .folder {
-                    entryItem.parentId = model.parentId
-                }
-                entryItem.displayState = 0
-            }
-        }
-        model.displayState = 2
-        updateTags(modelContext: modelContext)
-        try? modelContext?.save()
-    }
-    
-    func addItem(itemId: UUID, in modelContext: ModelContext, parentId: UUID?, folderId: UUID?) {
-        guard let model = PhotoDataModel.model(modelContext: modelContext, id: parentId) else { return }
-        addItem(itemId: itemId, in: model, folderId: folderId)
-    }
-    
-    func addItem(itemId: UUID, in model: PhotoDataModel, folderId: UUID?) {
-        guard itemId != model.id else { return }
-        model.withTransaction { modelContext in
-            guard let item = PhotoDataModel.model(modelContext: modelContext, id: itemId) else { return }
-            
-            var entries: [PhotoEntryDataModel] = model.entryModels
-            let entry = PhotoEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, childId: itemId, item: model)
-            entries.append(entry)
-            model.entryModels = entries
-            modelContext.insert(entry)
-            if model.category == .folder {
-                item.parentId = model.id
-            } else {
-                item.parentId = folderId
-            }
-        }
-    }
-
-    func removeItem(itemId: UUID, model: PhotoDataModel) {
-        model.withTransaction { modelContext in
-            guard let item = PhotoDataModel.model(modelContext: modelContext, id: itemId) else { return }
-            
-            let entry = model[itemId]
-            model.entryModels.removeAll(where: { $0.childId == itemId })
-            model.entryModels.enumerated().forEach { index, entry in
-                entry.index = Int16(index)
-            }
-            modelContext.delete(entry)
-            if model.category == .folder {
-                item.parentId = nil
-            }
-            item.displayState = 0
-        }
-    }
-
     func addSubPhoto(photoId: UUID, model: PhotoDataModel) {
         model.withTransaction { modelContext in
             var entries: [PhotoEntryDataModel] = model.entryModels
 
-            let entry = PhotoEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, childId: photoId, item: model)
+            let entry = PhotoEntryDataModel(id: UUID(), index: entries.count, parentId: model.id, childId: photoId, item: model)
             entries.append(entry)
             model.entryModels = entries
             
@@ -111,7 +56,7 @@ extension EditController {
             let entry = model[photoId]
             model.entryModels.removeAll(where: { $0.childId == photoId })
             model.entryModels.enumerated().forEach { index, entry in
-                entry.index = Int16(index)
+                entry.index = index
             }
                         
             guard let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
@@ -134,14 +79,6 @@ extension EditController {
         }
         
         updateTags(modelContext: model.modelContext)
-    }
-    
-    func updateTags(modelContext: ModelContext?) {
-        guard let modelContext else { return }
-        let fetch = FetchDescriptor<PhotoDataModel>()
-        guard let models = try? modelContext.fetch(fetch) else { return }
-        let tags = Set(models.flatMap { $0.tags })
-        TagController.update(tags: tags, in: PhotoDataModel.typeId, modelContext: modelContext)
     }
 }
 

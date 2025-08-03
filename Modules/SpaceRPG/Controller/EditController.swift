@@ -21,16 +21,8 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
-    @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> SpaceDataModel {
-        let newItem = SpaceDataModel.newItem
-        if type == .folder {
-            newItem.category = .folder
-        } else if type == .collection {
-            newItem.category = SpaceDataModel.collectionCategory
-        }
-        modelContext.insert(newItem)
-        try? modelContext.save()
-        return newItem
+    func createNewEntry(in model: SpaceDataModel, childId: UUID) -> SpaceEntryDataModel {
+        SpaceEntryDataModel(id: UUID(), index: Int16(model.entryModels.count), parentId: model.id, childId: childId, item: model)
     }
     
     func duplicate(model: SpaceDataModel) {
@@ -45,48 +37,6 @@ extension EditController {
         }
     }
     
-    func delete(model: SpaceDataModel) {
-        let fileUrl = model.fileUrl
-        let modelContext = model.modelContext
-        Task.detached {
-            await fileUrlDataController.delete(fileUrl)
-        }
-        model.entryModels.forEach { entry in
-            if let entryItem = SpaceDataModel.model(modelContext: modelContext, id: entry.childId) {
-                if model.category == .folder {
-                    entryItem.parentId = model.parentId
-                }
-                entryItem.displayState = 0
-            }
-        }
-        model.displayState = 2
-        updateTags(modelContext: modelContext)
-        try? modelContext?.save()
-    }
-    
-    func addItem(itemId: UUID, in modelContext: ModelContext, parentId: UUID?, folderId: UUID?) {
-        guard let model = SpaceDataModel.model(modelContext: modelContext, id: parentId) else { return }
-        addItem(itemId: itemId, in: model, folderId: folderId)
-    }
-
-    func addItem(itemId: UUID, in model: SpaceDataModel, folderId: UUID?) {
-        guard itemId != model.id else { return }
-        model.withTransaction { modelContext in
-            guard let item = SpaceDataModel.model(modelContext: modelContext, id: itemId) else { return }
-            
-            var entries: [SpaceEntryDataModel] = model.entryModels
-            let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, childId: itemId, item: model)
-            entries.append(entry)
-            model.entryModels = entries
-            modelContext.insert(entry)
-            if model.category == .folder {
-                item.parentId = model.id
-            } else {
-                item.parentId = folderId
-            }
-        }
-    }
-
     func removeItem(itemId: UUID, model: SpaceDataModel) {
         model.withTransaction { modelContext in
             guard let item = SpaceDataModel.model(modelContext: modelContext, id: itemId) else { return }
@@ -131,24 +81,6 @@ extension EditController {
             modelContext.delete(entry)
             subModel.displayState = 0
         }
-    }
-    
-    func update(model: SpaceDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
-        model.withTransaction { modelContext in
-            model.reset(name: name)
-            model.reset(information: information)
-            model.category = category
-            model.tags = tags
-        }
-        updateTags(modelContext: model.modelContext)
-    }
-    
-    func updateTags(modelContext: ModelContext?) {
-        guard let modelContext else { return }
-        let fetch = FetchDescriptor<SpaceDataModel>()
-        guard let models = try? modelContext.fetch(fetch) else { return }
-        let tags = Set(models.flatMap { $0.tags })
-        TagController.update(tags: tags, in: SpaceDataModel.typeId, modelContext: modelContext)
     }
 }
 

@@ -21,6 +21,10 @@ extension EditController: EditControllable {
 
 // MARK: - Edit Data Model Properties
 extension EditController {
+    func createNewEntry(in model: PdfDataModel, childId: UUID) -> PdfEntryDataModel {
+        PdfEntryDataModel(id: UUID(), index: Int16(model.entryModels.count), parentId: model.id, childId: childId, item: model)
+    }
+    
     func duplicate(model: PdfDataModel) {
         let newId = UUID()
         guard let actor = model.modelActor() else { return }
@@ -32,49 +36,7 @@ extension EditController {
             await actor.save()
         }
     }
-    
-    func delete(model: PdfDataModel) {
-        let fileUrl = model.fileUrl
-        let modelContext = model.modelContext
-        Task.detached {
-            await fileUrlDataController.delete(fileUrl)
-        }
-        model.entryModels.forEach { entry in
-            if let entryItem = PdfDataModel.model(modelContext: modelContext, id: entry.childId) {
-                if model.category == .folder {
-                    entryItem.parentId = model.parentId
-                }
-                entryItem.displayState = 0
-            }
-        }
-        model.displayState = 2
-        updateTags(modelContext: modelContext)
-        try? modelContext?.save()
-    }
-    
-    func addItem(itemId: UUID, in modelContext: ModelContext, parentId: UUID?, folderId: UUID?) {
-        guard let model = PdfDataModel.model(modelContext: modelContext, id: parentId) else { return }
-        addItem(itemId: itemId, in: model, folderId: folderId)
-    }
-        
-    func addItem(itemId: UUID, in model: PdfDataModel, folderId: UUID?) {
-        guard itemId != model.id else { return }
-        model.withTransaction { modelContext in
-            guard let item = PdfDataModel.model(modelContext: modelContext, id: itemId) else { return }
             
-            var entries: [PdfEntryDataModel] = model.entryModels
-            let entry = PdfEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, childId: itemId, item: model)
-            entries.append(entry)
-            model.entryModels = entries
-            modelContext.insert(entry)
-            if model.category == .folder {
-                item.parentId = model.id
-            } else {
-                item.parentId = folderId
-            }
-        }
-    }
-
     func removeItem(itemId: UUID, model: PdfDataModel) {
         model.withTransaction { modelContext in
             guard let item = PdfDataModel.model(modelContext: modelContext, id: itemId) else { return }
@@ -92,34 +54,6 @@ extension EditController {
         }
     }
 
-    func addSubPhoto(photoId: UUID, model: PdfDataModel) {
-//      model.withTransaction { modelContext in
-//            var entries: [PdfEntryDataModel] = model.entryModels
-//
-//            let entry = PdfEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, photoId: photoId, photo: model)
-//            entries.append(entry)
-//            model.entryModels = entries
-//            
-//            guard let modelContext = model.modelContext, let subModel = PdfDataModel.model(modelContext: modelContext, id: photoId) else { return }
-//            modelContext.insert(entry)
-//            subModel.displayState = DisplayStateMask.totalHidden.rawValue
-//        }
-    }
-
-    func removeSubPhoto(photoId: UUID, model: PdfDataModel) {
-//        model.withTransaction { modelContext in
-//            let entry = model[photoId]
-//            model.entryModels.removeAll(where: { $0.photoId == photoId })
-//            model.entryModels.enumerated().forEach { index, entry in
-//                entry.index = Int16(index)
-//            }
-//                        
-//            guard let modelContext = model.modelContext, let subModel = PdfDataModel.model(modelContext: modelContext, id: photoId) else { return }
-//            modelContext.delete(entry)
-//            subModel.displayState = 0
-//        }
-    }
-
     func update(model: PdfDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
         model.withTransaction { modelContext in
             model.reset(name: name)
@@ -129,14 +63,6 @@ extension EditController {
         }
         
         updateTags(modelContext: model.modelContext)
-    }
-    
-    func updateTags(modelContext: ModelContext?) {
-        guard let modelContext else { return }
-        let fetch = FetchDescriptor<PdfDataModel>()
-        guard let models = try? modelContext.fetch(fetch) else { return }
-        let tags = Set(models.flatMap { $0.tags })
-        TagController.update(tags: tags, in: PdfDataModel.typeId, modelContext: modelContext)
     }
 }
 

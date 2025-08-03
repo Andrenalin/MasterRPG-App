@@ -103,13 +103,13 @@ extension DetailView {
     
     @ViewBuilder
     var bottomView: some View {
-        if model.url != nil && !isEditing {
-            CarouselPhotosView(model: model)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .environment(selection)
-                .transition(.move(edge: .bottom))
-        }
+//        if model.url != nil && !isEditing {
+//            CarouselPhotosView(model: model)
+//                .frame(maxWidth: .infinity, alignment: .leading)
+//                .fixedSize(horizontal: false, vertical: true)
+//                .environment(selection)
+//                .transition(.move(edge: .bottom))
+//        }
     }
 
     private var detailView: some View {

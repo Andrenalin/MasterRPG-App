@@ -22,7 +22,9 @@ public protocol ItemDataAccessable {
     func reset(name: String)
     func reset(category: ItemListCategory)
     func reset(displayState: Int)
+    func reset(entries: [Entry])
     func reset(information: String)
+    func reset(tags: [String])
     func reset(url: URL?)
 
     subscript(id: UUID) -> Entry { get set }
@@ -95,6 +97,8 @@ public extension ItemDataAccessable {
     func reset(name: String) {}
     func reset(category: ItemListCategory) {}
     func reset(displayState: Int) {}
+    func reset(entries: [Entry]) {}
     func reset(information: String) {}
+    func reset(tags: [String]) {}
     func reset(url: URL?) {}
 }
