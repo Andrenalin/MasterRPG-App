@@ -5,10 +5,11 @@ import SwiftData
 import SwiftUI
 
 public struct DetailListView<Model: ListItemFolderable, EditController: EditControllable, Row: View>: View where Model.ID == UUID, Model == EditController.Model {
-    public init(editController: EditController, menuController: any ItemListContextMenuControllable, listModel: ListModel, items: [Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (Model) -> Row) {
+    public init(editController: EditController, menuController: any ItemListContextMenuControllable, listModel: ListModel, parentModel: Model, items: [Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (Model) -> Row) {
         self.editController = editController
         self.menuController = menuController
         self.listModel = listModel
+        self.parentModel = parentModel
         self.items = items
         self.module = module
         self.route = route
@@ -17,6 +18,7 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
     let editController: EditController
     let menuController: ItemListContextMenuControllable
     let listModel: ListModel
+    let parentModel: Model
     let items: [Model]
     let module: NetworkModules
     let route: (UUID) -> any NavigationDestination
@@ -54,7 +56,6 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
 #endif
-            .navigationTitle(module.title)
             .onChange(of: listModel.listSelection) {
                 guard !listModel.listSelection.isEmpty else { return }
                 listModel.update(selection: listModel.listSelection)
@@ -94,9 +95,11 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
                 }
             }
     }
-    
+}
+
+private extension DetailListView {
     @ViewBuilder
-    private var actionMenu: some View {
+    var actionMenu: some View {
         Menu {
             MenuDisplayModeToggle(listModel: listModel, showSelectionButton: false)
         } label: {
@@ -105,7 +108,7 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
     }
     
     @ViewBuilder
-    private var secondaryActionMenu: some View {
+    var secondaryActionMenu: some View {
         if !listModel.isSelectionMode {
             MenuSelectionButtonView(listModel: listModel)
         }
@@ -120,7 +123,7 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
         }
     }
 
-    private func addItemButton(for type: EditControllerAddType) -> some View {
+    func addItemButton(for type: EditControllerAddType) -> some View {
         Button {
             addItem(for: type)
         } label: {
@@ -132,7 +135,7 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
         }
     }
     
-    private func addItem(for type: EditControllerAddType) {
+    func addItem(for type: EditControllerAddType) {
         let newItem = editController.addNew(modelContext: modelContext, type: type)
         withAnimation {
             editController.addItem(itemId: newItem.id, in: modelContext, parentId: listModel.selectedParentId, folderId:  listModel.lastFolderId)
@@ -140,14 +143,9 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
         }
     }
     
-    private func deleteItems(offsets: IndexSet) {
+    func deleteItems(offsets: IndexSet) {
         for index in offsets {
-            if items[index].id == listModel.selected {
-                listModel.update(selection: Set())
-            }
-            Task { @MainActor in
-                editController.delete(model: items[index])
-            }
+            editController.removeItem(itemId: items[index].id, model: parentModel)
         }
     }
     
@@ -180,9 +178,21 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
                     }
                 }
                 .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
+#if !os(tvOS)
+                .dropDestination(for: LinkData.self) { items, _ in
+                    addLinks(links: items)
+                }
+#endif
         }
         .onDelete(perform: deleteItems)
         .deleteDisabled(listModel.isSelectionMode)
+    }
+    
+    private func addLinks(links: [LinkData]) {
+        links.forEach { link in
+            guard link.module == Model.typeId else { return }
+            withAnimation { editController.addItem(itemId: link.itemId, in: parentModel, folderId: listModel.lastFolderId) }
+        }
     }
     
     var leadingPadding: CGFloat {
@@ -198,9 +208,18 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
                 total.append(contentsOf: totalItems(items: item.subItems))
             }
         }
+        #if !os(tvOS)
         if total.isEmpty {
+            #if os(iOS) || os(visionOS)
+            if horizontalSizeClass != .compact {
+                total.append(Model.dropItem)
+            }
+            #else
             total.append(Model.dropItem)
+            #endif
+            
         }
+        #endif
         return total
     }
 }

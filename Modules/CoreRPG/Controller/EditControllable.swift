@@ -83,6 +83,7 @@ public extension EditControllable {
                 updatedEntry.index = index
                 return updatedEntry
             }
+            model.reset(entries: entries)
             if let entry = entry as? (any PersistentModel) {
                 modelContext.delete(entry)
             }

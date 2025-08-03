@@ -88,7 +88,7 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
         }
 #endif
         .sheet(isPresented: $isEditing) {
-            DetailItemEditorView(model: model, editController: editController, nameKeyPath: name, categoryKeyPath: category, tagsKeyPath: tags, descriptionKeyPath: description)
+            DetailItemEditorView(model: model, editController: editController, name: name, category: category, tags: tags, description: description)
             
                 .presentationContentInteraction(.resizes)
                 .presentationDetents([.medium, .large])

@@ -36,8 +36,13 @@ struct AudioRootView: View {
                         }
                 }
         } detail: {
-            if let selected = listModel.selected {
-                AudioRoute.detail(selected)
+            Group {
+                if let selected = listModel.selected {
+                    AudioRoute.detail(selected)
+                }
+            }
+            .navigationDestination(for: AudioRoute.self) { route in
+                route
             }
         }
         .environment(cacheItemListModel)

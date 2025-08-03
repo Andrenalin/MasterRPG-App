@@ -69,7 +69,9 @@ public struct RootView<List: View, Detail: View>: View {
             if listModel.selected == nil {
                 SplitContentUnavailableView(module: module)
             } else {
-                detail
+                ManagedNavigationStack {
+                    detail
+                }
             }
         }
     }
