@@ -37,24 +37,6 @@ extension EditController {
         }
     }
     
-    func removeItem(itemId: UUID, model: SpaceDataModel) {
-        model.withTransaction { modelContext in
-            guard let item = SpaceDataModel.model(modelContext: modelContext, id: itemId) else { return }
-            
-            let entry = model[itemId]
-            model.entryModels.removeAll(where: { $0.childId == itemId })
-            model.entryModels.enumerated().forEach { index, entry in
-                entry.index = Int16(index)
-            }
-            modelContext.delete(entry)
-            if model.category == .folder {
-                item.parentId = nil
-            }
-            item.displayState = 0
-        }
-    }
-
-
     func addSubPhoto(photoId: UUID, model: SpaceDataModel) {
         model.withTransaction { modelContext in
             var entries: [SpaceEntryDataModel] = model.entryModels

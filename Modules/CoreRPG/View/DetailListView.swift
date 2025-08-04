@@ -144,13 +144,15 @@ private extension DetailListView {
     }
     
     func deleteItems(offsets: IndexSet) {
-        for index in offsets {
-            editController.removeItem(itemId: items[index].id, model: parentModel)
-        }
+        editController.removeItem(offsets: offsets, model: parentModel)
+    }
+    
+    func moveItems(source: IndexSet, destination: Int) {
+        editController.moveItems(source: source, destination: destination, model: parentModel)
     }
     
     @ViewBuilder
-    private func listView(filteredItems: [Model]) -> some View {
+    func listView(filteredItems: [Model]) -> some View {
         @Bindable var listModel = listModel
 #if os(macOS)
         if listModel.isSelectionMode {
@@ -169,7 +171,7 @@ private extension DetailListView {
 #endif
     }
     
-    private func itemRows(filteredItems: [Model]) -> some View {
+    func itemRows(filteredItems: [Model]) -> some View {
         ForEach(filteredItems) { item in
             row(item)
                 .applyIf(!listModel.isSelectionMode) { content in
@@ -185,10 +187,12 @@ private extension DetailListView {
 #endif
         }
         .onDelete(perform: deleteItems)
+        .onMove(perform: moveItems)
         .deleteDisabled(listModel.isSelectionMode)
+        .moveDisabled(listModel.isSelectionMode)
     }
     
-    private func addLinks(links: [LinkData]) {
+    func addLinks(links: [LinkData]) {
         links.forEach { link in
             guard link.module == Model.typeId else { return }
             withAnimation { editController.addItem(itemId: link.itemId, in: parentModel, folderId: listModel.lastFolderId) }
@@ -223,3 +227,4 @@ private extension DetailListView {
         return total
     }
 }
+

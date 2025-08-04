@@ -2,6 +2,7 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 
 public protocol EditControllable: Sendable {
     associatedtype Model: ItemDataAccessable, ItemDataModelable, ListItemFolderable, PersistentModel
@@ -66,31 +67,45 @@ public extension EditControllable {
             if model.category == .folder {
                 item.parentId = model.id
             } else {
-                item.parentId = folderId
+                //item.parentId = folderId
             }
         }
     }
 
-    func removeItem(itemId: UUID, model: Model) {
+    func removeItem(offsets: IndexSet, model: Model) {
         model.withTransaction { modelContext in
-            guard var item = Model.model(modelContext: modelContext, id: itemId) else { return }
-            
-            let entry = model[itemId]
+            let removedEntries = model.entryModels.filter { offsets.contains($0.index) }
             var entries: [Model.Entry] = model.entryModels
-            entries.removeAll(where: { $0.childId == itemId })
+            entries.remove(atOffsets: offsets)
             entries = entries.enumerated().map { index, entry in
                 var updatedEntry = entry
                 updatedEntry.index = index
                 return updatedEntry
             }
             model.reset(entries: entries)
-            if let entry = entry as? (any PersistentModel) {
-                modelContext.delete(entry)
-            }
+            
             if model.category == .folder {
-                item.parentId = nil
+                removedEntries.forEach {
+                    if let entryModel = $0 as? (any PersistentModel) {
+                        modelContext.delete(entryModel)
+                    }
+                    if let entry = Model.model(modelContext: modelContext, id: $0.childId) {
+                        entry.reset(displayState: 2)
+                    }
+                }
             }
-            item.reset(displayState: 0)
+        }
+    }
+    
+    func moveItems(source: IndexSet, destination: Int, model: Model) {
+        model.withTransaction { modelContext in
+            var entries = model.entryModels
+            entries.move(fromOffsets: source, toOffset: destination)
+            entries = entries.enumerated().map { index, entry in
+                var updatedEntry = entry
+                updatedEntry.index = index
+                return updatedEntry
+            }
         }
     }
 

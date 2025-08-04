@@ -36,34 +36,6 @@ extension EditController {
             await actor.save()
         }
     }
-            
-    func removeItem(itemId: UUID, model: PdfDataModel) {
-        model.withTransaction { modelContext in
-            guard let item = PdfDataModel.model(modelContext: modelContext, id: itemId) else { return }
-            
-            let entry = model[itemId]
-            model.entryModels.removeAll(where: { $0.childId == itemId })
-            model.entryModels.enumerated().forEach { index, entry in
-                entry.index = Int16(index)
-            }
-            modelContext.delete(entry)
-            if model.category == .folder {
-                item.parentId = nil
-            }
-            item.displayState = 0
-        }
-    }
-
-    func update(model: PdfDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
-        model.withTransaction { modelContext in
-            model.reset(name: name)
-            model.reset(information: information)
-            model.category = category
-            model.tags = tags
-        }
-        
-        updateTags(modelContext: model.modelContext)
-    }
 }
 
 // MARK: - File Editor
