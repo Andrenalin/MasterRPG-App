@@ -127,10 +127,12 @@ public struct DescriptionLinkEditor: View {
                 Text("Selected: \(content.text[content.selection])")
             }
             Divider()
+            #if !os(tvOS)
             TextEditor(text: $content.text, selection: $content.selection)
                 .attributedTextFormattingDefinition(ContentFormattingDefinition(
                     links: Set(content.model.links.map(\.id))
                 ))
+            #endif
         }
     }
     
@@ -148,7 +150,6 @@ public struct DescriptionLinkEditor: View {
 #Preview {
     NavigationStack {
         DescriptionLinkEditor()
-            .toolbarRole(.editor)
             .navigationTitle("Example")
     }
 }

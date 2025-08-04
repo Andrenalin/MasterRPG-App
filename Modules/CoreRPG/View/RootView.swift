@@ -80,6 +80,9 @@ public struct RootView<List: View, Detail: View>: View {
     private var listRoot: some View {
         @Bindable var searchModel = searchModel
         list
+        #if os(tvOS)
+            .searchable(text: $searchModel.searchFieldText, placement: .automatic, prompt: Text("Search for items", bundle: .module))
+        #else
             .searchable(text: $searchModel.searchFieldText, tokens: $searchModel.selectedTokens, placement: .automatic, prompt: Text("Search or use @ for tags", bundle: .module), token: { token in
                 Label(token.tag.prefix(3), systemImage: "tag")
             })
@@ -95,6 +98,7 @@ public struct RootView<List: View, Detail: View>: View {
                     }
                 }
             }
+        #endif
             .searchPresentationToolbarBehavior(.avoidHidingContent)
             .onChange(of: searchModel.searchFieldText) {
                 guard searchModel.searchFieldText.starts(with: "@") == false else { return }

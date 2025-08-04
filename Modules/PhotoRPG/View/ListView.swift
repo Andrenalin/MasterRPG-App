@@ -64,7 +64,7 @@ struct ListView: View {
         EditController.importImageFromProviders(providers) { data in
             guard let data = data else { return }
             Task { @MainActor in
-                let model = root.editController.addNew(modelContext: modelContext)
+                let model = root.editController.addNew(modelContext: modelContext, type: .item)
                 try? await Task.sleep(for: .seconds(0.5))
                 withAnimation {
                     root.editController.resetFile(data: data, model: model)

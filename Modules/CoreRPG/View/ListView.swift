@@ -48,11 +48,13 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
                     ContentUnavailableView.search
                 }
             }
+#if !os(tvOS)
             .applyIf(listModel.isSelectionMode) { content in
                 content.contextMenu(forSelectionType: Model.ID.self) { selectedItemIDs in
                     ItemListContextMenu(controller: menuController)
                 }
             }
+#endif
             .animation(.smooth, value: items.count)
 #if os(iOS) || os(visionOS)
             .environment(\.editMode, $editMode)
@@ -86,7 +88,7 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
                     actionMenu
                 }
 #else
-                ToolbarItemGroup(placement: .secondaryAction) {
+                ToolbarItemGroup(placement: secondaryMenuPlacement) {
                     secondaryActionMenu
                 }
 #endif
@@ -211,5 +213,13 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
             }
         }
         return total
+    }
+
+    var secondaryMenuPlacement: ToolbarItemPlacement {
+#if os(tvOS)
+        .automatic
+#else
+        .secondaryAction
+#endif
     }
 }

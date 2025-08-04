@@ -39,7 +39,9 @@ private extension AudioPlayerBarView {
                     .padding(8)
                     .background(.regularMaterial, in: Circle())
             }
+#if !os(visionOS)
             .glassEffect(.regular.interactive())
+#endif
             .disabled(!root.audioPlayerModel.hasPrev)
             
             Button {
@@ -51,7 +53,9 @@ private extension AudioPlayerBarView {
                     .padding(8)
                     .background(.regularMaterial, in: Circle())
             }
+#if !os(visionOS)
             .glassEffect(.regular.interactive())
+#endif
             .disabled(root.audioPlayerModel.playList.isEmpty)
             
             Button {
@@ -62,7 +66,9 @@ private extension AudioPlayerBarView {
                     .padding(8)
                     .background(.regularMaterial, in: Circle())
             }
+#if !os(visionOS)
             .glassEffect(.regular.interactive())
+#endif
             .disabled(!root.audioPlayerModel.hasNext)
         }
         .buttonStyle(.plain)

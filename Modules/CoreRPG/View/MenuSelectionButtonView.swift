@@ -15,6 +15,8 @@ struct MenuSelectionButtonView: View {
                 Image(systemName: "checkmark.circle")
             }
        }
+#if !os(tvOS)
        .keyboardShortcut("S", modifiers: [.command, .shift])
+#endif
     }
 }

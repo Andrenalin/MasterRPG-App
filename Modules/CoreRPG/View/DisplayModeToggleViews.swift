@@ -38,7 +38,9 @@ struct ListModeToggle: View {
                 Image(systemName: "list.bullet")
             }
         }
+#if !os(tvOS)
         .keyboardShortcut("L", modifiers: [.command, .shift])
+#endif
     }
 }
 
@@ -54,7 +56,9 @@ struct FolderModeToggle: View {
                 Image(systemName: "folder")
             }
         }
+#if !os(tvOS)
         .keyboardShortcut("F", modifiers: [.command, .shift])
+#endif
     }
 }
 
@@ -70,7 +74,9 @@ struct CompactDisplayModeToggle: View {
                 Image(systemName: "list.dash.header.rectangle")
             }
         }
+#if !os(tvOS)
         .keyboardShortcut("C", modifiers: [.command, .shift])
+#endif
     }
 }
 
@@ -86,7 +92,9 @@ struct MediumDisplayModeToggle: View {
                 Image(systemName: "list.bullet.rectangle")
             }
         }
+#if !os(tvOS)
         .keyboardShortcut("M", modifiers: [.command, .shift])
+#endif
     }
 }
 
@@ -102,6 +110,8 @@ struct RegularDisplayModeToggle: View {
                 Image(systemName: "list.bullet.below.rectangle")
             }
         }
+#if !os(tvOS)
         .keyboardShortcut("R", modifiers: [.command, .shift])
+#endif
     }
 }
