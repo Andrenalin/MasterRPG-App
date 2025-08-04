@@ -120,6 +120,8 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
             addItemButton(for: .folder)
             addItemButton(for: .collection)
         }
+        .disabled(listModel.isListMode)
+        
         ControlGroup {
             CompactDisplayModeToggle(listModel: listModel)
             MediumDisplayModeToggle(listModel: listModel)

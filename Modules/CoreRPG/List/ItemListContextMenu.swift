@@ -13,11 +13,14 @@ public struct ItemListContextMenu: View {
     let currentSelected: UUID?
 
     @Environment(\.navigator) private var navigator
+    @Environment(ListModel.self) private var listModel
     
     public var body: some View {
         duplicateItemView
         moveItemView
+            .disabled(listModel.isListMode)
         addItemView
+            .disabled(listModel.isListMode)
         Divider()
         exportItemView
         generateLinkView
