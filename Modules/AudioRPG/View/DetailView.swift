@@ -25,16 +25,21 @@ struct DetailView: View {
                 
                 if model.specialCategory {
                     playlistView
+                        .safeAreaBar(edge: .bottom) {
+                            if shouldShowBottomBar {
+                                AudioPlayerBarView()
+                                    .opacity(0)
+                            }
+                        }
                 }
             }
-            .safeAreaBar(edge: .bottom) {
-                if shouldShowBottomBar {
-                    VStack {
-                        AudioPlayerBarView()
-                    }
-                    .padding()
-                    .frame(maxHeight: .infinity, alignment: .bottom)
+            
+            if shouldShowBottomBar {
+                VStack {
+                    AudioPlayerBarView()
                 }
+                .padding()
+                .frame(maxHeight: .infinity, alignment: .bottom)
             }
         }
 #if !os(tvOS)
@@ -78,12 +83,8 @@ private extension DetailView {
         .padding()
     }
     
-    var detailListModel: ListModel {
-        ListModel(listModel: listModel, parentId: model.id, lastFolderId: model.category == .folder ? model.id : listModel.lastFolderId)
-    }
-    
     var playlistView: some View {
-        DetailListView(editController: root.editController, menuController: menuController, listModel: detailListModel, parentModel: model, items: model.subItems, module: AudioDataModel.typeId) { id in
+        DetailListView(editController: root.editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: AudioDataModel.typeId) { id in
             AudioRoute.detail(id)
         } row: { model in
             MainRowView(model: model)

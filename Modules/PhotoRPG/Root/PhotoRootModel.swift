@@ -16,6 +16,8 @@ public final class PhotoRootModel {
         self.fileController = fileController
         self.itemController = itemController
         self.searchModel = SearchModel(modelContext: modelContext, module: PhotoDataModel.typeId, categoryTags: [.adventure, .map, .value, .weather])
+        
+        itemController.cleanDeleted()
     }
 
     let modelContext: ModelContext

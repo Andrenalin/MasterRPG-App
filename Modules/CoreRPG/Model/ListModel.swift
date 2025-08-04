@@ -32,7 +32,8 @@ public final class ListModel {
     public var selected: UUID?
     public var listSelection: Set<UUID>
     
-    //public var focusSelectedItem: Binding<UUID>?
+    // MARK: - ListModels
+    private var listModels: [UUID: ListModel] = [:]
     
     // MARK: - Display Mode
     public enum DisplayMode: Int, Equatable, Hashable, Codable, Sendable {
@@ -108,15 +109,22 @@ public extension ListModel {
             self.selection = Array(selection)
         } else {
             selected = selection.first
-//            if let selected {
-//                focusSelectedItem = .constant(selected)
-//            } else {
-//                focusSelectedItem = nil
-//            }
         }
     }
 }
 
+// MARK: - ListModels
+
+public extension ListModel {
+    func listModel(for parentId: UUID, parentIsFolder: Bool) -> ListModel {
+        guard let model = listModels[parentId] else {
+            let listModel = ListModel(listModel: self, parentId: parentId, lastFolderId: parentIsFolder ? parentId : lastFolderId)
+            listModels[parentId] = listModel
+            return listModel
+        }
+        return model
+    }
+}
 
 @Observable
 final class ListSubItemModel {

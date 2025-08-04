@@ -18,7 +18,9 @@ public final class AudioRootModel {
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
-        self.searchModel = SearchModel(modelContext: modelContext, module: AudioDataModel.typeId, categoryTags: [.adventure, .map, .value, .weather])
+        self.searchModel = SearchModel(modelContext: modelContext, module: AudioDataModel.typeId, categoryTags: [.music, .sound])
+        
+        itemController.cleanDeleted()
     }
 
     let modelContext: ModelContext

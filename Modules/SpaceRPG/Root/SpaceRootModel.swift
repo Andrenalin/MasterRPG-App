@@ -16,6 +16,8 @@ public final class SpaceRootModel {
         self.fileController = fileController
         self.itemController = itemController
         self.searchModel = SearchModel(modelContext: modelContext, module: SpaceDataModel.typeId, categoryTags: [.building, .item, .supplement])
+        
+        itemController.cleanDeleted()
     }
 
     let modelContext: ModelContext

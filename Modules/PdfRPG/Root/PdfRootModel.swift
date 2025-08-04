@@ -16,6 +16,8 @@ public final class PdfRootModel {
         self.fileController = fileController
         self.itemController = itemController
         self.searchModel = SearchModel(modelContext: modelContext, module: PdfDataModel.typeId, categoryTags: [.adventure, .character, .rules, .supplement])
+        
+        itemController.cleanDeleted()
     }
 
     let modelContext: ModelContext
