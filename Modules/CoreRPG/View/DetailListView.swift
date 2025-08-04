@@ -189,7 +189,7 @@ private extension DetailListView {
         .onDelete(perform: deleteItems)
         .onMove(perform: moveItems)
         .deleteDisabled(listModel.isSelectionMode)
-        .moveDisabled(listModel.isSelectionMode)
+        .moveDisabled(parentModel.category == .folder)
     }
     
     func addLinks(links: [LinkData]) {
@@ -206,7 +206,13 @@ private extension DetailListView {
     
     func totalItems(items: [Model]) -> [Model] {
         var total: [Model] = []
-        items.forEach { item in
+        let sorted: [Model]
+        if parentModel.category == .folder {
+            sorted = items.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+        } else {
+            sorted = items
+        }
+        sorted.forEach { item in
             total.append(item)
             if item.isFolder && listModel.subItemModels[item.id]?.isOpen ?? false {
                 total.append(contentsOf: totalItems(items: item.subItems))

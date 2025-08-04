@@ -36,9 +36,11 @@ struct DetailView: View {
             
             if shouldShowBottomBar {
                 VStack {
-                    AudioPlayerBarView()
+                    GlassEffectContainer {
+                        AudioPlayerBarView()
+                            .padding()
+                    }
                 }
-                .padding()
                 .frame(maxHeight: .infinity, alignment: .bottom)
             }
         }

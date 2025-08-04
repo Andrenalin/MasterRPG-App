@@ -77,11 +77,7 @@ public extension EditControllable {
             let removedEntries = model.entryModels.filter { offsets.contains($0.index) }
             var entries: [Model.Entry] = model.entryModels
             entries.remove(atOffsets: offsets)
-            entries = entries.enumerated().map { index, entry in
-                var updatedEntry = entry
-                updatedEntry.index = index
-                return updatedEntry
-            }
+            reindex(entries: &entries)
             model.reset(entries: entries)
             
             if model.category == .folder {
@@ -125,5 +121,13 @@ public extension EditControllable {
         guard let models = try? modelContext.fetch(fetch) else { return }
         let tags = Set(models.flatMap { $0.tags })
         TagController.update(tags: tags, in: Model.typeId, modelContext: modelContext)
+    }
+
+    private func reindex(entries: inout [Model.Entry]) {
+        entries = entries.enumerated().map { index, entry in
+            var updatedEntry = entry
+            updatedEntry.index = index
+            return updatedEntry
+        }
     }
 }

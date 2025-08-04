@@ -36,7 +36,10 @@ private extension AudioPlayerBarView {
             } label: {
                 Image(systemName: "backward.fill")
                     .font(.title3)
+                    .padding(8)
+                    .background(.regularMaterial, in: Circle())
             }
+            .glassEffect(.regular.interactive())
             .disabled(!root.audioPlayerModel.hasPrev)
             
             Button {
@@ -48,14 +51,18 @@ private extension AudioPlayerBarView {
                     .padding(8)
                     .background(.regularMaterial, in: Circle())
             }
-            .disabled(!root.audioPlayerModel.playList.isEmpty)
+            .glassEffect(.regular.interactive())
+            .disabled(root.audioPlayerModel.playList.isEmpty)
             
             Button {
                 withAnimation { root.audioController.skipToCurrentItem(offsetBy: 1) }
             } label: {
                 Image(systemName: "forward.fill")
                     .font(.title3)
+                    .padding(8)
+                    .background(.regularMaterial, in: Circle())
             }
+            .glassEffect(.regular.interactive())
             .disabled(!root.audioPlayerModel.hasNext)
         }
         .buttonStyle(.plain)
