@@ -10,12 +10,12 @@ public protocol EditControllable: Sendable {
     var fileUrlDataController: FileUrlDataController { get }
 
     func createNewEntry(in model: Model, childId: UUID) -> Model.Entry
-    func update(model: Model, name: String, information: String, category: ItemListCategory, tags: [String])
-    
+    func duplicate(model: Model)
+
     func resetFile(url: URL?, in model: Model)
 }
 
-
+// MARK: - Edit Item
 public extension EditControllable {
     @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> Model {
         let newItem = Model.newItem
@@ -28,7 +28,7 @@ public extension EditControllable {
         try? modelContext.save()
         return newItem
     }
-    
+
     func delete(model: Model) {
         let fileUrl = model.fileUrl
         let modelContext = model.modelContext
@@ -47,7 +47,10 @@ public extension EditControllable {
         updateTags(modelContext: modelContext)
         try? modelContext?.save()
     }
+}
 
+// MARK: - Folder / Collection
+public extension EditControllable {
     func addItem(itemId: UUID, in modelContext: ModelContext, parentId: UUID?, folderId: UUID?) {
         guard let model = Model.model(modelContext: modelContext, id: parentId) else { return }
         addItem(itemId: itemId, in: model, folderId: folderId)
@@ -79,7 +82,7 @@ public extension EditControllable {
             entries.remove(atOffsets: offsets)
             reindex(entries: &entries)
             model.reset(entries: entries)
-            
+
             if model.category == .folder {
                 removedEntries.forEach {
                     if let entryModel = $0 as? (any PersistentModel) {
@@ -92,7 +95,7 @@ public extension EditControllable {
             }
         }
     }
-    
+
     func moveItems(source: IndexSet, destination: Int, model: Model) {
         model.withTransaction { modelContext in
             var entries = model.entryModels
@@ -102,9 +105,47 @@ public extension EditControllable {
                 updatedEntry.index = index
                 return updatedEntry
             }
+            model.reset(entries: entries)
+        }
+    }
+}
+
+// MARK: - Group Items
+public extension EditControllable {
+    func addGroup(childId: UUID, model: Model) {
+        model.withTransaction { modelContext in
+            var entries: [Model.Entry] = model.entryModels
+
+            let entry = createNewEntry(in: model, childId: childId)
+            entries.append(entry)
+            model.reset(entries: entries)
+            if let entry = entry as? (any PersistentModel) {
+                modelContext.insert(entry)
+            }
+            guard let subModel = Model.model(modelContext: modelContext, id: childId) else { return }
+            subModel.reset(displayState: 1)
         }
     }
 
+    func removeGroup(childId: UUID, model: Model) {
+        model.withTransaction { modelContext in
+            var entries: [Model.Entry] = model.entryModels
+            let entry = model[childId]
+            entries.removeAll(where: { $0.childId == childId })
+            reindex(entries: &entries)
+            model.reset(entries: entries)
+
+            guard let subModel = Model.model(modelContext: modelContext, id: childId) else { return }
+            if let entry = entry as? (any PersistentModel) {
+                modelContext.delete(entry)
+            }
+            subModel.reset(displayState: 0)
+        }
+    }
+}
+
+// MARK: - Editor
+public extension EditControllable {
     func update(model: Model, name: String, information: String, category: ItemListCategory, tags: [String]) {
         model.withTransaction { modelContext in
             model.reset(name: name)

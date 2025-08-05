@@ -9,12 +9,14 @@ struct DetailView: View {
     let model: PhotoDataModel
     
     @Environment(PhotoRootModel.self) private var root
-    
+    @Environment(ListModel.self) private var listModel
+
     @State private var selection = GroupItemSelectionModel()
     
     var body: some View {
         ZStack(alignment: .top) {
             backgroundHeader
+
             VStack {
                 @Bindable var model = model
                 ZStack(alignment: .top) {
@@ -36,14 +38,22 @@ struct DetailView: View {
                         .pickerStyle(.segmented)
                         .padding(.vertical, 6)
                         .padding(.horizontal)
+
+                        //fileAndPlayerView
+
+                        if model.specialCategory {
+                            playlistView
+                        }
                     }
                     .overlay(alignment: .bottomTrailing) {
                         PhotoInlineImporterView(model: model)
                             .padding()
                     }
                 }
-                
-                bottomView
+
+                if !model.specialCategory {
+                    bottomView
+                }
             }
             .ignoresSafeArea(edges: .top)
         }
@@ -59,7 +69,19 @@ struct DetailView: View {
         .ignoresSafeArea(edges: .top)
         .backgroundExtensionEffect()
     }
-    
+
+    var playlistView: some View {
+        DetailListView(editController: root.editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: PhotoDataModel.typeId) { id in
+            PhotoRoute.detail(id)
+        } row: { model in
+            MainRowView(model: model)
+        }
+    }
+
+    private var menuController: any ItemListContextMenuControllable {
+        ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
+    }
+
     var contentView: some View {
         GeometryReader { geometry in
             Color.clear
@@ -79,20 +101,23 @@ struct DetailView: View {
 }
 
 extension DetailView {
-    
+
     @ViewBuilder
     var bottomView: some View {
         if model.url != nil {
-            CarouselPhotosView(model: model)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .environment(selection)
-                .transition(.move(edge: .bottom))
+            CarouselItemView(model: model, editController: root.editController, selection: selection) {
+                GroupItemView(model: model)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .environment(selection)
+            .transition(.move(edge: .bottom))
         }
     }
     
     private var detailView: some View {
-        PlainPhotoView(cacheController: root.cacheController, model: selection.selectedItem ?? model)
+        GroupItemView(model: model)
+            .environment(selection)
             .stretchy()
     }
 }

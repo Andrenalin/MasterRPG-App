@@ -36,34 +36,6 @@ extension EditController {
             await actor.save()
         }
     }
-    
-    func addSubPhoto(photoId: UUID, model: SpaceDataModel) {
-        model.withTransaction { modelContext in
-            var entries: [SpaceEntryDataModel] = model.entryModels
-            
-            let entry = SpaceEntryDataModel(id: UUID(), index: Int16(entries.count), parentId: model.id, childId: photoId, item: model)
-            entries.append(entry)
-            model.entryModels = entries
-            
-            guard let subModel = SpaceDataModel.model(modelContext: modelContext, id: photoId) else { return }
-            modelContext.insert(entry)
-            subModel.displayState = DisplayStateMask.totalHidden.rawValue
-        }
-    }
-    
-    func removeSubPhoto(photoId: UUID, model: SpaceDataModel) {
-        model.withTransaction { modelContext in
-            let entry = model[photoId]
-            model.entryModels.removeAll(where: { $0.childId == photoId })
-            model.entryModels.enumerated().forEach { index, entry in
-                entry.index = Int16(index)
-            }
-            
-            guard let subModel = SpaceDataModel.model(modelContext: modelContext, id: photoId) else { return }
-            modelContext.delete(entry)
-            subModel.displayState = 0
-        }
-    }
 }
 
 // MARK: - File editor

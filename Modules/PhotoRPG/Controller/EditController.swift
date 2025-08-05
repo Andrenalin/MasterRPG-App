@@ -36,38 +36,6 @@ extension EditController {
             await actor.save()
         }
     }
-    
-    func addSubPhoto(photoId: UUID, model: PhotoDataModel) {
-        model.withTransaction { modelContext in
-            var entries: [PhotoEntryDataModel] = model.entryModels
-
-            let entry = PhotoEntryDataModel(id: UUID(), index: entries.count, parentId: model.id, childId: photoId, item: model)
-            entries.append(entry)
-            model.entryModels = entries
-            
-            guard let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
-            modelContext.insert(entry)
-            subModel.displayState = DisplayStateMask.totalHidden.rawValue
-        }
-    }
-
-    func removeSubPhoto(photoId: UUID, model: PhotoDataModel) {
-        model.withTransaction { modelContext in
-            let entry = model[photoId]
-            model.entryModels.removeAll(where: { $0.childId == photoId })
-            model.entryModels.enumerated().forEach { index, entry in
-                entry.index = index
-            }
-                        
-            guard let subModel = PhotoDataModel.model(modelContext: modelContext, id: photoId) else { return }
-            modelContext.delete(entry)
-            subModel.displayState = 0
-        }
-    }
-
-    func update(model: PhotoDataModel, name: String, information: String, category: CoreRPG.ItemListCategory, tags: [String]) {
-        update(model: model, name: name, information: information, category: category, tags: tags, degrees: model.degrees)
-    }
 
     func update(model: PhotoDataModel, name: String, information: String, category: ItemListCategory, tags: [String], degrees: Double) {
         model.withTransaction { modelContext in

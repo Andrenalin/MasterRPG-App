@@ -13,11 +13,13 @@ struct DetailView: View {
     
     @Environment(AudioRootModel.self) private var root
     @Environment(ListModel.self) private var listModel
-    
+
+    @State private var selection = GroupItemSelectionModel()
+
     var body: some View {
         ZStack(alignment: .top) {
             Color.clear
-            
+
             FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
                 FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
             } editor: {
@@ -36,6 +38,10 @@ struct DetailView: View {
             
             if shouldShowBottomBar {
                 VStack {
+                    if !model.specialCategory {
+                        carouselView
+                            .padding(.bottom)
+                    }
                     #if os(visionOS)
                     AudioPlayerBarView()
                         .padding()
@@ -102,6 +108,18 @@ private extension DetailView {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
 
+    @ViewBuilder
+    var carouselView: some View {
+        if model.url != nil {
+            CarouselItemView(model: model, editController: root.editController, selection: selection) {
+                AudioGroupItem()
+            }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .transition(.move(edge: .bottom))
+        }
+    }
+
 }
 
 #Preview(traits: .mockData) {
@@ -110,4 +128,30 @@ private extension DetailView {
     
     DetailView(model: models[0])
         .environment(CacheItemListModel())
+}
+
+
+struct AudioGroupItem: View {
+    @Environment(\.modelContext) var modelContext
+    @Environment(GroupItemSelectionModel.self) var selection
+
+    var body: some View {
+        VStack {
+            if let item = item {
+                Text(item.name)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Image(systemName: item.category.icon)
+                    .imageScale(.large)
+                    .font(.title)
+            }
+        }
+        .padding()
+    }
+
+    var item: AudioDataModel? {
+        guard let id = selection.selectedItem else { return nil }
+        return AudioDataModel.model(modelContext: modelContext, id: id)
+    }
 }
