@@ -116,7 +116,6 @@ extension AudioDataModel {
     }
 }
 
-extension AudioDataModel: HasPhotoModel {}
 extension AudioDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .audio }
     public subscript(id: UUID) -> AudioEntryDataModel {

@@ -31,7 +31,7 @@ struct ListView: View {
     private var filteredItems: [AudioDataModel] {
         var filtered = items
         if listModel.listMode == .list {
-            filtered = filtered.filter { $0.category != .folder && $0.category != .playlist }
+            filtered = filtered.filter { $0.category != .folder && $0.category != AudioDataModel.collectionCategory }
         } else {
             filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
         }

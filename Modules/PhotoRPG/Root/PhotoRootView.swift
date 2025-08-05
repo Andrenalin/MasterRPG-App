@@ -13,6 +13,7 @@ struct PhotoRootView: View {
     
     @SceneStorage("PhotoRoute") private var route: PhotoRoute?
     @SceneStorage("PhotoDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
+    @SceneStorage("PhotoListModel") private var listMode: ListModel.ListMode = .list
 
     @State private var cacheItemListModel = CacheItemListModel()
 
@@ -27,6 +28,7 @@ struct PhotoRootView: View {
                     route
                         .environment(cacheItemListModel)
                         .environment(deviceRotationModel)
+                        .environment(listModel)
                         .environment(root.searchModel)
                         .onDisappear {
                             listModel.resetListSelection()
@@ -34,17 +36,29 @@ struct PhotoRootView: View {
                         }
                 }
         } detail: {
-            if let selected = listModel.selected {
-                PhotoRoute.detail(selected)
+            Group {
+                if let selected = listModel.selected {
+                    PhotoRoute.detail(selected)
+                }
+            }
+            .navigationDestination(for: PhotoRoute.self) { route in
+                route
             }
         }
         .environment(cacheItemListModel)
         .environment(listModel)
+        .environment(root.searchModel)
         .onChange(of: displayMode, initial: true) {
             listModel.displayMode = displayMode
         }
         .onChange(of: listModel.displayMode) {
             displayMode <=> listModel.displayMode
+        }
+        .onChange(of: listMode, initial: true) {
+            listModel.listMode <=> listMode
+        }
+        .onChange(of: listModel.listMode) {
+            listMode <=> listModel.listMode
         }
         .onChange(of: route, initial: true) {
             if let route {

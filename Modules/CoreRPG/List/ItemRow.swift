@@ -104,11 +104,14 @@ private extension ItemRow {
         }
     }
 
+    @ViewBuilder
     var thumbView: some View {
-        VStack(spacing: 0) {
-            thumbnail
+        if !isSpecialCategory {
+            VStack(spacing: 0) {
+                thumbnail
+            }
+            .fixedSize(horizontal: true, vertical: false)
         }
-        .fixedSize(horizontal: true, vertical: false)
     }
     
     var tagContent: [String] {

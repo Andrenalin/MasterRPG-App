@@ -30,8 +30,10 @@ struct ListView: View {
 
     private var filteredItems: [PhotoDataModel] {
         var filtered = items
-        if searchModel.searchToken != ItemListCategory.all {
-            filtered = filtered.filter { $0.category == searchModel.searchToken }
+        if listModel.listMode == .list {
+            filtered = filtered.filter { $0.category != .folder && $0.category != PhotoDataModel.collectionCategory }
+        } else {
+            filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
         }
         if !searchModel.selectedTokens.isEmpty {
             let selectedTags = searchModel.selectedTokens.map { $0.tag }

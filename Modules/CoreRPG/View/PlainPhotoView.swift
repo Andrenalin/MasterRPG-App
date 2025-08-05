@@ -2,20 +2,20 @@
 
 import SwiftUI
 
-public protocol HasPhotoModel: Observable {
+public protocol ImageFileLoadable: Observable {
     var id: UUID { get }
     var fileUrl: FileUrl? { get }
 }
 
 public struct PlainPhotoView: View {
-    public init(cacheController: any ImageCacheControllable, model: any HasPhotoModel, highResolution: Bool = true) {
+    public init(cacheController: any ImageCacheControllable, model: any ImageFileLoadable, highResolution: Bool = true) {
         self.cacheController = cacheController
         self.model = model
         self.highResolution = highResolution
     }
 
     let cacheController: ImageCacheControllable
-    let model: HasPhotoModel
+    let model: ImageFileLoadable
     let highResolution: Bool
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
@@ -24,11 +24,6 @@ public struct PlainPhotoView: View {
     @State private var isLoading: Bool = false
 
     public var body: some View {
-//        .scaleEffect(scale)
-//        .gesture(MagnifyGesture().onChanged({ value in
-//            scale = value.magnification
-//        }))
-
         VStack {
             if let image = cachedImage {
                 imageView(image: image)

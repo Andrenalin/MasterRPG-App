@@ -18,8 +18,6 @@ struct AudioEntity: IndexedEntity {
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
             title: "\(name)"
-            //,
-            //image: .init(data: try! self.thumbnailRepresentationData)
         )
     }
 
@@ -71,13 +69,9 @@ extension AudioEntity: Transferable {
             return .init(url)
         }
 
-        DataRepresentation(exportedContentType: .image) {
-            try await $0.imageRepresentationData
-        }
-
         DataRepresentation(exportedContentType: .plainText) {
             """
-            Photo: \($0.name)
+            Audio: \($0.name)
             Description: \($0.description)
             """.data(using: .utf8)!
         }

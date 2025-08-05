@@ -3,14 +3,14 @@
 import SwiftUI
 
 public struct ThumbnailRowPhotoView: View {
-    public init(cacheController: any ImageCacheControllable, model: any HasPhotoModel, isTrailing: Bool = false) {
+    public init(cacheController: any ImageCacheControllable, model: any ImageFileLoadable, isTrailing: Bool = false) {
         self.cacheController = cacheController
         self.model = model
         self.isTrailing = isTrailing
     }
 
     let cacheController: ImageCacheControllable
-    let model: HasPhotoModel
+    let model: ImageFileLoadable
     let isTrailing: Bool
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel

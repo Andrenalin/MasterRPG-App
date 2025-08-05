@@ -73,6 +73,7 @@ struct AudioRootView: View {
             }
         }
         .onChange(of: listModel.selected) {
+            root.currentSelectedItemId = listModel.selected
             if let itemId = listModel.selected {
                 route <=> .detail(itemId)
             } else {

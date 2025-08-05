@@ -101,13 +101,11 @@ extension PhotoDataModel {
     }
 }
 
-extension PhotoDataModel: HasPhotoModel {}
+extension PhotoDataModel: ImageFileLoadable {}
 extension PhotoDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .photo }
     public subscript(id: UUID) -> PhotoEntryDataModel {
-        get {
-            entryModels.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id)
-        }
+        get { entryModels.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id) }
         set(newValue) {
             guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
             entryModels[index] = newValue

@@ -13,7 +13,7 @@ struct ItemController: ItemControllable, Sendable {
     func item(for id: UUID) async -> PhotoModel? {
         let actor = DataModelActor(modelContainer: container)
         await actor.setup(id: id)
-        return await actor.photoModel()
+        return await actor.itemModel()
     }
     
     func fileUrl(for id: UUID) async -> FileUrl? {

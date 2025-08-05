@@ -97,7 +97,7 @@ extension SpaceDataModel {
     }
 }
 
-extension SpaceDataModel: HasPhotoModel {}
+extension SpaceDataModel: ImageFileLoadable {}
 extension SpaceDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .space }
     public subscript(id: UUID) -> SpaceEntryDataModel {

@@ -117,7 +117,7 @@ extension PdfDataModel {
     }
 }
 
-extension PdfDataModel: HasPhotoModel {}
+extension PdfDataModel: ImageFileLoadable {}
 extension PdfDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .pdf }
     public subscript(id: UUID) -> PdfEntryDataModel {
