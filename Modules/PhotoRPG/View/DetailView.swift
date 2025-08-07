@@ -3,7 +3,6 @@
 import CoreRPG
 import SwiftData
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct DetailView: View {
     let model: PhotoDataModel
@@ -14,40 +13,28 @@ struct DetailView: View {
     @State private var selection = GroupItemSelectionModel()
 
     var body: some View {
-        ZStack(alignment: .top) {
-            backgroundHeader
-
+        FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
             VStack {
-                ZStack(alignment: .top) {
-                    Color.clear
-
-                    FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
-                        VStack {
-                            PhotoImporterView(model: model, prominent: true)
-                        }
-                    } inside: {
-                        contentView
-                    } editor: {
-                        if model.specialCategory {
-                            detaillistView
-                        } else {
-                            degreesPickerView
-                        }
-                    }
+                PhotoImporterView(model: model, prominent: true)
+            }
+        } background: {
+            backgroundHeader
+        } editor: {
+            if model.specialCategory {
+                detaillistView
+            } else {
+                degreesPickerView
                     .overlay(alignment: .bottomTrailing) {
                         if !model.specialCategory {
                             PhotoInlineImporterView(model: model)
                                 .padding(.bottom, 32)
                         }
                     }
-                }
-
-                if !model.specialCategory {
-                    bottomView
-                }
             }
-            .ignoresSafeArea(edges: .top)
+        } bottom: {
+            GroupItemView(model: model)
         }
+        .environment(selection)
     }
 }
 
@@ -55,9 +42,9 @@ private extension DetailView {
     var backgroundHeader: some View {
         ScrollView(showsIndicators: false) {
             LazyVStack(alignment: .leading, spacing: 8) {
-                if !model.specialCategory {
-                    detailView
-                }
+                GroupItemView(model: model)
+                    .environment(selection)
+                    .stretchy()
             }
         }
         .ignoresSafeArea(.keyboard)
@@ -90,35 +77,6 @@ private extension DetailView {
 
     private var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
-    }
-
-    var contentView: some View {
-        GeometryReader { geometry in
-            Color.clear
-                .frame(height: geometry.size.height)
-        }
-        .mask(LinearGradient(
-            gradient: Gradient(colors: [.black, .black, .black, .clear]),
-            startPoint: .top, endPoint: .bottom))
-    }
-
-    @ViewBuilder
-    var bottomView: some View {
-        if model.url != nil {
-            CarouselItemView(model: model, editController: root.editController, selection: selection) {
-                GroupItemView(model: model)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .fixedSize(horizontal: false, vertical: true)
-            .environment(selection)
-            .transition(.move(edge: .bottom))
-        }
-    }
-    
-    private var detailView: some View {
-        GroupItemView(model: model)
-            .environment(selection)
-            .stretchy()
     }
 }
 

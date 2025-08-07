@@ -15,7 +15,7 @@ struct DetailView: View {
             
             FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
                 FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
-            } inside: {
+            } background: {
                 contentView
             }
             .overlay(alignment: .bottomTrailing) {

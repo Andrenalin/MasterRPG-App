@@ -22,19 +22,18 @@ struct DetailView: View {
 
             FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
                 FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
+            } background: {
+                
             } editor: {
                 if model.specialCategory {
                     playlistView
                 }
-            }
-
-            VStack {
+            } bottom: {
                 if !model.specialCategory {
                     carouselView
                         .padding(.bottom)
                 }
             }
-            .frame(maxHeight: .infinity, alignment: .bottom)
         }
 #if !os(tvOS)
         .toolbar(removing: .title)

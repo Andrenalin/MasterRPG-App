@@ -3,8 +3,8 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-public struct FileDetailEditorView<Model: Identifiable, EditController: EditControllable, Importer: View, Inside: View, Editor: View>: View where Model.ID == UUID, Model == EditController.Model {
-    public init(model: Model, editController: EditController, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, url: KeyPath<Model, URL?>, specialCategory: KeyPath<Model, Bool>, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder inside: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init) {
+public struct FileDetailEditorView<Model: Identifiable, EditController: EditControllable, Importer: View, Inside: View, Editor: View, Bottom: View>: View where Model.ID == UUID, Model == EditController.Model {
+    public init(model: Model, editController: EditController, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, url: KeyPath<Model, URL?>, specialCategory: KeyPath<Model, Bool>, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder bottom: () -> Bottom = EmptyView.init) {
         self.model = model
         self.editController = editController
         self.name = name
@@ -15,26 +15,9 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
         self.specialCategory = specialCategory
         self.fileTypes = fileTypes
         self.importer = importer()
-        self.inside = inside()
-        self.hasInside = true
+        self.background = background()
         self.editor = editor()
-        self.cacheItemListModel = CacheItemListModel()
-    }
-
-    public init(model: Model, editController: EditController, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, url: KeyPath<Model, URL?>, specialCategory: KeyPath<Model, Bool>, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder editor: () -> Editor = EmptyView.init) where Inside == EmptyView {
-        self.model = model
-        self.editController = editController
-        self.name = name
-        self.category = category
-        self.tags = tags
-        self.description = description
-        self.url = url
-        self.specialCategory = specialCategory
-        self.fileTypes = fileTypes
-        self.importer = importer()
-        self.inside = EmptyView()
-        self.hasInside = false
-        self.editor = editor()
+        self.bottom = bottom()
         self.cacheItemListModel = CacheItemListModel()
     }
 
@@ -48,9 +31,9 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
     let specialCategory: KeyPath<Model, Bool>
     let fileTypes: [UTType]
     let importer: Importer
-    let inside: Inside
-    let hasInside: Bool
+    let background: Inside
     let editor: Editor
+    let bottom: Bottom
     let cacheItemListModel: CacheItemListModel
 
 #if os(iOS)
@@ -60,12 +43,22 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
     @State private var isEditing = false
     @State private var itemIdHasUrl: Model.ID = UUID()
 
-    
+    @Environment(GroupItemSelectionModel.self) private var selection
+
     public var body: some View {
         ZStack(alignment: .top) {
+            Color.clear
+
             initialFileImporterView
-            
-            contentView
+
+            VStack {
+                backgroundView
+
+                contentView
+
+                bottomView
+            }
+            .frame(maxHeight: .infinity, alignment: .bottom)
         }
         .animation(.default, value: model[keyPath: url])
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -110,10 +103,15 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
 
 private extension FileDetailEditorView {
     @ViewBuilder
+    var backgroundView: some View {
+        if model[keyPath: specialCategory] == false && model[keyPath: url] != nil {
+            background
+        }
+    }
+
+    @ViewBuilder
     var initialFileImporterView: some View {
-        ZStack {
-            Color.clear
-            
+        HStack {
             importer
                 .padding(32)
                 .overlay {
@@ -121,46 +119,35 @@ private extension FileDetailEditorView {
                         .stroke(Color.accentColor, lineWidth: 2)
                 }
         }
-        .opacity(model[keyPath: url] == nil && !model[keyPath: specialCategory] ? 1 : 0)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .opacity(model[keyPath: url] == nil && model[keyPath: specialCategory] == false ? 1 : 0)
         .transition(.scale)
     }
-    
+
     @ViewBuilder
-    var contentView: some View {
-        if hasInside {
-            contentInsideView
-        } else {
-            contentWithoutInsideView
+    var bottomView: some View {
+        if model[keyPath: url] != nil && model[keyPath: specialCategory] == false {
+            CarouselItemView(model: model, editController: editController, selection: selection) {
+                bottom
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 2)
+            .environment(selection)
+            .transition(.move(edge: .bottom))
         }
     }
-}
 
-private extension FileDetailEditorView {
     @ViewBuilder
-    var contentWithoutInsideView: some View {
-        VStack(spacing: 0) {
+    var contentView: some View {
+        VStack(spacing: 8) {
             DetailOverlayView(itemId: model.id, model: model, nameKeyPath: name, categoryKeyPath: category, tagsKeyPath: tags, descriptionKeyPath: description)
-            
-            editor            
+
+            editor
         }
         .padding()
         .opacity(model[keyPath: url] != nil || model[keyPath: specialCategory] ? 1 : 0)
         .transition(.scale)
-    }
-
-    @ViewBuilder
-    var contentInsideView: some View {
-        VStack(spacing: 8) {
-            inside
-                .overlay(alignment: .bottom) {
-                    DetailOverlayView(itemId: model.id, model: model, nameKeyPath: name, categoryKeyPath: category, tagsKeyPath: tags, descriptionKeyPath: description)
-                        .padding()
-                }
-                .opacity(model[keyPath: url] != nil || model[keyPath: specialCategory] ? 1 : 0)
-                .transition(.scale)
-            
-            editor
-        }
     }
 
     private func updateFile(url: URL) {
