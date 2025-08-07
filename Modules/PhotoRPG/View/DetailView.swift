@@ -21,7 +21,7 @@ struct DetailView: View {
             backgroundHeader
         } editor: {
             if model.specialCategory {
-                detaillistView
+                detailListView
             } else {
                 degreesPickerView
                     .overlay(alignment: .bottomTrailing) {
@@ -32,7 +32,7 @@ struct DetailView: View {
                     }
             }
         } bottom: {
-            GroupItemView(model: model)
+            GroupedPhotoView(cacheController: root.cacheController, model: model)
         }
         .environment(selection)
     }
@@ -42,8 +42,7 @@ private extension DetailView {
     var backgroundHeader: some View {
         ScrollView(showsIndicators: false) {
             LazyVStack(alignment: .leading, spacing: 8) {
-                GroupItemView(model: model)
-                    .environment(selection)
+                GroupedPhotoView(cacheController: root.cacheController, model: model)
                     .stretchy()
             }
         }
@@ -67,7 +66,7 @@ private extension DetailView {
         .padding(.horizontal)
     }
 
-    var detaillistView: some View {
+    var detailListView: some View {
         DetailListView(editController: root.editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: PhotoDataModel.typeId) { id in
             PhotoRoute.detail(id)
         } row: { model in
@@ -75,7 +74,7 @@ private extension DetailView {
         }
     }
 
-    private var menuController: any ItemListContextMenuControllable {
+    var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
 }

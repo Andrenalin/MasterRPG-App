@@ -2,21 +2,25 @@
 
 import SwiftUI
 
-public struct MenuDisplayModeToggle: View {
-    public init(listModel: ListModel, showSelectionButton: Bool = true) {
+public struct MenuDisplayModeToggle<Add: View>: View {
+    public init(listModel: ListModel, showSelectionButton: Bool = true, @ViewBuilder add: () -> Add = EmptyView.init) {
         self.listModel = listModel
         self.showSelectionButton = showSelectionButton
+        self.addViews = add()
     }
     
     let listModel: ListModel
     let showSelectionButton: Bool
+    let addViews: Add
 
     public var body: some View {
         if showSelectionButton || !listModel.isSelectionMode {
             MenuSelectionButtonView(listModel: listModel)
             Divider()
         }
-
+        
+        addViews
+        
         CompactDisplayModeToggle(listModel: listModel)
         MediumDisplayModeToggle(listModel: listModel)
         RegularDisplayModeToggle(listModel: listModel)

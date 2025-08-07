@@ -12,15 +12,6 @@ public protocol ImageCacheControllable: Sendable {
     var thumbnailCacheController: ImageCacheController { get }
     var fileUrlDataController: FileUrlDataController { get }
 
-//    func photo(for itemId: UUID) async -> AKImage?
-//    func thumbnail(for itemId: UUID) async -> AKImage?
-//    func remove(itemId: UUID) async
-//    
-//    @discardableResult
-//    func photoId(for itemId: UUID, with fileUrl: FileUrl?, shouldDownload: Bool) async -> UUID?
-//    @discardableResult
-//    func thumbnailId(for itemId: UUID, with fileUrl: FileUrl?) async -> UUID?
-    
     func createImage(for itemId: UUID, fileUrl: FileUrl?) async
     func createThumbnail(for itemId: UUID, fileUrl: FileUrl?) async
 }

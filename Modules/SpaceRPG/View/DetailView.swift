@@ -8,23 +8,29 @@ struct DetailView: View {
     let model: SpaceDataModel
     
     @Environment(SpaceRootModel.self) private var root
+    @Environment(ListModel.self) private var listModel
+    
+    @State private var selection = GroupItemSelectionModel()
     
     var body: some View {
-        ZStack(alignment: .top) {
-            Color.clear
-            
-            FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
-                FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
-            } background: {
-                contentView
+        FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
+            FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
+        } background: {
+            backgroundHeader
+        } editor: {
+            if model.specialCategory {
+                detailListView
             }
-            .overlay(alignment: .bottomTrailing) {
-                FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes, isProminent: false)
-            }
+        } bottom: {
+            GroupedPhotoView(cacheController: root.cacheController, model: model)
+                .environment(selection)
         }
+        .environment(selection)
     }
-    
-    var contentView: some View {
+}
+
+private extension DetailView {
+    var backgroundHeader: some View {
         GeometryReader { geometry in
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
@@ -36,11 +42,20 @@ struct DetailView: View {
                 .frame(height: geometry.size.height)
             }
         }
-        .mask(LinearGradient(
-            gradient: Gradient(colors: [.black, .black, .black, .clear]),
-            startPoint: .top, endPoint: .bottom))
     }
 
+    var detailListView: some View {
+        DetailListView(editController: root.editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: SpaceDataModel.typeId) { id in
+            SpaceRoute.detail(id)
+        } row: { model in
+            MainRowView(model: model)
+        }
+    }
+
+    var menuController: any ItemListContextMenuControllable {
+        ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
+    }
+    
     var detailView: some View {
         SpaceViewer(root: root, model: model)
             .id(model.id)

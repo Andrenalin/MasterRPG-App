@@ -107,7 +107,13 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
     @ViewBuilder
     private var actionMenu: some View {
         Menu {
-            MenuDisplayModeToggle(listModel: listModel, showSelectionButton: false)
+            MenuDisplayModeToggle(listModel: listModel, showSelectionButton: false) {
+                addItemButton(for: .folder)
+                    .disabled(listModel.isListMode)
+                addItemButton(for: .collection)
+                    .disabled(listModel.isListMode)
+                Divider()
+            }
         } label: {
             Image(systemName: "ellipsis.circle")
         }
