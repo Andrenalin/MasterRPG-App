@@ -86,7 +86,7 @@ extension PdfDataModel {
         return PdfBookmarkDataModel(id: id)
     }
 
-    @MainActor var specialCategory: Bool {
+    @MainActor public var specialCategory: Bool {
         category == .folder || category == PdfDataModel.collectionCategory
     }
 }

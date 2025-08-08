@@ -3,16 +3,10 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-public struct FileDetailEditorView<Model: Identifiable, EditController: EditControllable, Importer: View, Inside: View, Editor: View, Bottom: View>: View where Model.ID == UUID, Model == EditController.Model {
-    public init(model: Model, editController: EditController, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, url: KeyPath<Model, URL?>, specialCategory: KeyPath<Model, Bool>, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder bottom: () -> Bottom = EmptyView.init) {
+public struct FileDetailEditorView<EditController: EditControllable, Importer: View, Inside: View, Editor: View, Bottom: View>: View where EditController.Model.ID == UUID {
+    public init(model: EditController.Model, editController: EditController, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder bottom: () -> Bottom = EmptyView.init) {
         self.model = model
         self.editController = editController
-        self.name = name
-        self.category = category
-        self.tags = tags
-        self.description = description
-        self.url = url
-        self.specialCategory = specialCategory
         self.fileTypes = fileTypes
         self.importer = importer()
         self.background = background()
@@ -21,14 +15,8 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
         self.cacheItemListModel = CacheItemListModel()
     }
 
-    let model: Model
+    let model: EditController.Model
     let editController: EditController
-    let name: KeyPath<Model, String>
-    let category: KeyPath<Model, ItemListCategory>
-    let tags: KeyPath<Model, [String]>
-    let description: KeyPath<Model, String>
-    let url: KeyPath<Model, URL?>
-    let specialCategory: KeyPath<Model, Bool>
     let fileTypes: [UTType]
     let importer: Importer
     let background: Inside
@@ -41,9 +29,10 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
 #endif
 
     @State private var isEditing = false
-    @State private var itemIdHasUrl: Model.ID = UUID()
+    @State private var itemIdHasUrl: EditController.Model.ID = UUID()
 
     @Environment(GroupItemSelectionModel.self) private var selection
+    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
 
     public var body: some View {
         ZStack(alignment: .top) {
@@ -60,28 +49,33 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
             }
             .frame(maxHeight: .infinity, alignment: .bottom)
         }
-        .animation(.default, value: model[keyPath: url])
+        .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onChange(of: model[keyPath: name], initial: true) {
-            guard model[keyPath: name].isEmpty && (model[keyPath: url] != nil || model[keyPath: specialCategory]) else { return }
-            withAnimation { isEditing = true }
-        }
-        .onChange(of: model.id) { oldId, newId in
-            guard model[keyPath: url] != nil else { return }
+        .onChange(of: model.id, initial: true) {
+            openFileWindowModel.itemId = model.id
+            openFileWindowModel.url = model.url
+            guard model.url != nil else { return }
             itemIdHasUrl = model.id
         }
-        .onChange(of: model[keyPath: url]) { oldValue, newValue in
+        .onChange(of: model.name, initial: true) {
+            guard model.name.isEmpty && (model.url != nil || model.specialCategory) else { return }
+            withAnimation { isEditing = true }
+        }
+        .onChange(of: model.url) { oldValue, newValue in
             guard oldValue == nil else { return }
             guard itemIdHasUrl != model.id else { return }
             withAnimation { isEditing = true }
         }
+        .onChange(of: selection.selectedItem) {
+            openFileWindowModel.itemId = selection.selectedItem ?? model.id
+        }
 #if !os(tvOS)
-        .applyIf(model[keyPath: category] != .folder) {
+        .applyIf(model.category != .folder) {
             $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
         }
 #endif
         .sheet(isPresented: $isEditing) {
-            DetailItemEditorView(model: model, editController: editController, name: name, category: category, tags: tags, description: description)
+            DetailItemEditorView(model: model, editController: editController, name: \.name, category: \.category, tags: \.tags, description: \.information)
             
                 .presentationContentInteraction(.resizes)
                 .presentationDetents([.medium, .large])
@@ -89,7 +83,7 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                if model[keyPath: url] != nil || model[keyPath: specialCategory] {
+                if model.url != nil || model.specialCategory {
                     Button {
                         withAnimation { isEditing = true }
                     } label: {
@@ -104,7 +98,7 @@ public struct FileDetailEditorView<Model: Identifiable, EditController: EditCont
 private extension FileDetailEditorView {
     @ViewBuilder
     var backgroundView: some View {
-        if model[keyPath: specialCategory] == false && model[keyPath: url] != nil {
+        if model.specialCategory == false && model.url != nil {
             background
         }
     }
@@ -120,13 +114,13 @@ private extension FileDetailEditorView {
                 }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .opacity(model[keyPath: url] == nil && model[keyPath: specialCategory] == false ? 1 : 0)
+        .opacity(model.url == nil && model.specialCategory == false ? 1 : 0)
         .transition(.scale)
     }
 
     @ViewBuilder
     var bottomView: some View {
-        if model[keyPath: url] != nil && model[keyPath: specialCategory] == false {
+        if model.url != nil && model.specialCategory == false {
             CarouselItemView(model: model, editController: editController, selection: selection) {
                 bottom
             }
@@ -141,12 +135,12 @@ private extension FileDetailEditorView {
     @ViewBuilder
     var contentView: some View {
         VStack(spacing: 8) {
-            DetailOverlayView(itemId: model.id, model: model, nameKeyPath: name, categoryKeyPath: category, tagsKeyPath: tags, descriptionKeyPath: description)
+            DetailOverlayView(itemId: model.id, model: model, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information)
 
             editor
         }
         .padding()
-        .opacity(model[keyPath: url] != nil || model[keyPath: specialCategory] ? 1 : 0)
+        .opacity(model.url != nil || model.specialCategory ? 1 : 0)
         .transition(.scale)
     }
 

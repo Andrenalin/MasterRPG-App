@@ -66,7 +66,7 @@ extension SpaceDataModel {
         return SpaceEntryDataModel(id: id)
     }
     
-    @MainActor var specialCategory: Bool {
+    @MainActor public var specialCategory: Bool {
         category == .folder || category == SpaceDataModel.collectionCategory
     }
 }

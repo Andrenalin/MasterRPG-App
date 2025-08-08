@@ -18,6 +18,7 @@ public protocol ItemDataAccessable {
     var url: URL? { get set }
     var fileUrl: FileUrl? { get }
     var parentId: UUID? { get set }
+    @MainActor var specialCategory: Bool { get }
 
     func reset(name: String)
     func reset(category: ItemListCategory)
@@ -94,6 +95,7 @@ public extension ItemDataAccessable {
         get { nil }
         set(newValue) {}
     }
+    var specialCategory: Bool { false }
     func reset(name: String) {}
     func reset(category: ItemListCategory) {}
     func reset(displayState: Int) {}

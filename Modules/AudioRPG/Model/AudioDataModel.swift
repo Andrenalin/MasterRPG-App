@@ -66,7 +66,7 @@ extension AudioDataModel {
         return AudioEntryDataModel(id: id)
     }
     
-    @MainActor var specialCategory: Bool {
+    @MainActor public var specialCategory: Bool {
         category == .folder || category == AudioDataModel.collectionCategory
     }
     

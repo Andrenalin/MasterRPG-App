@@ -70,7 +70,7 @@ extension PhotoDataModel {
         return PhotoEntryDataModel(id: id)
     }
     
-    @MainActor var specialCategory: Bool {
+    @MainActor public var specialCategory: Bool {
         category == .folder || category == PhotoDataModel.collectionCategory
     }
 }

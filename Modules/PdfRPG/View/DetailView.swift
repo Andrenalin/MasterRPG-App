@@ -22,7 +22,7 @@ struct DetailView: View {
     #endif
     
     var body: some View {
-        FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
+        FileDetailEditorView(model: model, editController: root.editController, fileTypes: FileController.fileTypes) {
             FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
         } background: {
             backgroundHeader
@@ -36,13 +36,7 @@ struct DetailView: View {
             GroupedPhotoView(cacheController: root.cacheController, model: model)
         }
         .environment(selection)
-        .onChange(of: model.id, initial: true) {
-            openFileWindowModel.itemId = model.id
-            openFileWindowModel.url = model.url
-        }
-        .onChange(of: selection.selectedItem) {
-            openFileWindowModel.itemId = selection.selectedItem ?? model.id
-        }
+        .environment(openFileWindowModel)
         .overlay {
             if openFileWindowModel.showItem {
                 root.viewController.viewPdfInline(with: selection.selectedItem ?? model.id, withoutBookmark: false) {

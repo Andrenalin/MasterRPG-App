@@ -13,7 +13,7 @@ struct DetailView: View {
     @State private var selection = GroupItemSelectionModel()
     
     var body: some View {
-        FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
+        FileDetailEditorView(model: model, editController: root.editController, fileTypes: FileController.fileTypes) {
             FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
         } background: {
             backgroundHeader
