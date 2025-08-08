@@ -12,14 +12,6 @@ struct DetailView: View {
     
     @State private var selection = GroupItemSelectionModel()
     @State private var openFileWindowModel = OpenFileWindowModel()
-    @State private var showPdf: Bool = false
-    
-    #if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    #endif
-    #if !os(tvOS)
-    @Environment(\.openWindow) private var openWindow
-    #endif
     
     var body: some View {
         FileDetailEditorView(model: model, editController: root.editController, fileTypes: FileController.fileTypes) {

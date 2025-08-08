@@ -15,6 +15,7 @@ struct DetailView: View {
     @Environment(ListModel.self) private var listModel
 
     @State private var selection = GroupItemSelectionModel()
+    @State private var openFileWindowModel = OpenFileWindowModel()
 
     var body: some View {
         FileDetailEditorView(model: model, editController: root.editController, fileTypes: FileController.fileTypes) {
@@ -37,6 +38,7 @@ struct DetailView: View {
             AudioGroupItem(model: model)
         }
         .environment(selection)
+        .environment(openFileWindowModel)
         .safeAreaInset(edge: .bottom) {
             if shouldShowBottomBar {
                 VStack {
