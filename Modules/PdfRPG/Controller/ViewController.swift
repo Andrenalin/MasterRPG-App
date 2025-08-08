@@ -17,8 +17,7 @@ public extension ViewController {
     func pdfWindow(selection: ItemSelectionModel) -> some View {
         let model = root.itemController.modelSync(for: selection.itemId) ?? .newItem
         
-        return PdfViewerView(editController: root.editController, model: model, entryId: selection.entryId, withoutBookmark: false)
-            .navigationTitle(model.name)
+        return PdfViewerView(model: model, entryId: selection.entryId, withoutBookmark: false)
             .environment(root)
     }
 
@@ -26,7 +25,7 @@ public extension ViewController {
     func viewPdfInline(with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.modelSync(for: id) ?? .newItem
         
-        return PdfViewerView(editController: root.editController, model: model, withoutBookmark: withoutBookmark, toolbarClose: true, dismissAction: dismissAction)
+        return PdfViewerView(model: model, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
             .environment(root)
     }
 }

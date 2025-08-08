@@ -83,7 +83,7 @@ public struct FileDetailEditorView<EditController: EditControllable, Importer: V
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                if model.url != nil || model.specialCategory {
+                if openFileWindowModel.showItem == false && (model.url != nil || model.specialCategory) {
                     Button {
                         withAnimation { isEditing = true }
                     } label: {

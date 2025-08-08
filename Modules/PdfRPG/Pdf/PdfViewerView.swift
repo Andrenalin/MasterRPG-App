@@ -9,21 +9,17 @@ import SwiftUI
 #endif
 
 struct PdfViewerView: View {
-    init(editController: EditController, model: PdfDataModel, entryId: UUID? = nil, withoutBookmark: Bool = false, toolbarClose: Bool = false, dismissAction: (() -> Void)? = nil) {
-        self.editController = editController
+    init(model: PdfDataModel, entryId: UUID? = nil, withoutBookmark: Bool = false, dismissAction: (() -> Void)? = nil) {
         self.model = model
         self.entryId = entryId
         self.withoutBookmark = withoutBookmark
-        self.toolbarClose = toolbarClose
         self.dismissAction = dismissAction
         self._dataModelActor = State(wrappedValue: model.modelActor())
     }
     
-    let editController: EditController
     let model: PdfDataModel
     let entryId: UUID?
     let withoutBookmark: Bool
-    let toolbarClose: Bool
     let dismissAction: (() -> Void)?
     
     @Environment(PdfRootModel.self) private var root
@@ -40,7 +36,7 @@ struct PdfViewerView: View {
         //let _ = Self._printChanges()
         NavigationStack {
             VStack(alignment: .leading, spacing: 0) {
-                PdfSearchHeaderView(editController: editController, model: model, searchModel: searchModel, entryId: entryId, toolbarClose: toolbarClose, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
+                PdfSearchHeaderView(editController: root.editController, model: model, searchModel: searchModel, entryId: entryId, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
                 
                 VStack {
 #if !os(tvOS)
@@ -78,3 +74,12 @@ struct PdfViewerView: View {
         return model.bookmarkOrNew(for: entryId)
     }
 }
+
+#Preview(traits: .mockData) {
+    @Previewable @Query var models: [PdfDataModel]
+    @Previewable @Environment(\.modelContext) var modelContext
+    
+    PdfViewerView(model: models[0])
+}
+
+
