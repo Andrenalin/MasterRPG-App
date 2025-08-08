@@ -2,7 +2,16 @@
 
 import CoreRPG
 import Foundation
+import SwiftData
 import UniformTypeIdentifiers
+
+#if canImport(PDFKit)
+import PDFKit
+#endif
+
+#if canImport(QuickLookThumbnailing)
+import QuickLookThumbnailing
+#endif
 
 struct FileController: Sendable {
     static var fileTypes: [UTType] { [.pdf] }
@@ -19,21 +28,17 @@ struct FileController: Sendable {
         _fileUrlDataController = FileUrlDataController(moduleFolder: PdfDataModel.typeId.token, fileTypes: FileController.fileTypes, filenameExtension: FileController.filenameExtension, fileUrlAccess: self)
     }
 
-    func moveFiles() async throws {
-//        let itemIds = await root.itemController.itemDataModel.items
-//        for itemId in itemIds {
-//            let item = await root.itemController.itemOrEmpty(for: itemId)
-//            guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
-//            do {
-//                if let newFileUrl = try await root.fileUrlDataController.move(fileUrl: fileUrl, name: item.name, category: item.category.title) {
-//                    let editController = await root.editController(type: .main)
-//                    await editController.reset(fileUrl: newFileUrl, for: itemId)
-//                }
-//            } catch {
-//                print(error)
-//            }
-//        }
+#if !os(tvOS)
+    func pdfDocument(itemId: UUID, actor: DataModelActor) async -> PDFDocument? {
+        await actor.setup(id: itemId)
+        guard let fileUrl = await actor.fileUrl else { return nil }
+        try? await fileUrlDataController.download(fileUrl: fileUrl)
+        return await fileUrlDataController.url(for: fileUrl) { url -> PDFDocument? in
+            guard let url else { return nil }
+            return PDFDocument(url: url)
+        }
     }
+#endif
 }
 
 extension FileController: FileControllable {

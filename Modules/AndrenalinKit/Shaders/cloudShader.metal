@@ -1,0 +1,14 @@
+// @copyright André Trettin
+
+#include <metal_stdlib>
+#include <SwiftUI/SwiftUI_Metal.h>
+
+using namespace metal;
+
+
+[[ stitchable ]] half4 cloudColor(float2 position, half4 currentColor, half4 startColor, half4 endColor) {
+    return currentColor * ((1.0h - position.y) * startColor + position.y * endColor) / 10;
+//    uint2 posInChecks = uint2(position.x / size, position.y / size);
+//    bool isColor = (posInChecks.x ^ posInChecks.y) & 1;
+//    return isColor ? newColor * currentColor.a : half4(0.0, 0.0, 0.0, 0.0);
+}

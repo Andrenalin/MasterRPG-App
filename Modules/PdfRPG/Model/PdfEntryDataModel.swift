@@ -34,34 +34,3 @@ extension PdfEntryDataModel {
         PdfEntryModel(id: id)
     }
 }
-
-
-@Model
-public final class PdfBookmarkDataModel {
-    init(id: UUID = UUID(), index: Int16 = 0, name: String = "", content: String = "", bounds: String = "", pageLabel: String = "", parent: PdfDataModel? = nil) {
-        self.id = id
-        self.index = index
-        self.name = name
-        self.content = content
-        self.bounds = bounds
-        self.pageLabel = pageLabel
-        self.parent = parent
-    }
-    
-    @Attribute(.preserveValueOnDeletion)
-    public var id: UUID = UUID()
-    var index: Int16 = 0
-    public var name: String = ""
-    var content: String = ""
-    var bounds: String = ""
-    var pageLabel: String = ""
-    var parent: PdfDataModel?
-}
-
-extension PdfBookmarkDataModel: EntryDataAccessable {}
-
-extension PdfBookmarkDataModel {
-    var entryModel: PdfEntryModel {
-        PdfEntryModel(id: id)
-    }
-}
