@@ -29,11 +29,13 @@ struct PdfSearchHeaderView: View {
         
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
+                #if !os(macOS)
                 if !toolbarClose {
                     closeButton
                 }
 
                 Text(model.name).bold()
+                #endif
                 
                 TextField(text: $searchModel.displaySearchText, prompt: Text("Find in pdf", bundle: .module)) {
                     Text("Find in pdf", bundle: .module)

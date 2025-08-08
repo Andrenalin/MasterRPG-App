@@ -37,6 +37,10 @@ struct Master3RPGApp: App {
     var body: some Scene {
         WindowGroup {
             AppRootView()
+#if os(macOS)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+                .toolbar(removing: .title)
+#endif
                 .environment(appModel)
                 .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
                     handle(userActivity: userActivity)
@@ -65,7 +69,7 @@ struct Master3RPGApp: App {
         .menuBarExtraStyle(.window)
 #endif
         
-#if os(macOS) || os(visionOS)
+#if !os(tvOS)
         WindowMacVisionList(appModel: appModel)
 #endif
 

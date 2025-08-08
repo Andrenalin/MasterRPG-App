@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-#if os(visionOS) || os(macOS)
+#if !os(tvOS)
 import CoreRPG
 import RolePlayGameKit
 import SwiftUI
@@ -13,12 +13,16 @@ struct WindowMacVisionList: Scene {
         Group {
             WindowGroup("Pdf Viewer", id: WindowIdentifier.pdfViewer.rawValue, for: ItemSelectionModel.self) { $selection in
                 appModel.pdfRoot.viewController.pdfWindow(selection: selection ?? ItemSelectionModel(itemId: UUID()))
-                    .accentColor(Color.accentColor)
-                        .tint(Color.accentColor)
-                        .frame(minWidth: 600, minHeight: 400)
+                    .accentColor(.teal)
+                    .tint(.teal)
+                    .frame(minWidth: 600, minHeight: 400)
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
-            //.defaultWindowPlacementAll( .below(WindowIdentifier.game.rawValue))
+            .windowResizability(.contentSize)
+            #if !os(iOS)
+            .restorationBehavior(.disabled)
+            #endif
+            .defaultWindowPlacementAll(.below(WindowIdentifier.game.rawValue))
         }
         .defaultSize(CGSize(width: 600, height: 800))
     }
