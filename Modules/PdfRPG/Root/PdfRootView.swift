@@ -27,6 +27,7 @@ struct PdfRootView: View {
                     route
                         .environment(cacheItemListModel)
                         .environment(deviceRotationModel)
+                        .environment(listModel)
                         .environment(root.searchModel)
                         .onDisappear {
                             listModel.resetListSelection()
@@ -40,6 +41,7 @@ struct PdfRootView: View {
         }
         .environment(cacheItemListModel)
         .environment(listModel)
+        .environment(root.searchModel)
         .onChange(of: displayMode, initial: true) {
             listModel.displayMode = displayMode
         }
@@ -53,6 +55,7 @@ struct PdfRootView: View {
                         if listModel.selected != itemId {
                             listModel.update(selection: Set(arrayLiteral: itemId))
                         }
+                    default: break
                 }
             } else {
                 listModel.update(selection: Set())
@@ -74,6 +77,8 @@ struct PdfRootView: View {
                     }
                     listModel.update(selection: Set(arrayLiteral: itemId))
                     return .auto
+                default:
+                return .cancel
             }
         }
         .environment(root.searchModel)

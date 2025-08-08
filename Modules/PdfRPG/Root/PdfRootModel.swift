@@ -17,6 +17,8 @@ public final class PdfRootModel {
         self.itemController = itemController
         self.searchModel = SearchModel(modelContext: modelContext, module: PdfDataModel.typeId, categoryTags: [.adventure, .character, .rules, .supplement])
         
+        self._viewController = ViewController(_root: self)
+        
         itemController.cleanDeleted()
     }
 
@@ -26,6 +28,10 @@ public final class PdfRootModel {
     @ObservationIgnored let exportController: ExportController
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: ItemController
+    @ObservationIgnored private var _viewController: ViewController? = nil
+    public var viewController: ViewController {
+        _viewController.unsafelyUnwrapped
+    }
     
     let listModel = ListModel()
     let searchModel: SearchModel

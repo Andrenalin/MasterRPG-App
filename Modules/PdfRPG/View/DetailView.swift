@@ -11,33 +11,45 @@ struct DetailView: View {
     @Environment(ListModel.self) private var listModel
     
     @State private var selection = GroupItemSelectionModel()
-    
+    @State private var openFileWindowModel = OpenFileWindowModel()
     @State private var showPdf: Bool = false
+    
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+    #if !os(tvOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
     
     var body: some View {
         FileDetailEditorView(model: model, editController: root.editController, name: \.name, category: \.category, tags: \.tags, description: \.information, url: \.url, specialCategory: \.specialCategory, fileTypes: FileController.fileTypes) {
             FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
         } background: {
             backgroundHeader
-                .overlay(alignment: .bottomTrailing) {
-                    GlassButton {
-                        showPdf.toggle()
-                    } label: {
-                        Image(systemName: PdfDataModel.typeId.icon)
-                    }
-                }
         } editor: {
             if model.specialCategory {
                 detailListView
+            } else {
+                OpenFileWindowView(model: openFileWindowModel, module: PdfDataModel.typeId, windowId: WindowIdentifier.pdfViewer.rawValue, route: PdfRoute.viewer(selection.selectedItem ?? model.id))
             }
         } bottom: {
             GroupedPhotoView(cacheController: root.cacheController, model: model)
         }
         .environment(selection)
+        .onChange(of: model.id, initial: true) {
+            openFileWindowModel.itemId = model.id
+            openFileWindowModel.url = model.url
+        }
+        .onChange(of: selection.selectedItem) {
+            openFileWindowModel.itemId = selection.selectedItem ?? model.id
+        }
         .overlay {
-            if showPdf {
-                PdfViewerView(editController: root.editController, model: model, entryId: nil, withoutBookmark: false)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if openFileWindowModel.showItem {
+                root.viewController.viewPdfInline(with: selection.selectedItem ?? model.id, withoutBookmark: false) {
+                    withAnimation { openFileWindowModel.showItem = false }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.move(edge: .bottom))
             }
         }
     }

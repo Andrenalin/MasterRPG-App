@@ -11,6 +11,7 @@ struct PdfSearchHeaderView: View {
     let model: PdfDataModel
     let searchModel: PdfSearchModel
     let entryId: UUID?
+    let toolbarClose: Bool
     let withoutBookmark: Bool
     let dismissAction: (() -> Void)?
     
@@ -28,16 +29,9 @@ struct PdfSearchHeaderView: View {
         
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
-                Button {
-                    if let dismissAction {
-                        dismissAction()
-                    } else {
-                        dismiss()
-                    }
-                } label: {
-                    Image(systemName: "xmark.circle")
+                if !toolbarClose {
+                    closeButton
                 }
-                .opacity(showGame ? 0 : 1)
 
                 Text(model.name).bold()
                 
@@ -117,5 +111,27 @@ struct PdfSearchHeaderView: View {
             Divider()
                 .padding(.horizontal, 8)
         }
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                if toolbarClose {
+                    closeButton
+                }
+            }
+        }
+    }
+}
+
+private extension PdfSearchHeaderView {
+    var closeButton: some View {
+        Button {
+            if let dismissAction {
+                dismissAction()
+            } else {
+                dismiss()
+            }
+        } label: {
+            Image(systemName: "xmark.circle")
+        }
+        .opacity(showGame ? 0 : 1)
     }
 }

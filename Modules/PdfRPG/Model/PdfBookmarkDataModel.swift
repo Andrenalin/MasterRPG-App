@@ -31,5 +31,4 @@ public final class PdfBookmarkDataModel {
 
     var pageLabel: String = ""
     var parent: PdfDataModel?
-    
 }

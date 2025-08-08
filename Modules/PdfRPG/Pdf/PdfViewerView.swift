@@ -9,11 +9,12 @@ import SwiftUI
 #endif
 
 struct PdfViewerView: View {
-    init(editController: EditController, model: PdfDataModel, entryId: UUID?, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) {
+    init(editController: EditController, model: PdfDataModel, entryId: UUID? = nil, withoutBookmark: Bool = false, toolbarClose: Bool = false, dismissAction: (() -> Void)? = nil) {
         self.editController = editController
         self.model = model
         self.entryId = entryId
         self.withoutBookmark = withoutBookmark
+        self.toolbarClose = toolbarClose
         self.dismissAction = dismissAction
         self._dataModelActor = State(wrappedValue: model.modelActor())
     }
@@ -22,6 +23,7 @@ struct PdfViewerView: View {
     let model: PdfDataModel
     let entryId: UUID?
     let withoutBookmark: Bool
+    let toolbarClose: Bool
     let dismissAction: (() -> Void)?
     
     @Environment(PdfRootModel.self) private var root
@@ -36,37 +38,38 @@ struct PdfViewerView: View {
         
     var body: some View {
         //let _ = Self._printChanges()
-        
-        VStack(alignment: .leading, spacing: 0) {
-            PdfSearchHeaderView(editController: editController, model: model, searchModel: searchModel, entryId: entryId, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
-            
-            VStack {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 0) {
+                PdfSearchHeaderView(editController: editController, model: model, searchModel: searchModel, entryId: entryId, toolbarClose: toolbarClose, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
+                
+                VStack {
 #if !os(tvOS)
-                PDFUIView(searchModel: searchModel, horizontal: false, entry: entry)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .id(searchModel.pdfId)
+                    PDFUIView(searchModel: searchModel, horizontal: false, entry: entry)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .id(searchModel.pdfId)
 #endif
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        }
 #if !os(visionOS)
-        .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
+            .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
-        .onChange(of: model, initial: true) {
-            let id = model.id
-            guard let actor = model.modelActor() else { return }
+            .onChange(of: model, initial: true) {
+                let id = model.id
+                guard let actor = model.modelActor() else { return }
 #if !os(tvOS)
-            Task { @MainActor in
-                let pdfTask = Task.detached {
-                    await root.fileController.pdfDocument(itemId: id, actor: actor)
+                Task { @MainActor in
+                    let pdfTask = Task.detached {
+                        await root.fileController.pdfDocument(itemId: id, actor: actor)
+                    }
+                    let doc = await pdfTask.value
+                    searchModel.pdfDoc = doc
+                    withAnimation {
+                        searchModel.pdfId = id
+                    }
                 }
-                let doc = await pdfTask.value
-                searchModel.pdfDoc = doc
-                withAnimation {
-                    searchModel.pdfId = id
-                }
-            }
 #endif
+            }
         }
     }
     

@@ -64,6 +64,11 @@ struct Master3RPGApp: App {
         }
         .menuBarExtraStyle(.window)
 #endif
+        
+#if os(macOS) || os(visionOS)
+        WindowMacVisionList(appModel: appModel)
+#endif
+
     }
     
     func handle(userActivity: NSUserActivity) {
