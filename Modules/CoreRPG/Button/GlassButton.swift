@@ -16,10 +16,14 @@ public struct GlassButton<Content: View>: View {
     public var body: some View {
         if isProminet {
             button
+            #if !os(visionOS)
                 .buttonStyle(.glassProminent)
+            #endif
         } else {
             button
+#if !os(visionOS)
                 .buttonStyle(.glass)
+            #endif
         }
     }
     
