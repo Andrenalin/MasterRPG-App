@@ -54,11 +54,14 @@ public struct FileDetailEditorView<EditController: EditControllable, Importer: V
         .onChange(of: model.id, initial: true) {
             openFileWindowModel.itemId = model.id
             openFileWindowModel.url = model.url
-            guard model.url != nil else { return }
+            guard model.url != nil else {
+                itemIdHasUrl = hasFile ? model.id : UUID()
+                return
+            }
             itemIdHasUrl = model.id
         }
         .onChange(of: model.name, initial: true) {
-            guard model.name.isEmpty && (model.url != nil || model.specialCategory) else { return }
+            guard model.name.isEmpty && (hasFile || model.specialCategory) else { return }
             withAnimation { isEditing = true }
         }
         .onChange(of: model.url) { oldValue, newValue in
@@ -70,7 +73,7 @@ public struct FileDetailEditorView<EditController: EditControllable, Importer: V
             openFileWindowModel.itemId = selection.selectedItem ?? model.id
         }
 #if !os(tvOS)
-        .applyIf(model.category != .folder) {
+        .applyIf(model.category != .folder && !fileTypes.isEmpty) {
             $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
         }
 #endif
@@ -83,7 +86,7 @@ public struct FileDetailEditorView<EditController: EditControllable, Importer: V
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                if openFileWindowModel.showItem == false && (model.url != nil || model.specialCategory) {
+                if openFileWindowModel.showItem == false && (hasFile || model.specialCategory) {
                     Button {
                         withAnimation { isEditing = true }
                     } label: {
@@ -96,9 +99,13 @@ public struct FileDetailEditorView<EditController: EditControllable, Importer: V
 }
 
 private extension FileDetailEditorView {
+    var hasFile: Bool {
+        model.url != nil || fileTypes.isEmpty
+    }
+    
     @ViewBuilder
     var backgroundView: some View {
-        if model.specialCategory == false && model.url != nil {
+        if model.specialCategory == false && hasFile {
             background
         }
     }
@@ -114,13 +121,13 @@ private extension FileDetailEditorView {
                 }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .opacity(model.url == nil && model.specialCategory == false ? 1 : 0)
+        .opacity(hasFile && model.specialCategory == false ? 1 : 0)
         .transition(.scale)
     }
 
     @ViewBuilder
     var bottomView: some View {
-        if model.url != nil && model.specialCategory == false {
+        if hasFile && model.specialCategory == false {
             CarouselItemView(model: model, editController: editController, selection: selection) {
                 bottom
             }
@@ -140,7 +147,7 @@ private extension FileDetailEditorView {
             editor
         }
         .padding()
-        .opacity(model.url != nil || model.specialCategory ? 1 : 0)
+        .opacity(hasFile || model.specialCategory ? 1 : 0)
         .transition(.scale)
     }
 

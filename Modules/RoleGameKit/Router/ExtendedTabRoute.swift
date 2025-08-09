@@ -93,8 +93,7 @@ struct ExtendedTabRouteDestionationView: View {
             case .audios:
                 NewAudioRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .dice:
-                DiceFactory.rootExtendedView(for: appStore.diceRoot, tabId: tabId)
-                    .environment(appStore.diceRoot)
+                NewDiceRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .maps:
                 MapFactory.rootExtendedView(for: appStore.mapRoot, tabId: tabId)
                     .environment(appStore.mapRoot)

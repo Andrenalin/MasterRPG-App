@@ -188,8 +188,7 @@ struct RouteRouteDestionationView: View {
         case .audios(let tabId):
             NewAudioRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .dice(let tabId):
-            DiceFactory.rootView(for: appStore.diceRoot, tabId: tabId)
-                .environment(appStore.diceRoot)
+            NewDiceRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .editors(let tabId):
 #if os(visionOS)
             EmptyView()

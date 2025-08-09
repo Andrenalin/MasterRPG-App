@@ -14,18 +14,18 @@ struct DetailView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
 
     var body: some View {
-//        FileDetailEditorView(model: model, editController: root.editController, fileTypes: FileController.fileTypes) {
-//        } background: {
-//            backgroundHeader
-//        } editor: {
-//            if model.specialCategory {
-//                detailListView
-//            }
-//        } bottom: {
+        FileDetailEditorView(model: model, editController: root.editController, fileTypes: []) {
+        } background: {
+            backgroundHeader
+        } editor: {
+            if model.specialCategory {
+                detailListView
+            }
+        } bottom: {
 //            GroupedPhotoView(cacheController: root.cacheController, model: model)
-//        }
-//        .environment(selection)
-//        .environment(openFileWindowModel)
+        }
+        .environment(selection)
+        .environment(openFileWindowModel)
     }
 }
 
@@ -33,6 +33,8 @@ private extension DetailView {
     var backgroundHeader: some View {
         ScrollView(showsIndicators: false) {
             LazyVStack(alignment: .leading, spacing: 8) {
+                ConcentricRectangle().fill(Color.blue.gradient)
+                    .frame(minHeight: 600)
             }
         }
         .ignoresSafeArea(.keyboard)
