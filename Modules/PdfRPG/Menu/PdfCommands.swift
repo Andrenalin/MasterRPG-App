@@ -52,7 +52,7 @@ struct NavigateButton: View {
 
     var body: some View {
         Button {
-            navigator.perform(route: KnownRoutes.photos(nil, nil))
+            navigator.perform(route: KnownRoutes.pdfs(nil, nil))
         } label: {
             Label { Text("Show Pdfs", bundle: .module) } icon: { Image(systemName: "eye") }
         }
@@ -67,7 +67,7 @@ struct AddItemButton: View {
     var body: some View {
         Button {
             let item = root.editController.addNew(modelContext: root.modelContext, type: .item)
-            navigator.perform(route: KnownRoutes.photos(item.id, nil))
+            navigator.perform(route: KnownRoutes.pdfs(item.id, nil))
         } label: {
             Label { Text("New Pdf", bundle: .module) } icon: { Image(systemName: "plus") }
         }

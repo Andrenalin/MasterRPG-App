@@ -12,7 +12,7 @@ internal import UIKit
 #endif
 
 struct EditController {
-    let fileUrlDataController: FileUrlDataController
+    let fileUrlDataController: FileUrlDataController?
 }
 
 extension EditController: EditControllable {
@@ -31,8 +31,8 @@ extension EditController {
         let id = model.id
         Task.detached {
             await actor.setup(id: id)
-            let fileUrl = try? await fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newId)
-            await actor.duplicate(url: fileUrl?.rawUrl)
+            let fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: actor.fileUrl, for: newId)
+            await actor.duplicate(newId: newId, url: fileUrl?.rawUrl)
             await actor.save()
         }
     }
@@ -51,6 +51,7 @@ extension EditController {
     }
 
     private func resetFile(url: URL?, id: UUID, actor: DataModelActor) async {
+        guard let fileUrlDataController else { return }
         await fileUrlDataController.delete(await actor.fileUrl)
         guard let url else {
             await actor.update(url: url)

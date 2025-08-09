@@ -173,6 +173,12 @@ public extension DiceRoot {
 }
 
 public extension DiceRoot {
+    @MainActor
+    func listItems() -> [DiceModel] {
+        itemController.itemDataModel.items.map {
+            itemController.itemOrEmpty(for: $0)
+        }
+    }
     
     @MainActor
     func widgetEntity(for idString: String?) async -> DiceWidgetModel? {

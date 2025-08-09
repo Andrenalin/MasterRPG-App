@@ -2,11 +2,15 @@
 
 import CoreRPG
 import Foundation
+
 import AudioRPG
+import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+
 import RPGAudios
+import RPGDie
 import RPGPdfs
 import RPGPhotos
 import RPGSpaces
@@ -44,6 +48,37 @@ struct NewAudioRoute: View {
     }
 }
 
+struct NewDiceRoute: View {
+    let appStore: AppStore
+    let tabId: UUID
+    let isExtended: Bool
+
+    @State private var cacheModel = CacheItemListModel()
+    @State private var deviceRotationModel = DeviceRotationModel()
+    @State private var tabTitleModel = TabTitleModel()
+
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        if appStore.isNewUICode {
+            DiceRootFactory.rootView(withoutNavigation: isExtended)
+                .environment(deviceRotationModel)
+                .environment(tabTitleModel)
+                .task {
+                    try? await Task.sleep(for: .seconds(3))
+                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
+                }
+        } else {
+            if isExtended {
+                DiceFactory.rootExtendedView(for: appStore.diceRoot, tabId: tabId)
+                    .environment(appStore.diceRoot)
+            } else {
+                DiceFactory.rootView(for: appStore.diceRoot, tabId: tabId)
+                    .environment(appStore.diceRoot)
+            }
+        }
+    }
+}
 struct NewPdfRoute: View {
     let appStore: AppStore
     let tabId: UUID

@@ -15,7 +15,7 @@ struct OpenAudioIntent: OpenIntent {
     @Dependency var navigator: Navigator
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.photos(target.id, nil))
+        await navigator.perform(route: KnownRoutes.audios(target.id, nil))
         return .result()
     }
 }

@@ -3,6 +3,7 @@
 import CoreExternalRPG
 import CoreRPG
 import AudioRPG
+import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -129,7 +130,7 @@ struct RouteRouteDestionationView: View {
         case .audios:
             AudioRootFactory.rootView(withoutNavigation: false)
         case .dice:
-            RootListView(rootRoute: route)
+            DiceRootFactory.rootView(withoutNavigation: false)
         case .editors:
 #if os(visionOS)
             EmptyView()

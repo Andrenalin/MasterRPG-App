@@ -7,6 +7,7 @@ import SwiftUI
 import os.log
 
 import AudioRPG
+import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -28,6 +29,7 @@ public final class AppModel: Sendable {
 
     // Module roots
     public var audioRoot: AudioRootModel
+    public var diceRoot: DiceRootModel
     public var pdfRoot: PdfRootModel
     public var photoRoot: PhotoRootModel
     public var spaceRoot: SpaceRootModel
@@ -42,6 +44,7 @@ public final class AppModel: Sendable {
         let modelContainer = Self.initModelContainer()
         self.modelContainer = modelContainer
         self.audioRoot = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.diceRoot = DiceRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.pdfRoot = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
@@ -54,6 +57,8 @@ public final class AppModel: Sendable {
                 TagDataModel.self,
                 AudioDataModel.self,
                 AudioEntryDataModel.self,
+                DiceDataModel.self,
+                DiceEntryDataModel.self,
                 PdfDataModel.self,
                 PdfEntryDataModel.self,
                 PhotoDataModel.self,

@@ -75,7 +75,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .weather: "cloud.bolt.rain"
         case .dice: "dice"
         case .audio: "music.note.list"
-        case .pdf: "books.vertical"
+        case .pdf: "apple.books.pages"
         case .space: "view.3d"
         case .setting: "gear"
         case .editor: "pencil"

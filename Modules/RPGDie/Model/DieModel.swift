@@ -4,20 +4,20 @@ import AndrenalinKit
 import RPGResources
 import SwiftUI
 
-struct DieModel: Equatable, Hashable, Identifiable, Codable, @unchecked Sendable {
-    let id: UUID
+public struct DieModel: Equatable, Hashable, Identifiable, Codable, @unchecked Sendable {
+    public let id: UUID
     let die: RawDie
     var rotation: Double = 0
     var result: [Int] = []
-    var displayState: Int = 0
+    public var displayState: Int = 0
 }
 
 extension DieModel {
-    var name: String {
+    public var name: String {
         name(for: 1)
     }
     
-    func name(for number: Int) -> String {
+    public func name(for number: Int) -> String {
         switch die.sides {
         case .four:
             return "D4G-\(number)"
@@ -36,32 +36,32 @@ extension DieModel {
         }
     }
 
-    func diceImage(for number: Int) -> Image {
+    public func diceImage(for number: Int) -> Image {
         Image(name(for: number), bundle: Resources.bundle)
     }
 }
 
 extension DieModel: EntryDataAccessable {
-    static var empty: DieModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> DieModel {
+    public static var empty: DieModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> DieModel {
         DieModel(id: id, die: RawDie.twenty)
     }
 
-    func duplicate() -> DieModel {
+    public func duplicate() -> DieModel {
         DieModel(id: UUID(), die: die)
     }
     
-    func filter(with search: String) -> Bool {
+    public func filter(with search: String) -> Bool {
         true
     }
 }
 
 extension DieModel: ItemDiffComparable {
-    func merge(_ other: DieModel) -> DieModel {
+    public func merge(_ other: DieModel) -> DieModel {
         other
     }
 
-    func isSame(_ other: DieModel) -> Bool {
+    public func isSame(_ other: DieModel) -> Bool {
         die == other.die
     }
 }

@@ -6,8 +6,8 @@ import Observation
 import SwiftUI
 
 @Observable
-final class DiceModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String = "", description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, dice: [DieModel], sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceModel.CompareValue = .off, compareValue: Double = 0.0, coupValues: [DiceModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, reroleOptions: [DiceModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, resultCategory: ResultCategory? = nil) {
+public final class DiceModel: Identifiable, @unchecked Sendable {
+    public init(id: UUID, name: String = "", description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, dice: [DieModel], sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceModel.CompareValue = .off, compareValue: Double = 0.0, coupValues: [DiceModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, reroleOptions: [DiceModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, resultCategory: ResultCategory? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -53,7 +53,7 @@ final class DiceModel: Identifiable, @unchecked Sendable {
         self.resultCategory = resultCategory
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<DiceModel.CodingKeys> = try decoder.container(keyedBy: DiceModel.CodingKeys.self)
 
         self._id = try container.decode(UUID.self, forKey: DiceModel.CodingKeys._id)
@@ -78,34 +78,34 @@ final class DiceModel: Identifiable, @unchecked Sendable {
         self._resultCategory = try container.decodeIfPresent(ResultCategory.self, forKey: DiceModel.CodingKeys._resultCategory)
     }
     
-    var id: UUID
-    var name: String {
+    public var id: UUID
+    public var name: String {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
     var name_: CRDT<String>
 
-    var description: String {
+    public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
     var description_: CRDT<String>
 
-    var tags: [String] {
+    public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
     var tags_: CRDT<[String]>
 
-    var category: ItemListCategory {
+    public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
     var category_: CRDT<ItemListCategory>
 
-    var displayState: Int
+    public var displayState: Int
 
-    var entries: [DieModel] {
+    public var entries: [DieModel] {
         get { dice_.wrappedValue }
         set { dice_.wrappedValue = newValue }
     }
@@ -115,14 +115,14 @@ final class DiceModel: Identifiable, @unchecked Sendable {
     var modifier: Double = 0.0
     var percentDice: Bool = false
 
-    enum CompareValue: Int, Identifiable, Equatable, Hashable, Codable, CaseIterable {
+    public enum CompareValue: Int, Identifiable, Equatable, Hashable, Codable, CaseIterable {
         case off
         case lower
         case lowerEqual
         case equalHigher
         case higher
 
-        var id: Int {
+        public var id: Int {
             rawValue
         }
 
@@ -194,11 +194,11 @@ final class DiceModel: Identifiable, @unchecked Sendable {
         }
     }
 
-    enum CoupFumbleOption: Identifiable, Equatable, Hashable, Codable, RawRepresentable {
+    public enum CoupFumbleOption: Identifiable, Equatable, Hashable, Codable, RawRepresentable {
         case result(Int)
         case diceValue(Int)
 
-        init?(rawValue: String) {
+        public init?(rawValue: String) {
             guard rawValue.count > 1 else { return nil }
             let index = rawValue.index(after: rawValue.startIndex)
             let number = Int(rawValue[index...]) ?? 0
@@ -211,7 +211,7 @@ final class DiceModel: Identifiable, @unchecked Sendable {
             }
         }
 
-        var rawValue: String {
+        public var rawValue: String {
             switch self {
             case let .result(number):
                 return "r\(number)"
@@ -220,7 +220,7 @@ final class DiceModel: Identifiable, @unchecked Sendable {
             }
         }
 
-        var id: String {
+        public var id: String {
             rawValue
         }
 
@@ -276,12 +276,12 @@ final class DiceModel: Identifiable, @unchecked Sendable {
     var fumbleValues: [CoupFumbleOption] = []
     var fumbleOnlyOnFirstDie: Bool = false
 
-    struct RerollOption: Identifiable, Equatable, Hashable, Codable {
+    public struct RerollOption: Identifiable, Equatable, Hashable, Codable {
         let number: Int
         let value: Int
         let maxDiceValue: Bool
 
-        var id: Int {
+        public var id: Int {
             number
         }
     }
@@ -353,7 +353,7 @@ extension DiceModel {
 }
 
 extension DiceModel: Comparable {
-    static func < (lhs: DiceModel, rhs: DiceModel) -> Bool {
+    public static func < (lhs: DiceModel, rhs: DiceModel) -> Bool {
         lhs.name < rhs.name
     }
 }
@@ -361,7 +361,7 @@ extension DiceModel: Comparable {
 extension DiceModel: ItemLinkRegistable {}
 
 extension DiceModel: ItemDiffComparable {
-    func merge(_ other: DiceModel) -> DiceModel {
+    public func merge(_ other: DiceModel) -> DiceModel {
         let mergedDice = dice_.merged(other: other.dice_)
         let isLeftDice = mergedDice.update == dice_.update
         return DiceModel(
@@ -388,7 +388,7 @@ extension DiceModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: DiceModel) -> Bool {
+    public func isSame(_ other: DiceModel) -> Bool {
         name == other.name &&
         description == other.description &&
         tags == other.tags &&
@@ -411,7 +411,7 @@ extension DiceModel: ItemDiffComparable {
 }
 
 extension DiceModel: ItemDuplicatable {
-    func duplicate() -> DiceModel {
+    public func duplicate() -> DiceModel {
         let copyName = duplicateName(from: name)
         let dupDice = entries.map { dieVM -> DieModel in
             DieModel(id: UUID(), die: dieVM.die)
@@ -421,25 +421,25 @@ extension DiceModel: ItemDuplicatable {
 }
 
 extension DiceModel: ItemDataAccessable {
-    static var empty: DiceModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> DiceModel {
+    public static var empty: DiceModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> DiceModel {
         DiceModel(id: id, name: "", dice: [])
     }
-    static let typeId: NetworkModules = .dice
+    public static let typeId: NetworkModules = .dice
 
-    func copy() -> DiceModel {
+    public func copy() -> DiceModel {
         DiceModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, dice: dice_, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, rerollOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, resultCategory: resultCategory)
     }
 
-    func filter(_ filter: String) -> Bool {
+    public func filter(_ filter: String) -> Bool {
         (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
     }
 
-    func isEqual(other: DiceModel) -> Bool {
+    public func isEqual(other: DiceModel) -> Bool {
         self == other
     }
 
-    var isGroupHiddenToggle: Bool {
+    public var isGroupHiddenToggle: Bool {
         get { isGroupHidden }
         set {
             if newValue {
@@ -450,7 +450,7 @@ extension DiceModel: ItemDataAccessable {
         }
     }
 
-    func replace(with model: DiceModel) -> Bool {
+    public func replace(with model: DiceModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_
@@ -474,7 +474,7 @@ extension DiceModel: ItemDataAccessable {
         return true
     }
 
-    subscript(id: UUID) -> DieModel {
+    public subscript(id: UUID) -> DieModel {
         get {
             guard let index = entries.firstIndex(where: { $0.id == id }) else { return .empty(id) }
             return entries[index]
@@ -485,15 +485,15 @@ extension DiceModel: ItemDataAccessable {
         }
     }
 
-    func urlName() -> String {
+    public func urlName() -> String {
         inlineText
     }
 
-    func urlName(entryId: UUID) -> String {
+    public func urlName(entryId: UUID) -> String {
         inlineText
     }
 
-    func url(linkNumber: Int, entryId: UUID) -> String {
+    public func url(linkNumber: Int, entryId: UUID) -> String {
         url(linkNumber: linkNumber)
     }
 }
@@ -522,7 +522,7 @@ extension DiceModel: Codable {
         case _resultCategory
     }
 
-    final func encode(to encoder: Encoder) throws {
+    public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<DiceModel.CodingKeys> = encoder.container(keyedBy: DiceModel.CodingKeys.self)
 
         try container.encode(self._id, forKey: DiceModel.CodingKeys._id)
@@ -549,11 +549,11 @@ extension DiceModel: Codable {
 }
 
 extension DiceModel: Equatable, Hashable {
-    static func == (lhs: DiceModel, rhs: DiceModel) -> Bool {
+    public static func == (lhs: DiceModel, rhs: DiceModel) -> Bool {
         lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState && lhs.resultCategory == rhs.resultCategory
     }
 
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

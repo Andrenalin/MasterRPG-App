@@ -67,7 +67,7 @@ struct AddItemButton: View {
     var body: some View {
         Button {
             let item = root.editController.addNew(modelContext: root.modelContext, type: .item)
-            navigator.perform(route: KnownRoutes.photos(item.id, nil))
+            navigator.perform(route: KnownRoutes.audios(item.id, nil))
         } label: {
             Label { Text("New Audio", bundle: .module) } icon: { Image(systemName: "plus") }
         }

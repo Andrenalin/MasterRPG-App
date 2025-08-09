@@ -7,12 +7,10 @@ import SwiftUI
 public protocol EditControllable: Sendable {
     associatedtype Model: ItemDataAccessable, ItemDataModelable, ListItemFolderable, PersistentModel
 
-    var fileUrlDataController: FileUrlDataController { get }
+    var fileUrlDataController: FileUrlDataController? { get }
 
     func createNewEntry(in model: Model, childId: UUID) -> Model.Entry
     func duplicate(model: Model)
-
-    func resetFile(url: URL?, in model: Model)
 }
 
 // MARK: - Edit Item
@@ -33,7 +31,7 @@ public extension EditControllable {
         let fileUrl = model.fileUrl
         let modelContext = model.modelContext
         Task.detached {
-            await fileUrlDataController.delete(fileUrl)
+            await fileUrlDataController?.delete(fileUrl)
         }
         model.entryModels.forEach { entry in
             if var entryItem = Model.model(modelContext: modelContext, id: entry.childId) {
@@ -171,4 +169,8 @@ public extension EditControllable {
             return updatedEntry
         }
     }
+}
+
+public extension EditControllable {
+    func resetFile(url: URL?, in model: Model) {}
 }

@@ -122,6 +122,6 @@ struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
 
 extension AudioEntity {
     var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "photo"))
+        SharePreview(name, icon: Image(systemName: "music.note.list"))
     }
 }

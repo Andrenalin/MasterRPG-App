@@ -4,6 +4,7 @@
 
 import RolePlayGameKit
 import AudioRPG
+import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -25,7 +26,7 @@ struct MenuCommandList: Commands {
 
             Group {
                 AudioCommands(root: appModel.audioRoot, navigator: appModel.navigator)
-                //            DiceCommands(root: appStore.diceRoot)
+                DiceCommands(root: appModel.diceRoot, navigator: appModel.navigator)
                 PhotoCommands(root: appModel.photoRoot, navigator: appModel.navigator)
                 SpaceCommands(root: appModel.spaceRoot, navigator: appModel.navigator)
             }

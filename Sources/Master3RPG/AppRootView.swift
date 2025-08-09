@@ -4,6 +4,8 @@ import CoreRPG
 import RolePlayGameKit
 
 import AudioRPG
+import DiceRPG
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 
@@ -22,6 +24,7 @@ struct AppRootView: View {
             .environment(\.navigator, appModel.navigator)
             .environment(appModel.deviceRotationModel)
             .environment(appModel.audioRoot)
+            .environment(appModel.diceRoot)
             .environment(appModel.pdfRoot)
             .environment(appModel.photoRoot)
             .environment(appModel.spaceRoot)
@@ -31,9 +34,8 @@ struct AppRootView: View {
     }
 }
 
-
 #Preview {
     AppRootView()
-        .modelContainer(for: [TagDataModel.self, AudioDataModel.self, PhotoDataModel.self, SpaceDataModel.self], inMemory: true)
+        .modelContainer(for: [TagDataModel.self, AudioDataModel.self, DiceDataModel.self, PdfDataModel.self, PhotoDataModel.self, SpaceDataModel.self], inMemory: true)
         .environment(AppModel())
 }

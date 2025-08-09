@@ -41,9 +41,9 @@ actor DataModelActor {
         model.url = url
     }
 
-    func duplicate(url: URL?) {
+    func duplicate(newId: UUID, url: URL?) {
         let newModel = AudioDataModel(
-            id: UUID(),
+            id: newId,
             name: "\(model.name) copy",
             information: model.information,
             category: model.category,

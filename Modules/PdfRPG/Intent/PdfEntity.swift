@@ -128,6 +128,6 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
 
 extension PdfEntity {
     var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "books.vertical"))
+        SharePreview(name, icon: Image(systemName: "apple.books.pages"))
     }
 }

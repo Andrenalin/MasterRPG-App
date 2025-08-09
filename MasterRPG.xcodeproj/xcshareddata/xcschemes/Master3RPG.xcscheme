@@ -85,6 +85,17 @@
                ReferencedContainer = "container:MasterRPG.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EB6400D2E47471400799690"
+               BuildableName = "DiceRPGTests.xctest"
+               BlueprintName = "DiceRPGTests"
+               ReferencedContainer = "container:MasterRPG.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
