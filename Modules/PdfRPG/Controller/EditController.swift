@@ -68,3 +68,16 @@ extension EditController {
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
 }
+
+// MARK: - Bookmarks
+
+extension EditController {
+    func addBookmark(model: PdfDataModel, bookmark: PdfBookmarkDataModel) {
+            
+    }
+    
+    func createBookmark(content: String, page: String, bounds: CGRect) -> PdfBookmarkDataModel {
+        let name = String(content.split(separator: " ").first ?? "Unnamed")
+        return PdfBookmarkDataModel(id: UUID(), name: name, content: content, bounds: bounds, pageLabel: page)
+    }
+}

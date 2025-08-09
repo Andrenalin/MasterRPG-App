@@ -90,9 +90,6 @@ struct PDFUIView: View {
     }
 }
 
-extension PDFDocument: @unchecked @retroactive Sendable {}
-extension PDFSelection: @unchecked @retroactive Sendable {}
-
 struct PDFWrapperView: CustomViewRepresentable {
     let pdfDocument: PDFDocument?
     let horizontal: Bool
