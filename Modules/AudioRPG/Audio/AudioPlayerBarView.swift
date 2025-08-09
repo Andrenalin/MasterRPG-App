@@ -6,25 +6,21 @@ struct AudioPlayerBarView: View {
     @Environment(AudioRootModel.self) private var root
             
     var body: some View {
-        HStack(spacing: 16) {
-            playbackControls
-
-            Spacer(minLength: 8)
-
-            musicArtTitleTimeline
-            
-            Spacer(minLength: 8)
-                        
-            volumeControl
+        GlassEffectContainer {
+            HStack(spacing: 16) {
+                playbackControls
+                
+                Spacer(minLength: 8)
+                
+                musicArtTitleTimeline
+                
+                Spacer(minLength: 8)
+                
+                volumeControl
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 8)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.13), lineWidth: 0.6)
-        )
-        .shadow(color: Color.black.opacity(0.04), radius: 24, y: 4)
     }
 }
 
@@ -37,7 +33,6 @@ private extension AudioPlayerBarView {
                 Image(systemName: "backward.fill")
                     .font(.title3)
                     .padding(8)
-                    .background(.regularMaterial, in: Circle())
             }
 #if !os(visionOS)
             .glassEffect(.regular.interactive())
@@ -51,7 +46,6 @@ private extension AudioPlayerBarView {
                     .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
                     .font(.title2)
                     .padding(8)
-                    .background(.regularMaterial, in: Circle())
             }
 #if !os(visionOS)
             .glassEffect(.regular.interactive())
@@ -64,14 +58,12 @@ private extension AudioPlayerBarView {
                 Image(systemName: "forward.fill")
                     .font(.title3)
                     .padding(8)
-                    .background(.regularMaterial, in: Circle())
             }
 #if !os(visionOS)
             .glassEffect(.regular.interactive())
 #endif
             .disabled(!root.audioPlayerModel.hasNext)
         }
-        .buttonStyle(.plain)
         .foregroundStyle(.primary)
     }
     
@@ -115,6 +107,7 @@ private extension AudioPlayerBarView {
             ProgressView(value: root.audioPlayerModel.currentTime, total: root.audioPlayerModel.playerTime.totalDuration)
                 .progressViewStyle(.linear)
         }
+        .glassEffect(.regular)
     }
     
     var volumeControl: some View {
@@ -124,6 +117,7 @@ private extension AudioPlayerBarView {
             Image(systemName: "speaker.wave.2.fill")
                 .font(.title3)
         }
+        .glassEffect(.regular.interactive())
     }
     
     var currentItem: PlaylistItem? {
