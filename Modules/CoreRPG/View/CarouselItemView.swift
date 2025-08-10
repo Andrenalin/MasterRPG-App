@@ -87,7 +87,7 @@ public struct CarouselItemView<EditController: EditControllable, Content: View>:
             }
 #if !os(tvOS)
             .dropDestination(for: LinkData.self) { items, _ in
-                addLinks(links: items)
+                _ = addLinks(links: items)
             }
 #endif
 
