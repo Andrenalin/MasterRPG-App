@@ -7,10 +7,11 @@ import SwiftUI
 
 @Model
 public final class DieDataModel {
-    public init(id: UUID, index: Int = 0, die: RawDie = .twenty, rotation: Double = 0, result: [Int] = [], parent: DiceConfigDataModel? = nil) {
+    public init(id: UUID, index: Int = 0, die: RawDie = .twenty, color: String = "", rotation: Double = 0, result: [Int] = [], parent: DiceConfigDataModel? = nil) {
         self.id = id
         self.index = index
         self.die = die
+        self.color = color
         self.rotation = rotation
         self.result = result
     }
@@ -18,6 +19,7 @@ public final class DieDataModel {
     public var id: UUID = UUID()
     var index: Int = 0
     var die: RawDie = RawDie.twenty
+    var color: String = ""
     
     @Transient
     var rotation: Double = 0
@@ -33,14 +35,26 @@ extension DieDataModel {
     }
     
     func name(for number: Int) -> String {
-        switch die.sides {
-        case .four: "D4G-\(number)"
-        case .six: "D6G-\(number)"
-        case .eight: "D8G-\(number)"
-        case .ten: "D10G-\(number)"
-        case .twelve: "D12G-\(number)"
-        case .twenty: "D20G-\(number)"
-        case .number: "D20-1"
+        var code = color
+        if die.sides == .four || die.sides == .twenty {
+            if color.isEmpty {
+                if RawDie(.number(2)).role() == 1 {
+                    code = "A"
+                } else {
+                    code = "G"
+                }
+            }
+        } else {
+            code = "G"
+        }
+        return switch die.sides {
+        case .four: "D4\(code)-\(number)"
+        case .six: "D6\(code)-\(number)"
+        case .eight: "D8\(code)-\(number)"
+        case .ten: "D10\(code)-\(number)"
+        case .twelve: "D12\(code)-\(number)"
+        case .twenty: "D20\(code)-\(number)"
+        case .number: "D20\(code)-1"
         }
     }
 

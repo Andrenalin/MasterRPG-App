@@ -26,7 +26,8 @@ public final class DiceDataModel {
         self.displayState = displayState
         self.parentId = parentId
         self.url = url
-        self.entries = entries
+        self.entries_ = entries
+        self.config_ = config
     }
     
     @Attribute(.preserveValueOnDeletion)
@@ -46,18 +47,18 @@ public final class DiceDataModel {
         return FileUrl(fileId: id, url: url, location: .cloud, module: DiceDataModel.typeId.token)
     }
 
-    @Relationship(deleteRule: .cascade) private var entries: [DiceEntryDataModel]? = []
-    @Relationship(deleteRule: .cascade) private var config: DiceConfigDataModel? = nil
+    @Relationship(deleteRule: .cascade) private var entries_: [DiceEntryDataModel]? = []
+    @Relationship(deleteRule: .cascade) private var config_: DiceConfigDataModel? = nil
 }
 
 extension DiceDataModel {
     public var entryModels: [DiceEntryDataModel] {
         get {
-            guard let all = entries else { return [] }
+            guard let all = entries_ else { return [] }
             return all.sorted { $0.index < $1.index }
         }
         set {
-            entries = newValue
+            entries_ = newValue
         }
     }
 
@@ -68,6 +69,11 @@ extension DiceDataModel {
         return DiceEntryDataModel(id: id)
     }
     
+    public var config: DiceConfigDataModel {
+        get { config_ ?? DiceConfigDataModel.twenty }
+        set { config_ = newValue }
+    }
+
     @MainActor public var specialCategory: Bool {
         category == .folder || category == DiceDataModel.collectionCategory
     }
