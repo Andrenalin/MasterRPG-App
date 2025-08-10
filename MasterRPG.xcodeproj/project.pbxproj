@@ -239,6 +239,8 @@
 		8EB6407D2E476A9F00799690 /* RPGDie.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECD912CD8EDED004E7103 /* RPGDie.framework */; };
 		8EB6407E2E476A9F00799690 /* RPGDie.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECD912CD8EDED004E7103 /* RPGDie.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EB74FC22BD1407A00BEDFE2 /* RoleGameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EB74F9A2BD13B5800BEDFE2 /* RoleGameKit.framework */; };
+		8EBD72F72E489F2F00104580 /* DiceRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EB640062E47471400799690 /* DiceRPG.framework */; };
+		8EBD72F82E489F2F00104580 /* DiceRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EB640062E47471400799690 /* DiceRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EBECD992CD8EDED004E7103 /* RPGDie.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECD912CD8EDED004E7103 /* RPGDie.framework */; };
 		8EBECE242CD8EE85004E7103 /* RPGSpaces.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECE1C2CD8EE85004E7103 /* RPGSpaces.framework */; };
 		8EBECE452CD8EE92004E7103 /* RPGTables.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECE3D2CD8EE92004E7103 /* RPGTables.framework */; };
@@ -1079,6 +1081,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 8EB74F992BD13B5800BEDFE2;
 			remoteInfo = RoleGameKit;
+		};
+		8EBD72F92E489F2F00104580 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8EB640052E47471400799690;
+			remoteInfo = DiceRPG;
 		};
 		8EBECD9A2CD8EDED004E7103 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -2158,6 +2167,7 @@
 				594686112E1E1012004DC406 /* CoreRPG.framework in Embed Frameworks */,
 				8E359A592E2A679E00355587 /* CoreExternalRPG.framework in Embed Frameworks */,
 				594686152E1E1016004DC406 /* PhotoRPG.framework in Embed Frameworks */,
+				8EBD72F82E489F2F00104580 /* DiceRPG.framework in Embed Frameworks */,
 				8E359A9B2E2A692B00355587 /* SpaceRPG.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -2730,6 +2740,7 @@
 				8EBED1DB2CD9A383004E7103 /* RPGWeathers.framework in Frameworks */,
 				8EBED1AB2CD9A383004E7103 /* AndrenalinKit.framework in Frameworks */,
 				8EBED1BB2CD9A383004E7103 /* RPGGame.framework in Frameworks */,
+				8EBD72F72E489F2F00104580 /* DiceRPG.framework in Frameworks */,
 				8EBED1C32CD9A383004E7103 /* RPGPdfs.framework in Frameworks */,
 				8EBED1AF2CD9A383004E7103 /* RPGAdventures.framework in Frameworks */,
 				8EEF8E9A2E374E3F00393DAD /* PdfRPG.framework in Frameworks */,
@@ -4191,6 +4202,7 @@
 				8E359A9D2E2A692B00355587 /* PBXTargetDependency */,
 				8EEF8E972E37404500393DAD /* PBXTargetDependency */,
 				8EEF8E9D2E374E3F00393DAD /* PBXTargetDependency */,
+				8EBD72FA2E489F2F00104580 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E8ED7582CD8D8B80010A25B /* RoleGameKit */,
@@ -6385,6 +6397,11 @@
 			isa = PBXTargetDependency;
 			target = 8EB74F992BD13B5800BEDFE2 /* RoleGameKit */;
 			targetProxy = 8EB74FC42BD1407A00BEDFE2 /* PBXContainerItemProxy */;
+		};
+		8EBD72FA2E489F2F00104580 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8EB640052E47471400799690 /* DiceRPG */;
+			targetProxy = 8EBD72F92E489F2F00104580 /* PBXContainerItemProxy */;
 		};
 		8EBECD9B2CD8EDED004E7103 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

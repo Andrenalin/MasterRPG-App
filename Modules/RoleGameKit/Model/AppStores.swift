@@ -55,6 +55,8 @@ public final class AppStore: Sendable {
             AudioEntryDataModel.self,
             DiceDataModel.self,
             DiceEntryDataModel.self,
+            DiceConfigDataModel.self,
+            DieDataModel.self,
             PdfDataModel.self,
             PdfEntryDataModel.self,
             PhotoDataModel.self,

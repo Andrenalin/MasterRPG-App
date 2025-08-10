@@ -15,7 +15,8 @@ public final class DiceDataModel {
         displayState: Int = 0,
         parentId: UUID? = nil,
         url: URL? = nil,
-        entries: [DiceEntryDataModel] = []
+        entries: [DiceEntryDataModel] = [],
+        config: DiceConfigDataModel? = nil
     ) {
         self.id = id
         self.name = name
@@ -46,6 +47,7 @@ public final class DiceDataModel {
     }
 
     @Relationship(deleteRule: .cascade) private var entries: [DiceEntryDataModel]? = []
+    @Relationship(deleteRule: .cascade) private var config: DiceConfigDataModel? = nil
 }
 
 extension DiceDataModel {

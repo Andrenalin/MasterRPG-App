@@ -14,12 +14,26 @@ public struct ConverterController {
         items.forEach { item in
             guard let models, !models.contains(where: { $0.id == item.id }) else { return }
             
-            let entries = item.entries.enumerated().map { (index, entry) in
-                DiceEntryDataModel(id: entry.id, index: index, parentId: item.id, childId: UUID(), item: nil)
+            let dice = item.entries.enumerated().map { (index, entry) in
+                DieDataModel(id: entry.id, index: index, die: convertDie(die: entry.die))
             }
+            let config = DiceConfigDataModel(sumUp: item.sumUp, modifier: item.modifier, percentDice: item.percentDice, compareValue: item.compareValue, coupValues: [], coupOnlyOnFirstDie: item.coupOnlyOnFirstDie, fumbleValues: [], fumbleOnlyOnFirstDie: item.fumbleOnlyOnFirstDie, rerollOptions: [], reorderDice: item.reorderDice, addDiceEvery: item.addDiceEvery, dice: dice)
             modelContext.insert(
-                DiceDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, entries: entries)
+                DiceDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, entries: [], config: config)
             )
+        }
+    }
+        
+    private static func convertDie(die: RPGDie.RawDie) -> DiceRPG.RawDie {
+        switch die.sides {
+        case .four: DiceRPG.RawDie.four
+        case .six: DiceRPG.RawDie.six
+        case .eight: DiceRPG.RawDie.eight
+        case .ten: DiceRPG.RawDie.ten
+        case .twelve: DiceRPG.RawDie.twelve
+        case .twenty: DiceRPG.RawDie.twenty
+        case .number(let int): DiceRPG.RawDie(.number(int))
+        @unknown default: .twenty
         }
     }
 }

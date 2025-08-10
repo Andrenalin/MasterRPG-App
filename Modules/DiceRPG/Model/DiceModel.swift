@@ -3,7 +3,7 @@
 import CoreRPG
 import Foundation
 
-public struct DiceModel: Identifiable, Sendable {
+public struct DiceModel: Equatable, Hashable, Identifiable, Sendable {
     public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, degrees: CRDT<Double>, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[DiceEntryModel]>) {
         self.id = id
         name_ = name

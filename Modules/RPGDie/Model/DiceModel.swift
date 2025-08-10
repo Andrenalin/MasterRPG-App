@@ -111,9 +111,9 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
     }
     var dice_: CRDTDataUpdate<[DieModel]>
 
-    var sumUp: Bool = true
-    var modifier: Double = 0.0
-    var percentDice: Bool = false
+    public var sumUp: Bool = true
+    public var modifier: Double = 0.0
+    public var percentDice: Bool = false
 
     public enum CompareValue: Int, Identifiable, Equatable, Hashable, Codable, CaseIterable {
         case off
@@ -187,8 +187,8 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         }
     }
 
-    var compareOption: CompareValue = .off
-    var compareValue: Double = 0.0 {
+    public var compareOption: CompareValue = .off
+    public var compareValue: Double = 0.0 {
         didSet {
             resetDice()
         }
@@ -270,11 +270,11 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         }
     }
 
-    var coupValues: [CoupFumbleOption] = []
-    var coupOnlyOnFirstDie: Bool = false
+    public var coupValues: [CoupFumbleOption] = []
+    public var coupOnlyOnFirstDie: Bool = false
 
-    var fumbleValues: [CoupFumbleOption] = []
-    var fumbleOnlyOnFirstDie: Bool = false
+    public var fumbleValues: [CoupFumbleOption] = []
+    public var fumbleOnlyOnFirstDie: Bool = false
 
     public struct RerollOption: Identifiable, Equatable, Hashable, Codable {
         let number: Int
@@ -286,10 +286,10 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         }
     }
 
-    var rerollOptions: [RerollOption] = []
+    public var rerollOptions: [RerollOption] = []
 
-    var reorderDice: Bool = false
-    var addDiceEvery: Int = 0 {
+    public var reorderDice: Bool = false
+    public var addDiceEvery: Int = 0 {
         didSet {
             resetDice()
         }

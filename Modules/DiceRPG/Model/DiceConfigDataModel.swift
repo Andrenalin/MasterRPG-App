@@ -1,0 +1,273 @@
+// @copyright André Trettin
+
+import CoreRPG
+import Foundation
+import SwiftData
+import SwiftUI
+
+@Model
+public final class DiceConfigDataModel {
+    init(parent: DiceDataModel? = nil, sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceConfigDataModel.CompareValue = DiceConfigDataModel.CompareValue.off, compareValue: Double = 0.0, coupValues: [DiceConfigDataModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceConfigDataModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [DiceConfigDataModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, dice: [DieDataModel] = []) {
+        self.parent = parent
+        self.sumUp = sumUp
+        self.modifier = modifier
+        self.percentDice = percentDice
+        self.compareOption = compareOption
+        self.compareValue = compareValue
+        self.coupValues = coupValues
+        self.coupOnlyOnFirstDie = coupOnlyOnFirstDie
+        self.fumbleValues = fumbleValues
+        self.fumbleOnlyOnFirstDie = fumbleOnlyOnFirstDie
+        self.rerollOptions = rerollOptions
+        self.reorderDice = reorderDice
+        self.addDiceEvery = addDiceEvery
+        self.dice_ = dice
+    }
+    
+    var parent: DiceDataModel?
+    
+    var sumUp: Bool = true
+    var modifier: Double = 0.0
+    var percentDice: Bool = false
+    
+    // Compare
+    var compareOption: CompareValue = DiceConfigDataModel.CompareValue.off
+    var compareValue: Double = 0.0 {
+        didSet {
+            //resetDice()
+        }
+    }
+    
+    // Coup - critical
+    var coupValues: [CoupFumbleOption] = []
+    var coupOnlyOnFirstDie: Bool = false
+    
+    // Fumble
+    var fumbleValues: [CoupFumbleOption] = []
+    var fumbleOnlyOnFirstDie: Bool = false
+    
+    // Reroll
+    var rerollOptions: [RerollOption] = []
+    
+    // other option
+    var reorderDice: Bool = false
+    var addDiceEvery: Int = 0 {
+        didSet {
+            resetDice()
+        }
+    }
+    
+    @Relationship(deleteRule: .cascade) private var dice_: [DieDataModel]? = []
+
+    // temporary values
+    //    var resultCategory: ResultCategory? = nil
+}
+
+extension DiceConfigDataModel {
+    var dice: [DieDataModel] {
+        get {
+            guard let all = dice_ else { return [] }
+            return all.sorted { $0.index < $1.index }
+        }
+        set {
+            dice_ = newValue
+        }
+    }
+
+    func entryOrNew(for id: UUID) -> DieDataModel {
+        if let entry = dice.first(where: { $0.id == id }) {
+            return entry
+        }
+        return DieDataModel(id: id)
+    }
+    
+    static var twenty: DiceConfigDataModel {
+        DiceConfigDataModel(dice: [DieDataModel.die20])
+    }
+}
+
+extension DiceConfigDataModel {
+    var canFumbleOnFirstDiceOnly: Bool {
+        guard !fumbleValues.contains(where: { $0.isResult }) else { return false }
+        return fumbleOnlyOnFirstDie
+    }
+    
+    var canCoupOnFirstDiceOnly: Bool {
+        guard !coupValues.contains(where: { $0.isResult }) else { return false }
+        return coupOnlyOnFirstDie
+    }
+    
+    var canPercentDice: Bool {
+        guard dice.count == 2 else { return false }
+        return dice[0].die.sides == .ten && dice[1].die.sides == .ten
+    }
+    
+    var inlineText: String {
+        var diceModel = RawDice(dice: dice.map { $0.die })
+        diceModel.modifier = Int(modifier)
+        return diceModel.text
+    }
+    
+    func resetDice() {
+        guard addDiceEvery > 0 else { return }
+        var number = Int(compareValue) / addDiceEvery + (Int(compareValue) % addDiceEvery > 0 ? 1 : 0)
+        if number <= 0 {
+            number = 1
+        }
+        if dice.count != number, let die = dice.first {
+            dice = (1 ... number).map { die.duplicate(index: $0 - 1) }
+        }
+    }
+    
+    func applyResult(text: String) {
+        let diceResult = text.split(separator: "|")
+        guard diceResult.count == dice.count else { return }
+        for index in 0 ..< dice.count {
+            let dieResult = diceResult[index]
+                .split(separator: ",", omittingEmptySubsequences: false)
+                .compactMap { Int($0) }
+            dice[index].applyResult(values: dieResult)
+        }
+    }
+    
+    var minValue: Int {
+        dice.reduce(0) { $0 + $1.die.min }
+    }
+    
+    var maxValue: Int {
+        dice.reduce(0) { $0 + $1.die.max }
+    }
+}
+
+extension DiceConfigDataModel {
+    enum CompareValue: Int, Identifiable, Equatable, Hashable, Codable, CaseIterable {
+        case off
+        case lower
+        case lowerEqual
+        case equalHigher
+        case higher
+        
+        public var id: Int {
+            rawValue
+        }
+        
+        var text: LocalizedStringKey {
+            switch self {
+            case .off: "Off"
+            case .lower: "<"
+            case .lowerEqual: "<="
+            case .equalHigher: ">="
+            case .higher: ">"
+            }
+        }
+        
+        var rawText: String {
+            switch self {
+            case .off: "Off"
+            case .lower: "<"
+            case .lowerEqual: "<="
+            case .equalHigher: ">="
+            case .higher: ">"
+            }
+        }
+        
+        var icon: String {
+            switch self {
+            case .off: ""
+            case .lower: "lessthan.circle"
+            case .lowerEqual: "arrow.left.to.line.circle"
+            case .equalHigher: "arrow.right.to.line.circle"
+            case .higher: "greaterthan.circle"
+            }
+        }
+        
+        func check(value: Double, against other: Double) -> Bool {
+            switch self {
+            case .off: false
+            case .lower: value < other
+            case .lowerEqual: value <= other
+            case .equalHigher: value >= other
+            case .higher: value > other
+            }
+        }
+    }
+}
+
+extension DiceConfigDataModel {
+    enum CoupFumbleOption: Identifiable, Equatable, Hashable, Codable, RawRepresentable {
+        case result(Int)
+        case diceValue(Int)
+        
+        public init?(rawValue: String) {
+            guard rawValue.count > 1 else { return nil }
+            let index = rawValue.index(after: rawValue.startIndex)
+            let number = Int(rawValue[index...]) ?? 0
+            if rawValue[rawValue.startIndex] == "r" {
+                self = .result(number)
+            } else if rawValue[rawValue.startIndex] == "d" {
+                self = .diceValue(number)
+            } else {
+                return nil
+            }
+        }
+        
+        public var rawValue: String {
+            switch self {
+            case let .result(number): "r\(number)"
+            case let .diceValue(number): "d\(number)"
+            }
+        }
+        
+        public var id: String {
+            rawValue
+        }
+        
+        var icon: String {
+            switch self {
+            case .diceValue: NetworkModules.dice.icon
+            case .result: "123.rectangle"
+            }
+        }
+        
+        var text: String {
+            switch self {
+            case let .diceValue(number): "\(number)"
+            case let .result(number): "\(number)"
+            }
+        }
+        
+        func isDiceValue(_ value: Int) -> Bool {
+            switch self {
+            case let .diceValue(number): number == value
+            case .result: false
+            }
+        }
+        
+        func isResultValue(_ value: Int) -> Bool {
+            switch self {
+            case .diceValue: false
+            case let .result(number): number == value
+            }
+        }
+        
+        var isResult: Bool {
+            switch self {
+            case .result: true
+            default: false
+            }
+        }
+    }
+    
+}
+
+extension DiceConfigDataModel {
+    struct RerollOption: Identifiable, Equatable, Hashable, Codable {
+        let number: Int
+        let value: Int
+        let maxDiceValue: Bool
+        
+        public var id: Int {
+            number
+        }
+    }
+}

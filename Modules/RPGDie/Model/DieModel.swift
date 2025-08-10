@@ -6,7 +6,7 @@ import SwiftUI
 
 public struct DieModel: Equatable, Hashable, Identifiable, Codable, @unchecked Sendable {
     public let id: UUID
-    let die: RawDie
+    public let die: RawDie
     var rotation: Double = 0
     var result: [Int] = []
     public var displayState: Int = 0
