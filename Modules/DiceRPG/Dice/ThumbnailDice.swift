@@ -14,7 +14,7 @@ struct ThumbnailDice: View {
             die.diceImage(for: die.die.max)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(height: height)
+                .frame(width: height, height: height)
                 .padding(4)
         }
     }
