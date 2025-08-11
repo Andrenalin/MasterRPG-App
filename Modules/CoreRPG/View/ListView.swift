@@ -42,7 +42,7 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
     
     public var body: some View {
         listView(filteredItems: totalItems(items: items))
-            .frame(minWidth: 250, idealWidth: 350, maxWidth: 450)
+            .frame(minWidth: 250, idealWidth: 350)
             .overlay {
                 if items.isEmpty && !searchModel.searchText.isEmpty {
                     ContentUnavailableView.search

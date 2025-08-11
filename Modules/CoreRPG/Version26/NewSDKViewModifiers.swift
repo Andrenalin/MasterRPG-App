@@ -49,3 +49,20 @@ private struct TabBarMinimizeBehavior26ViewModifier: ViewModifier {
 }
 
 
+public struct GlassEffectContainerView<Content: View>: View {
+    public init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+    
+    @ViewBuilder var content: Content
+    
+    public var body: some View {
+#if os(visionOS)
+        content
+#else
+        GlassEffectContainer {
+            content
+        }
+#endif
+    }
+}

@@ -25,12 +25,7 @@ struct MainRowView: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [PhotoDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
     
     MainRowView(model: models[0])
-        .environment(PhotoRootModel(modelContext: modelContext))
-        .environment(CacheItemListModel())
-        .environment(SearchModel.preview(modelContext: modelContext, module: PhotoDataModel.typeId))
-        .environment(DeviceRotationModel())
 }
 

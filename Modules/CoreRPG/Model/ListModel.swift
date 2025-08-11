@@ -85,7 +85,9 @@ public final class ListModel {
             guard newValue, listMode != .folder else { return }
             listMode = .folder
         }
-    }    
+    }
+    
+    var isPadStyle = false
 }
 
 // MARK: - Selection

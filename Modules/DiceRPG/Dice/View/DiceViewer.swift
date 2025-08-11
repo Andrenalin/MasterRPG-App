@@ -34,6 +34,7 @@ struct DiceViewer: View {
                             }
                         }
                     }
+                    .borderLessTVBottonStyle()
                 }
             }
         }

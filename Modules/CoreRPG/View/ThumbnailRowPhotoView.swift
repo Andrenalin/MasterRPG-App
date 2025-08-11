@@ -16,21 +16,25 @@ public struct ThumbnailRowPhotoView: View {
 
     @State private var lastFileUrl: FileUrl?
     @State private var isLoading: Bool = false
-
+    
     public var body: some View {
         VStack {
             if let image = cachedImage {
                 GeometryReader { proxy in
                     imageView(image: image)
-                    #if os(macOS)
-                        .clipShape(.rect(cornerRadius: 24, style: .continuous))
+                    #if os(iOS)
+                        .clipShape(
+                            .rect(
+                                bottomTrailingRadius: listModel.isPadStyle ? 24 : 0,
+                                topTrailingRadius: listModel.isPadStyle ? 24 : 0,
+                                style: .continuous
+                            )
+                        )
                     #else
                         .clipShape(
                             .rect(
-                                topLeadingRadius: 0,
-                                bottomLeadingRadius: 0,
-                                bottomTrailingRadius: 24,
-                                topTrailingRadius: 24,
+                                bottomTrailingRadius: 8,
+                                topTrailingRadius: 8,
                                 style: .continuous
                             )
                         )
@@ -90,10 +94,14 @@ private extension ThumbnailRowPhotoView {
                 .font(.system(size: 32))
                 .frame(width: size.width, height: size.height)
                 .overlay {
-#if os(macOS)
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+#if os(iOS)
+                    UnevenRoundedRectangle(bottomTrailingRadius: listModel.isPadStyle ? 24 : 0, topTrailingRadius: listModel.isPadStyle ? 24 : 0)
+                        .fill(Color.accentColor.tertiary)
+                        .stroke(Color.accentColor.secondary, lineWidth: 2)
 #else
-                    UnevenRoundedRectangle(bottomTrailingRadius: 24, topTrailingRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
+                    UnevenRoundedRectangle(bottomTrailingRadius: 4, topTrailingRadius: 4)
+                        .fill(Color.accentColor.tertiary)
+                        .stroke(Color.accentColor.secondary, lineWidth: 2)
 #endif
                 }
         }

@@ -50,7 +50,9 @@ private extension SearchBar {
                 .font(.headline)
                 .foregroundStyle(Color.accentColor)
                 .padding()
+#if !os(visionOS)
                 .glassEffect(.regular)
+#endif
             
             Button {
                 withAnimation {

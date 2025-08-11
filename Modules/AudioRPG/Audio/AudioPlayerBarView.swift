@@ -1,12 +1,13 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 struct AudioPlayerBarView: View {
     @Environment(AudioRootModel.self) private var root
             
     var body: some View {
-        GlassEffectContainer {
+        GlassEffectContainerView {
             HStack(spacing: 16) {
                 playbackControls
                 
@@ -20,6 +21,10 @@ struct AudioPlayerBarView: View {
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 8)
+#if !os(visionOS)
+            .glassEffect(.clear)
+#endif
+
         }
     }
 }
@@ -107,7 +112,9 @@ private extension AudioPlayerBarView {
             ProgressView(value: root.audioPlayerModel.currentTime, total: root.audioPlayerModel.playerTime.totalDuration)
                 .progressViewStyle(.linear)
         }
+#if !os(visionOS)
         .glassEffect(.regular)
+#endif
     }
     
     var volumeControl: some View {
@@ -117,7 +124,9 @@ private extension AudioPlayerBarView {
             Image(systemName: "speaker.wave.2.fill")
                 .font(.title3)
         }
+#if !os(visionOS)
         .glassEffect(.regular.interactive())
+#endif
     }
     
     var currentItem: PlaylistItem? {

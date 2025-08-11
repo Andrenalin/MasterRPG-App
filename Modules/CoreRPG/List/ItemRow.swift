@@ -45,6 +45,7 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
                         .lineLimit(3)
                 }
             }
+            .padding(.leading, isSpecialCategory ? 0 : 6)
             .frame(minHeight: 64, alignment: .center)
             .frame(maxWidth: .infinity, alignment: .leading)
             

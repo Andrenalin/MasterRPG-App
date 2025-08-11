@@ -42,7 +42,8 @@ public struct RootView<List: View, Detail: View>: View {
         .onChange(of: tabBarPlacement, initial: true) {
             tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
         }
-        .onChange(of: horizontalSizeClass, initial: false) {
+        .onChange(of: horizontalSizeClass, initial: true) {
+            listModel.isPadStyle = horizontalSizeClass != .compact
             tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
         }
 #else

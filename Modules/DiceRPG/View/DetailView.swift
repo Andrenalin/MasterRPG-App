@@ -21,11 +21,17 @@ struct DetailView: View {
             if model.specialCategory {
                 detailListView
             } else {
+#if os(macOS)
+                ScrollView {
+                    detailEditorView
+                }
+#else
                 detailEditorView
                     .padding(.horizontal, -20)
+#endif
             }
         } bottom: {
-//            GroupedPhotoView(cacheController: root.cacheController, model: model)
+            ItemGroupItemView(model: model)
         }
         .environment(selection)
         .environment(openFileWindowModel)

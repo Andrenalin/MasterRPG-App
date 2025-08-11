@@ -35,6 +35,7 @@ struct DiceBag: View {
                 ThumbnailDice(die: die)
                     .padding(4)
             }
+            .borderLessTVBottonStyle()
         }
     }
 }
