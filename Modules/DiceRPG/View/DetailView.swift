@@ -14,7 +14,6 @@ struct DetailView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
 
     var body: some View {
-        let _ = Self._printChanges()
         FileDetailEditorView(model: model, editController: root.editController, fileTypes: []) {
         } background: {
             backgroundHeader
@@ -22,8 +21,8 @@ struct DetailView: View {
             if model.specialCategory {
                 detailListView
             } else {
-                DiceEditor(model: model)
-                DiceOptionEditor(model: model)
+                detailEditorView
+                    .padding(.horizontal, -20)
             }
         } bottom: {
 //            GroupedPhotoView(cacheController: root.cacheController, model: model)
@@ -36,19 +35,22 @@ struct DetailView: View {
 private extension DetailView {
     var backgroundHeader: some View {
         DiceViewer(model: model, isEditor: false)
-//        ScrollView(showsIndicators: false) {
-//            LazyVStack(alignment: .leading, spacing: 8) {
-//                ConcentricRectangle().fill(Color.blue.gradient)
-//                    .overlay {
-//                        DiceViewer(model: model)
-//                    }
-//                    .frame(minHeight: 600)
-//            }
-//        }
-//        //.ignoresSafeArea(.keyboard)
-//        .ignoresSafeArea(edges: .top)
-//        .backgroundExtensionEffect()
-        
+            .background {
+                ConcentricRectangle().fill(DiceDataModel.typeId.color.gradient)
+                    .ignoresSafeArea(edges: .top)
+                    .backgroundExtensionEffect()
+            }
+    }
+    
+    var detailEditorView: some View {
+        Form {
+            DiceEditor(model: model)
+            DiceOptionEditor(model: model)
+            CoupEditor(model: model)
+            FumbleEditor(model: model)
+            RerollEditor(model: model)
+            SpecialOptionEditor(model: model)
+        }
     }
 
     var detailListView: some View {

@@ -130,6 +130,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
         case .pdf: "apple.books.pages"
 
         case .sound: "waveform"
+        case .music: "music.note.list"
 
         default: "exclamationmark.triangle"
         }

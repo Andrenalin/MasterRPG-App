@@ -34,7 +34,7 @@ public final class DiceConfigDataModel {
     var compareOption: CompareValue = DiceConfigDataModel.CompareValue.off
     var compareValue: Double = 0.0 {
         didSet {
-            //resetDice()
+            resetDice()
         }
     }
     
@@ -87,6 +87,19 @@ extension DiceConfigDataModel {
 }
 
 extension DiceConfigDataModel {
+    var addDiceActivate: Bool {
+        get { addDiceEvery > 0 }
+        set { reset(addDice: newValue) }
+    }
+    
+    func reset(addDice: Bool) {
+        if addDice {
+            let newMax = dice.first?.die.max ?? 0
+            addDiceEvery = newMax
+        } else {
+            addDiceEvery = 0
+        }
+    }
     var canFumbleOnFirstDiceOnly: Bool {
         guard !fumbleValues.contains(where: { $0.isResult }) else { return false }
         return fumbleOnlyOnFirstDie

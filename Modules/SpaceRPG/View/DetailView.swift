@@ -32,20 +32,38 @@ struct DetailView: View {
 }
 
 private extension DetailView {
+    @ViewBuilder
     var backgroundHeader: some View {
-        GeometryReader { geometry in
-            ScrollViewReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    VStack {
-                        detailView
-                            .frame(minHeight: 600)
+        if model.specialCategory == false && model.url != nil {
+            GeometryReader { geometry in
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack {
+                            detailView
+                                .frame(minHeight: 600)
+                        }
                     }
+                    .frame(height: geometry.size.height)
                 }
-                .frame(height: geometry.size.height)
             }
+        } else if model.specialCategory == true || model.url != nil {
+            Label {
+                Text(SpaceDataModel.typeId.localizedTitle)
+                    .font(.largeTitle)
+            } icon: {
+                Image(systemName: SpaceDataModel.typeId.icon)
+                    .font(.largeTitle)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background {
+                    ConcentricRectangle().fill(SpaceDataModel.typeId.color.gradient)
+                        .ignoresSafeArea(edges: .top)
+                        .backgroundExtensionEffect()
+                }
         }
     }
-
+    
     var detailListView: some View {
         DetailListView(editController: root.editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: SpaceDataModel.typeId) { id in
             SpaceRoute.detail(id)

@@ -105,9 +105,7 @@ private extension FileDetailEditorView {
     
     @ViewBuilder
     var backgroundView: some View {
-        if model.specialCategory == false && hasFile {
-            background
-        }
+        background
     }
 
     @ViewBuilder
@@ -121,7 +119,7 @@ private extension FileDetailEditorView {
                 }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .opacity(hasFile && model.specialCategory == false ? 1 : 0)
+        .opacity(hasFile || model.specialCategory ? 0 : 1)
         .transition(.scale)
     }
 

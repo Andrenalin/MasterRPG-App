@@ -7,10 +7,6 @@ import SwiftUI
 struct DetailView: View {
     let model: AudioDataModel
 
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-#endif
-
     @Environment(AudioRootModel.self) private var root
     @Environment(ListModel.self) private var listModel
 
@@ -21,50 +17,41 @@ struct DetailView: View {
         FileDetailEditorView(model: model, editController: root.editController, fileTypes: FileController.fileTypes) {
             FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
         } background: {
-            //Rectangle().fill(Color.secondary.gradient)
+            backgroundHeader
         } editor: {
             fileAndPlayerView
 
             if model.specialCategory {
                 playlistView
-//                    .safeAreaBar(edge: .bottom) {
-//                        if shouldShowBottomBar {
-//                            AudioPlayerBarView()
-//                                .opacity(0)
-//                        }
-//                    }
+            } else {
+                Color.clear
             }
         } bottom: {
-            AudioGroupItem(model: model)
+            ItemGroupItemView(model: model)
         }
         .environment(selection)
         .environment(openFileWindowModel)
-        .safeAreaInset(edge: .bottom) {
-            if shouldShowBottomBar {
-                VStack {
-#if os(visionOS)
-                    AudioPlayerBarView()
-                        .padding()
-#else
-                    GlassEffectContainer {
-                        AudioPlayerBarView()
-                            .padding()
-                    }
-#endif
-                }
-                .frame(maxHeight: .infinity, alignment: .bottom)
-            }
-        }
     }
 }
 
 private extension DetailView {
-    var shouldShowBottomBar: Bool {
-#if os(iOS)
-        return horizontalSizeClass != .compact
+    var backgroundHeader: some View {
+        Group {
+#if os(visionOS)
+            AudioPlayerBarView()
+                .padding()
 #else
-        return true
+            GlassEffectContainer {
+                AudioPlayerBarView()
+                    .padding()
+            }
 #endif
+        }
+        .background {
+                ConcentricRectangle().fill(AudioDataModel.typeId.color.gradient)
+                    .ignoresSafeArea(edges: .top)
+                    .backgroundExtensionEffect()
+            }
     }
 
     var fileAndPlayerView: some View {
@@ -112,31 +99,4 @@ private extension DetailView {
 
     DetailView(model: models[0])
         .environment(CacheItemListModel())
-}
-
-
-struct AudioGroupItem: View {
-    let model: AudioDataModel
-
-    @Environment(\.modelContext) var modelContext
-    @Environment(GroupItemSelectionModel.self) var selection
-
-    var body: some View {
-        VStack {
-            Text(item.name)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Image(systemName: item.category.icon)
-                .imageScale(.large)
-                .
-            font(.title)
-        }
-        .padding()
-    }
-
-    var item: AudioDataModel {
-        guard let id = selection.selectedItem else { return model }
-        return AudioDataModel.model(modelContext: modelContext, id: id) ?? model
-    }
 }

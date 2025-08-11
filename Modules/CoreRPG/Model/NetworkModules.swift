@@ -111,7 +111,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     public var color: Color {
         switch self {
         case .adventure: .blue
-        case .audio: .cyan
+        case .audio: .pink
         case .dice: .purple
         case .editor: .gray
         case .map: .indigo

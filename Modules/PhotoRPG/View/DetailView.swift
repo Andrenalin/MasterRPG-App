@@ -41,16 +41,34 @@ struct DetailView: View {
 }
 
 private extension DetailView {
+    @ViewBuilder
     var backgroundHeader: some View {
-        ScrollView(showsIndicators: false) {
-            LazyVStack(alignment: .leading, spacing: 8) {
-                GroupedPhotoView(cacheController: root.cacheController, model: model)
-                    .stretchy()
+        if model.specialCategory == false && model.url != nil {
+            ScrollView(showsIndicators: false) {
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    GroupedPhotoView(cacheController: root.cacheController, model: model)
+                        .stretchy()
+                }
             }
+            .ignoresSafeArea(.keyboard)
+            .ignoresSafeArea(edges: .top)
+            .backgroundExtensionEffect()
+        } else if model.specialCategory == true || model.url != nil {
+            Label {
+                Text(PhotoDataModel.typeId.localizedTitle)
+                    .font(.largeTitle)
+            } icon: {
+                Image(systemName: PhotoDataModel.typeId.icon)
+                    .font(.largeTitle)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background {
+                    ConcentricRectangle().fill(PhotoDataModel.typeId.color.gradient)
+                        .ignoresSafeArea(edges: .top)
+                        .backgroundExtensionEffect()
+                }
         }
-        .ignoresSafeArea(.keyboard)
-        .ignoresSafeArea(edges: .top)
-        .backgroundExtensionEffect()
     }
 
     @ViewBuilder
