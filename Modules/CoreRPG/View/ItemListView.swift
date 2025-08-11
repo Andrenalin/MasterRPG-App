@@ -12,8 +12,8 @@ public protocol ListItemFolderable: Identifiable {
     @MainActor static var collectionCategory: ItemListCategory { get }
 }
 
-public struct ListView<Model: ListItemFolderable, EditController: EditControllable, Row: View>: View where Model.ID == UUID, Model == EditController.Model {
-    public init(editController: EditController, menuController: any ItemListContextMenuControllable, items: [Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (Model) -> Row) {
+public struct ItemListView<EditController: EditControllable, Row: View>: View where EditController.Model.ID == UUID {
+    public init(editController: EditController, menuController: any ItemListContextMenuControllable, items: [EditController.Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (EditController.Model) -> Row) {
         self.editController = editController
         self.menuController = menuController
         self.items = items
@@ -23,10 +23,10 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
     }
     let editController: EditController
     let menuController: ItemListContextMenuControllable
-    let items: [Model]
+    let items: [EditController.Model]
     let module: NetworkModules
     let route: (UUID) -> any NavigationDestination
-    let row: (Model) -> Row
+    let row: (EditController.Model) -> Row
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.navigator) private var navigator
@@ -50,7 +50,7 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
             }
 #if !os(tvOS)
             .applyIf(listModel.isSelectionMode) { content in
-                content.contextMenu(forSelectionType: Model.ID.self) { selectedItemIDs in
+                content.contextMenu(forSelectionType: EditController.Model.ID.self) { selectedItemIDs in
                     ItemListContextMenu(controller: menuController)
                 }
             }
@@ -103,9 +103,11 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
                 }
             }
     }
-    
+}
+
+private extension ItemListView {
     @ViewBuilder
-    private var actionMenu: some View {
+    var actionMenu: some View {
         Menu {
             MenuDisplayModeToggle(listModel: listModel, showSelectionButton: false) {
                 addItemButton(for: .folder)
@@ -120,7 +122,7 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
     }
     
     @ViewBuilder
-    private var secondaryActionMenu: some View {
+    var secondaryActionMenu: some View {
         if !listModel.isSelectionMode {
             MenuSelectionButtonView(listModel: listModel)
         }
@@ -141,26 +143,26 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
         }
     }
     
-    private func addItemButton(for type: EditControllerAddType) -> some View {
+    func addItemButton(for type: EditControllerAddType) -> some View {
         Button {
             addItem(for: type)
         } label: {
             Label {
                 Text(type.title)
             } icon: {
-                Image(systemName: type.icon(collection: Model.collectionCategory.icon))
+                Image(systemName: type.icon(collection: EditController.Model.collectionCategory.icon))
             }
         }
     }
     
-    private func addItem(for type: EditControllerAddType) {
+    func addItem(for type: EditControllerAddType) {
         let newItem = editController.addNew(modelContext: modelContext, type: type)
         withAnimation {
             listModel.selected = newItem.id
         }
     }
     
-    private func deleteItems(offsets: IndexSet) {
+    func deleteItems(offsets: IndexSet) {
         for index in offsets {
             if items[index].id == listModel.selected {
                 listModel.update(selection: Set())
@@ -171,8 +173,26 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
         }
     }
     
+    var filteredItems: [EditController.Model] {
+        var filtered = items
+        if listModel.listMode == .list {
+            filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
+        } else {
+            filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
+        }
+        if !searchModel.selectedTokens.isEmpty {
+            let selectedTags = searchModel.selectedTokens.map { $0.tag }
+            filtered = filtered.filter { $0.tags.contains(selectedTags) }
+        }
+        guard !searchModel.searchText.isEmpty else { return filtered }
+        return filtered.filter {
+            $0.name.localizedStandardContains(searchModel.searchText) ||
+            $0.information.localizedStandardContains(searchModel.searchText)
+        }
+    }
+    
     @ViewBuilder
-    private func listView(filteredItems: [Model]) -> some View {
+    func listView(filteredItems: [EditController.Model]) -> some View {
         @Bindable var listModel = listModel
 #if os(macOS)
         if listModel.isSelectionMode {
@@ -191,7 +211,7 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
 #endif
     }
     
-    private func itemRows(filteredItems: [Model]) -> some View {
+    func itemRows(filteredItems: [EditController.Model]) -> some View {
         ForEach(filteredItems) { item in
             row(item)
                 .applyIf(!listModel.isSelectionMode) { content in
@@ -210,9 +230,9 @@ public struct ListView<Model: ListItemFolderable, EditController: EditControllab
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
     }
     
-    func totalItems(items: [Model]) -> [Model] {
-        var total: [Model] = []
-        items.forEach { item in
+    func totalItems(items: [EditController.Model]) -> [EditController.Model] {
+        var total: [EditController.Model] = []
+        filteredItems.forEach { item in
             total.append(item)
             if item.isFolder && listModel.subItemModels[item.id]?.isOpen ?? false {
                 total.append(contentsOf: totalItems(items: item.subItems))

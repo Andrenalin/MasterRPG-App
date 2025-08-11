@@ -15,7 +15,7 @@ struct ListView: View {
     @Query(filter: #Predicate<SpaceDataModel>{ $0.displayState == 0 }, sort: \SpaceDataModel.name, animation: .smooth) private var items: [SpaceDataModel]
 
     var body: some View {
-        CoreRPG.ListView(editController: root.editController, menuController: menuController, items: filteredItems, module: SpaceDataModel.typeId) { id in
+        ItemListView(editController: root.editController, menuController: menuController, items: items, module: SpaceDataModel.typeId) { id in
             SpaceRoute.detail(id)
         } row: { model in
             MainRowView(model: model)
@@ -25,24 +25,6 @@ struct ListView: View {
 #endif
     }
     
-    private var filteredItems: [SpaceDataModel] {
-        var filtered = items
-        if listModel.listMode == .list {
-            filtered = filtered.filter { $0.category != .folder && $0.category != SpaceDataModel.collectionCategory }
-        } else {
-            filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
-        }
-        if !searchModel.selectedTokens.isEmpty {
-            let selectedTags = searchModel.selectedTokens.map { $0.tag }
-            filtered = filtered.filter { $0.tags.contains(selectedTags) }
-        }
-        guard !searchModel.searchText.isEmpty else { return filtered }
-        return filtered.filter {
-            $0.name.localizedStandardContains(searchModel.searchText) ||
-            $0.information.localizedStandardContains(searchModel.searchText)
-        }
-    }
-
     private var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }

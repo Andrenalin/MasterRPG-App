@@ -15,7 +15,7 @@ struct ListView: View {
     @Query(filter: #Predicate<PhotoDataModel>{ $0.displayState == 0 }, sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
     
     var body: some View {
-        CoreRPG.ListView(editController: root.editController, menuController: menuController, items: filteredItems, module: PhotoDataModel.typeId) { id in
+        ItemListView(editController: root.editController, menuController: menuController, items: items, module: PhotoDataModel.typeId) { id in
             PhotoRoute.detail(id)
         } row: { model in
             MainRowView(model: model)
@@ -28,24 +28,6 @@ struct ListView: View {
 #endif
     }
 
-    private var filteredItems: [PhotoDataModel] {
-        var filtered = items
-        if listModel.listMode == .list {
-            filtered = filtered.filter { $0.category != .folder && $0.category != PhotoDataModel.collectionCategory }
-        } else {
-            filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
-        }
-        if !searchModel.selectedTokens.isEmpty {
-            let selectedTags = searchModel.selectedTokens.map { $0.tag }
-            filtered = filtered.filter { $0.tags.contains(selectedTags) }
-        }
-        guard !searchModel.searchText.isEmpty else { return filtered }
-        return filtered.filter {
-            $0.name.localizedStandardContains(searchModel.searchText) ||
-            $0.information.localizedStandardContains(searchModel.searchText)
-        }
-    }
-    
     private var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
@@ -79,14 +61,7 @@ struct ListView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [PhotoDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
-    
     ManagedNavigationStack {
         ListView()
-            .environment(CacheItemListModel())
-            .environment(SearchModel.preview(modelContext: modelContext, module: PhotoDataModel.typeId))
-            .environment(DeviceRotationModel())
     }
-    .environment(ListModel())
 }

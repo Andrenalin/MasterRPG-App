@@ -15,7 +15,7 @@ struct ListView: View {
     @Query(filter: #Predicate<PdfDataModel>{ $0.displayState == 0 }, sort: \PdfDataModel.name, animation: .smooth) private var items: [PdfDataModel]
     
     var body: some View {
-        CoreRPG.ListView(editController: root.editController, menuController: menuController, items: filteredItems, module: PdfDataModel.typeId) { id in
+        ItemListView(editController: root.editController, menuController: menuController, items: items, module: PdfDataModel.typeId) { id in
             PdfRoute.detail(id)
         } row: { model in
             MainRowView(model: model)
@@ -25,22 +25,6 @@ struct ListView: View {
 #endif
     }
 
-    private var filteredItems: [PdfDataModel] {
-        var filtered = items
-        if searchModel.searchToken != ItemListCategory.all {
-            filtered = filtered.filter { $0.category == searchModel.searchToken }
-        }
-        if !searchModel.selectedTokens.isEmpty {
-            let selectedTags = searchModel.selectedTokens.map { $0.tag }
-            filtered = filtered.filter { $0.tags.contains(selectedTags) }
-        }
-        guard !searchModel.searchText.isEmpty else { return filtered }
-        return filtered.filter {
-            $0.name.localizedStandardContains(searchModel.searchText) ||
-            $0.information.localizedStandardContains(searchModel.searchText)
-        }
-    }
-    
     private var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
