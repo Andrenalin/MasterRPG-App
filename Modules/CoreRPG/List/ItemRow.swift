@@ -2,18 +2,12 @@
 
 import SwiftUI
 
-public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
-    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>, isSelected: Bool = false, isTrailing: Bool = false, collectionCategory: ItemListCategory? = nil, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
+public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View {
+    public init(itemId: UUID, model: Model, cacheItemListModel: CacheItemListModel, isSelected: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
         self.itemId = itemId
         self.model = model
         self.cacheItemListModel = cacheItemListModel
-        self.name = name
-        self.category = category
-        self.tags = tags
-        self.description = description
         self.isSelected = isSelected
-        self.isTrailing = isTrailing
-        self.collectionCategory = collectionCategory
         self.thumbnail = thumbnail()
         self.actionBar = actionBar()
     }
@@ -21,13 +15,7 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
     let itemId: UUID
     let model: Model
     let cacheItemListModel: CacheItemListModel
-    let name: KeyPath<Model, String>
-    let category: KeyPath<Model, ItemListCategory>
-    let tags: KeyPath<Model, [String]>
-    let description: KeyPath<Model, String>
     let isSelected: Bool
-    let isTrailing: Bool
-    let collectionCategory: ItemListCategory?
     let thumbnail: Thumbnail
     let actionBar: ActionBar
     
@@ -37,16 +25,12 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
         HStack(alignment: .center, spacing: 4) {
             specialCategoryIcon
             
-            if !isTrailing {
-                thumbView
-            }
-            
             VStack(alignment: .leading, spacing: 4) {
-                NameItemRow(itemId: itemId, name: model[keyPath: name], cacheItemListModel: cacheItemListModel)
+                NameItemRow(itemId: itemId, name: model.name, cacheItemListModel: cacheItemListModel)
                     .font(.headline)
                 
                 if listModel.displayMode == .regular {
-                    if model[keyPath: tags].count > 4 {
+                    if model.tags.count > 4 {
                         twoLineTagView
                     } else {
                         allTagsView
@@ -55,7 +39,7 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
                     actionBar
                 }
                 if listModel.displayMode != .compact {
-                    DescriptionItemRow(itemId: itemId, description: model[keyPath: description], cacheItemListModel: cacheItemListModel)
+                    DescriptionItemRow(itemId: itemId, description: model.information, cacheItemListModel: cacheItemListModel)
                         .foregroundStyle(.secondary)
                         .font(.footnote)
                         .lineLimit(3)
@@ -64,9 +48,7 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
             .frame(minHeight: 64, alignment: .center)
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            if isTrailing {
-                thumbView
-            }
+            thumbView
             
             specialCategoryFolderIndicator
         }
@@ -76,27 +58,27 @@ public struct ItemRow<Model, Thumbnail: View, ActionBar: View>: View {
 
 private extension ItemRow {
     var isSpecialCategory: Bool {
-        model[keyPath: category] == .folder || model[keyPath: category] == .drop || model[keyPath: category] == collectionCategory
+        model.category == .folder || model.category == .drop || model.category == Model.collectionCategory
     }
     
     @ViewBuilder
     var specialCategoryIcon: some View {
         if isSpecialCategory {
-            Image(systemName: model[keyPath: category].icon)
+            Image(systemName: model.category.icon)
                 .font(.title)
         }
     }
 
     @ViewBuilder
     var specialCategoryFolderIndicator: some View {
-        if model[keyPath: category] == .folder {
+        if model.category == .folder {
             Image(systemName: (listModel.subItemModels[itemId]?.isOpen ?? false) ? "chevron.down" : "chevron.right")
                 .imageScale(.small)
                 .padding(.trailing)
                 .foregroundStyle((listModel.subItemModels[itemId]?.isOpen ?? false) ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    guard model[keyPath: category] == .folder else { return }
+                    guard model.category == .folder else { return }
                     let subModel = listModel.subItemModels[itemId, default: ListSubItemModel(id: itemId)]
                     subModel.isOpen.toggle()
                     withAnimation { listModel.subItemModels[itemId] = subModel }
@@ -115,13 +97,13 @@ private extension ItemRow {
     }
     
     var tagContent: [String] {
-        model[keyPath: tags]
+        model.tags
     }
     
     var allTagsView: some View {
         HStack(spacing: 4) {
-            if model[keyPath: category] != .folder && model[keyPath: category] != collectionCategory {
-                CategoryItemRow(category: model[keyPath: category])
+            if model.category != .folder && model.category != Model.collectionCategory {
+                CategoryItemRow(category: model.category)
             }
             
             TagItemRow(tags: tagContent)
@@ -147,8 +129,8 @@ private extension ItemRow {
     var twoLineTagView: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
-                if model[keyPath: category] != .folder && model[keyPath: category] != collectionCategory {
-                    CategoryItemRow(category: model[keyPath: category])
+                if model.category != .folder && model.category != Model.collectionCategory {
+                    CategoryItemRow(category: model.category)
                 }
                 TagItemRow(tags: tagFirstContent)
             }

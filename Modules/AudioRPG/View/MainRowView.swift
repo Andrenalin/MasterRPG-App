@@ -13,7 +13,7 @@ struct MainRowView: View {
     @Environment(AudioRootModel.self) private var root
 
     var body: some View {
-        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, category: \.category, tags: \.tags, description: \.information, isSelected: false, collectionCategory: AudioDataModel.collectionCategory)
+        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, isSelected: false)
             .animation(.smooth, value: listModel.displayMode)
 #if !os(tvOS)
             .draggable(LinkData(itemId: model.id, module: AudioDataModel.typeId, name: model.name))

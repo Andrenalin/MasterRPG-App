@@ -3,15 +3,13 @@
 import SwiftUI
 
 public struct ThumbnailRowPhotoView: View {
-    public init(cacheController: any ImageCacheControllable, model: any ImageFileLoadable, isTrailing: Bool = false) {
+    public init(cacheController: any ImageCacheControllable, model: any ImageFileLoadable) {
         self.cacheController = cacheController
         self.model = model
-        self.isTrailing = isTrailing
     }
 
     let cacheController: ImageCacheControllable
     let model: ImageFileLoadable
-    let isTrailing: Bool
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListModel.self) private var listModel
@@ -29,10 +27,10 @@ public struct ThumbnailRowPhotoView: View {
                     #else
                         .clipShape(
                             .rect(
-                                topLeadingRadius: isTrailing ? 0 : 24,
-                                bottomLeadingRadius: isTrailing ? 0 : 24,
-                                bottomTrailingRadius: isTrailing ? 24 : 0,
-                                topTrailingRadius: isTrailing ? 24 : 0,
+                                topLeadingRadius: 0,
+                                bottomLeadingRadius: 0,
+                                bottomTrailingRadius: 24,
+                                topTrailingRadius: 24,
                                 style: .continuous
                             )
                         )
@@ -95,11 +93,7 @@ private extension ThumbnailRowPhotoView {
 #if os(macOS)
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
 #else
-                    if isTrailing {
-                        UnevenRoundedRectangle(bottomTrailingRadius: 24, topTrailingRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
-                    } else {
-                        UnevenRoundedRectangle(topLeadingRadius: 24, bottomLeadingRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
-                    }
+                    UnevenRoundedRectangle(bottomTrailingRadius: 24, topTrailingRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
 #endif
                 }
         }

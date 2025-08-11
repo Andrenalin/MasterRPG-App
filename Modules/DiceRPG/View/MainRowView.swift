@@ -13,7 +13,7 @@ struct MainRowView: View {
     @Environment(DiceRootModel.self) private var root
 
     var body: some View {
-        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, category: \.category, tags: \.tags, description: \.information, isSelected: false, isTrailing: true, collectionCategory: DiceDataModel.collectionCategory, thumbnail: {
+        ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, isSelected: false, thumbnail: {
             if let die = model.config.dice.first {
                 ThumbnailDice(die: die)
             }
