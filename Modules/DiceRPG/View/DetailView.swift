@@ -14,12 +14,16 @@ struct DetailView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
 
     var body: some View {
+        let _ = Self._printChanges()
         FileDetailEditorView(model: model, editController: root.editController, fileTypes: []) {
         } background: {
             backgroundHeader
         } editor: {
             if model.specialCategory {
                 detailListView
+            } else {
+                DiceEditor(model: model)
+                DiceOptionEditor(model: model)
             }
         } bottom: {
 //            GroupedPhotoView(cacheController: root.cacheController, model: model)
@@ -31,15 +35,20 @@ struct DetailView: View {
 
 private extension DetailView {
     var backgroundHeader: some View {
-        ScrollView(showsIndicators: false) {
-            LazyVStack(alignment: .leading, spacing: 8) {
-                ConcentricRectangle().fill(Color.blue.gradient)
-                    .frame(minHeight: 600)
-            }
-        }
-        .ignoresSafeArea(.keyboard)
-        .ignoresSafeArea(edges: .top)
-        .backgroundExtensionEffect()
+        DiceViewer(model: model, isEditor: false)
+//        ScrollView(showsIndicators: false) {
+//            LazyVStack(alignment: .leading, spacing: 8) {
+//                ConcentricRectangle().fill(Color.blue.gradient)
+//                    .overlay {
+//                        DiceViewer(model: model)
+//                    }
+//                    .frame(minHeight: 600)
+//            }
+//        }
+//        //.ignoresSafeArea(.keyboard)
+//        .ignoresSafeArea(edges: .top)
+//        .backgroundExtensionEffect()
+        
     }
 
     var detailListView: some View {
@@ -57,8 +66,11 @@ private extension DetailView {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [DiceDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
-
+    @Previewable @Environment(DiceRootModel.self) var root
+    
     DetailView(model: models[0])
         .environment(CacheItemListModel())
+        .environment(ListModel())
+        .environment(root.searchModel)
+        .environment(DeviceRotationModel())
 }

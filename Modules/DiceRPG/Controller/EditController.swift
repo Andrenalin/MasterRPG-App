@@ -28,3 +28,26 @@ extension EditController {
         }
     }
 }
+
+// MARK: - Edit dice
+
+extension EditController {
+    func add(die: DieDataModel, to model: DiceDataModel) {
+        let counter = model.config.dice.count
+        let duplicate = die.duplicate(index: counter)
+        let config = model.config
+        config.dice.append(duplicate)
+        model.config = config
+    }
+    
+    func remove(die: DieDataModel, from model: DiceDataModel) {
+        let config = model.config
+        var dice = config.dice
+        dice.removeAll(where: { $0.id == die.id })
+        dice.enumerated().forEach { index, die in
+            die.index = index
+        }
+        config.dice = dice
+        model.config = config
+    }
+}

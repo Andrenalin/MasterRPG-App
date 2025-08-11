@@ -14,7 +14,9 @@ struct MainRowView: View {
 
     var body: some View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, name: \.name, category: \.category, tags: \.tags, description: \.information, isSelected: false, isTrailing: true, collectionCategory: DiceDataModel.collectionCategory, thumbnail: {
-            ThumbnailDice(model: model)
+            if let die = model.config.dice.first {
+                ThumbnailDice(die: die)
+            }
         })
         .animation(.smooth, value: listModel.displayMode)
 #if !os(tvOS)

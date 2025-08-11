@@ -19,7 +19,7 @@ public final class DieDataModel {
     public var id: UUID = UUID()
     var index: Int = 0
     var die: RawDie = RawDie.twenty
-    var color: String = ""
+    var color: String = ColorCode.Random.rawValue
     
     @Transient
     var rotation: Double = 0
@@ -30,6 +30,11 @@ public final class DieDataModel {
 }
 
 extension DieDataModel {
+    enum ColorCode: String {
+        case Random
+        case A, G
+    }
+    
     var name: String {
         name(for: 1)
     }
@@ -37,15 +42,15 @@ extension DieDataModel {
     func name(for number: Int) -> String {
         var code = color
         if die.sides == .four || die.sides == .twenty {
-            if color.isEmpty {
+            if color == ColorCode.Random.rawValue || color.isEmpty {
                 if RawDie(.number(2)).role() == 1 {
-                    code = "A"
+                    code = ColorCode.A.rawValue
                 } else {
-                    code = "G"
+                    code = ColorCode.G.rawValue
                 }
             }
         } else {
-            code = "G"
+            code = ColorCode.G.rawValue
         }
         return switch die.sides {
         case .four: "D4\(code)-\(number)"
@@ -70,7 +75,7 @@ extension DieDataModel {
     }
     
     func duplicate(index: Int) -> DieDataModel {
-        DieDataModel(id: UUID(), index: index, die: die)
+        DieDataModel(id: UUID(), index: index, die: die, color: color)
     }
 
     func resetResults() {
@@ -98,26 +103,50 @@ extension DieDataModel {
 
 extension DieDataModel {
     static var die4: DieDataModel {
-        DieDataModel(id: UUID(), die: RawDie.four)
+        die4(color: .Random)
+    }
+
+    static func die4(color: ColorCode) -> DieDataModel {
+        DieDataModel(id: UUID(), die: RawDie.four, color: color.rawValue)
     }
 
     static var die6: DieDataModel {
-        DieDataModel(id: UUID(), die: RawDie.six)
+        die6(color: .Random)
+    }
+
+    static func die6(color: ColorCode) -> DieDataModel {
+        DieDataModel(id: UUID(), die: RawDie.six, color: color.rawValue)
     }
 
     static var die8: DieDataModel {
-        DieDataModel(id: UUID(), die: RawDie.eight)
+        die8(color: .Random)
+    }
+
+    static func die8(color: ColorCode) -> DieDataModel {
+        DieDataModel(id: UUID(), die: RawDie.eight, color: color.rawValue)
     }
 
     static var die10: DieDataModel {
-        DieDataModel(id: UUID(), die: RawDie.ten)
+        die10(color: .Random)
+    }
+
+    static func die10(color: ColorCode) -> DieDataModel {
+        DieDataModel(id: UUID(), die: RawDie.ten, color: color.rawValue)
     }
 
     static var die12: DieDataModel {
-        DieDataModel(id: UUID(), die: RawDie.twelve)
+        die12(color: .Random)
+    }
+
+    static func die12(color: ColorCode) -> DieDataModel {
+        DieDataModel(id: UUID(), die: RawDie.twelve, color: color.rawValue)
     }
 
     static var die20: DieDataModel {
-        DieDataModel(id: UUID(), die: RawDie.twenty)
+        die20(color: .Random)
+    }
+    
+    static func die20(color: ColorCode) -> DieDataModel {
+        DieDataModel(id: UUID(), die: RawDie.twenty, color: color.rawValue)
     }
 }
