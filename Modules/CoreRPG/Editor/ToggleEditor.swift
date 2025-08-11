@@ -3,8 +3,7 @@
 import SwiftUI
 
 public struct ToggleEditor: View {
-    public init(editController: any EditControllable, model: Binding<Bool>, canToggle: Bool = true, title: LocalizedStringKey = "Hidden", bundle: Bundle?, icon: String = "eye.slash") {
-        self.editController = editController
+    public init(model: Binding<Bool>, canToggle: Bool = true, title: LocalizedStringKey = "Hidden", bundle: Bundle?, icon: String = "eye.slash") {
         self.model = model
         self.canToggle = canToggle
         self.title = title
@@ -12,7 +11,6 @@ public struct ToggleEditor: View {
         self.icon = icon
     }
 
-    let editController: any EditControllable
     let model: Binding<Bool>
     let canToggle: Bool
     let title: LocalizedStringKey

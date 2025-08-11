@@ -14,24 +14,24 @@ struct DiceOptionEditor: View {
         
         @Bindable var config = model.config
         Section {
-            ToggleEditor(editController: root.editController, model: $config.sumUp, title: "Sum up dice", bundle: .module, icon: "sum")
+            ToggleEditor(model: $config.sumUp, title: "Sum up dice", bundle: .module, icon: "sum")
 
-//            TextDoubleEditor(editController: editController, model: $model.modifier, title: "Modifier", icon: "plus.forwardslash.minus", prompt: "+/- 5", bundle: .module, range: -10...10)
-//                .padding(.bottom, 8)
-//            
-//            if model.canPercentDice {
-//                ToggleEditor(editController: editController, model: $model.percentDice, title: "Percent dice", bundle: .module, icon: "percent")
-//            }
-//
-//            ValuePickerEditor(editController: editController, model: $model.compareOption, allCategories: DiceModel.CompareValue.allCases, title: "Check for", bundle: .module) { option in
-//                Text(option.text, bundle: .module)
-//                    .tag(option)
-//
-//            }
-//
-//            if model.compareOption != .off {
-//                TextDoubleEditor(editController: editController, model: $model.compareValue, title: "Value", icon: model.compareOption.icon, prompt: "Value to compare against", bundle: .module, range: -10...10)
-//            }
+            TextDoubleEditor(model: $config.modifier, title: "Modifier", icon: "plus.forwardslash.minus", prompt: "+/- 5", bundle: .module, range: -10...10)
+                .padding(.bottom, 8)
+            
+            if config.canPercentDice {
+                ToggleEditor(model: $config.percentDice, title: "Percent dice", bundle: .module, icon: "percent")
+            }
+
+            ValuePickerEditor(model: $config.compareOption, allCategories: DiceConfigDataModel.CompareValue.allCases, title: "Check for", bundle: .module) { option in
+                Text(option.text, bundle: .module)
+                    .tag(option)
+
+            }
+
+            if config.compareOption != .off {
+                TextDoubleEditor(model: $config.compareValue, title: "Value", icon: config.compareOption.icon, prompt: "Value to compare against", bundle: .module, range: 1...41)
+            }
         } header: {
 #if os(macOS)
             Divider()
@@ -41,6 +41,14 @@ struct DiceOptionEditor: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
+    }
+    
+    var modifierRange: ClosedRange<Double> {
+        let modifier = model.config.modifier
+        let min = modifier - 10
+        let max = modifier + 10
+                
+        return min...max
     }
 }
 
