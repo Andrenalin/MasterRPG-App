@@ -31,6 +31,14 @@ struct DetailView: View {
         }
         .environment(selection)
         .environment(openFileWindowModel)
+        .onAppear {
+            print("*** APPEAR id: \(model.id) sel: \(listModel.selected) --> parent: \(listModel.selectedParentId)")
+        }
+        .onDisappear {
+            print("*** DISAPPEAR id: \(model.id) sel: \(listModel.selected) --> parent: \(listModel.selectedParentId)")
+            listModel.resetListSelection()
+            listModel.update(selection: Set())
+        }
     }
 }
 

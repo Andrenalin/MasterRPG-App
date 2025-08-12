@@ -13,7 +13,8 @@ struct SpaceRootView: View {
 
     @SceneStorage("SpaceRoute") private var route: SpaceRoute?
     @SceneStorage("SpaceDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
-
+    @SceneStorage("SpaceListModel") private var listMode: ListModel.ListMode = .list
+    
     @State private var cacheItemListModel = CacheItemListModel()
 
     var listModel: ListModel {
@@ -21,18 +22,8 @@ struct SpaceRootView: View {
     }
 
     var body: some View {
-        RootView(module: SpaceDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation) {
+        RootView(module: SpaceDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, route: route, displayMode: $displayMode, listMode: $listMode) {
             ListView()
-                .navigationDestination(for: SpaceRoute.self) { route in
-                    route
-                        .environment(cacheItemListModel)
-                        .environment(deviceRotationModel)
-                        .environment(root.searchModel)
-                        .onDisappear {
-                            listModel.resetListSelection()
-                            listModel.update(selection: Set())
-                        }
-                }
         } detail: {
             if let selected = listModel.selected {
                 SpaceRoute.detail(selected)
@@ -41,12 +32,6 @@ struct SpaceRootView: View {
         .environment(cacheItemListModel)
         .environment(listModel)
         .environment(root.searchModel)
-        .onChange(of: displayMode, initial: true) {
-            listModel.displayMode = displayMode
-        }
-        .onChange(of: listModel.displayMode) {
-            displayMode <=> listModel.displayMode
-        }
         .onChange(of: route, initial: true) {
             if let route {
                 switch route {

@@ -11,6 +11,7 @@ public protocol EditControllable: Sendable {
 
     func createNewEntry(in model: Model, childId: UUID) -> Model.Entry
     func duplicate(model: Model)
+    func resetFile(url: URL?, in model: Model)
 }
 
 // MARK: - Edit Item

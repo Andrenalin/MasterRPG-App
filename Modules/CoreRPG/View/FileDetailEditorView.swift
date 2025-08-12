@@ -31,6 +31,7 @@ public struct FileDetailEditorView<EditController: EditControllable, Importer: V
     @State private var isEditing = false
     @State private var itemIdHasUrl: EditController.Model.ID = UUID()
 
+    @Environment(ListModel.self) private var listModel
     @Environment(GroupItemSelectionModel.self) private var selection
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
 

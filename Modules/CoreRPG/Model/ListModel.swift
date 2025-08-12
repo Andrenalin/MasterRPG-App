@@ -26,6 +26,10 @@ public final class ListModel {
     public var lastFolderId: UUID?
     var subItemModels: [UUID: ListSubItemModel] = [:]
     
+    public func resetSubListModels() {
+        listModels = [:]
+    }
+    
     // MARK: - Selection
     private(set) public var isSelectionMode: Bool
     public var selection: [UUID]

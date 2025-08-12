@@ -3,11 +3,14 @@
 import CoreExternalRPG
 import SwiftUI
 
-public struct RootView<List: View, Detail: View>: View {
-    public init(module: NetworkModules, listModel: ListModel, withoutNavigation: Bool, @ViewBuilder list: () -> List, @ViewBuilder detail: () -> Detail) {
+public struct RootView<List: View, Detail: View, Route: NavigationDestination>: View {
+    public init(module: NetworkModules, listModel: ListModel, withoutNavigation: Bool, route: Route?, displayMode: Binding<ListModel.DisplayMode>, listMode: Binding<ListModel.ListMode>, @ViewBuilder list: () -> List, @ViewBuilder detail: () -> Detail) {
         self.module = module
         self.listModel = listModel
         self.withoutNavigation = withoutNavigation
+        self.route = route
+        self.displayMode = displayMode
+        self.listMode = listMode
         self.list = list()
         self.detail = detail()
     }
@@ -15,10 +18,15 @@ public struct RootView<List: View, Detail: View>: View {
     let module: NetworkModules
     let listModel: ListModel
     let withoutNavigation: Bool
+    let route: Route?
+    let displayMode: Binding<ListModel.DisplayMode>
+    let listMode: Binding<ListModel.ListMode>
+
     let list: List
     let detail: Detail
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
+    @Environment(DeviceRotationModel.self) private var deviceRotationModel
     @Environment(SearchModel.self) private var searchModel
     @Environment(TabTitleModel.self) private var tabTitleModel
     
@@ -38,6 +46,18 @@ public struct RootView<List: View, Detail: View>: View {
             } else {
                 rootView
             }
+        }
+        .onChange(of: displayMode.wrappedValue, initial: true) {
+            listModel.displayMode <=> displayMode.wrappedValue
+        }
+        .onChange(of: listModel.displayMode) {
+            displayMode.wrappedValue <=> listModel.displayMode
+        }
+        .onChange(of: listMode.wrappedValue, initial: true) {
+            listModel.listMode <=> listMode.wrappedValue
+        }
+        .onChange(of: listModel.listMode) {
+            listMode.wrappedValue <=> listModel.listMode
         }
         .onChange(of: tabBarPlacement, initial: true) {
             tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
@@ -81,6 +101,13 @@ public struct RootView<List: View, Detail: View>: View {
     private var listRoot: some View {
         @Bindable var searchModel = searchModel
         list
+            .navigationDestination(for: Route.self) { route in
+                route
+                    .environment(cacheItemListModel)
+                    .environment(deviceRotationModel)
+                    .environment(listModel)
+                    .environment(searchModel)
+            }
         #if os(tvOS)
             .searchable(text: $searchModel.searchFieldText, placement: .automatic, prompt: Text("Search for items", bundle: .module))
         #else

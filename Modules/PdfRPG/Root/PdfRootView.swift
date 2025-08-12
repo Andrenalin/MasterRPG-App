@@ -13,7 +13,8 @@ struct PdfRootView: View {
     
     @SceneStorage("PdfRoute") private var route: PdfRoute?
     @SceneStorage("PdfDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
-
+    @SceneStorage("PdfListModel") private var listMode: ListModel.ListMode = .list
+    
     @State private var cacheItemListModel = CacheItemListModel()
 
     var listModel: ListModel {
@@ -21,19 +22,8 @@ struct PdfRootView: View {
     }
     
     var body: some View {
-        RootView(module: PdfDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation) {
-            ListView()            
-                .navigationDestination(for: PdfRoute.self) { route in
-                    route
-                        .environment(cacheItemListModel)
-                        .environment(deviceRotationModel)
-                        .environment(listModel)
-                        .environment(root.searchModel)
-                        .onDisappear {
-                            listModel.resetListSelection()
-                            listModel.update(selection: Set())
-                        }
-                }
+        RootView(module: PdfDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, route: route, displayMode: $displayMode, listMode: $listMode) {
+            ListView()
         } detail: {
             if let selected = listModel.selected {
                 PdfRoute.detail(selected)
@@ -42,12 +32,6 @@ struct PdfRootView: View {
         .environment(cacheItemListModel)
         .environment(listModel)
         .environment(root.searchModel)
-        .onChange(of: displayMode, initial: true) {
-            listModel.displayMode = displayMode
-        }
-        .onChange(of: listModel.displayMode) {
-            displayMode <=> listModel.displayMode
-        }
         .onChange(of: route, initial: true) {
             if let route {
                 switch route {

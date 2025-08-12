@@ -22,44 +22,18 @@ struct AudioRootView: View {
     }
     
     var body: some View {
-        RootView(module: AudioDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation) {
-            ListView()
-                .navigationDestination(for: AudioRoute.self) { route in
-                    route
-                        .environment(cacheItemListModel)
-                        .environment(deviceRotationModel)
-                        .environment(listModel)
-                        .environment(root.searchModel)
-                        .onDisappear {
-                            listModel.resetListSelection()
-                            listModel.update(selection: Set())
-                        }
-                }
+        RootView(module: AudioDataModel.typeId, listModel: root.listModel, withoutNavigation: withoutNavigation, route: route, displayMode: $displayMode, listMode: $listMode) {
+            ListView(listModel: root.listModel)
         } detail: {
             Group {
                 if let selected = listModel.selected {
                     AudioRoute.detail(selected)
                 }
             }
-            .navigationDestination(for: AudioRoute.self) { route in
-                route
-            }
         }
         .environment(cacheItemListModel)
-        .environment(listModel)
+        .environment(root.listModel)
         .environment(root.searchModel)
-        .onChange(of: displayMode, initial: true) {
-            listModel.displayMode <=> displayMode
-        }
-        .onChange(of: listModel.displayMode) {
-            displayMode <=> listModel.displayMode
-        }
-        .onChange(of: listMode, initial: true) {
-            listModel.listMode <=> listMode
-        }
-        .onChange(of: listModel.listMode) {
-            listMode <=> listModel.listMode
-        }
         .onChange(of: route, initial: true) {
             if let route {
                 switch route {

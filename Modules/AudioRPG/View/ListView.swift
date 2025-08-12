@@ -7,8 +7,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ListView: View {
+    let listModel: ListModel
+    
     @Environment(\.modelContext) private var modelContext
-    @Environment(ListModel.self) private var listModel
     @Environment(AudioRootModel.self) private var root
     @Environment(SearchModel.self) private var searchModel
         
@@ -20,9 +21,9 @@ struct ListView: View {
         } row: { model in
             MainRowView(model: model)
         }
-        .onAppear {
-            withAnimation { root.audioPlayerModel.showPlayerToolBar = true }
-        }
+//        .onAppear {
+//            withAnimation { root.audioPlayerModel.showPlayerToolBar = true }
+//        }
 #if !os(tvOS)
         .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
 #endif
@@ -46,13 +47,9 @@ struct ListView: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [AudioDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
+    @Previewable @Environment(ListModel.self) var listModel
     
     ManagedNavigationStack {
-        ListView()
-            .environment(CacheItemListModel())
-            .environment(SearchModel.preview(modelContext: modelContext, module: AudioDataModel.typeId))
-            .environment(DeviceRotationModel())
+        ListView(listModel: listModel)
     }
-    .environment(ListModel())
 }

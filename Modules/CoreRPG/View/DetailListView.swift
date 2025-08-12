@@ -4,8 +4,8 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct DetailListView<Model: ListItemFolderable, EditController: EditControllable, Row: View>: View where Model.ID == UUID, Model == EditController.Model {
-    public init(editController: EditController, menuController: any ItemListContextMenuControllable, listModel: ListModel, parentModel: Model, items: [Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (Model) -> Row) {
+public struct DetailListView<EditController: EditControllable, Row: View>: View where EditController.Model.ID == UUID {
+    public init(editController: EditController, menuController: any ItemListContextMenuControllable, listModel: ListModel, parentModel: EditController.Model, items: [EditController.Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (EditController.Model) -> Row) {
         self.editController = editController
         self.menuController = menuController
         self.listModel = listModel
@@ -18,11 +18,11 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
     let editController: EditController
     let menuController: ItemListContextMenuControllable
     let listModel: ListModel
-    let parentModel: Model
-    let items: [Model]
+    let parentModel: EditController.Model
+    let items: [EditController.Model]
     let module: NetworkModules
     let route: (UUID) -> any NavigationDestination
-    let row: (Model) -> Row
+    let row: (EditController.Model) -> Row
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.navigator) private var navigator
@@ -44,7 +44,7 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
             }
 #if !os(tvOS)
             .applyIf(listModel.isSelectionMode) { content in
-                content.contextMenu(forSelectionType: Model.ID.self) { selectedItemIDs in
+                content.contextMenu(forSelectionType: EditController.Model.ID.self) { selectedItemIDs in
                     ItemListContextMenu(controller: menuController)
                 }
             }
@@ -96,6 +96,7 @@ public struct DetailListView<Model: ListItemFolderable, EditController: EditCont
                     }
                 }
             }
+            .environment(listModel)
     }
 }
 
@@ -154,7 +155,7 @@ private extension DetailListView {
     }
     
     @ViewBuilder
-    func listView(filteredItems: [Model]) -> some View {
+    func listView(filteredItems: [EditController.Model]) -> some View {
         @Bindable var listModel = listModel
 #if os(macOS)
         if listModel.isSelectionMode {
@@ -173,7 +174,7 @@ private extension DetailListView {
 #endif
     }
     
-    func itemRows(filteredItems: [Model]) -> some View {
+    func itemRows(filteredItems: [EditController.Model]) -> some View {
         ForEach(filteredItems) { item in
             row(item)
                 .applyIf(!listModel.isSelectionMode) { content in
@@ -196,7 +197,7 @@ private extension DetailListView {
     
     func addLinks(links: [LinkData]) {
         links.forEach { link in
-            guard link.module == Model.typeId else { return }
+            guard link.module == EditController.Model.typeId else { return }
             withAnimation { editController.addItem(itemId: link.itemId, in: parentModel, folderId: listModel.lastFolderId) }
         }
     }
@@ -206,9 +207,9 @@ private extension DetailListView {
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
     }
     
-    func totalItems(items: [Model]) -> [Model] {
-        var total: [Model] = []
-        let sorted: [Model]
+    func totalItems(items: [EditController.Model]) -> [EditController.Model] {
+        var total: [EditController.Model] = []
+        let sorted: [EditController.Model]
         if parentModel.category == .folder {
             sorted = items.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         } else {
@@ -224,10 +225,10 @@ private extension DetailListView {
         if total.isEmpty {
             #if os(iOS) || os(visionOS)
             if horizontalSizeClass != .compact {
-                total.append(Model.dropItem)
+                total.append(EditController.Model.dropItem)
             }
             #else
-            total.append(Model.dropItem)
+            total.append(EditController.Model.dropItem)
             #endif
             
         }

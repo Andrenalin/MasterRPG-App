@@ -4,16 +4,8 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public protocol ListItemFolderable: Identifiable {
-    var isFolder: Bool { get }
-    @MainActor var subItems: [Self] { get }
-    
-    @MainActor static var dropItem: Self { get }
-    @MainActor static var collectionCategory: ItemListCategory { get }
-}
-
 public struct ItemListView<EditController: EditControllable, Row: View>: View where EditController.Model.ID == UUID {
-    public init(editController: EditController, menuController: any ItemListContextMenuControllable, items: [EditController.Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, row: @escaping (EditController.Model) -> Row) {
+    public init(editController: EditController, menuController: any ItemListContextMenuControllable, items: [EditController.Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (EditController.Model) -> Row) {
         self.editController = editController
         self.menuController = menuController
         self.items = items
