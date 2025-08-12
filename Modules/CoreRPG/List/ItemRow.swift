@@ -54,6 +54,7 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
             specialCategoryFolderIndicator
         }
         .fixedSize(horizontal: false, vertical: true)
+        .animation(.smooth, value: listModel.displayMode)
     }
 }
 

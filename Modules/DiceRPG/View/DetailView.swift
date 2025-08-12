@@ -14,7 +14,9 @@ struct DetailView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
 
     var body: some View {
-        FileDetailEditorView(model: model, editController: root.editController, fileTypes: []) {
+        FileDetailEditorView(model: model, editController: root.editController, menuController: menuController, fileTypes: []) {
+            DiceRoute.detail($0)
+        } importer: {
         } background: {
             backgroundHeader
         } editor: {
@@ -30,6 +32,8 @@ struct DetailView: View {
                     .padding(.horizontal, -20)
 #endif
             }
+        } row: {
+            MainRowView(model: $0)
         } bottom: {
             ItemGroupItemView(model: model)
         }

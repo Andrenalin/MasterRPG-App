@@ -14,7 +14,9 @@ struct DetailView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
-        FileDetailEditorView(model: model, editController: root.editController, fileTypes: FileController.fileTypes) {
+        FileDetailEditorView(model: model, editController: root.editController, menuController: menuController, fileTypes: FileController.fileTypes) {
+            SpaceRoute.detail($0)
+        } importer: {
             FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
         } background: {
             backgroundHeader
@@ -22,6 +24,8 @@ struct DetailView: View {
             if model.specialCategory {
                 detailListView
             }
+        } row: {
+            MainRowView(model: $0)
         } bottom: {
             GroupedPhotoView(cacheController: root.cacheController, model: model)
                 .environment(selection)
@@ -84,9 +88,6 @@ private extension DetailView {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [SpaceDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
     
     DetailView(model: models[0])
-        .environment(SpaceRootModel(modelContext: modelContext))
-        .environment(CacheItemListModel())
 }

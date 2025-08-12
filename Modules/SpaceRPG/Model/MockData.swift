@@ -59,6 +59,10 @@ struct MockRootViewModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content.environment(root)
+            .environment(root.searchModel)
+            .environment(CacheItemListModel())
+            .environment(DeviceRotationModel())
+            .environment(ListModel())
     }
 }
 

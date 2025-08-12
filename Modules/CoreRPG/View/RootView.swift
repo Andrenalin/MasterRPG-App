@@ -46,6 +46,11 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
             Group {
                 if horizontalSizeClass == .compact {
                     listRoot
+                        .onAppear {
+                            listModel.resetSubListModels()
+                            listModel.resetListSelection()
+                            listModel.update(selection: Set())
+                        }
                 } else {
                     rootView
                 }

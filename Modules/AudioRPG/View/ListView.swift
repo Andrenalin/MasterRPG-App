@@ -7,12 +7,10 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ListView: View {
-    let listModel: ListModel
-    
     @Environment(\.modelContext) private var modelContext
     @Environment(AudioRootModel.self) private var root
-    @Environment(SearchModel.self) private var searchModel
-        
+    @Environment(ListModel.self) private var listModel
+
     @Query(filter: #Predicate<AudioDataModel>{ $0.displayState == 0 }, sort: \AudioDataModel.name, animation: .smooth) private var items: [AudioDataModel]
     
     var body: some View {
@@ -47,9 +45,8 @@ struct ListView: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [AudioDataModel]
-    @Previewable @Environment(ListModel.self) var listModel
     
     ManagedNavigationStack {
-        ListView(listModel: listModel)
+        ListView()
     }
 }

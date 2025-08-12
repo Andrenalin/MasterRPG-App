@@ -5,8 +5,27 @@ import SwiftUI
 
 struct AudioPlayerBarView: View {
     @Environment(AudioRootModel.self) private var root
-            
+    
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#endif
+    
     var body: some View {
+#if os(iOS)
+        if horizontalSizeClass == .compact {
+            GlassEffectContainerView {
+                AudioPlayerMiniBarView()
+                    .glassEffect(.clear)
+            }
+        } else {
+            content
+        }
+#else
+        content
+#endif
+    }
+    
+    var content: some View {
         GlassEffectContainerView {
             HStack(spacing: 16) {
                 playbackControls
@@ -24,7 +43,6 @@ struct AudioPlayerBarView: View {
 #if !os(visionOS)
             .glassEffect(.clear)
 #endif
-
         }
     }
 }
@@ -108,7 +126,7 @@ private extension AudioPlayerBarView {
                 }
                 .opacity(0)
             }
-                 
+            
             ProgressView(value: root.audioPlayerModel.currentTime, total: root.audioPlayerModel.playerTime.totalDuration)
                 .progressViewStyle(.linear)
         }

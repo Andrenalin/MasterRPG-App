@@ -14,31 +14,25 @@ struct DetailView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
 
     var body: some View {
-        FileDetailEditorView(model: model, editController: root.editController, fileTypes: FileController.fileTypes) {
+        FileDetailEditorView(model: model, editController: root.editController, menuController: menuController, fileTypes: FileController.fileTypes) {
+            AudioDetailRoute.detail($0)
+        } importer: {
             FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
         } background: {
             backgroundHeader
         } editor: {
             fileAndPlayerView
-
-            if model.specialCategory {
-                playlistView
-            } else {
+            
+            if !model.specialCategory {
                 Color.clear
             }
+        } row: {
+            MainRowView(model: $0)
         } bottom: {
             ItemGroupItemView(model: model)
         }
         .environment(selection)
         .environment(openFileWindowModel)
-        .onAppear {
-            print("*** APPEAR id: \(model.id) sel: \(listModel.selected) --> parent: \(listModel.selectedParentId)")
-        }
-        .onDisappear {
-            print("*** DISAPPEAR id: \(model.id) sel: \(listModel.selected) --> parent: \(listModel.selectedParentId)")
-            listModel.resetListSelection()
-            listModel.update(selection: Set())
-        }
     }
 }
 
@@ -86,14 +80,6 @@ private extension DetailView {
             .disabled(!model.hasAudio)
         }
         .padding()
-    }
-
-    var playlistView: some View {
-        DetailListView(editController: root.editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: AudioDataModel.typeId) { id in
-            AudioRoute.detail(id)
-        } row: { model in
-            MainRowView(model: model)
-        }
     }
 
     private var menuController: any ItemListContextMenuControllable {

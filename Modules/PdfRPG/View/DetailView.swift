@@ -14,7 +14,9 @@ struct DetailView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
-        FileDetailEditorView(model: model, editController: root.editController, fileTypes: FileController.fileTypes) {
+        FileDetailEditorView(model: model, editController: root.editController, menuController: menuController, fileTypes: FileController.fileTypes) {
+            PdfRoute.detail($0)
+        } importer: {
             FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
         } background: {
             backgroundHeader
@@ -24,6 +26,8 @@ struct DetailView: View {
             } else {
                 OpenFileWindowView(model: openFileWindowModel, module: PdfDataModel.typeId, windowId: WindowIdentifier.pdfViewer.rawValue, route: PdfRoute.viewer(selection.selectedItem ?? model.id))
             }
+        } row: {
+            MainRowView(model: $0)
         } bottom: {
             GroupedPhotoView(cacheController: root.cacheController, model: model)
         }

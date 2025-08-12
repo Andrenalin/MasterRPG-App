@@ -1,26 +1,33 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import SwiftUI
 import UniformTypeIdentifiers
 
-public struct FileDetailEditorView<EditController: EditControllable, Importer: View, Inside: View, Editor: View, Bottom: View>: View where EditController.Model.ID == UUID {
-    public init(model: EditController.Model, editController: EditController, fileTypes: [UTType], @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder bottom: () -> Bottom = EmptyView.init) {
+public struct FileDetailEditorView<EditController: EditControllable, Route: NavigationDestination, Importer: View, Inside: View, Editor: View, Row: View, Bottom: View>: View where EditController.Model.ID == UUID {
+    public init(model: EditController.Model, editController: EditController, menuController: any ItemListContextMenuControllable, fileTypes: [UTType], route: @escaping (UUID) -> Route, @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder row: @escaping (EditController.Model) -> Row, @ViewBuilder bottom: () -> Bottom = EmptyView.init) {
         self.model = model
         self.editController = editController
+        self.menuController = menuController
         self.fileTypes = fileTypes
+        self.route = route
         self.importer = importer()
         self.background = background()
         self.editor = editor()
+        self.row = row
         self.bottom = bottom()
         self.cacheItemListModel = CacheItemListModel()
     }
 
     let model: EditController.Model
     let editController: EditController
+    let menuController: ItemListContextMenuControllable
     let fileTypes: [UTType]
+    let route: (UUID) -> Route
     let importer: Importer
     let background: Inside
     let editor: Editor
+    let row: (EditController.Model) -> Row
     let bottom: Bottom
     let cacheItemListModel: CacheItemListModel
 
@@ -32,6 +39,7 @@ public struct FileDetailEditorView<EditController: EditControllable, Importer: V
     @State private var itemIdHasUrl: EditController.Model.ID = UUID()
 
     @Environment(ListModel.self) private var listModel
+    @Environment(SearchModel.self) private var searchModel
     @Environment(GroupItemSelectionModel.self) private var selection
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
 
@@ -72,6 +80,12 @@ public struct FileDetailEditorView<EditController: EditControllable, Importer: V
         }
         .onChange(of: selection.selectedItem) {
             openFileWindowModel.itemId = selection.selectedItem ?? model.id
+        }
+        .navigationDestination(for: Route.self) { route in
+            route
+                .environment(listModel.listModel(for: model.id, parentIsFolder: model.category == .folder))
+                .environment(searchModel)
+                .environment(cacheItemListModel)            
         }
 #if !os(tvOS)
         .applyIf(model.category != .folder && !fileTypes.isEmpty) {
@@ -144,6 +158,14 @@ private extension FileDetailEditorView {
             DetailOverlayView(itemId: model.id, model: model, nameKeyPath: \.name, categoryKeyPath: \.category, tagsKeyPath: \.tags, descriptionKeyPath: \.information)
 
             editor
+            
+            if model.specialCategory {
+                DetailListView(editController: editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: EditController.Model.typeId) { id in
+                    route(id)
+                } row: { model in
+                    row(model)
+                }
+            }
         }
         .padding()
         .opacity(hasFile || model.specialCategory ? 1 : 0)

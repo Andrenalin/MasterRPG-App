@@ -22,7 +22,7 @@ struct AudioRootView: View {
             case .detail(let itemId): itemId
             }
         } list: {
-            ListView(listModel: root.listModel)
+            ListView()
         }
         .environment(root.searchModel)
     }

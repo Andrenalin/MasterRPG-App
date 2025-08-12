@@ -14,7 +14,9 @@ struct DetailView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
 
     var body: some View {
-        FileDetailEditorView(model: model, editController: root.editController, fileTypes: FileController.fileTypes) {
+        FileDetailEditorView(model: model, editController: root.editController, menuController: menuController, fileTypes: FileController.fileTypes) {
+            PhotoRoute.detail($0)
+        } importer: {
             VStack {
                 PhotoImporterView(model: model, prominent: true)
             }
@@ -32,6 +34,8 @@ struct DetailView: View {
                         }
                     }
             }
+        } row: {
+            MainRowView(model: $0)
         } bottom: {
             GroupedPhotoView(cacheController: root.cacheController, model: model)
         }
