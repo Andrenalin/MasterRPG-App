@@ -21,9 +21,7 @@ struct DetailView: View {
         } background: {
             backgroundHeader
         } editor: {
-            if model.specialCategory {
-                detailListView
-            } else {
+            if !model.specialCategory {
                 OpenFileWindowView(model: openFileWindowModel, module: PdfDataModel.typeId, windowId: WindowIdentifier.pdfViewer.rawValue, route: PdfRoute.viewer(selection.selectedItem ?? model.id))
             }
         } row: {
@@ -73,14 +71,6 @@ private extension DetailView {
                         .ignoresSafeArea(edges: .top)
                         .backgroundExtensionEffect()
                 }
-        }
-    }
-    
-    var detailListView: some View {
-        DetailListView(editController: root.editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: PdfDataModel.typeId) { id in
-            PdfRoute.detail(id)
-        } row: { model in
-            MainRowView(model: model)
         }
     }
     

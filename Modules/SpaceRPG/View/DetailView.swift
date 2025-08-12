@@ -21,9 +21,6 @@ struct DetailView: View {
         } background: {
             backgroundHeader
         } editor: {
-            if model.specialCategory {
-                detailListView
-            }
         } row: {
             MainRowView(model: $0)
         } bottom: {
@@ -68,14 +65,6 @@ private extension DetailView {
         }
     }
     
-    var detailListView: some View {
-        DetailListView(editController: root.editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: SpaceDataModel.typeId) { id in
-            SpaceRoute.detail(id)
-        } row: { model in
-            MainRowView(model: model)
-        }
-    }
-
     var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }

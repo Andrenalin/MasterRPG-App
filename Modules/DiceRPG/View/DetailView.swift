@@ -20,9 +20,7 @@ struct DetailView: View {
         } background: {
             backgroundHeader
         } editor: {
-            if model.specialCategory {
-                detailListView
-            } else {
+            if !model.specialCategory {
 #if os(macOS)
                 ScrollView {
                     detailEditorView
@@ -63,14 +61,6 @@ private extension DetailView {
         }
     }
 
-    var detailListView: some View {
-        DetailListView(editController: root.editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: DiceDataModel.typeId) { id in
-            DiceRoute.detail(id)
-        } row: { model in
-            MainRowView(model: model)
-        }
-    }
-
     var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
@@ -78,11 +68,6 @@ private extension DetailView {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [DiceDataModel]
-    @Previewable @Environment(DiceRootModel.self) var root
     
     DetailView(model: models[0])
-        .environment(CacheItemListModel())
-        .environment(ListModel())
-        .environment(root.searchModel)
-        .environment(DeviceRotationModel())
 }

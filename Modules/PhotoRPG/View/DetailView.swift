@@ -23,9 +23,7 @@ struct DetailView: View {
         } background: {
             backgroundHeader
         } editor: {
-            if model.specialCategory {
-                detailListView
-            } else {
+            if !model.specialCategory {
                 degreesPickerView
                     .overlay(alignment: .bottomTrailing) {
                         if !model.specialCategory {
@@ -88,14 +86,6 @@ private extension DetailView {
         .pickerStyle(.segmented)
         .padding(.vertical, 6)
         .padding(.horizontal)
-    }
-
-    var detailListView: some View {
-        DetailListView(editController: root.editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: PhotoDataModel.typeId) { id in
-            PhotoRoute.detail(id)
-        } row: { model in
-            MainRowView(model: model)
-        }
     }
 
     var menuController: any ItemListContextMenuControllable {
