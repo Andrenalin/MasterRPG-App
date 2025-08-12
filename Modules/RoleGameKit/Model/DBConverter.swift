@@ -27,7 +27,7 @@ struct DBConverter {
         PdfRPG.ConverterController.insert(items: pdfs, into: appStore.modelContainer.mainContext)
 
         let photos = appStore.photoRoot.listItems()
-        PhotoRPG.ConverterController.insert(items: photos, into: appStore.modelContainer.mainContext)
+        PhotoRPG.ConverterController.insert(items: photos, into: appStore.modelContainer.mainContext, root: appStore.photoRootModel)
         
         let spaces = appStore.spaceRoot.listItems()
         SpaceRPG.ConverterController.insert(items: spaces, into: appStore.modelContainer.mainContext)
