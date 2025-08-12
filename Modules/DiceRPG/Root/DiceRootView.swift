@@ -9,64 +9,22 @@ struct DiceRootView: View {
     let withoutNavigation: Bool
 
     @Environment(DiceRootModel.self) private var root
-    @Environment(DeviceRotationModel.self) private var deviceRotationModel
     
     @SceneStorage("DiceRoute") private var route: DiceRoute?
     @SceneStorage("DiceDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
     @SceneStorage("DiceListModel") private var listMode: ListModel.ListMode = .list
 
-    @State private var cacheItemListModel = CacheItemListModel()
-
-    var listModel: ListModel {
-        root.listModel
-    }
-    
     var body: some View {
-        RootView(module: DiceDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, route: route, displayMode: $displayMode, listMode: $listMode) {
+        RootView(module: DiceDataModel.typeId, listModel: root.listModel, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
+            .detail($0)
+        } detailId: {
+            switch $0 {
+            case .detail(let itemId): itemId
+            }
+        } list: {
             ListView()
-        } detail: {
-            Group {
-                if let selected = listModel.selected {
-                    DiceRoute.detail(selected)
-                }
-            }
-            .navigationDestination(for: DiceRoute.self) { route in
-                route
-            }
         }
-        .environment(cacheItemListModel)
-        .environment(listModel)
-        .environment(root.searchModel)
-        .onChange(of: route, initial: true) {
-            if let route {
-                switch route {
-                    case .detail(let itemId):
-                        if listModel.selected != itemId {
-                            listModel.update(selection: Set(arrayLiteral: itemId))
-                        }
-                }
-            } else {
-                listModel.update(selection: Set())
-            }
-        }
-        .onChange(of: listModel.selected) {
-            root.currentSelectedItemId = listModel.selected
-            if let itemId = listModel.selected {
-                route <=> .detail(itemId)
-            } else {
-                route <=> nil
-            }
-        }
-        .onNavigationReceive { (route: DiceRoute, navigator) in
-            switch route {
-                case .detail(let itemId):
-                    if listModel.selected == itemId {
-                        return .immediately
-                    }
-                    listModel.update(selection: Set(arrayLiteral: itemId))
-                    return .auto
-            }
-        }
+        .environment(root.listModel)
         .environment(root.searchModel)
     }
 }

@@ -3,29 +3,29 @@
 import CoreExternalRPG
 import SwiftUI
 
-public struct RootView<List: View, Detail: View, Route: NavigationDestination>: View {
-    public init(module: NetworkModules, listModel: ListModel, withoutNavigation: Bool, route: Route?, displayMode: Binding<ListModel.DisplayMode>, listMode: Binding<ListModel.ListMode>, @ViewBuilder list: () -> List, @ViewBuilder detail: () -> Detail) {
+public struct RootView<List: View, Route: NavigationDestination>: View {
+    public init(module: NetworkModules, listModel: ListModel, displayMode: Binding<ListModel.DisplayMode>, listMode: Binding<ListModel.ListMode>, withoutNavigation: Bool, route: Binding<Route?>, detailRoute: @escaping (UUID) -> Route, detailId: @escaping (Route) -> UUID?, @ViewBuilder list: () -> List) {
         self.module = module
         self.listModel = listModel
-        self.withoutNavigation = withoutNavigation
-        self.route = route
         self.displayMode = displayMode
         self.listMode = listMode
+        self.withoutNavigation = withoutNavigation
+        self.route = route
+        self.detailRoute = detailRoute
+        self.detailId = detailId
         self.list = list()
-        self.detail = detail()
     }
     
     let module: NetworkModules
     let listModel: ListModel
-    let withoutNavigation: Bool
-    let route: Route?
     let displayMode: Binding<ListModel.DisplayMode>
     let listMode: Binding<ListModel.ListMode>
-
+    let withoutNavigation: Bool
+    let route: Binding<Route?>
+    let detailRoute: (UUID) -> Route
+    let detailId: (Route) -> UUID?
     let list: List
-    let detail: Detail
     
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(DeviceRotationModel.self) private var deviceRotationModel
     @Environment(SearchModel.self) private var searchModel
     @Environment(TabTitleModel.self) private var tabTitleModel
@@ -35,17 +35,31 @@ public struct RootView<List: View, Detail: View, Route: NavigationDestination>: 
     @Environment(\.tabBarPlacement) private var tabBarPlacement
 #endif
     
+    @State private var cacheItemListModel = CacheItemListModel()
+    
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
     public var body: some View {
-#if os(iOS)
         Group {
-            if horizontalSizeClass == .compact {
-                listRoot
-            } else {
-                rootView
+#if os(iOS)
+            Group {
+                if horizontalSizeClass == .compact {
+                    listRoot
+                } else {
+                    rootView
+                }
             }
+            .onChange(of: tabBarPlacement, initial: true) {
+                tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
+            }
+            .onChange(of: horizontalSizeClass, initial: true) {
+                listModel.isPadStyle = horizontalSizeClass != .compact
+                tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
+            }
+#else
+            rootView
+#endif
         }
         .onChange(of: displayMode.wrappedValue, initial: true) {
             listModel.displayMode <=> displayMode.wrappedValue
@@ -59,16 +73,34 @@ public struct RootView<List: View, Detail: View, Route: NavigationDestination>: 
         .onChange(of: listModel.listMode) {
             listMode.wrappedValue <=> listModel.listMode
         }
-        .onChange(of: tabBarPlacement, initial: true) {
-            tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
+        .onChange(of: listModel.selected) {
+            if let itemId = listModel.selected {
+                route.wrappedValue <=> detailRoute(itemId)
+            } else {
+                route.wrappedValue <=> nil
+            }
         }
-        .onChange(of: horizontalSizeClass, initial: true) {
-            listModel.isPadStyle = horizontalSizeClass != .compact
-            tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
+        .onChange(of: route.wrappedValue, initial: true) {
+            if let route = route.wrappedValue, let itemId = detailId(route) {
+                if listModel.selected != itemId {
+                    listModel.update(selection: Set(arrayLiteral: itemId))
+                }
+            } else {
+                listModel.update(selection: Set())
+            }
         }
-#else
-        rootView
-#endif
+        .onNavigationReceive { (route: Route, navigator) in
+            guard let itemId = detailId(route) else {
+                return .auto
+            }
+            if listModel.selected == itemId {
+                return .immediately
+            }
+            listModel.update(selection: Set(arrayLiteral: itemId))
+            return .auto
+        }
+        .environment(cacheItemListModel)
+        .environment(listModel)
     }
     
     @ViewBuilder
@@ -87,12 +119,12 @@ public struct RootView<List: View, Detail: View, Route: NavigationDestination>: 
                 listRoot
             }
         } detail: {
-            if listModel.selected == nil {
-                SplitContentUnavailableView(module: module)
-            } else {
+            if let selected = listModel.selected {
                 ManagedNavigationStack {
-                    detail
+                    detailRoute(selected)
                 }
+            } else {
+                SplitContentUnavailableView(module: module)
             }
         }
     }

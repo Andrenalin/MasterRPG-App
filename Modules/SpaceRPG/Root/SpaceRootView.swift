@@ -9,58 +9,22 @@ struct SpaceRootView: View {
     let withoutNavigation: Bool
 
     @Environment(SpaceRootModel.self) private var root
-    @Environment(DeviceRotationModel.self) private var deviceRotationModel
 
     @SceneStorage("SpaceRoute") private var route: SpaceRoute?
     @SceneStorage("SpaceDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
     @SceneStorage("SpaceListModel") private var listMode: ListModel.ListMode = .list
     
-    @State private var cacheItemListModel = CacheItemListModel()
-
-    var listModel: ListModel {
-        root.listModel
-    }
-
     var body: some View {
-        RootView(module: SpaceDataModel.typeId, listModel: listModel, withoutNavigation: withoutNavigation, route: route, displayMode: $displayMode, listMode: $listMode) {
+        RootView(module: SpaceDataModel.typeId, listModel: root.listModel, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
+            .detail($0)
+        } detailId: {
+            switch $0 {
+            case .detail(let itemId): itemId
+            }
+        } list: {
             ListView()
-        } detail: {
-            if let selected = listModel.selected {
-                SpaceRoute.detail(selected)
-            }
         }
-        .environment(cacheItemListModel)
-        .environment(listModel)
         .environment(root.searchModel)
-        .onChange(of: route, initial: true) {
-            if let route {
-                switch route {
-                case .detail(let itemId):
-                    if listModel.selected != itemId {
-                        listModel.update(selection: Set(arrayLiteral: itemId))
-                    }
-                }
-            } else {
-                listModel.update(selection: Set())
-            }
-        }
-        .onChange(of: listModel.selected) {
-            if let itemId = listModel.selected {
-                route <=> .detail(itemId)
-            } else {
-                route <=> nil
-            }
-        }
-        .onNavigationReceive { (route: SpaceRoute, navigator) in
-            switch route {
-            case .detail(let itemId):
-                if listModel.selected == itemId {
-                    return .immediately
-                }
-                listModel.update(selection: Set(arrayLiteral: itemId))
-                return .auto
-            }
-        }
     }
 }
 
