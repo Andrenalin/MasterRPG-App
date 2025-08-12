@@ -277,9 +277,9 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
     public var fumbleOnlyOnFirstDie: Bool = false
 
     public struct RerollOption: Identifiable, Equatable, Hashable, Codable {
-        let number: Int
-        let value: Int
-        let maxDiceValue: Bool
+        public let number: Int
+        public let value: Int
+        public let maxDiceValue: Bool
 
         public var id: Int {
             number
@@ -557,3 +557,4 @@ extension DiceModel: Equatable, Hashable {
         hasher.combine(id)
     }
 }
+

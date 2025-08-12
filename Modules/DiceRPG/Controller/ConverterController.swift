@@ -19,7 +19,21 @@ public struct ConverterController {
                 modelContext.insert(dieModel)
                 return dieModel
             }
-            let config = DiceConfigDataModel(sumUp: item.sumUp, modifier: item.modifier, percentDice: item.percentDice, compareValue: item.compareValue, coupValues: [], coupOnlyOnFirstDie: item.coupOnlyOnFirstDie, fumbleValues: [], fumbleOnlyOnFirstDie: item.fumbleOnlyOnFirstDie, rerollOptions: [], reorderDice: item.reorderDice, addDiceEvery: item.addDiceEvery, dice: dice)
+            let config = DiceConfigDataModel(
+                sumUp: item.sumUp,
+                modifier: item.modifier,
+                percentDice: item.percentDice,
+                compareOption: convertCompareOption(compareOption: item.compareOption),
+                compareValue: item.compareValue,
+                coupValues: convertCoupFumbleValues(values: item.coupValues),
+                coupOnlyOnFirstDie: item.coupOnlyOnFirstDie,
+                fumbleValues: convertCoupFumbleValues(values: item.fumbleValues),
+                fumbleOnlyOnFirstDie: item.fumbleOnlyOnFirstDie,
+                rerollOptions: convertRerollOptions(options: item.rerollOptions),
+                reorderDice: item.reorderDice,
+                addDiceEvery: item.addDiceEvery,
+                dice: dice
+            )
             modelContext.insert(config)
             modelContext.insert(
                 DiceDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, entries: [], config: config)
@@ -37,6 +51,35 @@ public struct ConverterController {
         case .twenty: DiceRPG.RawDie.twenty
         case .number(let int): DiceRPG.RawDie(.number(int))
         @unknown default: .twenty
+        }
+    }
+    
+    private static func convertCompareOption(compareOption: RPGDie.DiceModel.CompareValue) -> DiceConfigDataModel.CompareValue {
+        switch compareOption {
+        case .off: return .off
+        case .lower: return .lower
+        case .lowerEqual: return .lowerEqual
+        case .equalHigher: return .equalHigher
+        case .higher: return .higher
+        @unknown default:
+            fatalError()
+        }
+    }
+    
+    private static func convertCoupFumbleValues(values: [RPGDie.DiceModel.CoupFumbleOption]) -> [DiceConfigDataModel.CoupFumbleOption] {
+        values.map { value in
+            switch value {
+            case .result(let n): return .result(n)
+            case .diceValue(let n): return .diceValue(n)
+            @unknown default:
+                fatalError()
+            }
+        }
+    }
+    
+    private static func convertRerollOptions(options: [RPGDie.DiceModel.RerollOption]) -> [DiceConfigDataModel.RerollOption] {
+        options.map { option in
+            DiceConfigDataModel.RerollOption(number: option.number, value: option.value, maxDiceValue: option.maxDiceValue)
         }
     }
 }
