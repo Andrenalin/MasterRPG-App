@@ -57,6 +57,9 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
             .scrollDismissesKeyboard(.immediately)
 #endif
             .navigationTitle(module.title)
+            .onAppear {
+                listModel.selected = nil
+            }
             .onChange(of: listModel.listSelection) {
                 guard !listModel.listSelection.isEmpty else { return }
                 listModel.update(selection: listModel.listSelection)

@@ -19,9 +19,9 @@ struct ListView: View {
         } row: { model in
             MainRowView(model: model)
         }
-//        .onAppear {
-//            withAnimation { root.audioPlayerModel.showPlayerToolBar = true }
-//        }
+        .onAppear {
+            //withAnimation { root.audioPlayerModel.showPlayerToolBar = true }
+        }
 #if !os(tvOS)
         .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
 #endif
