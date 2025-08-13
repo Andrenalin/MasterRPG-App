@@ -222,8 +222,8 @@ private extension DetailListView {
         }
         sorted.forEach { item in
             total.append(item)
-            if item.isFolder && listModel.subItemModels[item.id]?.isOpen ?? false {
-                total.append(contentsOf: totalItems(items: item.subItems))
+            if item.isFolder && listModel.isFolderOpen(id: item.id) {
+                total.append(contentsOf: totalItems(items: item.subItems.0))
             }
         }
         if total.isEmpty {

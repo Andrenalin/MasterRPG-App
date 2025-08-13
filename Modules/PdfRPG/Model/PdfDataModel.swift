@@ -156,14 +156,20 @@ extension PdfDataModel: ListItemFolderable {
     public var isFolder: Bool {
         category == .folder
     }
-    @MainActor public var subItems: [PdfDataModel] {
-        guard specialCategory else { return [] }
-        return entryModels.compactMap {
-            let model = PdfDataModel.model(modelContext: modelContext, id: $0.childId)
-            return model?.displayState == 0 ? model : nil
+    @MainActor public var subItems: ([PdfDataModel], [UUID: UUID]) {
+        guard specialCategory else { return ([], [:]) }
+        var entryIds: [UUID: UUID] = [:]
+        let items: [PdfDataModel] = entryModels.compactMap {
+            guard let childId = $0.childId, childId != id else { return nil }
+            if let model = PdfDataModel.model(modelContext: modelContext, id: childId), model.displayState == 0 {
+                entryIds[childId] = $0.id
+                return model
+            }
+            return nil
         }
+        return (items, entryIds)
     }
-    @MainActor public static let dropItem: PdfDataModel = PdfDataModel(id: UUID(), name: "Pdf", information: "Drop or select a Pdf", category: .drop)
+    @MainActor public static let dropItem: PdfDataModel = PdfDataModel(id: UUID(), name: "Pdf", information: "Drop or select a pdf", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .bookshelf
 }
 

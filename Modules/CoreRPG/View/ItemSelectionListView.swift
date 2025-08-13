@@ -143,8 +143,9 @@ private extension ItemSelectionListView {
         var total: [EditController.Model] = []
         filteredItems.forEach { item in
             total.append(item)
-            if item.isFolder && listModel.subItemModels[item.id]?.isOpen ?? false {
-                total.append(contentsOf: totalItems(items: item.subItems))
+            if item.isFolder && listModel.isFolderOpen(id: item.id) {
+                let (newItems, newEntryIds) = item.subItems
+                total.append(contentsOf: totalItems(items: newItems))
             }
         }
         return total

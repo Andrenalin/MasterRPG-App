@@ -144,14 +144,20 @@ extension DiceDataModel: ListItemFolderable {
     public var isFolder: Bool {
         category == .folder
     }
-    public var subItems: [DiceDataModel] {
-        guard specialCategory else { return [] }
-        return entryModels.compactMap {
-            let model = DiceDataModel.model(modelContext: modelContext, id: $0.childId)
-            return model?.displayState == 0 ? model : nil
+    @MainActor public var subItems: ([DiceDataModel], [UUID: UUID]) {
+        guard specialCategory else { return ([], [:]) }
+        var entryIds: [UUID: UUID] = [:]
+        let items: [DiceDataModel] = entryModels.compactMap {
+            guard let childId = $0.childId, childId != id else { return nil }
+            if let model = DiceDataModel.model(modelContext: modelContext, id: childId), model.displayState == 0 {
+                entryIds[childId] = $0.id
+                return model
+            }
+            return nil
         }
+        return (items, entryIds)
     }
-    @MainActor public static let dropItem: DiceDataModel = DiceDataModel(id: UUID(), name: "Dice", information: "Drop or select a Dice", category: .drop)
+    @MainActor public static let dropItem: DiceDataModel = DiceDataModel(id: UUID(), name: "Dice", information: "Drop or select a dice", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .diceBag
 }
 

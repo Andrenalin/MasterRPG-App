@@ -64,7 +64,9 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
             .onChange(of: listModel.selected) {
                 if let id = listModel.selected {
                     listModel.listSelection <=> Set(arrayLiteral: id)
-                    navigator.navigate(to: route(id), method: .push)
+                    let local = totalItems(items: items)
+                    guard let modelId = local.first(where: { $0.id == id })?.model.id else { return }
+                    navigator.navigate(to: route(modelId), method: .push)
                 } else {
                     listModel.resetListSelection()
                 }
@@ -165,12 +167,14 @@ private extension ItemListView {
         }
     }
     
-    var filteredItems: [EditController.Model] {
+    func filteredItems(items: [EditController.Model], withParentFilter: Bool = true) -> [EditController.Model] {
         var filtered = items
-        if listModel.listMode == .list {
-            filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
-        } else {
-            filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
+        if withParentFilter {
+            if listModel.listMode == .list {
+                filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
+            } else {
+                filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
+            }
         }
         if !searchModel.selectedTokens.isEmpty {
             let selectedTags = searchModel.selectedTokens.map { $0.tag }
@@ -184,7 +188,7 @@ private extension ItemListView {
     }
     
     @ViewBuilder
-    func listView(filteredItems: [EditController.Model]) -> some View {
+    func listView(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         @Bindable var listModel = listModel
 #if os(macOS)
         if listModel.isSelectionMode {
@@ -203,15 +207,17 @@ private extension ItemListView {
 #endif
     }
     
-    func itemRows(filteredItems: [EditController.Model]) -> some View {
+    func itemRows(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         ForEach(filteredItems) { item in
-            row(item)
+            row(item.model)
                 .applyIf(!listModel.isSelectionMode) { content in
                     content.contextMenu {
-                        ItemListContextMenu(controller: menuController, currentSelected: item.id)
+                        ItemListContextMenu(controller: menuController, currentSelected: item.model.id)
                     }
                 }
+                .padding(.leading, CGFloat(item.level * 16))
                 .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
+                .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
         .onDelete(perform: deleteItems)
         .deleteDisabled(listModel.isSelectionMode)
@@ -222,12 +228,14 @@ private extension ItemListView {
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
     }
     
-    func totalItems(items: [EditController.Model]) -> [EditController.Model] {
-        var total: [EditController.Model] = []
-        filteredItems.forEach { item in
-            total.append(item)
-            if item.isFolder && listModel.subItemModels[item.id]?.isOpen ?? false {
-                total.append(contentsOf: totalItems(items: item.subItems))
+    func totalItems(items: [EditController.Model], level: Int = 0, withParentFilter: Bool = true, entryIds: [UUID: UUID] = [:]) -> [ItemListModel<EditController.Model>] {
+        var total: [ItemListModel<EditController.Model>] = []
+        guard level < 10 else { return total }
+        filteredItems(items: items, withParentFilter: withParentFilter).forEach { item in
+            total.append(ItemListModel(id: entryIds[item.id, default: item.id], model: item, isOpen: listModel.isFolderOpen(id: item.id), level: level))
+            if item.specialCategory && listModel.isFolderOpen(id: item.id) {
+                let (newItems, newEntryIds) = item.subItems
+                total.append(contentsOf: totalItems(items: newItems, level: level + 1, withParentFilter: false, entryIds: newEntryIds))
             }
         }
         return total

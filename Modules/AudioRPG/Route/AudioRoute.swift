@@ -52,6 +52,8 @@ struct DetailRouteDestinationView: View {
         
         if let item = items.first {
             DetailView(model: item)
+        } else {
+            Text("itemId: \(itemId)")
         }
     }
 }

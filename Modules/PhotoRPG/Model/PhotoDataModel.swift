@@ -140,14 +140,20 @@ extension PhotoDataModel: ListItemFolderable {
     public var isFolder: Bool {
         category == .folder
     }
-    public var subItems: [PhotoDataModel] {
-        guard specialCategory else { return [] }
-        return entryModels.compactMap {
-            let model = PhotoDataModel.model(modelContext: modelContext, id: $0.childId)
-            return model?.displayState == 0 ? model : nil
+    @MainActor public var subItems: ([PhotoDataModel], [UUID: UUID]) {
+        guard specialCategory else { return ([], [:]) }
+        var entryIds: [UUID: UUID] = [:]
+        let items: [PhotoDataModel] = entryModels.compactMap {
+            guard let childId = $0.childId, childId != id else { return nil }
+            if let model = PhotoDataModel.model(modelContext: modelContext, id: childId), model.displayState == 0 {
+                entryIds[childId] = $0.id
+                return model
+            }
+            return nil
         }
+        return (items, entryIds)
     }
-    @MainActor public static let dropItem: PhotoDataModel = PhotoDataModel(id: UUID(), name: "Photo", information: "Drop or select a Photo", category: .drop)
+    @MainActor public static let dropItem: PhotoDataModel = PhotoDataModel(id: UUID(), name: "Photo", information: "Drop or select a photo", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .album
 }
 

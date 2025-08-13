@@ -160,7 +160,7 @@ private extension FileDetailEditorView {
             editor
             
             if model.specialCategory {
-                DetailListView(editController: editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems, module: EditController.Model.typeId) { id in
+                DetailListView(editController: editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems.0, module: EditController.Model.typeId) { id in
                     route(id)
                 } row: { model in
                     row(model)

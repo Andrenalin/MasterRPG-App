@@ -21,10 +21,28 @@ public final class ListModel {
         self.listMode = .folder
     }
     
+    // MARK: - Items
+    
+    //public var items:
+    
     // MARK: - List navigation
     public var selectedParentId: UUID?
     public var lastFolderId: UUID?
-    var subItemModels: [UUID: ListSubItemModel] = [:]
+    private var subItemModels: [UUID: ListSubItemModel] = [:]
+    var level: Int = 0
+    
+    func isFolderOpen(id: UUID) -> Bool {
+        subItemModels[id]?.isOpen ?? false
+    }
+    
+    func subItemModel(for itemId: UUID) -> ListSubItemModel {
+        if let model = subItemModels[itemId] {
+           return model
+        }
+        let model = ListSubItemModel(id: itemId, level: level + 1)
+        subItemModels[itemId] = model
+        return model
+    }
     
     public func resetSubListModels() {
         listModels = [:]
@@ -136,11 +154,20 @@ public extension ListModel {
 
 @Observable
 final class ListSubItemModel {
-    init(id: UUID, isOpen: Bool = false) {
+    init(id: UUID, isOpen: Bool = false, level: Int = 0) {
         self.id = id
         self.isOpen = isOpen
+        self.level = 0
     }
     
     var id: UUID
     var isOpen: Bool
+    let level: Int
+}
+
+struct ItemListModel<Model>: Identifiable {
+    let id: UUID
+    let model: Model
+    let isOpen: Bool
+    let level: Int
 }

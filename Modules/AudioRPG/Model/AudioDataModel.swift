@@ -154,12 +154,18 @@ extension AudioDataModel: ListItemFolderable {
     public var isFolder: Bool {
         category == .folder
     }
-    @MainActor public var subItems: [AudioDataModel] {
-        guard specialCategory else { return [] }
-        return entryModels.compactMap {
-            let model = AudioDataModel.model(modelContext: modelContext, id: $0.childId)
-            return model?.displayState == 0 ? model : nil
+    @MainActor public var subItems: ([AudioDataModel], [UUID: UUID]) {
+        guard specialCategory else { return ([], [:]) }
+        var entryIds: [UUID: UUID] = [:]
+        let items: [AudioDataModel] = entryModels.compactMap {
+            guard let childId = $0.childId, childId != id else { return nil }
+            if let model = AudioDataModel.model(modelContext: modelContext, id: childId), model.displayState == 0 {
+                entryIds[childId] = $0.id
+                return model
+            }
+            return nil
         }
+        return (items, entryIds)
     }
     @MainActor public static let dropItem: AudioDataModel = AudioDataModel(id: UUID(), name: "Audio", information: "Drop or select an Audio", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .playlist

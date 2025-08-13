@@ -96,17 +96,15 @@ private extension ItemRow {
 
     @ViewBuilder
     var specialCategoryFolderIndicator: some View {
-        if model.category == .folder {
-            Image(systemName: (listModel.subItemModels[itemId]?.isOpen ?? false) ? "chevron.down" : "chevron.right")
+        if model.category == .folder || model.category == Model.collectionCategory {
+            Image(systemName: listModel.isFolderOpen(id: itemId) ? "chevron.down" : "chevron.right")
                 .imageScale(.small)
                 .padding(.trailing)
-                .foregroundStyle((listModel.subItemModels[itemId]?.isOpen ?? false) ? Color.accentColor : Color.secondary)
+                .foregroundStyle(listModel.isFolderOpen(id: itemId) ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    guard model.category == .folder else { return }
-                    let subModel = listModel.subItemModels[itemId, default: ListSubItemModel(id: itemId)]
-                    subModel.isOpen.toggle()
-                    withAnimation { listModel.subItemModels[itemId] = subModel }
+                    let subModel = listModel.subItemModel(for: itemId)
+                    withAnimation { subModel.isOpen.toggle() }
                 }
         }
     }
