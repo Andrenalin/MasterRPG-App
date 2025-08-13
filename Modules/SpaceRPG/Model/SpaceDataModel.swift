@@ -143,7 +143,7 @@ extension SpaceDataModel: ListItemFolderable {
             return model?.displayState == 0 ? model : nil
         }
     }
-    @MainActor public static let dropItem: SpaceDataModel = SpaceDataModel(id: UUID(), name: "Drop Space", information: "Add Space to a folder or collection", category: .drop)
+    @MainActor public static let dropItem: SpaceDataModel = SpaceDataModel(id: UUID(), name: "3D Model", information: "Drop or select a 3D model", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .models
 }
 

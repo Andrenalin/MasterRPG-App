@@ -20,6 +20,9 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
     let actionBar: ActionBar
     
     @Environment(ListModel.self) private var listModel
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
     
     public var body: some View {
         HStack(alignment: .center, spacing: 4) {
@@ -52,6 +55,7 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
             thumbView
             
             specialCategoryFolderIndicator
+            specialAddIcon
         }
         .fixedSize(horizontal: false, vertical: true)
         .animation(.smooth, value: listModel.displayMode)
@@ -66,8 +70,27 @@ private extension ItemRow {
     @ViewBuilder
     var specialCategoryIcon: some View {
         if isSpecialCategory {
+            #if os(iOS)
+            if model.category == .drop {
+                Image(systemName: model.category.icon)
+                    .font(.title)
+                    .foregroundStyle(horizontalSizeClass == .compact ? .secondary : .primary)
+            } else {
+                Image(systemName: model.category.icon)
+                    .font(.title)
+            }
+            #else
             Image(systemName: model.category.icon)
                 .font(.title)
+            #endif
+        }
+    }
+    @ViewBuilder
+    var specialAddIcon: some View {
+        if model.category == .drop {
+            Image(systemName: "checkmark.circle")
+                .font(.title)
+                .padding(.trailing)
         }
     }
 
@@ -143,3 +166,4 @@ private extension ItemRow {
         }
     }
 }
+

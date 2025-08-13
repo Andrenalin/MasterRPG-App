@@ -30,6 +30,20 @@ extension AudioDetailRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
+            AudioDetailDestinationView(itemId: itemId)
+        }
+    }
+}
+
+struct AudioDetailDestinationView: View {
+    let itemId: UUID
+    
+    @Environment(AudioRootModel.self) private var root
+    var body: some View {
+        if itemId == AudioDataModel.dropItem.id {
+            SelectionRootListView()
+                .environment(root.searchModel)
+        } else {
             DetailRouteDestinationView(itemId: itemId)
         }
     }

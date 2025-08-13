@@ -151,7 +151,7 @@ extension DiceDataModel: ListItemFolderable {
             return model?.displayState == 0 ? model : nil
         }
     }
-    @MainActor public static let dropItem: DiceDataModel = DiceDataModel(id: UUID(), name: "Drop Dice", information: "Add Dice to a folder or bag", category: .drop)
+    @MainActor public static let dropItem: DiceDataModel = DiceDataModel(id: UUID(), name: "Dice", information: "Drop or select a Dice", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .diceBag
 }
 

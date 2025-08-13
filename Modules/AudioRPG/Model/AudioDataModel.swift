@@ -161,7 +161,7 @@ extension AudioDataModel: ListItemFolderable {
             return model?.displayState == 0 ? model : nil
         }
     }
-    @MainActor public static let dropItem: AudioDataModel = AudioDataModel(id: UUID(), name: "Drop Audio", information: "Add Audio to a folder or playlist", category: .drop)
+    @MainActor public static let dropItem: AudioDataModel = AudioDataModel(id: UUID(), name: "Audio", information: "Drop or select an Audio", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .playlist
 }
 

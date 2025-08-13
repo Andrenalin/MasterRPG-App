@@ -64,8 +64,13 @@ public struct DetailListView<EditController: EditControllable, Row: View>: View 
             }
             .onChange(of: listModel.selected) {
                 if let id = listModel.selected {
-                    listModel.listSelection <=> Set(arrayLiteral: id)
-                    navigator.navigate(to: route(id), method: .push)
+                    if id == EditController.Model.dropItem.id {
+                        navigator.navigate(to: route(EditController.Model.dropItem.id), method: .sheet)
+                        listModel.update(selection: [])
+                    } else {
+                        listModel.listSelection <=> Set(arrayLiteral: id)
+                        navigator.navigate(to: route(id), method: .push)
+                    }
                 } else {
                     listModel.resetListSelection()
                 }
@@ -221,18 +226,9 @@ private extension DetailListView {
                 total.append(contentsOf: totalItems(items: item.subItems))
             }
         }
-        #if !os(tvOS)
         if total.isEmpty {
-            #if os(iOS) || os(visionOS)
-            if horizontalSizeClass != .compact {
-                total.append(EditController.Model.dropItem)
-            }
-            #else
             total.append(EditController.Model.dropItem)
-            #endif
-            
         }
-        #endif
         return total
     }
 

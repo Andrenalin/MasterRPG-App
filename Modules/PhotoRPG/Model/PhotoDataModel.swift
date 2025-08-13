@@ -147,7 +147,7 @@ extension PhotoDataModel: ListItemFolderable {
             return model?.displayState == 0 ? model : nil
         }
     }
-    @MainActor public static let dropItem: PhotoDataModel = PhotoDataModel(id: UUID(), name: "Drop Photo", information: "Add Photo to a folder or album", category: .drop)
+    @MainActor public static let dropItem: PhotoDataModel = PhotoDataModel(id: UUID(), name: "Photo", information: "Drop or select a Photo", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .album
 }
 

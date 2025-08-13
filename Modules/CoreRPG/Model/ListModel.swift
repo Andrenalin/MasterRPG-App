@@ -36,6 +36,8 @@ public final class ListModel {
     public var selected: UUID?
     public var listSelection: Set<UUID>
     
+    public var multiSelection: Bool = true
+    
     // MARK: - ListModels
     private var listModels: [UUID: ListModel] = [:]
     

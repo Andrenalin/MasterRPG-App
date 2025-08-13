@@ -163,7 +163,7 @@ extension PdfDataModel: ListItemFolderable {
             return model?.displayState == 0 ? model : nil
         }
     }
-    @MainActor public static let dropItem: PdfDataModel = PdfDataModel(id: UUID(), name: "Drop Pdf", information: "Add Pdf to a folder or collection", category: .drop)
+    @MainActor public static let dropItem: PdfDataModel = PdfDataModel(id: UUID(), name: "Pdf", information: "Drop or select a Pdf", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .bookshelf
 }
 
