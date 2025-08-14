@@ -5,26 +5,25 @@ import SwiftData
 import SwiftUI
 
 struct DetailRootView: View {
-    let model: AudioDataModel
-
-    @Environment(AudioRootModel.self) private var root
+    let model: DiceDataModel
+    
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListModel.self) private var listModel
     @Environment(SearchModel.self) private var searchModel
     
     var body: some View {
         DetailView(model: model)
-        .navigationDestination(for: AudioDetailRoute.self) { route in
-            route
-                .environment(listModel.lastSubListModel())
-                .environment(searchModel)
-                .environment(cacheItemListModel)
-        }
+            .navigationDestination(for: DetailRoute.self) { route in
+                route
+                    .environment(cacheItemListModel)
+                    .environment(listModel.lastSubListModel())
+                    .environment(searchModel)
+            }
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [AudioDataModel]
-
+    @Previewable @Query var models: [DiceDataModel]
+    
     DetailRootView(model: models[0])
 }

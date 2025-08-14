@@ -6,25 +6,21 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct SelectionRootListView: View {
+struct SelectionRootView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(AudioRootModel.self) private var root
     @State private var listModel = ListModel()
     @State private var cacheItemListModel = CacheItemListModel()
 
-    @Query(filter: #Predicate<AudioDataModel>{ $0.displayState == 0 }, sort: \AudioDataModel.name, animation: .smooth) private var items: [AudioDataModel]
-    
     var body: some View {
         NavigationStack {
-            SelectionListView2()
+            SelectionListView()
         }
         .environment(listModel)
         .environment(cacheItemListModel)
     }
 }
 
-
-struct SelectionListView2: View {
+struct SelectionListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AudioRootModel.self) private var root
 
@@ -43,6 +39,6 @@ struct SelectionListView2: View {
     @Previewable @Query var models: [AudioDataModel]
     
     ManagedNavigationStack {
-        SelectionRootListView()
+        SelectionRootView()
     }
 }

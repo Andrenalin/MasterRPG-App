@@ -30,26 +30,30 @@ extension DiceRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DetailRouteDestinationView(itemId: itemId)
+            RootDestinationView(itemId: itemId)
         }
     }
 }
 
-struct DetailRouteDestinationView: View {
-    init(itemId: UUID) {
+struct RootDestinationView: View {
+    init(itemId: UUID, isRootView: Bool = true) {
         self.itemId = itemId
+        self.isRootView = isRootView
         self._items = Query(filter: #Predicate<DiceDataModel>{ $0.id == itemId })
     }
     
     let itemId: UUID
-
+    let isRootView: Bool
+    
     @Query private var items: [DiceDataModel]
     
     var body: some View {
-        let _ = Self._printChanges()
-        
         if let item = items.first {
-            DetailView(model: item)
+            if isRootView {
+                DetailRootView(model: item)
+            } else {
+                DetailView(model: item)
+            }
         }
     }
 }

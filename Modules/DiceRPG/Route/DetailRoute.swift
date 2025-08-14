@@ -5,11 +5,11 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 
-public enum AudioDetailRoute: Equatable, Hashable, Codable {
+enum DetailRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }
 
-extension AudioDetailRoute: RawRepresentable {
+extension DetailRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
         case .detail(let id): "detail/\(id.uuidString)"
@@ -26,25 +26,25 @@ extension AudioDetailRoute: RawRepresentable {
     }
 }
 
-extension AudioDetailRoute: NavigationDestination {
+extension DetailRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            AudioDetailDestinationView(itemId: itemId)
+            DetailDestinationView(itemId: itemId)
         }
     }
 }
 
-struct AudioDetailDestinationView: View {
+struct DetailDestinationView: View {
     let itemId: UUID
     
-    @Environment(AudioRootModel.self) private var root
+    @Environment(DiceRootModel.self) private var root
     var body: some View {
-        if itemId == AudioDataModel.dropItem.id {
-            SelectionRootListView()
+        if itemId == DiceDataModel.dropItem.id {
+            SelectionRootView()
                 .environment(root.searchModel)
         } else {
-            DetailRouteDestinationView(itemId: itemId, isRootView: false)
+            RootDestinationView(itemId: itemId, isRootView: false)
         }
     }
 }

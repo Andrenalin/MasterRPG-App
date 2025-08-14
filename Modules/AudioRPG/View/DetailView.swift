@@ -15,7 +15,7 @@ struct DetailView: View {
 
     var body: some View {
         FileDetailEditorView(model: model, editController: root.editController, menuController: menuController, fileTypes: FileController.fileTypes) {
-            AudioDetailRoute.detail($0)
+            DetailRoute.detail($0)
         } importer: {
             FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
         } background: {
