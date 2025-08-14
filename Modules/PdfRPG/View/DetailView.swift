@@ -22,7 +22,7 @@ struct DetailView: View {
             backgroundHeader
         } editor: {
             if !model.specialCategory {
-                OpenFileWindowView(model: openFileWindowModel, module: PdfDataModel.typeId, windowId: WindowIdentifier.pdfViewer.rawValue, route: PdfRoute.viewer(selection.selectedItem ?? model.id))
+                OpenFileWindowView(model: openFileWindowModel, module: PdfDataModel.typeId, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
             }
         } row: {
             MainRowView(model: $0)
@@ -82,8 +82,6 @@ private extension DetailView {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [PdfDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
     
     DetailView(model: models[0])
-        .environment(CacheItemListModel())
 }

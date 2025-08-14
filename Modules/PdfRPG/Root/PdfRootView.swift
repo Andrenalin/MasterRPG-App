@@ -20,7 +20,6 @@ struct PdfRootView: View {
         } detailId: {
             switch $0 {
             case .detail(let itemId): itemId
-            default: nil
             }
         } list: {
             ListView()
