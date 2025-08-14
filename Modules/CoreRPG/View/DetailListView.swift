@@ -36,6 +36,8 @@ public struct DetailListView<EditController: EditControllable, Row: View>: View 
 #endif
     
     public var body: some View {
+        let _ = Self._printChanges()
+        let _ = print("ParentId \(listModel.selectedParentId?.uuidString ?? "not set")")
         listView(filteredItems: totalItems(items: items))
             .frame(minWidth: 250, idealWidth: 350)
             .overlay {
@@ -60,7 +62,7 @@ public struct DetailListView<EditController: EditControllable, Row: View>: View 
             .scrollDismissesKeyboard(.immediately)
 #endif
             .onAppear {
-                listModel.selected = nil
+                listModel.resetListModel()
             }
             .onChange(of: listModel.listSelection) {
                 guard !listModel.listSelection.isEmpty else { return }

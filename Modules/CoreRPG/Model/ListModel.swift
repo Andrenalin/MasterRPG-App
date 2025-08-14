@@ -136,7 +136,7 @@ public extension ListModel {
     }
 }
 
-// MARK: - ListModels
+// MARK: - Navigation
 
 public extension ListModel {
     func lastSubListModel(for parentId: UUID, parentIsFolder: Bool) -> ListModel {
@@ -153,6 +153,11 @@ public extension ListModel {
             return self
         }
         return listModel.lastSubListModel()
+    }
+    
+    func resetListModel() {
+        selected = nil
+        subListModel = nil
     }
 }
 

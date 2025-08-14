@@ -10,8 +10,6 @@ struct DiceOptionEditor: View {
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        let _ = Self._printChanges()
-        
         @Bindable var config = model.config
         Section {
             ToggleEditor(model: $config.sumUp, title: "Sum up dice", bundle: .module, icon: "sum")

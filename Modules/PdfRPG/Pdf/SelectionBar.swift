@@ -21,7 +21,6 @@ struct SelectionBar: View {
     @Environment(\.showGame) private var showGame
     
     var body: some View {
-        let _ = Self._printChanges()
         textSelection
             .opacity((!withoutBookmark && searchModel.selectedEntry != nil) ? 1 : 0)
             .padding()

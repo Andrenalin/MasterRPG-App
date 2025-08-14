@@ -10,7 +10,6 @@ struct NameItemRow: View {
     @Environment(SearchModel.self) private var searchModel
 
     var body: some View {
-        let _ = Self._printChanges()
         LinkHighlightTextView(model: linkTextModel)
             .foregroundStyle(name.isEmpty ? .secondary : .primary)
             .lineLimit(1)

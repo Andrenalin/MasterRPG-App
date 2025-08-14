@@ -10,7 +10,6 @@ public struct RemoveTagsEditor: View {
     @Binding var tags: [String]
     
     public var body: some View {
-        let _ = Self._printChanges()
         tagsView
     }
 }
@@ -50,7 +49,6 @@ public struct AddTagsEditor: View {
     @State private var currentTag: String = ""
     
     public var body: some View {
-        let _ = Self._printChanges()
         addTagView
     }
 }

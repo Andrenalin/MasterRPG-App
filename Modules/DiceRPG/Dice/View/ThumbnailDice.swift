@@ -11,12 +11,9 @@ struct ThumbnailDice: View {
     @Environment(ListModel.self) private var listModel
     
     var body: some View {
-        let _ = Self._printChanges()
-        
         die.diceImage(for: die.die.max)
             .resizable()
             .aspectRatio(contentMode: .fit)
-//            .frame(width: height, height: height)
             .frame(width: 44, height: 44)
             .rotation3DEffect(.degrees(withoutResult ? 0 : die.rotation), axis: (x: 0, y: 0, z: 1))
 

@@ -9,8 +9,7 @@ struct DescriptionItemRow: View {
 
     @Environment(SearchModel.self) private var searchModel
 
-    var body: some View {
-        let _ = Self._printChanges()
+    var body: some View {    
         Group {
             if !description.isEmpty {
                 LinkHighlightTextView(model: linkTextModel)

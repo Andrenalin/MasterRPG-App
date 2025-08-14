@@ -11,8 +11,6 @@ struct DiceViewer: View {
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        let _ = Self._printChanges()
-        
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
                 ForEach(model.config.dice) { die in

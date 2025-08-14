@@ -58,7 +58,7 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
 #endif
             .navigationTitle(module.title)
             .onAppear {
-                listModel.selected = nil
+                listModel.resetListModel()
             }
             .onChange(of: listModel.listSelection) {
                 guard !listModel.listSelection.isEmpty else { return }

@@ -25,7 +25,6 @@ struct DetailView: View {
             MainRowView(model: $0)
         } bottom: {
             GroupedPhotoView(cacheController: root.cacheController, model: model)
-                .environment(selection)
         }
         .environment(selection)
         .environment(openFileWindowModel)

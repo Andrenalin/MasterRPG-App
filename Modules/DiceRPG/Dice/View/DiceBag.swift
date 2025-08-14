@@ -13,8 +13,6 @@ struct DiceBag: View {
     @Environment(DiceRootModel.self) private var root
 
     var body: some View {
-        let _ = Self._printChanges()
-        
         ScrollView(.horizontal, showsIndicators: false) {
             VStack {
                 HStack(spacing: 8) {

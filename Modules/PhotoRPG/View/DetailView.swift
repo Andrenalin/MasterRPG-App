@@ -95,8 +95,6 @@ private extension DetailView {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [PhotoDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
 
     DetailView(model: models[0])
-        .environment(CacheItemListModel())
 }

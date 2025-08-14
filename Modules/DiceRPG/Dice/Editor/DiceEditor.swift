@@ -10,8 +10,6 @@ struct DiceEditor: View {
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        let _ = Self._printChanges()
-        
         Section {
             LabeledContent {
                 DiceViewer(model: model, isEditor: true)

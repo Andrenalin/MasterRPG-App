@@ -14,8 +14,6 @@ struct PdfContentView: View {
     @State private var showThumbnail = false
     
     var body: some View {
-        //let _ = Self._printChanges()
-        
         HStack(spacing: 0) {
             if showThumbnail && !horizontal {
                 thumbnails

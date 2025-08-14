@@ -15,7 +15,6 @@ struct SearchBar: View {
     @Environment(\.isSearching) private var isSearching
     
     var body: some View {
-        let _ = Self._printChanges()
         if !searchModel.matches.isEmpty {
             searchResults
                 .padding()

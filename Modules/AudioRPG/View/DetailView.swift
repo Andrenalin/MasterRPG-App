@@ -82,7 +82,7 @@ private extension DetailView {
         .padding()
     }
 
-    private var menuController: any ItemListContextMenuControllable {
+    var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
 }
