@@ -11,7 +11,7 @@ public final class ListModel {
         update(selection: Set(selection))
     }
     
-    public init(listModel: ListModel, parentId: UUID, lastFolderId: UUID?) {
+    public init(listModel: ListModel, parentId: UUID?, lastFolderId: UUID?) {
         self.selectedParentId = parentId
         self.lastFolderId = lastFolderId
         self.isSelectionMode = false
@@ -43,11 +43,7 @@ public final class ListModel {
         subItemModels[itemId] = model
         return model
     }
-    
-    public func resetSubListModels() {
-        listModels = [:]
-    }
-    
+        
     // MARK: - Selection
     private(set) public var isSelectionMode: Bool
     public var selection: [UUID]
@@ -57,7 +53,8 @@ public final class ListModel {
     public var multiSelection: Bool = true
     
     // MARK: - ListModels
-    private var listModels: [UUID: ListModel] = [:]
+    @ObservationIgnored
+    private var subListModel: ListModel?
     
     // MARK: - Display Mode
     public enum DisplayMode: Int, Equatable, Hashable, Codable, Sendable {
@@ -142,13 +139,20 @@ public extension ListModel {
 // MARK: - ListModels
 
 public extension ListModel {
-    func listModel(for parentId: UUID, parentIsFolder: Bool) -> ListModel {
-        guard let model = listModels[parentId] else {
+    func lastSubListModel(for parentId: UUID, parentIsFolder: Bool) -> ListModel {
+        guard let subListModel, subListModel.selectedParentId == parentId else {
             let listModel = ListModel(listModel: self, parentId: parentId, lastFolderId: parentIsFolder ? parentId : lastFolderId)
-            listModels[parentId] = listModel
+            self.subListModel = listModel
             return listModel
         }
-        return model
+        return subListModel
+    }
+
+    func lastSubListModel() -> ListModel {
+        guard let listModel = subListModel else {
+            return self
+        }
+        return listModel.lastSubListModel()
     }
 }
 

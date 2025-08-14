@@ -36,12 +36,14 @@ extension AudioRoute: NavigationDestination {
 }
 
 struct DetailRouteDestinationView: View {
-    init(itemId: UUID) {
+    init(itemId: UUID, isRootView: Bool = true) {
         self.itemId = itemId
+        self.isRootView = isRootView
         self._items = Query(filter: #Predicate<AudioDataModel>{ $0.id == itemId })
     }
     
     let itemId: UUID
+    let isRootView: Bool
 
     @Environment(AudioRootModel.self) private var root
 
@@ -51,7 +53,11 @@ struct DetailRouteDestinationView: View {
         let _ = Self._printChanges()
         
         if let item = items.first {
-            DetailView(model: item)
+            if isRootView {
+                DetailRootView(model: item)
+            } else {
+                DetailView(model: item)
+            }
         }
     }
 }

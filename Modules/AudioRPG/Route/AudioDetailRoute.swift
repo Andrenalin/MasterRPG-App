@@ -44,7 +44,7 @@ struct AudioDetailDestinationView: View {
             SelectionRootListView()
                 .environment(root.searchModel)
         } else {
-            DetailRouteDestinationView(itemId: itemId)
+            DetailRouteDestinationView(itemId: itemId, isRootView: false)
         }
     }
 }

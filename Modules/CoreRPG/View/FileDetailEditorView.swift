@@ -81,12 +81,6 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
         .onChange(of: selection.selectedItem) {
             openFileWindowModel.itemId = selection.selectedItem ?? model.id
         }
-        .navigationDestination(for: Route.self) { route in
-            route
-                .environment(listModel.listModel(for: model.id, parentIsFolder: model.category == .folder))
-                .environment(searchModel)
-                .environment(cacheItemListModel)            
-        }
 #if !os(tvOS)
         .applyIf(model.category != .folder && !fileTypes.isEmpty) {
             $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
@@ -160,7 +154,7 @@ private extension FileDetailEditorView {
             editor
             
             if model.specialCategory {
-                DetailListView(editController: editController, menuController: menuController, listModel: listModel.listModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems.0, module: EditController.Model.typeId) { id in
+                DetailListView(editController: editController, menuController: menuController, listModel: listModel.lastSubListModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems.0, module: EditController.Model.typeId) { id in
                     route(id)
                 } row: { model in
                     row(model)

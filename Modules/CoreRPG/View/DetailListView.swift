@@ -37,6 +37,7 @@ public struct DetailListView<EditController: EditControllable, Row: View>: View 
     
     public var body: some View {
         listView(filteredItems: totalItems(items: items))
+            .frame(minWidth: 250, idealWidth: 350)
             .overlay {
                 if items.isEmpty && !searchModel.searchText.isEmpty {
                     ContentUnavailableView.search
@@ -58,6 +59,9 @@ public struct DetailListView<EditController: EditControllable, Row: View>: View 
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
 #endif
+            .onAppear {
+                listModel.selected = nil
+            }
             .onChange(of: listModel.listSelection) {
                 guard !listModel.listSelection.isEmpty else { return }
                 listModel.update(selection: listModel.listSelection)
@@ -69,7 +73,9 @@ public struct DetailListView<EditController: EditControllable, Row: View>: View 
                         listModel.update(selection: [])
                     } else {
                         listModel.listSelection <=> Set(arrayLiteral: id)
-                        navigator.navigate(to: route(id), method: .push)
+                        let local = totalItems(items: items)
+                        guard let modelId = local.first(where: { $0.id == id })?.model.id else { return }
+                        navigator.navigate(to: route(modelId), method: .push)
                     }
                 } else {
                     listModel.resetListSelection()
@@ -101,7 +107,6 @@ public struct DetailListView<EditController: EditControllable, Row: View>: View 
                     }
                 }
             }
-            .environment(listModel)
     }
 }
 
@@ -138,7 +143,7 @@ private extension DetailListView {
             Label {
                 Text(type.title)
             } icon: {
-                Image(systemName: type.icon(collection: "plus"))
+                Image(systemName: type.icon(collection: EditController.Model.collectionCategory.icon))
             }
         }
     }
@@ -159,8 +164,28 @@ private extension DetailListView {
         editController.moveItems(source: source, destination: destination, model: parentModel)
     }
     
+    func filteredItems(items: [EditController.Model], withParentFilter: Bool = true) -> [EditController.Model] {
+        var filtered = items
+        if withParentFilter {
+            if listModel.listMode == .list {
+                filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
+            } else {
+                filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
+            }
+        }
+        if !searchModel.selectedTokens.isEmpty {
+            let selectedTags = searchModel.selectedTokens.map { $0.tag }
+            filtered = filtered.filter { $0.tags.contains(selectedTags) }
+        }
+        guard !searchModel.searchText.isEmpty else { return filtered }
+        return filtered.filter {
+            $0.name.localizedStandardContains(searchModel.searchText) ||
+            $0.information.localizedStandardContains(searchModel.searchText)
+        }
+    }
+
     @ViewBuilder
-    func listView(filteredItems: [EditController.Model]) -> some View {
+    func listView(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         @Bindable var listModel = listModel
 #if os(macOS)
         if listModel.isSelectionMode {
@@ -179,20 +204,22 @@ private extension DetailListView {
 #endif
     }
     
-    func itemRows(filteredItems: [EditController.Model]) -> some View {
+    func itemRows(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         ForEach(filteredItems) { item in
-            row(item)
+            row(item.model)
                 .applyIf(!listModel.isSelectionMode) { content in
                     content.contextMenu {
                         ItemListContextMenu(controller: menuController, currentSelected: item.id)
                     }
                 }
-                .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
+                .padding(.leading, CGFloat(item.level * 16))
 #if !os(tvOS)
                 .dropDestination(for: LinkData.self) { items, _ in
                     addLinks(links: items)
                 }
 #endif
+                .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
+                .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
         .onDelete(perform: deleteItems)
         .onMove(perform: moveItems)
@@ -212,22 +239,25 @@ private extension DetailListView {
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
     }
     
-    func totalItems(items: [EditController.Model]) -> [EditController.Model] {
-        var total: [EditController.Model] = []
+    func totalItems(items: [EditController.Model], level: Int = 0, withParentFilter: Bool = true, entryIds: [UUID: UUID] = [:]) -> [ItemListModel<EditController.Model>] {
+        var total: [ItemListModel<EditController.Model>] = []
+        guard level < 10 else { return total }
         let sorted: [EditController.Model]
+        let filtered = filteredItems(items: items, withParentFilter: withParentFilter)
         if parentModel.category == .folder {
-            sorted = items.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            sorted = filtered.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         } else {
-            sorted = items
+            sorted = filtered
         }
         sorted.forEach { item in
-            total.append(item)
-            if item.isFolder && listModel.isFolderOpen(id: item.id) {
-                total.append(contentsOf: totalItems(items: item.subItems.0))
+            total.append(ItemListModel(id: entryIds[item.id, default: item.id], model: item, isOpen: listModel.isFolderOpen(id: item.id), level: level))
+            if item.specialCategory && listModel.isFolderOpen(id: item.id) {
+                let (newItems, newEntryIds) = item.subItems
+                total.append(contentsOf: totalItems(items: newItems, level: level + 1, withParentFilter: false, entryIds: newEntryIds))
             }
         }
         if total.isEmpty {
-            total.append(EditController.Model.dropItem)
+            total.append(ItemListModel(id: EditController.Model.dropItem.id, model: EditController.Model.dropItem, isOpen: false, level: level))
         }
         return total
     }

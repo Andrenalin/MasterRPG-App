@@ -9,7 +9,7 @@ struct DetailView: View {
 
     @Environment(AudioRootModel.self) private var root
     @Environment(ListModel.self) private var listModel
-
+    
     @State private var selection = GroupItemSelectionModel()
     @State private var openFileWindowModel = OpenFileWindowModel()
 
@@ -89,8 +89,6 @@ private extension DetailView {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [AudioDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
 
     DetailView(model: models[0])
-        .environment(CacheItemListModel())
 }
