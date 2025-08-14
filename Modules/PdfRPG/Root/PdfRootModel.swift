@@ -34,6 +34,7 @@ public final class PdfRootModel {
     }
     
     let listModel = ListModel()
+    let listDisplayModel = ListDisplayModel()
     let searchModel: SearchModel
     var currentSelectedItemId: UUID? {
         listModel.selected

@@ -23,6 +23,7 @@ public final class DiceRootModel {
     @ObservationIgnored let itemController: ItemController
     
     let listModel = ListModel()
+    let listDisplayModel = ListDisplayModel()
     let searchModel: SearchModel
     var currentSelectedItemId: UUID? {
         listModel.selected

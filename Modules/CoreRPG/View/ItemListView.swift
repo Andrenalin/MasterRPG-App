@@ -25,6 +25,7 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListModel.self) private var listModel
+    @Environment(ListDisplayModel.self) private var listDisplayModel
     @Environment(SearchModel.self) private var searchModel
     
 #if os(iOS) || os(visionOS)
@@ -106,11 +107,11 @@ private extension ItemListView {
     @ViewBuilder
     var actionMenu: some View {
         Menu {
-            MenuDisplayModeToggle(listModel: listModel, showSelectionButton: false) {
+            MenuDisplayModeToggle(listModel: listModel, listDisplayModel: listDisplayModel, showSelectionButton: false) {
                 addItemButton(for: .folder)
-                    .disabled(listModel.isListMode)
+                    .disabled(listDisplayModel.isListMode)
                 addItemButton(for: .collection)
-                    .disabled(listModel.isListMode)
+                    .disabled(listDisplayModel.isListMode)
                 Divider()
             }
         } label: {
@@ -127,16 +128,16 @@ private extension ItemListView {
             addItemButton(for: .folder)
             addItemButton(for: .collection)
         }
-        .disabled(listModel.isListMode)
+        .disabled(listDisplayModel.isListMode)
         
         ControlGroup {
-            CompactDisplayModeToggle(listModel: listModel)
-            MediumDisplayModeToggle(listModel: listModel)
-            RegularDisplayModeToggle(listModel: listModel)
+            CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
+            MediumDisplayModeToggle(listDisplayModel: listDisplayModel)
+            RegularDisplayModeToggle(listDisplayModel: listDisplayModel)
         }
         ControlGroup {
-            ListModeToggle(listModel: listModel)
-            FolderModeToggle(listModel: listModel)
+            ListModeToggle(listDisplayModel: listDisplayModel)
+            FolderModeToggle(listDisplayModel: listDisplayModel)
         }
     }
     
@@ -173,7 +174,7 @@ private extension ItemListView {
     func filteredItems(items: [EditController.Model], withParentFilter: Bool = true) -> [EditController.Model] {
         var filtered = items
         if withParentFilter {
-            if listModel.listMode == .list {
+            if listDisplayModel.listMode == .list {
                 filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
             } else {
                 filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
@@ -194,7 +195,7 @@ private extension ItemListView {
     func listView(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         @Bindable var listModel = listModel
 #if os(macOS)
-        if listModel.isSelectionMode {
+        if listDisplayModel.isSelectionMode {
             List(selection: $listModel.listSelection) {
                 itemRows(filteredItems: filteredItems)
             }

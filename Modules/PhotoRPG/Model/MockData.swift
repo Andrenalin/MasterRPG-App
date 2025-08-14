@@ -164,9 +164,10 @@ struct MockRootViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content.environment(root)
             .environment(root.searchModel)
+            .environment(root.listModel)
+            .environment(root.listDisplayModel)
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
-            .environment(ListModel())
             .environment(TabTitleModel())
 #if os(macOS)
             .frame(width: 800, height: 600)

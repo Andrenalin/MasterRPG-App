@@ -11,8 +11,8 @@ struct DiceRootView: View {
     @Environment(DiceRootModel.self) private var root
     
     @SceneStorage("DiceRoute") private var route: DiceRoute?
-    @SceneStorage("DiceDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
-    @SceneStorage("DiceListModel") private var listMode: ListModel.ListMode = .list
+    @SceneStorage("DiceDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
+    @SceneStorage("DiceListModel") private var listMode: ListDisplayModel.ListMode = .list
 
     var body: some View {
         RootView(module: DiceDataModel.typeId, listModel: root.listModel, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
@@ -24,7 +24,7 @@ struct DiceRootView: View {
         } list: {
             ListView()
         }
-        .environment(root.listModel)
+        .environment(root.listDisplayModel)
         .environment(root.searchModel)
     }
 }

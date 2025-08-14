@@ -3,13 +3,15 @@
 import SwiftUI
 
 public struct MenuDisplayModeToggle<Add: View>: View {
-    public init(listModel: ListModel, showSelectionButton: Bool = true, @ViewBuilder add: () -> Add = EmptyView.init) {
+    public init(listModel: ListModel, listDisplayModel: ListDisplayModel, showSelectionButton: Bool = true, @ViewBuilder add: () -> Add = EmptyView.init) {
         self.listModel = listModel
+        self.listDisplayModel = listDisplayModel
         self.showSelectionButton = showSelectionButton
         self.addViews = add()
     }
     
     let listModel: ListModel
+    let listDisplayModel: ListDisplayModel
     let showSelectionButton: Bool
     let addViews: Add
 
@@ -21,20 +23,20 @@ public struct MenuDisplayModeToggle<Add: View>: View {
         
         addViews
         
-        CompactDisplayModeToggle(listModel: listModel)
-        MediumDisplayModeToggle(listModel: listModel)
-        RegularDisplayModeToggle(listModel: listModel)
+        CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
+        MediumDisplayModeToggle(listDisplayModel: listDisplayModel)
+        RegularDisplayModeToggle(listDisplayModel: listDisplayModel)
         Divider()
-        ListModeToggle(listModel: listModel)
-        FolderModeToggle(listModel: listModel)
+        ListModeToggle(listDisplayModel: listDisplayModel)
+        FolderModeToggle(listDisplayModel: listDisplayModel)
     }
 }
 
 struct ListModeToggle: View {
-    let listModel: ListModel
+    let listDisplayModel: ListDisplayModel
     
     var body: some View {
-        @Bindable var listModel = listModel
+        @Bindable var listModel = listDisplayModel
         Toggle(isOn: $listModel.isListMode) {
             Label {
                 Text("List", bundle: .module)
@@ -49,10 +51,10 @@ struct ListModeToggle: View {
 }
 
 struct FolderModeToggle: View {
-    let listModel: ListModel
+    let listDisplayModel: ListDisplayModel
     
     var body: some View {
-        @Bindable var listModel = listModel
+        @Bindable var listModel = listDisplayModel
         Toggle(isOn: $listModel.isFolderMode) {
             Label {
                 Text("Folder", bundle: .module)
@@ -67,10 +69,10 @@ struct FolderModeToggle: View {
 }
 
 struct CompactDisplayModeToggle: View {
-    let listModel: ListModel
+    let listDisplayModel: ListDisplayModel
     
     var body: some View {
-        @Bindable var listModel = listModel
+        @Bindable var listModel = listDisplayModel
         Toggle(isOn: $listModel.isCompactDisplayMode) {
             Label {
                 Text("Compact", bundle: .module)
@@ -85,10 +87,10 @@ struct CompactDisplayModeToggle: View {
 }
 
 struct MediumDisplayModeToggle: View {
-    let listModel: ListModel
+    let listDisplayModel: ListDisplayModel
     
     var body: some View {
-        @Bindable var listModel = listModel
+        @Bindable var listModel = listDisplayModel
         Toggle(isOn: $listModel.isMediumDisplayMode) {
             Label {
                 Text("Medium", bundle: .module)
@@ -103,10 +105,10 @@ struct MediumDisplayModeToggle: View {
 }
 
 struct RegularDisplayModeToggle: View {
-    let listModel: ListModel
+    let listDisplayModel: ListDisplayModel
     
     var body: some View {
-        @Bindable var listModel = listModel
+        @Bindable var listModel = listDisplayModel
         Toggle(isOn: $listModel.isRegularDisplayMode) {
             Label {
                 Text("Regular", bundle: .module)

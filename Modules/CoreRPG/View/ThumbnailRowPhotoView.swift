@@ -12,7 +12,7 @@ public struct ThumbnailRowPhotoView: View {
     let model: ImageFileLoadable
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(ListModel.self) private var listModel
+    @Environment(ListDisplayModel.self) private var listDisplayModel
 
     @State private var lastFileUrl: FileUrl?
     @State private var isLoading: Bool = false
@@ -25,8 +25,8 @@ public struct ThumbnailRowPhotoView: View {
                     #if os(iOS)
                         .clipShape(
                             .rect(
-                                bottomTrailingRadius: listModel.isPadStyle ? 24 : 0,
-                                topTrailingRadius: listModel.isPadStyle ? 24 : 0,
+                                bottomTrailingRadius: listDisplayModel.isPadStyle ? 24 : 0,
+                                topTrailingRadius: listDisplayModel.isPadStyle ? 24 : 0,
                                 style: .continuous
                             )
                         )
@@ -56,7 +56,7 @@ public struct ThumbnailRowPhotoView: View {
 
 private extension ThumbnailRowPhotoView {
     var width: CGFloat {
-        switch listModel.displayMode {
+        switch listDisplayModel.displayMode {
             case .compact: 160
             case .medium: 128
             case .regular: 96
@@ -95,7 +95,7 @@ private extension ThumbnailRowPhotoView {
                 .frame(width: size.width, height: size.height)
                 .overlay {
 #if os(iOS)
-                    UnevenRoundedRectangle(bottomTrailingRadius: listModel.isPadStyle ? 24 : 0, topTrailingRadius: listModel.isPadStyle ? 24 : 0)
+                    UnevenRoundedRectangle(bottomTrailingRadius: listDisplayModel.isPadStyle ? 24 : 0, topTrailingRadius: listDisplayModel.isPadStyle ? 24 : 0)
                         .fill(Color.accentColor.tertiary)
                         .stroke(Color.accentColor.secondary, lineWidth: 2)
 #else

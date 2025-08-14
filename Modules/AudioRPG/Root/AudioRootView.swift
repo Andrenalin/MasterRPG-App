@@ -11,8 +11,8 @@ struct AudioRootView: View {
     @Environment(AudioRootModel.self) private var root
 
     @SceneStorage("AudioRoute") private var route: AudioRoute?
-    @SceneStorage("AudioDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
-    @SceneStorage("AudioListModel") private var listMode: ListModel.ListMode = .list
+    @SceneStorage("AudioDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
+    @SceneStorage("AudioListModel") private var listMode: ListDisplayModel.ListMode = .list
 
     var body: some View {
         RootView(module: AudioDataModel.typeId, listModel: root.listModel, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
@@ -24,6 +24,7 @@ struct AudioRootView: View {
         } list: {
             ListView()
         }
+        .environment(root.listDisplayModel)
         .environment(root.searchModel)
     }
 }

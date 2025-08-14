@@ -11,8 +11,8 @@ struct PdfRootView: View {
     @Environment(PdfRootModel.self) private var root
     
     @SceneStorage("PdfRoute") private var route: PdfRoute?
-    @SceneStorage("PdfDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
-    @SceneStorage("PdfListModel") private var listMode: ListModel.ListMode = .list
+    @SceneStorage("PdfDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
+    @SceneStorage("PdfListModel") private var listMode: ListDisplayModel.ListMode = .list
 
     var body: some View {
         RootView(module: PdfDataModel.typeId, listModel: root.listModel, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
@@ -24,6 +24,7 @@ struct PdfRootView: View {
         } list: {
             ListView()
         }
+        .environment(root.listDisplayModel)
         .environment(root.searchModel)
     }
 }

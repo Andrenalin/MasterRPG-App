@@ -20,6 +20,7 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
     let actionBar: ActionBar
     
     @Environment(ListModel.self) private var listModel
+    @Environment(ListDisplayModel.self) private var listDisplayModel
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -33,7 +34,7 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
                 NameItemRow(itemId: itemId, name: model.name, cacheItemListModel: cacheItemListModel)
                     .font(.headline)
                 
-                if listModel.displayMode == .regular {
+                if listDisplayModel.displayMode == .regular {
                     if model.tags.count > 4 {
                         twoLineTagView
                     } else {
@@ -42,7 +43,7 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
                     
                     actionBar
                 }
-                if listModel.displayMode != .compact {
+                if listDisplayModel.displayMode != .compact {
                     DescriptionItemRow(itemId: itemId, description: model.information, cacheItemListModel: cacheItemListModel)
                         .foregroundStyle(.secondary)
                         .font(.footnote)
@@ -59,7 +60,7 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
             specialAddIcon
         }
         .fixedSize(horizontal: false, vertical: true)
-        .animation(.smooth, value: listModel.displayMode)
+        .animation(.smooth, value: listDisplayModel.displayMode)
     }
 }
 

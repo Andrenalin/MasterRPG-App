@@ -11,8 +11,8 @@ struct SpaceRootView: View {
     @Environment(SpaceRootModel.self) private var root
 
     @SceneStorage("SpaceRoute") private var route: SpaceRoute?
-    @SceneStorage("SpaceDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
-    @SceneStorage("SpaceListModel") private var listMode: ListModel.ListMode = .list
+    @SceneStorage("SpaceDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
+    @SceneStorage("SpaceListModel") private var listMode: ListDisplayModel.ListMode = .list
     
     var body: some View {
         RootView(module: SpaceDataModel.typeId, listModel: root.listModel, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
@@ -24,6 +24,7 @@ struct SpaceRootView: View {
         } list: {
             ListView()
         }
+        .environment(root.listDisplayModel)
         .environment(root.searchModel)
     }
 }

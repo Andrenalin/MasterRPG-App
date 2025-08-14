@@ -28,6 +28,7 @@ public struct DetailListView<EditController: EditControllable, Row: View>: View 
     @Environment(\.navigator) private var navigator
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
+    @Environment(ListDisplayModel.self) private var listDisplayModel
     @Environment(SearchModel.self) private var searchModel
     
 #if os(iOS) || os(visionOS)
@@ -116,7 +117,7 @@ private extension DetailListView {
     @ViewBuilder
     var actionMenu: some View {
         Menu {
-            MenuDisplayModeToggle(listModel: listModel, showSelectionButton: false)
+            MenuDisplayModeToggle(listModel: listModel, listDisplayModel: listDisplayModel, showSelectionButton: false)
         } label: {
             Image(systemName: "ellipsis.circle")
         }
@@ -132,9 +133,9 @@ private extension DetailListView {
             addItemButton(for: .collection)
         }
         ControlGroup {
-            CompactDisplayModeToggle(listModel: listModel)
-            MediumDisplayModeToggle(listModel: listModel)
-            RegularDisplayModeToggle(listModel: listModel)
+            CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
+            MediumDisplayModeToggle(listDisplayModel: listDisplayModel)
+            RegularDisplayModeToggle(listDisplayModel: listDisplayModel)
         }
     }
 
@@ -169,7 +170,7 @@ private extension DetailListView {
     func filteredItems(items: [EditController.Model], withParentFilter: Bool = true) -> [EditController.Model] {
         var filtered = items
         if withParentFilter {
-            if listModel.listMode == .list {
+            if listDisplayModel.listMode == .list {
                 filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
             } else {
                 filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
@@ -190,7 +191,7 @@ private extension DetailListView {
     func listView(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         @Bindable var listModel = listModel
 #if os(macOS)
-        if listModel.isSelectionMode {
+        if listDisplayModel.isSelectionMode {
             List(selection: $listModel.listSelection) {
                 itemRows(filteredItems: filteredItems)
             }

@@ -8,7 +8,7 @@ struct ThumbnailDice: View {
     let die: DieDataModel
     var withoutResult: Bool = false
     
-    @Environment(ListModel.self) private var listModel
+    @Environment(ListDisplayModel.self) private var listDisplayModel
     
     var body: some View {
         die.diceImage(for: die.die.max)
@@ -21,7 +21,7 @@ struct ThumbnailDice: View {
     }
     
     private var height: CGFloat {
-        switch listModel.displayMode {
+        switch listDisplayModel.displayMode {
         case .compact: 48
         case .medium: 64
         default: 80
@@ -33,9 +33,6 @@ struct ThumbnailDice: View {
     @Previewable @Query var models: [DiceDataModel]
 
     ThumbnailDice(die: models.first!.config.dice.first!, withoutResult: false)
-        .environment(ListModel())
     
     ThumbnailDice(die: models[1].config.dice.first!, withoutResult: false)
-        .environment(ListModel())
-
 }

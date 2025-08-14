@@ -4,7 +4,7 @@ import CoreExternalRPG
 import SwiftUI
 
 public struct RootView<List: View, Route: NavigationDestination>: View {
-    public init(module: NetworkModules, listModel: ListModel, displayMode: Binding<ListModel.DisplayMode>, listMode: Binding<ListModel.ListMode>, withoutNavigation: Bool, route: Binding<Route?>, detailRoute: @escaping (UUID) -> Route, detailId: @escaping (Route) -> UUID?, @ViewBuilder list: () -> List) {
+    public init(module: NetworkModules, listModel: ListModel, displayMode: Binding<ListDisplayModel.DisplayMode>, listMode: Binding<ListDisplayModel.ListMode>, withoutNavigation: Bool, route: Binding<Route?>, detailRoute: @escaping (UUID) -> Route, detailId: @escaping (Route) -> UUID?, @ViewBuilder list: () -> List) {
         self.module = module
         self.listModel = listModel
         self.displayMode = displayMode
@@ -18,8 +18,8 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
     
     let module: NetworkModules
     let listModel: ListModel
-    let displayMode: Binding<ListModel.DisplayMode>
-    let listMode: Binding<ListModel.ListMode>
+    let displayMode: Binding<ListDisplayModel.DisplayMode>
+    let listMode: Binding<ListDisplayModel.ListMode>
     let withoutNavigation: Bool
     let route: Binding<Route?>
     let detailRoute: (UUID) -> Route
@@ -27,6 +27,7 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
     let list: List
     
     @Environment(DeviceRotationModel.self) private var deviceRotationModel
+    @Environment(ListDisplayModel.self) private var listDisplayModel
     @Environment(SearchModel.self) private var searchModel
     @Environment(TabTitleModel.self) private var tabTitleModel
     
@@ -58,7 +59,7 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
                 tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
             }
             .onChange(of: horizontalSizeClass, initial: true) {
-                listModel.isPadStyle = horizontalSizeClass != .compact
+                listDisplayModel.isPadStyle = horizontalSizeClass != .compact
                 tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
             }
 #else
@@ -66,16 +67,16 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
 #endif
         }
         .onChange(of: displayMode.wrappedValue, initial: true) {
-            listModel.displayMode <=> displayMode.wrappedValue
+            listDisplayModel.displayMode <=> displayMode.wrappedValue
         }
-        .onChange(of: listModel.displayMode) {
-            displayMode.wrappedValue <=> listModel.displayMode
+        .onChange(of: listDisplayModel.displayMode) {
+            displayMode.wrappedValue <=> listDisplayModel.displayMode
         }
         .onChange(of: listMode.wrappedValue, initial: true) {
-            listModel.listMode <=> listMode.wrappedValue
+            listDisplayModel.listMode <=> listMode.wrappedValue
         }
-        .onChange(of: listModel.listMode) {
-            listMode.wrappedValue <=> listModel.listMode
+        .onChange(of: listDisplayModel.listMode) {
+            listMode.wrappedValue <=> listDisplayModel.listMode
         }
         .onChange(of: listModel.selected) {
             if let itemId = listModel.selected {

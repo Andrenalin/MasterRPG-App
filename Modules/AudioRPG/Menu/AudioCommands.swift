@@ -36,7 +36,7 @@ public struct AudioCommands: Commands {
         }
         CommandGroup(before: .sidebar) {
             if selectedModule == AudioDataModel.typeId {
-                MenuDisplayModeToggle(listModel: root.listModel, showSelectionButton: true)
+                MenuDisplayModeToggle(listModel: root.listModel, listDisplayModel: root.listDisplayModel, showSelectionButton: true)
                 Divider()
             }
         }

@@ -11,8 +11,8 @@ struct PhotoRootView: View {
     @Environment(PhotoRootModel.self) private var root
     
     @SceneStorage("PhotoRoute") private var route: PhotoRoute?
-    @SceneStorage("PhotoDisplayModel") private var displayMode: ListModel.DisplayMode = .medium
-    @SceneStorage("PhotoListModel") private var listMode: ListModel.ListMode = .list
+    @SceneStorage("PhotoDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
+    @SceneStorage("PhotoListModel") private var listMode: ListDisplayModel.ListMode = .list
 
     var body: some View {
         RootView(module: PhotoDataModel.typeId, listModel: root.listModel, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
@@ -24,6 +24,7 @@ struct PhotoRootView: View {
         } list: {
             ListView()
         }
+        .environment(root.listDisplayModel)
         .environment(root.searchModel)
     }
 }

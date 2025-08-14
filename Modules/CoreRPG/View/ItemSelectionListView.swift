@@ -24,6 +24,7 @@ public struct ItemSelectionListView<EditController: EditControllable, Row: View>
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListModel.self) private var listModel
+    @Environment(ListDisplayModel.self) private var listDisplayModel
     @Environment(SearchModel.self) private var searchModel
 
 #if os(iOS) || os(visionOS)
@@ -88,20 +89,20 @@ private extension ItemSelectionListView {
     @ViewBuilder
     var secondaryActionMenu: some View {
         ControlGroup {
-            CompactDisplayModeToggle(listModel: listModel)
-            MediumDisplayModeToggle(listModel: listModel)
-            RegularDisplayModeToggle(listModel: listModel)
+            CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
+            MediumDisplayModeToggle(listDisplayModel: listDisplayModel)
+            RegularDisplayModeToggle(listDisplayModel: listDisplayModel)
         }
         ControlGroup {
-            ListModeToggle(listModel: listModel)
-            FolderModeToggle(listModel: listModel)
+            ListModeToggle(listDisplayModel: listDisplayModel)
+            FolderModeToggle(listDisplayModel: listDisplayModel)
         }
     }
         
     func filteredItems(items: [EditController.Model], withParentFilter: Bool = true) -> [EditController.Model] {
         var filtered = items
         if withParentFilter {
-            if listModel.listMode == .list {
+            if listDisplayModel.listMode == .list {
                 filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
             } else {
                 filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
