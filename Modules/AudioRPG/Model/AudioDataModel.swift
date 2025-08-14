@@ -25,7 +25,7 @@ public final class AudioDataModel {
         self.displayState = displayState
         self.parentId = parentId
         self.url = url
-        self.entries = entries
+        self.entries_ = entries
     }
     
     @Attribute(.preserveValueOnDeletion)
@@ -45,22 +45,22 @@ public final class AudioDataModel {
         return FileUrl(fileId: id, url: url, location: .cloud, module: AudioDataModel.typeId.token)
     }
     
-    @Relationship(deleteRule: .cascade) private var entries: [AudioEntryDataModel]? = []
+    @Relationship(deleteRule: .cascade) private var entries_: [AudioEntryDataModel]? = []
 }
 
 extension AudioDataModel {
-    public var entryModels: [AudioEntryDataModel] {
+    public var entries: [AudioEntryDataModel] {
         get {
-            guard let all = entries else { return [] }
+            guard let all = entries_ else { return [] }
             return all.sorted { $0.index < $1.index }
         }
         set {
-            entries = newValue
+            entries_ = newValue
         }
     }
 
     func entryOrNew(for id: UUID) -> AudioEntryDataModel {
-        if let entry = entryModels.first(where: { $0.id == id }) {
+        if let entry = entries.first(where: { $0.id == id }) {
             return entry
         }
         return AudioEntryDataModel(id: id)
@@ -72,7 +72,7 @@ extension AudioDataModel {
     
     var hasAudio: Bool {
         guard category == .folder || category == .playlist else { return url != nil }
-        return entryModels.first { entry in
+        return entries.first { entry in
             guard let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.childId) else { return false }
             return entryItem.hasAudio
         } != nil
@@ -81,7 +81,7 @@ extension AudioDataModel {
     var audioList: [AudioModel] {
         guard category == .folder || category == .playlist else { return url == nil ? [] : [itemModel] }
         var list: [AudioModel] = []
-        entryModels.forEach { entry in
+        entries.forEach { entry in
             if let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.childId) {
                 list.append(contentsOf: entryItem.audioList)
             }
@@ -119,10 +119,10 @@ extension AudioDataModel {
 extension AudioDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .audio }
     public subscript(id: UUID) -> AudioEntryDataModel {
-        get { entryModels.first(where: { $0.id == id }) ?? AudioEntryDataModel(id: id) }
+        get { entries.first(where: { $0.id == id }) ?? AudioEntryDataModel(id: id) }
         set(newValue) {
-            guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
-            entryModels[index] = newValue
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+            entries[index] = newValue
         }
     }
     public func reset(name: String) {
@@ -136,7 +136,7 @@ extension AudioDataModel: ItemDataAccessable {
         self.displayState = displayState
     }
     public func reset(entries: [AudioEntryDataModel]) {
-        self.entryModels = entries
+        self.entries = entries
     }
     public func reset(information: String) {
         _informationLWW.wrappedValue = information
@@ -157,7 +157,7 @@ extension AudioDataModel: ListItemFolderable {
     @MainActor public var subItems: ([AudioDataModel], [UUID: UUID]) {
         guard specialCategory else { return ([], [:]) }
         var entryIds: [UUID: UUID] = [:]
-        let items: [AudioDataModel] = entryModels.compactMap {
+        let items: [AudioDataModel] = entries.compactMap {
             guard let childId = $0.childId, childId != id else { return nil }
             if let model = AudioDataModel.model(modelContext: modelContext, id: childId), model.displayState == 0 {
                 entryIds[childId] = $0.id
@@ -167,7 +167,7 @@ extension AudioDataModel: ListItemFolderable {
         }
         return (items, entryIds)
     }
-    @MainActor public static let dropItem: AudioDataModel = AudioDataModel(id: UUID(), name: "Audio", information: "Drop or select an Audio", category: .drop)
+    @MainActor public static let dropItem: AudioDataModel = AudioDataModel(id: UUID(), name: "Audio", information: "Drop or select an audio", category: .drop)
     @MainActor public static var collectionCategory: ItemListCategory = .playlist
 }
 
@@ -182,7 +182,7 @@ extension AudioDataModel {
     }
     
     public var itemModel: AudioModel {
-        let entries = entryModels.map { $0.entryModel }
+        let entries = entries.map { $0.entryModel }
         return AudioModel(
             id: id,
             name: _nameLWW,

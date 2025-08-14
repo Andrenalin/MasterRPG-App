@@ -5,10 +5,6 @@ import SwiftData
 import SwiftUI
 import CoreExternalRPG
 
-extension FocusedValues {
-    @Entry var selectedItem: Binding<UUID>?
-}
-
 #if !os(tvOS)
 public struct SpaceCommands: Commands {
     public init(root: SpaceRootModel, navigator: Navigator) {
@@ -78,8 +74,6 @@ struct AddItemButton: View {
 struct DuplicateItemButton: View {
     let root: SpaceRootModel
 
-    @FocusedBinding(\.selectedItem) private var selectedItem: UUID?
-
     var body: some View {
         Button {
             if let model {
@@ -89,11 +83,11 @@ struct DuplicateItemButton: View {
             Text("Duplicate \(model?.name ?? "")", bundle: .module)
         }
         .keyboardShortcut("D", modifiers: [.command, .shift])
-        .disabled(selectedItem == nil)
+        .disabled(root.currentSelectedItemId == nil)
     }
 
     var model: SpaceDataModel? {
-        guard let selectedItem else { return nil }
+        guard let selectedItem = root.currentSelectedItemId else { return nil }
         return root.itemController.modelSync(for: selectedItem)
     }
 }

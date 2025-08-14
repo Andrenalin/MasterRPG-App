@@ -26,8 +26,8 @@ public final class PdfDataModel {
         self.displayState = displayState
         self.parentId = parentId
         self.url = url
-        self.entries = entries
-        self.bookmarks = bookmarks
+        self.entries_ = entries
+        self.bookmarks_ = bookmarks
     }
     
     @Attribute(.preserveValueOnDeletion)
@@ -47,40 +47,40 @@ public final class PdfDataModel {
         return FileUrl(fileId: id, url: url, location: .cloud, module: PdfDataModel.typeId.token)
     }
     
-    @Relationship(deleteRule: .cascade) private var entries: [PdfEntryDataModel]? = []
-    @Relationship(deleteRule: .cascade) private var bookmarks: [PdfBookmarkDataModel]? = []
+    @Relationship(deleteRule: .cascade) private var entries_: [PdfEntryDataModel]? = []
+    @Relationship(deleteRule: .cascade) private var bookmarks_: [PdfBookmarkDataModel]? = []
 }
 
 extension PdfDataModel {
-    public var entryModels: [PdfEntryDataModel] {
+    public var entries: [PdfEntryDataModel] {
         get {
-            guard let all = entries else { return [] }
+            guard let all = entries_ else { return [] }
             return all.sorted { $0.index < $1.index }
         }
         set {
-            entries = newValue
+            entries_ = newValue
         }
     }
 
     func entryOrNew(for id: UUID) -> PdfEntryDataModel {
-        if let entry = entryModels.first(where: { $0.id == id }) {
+        if let entry = entries.first(where: { $0.id == id }) {
             return entry
         }
         return PdfEntryDataModel(id: id)
     }
 
-    public var bookmarksModels: [PdfBookmarkDataModel] {
+    public var bookmarkss: [PdfBookmarkDataModel] {
         get {
-            guard let all = bookmarks else { return [] }
+            guard let all = bookmarks_ else { return [] }
             return all.sorted { $0.index < $1.index }
         }
         set {
-            bookmarks = newValue
+            bookmarks_ = newValue
         }
     }
 
     func bookmarkOrNew(for id: UUID) -> PdfBookmarkDataModel {
-        if let entry = bookmarksModels.first(where: { $0.id == id }) {
+        if let entry = bookmarkss.first(where: { $0.id == id }) {
             return entry
         }
         return PdfBookmarkDataModel(id: id)
@@ -121,10 +121,10 @@ extension PdfDataModel: ImageFileLoadable {}
 extension PdfDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .pdf }
     public subscript(id: UUID) -> PdfEntryDataModel {
-        get { entryModels.first(where: { $0.id == id }) ?? PdfEntryDataModel(id: id) }
+        get { entries.first(where: { $0.id == id }) ?? PdfEntryDataModel(id: id) }
         set(newValue) {
-            guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
-            entryModels[index] = newValue
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+            entries[index] = newValue
         }
     }
     public func reset(name: String) {
@@ -138,7 +138,7 @@ extension PdfDataModel: ItemDataAccessable {
         self.displayState = displayState
     }
     public func reset(entries: [PdfEntryDataModel]) {
-        self.entryModels = entries
+        self.entries = entries
     }
     public func reset(information: String) {
         _informationLWW.wrappedValue = information
@@ -159,7 +159,7 @@ extension PdfDataModel: ListItemFolderable {
     @MainActor public var subItems: ([PdfDataModel], [UUID: UUID]) {
         guard specialCategory else { return ([], [:]) }
         var entryIds: [UUID: UUID] = [:]
-        let items: [PdfDataModel] = entryModels.compactMap {
+        let items: [PdfDataModel] = entries.compactMap {
             guard let childId = $0.childId, childId != id else { return nil }
             if let model = PdfDataModel.model(modelContext: modelContext, id: childId), model.displayState == 0 {
                 entryIds[childId] = $0.id
@@ -184,7 +184,7 @@ extension PdfDataModel {
     }
     
     public var itemModel: PdfModel {
-        let entries = entryModels.map { $0.entryModel }
+        let entries = entries.map { $0.entryModel }
         return PdfModel(
             id: id,
             name: _nameLWW,

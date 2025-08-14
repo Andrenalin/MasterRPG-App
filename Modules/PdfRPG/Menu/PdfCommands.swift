@@ -5,10 +5,6 @@ import SwiftData
 import SwiftUI
 import CoreExternalRPG
 
-extension FocusedValues {
-    @Entry var selectedItem: Binding<UUID>?
-}
-
 #if !os(tvOS)
 public struct PdfCommands: Commands {
     public init(root: PdfRootModel, navigator: Navigator) {

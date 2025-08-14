@@ -25,7 +25,7 @@ public final class SpaceDataModel {
         self.displayState = displayState
         self.parentId = parentId
         self.url = url
-        self.entries = entries
+        self.entries_ = entries
     }
 
     @Attribute(.preserveValueOnDeletion)
@@ -45,22 +45,22 @@ public final class SpaceDataModel {
         return FileUrl(fileId: id, url: url, location: .cloud, module: SpaceDataModel.typeId.token)
     }
     
-    @Relationship(deleteRule: .cascade) private var entries: [SpaceEntryDataModel]?
+    @Relationship(deleteRule: .cascade) private var entries_: [SpaceEntryDataModel]?
 }
 
 extension SpaceDataModel {
-    public var entryModels: [SpaceEntryDataModel] {
+    public var entries: [SpaceEntryDataModel] {
         get {
-            guard let all = entries else { return [] }
+            guard let all = entries_ else { return [] }
             return all.sorted { $0.index < $1.index }
         }
         set {
-            entries = newValue
+            entries_ = newValue
         }
     }
 
     func entryOrNew(for id: UUID) -> SpaceEntryDataModel {
-        if let entry = entryModels.first(where: { $0.id == id }) {
+        if let entry = entries.first(where: { $0.id == id }) {
             return entry
         }
         return SpaceEntryDataModel(id: id)
@@ -101,10 +101,10 @@ extension SpaceDataModel: ImageFileLoadable {}
 extension SpaceDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .space }
     public subscript(id: UUID) -> SpaceEntryDataModel {
-        get { entryModels.first(where: { $0.id == id }) ?? SpaceEntryDataModel(id: id) }
+        get { entries.first(where: { $0.id == id }) ?? SpaceEntryDataModel(id: id) }
         set(newValue) {
-            guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
-            entryModels[index] = newValue
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+            entries[index] = newValue
         }
     }
     public func reset(name: String) {
@@ -118,7 +118,7 @@ extension SpaceDataModel: ItemDataAccessable {
         self.displayState = displayState
     }
     public func reset(entries: [SpaceEntryDataModel]) {
-        self.entryModels = entries
+        self.entries = entries
     }
     public func reset(information: String) {
         _informationLWW.wrappedValue = information
@@ -139,7 +139,7 @@ extension SpaceDataModel: ListItemFolderable {
     @MainActor public var subItems: ([SpaceDataModel], [UUID: UUID]) {
         guard specialCategory else { return ([], [:]) }
         var entryIds: [UUID: UUID] = [:]
-        let items: [SpaceDataModel] = entryModels.compactMap {
+        let items: [SpaceDataModel] = entries.compactMap {
             guard let childId = $0.childId, childId != id else { return nil }
             if let model = SpaceDataModel.model(modelContext: modelContext, id: childId), model.displayState == 0 {
                 entryIds[childId] = $0.id
@@ -164,7 +164,7 @@ extension SpaceDataModel {
     }
     
     public var itemModel: SpaceModel {
-        let entries = entryModels.map { $0.entryModel }
+        let entries = entries.map { $0.entryModel }
         return SpaceModel(
             id: id,
             name: _nameLWW,

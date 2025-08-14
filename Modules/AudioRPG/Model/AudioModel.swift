@@ -99,10 +99,6 @@ extension AudioModel: ItemDataAccessable {
     public static var typeId: NetworkModules {
         .audio
     }
-    public var entryModels: [AudioEntryModel] {
-        get { entries }
-        set(newValue) { entries = newValue }
-    }
     public var information: String {
         get { description }
         set(newValue) { description = newValue }

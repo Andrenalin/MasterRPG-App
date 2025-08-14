@@ -109,10 +109,6 @@ extension DiceModel: ItemDataAccessable {
     public static var typeId: NetworkModules {
         .dice
     }
-    public var entryModels: [DiceEntryModel] {
-        get { entries }
-        set(newValue) { entries = newValue }
-    }
     public var information: String {
         get { description }
         set(newValue) { description = newValue }

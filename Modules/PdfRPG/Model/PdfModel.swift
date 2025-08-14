@@ -99,10 +99,6 @@ extension PdfModel: ItemDataAccessable {
     public static var typeId: NetworkModules {
         .pdf
     }
-    public var entryModels: [PdfEntryModel] {
-        get { entries }
-        set(newValue) { entries = newValue }
-    }
     public var information: String {
         get { description }
         set(newValue) { description = newValue }

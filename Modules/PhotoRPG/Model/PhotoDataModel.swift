@@ -26,7 +26,7 @@ public final class PhotoDataModel {
         self.displayState = displayState
         self.parentId = parentId
         self.url = url
-        self.entries = entries
+        self.entries_ = entries
         self.degrees = degrees
     }
     
@@ -49,22 +49,22 @@ public final class PhotoDataModel {
     
     public var degrees: Double = 0
 
-    @Relationship(deleteRule: .cascade) private var entries: [PhotoEntryDataModel]? = []
+    @Relationship(deleteRule: .cascade) private var entries_: [PhotoEntryDataModel]? = []
 }
 
 extension PhotoDataModel {
-    public var entryModels: [PhotoEntryDataModel] {
+    public var entries: [PhotoEntryDataModel] {
         get {
-            guard let all = entries else { return [] }
+            guard let all = entries_ else { return [] }
             return all.sorted { $0.index < $1.index }
         }
         set {
-            entries = newValue
+            entries_ = newValue
         }
     }
 
     func entryOrNew(for id: UUID) -> PhotoEntryDataModel {
-        if let entry = entryModels.first(where: { $0.id == id }) {
+        if let entry = entries.first(where: { $0.id == id }) {
             return entry
         }
         return PhotoEntryDataModel(id: id)
@@ -105,10 +105,10 @@ extension PhotoDataModel: ImageFileLoadable {}
 extension PhotoDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .photo }
     public subscript(id: UUID) -> PhotoEntryDataModel {
-        get { entryModels.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id) }
+        get { entries.first(where: { $0.id == id }) ?? PhotoEntryDataModel(id: id) }
         set(newValue) {
-            guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
-            entryModels[index] = newValue
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+            entries[index] = newValue
         }
     }
     public func reset(name: String) {
@@ -122,7 +122,7 @@ extension PhotoDataModel: ItemDataAccessable {
         self.displayState = displayState
     }
     public func reset(entries: [PhotoEntryDataModel]) {
-        self.entryModels = entries
+        self.entries = entries
     }
     public func reset(information: String) {
         _informationLWW.wrappedValue = information
@@ -143,7 +143,7 @@ extension PhotoDataModel: ListItemFolderable {
     @MainActor public var subItems: ([PhotoDataModel], [UUID: UUID]) {
         guard specialCategory else { return ([], [:]) }
         var entryIds: [UUID: UUID] = [:]
-        let items: [PhotoDataModel] = entryModels.compactMap {
+        let items: [PhotoDataModel] = entries.compactMap {
             guard let childId = $0.childId, childId != id else { return nil }
             if let model = PhotoDataModel.model(modelContext: modelContext, id: childId), model.displayState == 0 {
                 entryIds[childId] = $0.id
@@ -168,7 +168,7 @@ extension PhotoDataModel {
     }
     
     public var itemModel: PhotoModel {
-        let entries = entryModels.map { $0.entryModel }
+        let entries = entries.map { $0.entryModel }
         return PhotoModel(
             id: id,
             name: _nameLWW,

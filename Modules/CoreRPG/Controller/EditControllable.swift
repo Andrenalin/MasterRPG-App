@@ -34,7 +34,7 @@ public extension EditControllable {
         Task.detached {
             await fileUrlDataController?.delete(fileUrl)
         }
-        model.entryModels.forEach { entry in
+        model.entries.forEach { entry in
             if var entryItem = Model.model(modelContext: modelContext, id: entry.childId) {
                 if model.category == .folder {
                     entryItem.parentId = model.parentId
@@ -59,7 +59,7 @@ public extension EditControllable {
         guard itemId != model.id else { return }
         model.withTransaction { modelContext in
             guard var item = Model.model(modelContext: modelContext, id: itemId) else { return }
-            var entries: [Model.Entry] = model.entryModels
+            var entries: [Model.Entry] = model.entries
             let entry = createNewEntry(in: model, childId: itemId)
             entries.append(entry)
             model.reset(entries: entries)
@@ -76,8 +76,8 @@ public extension EditControllable {
 
     func removeItem(offsets: IndexSet, model: Model) {
         model.withTransaction { modelContext in
-            let removedEntries = model.entryModels.filter { offsets.contains($0.index) }
-            var entries: [Model.Entry] = model.entryModels
+            let removedEntries = model.entries.filter { offsets.contains($0.index) }
+            var entries: [Model.Entry] = model.entries
             entries.remove(atOffsets: offsets)
             reindex(entries: &entries)
             model.reset(entries: entries)
@@ -97,7 +97,7 @@ public extension EditControllable {
 
     func moveItems(source: IndexSet, destination: Int, model: Model) {
         model.withTransaction { modelContext in
-            var entries = model.entryModels
+            var entries = model.entries
             entries.move(fromOffsets: source, toOffset: destination)
             entries = entries.enumerated().map { index, entry in
                 var updatedEntry = entry
@@ -113,7 +113,7 @@ public extension EditControllable {
 public extension EditControllable {
     func addGroup(childId: UUID, model: Model) {
         model.withTransaction { modelContext in
-            var entries: [Model.Entry] = model.entryModels
+            var entries: [Model.Entry] = model.entries
 
             let entry = createNewEntry(in: model, childId: childId)
             entries.append(entry)
@@ -128,7 +128,7 @@ public extension EditControllable {
 
     func removeGroup(childId: UUID, model: Model) {
         model.withTransaction { modelContext in
-            var entries: [Model.Entry] = model.entryModels
+            var entries: [Model.Entry] = model.entries
             let entry = model[childId]
             entries.removeAll(where: { $0.childId == childId })
             reindex(entries: &entries)

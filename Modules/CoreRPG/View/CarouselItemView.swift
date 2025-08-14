@@ -23,7 +23,7 @@ public struct CarouselItemView<EditController: EditControllable, Content: View>:
             LazyHStack {
                 itemView(item: model, selectedItem: nil)
 
-                ForEach(model.entryModels) { entry in
+                ForEach(model.entries) { entry in
                     if let item = EditController.Model.model(modelContext: modelContext, id: entry.childId) {
                         itemView(item: item, selectedItem: item)
                             .overlay(alignment: .topTrailing) {

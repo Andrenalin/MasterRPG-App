@@ -5,10 +5,6 @@ import SwiftData
 import SwiftUI
 import CoreExternalRPG
 
-extension FocusedValues {
-    @Entry var selectedItem: Binding<UUID>?
-}
-
 #if !os(tvOS)
 public struct PhotoCommands: Commands {
     public init(root: PhotoRootModel, navigator: Navigator) {

@@ -36,7 +36,7 @@ extension ExportController: ExportControllable {
             }
             results.insert(id)
             
-            let ids = item.entryModels.compactMap { entry -> UUID? in
+            let ids = item.entries.compactMap { entry -> UUID? in
                 guard let entry = entry as? AudioEntryDataModel, let subId = entry.childId else { return nil }
                 if !(results.contains(subId) || checkIds.contains(subId)) && itemControllable.itemSync(for: subId) != nil {
                     return subId

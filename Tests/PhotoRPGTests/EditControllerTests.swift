@@ -82,16 +82,16 @@ struct EditControllerTests {
         let albumModel = allModels.first { $0.id == album.id }!
 
         // Check folder contains subfolder and album
-        let folderChildren = folderModel.entryModels.map { $0.childId }
+        let folderChildren = folderModel.entries.map { $0.childId }
         #expect(folderChildren.contains(subfolder.id))
         #expect(folderChildren.contains(album.id))
 
         // Check subfolder contains its photo
-        let subfolderChildren = subfolderModel.entryModels.map { $0.childId }
+        let subfolderChildren = subfolderModel.entries.map { $0.childId }
         #expect(subfolderChildren.contains(photo1.id))
 
         // Check album contains its photo
-        let albumChildren = albumModel.entryModels.map { $0.childId }
+        let albumChildren = albumModel.entries.map { $0.childId }
         #expect(albumChildren.contains(photo2.id))
     }
 }

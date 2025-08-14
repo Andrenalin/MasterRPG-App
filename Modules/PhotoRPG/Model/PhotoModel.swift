@@ -109,10 +109,6 @@ extension PhotoModel: ItemDataAccessable {
     public static var typeId: NetworkModules {
         .photo
     }
-    public var entryModels: [PhotoEntryModel] {
-        get { entries }
-        set(newValue) { entries = newValue }
-    }
     public var information: String {
         get { description }
         set(newValue) { description = newValue }

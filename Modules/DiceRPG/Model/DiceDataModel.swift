@@ -52,7 +52,7 @@ public final class DiceDataModel {
 }
 
 extension DiceDataModel {
-    public var entryModels: [DiceEntryDataModel] {
+    public var entries: [DiceEntryDataModel] {
         get {
             guard let all = entries_ else { return [] }
             return all.sorted { $0.index < $1.index }
@@ -63,7 +63,7 @@ extension DiceDataModel {
     }
 
     func entryOrNew(for id: UUID) -> DiceEntryDataModel {
-        if let entry = entryModels.first(where: { $0.id == id }) {
+        if let entry = entries.first(where: { $0.id == id }) {
             return entry
         }
         return DiceEntryDataModel(id: id)
@@ -105,14 +105,13 @@ extension DiceDataModel {
     }
 }
 
-extension DiceDataModel: ImageFileLoadable {}
 extension DiceDataModel: ItemDataAccessable {
     public static var typeId: NetworkModules { .dice }
     public subscript(id: UUID) -> DiceEntryDataModel {
-        get { entryModels.first(where: { $0.id == id }) ?? DiceEntryDataModel(id: id) }
+        get { entries.first(where: { $0.id == id }) ?? DiceEntryDataModel(id: id) }
         set(newValue) {
-            guard let index = entryModels.firstIndex(where: { $0.id == id }) else { return }
-            entryModels[index] = newValue
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+            entries[index] = newValue
         }
     }
     public func reset(name: String) {
@@ -126,7 +125,7 @@ extension DiceDataModel: ItemDataAccessable {
         self.displayState = displayState
     }
     public func reset(entries: [DiceEntryDataModel]) {
-        self.entryModels = entries
+        self.entries = entries
     }
     public func reset(information: String) {
         _informationLWW.wrappedValue = information
@@ -147,7 +146,7 @@ extension DiceDataModel: ListItemFolderable {
     @MainActor public var subItems: ([DiceDataModel], [UUID: UUID]) {
         guard specialCategory else { return ([], [:]) }
         var entryIds: [UUID: UUID] = [:]
-        let items: [DiceDataModel] = entryModels.compactMap {
+        let items: [DiceDataModel] = entries.compactMap {
             guard let childId = $0.childId, childId != id else { return nil }
             if let model = DiceDataModel.model(modelContext: modelContext, id: childId), model.displayState == 0 {
                 entryIds[childId] = $0.id
@@ -172,7 +171,7 @@ extension DiceDataModel {
     }
     
     public var itemModel: DiceModel {
-        let entries = entryModels.map { $0.entryModel }
+        let entries = entries.map { $0.entryModel }
         return DiceModel(
             id: id,
             name: _nameLWW,

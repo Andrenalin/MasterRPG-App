@@ -99,10 +99,6 @@ extension SpaceModel: ItemDataAccessable {
     public static var typeId: NetworkModules {
         .space
     }
-    public var entryModels: [SpaceEntryModel] {
-        get { entries }
-        set(newValue) { entries = newValue }
-    }
     public var information: String {
         get { description }
         set(newValue) { description = newValue }

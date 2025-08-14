@@ -22,7 +22,7 @@ extension EditController: EditControllable {
 // MARK: - Edit Data Model Properties
 extension EditController {
     func createNewEntry(in model: AudioDataModel, childId: UUID) -> AudioEntryDataModel {
-        AudioEntryDataModel(id: UUID(), index: model.entryModels.count, parentId: model.id, childId: childId, item: model)
+        AudioEntryDataModel(id: UUID(), index: model.entries.count, parentId: model.id, childId: childId, item: model)
     }
     
     func duplicate(model: AudioDataModel) {
