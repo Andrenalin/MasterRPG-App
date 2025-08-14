@@ -33,8 +33,6 @@ struct PhotoRootView: View {
 
     ManagedNavigationStack {
         PhotoRootView(withoutNavigation: true)
-            .environment(TabTitleModel())
-            .environment(DeviceRotationModel())
     }
 }
 
@@ -43,9 +41,4 @@ struct PhotoRootView: View {
     @Previewable @Query var models: [PhotoDataModel]
 
     PhotoRootView(withoutNavigation: false)
-        .environment(TabTitleModel())
-        .environment(DeviceRotationModel())
-#if os(macOS)
-        .frame(width: 800, height: 600)
-#endif
 }

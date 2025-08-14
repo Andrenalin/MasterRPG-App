@@ -34,8 +34,6 @@ struct PdfRootView: View {
 
     ManagedNavigationStack {
         PdfRootView(withoutNavigation: true)
-            .environment(TabTitleModel())
-            .environment(DeviceRotationModel())
     }
 }
 
@@ -44,9 +42,4 @@ struct PdfRootView: View {
     @Previewable @Query var models: [PdfDataModel]
 
     PdfRootView(withoutNavigation: false)
-        .environment(TabTitleModel())
-        .environment(DeviceRotationModel())
-#if os(macOS)
-        .frame(width: 800, height: 600)
-#endif
 }

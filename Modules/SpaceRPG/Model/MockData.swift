@@ -63,6 +63,10 @@ struct MockRootViewModifier: ViewModifier {
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
             .environment(ListModel())
+            .environment(TabTitleModel())
+#if os(macOS)
+            .frame(width: 800, height: 600)
+#endif
     }
 }
 

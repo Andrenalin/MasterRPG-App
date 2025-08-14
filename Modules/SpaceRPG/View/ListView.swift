@@ -8,9 +8,8 @@ import UniformTypeIdentifiers
 
 struct ListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(ListModel.self) private var listModel
     @Environment(SpaceRootModel.self) private var root
-    @Environment(SearchModel.self) private var searchModel
+    @Environment(ListModel.self) private var listModel
 
     @Query(filter: #Predicate<SpaceDataModel>{ $0.displayState == 0 }, sort: \SpaceDataModel.name, animation: .smooth) private var items: [SpaceDataModel]
 
@@ -24,12 +23,14 @@ struct ListView: View {
         .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
 #endif
     }
-    
-    private var menuController: any ItemListContextMenuControllable {
+}
+
+private extension ListView {
+    var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
     
-    private func updateFile(url: URL) {
+    func updateFile(url: URL) {
         Task { @MainActor in
             let model = root.editController.addNew(modelContext: modelContext, type: .item)
             try? await Task.sleep(for: .seconds(0.5))
@@ -43,13 +44,8 @@ struct ListView: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [SpaceDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
     
     ManagedNavigationStack {
         ListView()
-            .environment(CacheItemListModel())
-            .environment(SearchModel.preview(modelContext: modelContext, module: SpaceDataModel.typeId))
-            .environment(DeviceRotationModel())
     }
-    .environment(ListModel())
 }

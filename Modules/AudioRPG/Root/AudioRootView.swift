@@ -33,8 +33,6 @@ struct AudioRootView: View {
 
     ManagedNavigationStack {
         AudioRootView(withoutNavigation: true)
-            .environment(TabTitleModel())
-            .environment(DeviceRotationModel())
     }
 }
 
@@ -43,9 +41,4 @@ struct AudioRootView: View {
     @Previewable @Query var models: [AudioDataModel]
 
     AudioRootView(withoutNavigation: false)
-        .environment(TabTitleModel())
-        .environment(DeviceRotationModel())
-#if os(macOS)
-        .frame(width: 800, height: 600)
-#endif
 }

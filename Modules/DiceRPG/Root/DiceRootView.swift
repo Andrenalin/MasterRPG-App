@@ -34,8 +34,6 @@ struct DiceRootView: View {
 
     ManagedNavigationStack {
         DiceRootView(withoutNavigation: true)
-            .environment(TabTitleModel())
-            .environment(DeviceRotationModel())
     }
 }
 
@@ -44,9 +42,4 @@ struct DiceRootView: View {
     @Previewable @Query var models: [DiceDataModel]
 
     DiceRootView(withoutNavigation: false)
-        .environment(TabTitleModel())
-        .environment(DeviceRotationModel())
-#if os(macOS)
-        .frame(width: 800, height: 600)
-#endif
 }

@@ -10,7 +10,7 @@ struct ListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AudioRootModel.self) private var root
     @Environment(ListModel.self) private var listModel
-
+    
     @Query(filter: #Predicate<AudioDataModel>{ $0.displayState == 0 }, sort: \AudioDataModel.name, animation: .smooth) private var items: [AudioDataModel]
     
     var body: some View {
@@ -26,12 +26,14 @@ struct ListView: View {
         .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
 #endif
     }
+}
 
-    private var menuController: any ItemListContextMenuControllable {
+private extension ListView {
+    var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
     
-    private func updateFile(url: URL) {
+    func updateFile(url: URL) {
         Task { @MainActor in
             let model = root.editController.addNew(modelContext: modelContext, type: .item)
             try? await Task.sleep(for: .seconds(0.5))
@@ -44,8 +46,6 @@ struct ListView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [AudioDataModel]
-    
     ManagedNavigationStack {
         ListView()
     }

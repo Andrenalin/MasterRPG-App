@@ -8,10 +8,9 @@ import UniformTypeIdentifiers
 
 struct ListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(ListModel.self) private var listModel
     @Environment(PhotoRootModel.self) private var root
-    @Environment(SearchModel.self) private var searchModel
-        
+    @Environment(ListModel.self) private var listModel
+
     @Query(filter: #Predicate<PhotoDataModel>{ $0.displayState == 0 }, sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
     
     var body: some View {
@@ -27,12 +26,14 @@ struct ListView: View {
         .importsItemProviders(EditController.importImageTypes, onImport: importImage(_:))
 #endif
     }
+}
 
-    private var menuController: any ItemListContextMenuControllable {
+private extension ListView {
+    var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
 
-    private func updateFile(url: URL) {
+    func updateFile(url: URL) {
         Task { @MainActor in
             let model = root.editController.addNew(modelContext: modelContext, type: .item)
             try? await Task.sleep(for: .seconds(0.5))

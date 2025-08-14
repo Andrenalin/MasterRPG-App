@@ -31,7 +31,9 @@ public final class AudioRootModel {
         
     let listModel = ListModel()
     let searchModel: SearchModel
-    var currentSelectedItemId: UUID?
+    var currentSelectedItemId: UUID? {
+        listModel.selected
+    }
     
     public let audioPlayerModel: AudioPlayerModel
 }

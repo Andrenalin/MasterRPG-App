@@ -24,5 +24,7 @@ public final class DiceRootModel {
     
     let listModel = ListModel()
     let searchModel: SearchModel
-    var currentSelectedItemId: UUID?
+    var currentSelectedItemId: UUID? {
+        listModel.selected
+    }
 }

@@ -4,14 +4,12 @@ import CoreExternalRPG
 import CoreRPG
 import SwiftData
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct ListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ListModel.self) private var listModel
     @Environment(DiceRootModel.self) private var root
-    @Environment(SearchModel.self) private var searchModel
-        
+    
     @Query(filter: #Predicate<DiceDataModel>{ $0.displayState == 0 }, sort: \DiceDataModel.name, animation: .smooth) private var items: [DiceDataModel]
     
     var body: some View {
@@ -21,8 +19,10 @@ struct ListView: View {
             MainRowView(model: model)
         }
     }
+}
 
-    private var menuController: any ItemListContextMenuControllable {
+private extension ListView {
+    var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
     }
 }

@@ -33,8 +33,6 @@ struct SpaceRootView: View {
 
     ManagedNavigationStack {
         SpaceRootView(withoutNavigation: true)
-            .environment(TabTitleModel())
-            .environment(DeviceRotationModel())
     }
 }
 
@@ -42,10 +40,5 @@ struct SpaceRootView: View {
     @Previewable @Query var models: [SpaceDataModel]
 
     SpaceRootView(withoutNavigation: false)
-        .environment(TabTitleModel())
-        .environment(DeviceRotationModel())
-#if os(macOS)
-        .frame(width: 800, height: 600)
-#endif
 }
 

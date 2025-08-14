@@ -29,7 +29,9 @@ public final class PhotoRootModel {
     
     let listModel = ListModel()
     let searchModel: SearchModel
-    var currentSelectedItemId: UUID?
+    var currentSelectedItemId: UUID? {
+        listModel.selected
+    }
 }
 
 extension PhotoRootModel {

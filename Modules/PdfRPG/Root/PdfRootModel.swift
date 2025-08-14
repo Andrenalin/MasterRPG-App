@@ -35,7 +35,9 @@ public final class PdfRootModel {
     
     let listModel = ListModel()
     let searchModel: SearchModel
-    var currentSelectedItemId: UUID?
+    var currentSelectedItemId: UUID? {
+        listModel.selected
+    }
 }
 
 extension PdfRootModel {
