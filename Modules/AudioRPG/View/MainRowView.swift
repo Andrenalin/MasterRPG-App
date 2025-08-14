@@ -22,3 +22,4 @@ struct MainRowView: View {
     
     MainRowView(model: models[0])
 }
+

@@ -20,11 +20,11 @@ public struct ItemSelectionListView<EditController: EditControllable, Row: View>
     
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(SearchModel.self) private var searchModel
+    @Environment(\.navigator) private var navigator
 
-    @State private var listModel = ListModel()
+    @Environment(CacheItemListModel.self) private var cacheItemListModel
+    @Environment(ListModel.self) private var listModel
+    @Environment(SearchModel.self) private var searchModel
 
 #if os(iOS) || os(visionOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -45,6 +45,9 @@ public struct ItemSelectionListView<EditController: EditControllable, Row: View>
             .scrollDismissesKeyboard(.immediately)
 #endif
             .navigationTitle(module.title)
+            .onAppear {
+                listModel.resetListModel()
+            }
             .onChange(of: listModel.listSelection) {
                 guard !listModel.listSelection.isEmpty else { return }
                 listModel.update(selection: listModel.listSelection)
@@ -52,6 +55,9 @@ public struct ItemSelectionListView<EditController: EditControllable, Row: View>
             .onChange(of: listModel.selected) {
                 if let id = listModel.selected {
                     listModel.listSelection <=> Set(arrayLiteral: id)
+                    let local = totalItems(items: items)
+                    guard let modelId = local.first(where: { $0.id == id })?.model.id else { return }
+                    navigator.navigate(to: route(modelId), method: .push)
                 } else {
                     listModel.resetListSelection()
                 }
@@ -92,12 +98,14 @@ private extension ItemSelectionListView {
         }
     }
         
-    var filteredItems: [EditController.Model] {
+    func filteredItems(items: [EditController.Model], withParentFilter: Bool = true) -> [EditController.Model] {
         var filtered = items
-        if listModel.listMode == .list {
-            filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
-        } else {
-            filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
+        if withParentFilter {
+            if listModel.listMode == .list {
+                filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
+            } else {
+                filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
+            }
         }
         if !searchModel.selectedTokens.isEmpty {
             let selectedTags = searchModel.selectedTokens.map { $0.tag }
@@ -109,18 +117,18 @@ private extension ItemSelectionListView {
             $0.information.localizedStandardContains(searchModel.searchText)
         }
     }
-    
+
     @ViewBuilder
-    func listView(filteredItems: [EditController.Model]) -> some View {
+    func listView(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         @Bindable var listModel = listModel
         List(selection: $listModel.listSelection) {
             itemRows(filteredItems: filteredItems)
         }
     }
     
-    func itemRows(filteredItems: [EditController.Model]) -> some View {
+    func itemRows(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         ForEach(filteredItems) { item in
-            row(item)
+            row(item.model)
                 .selectListItem {
                     if listModel.selection.contains(item.id) {
                         listModel.selection.removeAll { $0 == item.id }
@@ -130,7 +138,9 @@ private extension ItemSelectionListView {
                 } isSelected: {
                     listModel.selection.contains(item.id)
                 }
+                .padding(.leading, CGFloat(item.level * 16))
                 .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
+                .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
     }
     
@@ -139,13 +149,14 @@ private extension ItemSelectionListView {
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
     }
     
-    func totalItems(items: [EditController.Model]) -> [EditController.Model] {
-        var total: [EditController.Model] = []
-        filteredItems.forEach { item in
-            total.append(item)
-            if item.isFolder && listModel.isFolderOpen(id: item.id) {
+    func totalItems(items: [EditController.Model], level: Int = 0, withParentFilter: Bool = true, entryIds: [UUID: UUID] = [:]) -> [ItemListModel<EditController.Model>] {
+        var total: [ItemListModel<EditController.Model>] = []
+        guard level < 10 else { return total }
+        filteredItems(items: items, withParentFilter: withParentFilter).forEach { item in
+            total.append(ItemListModel(id: entryIds[item.id, default: item.id], model: item, isOpen: listModel.isFolderOpen(id: item.id), level: level))
+            if item.specialCategory && listModel.isFolderOpen(id: item.id) {
                 let (newItems, newEntryIds) = item.subItems
-                total.append(contentsOf: totalItems(items: newItems))
+                total.append(contentsOf: totalItems(items: newItems, level: level + 1, withParentFilter: false, entryIds: newEntryIds))
             }
         }
         return total

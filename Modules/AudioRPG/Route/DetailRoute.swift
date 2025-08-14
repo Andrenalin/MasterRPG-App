@@ -7,12 +7,14 @@ import SwiftUI
 
 enum DetailRoute: Equatable, Hashable, Codable {
     case detail(UUID)
+    case selection(UUID)
 }
 
 extension DetailRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
         case .detail(let id): "detail/\(id.uuidString)"
+        case .selection(let id): "selection/\(id.uuidString)"
         }
     }
 
@@ -21,6 +23,7 @@ extension DetailRoute: RawRepresentable {
         guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
         switch token {
         case "detail": self = .detail(uuid)
+        case "selection": self = .selection(uuid)
         default: return nil
         }
     }
@@ -31,6 +34,8 @@ extension DetailRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             DetailDestinationView(itemId: itemId)
+        case .selection(let itemId):
+            SelectionDestinationView(itemId: itemId)
         }
     }
 }
@@ -46,5 +51,13 @@ struct DetailDestinationView: View {
         } else {
             RootDestinationView(itemId: itemId, isRootView: false)
         }
+    }
+}
+
+struct SelectionDestinationView: View {
+    let itemId: UUID
+    
+    var body: some View {
+        SelectionListView(itemId: itemId)
     }
 }
