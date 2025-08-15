@@ -14,7 +14,7 @@ struct ListView: View {
     @Query(filter: #Predicate<AudioDataModel>{ $0.displayState == 0 }, sort: \AudioDataModel.name, animation: .smooth) private var items: [AudioDataModel]
     
     var body: some View {
-        ItemListView(editController: root.editController, menuController: menuController, items: items, module: AudioDataModel.typeId) { id in
+        ItemListView(editController: root.editController, menuController: menuController, listModel: listModel, parentModel: nil, items: items, module: AudioDataModel.typeId) { id in
             AudioRoute.detail(id)
         } row: { model in
             MainRowView(model: model)

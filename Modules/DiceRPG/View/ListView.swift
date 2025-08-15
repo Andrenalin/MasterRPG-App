@@ -13,7 +13,7 @@ struct ListView: View {
     @Query(filter: #Predicate<DiceDataModel>{ $0.displayState == 0 }, sort: \DiceDataModel.name, animation: .smooth) private var items: [DiceDataModel]
     
     var body: some View {
-        ItemListView(editController: root.editController, menuController: menuController, items: items, module: DiceDataModel.typeId) { id in
+        ItemListView(editController: root.editController, menuController: menuController, listModel: listModel, parentModel: nil, items: items, module: DiceDataModel.typeId) { id in
             DiceRoute.detail(id)
         } row: { model in
             MainRowView(model: model)

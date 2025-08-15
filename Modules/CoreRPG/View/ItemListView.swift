@@ -5,9 +5,11 @@ import SwiftData
 import SwiftUI
 
 public struct ItemListView<EditController: EditControllable, Row: View>: View where EditController.Model.ID == UUID {
-    public init(editController: EditController, menuController: any ItemListContextMenuControllable, items: [EditController.Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (EditController.Model) -> Row) {
+    public init(editController: EditController, menuController: any ItemListContextMenuControllable, listModel: ListModel, parentModel: EditController.Model? = nil, items: [EditController.Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (EditController.Model) -> Row) {
         self.editController = editController
         self.menuController = menuController
+        self.listModel = listModel
+        self.parentModel = parentModel
         self.items = items
         self.module = module
         self.route = route
@@ -15,6 +17,8 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
     }
     let editController: EditController
     let menuController: ItemListContextMenuControllable
+    let listModel: ListModel
+    let parentModel: EditController.Model?
     let items: [EditController.Model]
     let module: NetworkModules
     let route: (UUID) -> any NavigationDestination
@@ -24,7 +28,6 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
     @Environment(\.navigator) private var navigator
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(ListModel.self) private var listModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
     @Environment(SearchModel.self) private var searchModel
     
@@ -34,6 +37,9 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
 #endif
     
     public var body: some View {
+        let _ = Self._printChanges()
+        let _ = print("ParentId \(listModel.selectedParentId?.uuidString ?? "not set")")
+
         listView(filteredItems: totalItems(items: items))
             .frame(minWidth: 250, idealWidth: 350)
             .overlay {
@@ -57,7 +63,9 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
 #endif
-            .navigationTitle(module.title)
+            .applyIf(parentModel == nil) {
+                $0.navigationTitle(module.title)
+            }
             .onAppear {
                 listModel.resetListModel()
             }
@@ -67,10 +75,15 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
             }
             .onChange(of: listModel.selected) {
                 if let id = listModel.selected {
-                    listModel.listSelection <=> Set(arrayLiteral: id)
-                    let local = totalItems(items: items)
-                    guard let modelId = local.first(where: { $0.id == id })?.model.id else { return }
-                    navigator.navigate(to: route(modelId), method: .push)
+                    if id == EditController.Model.dropItem.id {
+                        navigator.navigate(to: route(EditController.Model.dropItem.id), method: .sheet)
+                        listModel.update(selection: [])
+                    } else {
+                        listModel.listSelection <=> Set(arrayLiteral: id)
+                        let local = totalItems(items: items)
+                        guard let modelId = local.first(where: { $0.id == id })?.model.id else { return }
+                        navigator.navigate(to: route(modelId), method: .push)
+                    }
                 } else {
                     listModel.resetListSelection()
                 }
@@ -108,11 +121,13 @@ private extension ItemListView {
     var actionMenu: some View {
         Menu {
             MenuDisplayModeToggle(listModel: listModel, listDisplayModel: listDisplayModel, showSelectionButton: false) {
-                addItemButton(for: .folder)
-                    .disabled(listDisplayModel.isListMode)
-                addItemButton(for: .collection)
-                    .disabled(listDisplayModel.isListMode)
-                Divider()
+                if parentModel == nil {
+                    addItemButton(for: .folder)
+                        .disabled(listDisplayModel.isListMode)
+                    addItemButton(for: .collection)
+                        .disabled(listDisplayModel.isListMode)
+                    Divider()
+                }
             }
         } label: {
             Image(systemName: "ellipsis.circle")
@@ -135,9 +150,11 @@ private extension ItemListView {
             MediumDisplayModeToggle(listDisplayModel: listDisplayModel)
             RegularDisplayModeToggle(listDisplayModel: listDisplayModel)
         }
-        ControlGroup {
-            ListModeToggle(listDisplayModel: listDisplayModel)
-            FolderModeToggle(listDisplayModel: listDisplayModel)
+        if parentModel == nil {
+            ControlGroup {
+                ListModeToggle(listDisplayModel: listDisplayModel)
+                FolderModeToggle(listDisplayModel: listDisplayModel)
+            }
         }
     }
     
@@ -156,19 +173,31 @@ private extension ItemListView {
     func addItem(for type: EditControllerAddType) {
         let newItem = editController.addNew(modelContext: modelContext, type: type)
         withAnimation {
+            if parentModel != nil {
+                editController.addItem(itemId: newItem.id, in: modelContext, parentId: listModel.selectedParentId, folderId:  listModel.lastFolderId)
+            }
             listModel.selected = newItem.id
         }
     }
     
     func deleteItems(offsets: IndexSet) {
-        for index in offsets {
-            if items[index].id == listModel.selected {
-                listModel.update(selection: Set())
-            }
-            Task { @MainActor in
-                editController.delete(model: items[index])
+        if let parentModel {
+            editController.removeItem(offsets: offsets, model: parentModel)
+        } else {
+            for index in offsets {
+                if items[index].id == listModel.selected {
+                    listModel.update(selection: Set())
+                }
+                Task { @MainActor in
+                    editController.delete(model: items[index])
+                }
             }
         }
+    }
+    
+    func moveItems(source: IndexSet, destination: Int) {
+        guard let parentModel else { return }
+        editController.moveItems(source: source, destination: destination, model: parentModel)
     }
     
     func filteredItems(items: [EditController.Model], withParentFilter: Bool = true) -> [EditController.Model] {
@@ -220,11 +249,26 @@ private extension ItemListView {
                     }
                 }
                 .padding(.leading, CGFloat(item.level * 16))
+#if !os(tvOS)
+                .dropDestination(for: LinkData.self) { items, _ in
+                    addLinks(links: items)
+                }
+#endif
                 .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
                 .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
         .onDelete(perform: deleteItems)
+        .onMove(perform: moveItems)
+        .moveDisabled(parentModel == nil || parentModel?.category == .folder)
         .deleteDisabled(listModel.isSelectionMode)
+    }
+    
+    func addLinks(links: [LinkData]) {
+        guard let parentModel else { return }
+        links.forEach { link in
+            guard link.module == EditController.Model.typeId else { return }
+            withAnimation { editController.addItem(itemId: link.itemId, in: parentModel, folderId: listModel.lastFolderId) }
+        }
     }
     
     var leadingPadding: CGFloat {
@@ -235,12 +279,22 @@ private extension ItemListView {
     func totalItems(items: [EditController.Model], level: Int = 0, withParentFilter: Bool = true, entryIds: [UUID: UUID] = [:]) -> [ItemListModel<EditController.Model>] {
         var total: [ItemListModel<EditController.Model>] = []
         guard level < 10 else { return total }
-        filteredItems(items: items, withParentFilter: withParentFilter).forEach { item in
+        let filtered = filteredItems(items: items, withParentFilter: withParentFilter)
+        let sorted: [EditController.Model]
+        if parentModel?.category == .folder {
+            sorted = filtered.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+        } else {
+            sorted = filtered
+        }
+        sorted.forEach { item in
             total.append(ItemListModel(id: entryIds[item.id, default: item.id], model: item, isOpen: listModel.isFolderOpen(id: item.id), level: level))
             if item.specialCategory && listModel.isFolderOpen(id: item.id) {
                 let (newItems, newEntryIds) = item.subItems
                 total.append(contentsOf: totalItems(items: newItems, level: level + 1, withParentFilter: false, entryIds: newEntryIds))
             }
+        }
+        if total.isEmpty && parentModel != nil {
+            total.append(ItemListModel(id: EditController.Model.dropItem.id, model: EditController.Model.dropItem, isOpen: false, level: level))
         }
         return total
     }

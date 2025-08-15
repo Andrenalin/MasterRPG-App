@@ -14,7 +14,7 @@ struct ListView: View {
     @Query(filter: #Predicate<PhotoDataModel>{ $0.displayState == 0 }, sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
     
     var body: some View {
-        ItemListView(editController: root.editController, menuController: menuController, items: items, module: PhotoDataModel.typeId) { id in
+        ItemListView(editController: root.editController, menuController: menuController, listModel: listModel, parentModel: nil, items: items, module: PhotoDataModel.typeId) { id in
             PhotoRoute.detail(id)
         } row: { model in
             MainRowView(model: model)
