@@ -16,8 +16,10 @@ struct ListView: View {
     var body: some View {
         ItemListView(editController: root.editController, menuController: menuController, listModel: listModel, parentModel: nil, items: items, module: AudioDataModel.typeId) { id in
             AudioRoute.detail(id)
-        } row: { model in
-            MainRowView(model: model)
+        } row: { itemId in
+            if let model = root.itemController.modelSync(for: itemId) {
+                MainRowView(model: model)
+            }
         }
         .onChange(of: items) {
             

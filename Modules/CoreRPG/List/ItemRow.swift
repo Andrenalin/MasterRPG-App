@@ -99,14 +99,13 @@ private extension ItemRow {
     @ViewBuilder
     var specialCategoryFolderIndicator: some View {
         if model.category == .folder || model.category == Model.collectionCategory {
-            Image(systemName: listModel.isFolderOpen(id: itemId) ? "chevron.down" : "chevron.right")
+            Image(systemName: listModel.isFolderOpen(itemId: itemId) ? "chevron.down" : "chevron.right")
                 .imageScale(.small)
                 .padding(.trailing)
-                .foregroundStyle(listModel.isFolderOpen(id: itemId) ? Color.accentColor : Color.secondary)
+                .foregroundStyle(listModel.isFolderOpen(itemId: itemId) ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    let subModel = listModel.subItemModel(for: itemId)
-                    withAnimation { subModel.isOpen.toggle() }
+                    withAnimation { listModel.toggleFolder(itemId: itemId) }
                 }
         }
     }

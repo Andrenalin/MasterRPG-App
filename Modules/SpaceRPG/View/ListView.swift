@@ -16,8 +16,10 @@ struct ListView: View {
     var body: some View {
         ItemListView(editController: root.editController, menuController: menuController, listModel: listModel, parentModel: nil, items: items, module: SpaceDataModel.typeId) { id in
             SpaceRoute.detail(id)
-        } row: { model in
-            MainRowView(model: model)
+        } row: { itemId in
+            if let model = root.itemController.modelSync(for: itemId) {
+                MainRowView(model: model)
+            }
         }
 #if !os(tvOS)
         .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))

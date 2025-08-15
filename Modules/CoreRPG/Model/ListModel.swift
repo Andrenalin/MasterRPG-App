@@ -32,8 +32,17 @@ public final class ListModel {
     private var subItemModels: [UUID: ListSubItemModel] = [:]
     var level: Int = 0
     
-    func isFolderOpen(id: UUID) -> Bool {
-        subItemModels[id]?.isOpen ?? false
+    
+    func isFolderOpen(itemId: UUID) -> Bool {
+        subItemModels[itemId]?.isOpen ?? false
+    }
+    
+    func toggleFolder(itemId: UUID) {
+        guard let model = subItemModels[itemId] else {
+            subItemModels[itemId] = ListSubItemModel(id: itemId, isOpen: true, level: level)
+            return
+        }
+        model.isOpen.toggle()
     }
     
     func subItemModel(for itemId: UUID) -> ListSubItemModel {

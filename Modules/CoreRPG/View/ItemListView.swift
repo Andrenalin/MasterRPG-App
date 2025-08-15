@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 public struct ItemListView<EditController: EditControllable, Row: View>: View where EditController.Model.ID == UUID {
-    public init(editController: EditController, menuController: any ItemListContextMenuControllable, listModel: ListModel, parentModel: EditController.Model? = nil, items: [EditController.Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (EditController.Model) -> Row) {
+    public init(editController: EditController, menuController: any ItemListContextMenuControllable, listModel: ListModel, parentModel: EditController.Model? = nil, items: [EditController.Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (UUID) -> Row) {
         self.editController = editController
         self.menuController = menuController
         self.listModel = listModel
@@ -22,7 +22,7 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
     let items: [EditController.Model]
     let module: NetworkModules
     let route: (UUID) -> any NavigationDestination
-    let row: (EditController.Model) -> Row
+    let row: (UUID) -> Row
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.navigator) private var navigator
@@ -245,7 +245,7 @@ private extension ItemListView {
     
     func itemRows(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         ForEach(filteredItems) { item in
-            row(item.model)
+            row(item.model.id)
                 .applyIf(!listDisplayModel.isSelectionMode) { content in
                     content.contextMenu {
                         ItemListContextMenu(controller: menuController, currentSelected: item.model.id)
@@ -290,8 +290,8 @@ private extension ItemListView {
             sorted = filtered
         }
         sorted.forEach { item in
-            total.append(ItemListModel(id: entryIds[item.id, default: item.id], model: item, isOpen: listModel.isFolderOpen(id: item.id), level: level))
-            if item.specialCategory && listModel.isFolderOpen(id: item.id) {
+            total.append(ItemListModel(id: entryIds[item.id, default: item.id], model: item, isOpen: listModel.isFolderOpen(itemId: item.id), level: level))
+            if item.specialCategory && listModel.isFolderOpen(itemId: item.id) {
                 let (newItems, newEntryIds) = item.subItems
                 total.append(contentsOf: totalItems(items: newItems, level: level + 1, withParentFilter: false, entryIds: newEntryIds))
             }

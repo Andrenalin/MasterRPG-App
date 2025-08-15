@@ -24,8 +24,10 @@ struct DetailView: View {
             if !model.specialCategory {
                 OpenFileWindowView(model: openFileWindowModel, module: PdfDataModel.typeId, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
             }
-        } row: {
-            MainRowView(model: $0)
+        } row: { itemId in
+            if let model = root.itemController.modelSync(for: itemId) {
+                MainRowView(model: model)
+            }
         } bottom: {
             GroupedPhotoView(cacheController: root.cacheController, model: model)
         }

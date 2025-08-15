@@ -29,8 +29,10 @@ struct SelectionListView: View {
     var body: some View {
         ItemSelectionListView(editController: root.editController, items: items, module: SpaceDataModel.typeId) { id in
             SpaceRoute.detail(id)
-        } row: { model in
-            MainRowView(model: model)
+        } row: { itemId in
+            if let model = root.itemController.modelSync(for: itemId) {
+                MainRowView(model: model)
+            }
         }
     }
 }

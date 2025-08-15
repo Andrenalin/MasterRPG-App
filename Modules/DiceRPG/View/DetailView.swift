@@ -30,8 +30,10 @@ struct DetailView: View {
                     .padding(.horizontal, -20)
 #endif
             }
-        } row: {
-            MainRowView(model: $0)
+        } row: { itemId in
+            if let model = root.itemController.modelSync(for: itemId) {
+                MainRowView(model: model)
+            }
         } bottom: {
             ItemGroupItemView(model: model)
         }

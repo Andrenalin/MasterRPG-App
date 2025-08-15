@@ -5,7 +5,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct FileDetailEditorView<EditController: EditControllable, Route: NavigationDestination, Importer: View, Inside: View, Editor: View, Row: View, Bottom: View>: View where EditController.Model.ID == UUID {
-    public init(model: EditController.Model, editController: EditController, menuController: any ItemListContextMenuControllable, fileTypes: [UTType], route: @escaping (UUID) -> Route, @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder row: @escaping (EditController.Model) -> Row, @ViewBuilder bottom: () -> Bottom = EmptyView.init) {
+    public init(model: EditController.Model, editController: EditController, menuController: any ItemListContextMenuControllable, fileTypes: [UTType], route: @escaping (UUID) -> Route, @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder row: @escaping (UUID) -> Row, @ViewBuilder bottom: () -> Bottom = EmptyView.init) {
         self.model = model
         self.editController = editController
         self.menuController = menuController
@@ -27,7 +27,7 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
     let importer: Importer
     let background: Inside
     let editor: Editor
-    let row: (EditController.Model) -> Row
+    let row: (UUID) -> Row
     let bottom: Bottom
     let cacheItemListModel: CacheItemListModel
 
@@ -156,8 +156,8 @@ private extension FileDetailEditorView {
             if model.specialCategory {
                 ItemListView(editController: editController, menuController: menuController, listModel: listModel.lastSubListModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems.0, module: EditController.Model.typeId) { id in
                     route(id)
-                } row: { model in
-                    row(model)
+                } row: { itemId in
+                    row(itemId)
                 }
             }
         }

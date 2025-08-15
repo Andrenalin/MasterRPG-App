@@ -26,8 +26,10 @@ struct DetailView: View {
             if !model.specialCategory {
                 Color.clear
             }
-        } row: {
-            MainRowView(model: $0)
+        } row: { itemId in
+            if let model = root.itemController.modelSync(for: itemId) {
+                MainRowView(model: model)
+            }
         } bottom: {
             ItemGroupItemView(model: model)
         }

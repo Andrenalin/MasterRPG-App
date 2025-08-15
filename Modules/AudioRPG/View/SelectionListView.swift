@@ -30,8 +30,10 @@ struct SelectionListView: View {
     var body: some View {
         ItemSelectionListView(editController: root.editController, items: items, module: AudioDataModel.typeId) { id in
             DetailRoute.selection(id)
-        } row: { model in
-            MainRowView(model: model)
+        } row: { itemId in
+            if let model = root.itemController.modelSync(for: itemId) {
+                MainRowView(model: model)
+            }
         }
     }
 }
