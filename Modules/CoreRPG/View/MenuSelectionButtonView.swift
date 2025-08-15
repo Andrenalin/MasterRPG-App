@@ -3,11 +3,11 @@
 import SwiftUI
 
 struct MenuSelectionButtonView: View {
-    let listModel: ListModel
+    let listDisplayModel: ListDisplayModel
     
     var body: some View {
         Button {
-            withAnimation { listModel.toogleSelectionMode() }
+            withAnimation { listDisplayModel.isSelectionMode.toggle() }
        } label: {
             Label {
                 Text("Select", bundle: .module)

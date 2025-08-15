@@ -36,7 +36,7 @@ public struct SpaceCommands: Commands {
         }
         CommandGroup(before: .sidebar) {
             if selectedModule == SpaceDataModel.typeId {
-                MenuDisplayModeToggle(listModel: root.listModel, listDisplayModel: root.listDisplayModel, showSelectionButton: true)
+                MenuDisplayModeToggle(listDisplayModel: root.listDisplayModel, showSelectionButton: true)
                 Divider()
             }
         }

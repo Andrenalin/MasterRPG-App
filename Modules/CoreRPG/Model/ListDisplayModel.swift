@@ -4,12 +4,15 @@ import SwiftUI
 
 @Observable @MainActor
 public final class ListDisplayModel {
-    public init(displayMode: ListDisplayModel.DisplayMode = .medium, listMode: ListDisplayModel.ListMode = .list, isPadStyle: Bool = false) {
+    public init(isSelectionMode: Bool = false, displayMode: ListDisplayModel.DisplayMode = .medium, listMode: ListDisplayModel.ListMode = .list, isPadStyle: Bool = false) {
+        self.isSelectionMode = isSelectionMode
         self.displayMode = displayMode
         self.listMode = listMode
         self.isPadStyle = isPadStyle
     }
     
+    public var isSelectionMode: Bool
+
     public enum DisplayMode: Int, Equatable, Hashable, Codable, Sendable {
         case compact
         case medium

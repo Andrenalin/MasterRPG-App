@@ -20,7 +20,10 @@ public final class ListModel {
     }
     
     // MARK: - Items
-    
+//    var items: [Model] = []
+//    func update(items: [Model]) {
+//        
+//    }
     //public var items:
     
     // MARK: - List navigation
@@ -43,7 +46,7 @@ public final class ListModel {
     }
         
     // MARK: - Selection
-    private(set) public var isSelectionMode: Bool
+    private var isSelectionMode: Bool
     public var selection: [UUID]
     public var selected: UUID?
     public var listSelection: Set<UUID>
@@ -52,7 +55,7 @@ public final class ListModel {
     
     // MARK: - ListModels
     @ObservationIgnored
-    private var subListModel: ListModel?    
+    private var subListModel: ListModel?
 }
 
 // MARK: - Selection
@@ -62,8 +65,8 @@ public extension ListModel {
         listSelection = []
     }
 
-    func toogleSelectionMode() {
-        isSelectionMode.toggle()
+    func update(selectionMode: Bool) {
+        isSelectionMode = selectionMode
         if isSelectionMode {
             selection = []
         } else if let selected {

@@ -48,7 +48,7 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
                 }
             }
 #if !os(tvOS)
-            .applyIf(listModel.isSelectionMode) { content in
+            .applyIf(listDisplayModel.isSelectionMode) { content in
                 content.contextMenu(forSelectionType: EditController.Model.ID.self) { selectedItemIDs in
                     ItemListContextMenu(controller: menuController)
                 }
@@ -68,6 +68,9 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
             }
             .onAppear {
                 listModel.resetListModel()
+            }
+            .onChange(of: listDisplayModel.isSelectionMode) {
+                listModel.update(selectionMode: listDisplayModel.isSelectionMode)
             }
             .onChange(of: listModel.listSelection) {
                 guard !listModel.listSelection.isEmpty else { return }
@@ -89,8 +92,8 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
                 }
             }
 #if os(iOS) || os(visionOS)
-            .onChange(of: listModel.isSelectionMode) {
-                editMode = listModel.isSelectionMode ? .active : .inactive
+            .onChange(of: listDisplayModel.isSelectionMode) {
+                editMode = listDisplayModel.isSelectionMode ? .active : .inactive
             }
 #endif
             .toolbar {
@@ -103,9 +106,9 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
                     secondaryActionMenu
                 }
 #endif
-                if listModel.isSelectionMode {
+                if listDisplayModel.isSelectionMode {
                     ToolbarItem(placement: .primaryAction) {
-                        MenuSelectionButtonView(listModel: listModel)
+                        MenuSelectionButtonView(listDisplayModel: listDisplayModel)
                     }
                 } else {
                     ToolbarItem(placement: .primaryAction) {
@@ -120,7 +123,7 @@ private extension ItemListView {
     @ViewBuilder
     var actionMenu: some View {
         Menu {
-            MenuDisplayModeToggle(listModel: listModel, listDisplayModel: listDisplayModel, showSelectionButton: false) {
+            MenuDisplayModeToggle(listDisplayModel: listDisplayModel, showSelectionButton: false) {
                 if parentModel == nil {
                     addItemButton(for: .folder)
                         .disabled(listDisplayModel.isListMode)
@@ -136,8 +139,8 @@ private extension ItemListView {
     
     @ViewBuilder
     var secondaryActionMenu: some View {
-        if !listModel.isSelectionMode {
-            MenuSelectionButtonView(listModel: listModel)
+        if !listDisplayModel.isSelectionMode {
+            MenuSelectionButtonView(listDisplayModel: listDisplayModel)
         }
         ControlGroup {
             addItemButton(for: .folder)
@@ -203,7 +206,7 @@ private extension ItemListView {
     func filteredItems(items: [EditController.Model], withParentFilter: Bool = true) -> [EditController.Model] {
         var filtered = items
         if withParentFilter {
-            if listDisplayModel.listMode == .list {
+            if parentModel == nil && listDisplayModel.listMode == .list {
                 filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
             } else {
                 filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
@@ -243,7 +246,7 @@ private extension ItemListView {
     func itemRows(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         ForEach(filteredItems) { item in
             row(item.model)
-                .applyIf(!listModel.isSelectionMode) { content in
+                .applyIf(!listDisplayModel.isSelectionMode) { content in
                     content.contextMenu {
                         ItemListContextMenu(controller: menuController, currentSelected: item.model.id)
                     }
@@ -260,7 +263,7 @@ private extension ItemListView {
         .onDelete(perform: deleteItems)
         .onMove(perform: moveItems)
         .moveDisabled(parentModel == nil || parentModel?.category == .folder)
-        .deleteDisabled(listModel.isSelectionMode)
+        .deleteDisabled(listDisplayModel.isSelectionMode)
     }
     
     func addLinks(links: [LinkData]) {
@@ -272,7 +275,7 @@ private extension ItemListView {
     }
     
     var leadingPadding: CGFloat {
-        let value = listModel.isSelectionMode ? 12 : 8
+        let value = listDisplayModel.isSelectionMode ? 12 : 8
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
     }
     

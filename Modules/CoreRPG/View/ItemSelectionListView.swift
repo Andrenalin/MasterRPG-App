@@ -146,8 +146,7 @@ private extension ItemSelectionListView {
     }
     
     var leadingPadding: CGFloat {
-        let value = listModel.isSelectionMode ? 12 : 8
-        return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
+        CGFloat(valueFor(iOS: 8, macOS: 4, tvOS: 8, visionOS: 8))
     }
     
     func totalItems(items: [EditController.Model], level: Int = 0, withParentFilter: Bool = true, entryIds: [UUID: UUID] = [:]) -> [ItemListModel<EditController.Model>] {
