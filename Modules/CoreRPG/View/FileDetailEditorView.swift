@@ -4,8 +4,8 @@ import CoreExternalRPG
 import SwiftUI
 import UniformTypeIdentifiers
 
-public struct FileDetailEditorView<EditController: EditControllable, Route: NavigationDestination, Importer: View, Inside: View, Editor: View, Row: View, Bottom: View>: View where EditController.Model.ID == UUID {
-    public init(model: EditController.Model, editController: EditController, menuController: any ItemListContextMenuControllable, fileTypes: [UTType], route: @escaping (UUID) -> Route, @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder row: @escaping (UUID) -> Row, @ViewBuilder bottom: () -> Bottom = EmptyView.init) {
+public struct FileDetailEditorView<EditController: EditControllable, Route: NavigationDestination, Importer: View, Inside: View, Editor: View, Row: View, Bottom: View, Inspector: View>: View where EditController.Model.ID == UUID {
+    public init(model: EditController.Model, editController: EditController, menuController: any ItemListContextMenuControllable, fileTypes: [UTType], route: @escaping (UUID) -> Route, @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder row: @escaping (UUID) -> Row, @ViewBuilder bottom: () -> Bottom = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
         self.model = model
         self.editController = editController
         self.menuController = menuController
@@ -16,6 +16,7 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
         self.editor = editor()
         self.row = row
         self.bottom = bottom()
+        self.inspector = inspector()
         self.cacheItemListModel = CacheItemListModel()
     }
 
@@ -29,6 +30,7 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
     let editor: Editor
     let row: (UUID) -> Row
     let bottom: Bottom
+    let inspector: Inspector
     let cacheItemListModel: CacheItemListModel
 
 #if os(iOS)
@@ -36,6 +38,7 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
 #endif
 
     @State private var isEditing = false
+    @State private var showInspector = false
     @State private var itemIdHasUrl: EditController.Model.ID = UUID()
 
     @Environment(ListModel.self) private var listModel
@@ -86,6 +89,11 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
             $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
         }
 #endif
+        .inspector(isPresented: $showInspector) {
+            if model.specialCategory {
+                inspector
+            }
+        }
         .sheet(isPresented: $isEditing) {
             DetailItemEditorView(model: model, editController: editController, name: \.name, category: \.category, tags: \.tags, description: \.information)
             
@@ -100,6 +108,16 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
                         withAnimation { isEditing = true }
                     } label: {
                         Image(systemName: "pencil")
+                    }
+                }
+            }
+            
+            ToolbarItem(placement: .primaryAction) {
+                if horizontalSizeClass == .regular && model.specialCategory {
+                    Button {
+                        withAnimation { showInspector.toggle() }
+                    } label: {
+                        Image(systemName: "scope")
                     }
                 }
             }

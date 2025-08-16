@@ -143,6 +143,7 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
                     .environment(cacheItemListModel)
                     .environment(deviceRotationModel)
                     .environment(listModel)
+                    .environment(listDisplayModel)
                     .environment(searchModel)
             }
         #if os(tvOS)

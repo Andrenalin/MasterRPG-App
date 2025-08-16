@@ -23,8 +23,6 @@ struct SelectionRootView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [AudioDataModel]
-    
     ManagedNavigationStack {
         SelectionRootView()
     }
