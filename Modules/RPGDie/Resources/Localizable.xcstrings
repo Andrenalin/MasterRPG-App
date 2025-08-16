@@ -619,9 +619,6 @@
         }
       }
     },
-    "Roll a dice" : {
-
-    },
     "Rolled" : {
       "localizations" : {
         "de" : {
@@ -721,9 +718,6 @@
           }
         }
       }
-    },
-    "Tap the dice to roll" : {
-
     },
     "Undo %@" : {
       "localizations" : {

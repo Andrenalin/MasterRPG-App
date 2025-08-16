@@ -36,7 +36,7 @@ struct RootCanvasMap: View {
     @State private var degrees: Double = 0
 
     var body: some View {
-        @Bindable var mapModel = mapModel
+        //@Bindable var mapModel = mapModel
         GeometryReader { geo in
             if let image {
                 MapViewer(image: image, photoDegrees: degrees, map: mapModel, toolBarModel: toolBarModel, playerPinId: playerPinId, mapMode: mode == .player ? .player : .gameMaster, containerSize: geo.size, sendMapUpdates: sendMapUpdates, focused: focused)
