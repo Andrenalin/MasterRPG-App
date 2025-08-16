@@ -17,11 +17,9 @@ public struct AudioCommands: Commands {
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
     public var body: some Commands {
-//#if os(macOS)
-//        CommandGroup(after: .windowArrangement) {
-//            LinkWindowCommandView(title: "Photo Link", networkModule: .photo, key: "8")
-//        }
-//#endif
+        CommandGroup(after: .windowArrangement) {
+            LinkWindowCommandView(networkModule: .audio, key: "6")
+        }
         CommandGroup(after: .toolbar) {
             NavigateButton(navigator: navigator)
         }

@@ -6,7 +6,7 @@ import RolePlayGameKit
 import SwiftUI
 import PdfRPG
 
-struct WindowMacVisionList: Scene {
+struct WindowList: Scene {
     let appModel: AppModel
     
     var body: some Scene {

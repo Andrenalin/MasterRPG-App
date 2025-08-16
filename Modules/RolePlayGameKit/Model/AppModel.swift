@@ -26,7 +26,8 @@ public final class AppModel: Sendable {
 
     // other models
     public let deviceRotationModel: DeviceRotationModel
-
+    public let windowStateModel: WindowStateModel
+    
     // Module roots
     public var audioRoot: AudioRootModel
     public var diceRoot: DiceRootModel
@@ -39,15 +40,19 @@ public final class AppModel: Sendable {
 
     @MainActor
     public init() {
-        self.deviceRotationModel = DeviceRotationModel()
-        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.0", executionDelay: 0.4, verbosity: .info))
         let modelContainer = Self.initModelContainer()
         self.modelContainer = modelContainer
+
+        self.deviceRotationModel = DeviceRotationModel()
+        self.windowStateModel = WindowStateModel()
+        
         self.audioRoot = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.diceRoot = DiceRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.pdfRoot = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
+
+        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.0", executionDelay: 0.4, verbosity: .info))
     }
     
     @MainActor
@@ -72,6 +77,57 @@ public final class AppModel: Sendable {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
+        }
+    }
+}
+
+
+// MARK: Window Management
+
+public extension AppModel {
+    func windowPlacement(for module: NetworkModules) -> WindowPlacementPosition {
+        switch module {
+        case .none, .setting, .editor, .game, .search:
+            return .leading(WindowIdentifier.game.rawValue)
+        case .photo:
+//            if settingsModel.gameModus == .player {
+//                return .leading(WindowIdentifier.game.rawValue, fallback: nil)
+//            }
+            return
+                .above(NetworkModules.adventure.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+        case .map:
+            return .trailing(NetworkModules.adventure.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+        case .table:
+            return .leading(WindowIdentifier.game.rawValue)
+        case .adventure:
+            return .trailing(WindowIdentifier.game.rawValue)
+        case .dice:
+//            if settingsModel.gameModus == .player {
+//                return .trailing(NetworkModules.value.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+//            }
+            return .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+        case .weather:
+            return .above(NetworkModules.map.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+        case .value:
+//            if settingsModel.gameModus == .player {
+//                return .trailing(WindowIdentifier.game.rawValue, fallback: nil)
+//            }
+            return .above(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+            
+        case .audio:
+//            if settingsModel.gameModus == .player {
+//                return .leading(NetworkModules.photo.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+//            }
+            return .below(NetworkModules.adventure.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+        case .pdf:
+            return .leading(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+        case .space:
+//            if settingsModel.gameModus == .player {
+//                return .leading(NetworkModules.photo.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+//            }
+            return .below(NetworkModules.map.linkWindowId, fallback: WindowIdentifier.game.rawValue)
+        @unknown default:
+            fatalError()
         }
     }
 }

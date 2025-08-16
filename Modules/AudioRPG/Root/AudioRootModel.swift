@@ -17,8 +17,10 @@ public final class AudioRootModel {
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
-        self.searchModel = SearchModel(modelContext: modelContext, module: AudioDataModel.typeId, categoryTags: [.music, .sound])
+        self.searchModel = AudioRootModel.newSearchModel(modelContext: modelContext)
         
+        self._viewController = ViewController(_root: self)
+
         itemController.cleanDeleted()
     }
 
@@ -28,7 +30,11 @@ public final class AudioRootModel {
     @ObservationIgnored let exportController: ExportController
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: ItemController
-        
+    @ObservationIgnored private var _viewController: ViewController? = nil
+    public var viewController: ViewController {
+        _viewController.unsafelyUnwrapped
+    }
+
     let listModel = ListModel()
     let listDisplayModel = ListDisplayModel()
     let searchModel: SearchModel
@@ -37,6 +43,14 @@ public final class AudioRootModel {
     }
     
     public let audioPlayerModel: AudioPlayerModel
+    
+    func newSearchModel() -> SearchModel {
+        Self.newSearchModel(modelContext: modelContext)
+    }
+    
+    static private func newSearchModel(modelContext: ModelContext) -> SearchModel {
+        SearchModel(modelContext: modelContext, module: AudioDataModel.typeId, categoryTags: [.music, .sound])
+    }
 }
 
 extension AudioRootModel {

@@ -4,55 +4,97 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct LinkItemListView<EditController: EditControllable, Row: View>: View where EditController.Model.ID == UUID {
-    public init(editController: EditController, items: [EditController.Model], parentModel: EditController.Model, @ViewBuilder row: @escaping (UUID) -> Row) {
-        self.editController = editController
+public struct LinkItemListView<Model: ItemDataAccessable, Row: View>: View where Model: ListItemFolderable, Model: Identifiable, Model.ID == UUID {
+    public init(items: [Model], parentModel: Model?, isInspector: Bool, @ViewBuilder row: @escaping (UUID) -> Row) {
         self.items = items
         self.parentModel = parentModel
+        self.isInspector = isInspector
         self.row = row
+        let listDisplayModel = ListDisplayModel()
+        listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
+        self._inspectorDisplayModel = State(wrappedValue: listDisplayModel)
     }
-    let editController: EditController
-    let items: [EditController.Model]
-    let parentModel: EditController.Model
+
+    let items: [Model]
+    let parentModel: Model?
+    let isInspector: Bool
     let row: (UUID) -> Row
     
-    @Environment(\.modelContext) private var modelContext
-
     @Environment(ListDisplayModel.self) private var listDisplayModel
     @Environment(SearchModel.self) private var searchModel
     
-    @State private var cacheItemListModel = CacheItemListModel()
     @State private var listModel = ListModel()
-
+    @State private var inspectorDisplayModel = ListDisplayModel()
+    
     public var body: some View {
-            listView()
-                .frame(minWidth: 250, idealWidth: 350)
-                .overlay {
-                    if filteredItems.isEmpty && !searchModel.searchText.isEmpty {
-                        ContentUnavailableView.search
+        NavigationStack {
+            @Bindable var searchModel = searchModel
+            @Bindable var inspectorDisplayModel = inspectorDisplayModel
+            
+            if isInspector {
+                Picker(selection: $inspectorDisplayModel.listMode) {
+                    ForEach(ListDisplayModel.ListMode.allCases) { mode in
+                        Text(mode.title)
+                            .tag(mode)
                     }
+                } label: {
+                    Text("List Mode")
                 }
-                .listStyle(.plain)
-                .environment(listModel)
-                .animation(.smooth, value: filteredItems.count)
-                .scrollIndicatorsFlash(onAppear: true)
-                .scrollIndicatorsFlash(trigger: filteredItems.count)
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                
+                TextField("Filter", text: $searchModel.searchText)
+                    .padding(.horizontal)
+            }
+                        
+            contentView
+                .onChange(of: listDisplayModel.displayMode, initial: true) {
+                    inspectorDisplayModel.displayMode = listDisplayModel.displayMode
+                }
+                .environment(inspectorDisplayModel)
+                .applyIf(!isInspector) { content in
+                    content
+                        .toolbar {
+                            ToolbarItem(placement: .secondaryAction) {
+                                ControlGroup {
+                                    ListModeToggle(listDisplayModel: inspectorDisplayModel)
+                                    FolderModeToggle(listDisplayModel: inspectorDisplayModel)
+                                }
+                            }
+                        }
+                        .searchable(text: $searchModel.searchText, placement: .automatic)
+                }
+        }
+    }
+
+    var contentView: some View {
+        listView
+            .frame(minWidth: 150, idealWidth: 250)
+            .overlay {
+                if filteredItems.isEmpty && !searchModel.searchText.isEmpty {
+                    ContentUnavailableView.search
+                }
+            }
+            //.listStyle(.plain)
+            .environment(listModel)
+            .animation(.smooth, value: filteredItems.count)
+            .scrollIndicatorsFlash(onAppear: true)
+            .scrollIndicatorsFlash(trigger: filteredItems.count)
+            .scrollEdgeEffectStyle(.hard, for: .top)
 #if !os(visionOS)
-                .scrollDismissesKeyboard(.immediately)
+            .scrollDismissesKeyboard(.immediately)
 #endif
     }
 }
 
 private extension LinkItemListView {
-        
-    var filteredItems: [EditController.Model] {
-        var filtered: [EditController.Model]
-        if parentModel.category == .folder {
-            listDisplayModel.listMode = .folder
+    
+    var filteredItems: [Model] {
+        var filtered: [Model]
+        if inspectorDisplayModel.listMode == .folder {
             filtered = items
         } else {
-            listDisplayModel.listMode = .list
-            filtered = items.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
+            filtered = items.filter { $0.category != .folder && $0.category != Model.collectionCategory }
         }
         if !searchModel.selectedTokens.isEmpty {
             let selectedTags = searchModel.selectedTokens.map { $0.tag }
@@ -64,9 +106,9 @@ private extension LinkItemListView {
             $0.information.localizedStandardContains(searchModel.searchText)
         }
     }
-
+    
     @ViewBuilder
-    func listView() -> some View {
+    var listView: some View {
         @Bindable var listModel = listModel
         List(selection: $listModel.listSelection) {
             itemRows()

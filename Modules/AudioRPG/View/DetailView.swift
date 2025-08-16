@@ -33,7 +33,7 @@ struct DetailView: View {
         } bottom: {
             ItemGroupItemView(model: model)
         } inspector: {
-            InspectorRootView(model: model)
+            LinkRootView(isInspector: true)
         }
         .environment(selection)
         .environment(openFileWindowModel)

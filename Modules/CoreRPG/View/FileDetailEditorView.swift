@@ -112,8 +112,8 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
                 }
             }
             
-            ToolbarItem(placement: .primaryAction) {
-                if horizontalSizeClass == .regular && model.specialCategory {
+            ToolbarItem(placement: .primaryAction) {                
+                if canShowInspector {
                     Button {
                         withAnimation { showInspector.toggle() }
                     } label: {
@@ -126,6 +126,14 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
 }
 
 private extension FileDetailEditorView {
+    var canShowInspector: Bool {
+#if os(iOS)
+        horizontalSizeClass == .regular && model.specialCategory
+#else
+        model.specialCategory
+#endif
+    }
+
     var hasFile: Bool {
         model.url != nil || fileTypes.isEmpty
     }
