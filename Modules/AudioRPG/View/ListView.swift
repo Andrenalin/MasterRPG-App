@@ -21,9 +21,6 @@ struct ListView: View {
                 MainRowView(model: model)
             }
         }
-        .onChange(of: items) {
-            
-        }
         .onAppear {
             //withAnimation { root.audioPlayerModel.showPlayerToolBar = true }
         }

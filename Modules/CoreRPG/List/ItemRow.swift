@@ -19,7 +19,6 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
     let thumbnail: Thumbnail
     let actionBar: ActionBar
     
-    @Environment(ListModel.self) private var listModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -56,7 +55,6 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
             
             thumbView
             
-            specialCategoryFolderIndicator
             specialAddIcon
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -93,20 +91,6 @@ private extension ItemRow {
             Image(systemName: "checkmark.circle")
                 .font(.title)
                 .padding(.trailing)
-        }
-    }
-
-    @ViewBuilder
-    var specialCategoryFolderIndicator: some View {
-        if model.category == .folder || model.category == Model.collectionCategory {
-            Image(systemName: listModel.isFolderOpen(itemId: itemId) ? "chevron.down" : "chevron.right")
-                .imageScale(.small)
-                .padding(.trailing)
-                .foregroundStyle(listModel.isFolderOpen(itemId: itemId) ? Color.accentColor : Color.secondary)
-                .contentShape(.rect)
-                .onTapGesture {
-                    withAnimation { listModel.toggleFolder(itemId: itemId) }
-                }
         }
     }
 

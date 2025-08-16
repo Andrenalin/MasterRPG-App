@@ -40,10 +40,10 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
         let _ = Self._printChanges()
         let _ = print("ParentId \(listModel.selectedParentId?.uuidString ?? "not set")")
 
-        listView(filteredItems: totalItems(items: items))
+        listView()
             .frame(minWidth: 250, idealWidth: 350)
             .overlay {
-                if items.isEmpty && !searchModel.searchText.isEmpty {
+                if totalItems.isEmpty && !searchModel.searchText.isEmpty {
                     ContentUnavailableView.search
                 }
             }
@@ -54,12 +54,12 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
                 }
             }
 #endif
-            .animation(.smooth, value: items.count)
+            .animation(.smooth, value: totalItems.count)
 #if os(iOS) || os(visionOS)
             .environment(\.editMode, $editMode)
 #endif
             .scrollIndicatorsFlash(onAppear: true)
-            .scrollIndicatorsFlash(trigger: items.count)
+            .scrollIndicatorsFlash(trigger: totalItems.count)
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
 #endif
@@ -74,7 +74,13 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
             }
             .onChange(of: listModel.listSelection) {
                 guard !listModel.listSelection.isEmpty else { return }
-                listModel.update(selection: listModel.listSelection)
+                guard let id = listModel.listSelection.first else {
+                    listModel.selected = nil
+                    return
+                }
+                guard let modelId = totalItems.first(where: { $0.id == id })?.model.id else { return }
+                let selection = Set([modelId])
+                listModel.update(selection: selection)
             }
             .onChange(of: listModel.selected) {
                 if let id = listModel.selected {
@@ -83,9 +89,7 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
                         listModel.update(selection: [])
                     } else {
                         listModel.listSelection <=> Set(arrayLiteral: id)
-                        let local = totalItems(items: items)
-                        guard let modelId = local.first(where: { $0.id == id })?.model.id else { return }
-                        navigator.navigate(to: route(modelId), method: .push)
+                        navigator.navigate(to: route(id), method: .push)
                     }
                 } else {
                     listModel.resetListSelection()
@@ -203,62 +207,46 @@ private extension ItemListView {
         editController.moveItems(source: source, destination: destination, model: parentModel)
     }
     
-    func filteredItems(items: [EditController.Model], withParentFilter: Bool = true) -> [EditController.Model] {
-        var filtered = items
-        if withParentFilter {
-            if parentModel == nil && listDisplayModel.listMode == .list {
-                filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
-            } else {
-                filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
-            }
-        }
-        if !searchModel.selectedTokens.isEmpty {
-            let selectedTags = searchModel.selectedTokens.map { $0.tag }
-            filtered = filtered.filter { $0.tags.contains(selectedTags) }
-        }
-        guard !searchModel.searchText.isEmpty else { return filtered }
-        return filtered.filter {
-            $0.name.localizedStandardContains(searchModel.searchText) ||
-            $0.information.localizedStandardContains(searchModel.searchText)
-        }
-    }
-    
     @ViewBuilder
-    func listView(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
+    func listView() -> some View {
         @Bindable var listModel = listModel
 #if os(macOS)
         if listDisplayModel.isSelectionMode {
             List(selection: $listModel.listSelection) {
-                itemRows(filteredItems: filteredItems)
+                itemRows()
             }
         } else {
             List(selection: $listModel.selected) {
-                itemRows(filteredItems: filteredItems)
+                itemRows()
             }
         }
 #else
         List(selection: $listModel.listSelection) {
-            itemRows(filteredItems: filteredItems)
+            itemRows()
         }
 #endif
     }
     
-    func itemRows(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
-        ForEach(filteredItems) { item in
-            row(item.model.id)
-                .applyIf(!listDisplayModel.isSelectionMode) { content in
-                    content.contextMenu {
-                        ItemListContextMenu(controller: menuController, currentSelected: item.model.id)
+    func itemRows() -> some View {
+        ForEach(totalItems) { item in
+            HStack {
+                row(item.model.id)
+                    .applyIf(!listDisplayModel.isSelectionMode) { content in
+                        content.contextMenu {
+                            ItemListContextMenu(controller: menuController, currentSelected: item.model.id)
+                        }
                     }
-                }
-                .padding(.leading, CGFloat(item.level * 16))
+                
+                specialCategoryFolderIndicator(model: item.model)
+            }
+            .padding(.leading, CGFloat(item.level * 16))
 #if !os(tvOS)
-                .dropDestination(for: LinkData.self) { items, _ in
-                    addLinks(links: items)
-                }
+            .dropDestination(for: LinkData.self) { items, _ in
+                addLinks(links: items)
+            }
 #endif
-                .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
-                .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
+            .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
+            .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
         .onDelete(perform: deleteItems)
         .onMove(perform: moveItems)
@@ -279,7 +267,45 @@ private extension ItemListView {
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
     }
     
-    func totalItems(items: [EditController.Model], level: Int = 0, withParentFilter: Bool = true, entryIds: [UUID: UUID] = [:]) -> [ItemListModel<EditController.Model>] {
+    @ViewBuilder
+    func specialCategoryFolderIndicator(model: EditController.Model) -> some View {
+        if model.category == .folder || model.category == EditController.Model.collectionCategory {
+            Image(systemName: listModel.isFolderOpen(itemId: model.id) ? "chevron.down" : "chevron.right")
+                .imageScale(.small)
+                .padding(.trailing)
+                .foregroundStyle(listModel.isFolderOpen(itemId: model.id) ? Color.accentColor : Color.secondary)
+                .contentShape(.rect)
+                .onTapGesture {
+                    withAnimation { listModel.toggleFolder(itemId: model.id) }
+                }
+        }
+    }
+    
+    var totalItems: [ItemListModel<EditController.Model>] {
+        expandedItems(items: items)
+    }
+
+    func filteredItems(items: [EditController.Model], withParentFilter: Bool = true) -> [EditController.Model] {
+        var filtered = items
+        if withParentFilter {
+            if parentModel == nil && listDisplayModel.listMode == .list {
+                filtered = filtered.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
+            } else {
+                filtered = filtered.filter { $0.parentId == listModel.selectedParentId }
+            }
+        }
+        if !searchModel.selectedTokens.isEmpty {
+            let selectedTags = searchModel.selectedTokens.map { $0.tag }
+            filtered = filtered.filter { $0.tags.contains(selectedTags) }
+        }
+        guard !searchModel.searchText.isEmpty else { return filtered }
+        return filtered.filter {
+            $0.name.localizedStandardContains(searchModel.searchText) ||
+            $0.information.localizedStandardContains(searchModel.searchText)
+        }
+    }
+    
+    func expandedItems(items: [EditController.Model], level: Int = 0, withParentFilter: Bool = true, entryIds: [UUID: UUID] = [:]) -> [ItemListModel<EditController.Model>] {
         var total: [ItemListModel<EditController.Model>] = []
         guard level < 10 else { return total }
         let filtered = filteredItems(items: items, withParentFilter: withParentFilter)
@@ -293,7 +319,7 @@ private extension ItemListView {
             total.append(ItemListModel(id: entryIds[item.id, default: item.id], model: item, isOpen: listModel.isFolderOpen(itemId: item.id), level: level))
             if item.specialCategory && listModel.isFolderOpen(itemId: item.id) {
                 let (newItems, newEntryIds) = item.subItems
-                total.append(contentsOf: totalItems(items: newItems, level: level + 1, withParentFilter: false, entryIds: newEntryIds))
+                total.append(contentsOf: expandedItems(items: newItems, level: level + 1, withParentFilter: false, entryIds: newEntryIds))
             }
         }
         if total.isEmpty && parentModel != nil {

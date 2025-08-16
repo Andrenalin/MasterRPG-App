@@ -63,6 +63,8 @@ public struct LinkItemListView<Model: ItemDataAccessable, Row: View>: View where
                             }
                         }
                         .searchable(text: $searchModel.searchText, placement: .automatic)
+                        .navigationTitle(Model.typeId.title)
+                        
                 }
         }
     }
@@ -71,15 +73,18 @@ public struct LinkItemListView<Model: ItemDataAccessable, Row: View>: View where
         listView
             .frame(minWidth: 150, idealWidth: 250)
             .overlay {
-                if filteredItems.isEmpty && !searchModel.searchText.isEmpty {
+                if totalItems.isEmpty && !searchModel.searchText.isEmpty {
                     ContentUnavailableView.search
                 }
             }
-            //.listStyle(.plain)
+            .animation(.smooth, value: totalItems.count)
             .environment(listModel)
-            .animation(.smooth, value: filteredItems.count)
+        #if os(macOS)
+            //.listStyle(.inset(alternatesRowBackgrounds: true))
+            .listStyle(.sidebar)
+        #endif
             .scrollIndicatorsFlash(onAppear: true)
-            .scrollIndicatorsFlash(trigger: filteredItems.count)
+            .scrollIndicatorsFlash(trigger: totalItems.count)
             .scrollEdgeEffectStyle(.hard, for: .top)
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
@@ -88,13 +93,18 @@ public struct LinkItemListView<Model: ItemDataAccessable, Row: View>: View where
 }
 
 private extension LinkItemListView {
+    var totalItems: [ItemListModel<Model>] {
+        expandedItems(items: items)
+    }
     
-    var filteredItems: [Model] {
-        var filtered: [Model]
-        if inspectorDisplayModel.listMode == .folder {
-            filtered = items
-        } else {
-            filtered = items.filter { $0.category != .folder && $0.category != Model.collectionCategory }
+    func filteredItems(items: [Model], withParentFilter: Bool = true) -> [Model] {
+        var filtered = items
+        if withParentFilter {
+            if inspectorDisplayModel.listMode == .folder {
+                filtered = items.filter { $0.parentId == nil }
+            } else {
+                filtered = items.filter { $0.category != .folder && $0.category != Model.collectionCategory }
+            }
         }
         if !searchModel.selectedTokens.isEmpty {
             let selectedTags = searchModel.selectedTokens.map { $0.tag }
@@ -107,6 +117,20 @@ private extension LinkItemListView {
         }
     }
     
+    func expandedItems(items: [Model], level: Int = 0, withParentFilter: Bool = true, entryIds: [UUID: UUID] = [:]) -> [ItemListModel<Model>] {
+        var total: [ItemListModel<Model>] = []
+        guard level < 10 else { return total }
+        let filtered = filteredItems(items: items, withParentFilter: withParentFilter)
+        filtered.forEach { item in
+            total.append(ItemListModel(id: entryIds[item.id, default: item.id], model: item, isOpen: listModel.isFolderOpen(itemId: item.id), level: level))
+            if item.specialCategory && listModel.isFolderOpen(itemId: item.id) {
+                let (newItems, newEntryIds) = item.subItems
+                total.append(contentsOf: expandedItems(items: newItems, level: level + 1, withParentFilter: false, entryIds: newEntryIds))
+            }
+        }
+        return total
+    }
+    
     @ViewBuilder
     var listView: some View {
         @Bindable var listModel = listModel
@@ -116,13 +140,34 @@ private extension LinkItemListView {
     }
     
     func itemRows() -> some View {
-        ForEach(filteredItems) { item in
-            row(item.id)
-                .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
+        ForEach(totalItems) { item in
+            HStack {
+                row(item.model.id)
+                
+                specialCategoryFolderIndicator(model: item.model)
+            }
+            .padding(.leading, CGFloat(item.level * 16))
+            .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
+            .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
+
         }
     }
     
     var leadingPadding: CGFloat {
         CGFloat(valueFor(iOS: 8, macOS: 4, tvOS: 8, visionOS: 8))
+    }
+    
+    @ViewBuilder
+    func specialCategoryFolderIndicator(model: Model) -> some View {
+        if model.category == .folder || model.category == Model.collectionCategory {
+            Image(systemName: listModel.isFolderOpen(itemId: model.id) ? "chevron.down" : "chevron.right")
+                .imageScale(.small)
+                .padding(.trailing)
+                .foregroundStyle(listModel.isFolderOpen(itemId: model.id) ? Color.accentColor : Color.secondary)
+                .contentShape(.rect)
+                .onTapGesture {
+                    withAnimation { listModel.toggleFolder(itemId: model.id) }
+                }
+        }
     }
 }
