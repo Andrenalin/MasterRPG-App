@@ -15,13 +15,13 @@ public final class PdfRootModel {
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
-        self.searchModel = SearchModel(modelContext: modelContext, module: PdfDataModel.typeId, categoryTags: [.adventure, .character, .rules, .supplement])
+        self.searchModel = PdfRootModel.newSearchModel(modelContext: modelContext)
         
         self._viewController = ViewController(_root: self)
         
         itemController.cleanDeleted()
     }
-
+    
     let modelContext: ModelContext
     @ObservationIgnored let cacheController: CacheController
     @ObservationIgnored let editController: EditController
@@ -38,6 +38,16 @@ public final class PdfRootModel {
     let searchModel: SearchModel
     var currentSelectedItemId: UUID? {
         listModel.selected
+    }
+}
+
+extension PdfRootModel {
+    func newSearchModel() -> SearchModel {
+        Self.newSearchModel(modelContext: modelContext)
+    }
+    
+    static private func newSearchModel(modelContext: ModelContext) -> SearchModel {
+        SearchModel(modelContext: modelContext, module: PdfDataModel.typeId, categoryTags: [.adventure, .character, .rules, .supplement])
     }
 }
 

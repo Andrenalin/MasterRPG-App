@@ -27,6 +27,8 @@ struct DetailView: View {
             }
         } bottom: {
             GroupedPhotoView(cacheController: root.cacheController, model: model)
+        } inspector: {
+            LinkRootView(isInspector: true)
         }
         .environment(selection)
         .environment(openFileWindowModel)

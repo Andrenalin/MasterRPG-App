@@ -14,6 +14,12 @@ public struct ViewController {
 
 public extension ViewController {
     @MainActor
+    func linkWindow() -> some View {
+        LinkRootView(isInspector: false)
+            .environment(root)
+    }
+
+    @MainActor
     func pdfWindow(selection: ItemSelectionModel) -> some View {
         let model = root.itemController.modelSync(for: selection.itemId) ?? .newItem
         

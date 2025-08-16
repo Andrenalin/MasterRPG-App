@@ -20,10 +20,10 @@ public final class AudioRootModel {
         self.searchModel = AudioRootModel.newSearchModel(modelContext: modelContext)
         
         self._viewController = ViewController(_root: self)
-
+        
         itemController.cleanDeleted()
     }
-
+    
     let modelContext: ModelContext
     @ObservationIgnored let audioController: AudioController
     @ObservationIgnored let editController: EditController
@@ -34,7 +34,7 @@ public final class AudioRootModel {
     public var viewController: ViewController {
         _viewController.unsafelyUnwrapped
     }
-
+    
     let listModel = ListModel()
     let listDisplayModel = ListDisplayModel()
     let searchModel: SearchModel
@@ -43,7 +43,9 @@ public final class AudioRootModel {
     }
     
     public let audioPlayerModel: AudioPlayerModel
-    
+}
+
+extension AudioRootModel {
     func newSearchModel() -> SearchModel {
         Self.newSearchModel(modelContext: modelContext)
     }

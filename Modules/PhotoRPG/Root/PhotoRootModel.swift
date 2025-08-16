@@ -15,7 +15,9 @@ public final class PhotoRootModel {
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
-        self.searchModel = SearchModel(modelContext: modelContext, module: PhotoDataModel.typeId, categoryTags: [.adventure, .map, .value, .weather])
+        self.searchModel = PhotoRootModel.newSearchModel(modelContext: modelContext)
+        
+        self._viewController = ViewController(_root: self)
         
         itemController.cleanDeleted()
     }
@@ -26,12 +28,26 @@ public final class PhotoRootModel {
     @ObservationIgnored let exportController: ExportController
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: ItemController
-    
+    @ObservationIgnored private var _viewController: ViewController? = nil
+    public var viewController: ViewController {
+        _viewController.unsafelyUnwrapped
+    }
+
     let listModel = ListModel()
     let listDisplayModel = ListDisplayModel()
     let searchModel: SearchModel
     var currentSelectedItemId: UUID? {
         listModel.selected
+    }
+}
+
+extension PhotoRootModel {
+    func newSearchModel() -> SearchModel {
+        Self.newSearchModel(modelContext: modelContext)
+    }
+    
+    static private func newSearchModel(modelContext: ModelContext) -> SearchModel {
+        SearchModel(modelContext: modelContext, module: PhotoDataModel.typeId, categoryTags: [.adventure, .map, .value, .weather])
     }
 }
 

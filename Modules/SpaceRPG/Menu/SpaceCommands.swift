@@ -17,11 +17,9 @@ public struct SpaceCommands: Commands {
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
     public var body: some Commands {
-//#if os(macOS)
-//        CommandGroup(after: .windowArrangement) {
-//            LinkWindowCommandView(title: "Photo Link", networkModule: .photo, key: "8")
-//        }
-//#endif
+        CommandGroup(after: .windowArrangement) {
+            LinkWindowCommandView(networkModule: .space, key: "9")
+        }
         CommandGroup(after: .toolbar) {
             NavigateButton(navigator: navigator)
         }

@@ -17,11 +17,9 @@ public struct DiceCommands: Commands {
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
     public var body: some Commands {
-//#if os(macOS)
-//        CommandGroup(after: .windowArrangement) {
-//            LinkWindowCommandView(title: "Photo Link", networkModule: .photo, key: "7")
-//        }
-//#endif
+        CommandGroup(after: .windowArrangement) {
+            LinkWindowCommandView(networkModule: .dice, key: "7")
+        }
         CommandGroup(after: .toolbar) {
             NavigateButton(navigator: navigator)
         }

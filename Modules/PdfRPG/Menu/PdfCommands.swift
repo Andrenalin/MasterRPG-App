@@ -17,11 +17,9 @@ public struct PdfCommands: Commands {
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
     public var body: some Commands {
-//#if os(macOS)
-//        CommandGroup(after: .windowArrangement) {
-//            LinkWindowCommandView(title: "Photo Link", networkModule: .photo, key: "3")
-//        }
-//#endif
+        CommandGroup(after: .windowArrangement) {
+            LinkWindowCommandView(networkModule: .pdf, key: "3")
+        }
         CommandGroup(after: .toolbar) {
             NavigateButton(navigator: navigator)
         }

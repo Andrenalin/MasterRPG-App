@@ -5,12 +5,35 @@ import CoreRPG
 import RolePlayGameKit
 import SwiftUI
 import AudioRPG
+import DiceRPG
+import PdfRPG
+import PhotoRPG
+import SpaceRPG
 
 struct WindowLinkList: Scene {
     let appModel: AppModel
     
     var body: some Scene {
         Group {
+            WindowGroup("\(NetworkModules.pdf.title) Link", id: NetworkModules.pdf.linkWindowId) {
+                appModel.pdfRoot.viewController.linkWindow()
+                    .accentColor(.teal)
+                    .tint(.teal)
+                    .frame(minWidth: 350, minHeight: 400)
+                    .onDisappear {
+                        appModel.windowStateModel.openWindowState[.pdf] = false
+                    }
+                    .handlesExternalEvents(preferring: [], allowing: [])
+#if os(macOS)
+                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+#endif
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .pdf))
+#if os(macOS)
+            .keyboardShortcut("3", modifiers: [.command, .option])
+#endif
+
             WindowGroup("\(NetworkModules.audio.title) Link", id: NetworkModules.audio.linkWindowId) {
                 appModel.audioRoot.viewController.linkWindow()
                     .accentColor(.teal)
@@ -19,16 +42,72 @@ struct WindowLinkList: Scene {
                     .onDisappear {
                         appModel.windowStateModel.openWindowState[.audio] = false
                     }
-                .handlesExternalEvents(preferring: [], allowing: [])
+                    .handlesExternalEvents(preferring: [], allowing: [])
 #if os(macOS)
-                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
 #endif
             }
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(appModel.windowPlacement(for: .audio))
-            #if os(macOS)
+#if os(macOS)
             .keyboardShortcut("6", modifiers: [.command, .option])
-            #endif
+#endif
+
+            WindowGroup("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkWindowId) {
+                appModel.diceRoot.viewController.linkWindow()
+                    .accentColor(.teal)
+                    .tint(.teal)
+                    .frame(minWidth: 350, minHeight: 400)
+                    .onDisappear {
+                        appModel.windowStateModel.openWindowState[.dice] = false
+                    }
+                    .handlesExternalEvents(preferring: [], allowing: [])
+#if os(macOS)
+                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+#endif
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .dice))
+#if os(macOS)
+            .keyboardShortcut("7", modifiers: [.command, .option])
+#endif
+
+            WindowGroup("\(NetworkModules.photo.title) Link", id: NetworkModules.photo.linkWindowId) {
+                appModel.photoRoot.viewController.linkWindow()
+                    .accentColor(.teal)
+                    .tint(.teal)
+                    .frame(minWidth: 350, minHeight: 400)
+                    .onDisappear {
+                        appModel.windowStateModel.openWindowState[.photo] = false
+                    }
+                    .handlesExternalEvents(preferring: [], allowing: [])
+#if os(macOS)
+                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+#endif
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .photo))
+#if os(macOS)
+            .keyboardShortcut("8", modifiers: [.command, .option])
+#endif
+            WindowGroup("\(NetworkModules.space.title) Link", id: NetworkModules.space.linkWindowId) {
+                appModel.spaceRoot.viewController.linkWindow()
+                    .accentColor(.teal)
+                    .tint(.teal)
+                    .frame(minWidth: 350, minHeight: 400)
+                    .onDisappear {
+                        appModel.windowStateModel.openWindowState[.space] = false
+                    }
+                    .handlesExternalEvents(preferring: [], allowing: [])
+#if os(macOS)
+                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+#endif
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .space))
+#if os(macOS)
+            .keyboardShortcut("9", modifiers: [.command, .option])
+#endif
         }
         .defaultSize(CGSize(width: 400, height: 800))
     }
