@@ -23,7 +23,6 @@ struct MockData: PreviewModifier {
         )
         
         guard try! container.mainContext.fetch(FetchDescriptor<PhotoDataModel>()).isEmpty else {
-            print("*** Empty ***")
             return container
         }
         let model1 = PhotoDataModel(
@@ -53,8 +52,6 @@ struct MockData: PreviewModifier {
         )
         container.mainContext.insert(model3)
 
-        // --- BEGIN Additional Mock Data ---
-        // Folder hierarchy
         let folderId = UUID()
         let subfolderId = UUID()
         let folder = PhotoDataModel(
@@ -148,7 +145,6 @@ struct MockData: PreviewModifier {
         container.mainContext.insert(photoX)
         container.mainContext.insert(photoY)
         container.mainContext.insert(emptyfolder)
-        // --- END Additional Mock Data ---
 
         return container
     }

@@ -42,10 +42,19 @@ public final class ListDisplayModel {
         }
     }
     
-    public enum ListMode: Int, Equatable, Hashable, Codable, Sendable {
+    public enum ListMode: Int, Equatable, Hashable, Codable, Sendable, CaseIterable, Identifiable {
         case list
         case folder
-    }
+        
+        public var title: String {
+            switch self {
+            case .list: return "List"
+            case .folder: return "Folder"
+            }
+        }
+        
+        public var id: Self { self }
+    }    
     public var listMode: ListMode
 
     public var isListMode: Bool {

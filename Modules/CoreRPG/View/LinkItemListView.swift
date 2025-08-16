@@ -22,12 +22,9 @@ public struct LinkItemListView<EditController: EditControllable, Row: View>: Vie
     @Environment(SearchModel.self) private var searchModel
     
     @State private var cacheItemListModel = CacheItemListModel()
-    @State private var myDisplayModel = ListDisplayModel()
     @State private var listModel = ListModel()
 
     public var body: some View {
-        NavigationStack {
-            @Bindable var searchModel = searchModel
             listView()
                 .frame(minWidth: 250, idealWidth: 350)
                 .overlay {
@@ -35,19 +32,14 @@ public struct LinkItemListView<EditController: EditControllable, Row: View>: Vie
                         ContentUnavailableView.search
                     }
                 }
-                .environment(myDisplayModel)
+                .listStyle(.plain)
                 .environment(listModel)
-                .onChange(of: listDisplayModel.displayMode, initial: true) {
-                    myDisplayModel.displayMode = listDisplayModel.displayMode
-                }
                 .animation(.smooth, value: filteredItems.count)
                 .scrollIndicatorsFlash(onAppear: true)
                 .scrollIndicatorsFlash(trigger: filteredItems.count)
 #if !os(visionOS)
                 .scrollDismissesKeyboard(.immediately)
 #endif
-                .searchable(text: $searchModel.searchText, placement: .automatic)
-        }
     }
 }
 
@@ -56,10 +48,10 @@ private extension LinkItemListView {
     var filteredItems: [EditController.Model] {
         var filtered: [EditController.Model]
         if parentModel.category == .folder {
-            myDisplayModel.listMode = .folder
+            listDisplayModel.listMode = .folder
             filtered = items
         } else {
-            myDisplayModel.listMode = .list
+            listDisplayModel.listMode = .list
             filtered = items.filter { $0.category != .folder && $0.category != EditController.Model.collectionCategory }
         }
         if !searchModel.selectedTokens.isEmpty {
