@@ -8,8 +8,17 @@ import Foundation
 public final class AudioRootModel {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
+        
         let audioPlayerModel = AudioPlayerModel()
         self.audioPlayerModel = audioPlayerModel
+        
+        let listModel = ListModel()
+        self.listModel = listModel
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = AudioRootModel.newSearchModel(modelContext: modelContext)
+        self.searchModel = searchModel
+
         let fileController = FileController()
         self.audioController = AudioController(fileController: fileController, model: audioPlayerModel)
         self.editController = EditController(fileUrlDataController: fileController.fileUrlDataController)
@@ -17,39 +26,39 @@ public final class AudioRootModel {
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
-        self.searchModel = AudioRootModel.newSearchModel(modelContext: modelContext)
-        
+        self.listController = ListController.listController(for: .main, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.listLinkController = ListController.listController(for: .link, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
         self._viewController = ViewController(_root: self)
         
         itemController.cleanDeleted()
     }
     
     let modelContext: ModelContext
+    
+    let listModel: ListModel
+    let listDisplayModel: ListDisplayModel
+    let searchModel: SearchModel
+    
+    public let audioPlayerModel: AudioPlayerModel
+
     @ObservationIgnored let audioController: AudioController
     @ObservationIgnored let editController: EditController
     @ObservationIgnored let exportController: ExportController
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: ItemController
+    @ObservationIgnored let listController: ListController
+    @ObservationIgnored let listLinkController: ListController
     @ObservationIgnored private var _viewController: ViewController? = nil
     public var viewController: ViewController {
         _viewController.unsafelyUnwrapped
     }
     
-    let listModel = ListModel()
-    let listDisplayModel = ListDisplayModel()
-    let searchModel: SearchModel
     var currentSelectedItemId: UUID? {
         listModel.selected
     }
-    
-    public let audioPlayerModel: AudioPlayerModel
 }
 
 extension AudioRootModel {
-    func newSearchModel() -> SearchModel {
-        Self.newSearchModel(modelContext: modelContext)
-    }
-    
     static private func newSearchModel(modelContext: ModelContext) -> SearchModel {
         SearchModel(modelContext: modelContext, module: AudioDataModel.typeId, categoryTags: [.music, .sound])
     }

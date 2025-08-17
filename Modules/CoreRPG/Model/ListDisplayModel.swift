@@ -73,4 +73,8 @@ public final class ListDisplayModel {
     }
     
     var isPadStyle: Bool
+    
+    public var newListDisplayModel: ListDisplayModel {
+        ListDisplayModel(isSelectionMode: isSelectionMode, displayMode: displayMode, listMode: listMode, isPadStyle: isPadStyle)
+    }
 }

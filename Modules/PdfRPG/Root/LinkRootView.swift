@@ -10,16 +10,16 @@ struct LinkRootView: View {
     @Query(filter: #Predicate<PdfDataModel>{ $0.displayState == 0 }, sort: \PdfDataModel.name, animation: .smooth) private var items: [PdfDataModel]
     
     var body: some View {
-        LinkItemListView(items: items, parentModel: selectedModel, isInspector: isInspector) { itemId in
+        LinkItemListView(listController: root.listLinkController, parentModel: selectedModel, isInspector: isInspector) { itemId in
             if let model = root.itemController.modelSync(for: itemId) {
                 MainRowView(model: model)
             }
         }
-        .environment(root.listModel)
-        .environment(root.listDisplayModel)
-        .environment(root.newSearchModel())
         .environment(DeviceRotationModel())
         .environment(CacheItemListModel())
+        .onChange(of: items) {
+            root.listLinkController.update(items: items)
+        }
     }
     
     var selectedModel: PdfDataModel? {

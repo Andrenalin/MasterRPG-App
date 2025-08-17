@@ -4,32 +4,26 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct LinkItemListView<Model: ItemDataAccessable, Row: View>: View where Model: ListItemFolderable, Model: Identifiable, Model.ID == UUID {
-    public init(items: [Model], parentModel: Model?, isInspector: Bool, @ViewBuilder row: @escaping (UUID) -> Row) {
-        self.items = items
+public struct LinkItemListView<ListController: ListControllable, Row: View>: View where ListController.Model.ID == UUID {
+    public init(listController: ListController, parentModel: ListController.Model?, isInspector: Bool, @ViewBuilder row: @escaping (UUID) -> Row) {
+        self.listController = listController
         self.parentModel = parentModel
         self.isInspector = isInspector
         self.row = row
-        let listDisplayModel = ListDisplayModel()
-        listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
-        self._inspectorDisplayModel = State(wrappedValue: listDisplayModel)
+        listController.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
     }
 
-    let items: [Model]
-    let parentModel: Model?
+    let listController: ListController
+    let parentModel: ListController.Model?
     let isInspector: Bool
     let row: (UUID) -> Row
     
     @Environment(ListDisplayModel.self) private var listDisplayModel
-    @Environment(SearchModel.self) private var searchModel
-    
-    @State private var listModel = ListModel()
-    @State private var inspectorDisplayModel = ListDisplayModel()
     
     public var body: some View {
         NavigationStack {
-            @Bindable var searchModel = searchModel
-            @Bindable var inspectorDisplayModel = inspectorDisplayModel
+            @Bindable var searchModel = listController.searchModel
+            @Bindable var inspectorDisplayModel = listController.listDisplayModel
             
             if isInspector {
                 Picker(selection: $inspectorDisplayModel.listMode) {
@@ -42,6 +36,9 @@ public struct LinkItemListView<Model: ItemDataAccessable, Row: View>: View where
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
+                .onChange(of: inspectorDisplayModel.listMode) {
+                    withAnimation { listController.resetFilter() }
+                }
                 
                 TextField("Filter", text: $searchModel.searchText)
                     .padding(.horizontal)
@@ -50,8 +47,11 @@ public struct LinkItemListView<Model: ItemDataAccessable, Row: View>: View where
             contentView
                 .onChange(of: listDisplayModel.displayMode, initial: true) {
                     inspectorDisplayModel.displayMode = listDisplayModel.displayMode
+                    withAnimation { listController.resetFilter() }
                 }
-                .environment(inspectorDisplayModel)
+                .onChange(of: listController.searchModel.searchText) {
+                    withAnimation { listController.resetFilter() }
+                }
                 .applyIf(!isInspector) { content in
                     content
                         .toolbar {
@@ -63,28 +63,29 @@ public struct LinkItemListView<Model: ItemDataAccessable, Row: View>: View where
                             }
                         }
                         .searchable(text: $searchModel.searchText, placement: .automatic)
-                        .navigationTitle(Model.typeId.title)
-                        
+                        .navigationTitle(ListController.Model.typeId.title)
                 }
         }
+        .environment(listController.listDisplayModel)
+        .environment(listController.listModel)
+        .environment(listController.searchModel)
     }
 
     var contentView: some View {
         listView
             .frame(minWidth: 150, idealWidth: 250)
             .overlay {
-                if totalItems.isEmpty && !searchModel.searchText.isEmpty {
+                if listController.listModel.displayedItems.isEmpty && !listController.searchModel.searchText.isEmpty {
                     ContentUnavailableView.search
                 }
             }
-            .animation(.smooth, value: totalItems.count)
-            .environment(listModel)
+            .animation(.smooth, value: listController.listModel.displayedItems.count)
         #if os(macOS)
             //.listStyle(.inset(alternatesRowBackgrounds: true))
             .listStyle(.sidebar)
         #endif
             .scrollIndicatorsFlash(onAppear: true)
-            .scrollIndicatorsFlash(trigger: totalItems.count)
+            .scrollIndicatorsFlash(trigger: listController.listModel.displayedItems.count)
             .scrollEdgeEffectStyle(.hard, for: .top)
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
@@ -93,58 +94,58 @@ public struct LinkItemListView<Model: ItemDataAccessable, Row: View>: View where
 }
 
 private extension LinkItemListView {
-    var totalItems: [ItemListModel<Model>] {
-        expandedItems(items: items)
-    }
-    
-    func filteredItems(items: [Model], withParentFilter: Bool = true) -> [Model] {
-        var filtered = items
-        if withParentFilter {
-            if inspectorDisplayModel.listMode == .folder {
-                filtered = items.filter { $0.parentId == nil }
-            } else {
-                filtered = items.filter { $0.category != .folder && $0.category != Model.collectionCategory }
-            }
-        }
-        if !searchModel.selectedTokens.isEmpty {
-            let selectedTags = searchModel.selectedTokens.map { $0.tag }
-            filtered = filtered.filter { $0.tags.contains(selectedTags) }
-        }
-        guard !searchModel.searchText.isEmpty else { return filtered }
-        return filtered.filter {
-            $0.name.localizedStandardContains(searchModel.searchText) ||
-            $0.information.localizedStandardContains(searchModel.searchText)
-        }
-    }
-    
-    func expandedItems(items: [Model], level: Int = 0, withParentFilter: Bool = true, entryIds: [UUID: UUID] = [:]) -> [ItemListModel<Model>] {
-        var total: [ItemListModel<Model>] = []
-        guard level < 10 else { return total }
-        let filtered = filteredItems(items: items, withParentFilter: withParentFilter)
-        filtered.forEach { item in
-            total.append(ItemListModel(id: entryIds[item.id, default: item.id], model: item, isOpen: listModel.isFolderOpen(itemId: item.id), level: level))
-            if item.specialCategory && listModel.isFolderOpen(itemId: item.id) {
-                let (newItems, newEntryIds) = item.subItems
-                total.append(contentsOf: expandedItems(items: newItems, level: level + 1, withParentFilter: false, entryIds: newEntryIds))
-            }
-        }
-        return total
-    }
+//    var totalItems: [ItemListModel<Model>] {
+//        expandedItems(items: items)
+//    }
+//    
+//    func filteredItems(items: [Model], withParentFilter: Bool = true) -> [Model] {
+//        var filtered = items
+//        if withParentFilter {
+//            if inspectorDisplayModel.listMode == .folder {
+//                filtered = items.filter { $0.parentId == nil }
+//            } else {
+//                filtered = items.filter { $0.category != .folder && $0.category != Model.collectionCategory }
+//            }
+//        }
+//        if !searchModel.selectedTokens.isEmpty {
+//            let selectedTags = searchModel.selectedTokens.map { $0.tag }
+//            filtered = filtered.filter { $0.tags.contains(selectedTags) }
+//        }
+//        guard !searchModel.searchText.isEmpty else { return filtered }
+//        return filtered.filter {
+//            $0.name.localizedStandardContains(searchModel.searchText) ||
+//            $0.information.localizedStandardContains(searchModel.searchText)
+//        }
+//    }
+//    
+//    func expandedItems(items: [Model], level: Int = 0, withParentFilter: Bool = true, entryIds: [UUID: UUID] = [:]) -> [ItemListModel<Model>] {
+//        var total: [ItemListModel<Model>] = []
+//        guard level < 10 else { return total }
+//        let filtered = filteredItems(items: items, withParentFilter: withParentFilter)
+//        filtered.forEach { item in
+//            total.append(ItemListModel(id: entryIds[item.id, default: item.id], model: item, isOpen: listModel.isFolderOpen(itemId: item.id), level: level))
+//            if item.specialCategory && listModel.isFolderOpen(itemId: item.id) {
+//                let (newItems, newEntryIds) = item.subItems
+//                total.append(contentsOf: expandedItems(items: newItems, level: level + 1, withParentFilter: false, entryIds: newEntryIds))
+//            }
+//        }
+//        return total
+//    }
     
     @ViewBuilder
     var listView: some View {
-        @Bindable var listModel = listModel
+        @Bindable var listModel = listController.listModel
         List(selection: $listModel.listSelection) {
             itemRows()
         }
     }
     
     func itemRows() -> some View {
-        ForEach(totalItems) { item in
+        ForEach(listController.listModel.displayedItems) { item in
             HStack {
-                row(item.model.id)
+                row(item.itemId)
                 
-                specialCategoryFolderIndicator(model: item.model)
+                specialCategoryFolderIndicator(item: item)
             }
             .padding(.leading, CGFloat(item.level * 16))
             .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
@@ -158,15 +159,15 @@ private extension LinkItemListView {
     }
     
     @ViewBuilder
-    func specialCategoryFolderIndicator(model: Model) -> some View {
-        if model.category == .folder || model.category == Model.collectionCategory {
-            Image(systemName: listModel.isFolderOpen(itemId: model.id) ? "chevron.down" : "chevron.right")
+    func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
+        if item.isSpecial {
+            Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                 .imageScale(.small)
                 .padding(.trailing)
-                .foregroundStyle(listModel.isFolderOpen(itemId: model.id) ? Color.accentColor : Color.secondary)
+                .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    withAnimation { listModel.toggleFolder(itemId: model.id) }
+                    withAnimation { listController.listModel.toggleFolder(itemId: item.itemId) }
                 }
         }
     }

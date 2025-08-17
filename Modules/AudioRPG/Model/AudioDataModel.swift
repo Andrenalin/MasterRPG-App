@@ -70,8 +70,8 @@ extension AudioDataModel {
         category == .folder || category == AudioDataModel.collectionCategory
     }
     
-    var hasAudio: Bool {
-        guard category == .folder || category == .playlist else { return url != nil }
+    @MainActor var hasAudio: Bool {
+        guard specialCategory else { return url != nil }
         return entries.first { entry in
             guard let entryItem = AudioDataModel.model(modelContext: modelContext, id: entry.childId) else { return false }
             return entryItem.hasAudio

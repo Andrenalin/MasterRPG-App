@@ -11,13 +11,13 @@ public final class SearchModel: Sendable {
         self.searchText = searchText
         self.searchToken = searchToken
         self.selectedTokens = selectedTokens
-        self.categoryTags = [ItemListCategory.all] + categoryTags
+        self.categoryTags = categoryTags
     }
     
     let modelContext: ModelContext
     let module: NetworkModules
     
-    public var searchText: String = ""
+    public var searchText: String
     internal(set) public var searchToken: ItemListCategory
     internal(set) public var selectedTokens: [SearchTags]
     var categoryTags: [ItemListCategory]
@@ -34,6 +34,10 @@ public final class SearchModel: Sendable {
             return tags?.filter { $0.name.localizedCaseInsensitiveContains(tagSearch) }.map { SearchTags(tag: $0.name) } ?? []
         }
         return []
+    }
+    
+    public var newSearchModel: SearchModel {
+        SearchModel(modelContext: modelContext, module: module, searchText: "", searchToken: searchToken, selectedTokens: [], categoryTags: categoryTags)
     }
 }
 

@@ -20,10 +20,9 @@ public final class ListModel {
     }
     
     // MARK: - Items
-//    var items: [Model] = []
-//    func update(items: [Model]) {
-//        
-//    }
+    public var originalItems: [ListItemModel] = []
+    public var displayedItems: [ListItemModel] = []
+    
     //public var items:
     
     // MARK: - List navigation
@@ -33,7 +32,7 @@ public final class ListModel {
     var level: Int = 0
     
     
-    func isFolderOpen(itemId: UUID) -> Bool {
+    public func isFolderOpen(itemId: UUID) -> Bool {
         subItemModels[itemId]?.isOpen ?? false
     }
     
@@ -135,4 +134,31 @@ struct ItemListModel<Model>: Identifiable {
     let model: Model
     let isOpen: Bool
     let level: Int
+}
+
+
+@Observable @MainActor
+public final class ListItemModel: Identifiable {
+    public init(id: String, itemId: UUID, isOpen: Bool = false, level: Int = 0, isSpecial: Bool = false, name: String, information: String, tags: [String], parentId: UUID? = nil) {
+        self.id = id
+        self.itemId = itemId
+        self.isOpen = isOpen
+        self.level = 0
+        self.isSpecial = isSpecial
+        self.name = name
+        self.information = information
+        self.tags = tags
+        self.parentId = parentId
+    }
+    
+    public let id: String
+    let itemId: UUID
+    var isOpen: Bool
+    public let level: Int
+    
+    public let name: String
+    public let information: String
+    public let isSpecial: Bool
+    public let tags: [String]
+    public let parentId: UUID?
 }

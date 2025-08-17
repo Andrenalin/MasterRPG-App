@@ -8,6 +8,14 @@ import Foundation
 public final class SpaceRootModel {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
+        
+        let listModel = ListModel()
+        self.listModel = listModel
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = SpaceRootModel.newSearchModel(modelContext: modelContext)
+        self.searchModel = searchModel
+
         let fileController = FileController()
         self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
         self.editController = EditController(fileUrlDataController: fileController.fileUrlDataController)
@@ -15,37 +23,37 @@ public final class SpaceRootModel {
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
-        self.searchModel = SpaceRootModel.newSearchModel(modelContext: modelContext)
-        
+        self.listController = ListController.listController(for: .main, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.listLinkController = ListController.listController(for: .link, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
         self._viewController = ViewController(_root: self)
 
         itemController.cleanDeleted()
     }
 
     let modelContext: ModelContext
+    
+    let listModel: ListModel
+    let listDisplayModel: ListDisplayModel
+    let searchModel: SearchModel
+
     @ObservationIgnored let cacheController: CacheController
     @ObservationIgnored let editController: EditController
     @ObservationIgnored let exportController: ExportController
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: ItemController
+    @ObservationIgnored let listController: ListController
+    @ObservationIgnored let listLinkController: ListController
     @ObservationIgnored private var _viewController: ViewController? = nil
     public var viewController: ViewController {
         _viewController.unsafelyUnwrapped
     }
 
-    let listModel = ListModel()
-    let listDisplayModel = ListDisplayModel()
-    let searchModel: SearchModel
     var currentSelectedItemId: UUID? {
         listModel.selected
     }
 }
 
 extension SpaceRootModel {
-    func newSearchModel() -> SearchModel {
-        Self.newSearchModel(modelContext: modelContext)
-    }
-    
     static private func newSearchModel(modelContext: ModelContext) -> SearchModel {
         SearchModel(modelContext: modelContext, module: SpaceDataModel.typeId, categoryTags: [.building, .item, .supplement])
     }
