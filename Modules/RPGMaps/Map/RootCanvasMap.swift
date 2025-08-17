@@ -49,7 +49,7 @@ struct RootCanvasMap: View {
                 await reloadImage()
             }
         }
-        .onChange(of: mapModel, initial: false) {
+        .onChange(of: mapModel.entries, initial: false) {
             guard image == nil else { return }
             Task {
                 await reloadImage()
