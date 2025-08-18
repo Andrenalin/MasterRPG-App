@@ -52,7 +52,7 @@ public final class AppModel: Sendable {
         self.photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
 
-        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.1", executionDelay: 0.4, verbosity: .info))
+        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.2", executionDelay: 0.4, verbosity: .info))
     }
     
     @MainActor

@@ -89,11 +89,13 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
             $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
         }
 #endif
+#if !os(visionOS)
         .inspector(isPresented: $showInspector) {
             if model.specialCategory {
                 inspector
             }
         }
+#endif
         .sheet(isPresented: $isEditing) {
             DetailItemEditorView(model: model, editController: editController, name: \.name, category: \.category, tags: \.tags, description: \.information)
             

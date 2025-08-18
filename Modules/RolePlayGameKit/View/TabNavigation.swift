@@ -21,11 +21,11 @@ public struct TabNavigation: View {
     
     public var body: some View {
         let _ = Self._printChanges()
-
+        let _ = print("Tab: \(selectedTab.title) --> Tab Selected:\(tabSelectedModule.title)")
+        
         Group {
 #if os(macOS)
             allMacTabs
-                .frame(minWidth: 220, maxWidth: 250)
 #elseif os(visionOS)
             allCustomTabs
 #else
@@ -45,7 +45,7 @@ public struct TabNavigation: View {
         }
 #endif
 #if os(macOS)
-        .tabViewStyle(.sidebarAdaptable)
+        .tabViewStyle(.automatic)
 #else
         .tabViewStyle(.sidebarAdaptable)
 #endif
@@ -54,7 +54,7 @@ public struct TabNavigation: View {
         .onNavigationOpenURL(RootURLHandler(appModel: appModel))
         .onChange(of: selectedTab, initial: true) {
             guard selectedTab != .editors else { return }
-            tabSelectedModule = selectedTab.module
+            tabSelectedModule <=> selectedTab.module
         }
     }
 }
@@ -74,10 +74,10 @@ private extension TabNavigation {
 
     var allMacTabs: some View {
         TabView(selection: $selectedTab) {
-            pageTab(for: .game)
+            pageMacTab(for: .game)
 
             ForEach(RootRoute.allTabs) { tab in
-                pageTab(for: tab)
+                pageMacTab(for: tab)
             }
         }
         .onNavigationReceive(assign: $selectedTab, delay: 0.8)

@@ -25,7 +25,7 @@ public struct ItemRow<Model: ModelType, Thumbnail: View, ActionBar: View>: View 
     #endif
     
     public var body: some View {
-        let _ = Self._printChanges()
+        //let _ = Self._printChanges()
         HStack(alignment: .center, spacing: 4) {
             specialCategoryIcon
             

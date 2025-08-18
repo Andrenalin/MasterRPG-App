@@ -86,8 +86,8 @@ public struct LinkItemListView<ListController: ListControllable, Row: View>: Vie
         #endif
             .scrollIndicatorsFlash(onAppear: true)
             .scrollIndicatorsFlash(trigger: listController.listModel.displayedItems.count)
-            .scrollEdgeEffectStyle(.hard, for: .top)
 #if !os(visionOS)
+            .scrollEdgeEffectStyle(.hard, for: .top)
             .scrollDismissesKeyboard(.immediately)
 #endif
     }

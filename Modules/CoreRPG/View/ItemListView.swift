@@ -37,8 +37,8 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
 #endif
     
     public var body: some View {
-        let _ = Self._printChanges()
-        let _ = print("ParentId \(listModel.selectedParentId?.uuidString ?? "not set")")
+//        let _ = Self._printChanges()
+//        let _ = print("ParentId \(listModel.selectedParentId?.uuidString ?? "not set")")
 
         listView()
             .frame(minWidth: 250, idealWidth: 350)
