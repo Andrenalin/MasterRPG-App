@@ -14,7 +14,7 @@ struct DetailView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
 
     var body: some View {
-        FileDetailEditorView(model: model, editController: root.editController, menuController: menuController, fileTypes: []) {
+        FileDetailEditorView(model: model, listController: root.listController, editController: root.editController, menuController: menuController, fileTypes: []) {
             DiceRoute.detail($0)
         } importer: {
         } background: {

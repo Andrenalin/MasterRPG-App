@@ -14,7 +14,7 @@ struct DetailView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
 
     var body: some View {
-        FileDetailEditorView(model: model, editController: root.editController, menuController: menuController, fileTypes: FileController.fileTypes) {
+        FileDetailEditorView(model: model, listController: root.listController, editController: root.editController, menuController: menuController, fileTypes: FileController.fileTypes) {
             DetailRoute.detail($0)
         } importer: {
             FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)

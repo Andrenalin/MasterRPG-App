@@ -14,7 +14,7 @@ struct ListView: View {
     @Query(filter: #Predicate<PdfDataModel>{ $0.displayState == 0 }, sort: \PdfDataModel.name, animation: .smooth) private var items: [PdfDataModel]
     
     var body: some View {
-        ItemListView(editController: root.editController, menuController: menuController, listModel: listModel, parentModel: nil, items: items, module: PdfDataModel.typeId) { id in
+        ItemListView(listController: root.listController, editController: root.editController, menuController: menuController, listModel: listModel, parentModel: nil, items: items, module: PdfDataModel.typeId) { id in
             PdfRoute.detail(id)
         } row: { itemId in
             if let model = root.itemController.modelSync(for: itemId) {

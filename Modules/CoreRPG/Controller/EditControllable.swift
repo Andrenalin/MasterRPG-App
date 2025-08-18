@@ -57,8 +57,10 @@ public extension EditControllable {
 
     func addItem(itemId: UUID, in model: Model, folderId: UUID?) {
         guard itemId != model.id else { return }
+        //let specdialType = Model.collectionCategory
         model.withTransaction { modelContext in
             guard var item = Model.model(modelContext: modelContext, id: itemId) else { return }
+            //guard model.category == specdialType && item.specialCategory else { return }
             var entries: [Model.Entry] = model.entries
             let entry = createNewEntry(in: model, childId: itemId)
             entries.append(entry)

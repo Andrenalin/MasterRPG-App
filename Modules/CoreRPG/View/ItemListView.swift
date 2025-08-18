@@ -4,8 +4,9 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct ItemListView<EditController: EditControllable, Row: View>: View where EditController.Model.ID == UUID {
-    public init(editController: EditController, menuController: any ItemListContextMenuControllable, listModel: ListModel, parentModel: EditController.Model? = nil, items: [EditController.Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (UUID) -> Row) {
+public struct ItemListView<ListController: ListControllable, EditController: EditControllable, Row: View>: View where ListController.Model == EditController.Model, EditController.Model.ID == UUID {
+    public init(listController: ListController, editController: EditController, menuController: any ItemListContextMenuControllable, listModel: ListModel, parentModel: EditController.Model? = nil, items: [EditController.Model], module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (UUID) -> Row) {
+        self.listController = listController
         self.editController = editController
         self.menuController = menuController
         self.listModel = listModel
@@ -15,6 +16,7 @@ public struct ItemListView<EditController: EditControllable, Row: View>: View wh
         self.route = route
         self.row = row
     }
+    let listController: ListController
     let editController: EditController
     let menuController: ItemListContextMenuControllable
     let listModel: ListModel

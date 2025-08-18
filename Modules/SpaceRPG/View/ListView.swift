@@ -14,7 +14,7 @@ struct ListView: View {
     @Query(filter: #Predicate<SpaceDataModel>{ $0.displayState == 0 }, sort: \SpaceDataModel.name, animation: .smooth) private var items: [SpaceDataModel]
 
     var body: some View {
-        ItemListView(editController: root.editController, menuController: menuController, listModel: listModel, parentModel: nil, items: items, module: SpaceDataModel.typeId) { id in
+        ItemListView(listController: root.listController, editController: root.editController, menuController: menuController, listModel: listModel, parentModel: nil, items: items, module: SpaceDataModel.typeId) { id in
             SpaceRoute.detail(id)
         } row: { itemId in
             if let model = root.itemController.modelSync(for: itemId) {

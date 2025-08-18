@@ -4,9 +4,10 @@ import CoreExternalRPG
 import SwiftUI
 import UniformTypeIdentifiers
 
-public struct FileDetailEditorView<EditController: EditControllable, Route: NavigationDestination, Importer: View, Inside: View, Editor: View, Row: View, Bottom: View, Inspector: View>: View where EditController.Model.ID == UUID {
-    public init(model: EditController.Model, editController: EditController, menuController: any ItemListContextMenuControllable, fileTypes: [UTType], route: @escaping (UUID) -> Route, @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder row: @escaping (UUID) -> Row, @ViewBuilder bottom: () -> Bottom = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
+public struct FileDetailEditorView<ListController: ListControllable, EditController: EditControllable, Route: NavigationDestination, Importer: View, Inside: View, Editor: View, Row: View, Bottom: View, Inspector: View>: View where ListController.Model == EditController.Model, EditController.Model.ID == UUID {
+    public init(model: EditController.Model, listController: ListController, editController: EditController, menuController: any ItemListContextMenuControllable, fileTypes: [UTType], route: @escaping (UUID) -> Route, @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder row: @escaping (UUID) -> Row, @ViewBuilder bottom: () -> Bottom = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
         self.model = model
+        self.listController = listController
         self.editController = editController
         self.menuController = menuController
         self.fileTypes = fileTypes
@@ -21,6 +22,7 @@ public struct FileDetailEditorView<EditController: EditControllable, Route: Navi
     }
 
     let model: EditController.Model
+    let listController: ListController
     let editController: EditController
     let menuController: ItemListContextMenuControllable
     let fileTypes: [UTType]
@@ -187,7 +189,7 @@ private extension FileDetailEditorView {
             editor
             
             if model.specialCategory {
-                ItemListView(editController: editController, menuController: menuController, listModel: listModel.lastSubListModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems.0, module: EditController.Model.typeId) { id in
+                ItemListView(listController: listController, editController: editController, menuController: menuController, listModel: listModel.lastSubListModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems.0, module: EditController.Model.typeId) { id in
                     route(id)
                 } row: { itemId in
                     row(itemId)
