@@ -167,7 +167,7 @@ private extension LinkItemListView {
                 .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    withAnimation { listController.listModel.toggleFolder(itemId: item.itemId) }
+                    withAnimation { listController.toggleFolder(item: item) }
                 }
         }
     }

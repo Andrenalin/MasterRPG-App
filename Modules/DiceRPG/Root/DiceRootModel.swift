@@ -20,8 +20,8 @@ public final class DiceRootModel {
         let itemController = ItemController(container: modelContext.container)
         self.exportController = ExportController(itemController: itemController, gameExporter: false)
         self.itemController = itemController
-        self.listController = ListController.listController(for: .main, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
-        self.listLinkController = ListController.listController(for: .link, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.listController = ListController.listController(for: .main, modelContext: modelContext, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.listLinkController = ListController.listController(for: .link, modelContext: modelContext, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
         self._viewController = ViewController(_root: self)
         
         itemController.cleanDeleted()

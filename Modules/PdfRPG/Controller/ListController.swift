@@ -1,9 +1,12 @@
 // @copyright André Trettin
 
 import CoreRPG
+import SwiftData
 import SwiftUI
 
+@MainActor
 struct ListController {
+    let modelContext: ModelContext
     let listModel: ListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
@@ -13,12 +16,12 @@ struct ListController {
         case link
     }
     
-    @MainActor static func listController(for type: ListType, listModel: ListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel) -> ListController {
+    @MainActor static func listController(for type: ListType, modelContext: ModelContext, listModel: ListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel) -> ListController {
         switch type {
         case .main:
-            ListController(listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
+            ListController(modelContext: modelContext, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
         case .link:
-            ListController(listModel: ListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel)
+            ListController(modelContext: modelContext, listModel: ListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel)
         }
     }
 }

@@ -143,7 +143,7 @@ public final class ListItemModel: Identifiable {
         self.id = id
         self.itemId = itemId
         self.isOpen = isOpen
-        self.level = 0
+        self.level = level
         self.isSpecial = isSpecial
         self.name = name
         self.information = information
