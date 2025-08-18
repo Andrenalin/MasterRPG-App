@@ -141,6 +141,11 @@ private extension FileDetailEditorView {
     @ViewBuilder
     var backgroundView: some View {
         background
+            .background {
+                Rectangle().fill(EditController.Model.typeId.color.gradient)
+                    .ignoresSafeArea(edges: .top)
+                    .backgroundExtensionEffect()
+            }
     }
 
     @ViewBuilder

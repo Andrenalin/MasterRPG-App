@@ -54,10 +54,10 @@ private extension DetailView {
 #endif
         }
         .background {
-                ConcentricRectangle().fill(AudioDataModel.typeId.color.gradient)
-                    .ignoresSafeArea(edges: .top)
-                    .backgroundExtensionEffect()
-            }
+            Rectangle().fill(AudioDataModel.typeId.color.gradient)
+                .ignoresSafeArea(edges: .top)
+                .backgroundExtensionEffect()
+        }
     }
 
     var fileAndPlayerView: some View {

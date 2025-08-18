@@ -25,6 +25,7 @@ public struct TabNavigation: View {
         Group {
 #if os(macOS)
             allMacTabs
+                .frame(minWidth: 220, maxWidth: 250)
 #elseif os(visionOS)
             allCustomTabs
 #else
@@ -139,10 +140,6 @@ private extension TabNavigation {
                 .customizationID("Tab.\(NetworkModules.setting.token)")
         }
         .tabViewCustomization($customization)
-#if os(macOS)
-        // Enforce minimum sidebar width on macOS
-        .frame(minWidth: 220)
-#endif
         .onNavigationReceive(assign: $selectedTab, delay: 0.8)
         .onNavigationRoute(RootRouteRouter(appModel: appModel))
     }

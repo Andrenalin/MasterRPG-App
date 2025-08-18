@@ -21,6 +21,7 @@ struct DetailRootView: View {
                     .environment(listDisplayModel)
                     .environment(searchModel)
             }
+            
     }
 }
 
