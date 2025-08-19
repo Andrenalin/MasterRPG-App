@@ -15,8 +15,35 @@ public protocol ListControllable: Sendable {
     var searchModel: SearchModel { get }
 }
 
+extension ListControllable {
+    func displayItems(for parentModel: Model?) -> [ListItemModel] {
+        guard let parentModel else { return listModel.displayedItems }
+        return lastListModel(for: parentModel).displayedItems
+    }
+
+    func listModel(for parentModel: Model?) -> ListModel {
+        guard let parentModel else { return self.listModel }
+        return lastListModel(for: parentModel)
+    }
+
+    private func lastListModel(for parentModel: Model) -> ListModel {
+        guard let subListModel = listModel.subListModel, subListModel.selectedParentId == parentModel.id else {
+            let listModel = ListModel(listModel: listModel, parentId: parentModel.id, lastFolderId: parentModel.isFolder ? parentModel.id : listModel.lastFolderId)
+            listModel.subListModel = listModel
+            update(items: parentModel.subItems.0, on: listModel)
+            return listModel
+        }
+        return subListModel
+    }
+
+}
+
 public extension ListControllable {
     func update(items: [Model]) {
+        update(items: items, on: listModel)
+    }
+
+    private func update(items: [Model], on listModel: ListModel) {
         listModel.originalItems = items.enumerated().flatMap { (index, model) in
             map(model: model, index: index, level: 0)
         }
@@ -57,15 +84,6 @@ extension ListControllable {
         }
         item.isOpen.toggle()
         listModel.displayedItems = listModel.originalItems.compactMap { filter(item: $0) }
-    }
-
-    func lastListModel(for parentId: UUID, parentIsFolder: Bool) -> ListModel {
-        guard let subListModel = listModel.subListModel, subListModel.selectedParentId == parentId else {
-            let listModel = ListModel(listModel: listModel, parentId: parentId, lastFolderId: parentIsFolder ? parentId : listModel.lastFolderId)
-            listModel.subListModel = listModel
-            return listModel
-        }
-        return subListModel
     }
 }
 

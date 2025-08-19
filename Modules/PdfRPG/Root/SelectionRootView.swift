@@ -8,14 +8,12 @@ import UniformTypeIdentifiers
 
 struct SelectionRootView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var listModel = ListModel()
     @State private var cacheItemListModel = CacheItemListModel()
 
     var body: some View {
         NavigationStack {
             SelectionListView()
         }
-        .environment(listModel)
         .environment(cacheItemListModel)
     }
 }
@@ -27,7 +25,7 @@ struct SelectionListView: View {
     @Query(filter: #Predicate<PdfDataModel>{ $0.displayState == 0 }, sort: \PdfDataModel.name, animation: .smooth) private var items: [PdfDataModel]
     
     var body: some View {
-        ItemSelectionListView(editController: root.editController, items: items, module: PdfDataModel.typeId) { id in
+        ItemSelectionListView(listController: root.listLinkController, parentModel: nil, module: PdfDataModel.typeId) { id in
             PdfRoute.detail(id)
         } row: { itemId in
             if let model = root.itemController.modelSync(for: itemId) {

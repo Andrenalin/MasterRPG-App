@@ -17,8 +17,8 @@ struct LinkRootView: View {
         }
         .environment(DeviceRotationModel())
         .environment(CacheItemListModel())
-        .onChange(of: items) {
-            root.listLinkController.update(items: items)
+        .onChange(of: items, initial: true) {
+            withAnimation { root.listLinkController.update(items: items) }
         }
     }
     

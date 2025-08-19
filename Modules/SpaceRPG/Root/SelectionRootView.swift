@@ -8,14 +8,12 @@ import UniformTypeIdentifiers
 
 struct SelectionRootView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var listModel = ListModel()
     @State private var cacheItemListModel = CacheItemListModel()
 
     var body: some View {
         NavigationStack {
             SelectionListView()
         }
-        .environment(listModel)
         .environment(cacheItemListModel)
     }
 }
@@ -27,7 +25,7 @@ struct SelectionListView: View {
     @Query(filter: #Predicate<SpaceDataModel>{ $0.displayState == 0 }, sort: \SpaceDataModel.name, animation: .smooth) private var items: [SpaceDataModel]
     
     var body: some View {
-        ItemSelectionListView(editController: root.editController, items: items, module: SpaceDataModel.typeId) { id in
+        ItemSelectionListView(listController: root.listLinkController, parentModel: nil, module: SpaceDataModel.typeId) { id in
             SpaceRoute.detail(id)
         } row: { itemId in
             if let model = root.itemController.modelSync(for: itemId) {

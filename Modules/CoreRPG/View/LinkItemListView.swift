@@ -7,14 +7,12 @@ import SwiftUI
 public struct LinkItemListView<ListController: ListControllable, Row: View>: View where ListController.Model.ID == UUID {
     public init(listController: ListController, parentModel: ListController.Model?, isInspector: Bool, @ViewBuilder row: @escaping (UUID) -> Row) {
         self.listController = listController
-        self.parentModel = parentModel
         self.isInspector = isInspector
         self.row = row
         listController.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
     }
 
     let listController: ListController
-    let parentModel: ListController.Model?
     let isInspector: Bool
     let row: (UUID) -> Row
 
@@ -44,7 +42,7 @@ public struct LinkItemListView<ListController: ListControllable, Row: View>: Vie
                 TextField("Filter", text: $searchModel.searchText)
                     .padding(.horizontal)
             }
-                        
+
             contentView
                 .onChange(of: listDisplayModel.displayMode, initial: true) {
                     inspectorDisplayModel.displayMode = listDisplayModel.displayMode
@@ -71,25 +69,29 @@ public struct LinkItemListView<ListController: ListControllable, Row: View>: Vie
                 }
         }
         .environment(listController.listDisplayModel)
-        .environment(listController.listModel)
+        .environment(listModel)
         .environment(listController.searchModel)
+    }
+
+    var listModel: ListModel {
+        listController.listModel(for: nil)
     }
 
     var contentView: some View {
         listView
             .frame(minWidth: 150, idealWidth: 250)
             .overlay {
-                if listController.listModel.displayedItems.isEmpty && !listController.searchModel.searchText.isEmpty {
+                if listModel.displayedItems.isEmpty && !listController.searchModel.searchText.isEmpty {
                     ContentUnavailableView.search
                 }
             }
-            .animation(.smooth, value: listController.listModel.displayedItems.count)
+            .animation(.smooth, value: listModel.displayedItems.count)
         #if os(macOS)
             //.listStyle(.inset(alternatesRowBackgrounds: true))
             .listStyle(.sidebar)
         #endif
             .scrollIndicatorsFlash(onAppear: true)
-            .scrollIndicatorsFlash(trigger: listController.listModel.displayedItems.count)
+            .scrollIndicatorsFlash(trigger: listModel.displayedItems.count)
 #if !os(visionOS)
             .scrollEdgeEffectStyle(.hard, for: .top)
             .scrollDismissesKeyboard(.immediately)
@@ -100,14 +102,14 @@ public struct LinkItemListView<ListController: ListControllable, Row: View>: Vie
 private extension LinkItemListView {
     @ViewBuilder
     var listView: some View {
-        @Bindable var listModel = listController.listModel
+        @Bindable var listModel = listModel
         List(selection: $listModel.listSelection) {
             itemRows()
         }
     }
     
     func itemRows() -> some View {
-        ForEach(listController.listModel.displayedItems) { item in
+        ForEach(listModel.displayedItems) { item in
             HStack {
                 row(item.itemId)
                 
@@ -116,7 +118,6 @@ private extension LinkItemListView {
             .padding(.leading, CGFloat(item.level * 16))
             .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
             .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
-
         }
     }
     

@@ -45,15 +45,21 @@ struct RootDestinationView: View {
     let itemId: UUID
     let isRootView: Bool
 
+    @Environment(AudioRootModel.self) private var root
     @Query private var items: [AudioDataModel]
     
     var body: some View {
-        if let item = items.first {
-            if isRootView {
-                DetailRootView(model: item)
-            } else {
-                DetailView(model: item)
+        Group {
+            if let item = items.first {
+                if isRootView {
+                    DetailRootView(model: item)
+                } else {
+                    DetailView(model: item)
+                }
             }
         }
+        .environment(root.listDisplayModel)
+        .environment(root.searchModel)
+
     }
 }

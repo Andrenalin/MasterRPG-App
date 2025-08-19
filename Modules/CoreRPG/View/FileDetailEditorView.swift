@@ -188,12 +188,11 @@ private extension FileDetailEditorView {
             editor
             
             if model.specialCategory {
-                ItemListView(listController: listController, editController: editController, menuController: menuController, parentModel: model, items: model.subItems.0, module: EditController.Model.typeId) { id in
+                ItemListView(listController: listController, editController: editController, menuController: menuController, parentModel: model, module: EditController.Model.typeId) { id in
                     route(id)
                 } row: { itemId in
                     row(itemId)
                 }
-                .environment(listController.lastListModel(for: model.id, parentIsFolder: model.category == .folder))
             }
         }
         .padding()

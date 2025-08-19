@@ -45,6 +45,11 @@ public struct RootView<ListController: ListControllable, List: View, Route: Navi
             Group {
                 if horizontalSizeClass == .compact {
                     listRoot
+                        .navigationDestination(for: Route.self) { route in
+                            route
+                                .environment(cacheItemListModel)
+                                .environment(deviceRotationModel)
+                        }
                         .onAppear {
                             listController.listModel.resetListSelection()
                             listController.listModel.update(selection: Set())
@@ -103,7 +108,6 @@ public struct RootView<ListController: ListControllable, List: View, Route: Navi
             return .auto
         }
         .environment(cacheItemListModel)
-        //.environment(listController.listModel)
     }
     
     @ViewBuilder
@@ -136,11 +140,6 @@ public struct RootView<ListController: ListControllable, List: View, Route: Navi
     private var listRoot: some View {
         @Bindable var searchModel = listController.searchModel
         list
-            .navigationDestination(for: Route.self) { route in
-                route
-                    .environment(cacheItemListModel)
-                    .environment(deviceRotationModel)
-            }
         #if os(tvOS)
             .searchable(text: $searchModel.searchFieldText, placement: .automatic, prompt: Text("Search for items", bundle: .module))
         #else

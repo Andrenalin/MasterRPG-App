@@ -28,7 +28,7 @@ struct SelectionListView: View {
     @Query private var items: [AudioDataModel]
     
     var body: some View {
-        ItemSelectionListView(editController: root.editController, items: items, module: AudioDataModel.typeId) { id in
+        ItemSelectionListView(listController: root.listLinkController, parentModel: nil, module: AudioDataModel.typeId) { id in
             DetailRoute.selection(id)
         } row: { itemId in
             if let model = root.itemController.modelSync(for: itemId) {

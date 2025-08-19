@@ -13,7 +13,7 @@ struct ListView: View {
     @Query(filter: #Predicate<AudioDataModel>{ $0.displayState == 0 }, sort: \AudioDataModel.name, animation: .smooth) private var items: [AudioDataModel]
     
     var body: some View {
-        ItemListView(listController: root.listController, editController: root.editController, menuController: menuController, parentModel: nil, items: items, module: AudioDataModel.typeId) { id in
+        ItemListView(listController: root.listController, editController: root.editController, menuController: menuController, parentModel: nil, module: AudioDataModel.typeId) { id in
             AudioRoute.detail(id)
         } row: { itemId in
             if let model = root.itemController.modelSync(for: itemId) {
