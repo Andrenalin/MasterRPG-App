@@ -8,7 +8,6 @@ struct DetailRootView: View {
     let model: PdfDataModel
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(ListModel.self) private var listModel
     @Environment(SearchModel.self) private var searchModel
     
     var body: some View {
@@ -16,7 +15,6 @@ struct DetailRootView: View {
             .navigationDestination(for: DetailRoute.self) { route in
                 route
                     .environment(cacheItemListModel)
-                    .environment(listModel.lastSubListModel())
                     .environment(searchModel)
             }
     }

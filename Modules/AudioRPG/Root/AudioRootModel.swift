@@ -54,7 +54,7 @@ public final class AudioRootModel {
     }
     
     var currentSelectedItemId: UUID? {
-        listModel.selected
+        listModel.selectedItemId
     }
 }
 

@@ -8,7 +8,6 @@ struct DetailView: View {
     let model: PhotoDataModel
 
     @Environment(PhotoRootModel.self) private var root
-    @Environment(ListModel.self) private var listModel
 
     @State private var selection = GroupItemSelectionModel()
     @State private var openFileWindowModel = OpenFileWindowModel()
@@ -93,7 +92,7 @@ private extension DetailView {
     }
 
     var menuController: any ItemListContextMenuControllable {
-        ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
+        ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: root.listController.listModel)
     }
 }
 

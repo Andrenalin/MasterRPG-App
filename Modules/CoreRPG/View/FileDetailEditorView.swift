@@ -43,7 +43,6 @@ public struct FileDetailEditorView<ListController: ListControllable, EditControl
     @State private var showInspector = false
     @State private var itemIdHasUrl: EditController.Model.ID = UUID()
 
-    @Environment(ListModel.self) private var listModel
     @Environment(SearchModel.self) private var searchModel
     @Environment(GroupItemSelectionModel.self) private var selection
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
@@ -189,11 +188,12 @@ private extension FileDetailEditorView {
             editor
             
             if model.specialCategory {
-                ItemListView(listController: listController, editController: editController, menuController: menuController, listModel: listModel.lastSubListModel(for: model.id, parentIsFolder: model.category == .folder), parentModel: model, items: model.subItems.0, module: EditController.Model.typeId) { id in
+                ItemListView(listController: listController, editController: editController, menuController: menuController, parentModel: model, items: model.subItems.0, module: EditController.Model.typeId) { id in
                     route(id)
                 } row: { itemId in
                     row(itemId)
                 }
+                .environment(listController.lastListModel(for: model.id, parentIsFolder: model.category == .folder))
             }
         }
         .padding()

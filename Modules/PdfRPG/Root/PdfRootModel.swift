@@ -49,7 +49,7 @@ public final class PdfRootModel {
     }
     
     var currentSelectedItemId: UUID? {
-        listModel.selected
+        listModel.selectedItemId
     }
 }
 

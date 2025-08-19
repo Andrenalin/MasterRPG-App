@@ -17,7 +17,8 @@ public struct LinkItemListView<ListController: ListControllable, Row: View>: Vie
     let parentModel: ListController.Model?
     let isInspector: Bool
     let row: (UUID) -> Row
-    
+
+    @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
     
     public var body: some View {
@@ -50,7 +51,10 @@ public struct LinkItemListView<ListController: ListControllable, Row: View>: Vie
                     withAnimation { listController.resetFilter() }
                 }
                 .onChange(of: listController.searchModel.searchText) {
-                    withAnimation { listController.resetFilter() }
+                    withAnimation {
+                        listController.resetFilter()
+                        cacheItemListModel.reset(search: searchModel.searchText)
+                    }
                 }
                 .applyIf(!isInspector) { content in
                     content

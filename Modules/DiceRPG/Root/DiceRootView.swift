@@ -15,7 +15,7 @@ struct DiceRootView: View {
     @SceneStorage("DiceListModel") private var listMode: ListDisplayModel.ListMode = .list
 
     var body: some View {
-        RootView(module: DiceDataModel.typeId, listModel: root.listModel, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
+        RootView(module: DiceDataModel.typeId, listController: root.listController, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
             .detail($0)
         } detailId: {
             switch $0 {

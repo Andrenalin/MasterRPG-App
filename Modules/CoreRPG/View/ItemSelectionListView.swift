@@ -54,14 +54,14 @@ public struct ItemSelectionListView<EditController: EditControllable, Row: View>
                 listModel.update(selection: listModel.listSelection)
             }
             .onChange(of: listModel.selected) {
-                if let id = listModel.selected {
-                    listModel.listSelection <=> Set(arrayLiteral: id)
-                    let local = totalItems(items: items)
-                    guard let modelId = local.first(where: { $0.id == id })?.model.id else { return }
-                    navigator.navigate(to: route(modelId), method: .push)
-                } else {
-                    listModel.resetListSelection()
-                }
+//                if let id = listModel.selected {
+//                    listModel.listSelection <=> Set(arrayLiteral: id)
+//                    let local = totalItems(items: items)
+//                    guard let modelId = local.first(where: { $0.id == id })?.model.id else { return }
+//                    navigator.navigate(to: route(modelId), method: .push)
+//                } else {
+//                    listModel.resetListSelection()
+//                }
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -130,15 +130,15 @@ private extension ItemSelectionListView {
     func itemRows(filteredItems: [ItemListModel<EditController.Model>]) -> some View {
         ForEach(filteredItems) { item in
             row(item.model.id)
-                .selectListItem {
-                    if listModel.selection.contains(item.id) {
-                        listModel.selection.removeAll { $0 == item.id }
-                    } else {
-                        listModel.selection.append(item.id)
-                    }
-                } isSelected: {
-                    listModel.selection.contains(item.id)
-                }
+//                .selectListItem {
+//                    if listModel.selection.contains(item.id) {
+//                        listModel.selection.removeAll { $0 == item.id }
+//                    } else {
+//                        listModel.selection.append(item.id)
+//                    }
+//                } isSelected: {
+//                    listModel.selection.contains(item.id)
+//                }
                 .padding(.leading, CGFloat(item.level * 16))
                 .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
                 .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)

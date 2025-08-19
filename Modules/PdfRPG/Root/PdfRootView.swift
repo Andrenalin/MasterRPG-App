@@ -15,7 +15,7 @@ struct PdfRootView: View {
     @SceneStorage("PdfListModel") private var listMode: ListDisplayModel.ListMode = .list
 
     var body: some View {
-        RootView(module: PdfDataModel.typeId, listModel: root.listModel, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
+        RootView(module: PdfDataModel.typeId, listController: root.listController, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
             .detail($0)
         } detailId: {
             switch $0 {

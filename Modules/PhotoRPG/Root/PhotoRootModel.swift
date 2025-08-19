@@ -49,7 +49,7 @@ public final class PhotoRootModel {
     }
 
     var currentSelectedItemId: UUID? {
-        listModel.selected
+        listModel.selectedItemId
     }
 }
 

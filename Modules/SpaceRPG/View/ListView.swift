@@ -9,17 +9,19 @@ import UniformTypeIdentifiers
 struct ListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(SpaceRootModel.self) private var root
-    @Environment(ListModel.self) private var listModel
 
     @Query(filter: #Predicate<SpaceDataModel>{ $0.displayState == 0 }, sort: \SpaceDataModel.name, animation: .smooth) private var items: [SpaceDataModel]
 
     var body: some View {
-        ItemListView(listController: root.listController, editController: root.editController, menuController: menuController, listModel: listModel, parentModel: nil, items: items, module: SpaceDataModel.typeId) { id in
+        ItemListView(listController: root.listController, editController: root.editController, menuController: menuController, parentModel: nil, items: items, module: SpaceDataModel.typeId) { id in
             SpaceRoute.detail(id)
         } row: { itemId in
             if let model = root.itemController.modelSync(for: itemId) {
                 MainRowView(model: model)
             }
+        }
+        .onChange(of: items, initial: true) {
+            withAnimation { root.listController.update(items: items) }
         }
 #if !os(tvOS)
         .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
@@ -29,7 +31,7 @@ struct ListView: View {
 
 private extension ListView {
     var menuController: any ItemListContextMenuControllable {
-        ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: listModel)
+        ContextMenuMultiController(editController: root.editController, itemController: root.itemController, listModel: root.listController.listModel)
     }
     
     func updateFile(url: URL) {
@@ -38,7 +40,7 @@ private extension ListView {
             try? await Task.sleep(for: .seconds(0.5))
             withAnimation {
                 root.editController.resetFile(url: url, in: model)
-                listModel.update(selection: [model.id])
+                root.listController.listModel.set(selectedItemId: model.id)
             }
         }
     }

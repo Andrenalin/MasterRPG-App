@@ -44,7 +44,7 @@ public final class DiceRootModel {
     }
 
     var currentSelectedItemId: UUID? {
-        listModel.selected
+        listModel.selectedItemId
     }
 }
 

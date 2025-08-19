@@ -4,7 +4,7 @@ import SwiftUI
 
 @Observable @MainActor
 public final class ListModel {
-    public init(isSelectionMode: Bool = false, selection: [UUID] = []) {
+    public init(isSelectionMode: Bool = false, selection: [String] = []) {
         self.isSelectionMode = isSelectionMode
         self.selection = selection
         self.listSelection = Set(selection)
@@ -55,15 +55,15 @@ public final class ListModel {
         
     // MARK: - Selection
     private var isSelectionMode: Bool
-    public var selection: [UUID]
-    public var selected: UUID?
-    public var listSelection: Set<UUID>
-    
+    public var selection: [String]
+    public var selected: String?
+    public var listSelection: Set<String>
+
     public var multiSelection: Bool = true
     
     // MARK: - ListModels
     @ObservationIgnored
-    private var subListModel: ListModel?
+    var subListModel: ListModel?
 }
 
 // MARK: - Selection
@@ -82,11 +82,25 @@ public extension ListModel {
         }
     }
 
-    func update(selection: Set<UUID>) {
+    func update(selection: Set<String>) {
         if isSelectionMode {
             self.selection = Array(selection)
         } else {
             selected = selection.first
+        }
+    }
+
+    func set(selectedItemId: UUID) {
+        selected = displayedItems.first(where: { $0.itemId == selectedItemId })?.id
+    }
+
+    var selectedItemId: UUID? {
+        displayedItems.first(where: { $0.id == selected })?.itemId
+    }
+
+    var selectionItemIds: [UUID] {
+        selection.compactMap { selected in
+            displayedItems.first(where: { $0.id == selected })?.itemId
         }
     }
 }

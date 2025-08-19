@@ -3,10 +3,10 @@
 import CoreExternalRPG
 import SwiftUI
 
-public struct RootView<List: View, Route: NavigationDestination>: View {
-    public init(module: NetworkModules, listModel: ListModel, displayMode: Binding<ListDisplayModel.DisplayMode>, listMode: Binding<ListDisplayModel.ListMode>, withoutNavigation: Bool, route: Binding<Route?>, detailRoute: @escaping (UUID) -> Route, detailId: @escaping (Route) -> UUID?, @ViewBuilder list: () -> List) {
+public struct RootView<ListController: ListControllable, List: View, Route: NavigationDestination>: View {
+    public init(module: NetworkModules, listController: ListController, displayMode: Binding<ListDisplayModel.DisplayMode>, listMode: Binding<ListDisplayModel.ListMode>, withoutNavigation: Bool, route: Binding<Route?>, detailRoute: @escaping (UUID) -> Route, detailId: @escaping (Route) -> UUID?, @ViewBuilder list: () -> List) {
         self.module = module
-        self.listModel = listModel
+        self.listController = listController
         self.displayMode = displayMode
         self.listMode = listMode
         self.withoutNavigation = withoutNavigation
@@ -17,7 +17,7 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
     }
     
     let module: NetworkModules
-    let listModel: ListModel
+    let listController: ListController
     let displayMode: Binding<ListDisplayModel.DisplayMode>
     let listMode: Binding<ListDisplayModel.ListMode>
     let withoutNavigation: Bool
@@ -27,8 +27,6 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
     let list: List
     
     @Environment(DeviceRotationModel.self) private var deviceRotationModel
-    @Environment(ListDisplayModel.self) private var listDisplayModel
-    @Environment(SearchModel.self) private var searchModel
     @Environment(TabTitleModel.self) private var tabTitleModel
     
 #if os(iOS)
@@ -48,8 +46,8 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
                 if horizontalSizeClass == .compact {
                     listRoot
                         .onAppear {
-                            listModel.resetListSelection()
-                            listModel.update(selection: Set())
+                            listController.listModel.resetListSelection()
+                            listController.listModel.update(selection: Set())
                         }
                 } else {
                     rootView
@@ -59,7 +57,7 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
                 tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
             }
             .onChange(of: horizontalSizeClass, initial: true) {
-                listDisplayModel.isPadStyle = horizontalSizeClass != .compact
+                listController.listDisplayModel.isPadStyle = horizontalSizeClass != .compact
                 tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
             }
 #else
@@ -67,45 +65,45 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
 #endif
         }
         .onChange(of: displayMode.wrappedValue, initial: true) {
-            listDisplayModel.displayMode <=> displayMode.wrappedValue
+            listController.listDisplayModel.displayMode <=> displayMode.wrappedValue
         }
-        .onChange(of: listDisplayModel.displayMode) {
-            displayMode.wrappedValue <=> listDisplayModel.displayMode
+        .onChange(of: listController.listDisplayModel.displayMode) {
+            displayMode.wrappedValue <=> listController.listDisplayModel.displayMode
         }
         .onChange(of: listMode.wrappedValue, initial: true) {
-            listDisplayModel.listMode <=> listMode.wrappedValue
+            listController.listDisplayModel.listMode <=> listMode.wrappedValue
         }
-        .onChange(of: listDisplayModel.listMode) {
-            listMode.wrappedValue <=> listDisplayModel.listMode
+        .onChange(of: listController.listDisplayModel.listMode) {
+            listMode.wrappedValue <=> listController.listDisplayModel.listMode
         }
-        .onChange(of: listModel.selected) {
-            if let itemId = listModel.selected {
-                route.wrappedValue <=> detailRoute(itemId)
+        .onChange(of: listController.listModel.selected) {
+            if let selected = listController.listModel.selectedItemId {
+                route.wrappedValue <=> detailRoute(selected)
             } else {
                 route.wrappedValue <=> nil
             }
         }
         .onChange(of: route.wrappedValue, initial: true) {
             if let route = route.wrappedValue, let itemId = detailId(route) {
-                if listModel.selected != itemId {
-                    listModel.update(selection: Set(arrayLiteral: itemId))
+                if listController.listModel.selectedItemId != itemId {
+                    listController.listModel.set(selectedItemId: itemId)
                 }
             } else {
-                listModel.update(selection: Set())
+                listController.listModel.update(selection: Set())
             }
         }
         .onNavigationReceive { (route: Route, navigator) in
             guard let itemId = detailId(route) else {
                 return .auto
             }
-            if listModel.selected == itemId {
+            if listController.listModel.selectedItemId == itemId {
                 return .immediately
             }
-            listModel.update(selection: Set(arrayLiteral: itemId))
+            listController.listModel.set(selectedItemId: itemId)
             return .auto
         }
         .environment(cacheItemListModel)
-        .environment(listModel)
+        //.environment(listController.listModel)
     }
     
     @ViewBuilder
@@ -124,7 +122,7 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
                 listRoot
             }
         } detail: {
-            if let selected = listModel.selected {
+            if let selected = listController.listModel.selectedItemId {
                 ManagedNavigationStack {
                     detailRoute(selected)
                 }
@@ -136,15 +134,12 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
     
     @ViewBuilder
     private var listRoot: some View {
-        @Bindable var searchModel = searchModel
+        @Bindable var searchModel = listController.searchModel
         list
             .navigationDestination(for: Route.self) { route in
                 route
                     .environment(cacheItemListModel)
                     .environment(deviceRotationModel)
-                    .environment(listModel)
-                    .environment(listDisplayModel)
-                    .environment(searchModel)
             }
         #if os(tvOS)
             .searchable(text: $searchModel.searchFieldText, placement: .automatic, prompt: Text("Search for items", bundle: .module))
@@ -171,7 +166,10 @@ public struct RootView<List: View, Route: NavigationDestination>: View {
                 withAnimation { searchModel.searchText = searchModel.searchFieldText }
             }
             .onChange(of: searchModel.searchText, initial: true) {
-                cacheItemListModel.reset(search: searchModel.searchText)
+                withAnimation {
+                    listController.resetFilter()
+                    cacheItemListModel.reset(search: searchModel.searchText)
+                }
             }
     }
     

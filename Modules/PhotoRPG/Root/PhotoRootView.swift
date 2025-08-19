@@ -15,7 +15,7 @@ struct PhotoRootView: View {
     @SceneStorage("PhotoListModel") private var listMode: ListDisplayModel.ListMode = .list
 
     var body: some View {
-        RootView(module: PhotoDataModel.typeId, listModel: root.listModel, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
+        RootView(module: PhotoDataModel.typeId, listController: root.listController, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
             .detail($0)
         } detailId: {
             switch $0 {

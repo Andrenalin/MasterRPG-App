@@ -25,6 +25,12 @@ public extension ListControllable {
 }
 
 extension ListControllable {
+    func add(model: Model) {
+        let newModel = map(model: model, index: 0, level: 0)
+        listModel.displayedItems.insert(contentsOf: newModel, at: 0)
+        listModel.selected = newModel.first?.id
+    }
+    
     func resetFilter() {
         listModel.displayedItems = listModel.originalItems.compactMap { filter(item: $0) }
     }
@@ -51,6 +57,15 @@ extension ListControllable {
         }
         item.isOpen.toggle()
         listModel.displayedItems = listModel.originalItems.compactMap { filter(item: $0) }
+    }
+
+    func lastListModel(for parentId: UUID, parentIsFolder: Bool) -> ListModel {
+        guard let subListModel = listModel.subListModel, subListModel.selectedParentId == parentId else {
+            let listModel = ListModel(listModel: listModel, parentId: parentId, lastFolderId: parentIsFolder ? parentId : listModel.lastFolderId)
+            listModel.subListModel = listModel
+            return listModel
+        }
+        return subListModel
     }
 }
 

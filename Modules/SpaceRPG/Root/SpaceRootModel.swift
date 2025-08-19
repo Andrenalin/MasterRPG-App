@@ -49,7 +49,7 @@ public final class SpaceRootModel {
     }
 
     var currentSelectedItemId: UUID? {
-        listModel.selected
+        listModel.selectedItemId
     }
 }
 
