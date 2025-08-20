@@ -8,14 +8,27 @@ public protocol EditControllable: Sendable {
     var itemControllable: ItemControllable { get }
     var fileUrlDataController: FileUrlDataController? { get }
 
-    func createNewEntry(in model: ItemDataModel, childId: UUID) -> EntryDataModel
-    func duplicate(model: ItemDataModel)
-    func resetFile(url: URL?, in model: ItemDataModel)
 }
 
 // MARK: - Edit Item
 public extension EditControllable {
-    @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> ItemDataModel {
+    func createNewEntry(in model: ItemDataModel, childId: UUID) -> EntryDataModel {
+        EntryDataModel(id: UUID(), index: model.entries.count, parentId: model.id, childId: childId, item: model)
+    }
+
+    func duplicate(model: ItemDataModel) {
+        let newId = UUID()
+        guard let actor = model.modelActor() else { return }
+        let id = model.id
+        Task.detached {
+            await actor.setup(id: id)
+            let fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: actor.fileUrl, for: newId)
+            await actor.duplicate(newId: newId, url: fileUrl?.rawUrl)
+            await actor.save()
+        }
+    }
+
+    func addNew(modelContext: ModelContext, type: EditControllerAddType) -> ItemDataModel {
         let newItem = ItemDataModel.newItem
         modelContext.insert(newItem)
         if type == .folder {
@@ -34,7 +47,7 @@ public extension EditControllable {
             await fileUrlDataController?.delete(fileUrl)
         }
         model.entries.forEach { entry in
-            if var entryItem = ItemDataModel.model(modelContext: modelContext, id: entry.childId) {
+            if let entryItem = ItemDataModel.model(modelContext: modelContext, id: entry.childId) {
                 if model.category == .folder {
                     entryItem.parentId = model.parentId
                 }
@@ -58,7 +71,7 @@ public extension EditControllable {
         guard itemId != model.id else { return }
         //let specdialType = Model.collectionCategory
         model.withTransaction { modelContext in
-            guard var item = ItemDataModel.model(modelContext: modelContext, id: itemId) else { return }
+            guard let item = ItemDataModel.model(modelContext: modelContext, id: itemId) else { return }
             //guard model.category == specdialType && item.specialCategory else { return }
             var entries: [EntryDataModel] = model.entries
             let entry = createNewEntry(in: model, childId: itemId)
@@ -98,7 +111,7 @@ public extension EditControllable {
             var entries = model.entries
             entries.move(fromOffsets: source, toOffset: destination)
             entries = entries.enumerated().map { index, entry in
-                var updatedEntry = entry
+                let updatedEntry = entry
                 updatedEntry.index = index
                 return updatedEntry
             }
@@ -160,7 +173,7 @@ public extension EditControllable {
 
     private func reindex(entries: inout [EntryDataModel]) {
         entries = entries.enumerated().map { index, entry in
-            var updatedEntry = entry
+            let updatedEntry = entry
             updatedEntry.index = index
             return updatedEntry
         }

@@ -12,7 +12,7 @@ internal import UIKit
 
 @MainActor
 struct ContextMenuMultiController: ItemListContextMenuControllable {
-    let editController: EditController
+    let editController: OldEditController
     let itemController: OldItemController
     let listModel: OldListModel
 

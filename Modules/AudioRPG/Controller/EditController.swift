@@ -11,31 +11,9 @@ internal import AppKit
 internal import UIKit
 #endif
 
-struct EditController {
+struct EditController: EditControllable {
+    let itemControllable: any ItemControllable
     let fileUrlDataController: FileUrlDataController?
-}
-
-extension EditController: OldEditControllable {
-    typealias Model = AudioDataModel
-}
-
-// MARK: - Edit Data Model Properties
-extension EditController {
-    func createNewEntry(in model: AudioDataModel, childId: UUID) -> AudioEntryDataModel {
-        AudioEntryDataModel(id: UUID(), index: model.entries.count, parentId: model.id, childId: childId, item: model)
-    }
-    
-    func duplicate(model: AudioDataModel) {
-        let newId = UUID()
-        guard let actor = model.modelActor() else { return }
-        let id = model.id
-        Task.detached {
-            await actor.setup(id: id)
-            let fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: actor.fileUrl, for: newId)
-            await actor.duplicate(newId: newId, url: fileUrl?.rawUrl)
-            await actor.save()
-        }
-    }
 }
 
 // MARK: - File Editor

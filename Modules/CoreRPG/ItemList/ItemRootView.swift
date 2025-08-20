@@ -81,7 +81,7 @@ private extension ItemRootView {
     }
 
     @ViewBuilder var listRoot: some View {
-        ListRootView(root: root)
+        ListRootView(root: root, parentModel: nil)
             .searchItemList(listControllable: root.listControllable)
     }
 

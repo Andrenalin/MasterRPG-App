@@ -21,7 +21,7 @@ public final class AudioRootModel {
 
         let fileController = FileController()
         self.audioController = AudioController(fileController: fileController, model: audioPlayerModel)
-        self.editController = EditController(fileUrlDataController: fileController.fileUrlDataController)
+        self.editController = OldEditController(fileUrlDataController: fileController.fileUrlDataController)
         let itemController = OldItemController(container: modelContext.container)
         self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
         self.fileController = fileController
@@ -29,8 +29,9 @@ public final class AudioRootModel {
         self.listController = OldListController.listController(for: .main, modelContext: modelContext, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
         self.listLinkController = OldListController.listController(for: .link, modelContext: modelContext, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
 
-        self.newItemController = ItemController(container: modelContext.container)
-
+        let newItemController = ItemController(container: modelContext.container)
+        self.newItemController = newItemController
+        self.newEditController = EditController(itemControllable: newItemController, fileUrlDataController: fileController.fileUrlDataController)
         self.newListController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
 
         self._viewController = ViewController(_root: self)
@@ -49,15 +50,16 @@ public final class AudioRootModel {
     public let audioPlayerModel: AudioPlayerModel
 
     @ObservationIgnored let audioController: AudioController
-    @ObservationIgnored let editController: EditController
+    @ObservationIgnored let editController: OldEditController
     @ObservationIgnored let exportController: ExportController
     @ObservationIgnored let fileController: FileController
     @ObservationIgnored let itemController: OldItemController
     @ObservationIgnored let listController: OldListController
     @ObservationIgnored let listLinkController: OldListController
 
-    @ObservationIgnored let newListController: ListController
+    @ObservationIgnored let newEditController: EditController
     @ObservationIgnored let newItemController: ItemController
+    @ObservationIgnored let newListController: ListController
 
     @ObservationIgnored private var _viewController: ViewController? = nil
     public var viewController: ViewController {
@@ -70,7 +72,7 @@ public final class AudioRootModel {
 }
 
 extension AudioRootModel: ItemRootControllable {
-    public var editControllable: any OldEditControllable { editController }
+    public var editControllable: any EditControllable { newEditController }
     public var itemControllable: any ItemControllable { newItemController }
     public var listControllable: any ListControllable { newListController }
 }
