@@ -8,7 +8,7 @@ struct EditController {
     let fileUrlDataController: FileUrlDataController? = nil
 }
 
-extension EditController: EditControllable {
+extension EditController: OldEditControllable {
     typealias Model = DiceDataModel
 }
 

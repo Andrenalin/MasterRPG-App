@@ -20,19 +20,73 @@ public struct ItemRootView: View {
     let listMode: Binding<ListDisplayModel.ListMode>
     let route: Binding<ItemRootRoute?>
 
+    @Environment(DeviceRotationModel.self) private var deviceRotationModel
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#endif
+
+    @State private var column: NavigationSplitViewVisibility = .all
+    @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     @State private var cacheItemListModel = CacheItemListModel()
 
     public var body: some View {
-        ItemContentRootView(module: root.module, listController: root.listControllable, withoutNavigation: withoutNavigation) {
-            //            //ListView()
-            Text("List")
+        rootView
+            .applyItemRootRoute(listControllable: root.listControllable, route: route)
+            .environment(cacheItemListModel)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .syncListDisplay(listControllable: root.listControllable, displayMode: displayMode, listMode: listMode)
+            .tabBarPlacementModifier(listControllable: root.listControllable)
+    }
+}
+
+private extension ItemRootView {
+    @ViewBuilder var rootView: some View {
+#if os(iOS)
+        Group {
+            if withoutNavigation || horizontalSizeClass == .compact {
+                listRoot
+                    .navigationDestination(for: ItemRootRoute.self) { route in
+                        route
+                            .environment(cacheItemListModel)
+                            .environment(deviceRotationModel)
+                    }
+                    .onAppear {
+                        listModel.resetListSelection()
+                        listModel.update(selection: Set())
+                    }
+            } else {
+                splitRoot
+            }
         }
-        .applyItemRootRoute(listControllable: root.listControllable, route: route)
-        .environment(cacheItemListModel)
-        .environment(root.listDisplayModel)
-        .environment(root.searchModel)
-        .syncListDisplay(listControllable: root.listControllable, displayMode: displayMode, listMode: listMode)
-        .tabBarPlacementModifier(listControllable: root.listControllable)
+#else
+        splitRoot
+#endif
+    }
+
+    @ViewBuilder var splitRoot: some View {
+        NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
+            ManagedPresentationView {
+                listRoot
+            }
+        } detail: {
+            if let selected = listModel.selectedItemId {
+                ManagedNavigationStack {
+                    ItemRootRoute.detail(selected)
+                }
+            } else {
+                SplitContentUnavailableView(module: root.module)
+            }
+        }
+    }
+
+    @ViewBuilder var listRoot: some View {
+        ListRootView(root: root)
+            .searchItemList(listControllable: root.listControllable)
+    }
+
+    var listModel: ListModel {
+        root.listControllable.listModel
     }
 }
 

@@ -5,7 +5,7 @@ import Foundation
 
 struct ExportController: Sendable {
     @MainActor
-    init(itemController: any ItemControllable, fileController: FileController, gameExporter: Bool) {
+    init(itemController: any OldItemControllable, fileController: FileController, gameExporter: Bool) {
         itemControllable = itemController
         fileControllable = fileController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
@@ -13,8 +13,8 @@ struct ExportController: Sendable {
     
     public let exportModel: ItemDataExportModel
     var fileControllable: (any FileControllable)?
-    var itemControllable: any ItemControllable
-    
+    var itemControllable: any OldItemControllable
+
     var networkModule: NetworkModules { SpaceDataModel.typeId }
     var version: Int { 2024 }
 }

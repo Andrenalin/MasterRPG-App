@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-struct ItemController: ItemControllable {
+struct ItemController: OldItemControllable {
     typealias Model = SpaceDataModel
     typealias ExchangeModel = SpaceModel
 

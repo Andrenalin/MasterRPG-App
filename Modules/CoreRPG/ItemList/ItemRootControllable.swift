@@ -9,7 +9,7 @@ public protocol ItemRootControllable {
     var listDisplayModel: ListDisplayModel { get }
     var searchModel: SearchModel { get }
 
-    var editControllable: any EditControllable { get }
+    var editControllable: any OldEditControllable { get }
     var itemControllable: any ItemControllable { get }
     var listControllable: any ListControllable { get }
 }

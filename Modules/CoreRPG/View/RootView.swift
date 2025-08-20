@@ -3,7 +3,7 @@
 import CoreExternalRPG
 import SwiftUI
 
-public struct RootView<ListController: ListControllable, List: View, Route: NavigationDestination>: View {
+public struct RootView<ListController: OldListControllable, List: View, Route: NavigationDestination>: View {
     public init(module: NetworkModules, listController: ListController, displayMode: Binding<ListDisplayModel.DisplayMode>, listMode: Binding<ListDisplayModel.ListMode>, withoutNavigation: Bool, route: Binding<Route?>, detailRoute: @escaping (UUID) -> Route, detailId: @escaping (Route) -> UUID?, @ViewBuilder list: () -> List) {
         self.module = module
         self.listController = listController
@@ -30,6 +30,7 @@ public struct RootView<ListController: ListControllable, List: View, Route: Navi
     @Environment(TabTitleModel.self) private var tabTitleModel
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.tabBarPlacement) private var tabBarPlacement
 #endif
 
     @State private var cacheItemListModel = CacheItemListModel()
@@ -56,12 +57,29 @@ public struct RootView<ListController: ListControllable, List: View, Route: Navi
                     rootView
                 }
             }
-            .tabBarPlacementModifier(listControllable: listController)
+            .onChange(of: tabBarPlacement, initial: true) {
+                tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
+            }
+            .onChange(of: horizontalSizeClass, initial: true) {
+                listController.listDisplayModel.isPadStyle = horizontalSizeClass != .compact
+                tabTitleModel.toggleTitles(horizontalSizeClass: horizontalSizeClass, tabBarPlacement: tabBarPlacement)
+            }
 #else
             rootView
 #endif
         }
-        .syncListDisplay(listControllable: listController, displayMode: displayMode, listMode: listMode)
+        .onChange(of: displayMode.wrappedValue, initial: true) {
+            listController.listDisplayModel.displayMode <=> displayMode.wrappedValue
+        }
+        .onChange(of: listController.listDisplayModel.displayMode) {
+            displayMode.wrappedValue <=> listController.listDisplayModel.displayMode
+        }
+        .onChange(of: listMode.wrappedValue, initial: true) {
+            listController.listDisplayModel.listMode <=> listMode.wrappedValue
+        }
+        .onChange(of: listController.listDisplayModel.listMode) {
+            listMode.wrappedValue <=> listController.listDisplayModel.listMode
+        }
         .onChange(of: listController.listModel.selected) {
             if let selected = listController.listModel.selectedItemId {
                 route.wrappedValue <=> detailRoute(selected)
@@ -121,7 +139,37 @@ public struct RootView<ListController: ListControllable, List: View, Route: Navi
     private var listRoot: some View {
         @Bindable var searchModel = listController.searchModel
         list
-            .searchItemList(listControllable: listController)
+#if os(tvOS)
+            .searchable(text: $searchModel.searchFieldText, placement: .automatic, prompt: Text("Search for items", bundle: .module))
+#else
+            .searchable(text: $searchModel.searchFieldText, tokens: $searchModel.selectedTokens, placement: .automatic, prompt: Text("Search or use @ for tags", bundle: .module), token: { token in
+                Label(token.tag.prefix(3), systemImage: "tag")
+            })
+            .searchSuggestions {
+                ForEach(searchModel.filteredTagSuggestions) { suggestion in
+                    Button {
+                        withAnimation {
+                            searchModel.selectedTokens.append(suggestion)
+                            searchModel.searchFieldText = ""
+                            listController.resetFilter()
+                        }
+                    } label: {
+                        Label(suggestion.tag, systemImage: "tag")
+                    }
+                }
+            }
+#endif
+            .searchPresentationToolbarBehavior(.avoidHidingContent)
+            .onChange(of: searchModel.searchFieldText) {
+                guard searchModel.searchFieldText.starts(with: "@") == false else { return }
+                withAnimation { searchModel.searchText = searchModel.searchFieldText }
+            }
+            .onChange(of: searchModel.searchText, initial: true) {
+                withAnimation {
+                    listController.resetFilter()
+                    cacheItemListModel.reset(search: searchModel.searchText)
+                }
+            }
     }
 }
 

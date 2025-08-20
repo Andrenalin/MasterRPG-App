@@ -3,7 +3,7 @@
 import Foundation
 import SwiftData
 
-public protocol ItemControllable: Sendable where ExchangeModel == Model.ExchangeModel {
+public protocol OldItemControllable: Sendable where ExchangeModel == Model.ExchangeModel {
     associatedtype Model: ItemDataAccessable, ItemDataModelable, ListItemFolderable, PersistentModel
     associatedtype ExchangeModel: ItemDataAccessable, Codable
     
@@ -13,7 +13,7 @@ public protocol ItemControllable: Sendable where ExchangeModel == Model.Exchange
     func fileUrl(for: UUID) async -> FileUrl?
 }
 
-public extension ItemControllable {
+public extension OldItemControllable {
     func allItemIds() -> [UUID] {
         let modelContext = ModelContext(container)
         let fetchDesc = FetchDescriptor<Model>()

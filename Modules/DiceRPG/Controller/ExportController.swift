@@ -5,14 +5,14 @@ import Foundation
 
 struct ExportController: Sendable {
     @MainActor
-    init(itemController: any ItemControllable, gameExporter: Bool) {
+    init(itemController: any OldItemControllable, gameExporter: Bool) {
         itemControllable = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
     
     public let exportModel: ItemDataExportModel
     var fileControllable: (any FileControllable)?
-    var itemControllable: any ItemControllable
+    var itemControllable: any OldItemControllable
     
     var networkModule: NetworkModules { DiceDataModel.typeId }
     var version: Int { 2024 }

@@ -9,8 +9,4 @@ public final class AppRootUiModel {
     }
     
     public var windowSize: CGSize
-
-//    var deviceRotationModel = DeviceRotationModel()
-//    var listModel = ListModel(searchToken: .all, categoryTags: [.adventure, .character, .photo, .weather], listStoreName: "Photo", hasChildren: false)
-//    var cacheModel = CacheItemListModel()
 }

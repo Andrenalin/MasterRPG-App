@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-struct ItemController: ItemControllable, Sendable {
+struct ItemController: OldItemControllable, Sendable {
     typealias Model = PhotoDataModel
     typealias ExchangeModel = PhotoModel
 

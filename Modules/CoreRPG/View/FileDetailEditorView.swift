@@ -4,7 +4,7 @@ import CoreExternalRPG
 import SwiftUI
 import UniformTypeIdentifiers
 
-public struct FileDetailEditorView<ListController: ListControllable, EditController: EditControllable, Route: NavigationDestination, Importer: View, Inside: View, Editor: View, Row: View, Bottom: View, Inspector: View>: View where ListController.Model == EditController.Model, EditController.Model.ID == UUID {
+public struct FileDetailEditorView<ListController: OldListControllable, EditController: OldEditControllable, Route: NavigationDestination, Importer: View, Inside: View, Editor: View, Row: View, Bottom: View, Inspector: View>: View where ListController.Model == EditController.Model, EditController.Model.ID == UUID {
     public init(model: EditController.Model, listController: ListController, editController: EditController, menuController: any ItemListContextMenuControllable, fileTypes: [UTType], route: @escaping (UUID) -> Route, @ViewBuilder importer: () -> Importer, @ViewBuilder background: () -> Inside, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder row: @escaping (UUID) -> Row, @ViewBuilder bottom: () -> Bottom = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
         self.model = model
         self.listController = listController

@@ -15,7 +15,7 @@ struct EditController {
     let fileUrlDataController: FileUrlDataController?
 }
 
-extension EditController: EditControllable {
+extension EditController: OldEditControllable {
     typealias Model = AudioDataModel
 }
 

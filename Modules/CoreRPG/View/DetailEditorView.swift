@@ -3,7 +3,7 @@
 import SwiftData
 import SwiftUI
 
-public struct DetailItemEditorView<Model: Identifiable, EditController: EditControllable>: View where Model == EditController.Model {
+public struct DetailItemEditorView<Model: Identifiable, EditController: OldEditControllable>: View where Model == EditController.Model {
     public init(model: Model, editController: EditController, name: KeyPath<Model, String>, category: KeyPath<Model, ItemListCategory>, tags: KeyPath<Model, [String]>, description: KeyPath<Model, String>) {
         self.model = model
         self.editController = editController

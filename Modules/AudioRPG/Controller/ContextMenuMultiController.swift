@@ -13,8 +13,8 @@ internal import UIKit
 @MainActor
 struct ContextMenuMultiController: ItemListContextMenuControllable {
     let editController: EditController
-    let itemController: ItemController
-    let listModel: ListModel
+    let itemController: OldItemController
+    let listModel: OldListModel
 
     var collectionIcon: String = ItemListCategory.playlist.icon
 

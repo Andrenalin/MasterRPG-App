@@ -4,7 +4,7 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct ItemListView<ListController: ListControllable, EditController: EditControllable, Row: View>: View where ListController.Model == EditController.Model, EditController.Model.ID == UUID {
+public struct ItemListView<ListController: OldListControllable, EditController: OldEditControllable, Row: View>: View where ListController.Model == EditController.Model, EditController.Model.ID == UUID {
     public init(listController: ListController, editController: EditController, menuController: any ItemListContextMenuControllable, parentModel: EditController.Model? = nil, module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (UUID) -> Row) {
         self.listController = listController
         self.editController = editController
@@ -106,11 +106,11 @@ public struct ItemListView<ListController: ListControllable, EditController: Edi
 }
 
 private extension ItemListView {
-    var displayItems: [ListItemModel] {
+    var displayItems: [OldListItemModel] {
         listController.displayItems(for: parentModel)
     }
 
-    var listModel: ListModel {
+    var listModel: OldListModel {
         listController.listModel(for: parentModel)
     }
 
@@ -277,7 +277,7 @@ private extension ItemListView {
     }
     
     @ViewBuilder
-    func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
+    func specialCategoryFolderIndicator(item: OldListItemModel) -> some View {
         if item.isSpecial {
             Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                 .imageScale(.small)

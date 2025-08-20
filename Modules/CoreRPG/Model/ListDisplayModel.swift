@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-@Observable @MainActor
+@Observable
 public final class ListDisplayModel {
     public init(isSelectionMode: Bool = false, displayMode: ListDisplayModel.DisplayMode = .medium, listMode: ListDisplayModel.ListMode = .list, isPadStyle: Bool = false) {
         self.isSelectionMode = isSelectionMode

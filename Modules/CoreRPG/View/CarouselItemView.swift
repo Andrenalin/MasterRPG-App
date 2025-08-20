@@ -3,7 +3,7 @@
 import SwiftData
 import SwiftUI
 
-public struct CarouselItemView<EditController: EditControllable, Content: View>: View {
+public struct CarouselItemView<EditController: OldEditControllable, Content: View>: View {
     public init(model: EditController.Model, editController: EditController, selection: GroupItemSelectionModel, @ViewBuilder content: () -> Content) {
         self.model = model
         self.editController = editController

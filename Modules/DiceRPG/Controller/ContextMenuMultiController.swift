@@ -14,7 +14,7 @@ internal import UIKit
 struct ContextMenuMultiController: ItemListContextMenuControllable {
     let editController: EditController
     let itemController: ItemController
-    let listModel: ListModel
+    let listModel: OldListModel
     
     var collectionIcon: String = DiceDataModel.collectionCategory.icon
     

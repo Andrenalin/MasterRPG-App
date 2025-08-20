@@ -4,7 +4,7 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct LinkItemListView<ListController: ListControllable, Row: View>: View where ListController.Model.ID == UUID {
+public struct LinkItemListView<ListController: OldListControllable, Row: View>: View where ListController.Model.ID == UUID {
     public init(listController: ListController, parentModel: ListController.Model?, isInspector: Bool, @ViewBuilder row: @escaping (UUID) -> Row) {
         self.listController = listController
         self.isInspector = isInspector
@@ -73,7 +73,7 @@ public struct LinkItemListView<ListController: ListControllable, Row: View>: Vie
         .environment(listController.searchModel)
     }
 
-    var listModel: ListModel {
+    var listModel: OldListModel {
         listController.listModel(for: nil)
     }
 
@@ -126,7 +126,7 @@ private extension LinkItemListView {
     }
     
     @ViewBuilder
-    func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
+    func specialCategoryFolderIndicator(item: OldListItemModel) -> some View {
         if item.isSpecial {
             Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                 .imageScale(.small)

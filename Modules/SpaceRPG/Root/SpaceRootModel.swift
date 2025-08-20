@@ -9,7 +9,7 @@ public final class SpaceRootModel {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         
-        let listModel = ListModel()
+        let listModel = OldListModel()
         self.listModel = listModel
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
@@ -32,7 +32,7 @@ public final class SpaceRootModel {
 
     let modelContext: ModelContext
     
-    let listModel: ListModel
+    let listModel: OldListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
 

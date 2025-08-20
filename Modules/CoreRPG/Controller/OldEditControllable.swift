@@ -4,7 +4,7 @@ import Foundation
 import SwiftData
 import SwiftUI
 
-public protocol EditControllable: Sendable {
+public protocol OldEditControllable: Sendable {
     associatedtype Model: ItemDataAccessable, ItemDataModelable, ListItemFolderable, PersistentModel
 
     var fileUrlDataController: FileUrlDataController? { get }
@@ -15,7 +15,7 @@ public protocol EditControllable: Sendable {
 }
 
 // MARK: - Edit Item
-public extension EditControllable {
+public extension OldEditControllable {
     @MainActor func addNew(modelContext: ModelContext, type: EditControllerAddType) -> Model {
         let newItem = Model.newItem
         modelContext.insert(newItem)
@@ -49,7 +49,7 @@ public extension EditControllable {
 }
 
 // MARK: - Folder / Collection
-public extension EditControllable {
+public extension OldEditControllable {
     func addItem(itemId: UUID, in modelContext: ModelContext, parentId: UUID?, folderId: UUID?) {
         guard let model = Model.model(modelContext: modelContext, id: parentId) else { return }
         addItem(itemId: itemId, in: model, folderId: folderId)
@@ -112,7 +112,7 @@ public extension EditControllable {
 }
 
 // MARK: - Group Items
-public extension EditControllable {
+public extension OldEditControllable {
     func addGroup(childId: UUID, model: Model) {
         model.withTransaction { modelContext in
             var entries: [Model.Entry] = model.entries
@@ -146,7 +146,7 @@ public extension EditControllable {
 }
 
 // MARK: - Editor
-public extension EditControllable {
+public extension OldEditControllable {
     func update(model: Model, name: String, information: String, category: ItemListCategory, tags: [String]) {
         model.withTransaction { modelContext in
             model.reset(name: name)
@@ -174,6 +174,6 @@ public extension EditControllable {
     }
 }
 
-public extension EditControllable {
+public extension OldEditControllable {
     func resetFile(url: URL?, in model: Model) {}
 }

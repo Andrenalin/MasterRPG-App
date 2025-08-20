@@ -4,7 +4,7 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct ItemSelectionListView<ListController: ListControllable, Row: View>: View where ListController.Model.ID == UUID {
+public struct ItemSelectionListView<ListController: OldListControllable, Row: View>: View where ListController.Model.ID == UUID {
     public init(listController: ListController, parentModel: ListController.Model? = nil, module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (UUID) -> Row) {
         self.listController = listController
         self.module = module
@@ -82,7 +82,7 @@ public struct ItemSelectionListView<ListController: ListControllable, Row: View>
 }
 
 private extension ItemSelectionListView {
-    var listModel: ListModel {
+    var listModel: OldListModel {
         listController.listModel(for: nil)
     }
 

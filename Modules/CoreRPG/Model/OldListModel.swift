@@ -3,7 +3,7 @@
 import SwiftUI
 
 @Observable @MainActor
-public final class ListModel {
+public final class OldListModel {
     public init(isSelectionMode: Bool = false, selection: [String] = []) {
         self.isSelectionMode = isSelectionMode
         self.selection = selection
@@ -11,7 +11,7 @@ public final class ListModel {
         update(selection: Set(selection))
     }
     
-    public init(listModel: ListModel, parentId: UUID?, lastFolderId: UUID?) {
+    public init(listModel: OldListModel, parentId: UUID?, lastFolderId: UUID?) {
         self.selectedParentId = parentId
         self.lastFolderId = lastFolderId
         self.isSelectionMode = false
@@ -20,15 +20,15 @@ public final class ListModel {
     }
     
     // MARK: - Items
-    public var originalItems: [ListItemModel] = []
-    public var displayedItems: [ListItemModel] = []
+    public var originalItems: [OldListItemModel] = []
+    public var displayedItems: [OldListItemModel] = []
     
     //public var items:
     
     // MARK: - List navigation
     public var selectedParentId: UUID?
     public var lastFolderId: UUID?
-    private var subItemModels: [UUID: ListSubItemModel] = [:]
+    private var subItemModels: [UUID: OldListSubItemModel] = [:]
     var level: Int = 0
     
     
@@ -38,17 +38,17 @@ public final class ListModel {
     
     func toggleFolder(itemId: UUID) {
         guard let model = subItemModels[itemId] else {
-            subItemModels[itemId] = ListSubItemModel(id: itemId, isOpen: true, level: level)
+            subItemModels[itemId] = OldListSubItemModel(id: itemId, isOpen: true, level: level)
             return
         }
         model.isOpen.toggle()
     }
     
-    func subItemModel(for itemId: UUID) -> ListSubItemModel {
+    func subItemModel(for itemId: UUID) -> OldListSubItemModel {
         if let model = subItemModels[itemId] {
            return model
         }
-        let model = ListSubItemModel(id: itemId, level: level + 1)
+        let model = OldListSubItemModel(id: itemId, level: level + 1)
         subItemModels[itemId] = model
         return model
     }
@@ -63,12 +63,12 @@ public final class ListModel {
     
     // MARK: - ListModels
     @ObservationIgnored
-    var subListModel: ListModel?
+    var subListModel: OldListModel?
 }
 
 // MARK: - Selection
 
-public extension ListModel {
+public extension OldListModel {
     func resetListSelection() {
         listSelection = []
     }
@@ -107,17 +107,17 @@ public extension ListModel {
 
 // MARK: - Navigation
 
-public extension ListModel {
-    func lastSubListModel(for parentId: UUID, parentIsFolder: Bool) -> ListModel {
+public extension OldListModel {
+    func lastSubListModel(for parentId: UUID, parentIsFolder: Bool) -> OldListModel {
         guard let subListModel, subListModel.selectedParentId == parentId else {
-            let listModel = ListModel(listModel: self, parentId: parentId, lastFolderId: parentIsFolder ? parentId : lastFolderId)
+            let listModel = OldListModel(listModel: self, parentId: parentId, lastFolderId: parentIsFolder ? parentId : lastFolderId)
             self.subListModel = listModel
             return listModel
         }
         return subListModel
     }
 
-    func lastSubListModel() -> ListModel {
+    func lastSubListModel() -> OldListModel {
         guard let listModel = subListModel else {
             return self
         }
@@ -131,7 +131,7 @@ public extension ListModel {
 }
 
 @Observable
-final class ListSubItemModel {
+final class OldListSubItemModel {
     init(id: UUID, isOpen: Bool = false, level: Int = 0) {
         self.id = id
         self.isOpen = isOpen
@@ -152,7 +152,7 @@ struct ItemListModel<Model>: Identifiable {
 
 
 @Observable @MainActor
-public final class ListItemModel: Identifiable {
+public final class OldListItemModel: Identifiable {
     public init(id: String, itemId: UUID, isOpen: Bool = false, level: Int = 0, isSpecial: Bool = false, name: String, information: String, tags: [String], parentId: UUID? = nil) {
         self.id = id
         self.itemId = itemId

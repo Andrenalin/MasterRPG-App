@@ -3,7 +3,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-public struct FileImporterView<Model: Identifiable, EditController: EditControllable>: View where Model.ID == UUID, Model == EditController.Model {
+public struct FileImporterView<Model: Identifiable, EditController: OldEditControllable>: View where Model.ID == UUID, Model == EditController.Model {
     public init(model: Model, editController: EditController, fileTypes: [UTType], isProminent: Bool = true) {
         self.model = model
         self.editController = editController

@@ -5,7 +5,7 @@ import os.log
 import Observation
 
 public protocol ExportControllable: Sendable {
-    var itemControllable: any ItemControllable { get }
+    var itemControllable: any OldItemControllable { get }
     var fileControllable: (any FileControllable)? { get }
     var networkModule: NetworkModules { get }
     var version: Int { get }
