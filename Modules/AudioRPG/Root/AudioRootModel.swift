@@ -33,11 +33,12 @@ public final class AudioRootModel {
         itemController.cleanDeleted()
     }
     
-    let modelContext: ModelContext
-    
-    let listModel: ListModel
-    let listDisplayModel: ListDisplayModel
-    let searchModel: SearchModel
+    public let modelContext: ModelContext
+
+    public let module: NetworkModules = .audio
+    public let listModel: ListModel
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
     
     public let audioPlayerModel: AudioPlayerModel
 
@@ -56,6 +57,12 @@ public final class AudioRootModel {
     var currentSelectedItemId: UUID? {
         listModel.selectedItemId
     }
+}
+
+extension AudioRootModel: ItemRootControllable {
+    public var editControllable: any EditControllable { editController }
+    public var itemControllable: any ItemControllable { itemController }
+    public var listControllable: any ListControllable { listController }
 }
 
 extension AudioRootModel {

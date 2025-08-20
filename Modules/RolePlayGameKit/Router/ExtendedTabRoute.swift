@@ -90,7 +90,7 @@ struct ExtendedTabRouteDestionationView: View {
             case .dice:
                 DiceRootFactory.rootView(withoutNavigation: true)
             case .maps:
-                RootListView(rootRoute: .maps)
+                AudioRootFactory.rootNewView(withoutNavigation: true)
             case .pdfs:
                 PdfRootFactory.rootView(withoutNavigation: true)
             case .photos:
@@ -98,7 +98,7 @@ struct ExtendedTabRouteDestionationView: View {
             case .space:
                 SpaceRootFactory.rootView(withoutNavigation: true)
             case .tables:
-                RootListView(rootRoute: .tables)
+                AudioRootFactory.rootNewView(withoutNavigation: true)
             case .weathers:
                 RootListView(rootRoute: .weathers)
             case .settings:
