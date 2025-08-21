@@ -60,6 +60,8 @@ public final class AppModel: Sendable {
         let schema = Schema(
             [
                 TagDataModel.self,
+                ItemDataModel.self,
+                EntryDataModel.self,
                 AudioDataModel.self,
                 AudioEntryDataModel.self,
                 DiceDataModel.self,
