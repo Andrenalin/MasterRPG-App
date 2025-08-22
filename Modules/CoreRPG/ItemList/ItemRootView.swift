@@ -55,6 +55,8 @@ private extension ItemRootView {
                             .environment(cacheItemListModel)
                             .environment(deviceRotationModel)
                             .environment(rootController)
+                            .environment(root.listDisplayModel)
+                            .environment(root.searchModel)
                     }
                     .onAppear {
                         listModel.resetListSelection()

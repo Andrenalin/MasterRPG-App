@@ -20,6 +20,10 @@ public actor DataModelActor {
         self._model = ItemDataModel.model(modelContext: modelContext, id: id)
     }
 
+    public var module: NetworkModules {
+        model.module
+    }
+
     public var name: String {
         model.name
     }
