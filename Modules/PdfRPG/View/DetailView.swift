@@ -16,7 +16,7 @@ struct DetailView: View {
         FileDetailEditorView(model: model, listController: root.listController, editController: root.editController, menuController: menuController, fileTypes: FileController.fileTypes) {
             PdfRoute.detail($0)
         } importer: {
-            FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
+            OldFileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
         } background: {
             backgroundHeader
         } editor: {

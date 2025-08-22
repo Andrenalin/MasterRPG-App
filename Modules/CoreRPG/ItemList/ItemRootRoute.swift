@@ -50,8 +50,9 @@ struct RootDestinationView: View {
         Group {
             if let item = items.first {
                 if isRootView {
-                    //DetailRootView(model: item)
+                    DetailRootView(model: item)
                 } else {
+                    DetailRootView(model: item)
                     //DetailView(model: item)
                 }
             }

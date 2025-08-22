@@ -10,60 +10,39 @@ struct ListRootView: View {
     let parentModel: ItemDataModel?
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
-
     @Environment(\.navigator) private var navigator
-
-#if os(iOS) || os(visionOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var editMode: EditMode = .inactive
-#endif
 
     @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name, animation: .smooth) private var items: [ItemDataModel]
 
     var body: some View {
         listView
+            .animation(.smooth, value: displayItems.count)
             .frame(minWidth: 250, idealWidth: 350)
-            .overlay {
-                if displayItems.isEmpty && !listController.searchModel.searchText.isEmpty {
-                    ContentUnavailableView.search
+#if !os(tvOS)
+            .applyIf(listController.listDisplayModel.isSelectionMode) { content in
+                content.contextMenu(forSelectionType: ListItemModel.ID.self) { selectedItemIDs in
+                    ItemListContextMenu(controller: menuController)
                 }
             }
-            .toolbarItemListModifier(root: root, parentModel: parentModel)
-            .animation(.smooth, value: displayItems.count)
-#if os(iOS) || os(visionOS)
-            .environment(\.editMode, $editMode)
 #endif
+            .applyIf(parentModel == nil) {
+                $0.navigationTitle(root.module.title)
+            }
             .scrollIndicatorsFlash(onAppear: true)
             .scrollIndicatorsFlash(trigger: displayItems.count)
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
 #endif
-            .applyIf(parentModel == nil) {
-                $0.navigationTitle(root.module.title)
+            .overlay {
+                if displayItems.isEmpty && !listController.searchModel.searchText.isEmpty {
+                    ContentUnavailableView.search
+                }
             }
-            .onAppear {
-                withAnimation { listModel.resetListModel() }
-            }
-            .onChange(of: listController.listDisplayModel.isSelectionMode) {
-                listModel.update(selectionMode: listController.listDisplayModel.isSelectionMode)
-            }
-            .onChange(of: listModel.listSelection) {
-                updateListSelection()
-            }
-            .onChange(of: listModel.selected) {
-                updateSelected()
-            }
-            .onChange(of: listController.listDisplayModel.listMode) {
-                withAnimation { listController.resetFilter() }
-            }
-#if os(iOS) || os(visionOS)
-            .onChange(of: listController.listDisplayModel.isSelectionMode) {
-                editMode = listController.listDisplayModel.isSelectionMode ? .active : .inactive
-            }
-#endif
             .onChange(of: items, initial: true) {
                 withAnimation { root.listControllable.update(items: items) }
             }
+            .listModelUpdatesModifier(listControllable: root.listControllable, parentModel: parentModel)
+            .toolbarItemListModifier(root: root, parentModel: parentModel)
 //#if !os(tvOS)
 //        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
 //#endif
@@ -71,10 +50,6 @@ struct ListRootView: View {
 }
 
 //private extension ListRootView {
-//    var menuController: any ItemListContextMenuControllable {
-//        ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: root.listControllable.listModel)
-//    }
-//    
 //    func updateFile(url: URL) {
 //        Task { @MainActor in
 //            let model = root.editControllable.addNew(modelContext: modelContext, type: .item)
@@ -99,31 +74,16 @@ private extension ListRootView {
     var listModel: ListModel {
         listController.listModel(for: parentModel)
     }
-
-    func updateListSelection() {
-        listModel.update(selection: listModel.listSelection)
-    }
-
-    func updateSelected() {
-        if let id = listModel.selected, let item = displayItems.first(where: { $0.id == id }) {
-
-//            if item.model.id == EditController.Model.dropItem.id {
-//                navigator.navigate(to: route(EditController.Model.dropItem.id), method: .sheet)
-//                listModel.update(selection: [])
-//            } else {
-                listModel.listSelection <=> Set(arrayLiteral: id)
-            navigator.navigate(to: ItemRootRoute.detail(item.model.id), method: .push)
-  //          }
-        } else {
-            listModel.resetListSelection()
-        }
+    
+    var menuController: any ItemListContextMenuControllable {
+        ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: listModel)
     }
 
     @ViewBuilder
     var listView: some View {
         @Bindable var listModel = listModel
 #if os(macOS)
-        if root.listController.listDisplayModel.isSelectionMode {
+        if listController.listDisplayModel.isSelectionMode {
             List(selection: $listModel.listSelection) {
                 itemRows()
             }
@@ -146,9 +106,9 @@ private extension ListRootView {
 #if !os(tvOS)
                     .draggable(LinkData(itemId: item.model.id, module: root.module, name: item.model.name))
 #endif
-                    .applyIf(!root.listControllable.listDisplayModel.isSelectionMode) { content in
+                    .applyIf(!listController.listDisplayModel.isSelectionMode) { content in
                         content.contextMenu {
-//                            ItemListContextMenu(controller: menuController, currentSelected: item.itemId)
+                            ItemListContextMenu(controller: menuController, currentSelected: item.model.id)
                         }
                     }
 
@@ -163,8 +123,8 @@ private extension ListRootView {
             .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
             .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
-//        .onDelete(perform: deleteItems)
-//        .onMove(perform: moveItems)
+        .onDelete(perform: deleteItems)
+        .onMove(perform: moveItems)
         .moveDisabled(parentModel == nil || parentModel?.category == .folder)
         .deleteDisabled(root.listControllable.listDisplayModel.isSelectionMode)
     }
@@ -175,6 +135,26 @@ private extension ListRootView {
             guard link.module == root.module else { return }
             withAnimation { root.editControllable.addItem(itemId: link.itemId, in: parentModel, folderId: listModel.lastFolderId) }
         }
+    }
+    
+    func deleteItems(offsets: IndexSet) {
+        if let parentModel {
+            root.editControllable.removeItem(offsets: offsets, model: parentModel)
+        } else {
+            for index in offsets {
+                if displayItems[index].id == listModel.selected {
+                    listModel.update(selection: Set())
+                }
+                Task { @MainActor in
+                    root.editControllable.delete(model: displayItems[index].model)
+                }
+            }
+        }
+    }
+    
+    func moveItems(source: IndexSet, destination: Int) {
+        guard let parentModel else { return }
+        root.editControllable.moveItems(source: source, destination: destination, model: parentModel)
     }
 
     var leadingPadding: CGFloat {

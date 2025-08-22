@@ -173,3 +173,29 @@ extension ItemDataModel {
 //        )
 //    }
 }
+
+public extension ItemDataModel {
+    func urlAdr(linkNumber: Int) -> String {
+        "\(URL.appScheme)://\(module.token)/\(linkNumber)/\(id)"
+    }
+    
+    func urlAdr(linkNumber: Int, entryId: UUID) -> String {
+        "\(urlAdr(linkNumber: linkNumber))/\(entryId)"
+    }
+    
+    func urlName() -> String {
+        name.withoutLink()
+    }
+    
+    func urlName(entryId: UUID) -> String {
+        self[entryId].name.withoutLink()
+    }
+    
+    func url(linkNumber: Int) -> String {
+        "[\(urlName())](\(urlAdr(linkNumber: linkNumber)))"
+    }
+    
+    func url(linkNumber: Int, entryId: UUID) -> String {
+        "[\(urlName(entryId: entryId))](\(urlAdr(linkNumber: linkNumber, entryId: entryId)))"
+    }
+}

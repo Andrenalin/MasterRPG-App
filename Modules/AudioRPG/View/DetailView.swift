@@ -16,7 +16,7 @@ struct DetailView: View {
         FileDetailEditorView(model: model, listController: root.listController, editController: root.editController, menuController: menuController, fileTypes: FileController.fileTypes) {
             DetailRoute.detail($0)
         } importer: {
-            FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
+            OldFileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes)
         } background: {
             backgroundHeader
         } editor: {
@@ -62,7 +62,7 @@ private extension DetailView {
     var fileAndPlayerView: some View {
         HStack {
             HStack {
-                FileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes, isProminent: false)
+                OldFileImporterView(model: model, editController: root.editController, fileTypes: FileController.fileTypes, isProminent: false)
 
                 Text(model.url?.absoluteString ?? "No file is set")
                     .frame(maxWidth: .infinity, alignment: .leading)

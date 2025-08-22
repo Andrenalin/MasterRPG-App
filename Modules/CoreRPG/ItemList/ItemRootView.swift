@@ -11,6 +11,8 @@ public struct ItemRootView: View {
         self.displayMode = displayMode
         self.listMode = listMode
         self.route = route
+        
+        self._rootController = State(wrappedValue: ItemRootController(module: root.module, listDisplayModel: root.listDisplayModel, searchModel: root.searchModel, editControllable: root.editControllable, itemControllable: root.itemControllable, listControllable: root.listControllable))
     }
 
     let root: ItemRootControllable
@@ -25,6 +27,7 @@ public struct ItemRootView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
 
+    @State private var rootController: ItemRootController
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     @State private var cacheItemListModel = CacheItemListModel()
@@ -35,6 +38,7 @@ public struct ItemRootView: View {
             .environment(cacheItemListModel)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
+            .environment(rootController)
             .syncListDisplay(listControllable: root.listControllable, displayMode: displayMode, listMode: listMode)
             .tabBarPlacementModifier(listControllable: root.listControllable)
     }
@@ -50,6 +54,7 @@ private extension ItemRootView {
                         route
                             .environment(cacheItemListModel)
                             .environment(deviceRotationModel)
+                            .environment(rootController)
                     }
                     .onAppear {
                         listModel.resetListSelection()
@@ -73,6 +78,7 @@ private extension ItemRootView {
             if let selected = listModel.selectedItemId {
                 ManagedNavigationStack {
                     ItemRootRoute.detail(selected)
+                        .environment(rootController)
                 }
             } else {
                 SplitContentUnavailableView(module: root.module)
