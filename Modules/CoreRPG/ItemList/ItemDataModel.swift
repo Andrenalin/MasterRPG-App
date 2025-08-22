@@ -7,7 +7,7 @@ import SwiftData
 public final class ItemDataModel {
     init(
         id: UUID = UUID(),
-        module: NetworkModules = .none,
+        module: NetworkModules = .audio,
         name: String = "",
         information: String = "",
         category: ItemListCategory = .all,
@@ -35,7 +35,7 @@ public final class ItemDataModel {
     
     @Attribute(.preserveValueOnDeletion)
     public var id: UUID = UUID()
-    public var module: NetworkModules = NetworkModules.none
+    public var module: NetworkModules = NetworkModules.audio
 
     public var name: String = ""
     public var information: String = ""

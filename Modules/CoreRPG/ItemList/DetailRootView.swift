@@ -30,8 +30,23 @@ struct DetailRootView: View {
     }
 }
 
-//#Preview(traits: .mockData) {
-//    @Previewable @Query var models: [AudioDataModel]
-//    
-//    DetailRootView(model: models[0])
-//}
+#Preview("Folder", traits: .mockData) {
+    @Previewable @Environment(FakeItemRootController.self) var root
+    @Previewable @Query var models: [ItemDataModel]
+    
+    DetailRootView(model: models.first(where: { $0.id == MockData.folderId })!)
+}
+
+#Preview("Collection", traits: .mockData) {
+    @Previewable @Environment(FakeItemRootController.self) var root
+    @Previewable @Query var models: [ItemDataModel]
+    
+    DetailRootView(model: models.first(where: { $0.id == MockData.playlistId })!)
+}
+
+#Preview("Item", traits: .mockData) {
+    @Previewable @Environment(FakeItemRootController.self) var root
+    @Previewable @Query var models: [ItemDataModel]
+    
+    DetailRootView(model: models.first(where: { $0.id == MockData.previewId })!)
+}

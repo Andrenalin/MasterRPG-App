@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreExternalRPG
+import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -33,9 +34,9 @@ public struct ItemDetailEditorView: View {
                         
             initialFileImporterView
 
-            VStack {
-                backgroundView
+            backgroundView
 
+            VStack {
                 contentView
 
                 //bottomView
@@ -116,9 +117,12 @@ private extension ItemDetailEditorView {
     }
 
     var backgroundView: some View {
-        Color.clear.frame(height: 200)
+        //Rectangle().fill(model.module.color.gradient)
+        Color.clear.frame(height: 120)
             .background {
-                Rectangle().fill(model.module.color.gradient)
+                //ConcentricRectangle()
+                UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 32, bottomTrailingRadius: 32, topTrailingRadius: 0, style: .continuous)
+                    .fill(model.module.color.gradient)
                     .ignoresSafeArea(edges: .top)
                     .backgroundExtensionEffect()
             }
@@ -195,4 +199,14 @@ private extension ItemDetailEditorView {
     func updateFile(url: URL) {
         root.editControllable.resetFile(url: url, in: model)
     }
+}
+
+#Preview("Folder", traits: .mockData) {
+    @Previewable @Environment(FakeItemRootController.self) var root
+    @Previewable @Query var models: [ItemDataModel]
+    
+    NavigationStack {
+        DetailRootView(model: models.first(where: { $0.id == MockData.folderId })!)
+    }
+    .preferredColorScheme(.dark)
 }

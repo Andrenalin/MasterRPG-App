@@ -96,18 +96,16 @@ private extension ItemRootView {
     }
 }
 
-//#Preview("Small", traits: .mockData) {
-//    @Previewable @Query var models: [AudioDataModel]
-//
-//    ManagedNavigationStack {
-//        ItemRootView(withoutNavigation: true)
-//    }
-//}
-//
-//
-//#Preview("Split", traits: .mockData) {
-//    @Previewable @Query var models: [AudioDataModel]
-//
-//    ItemRootView(withoutNavigation: false)
-//}
+#Preview("Small", traits: .mockData) {
+    @Previewable @Environment(FakeItemRootController.self) var root
+    
+    ManagedNavigationStack {
+        ItemRootView(root: root, withoutNavigation: true, displayMode: .constant(.regular), listMode: .constant(.list), route: .constant(.detail(UUID())))
+    }
+}
 
+#Preview("Split", traits: .mockData) {
+    @Previewable @Environment(FakeItemRootController.self) var root
+    
+    ItemRootView(root: root, withoutNavigation: false, displayMode: .constant(.regular), listMode: .constant(.list), route: .constant(.detail(UUID())))
+}

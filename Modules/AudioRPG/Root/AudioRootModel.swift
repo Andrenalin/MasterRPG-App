@@ -1,8 +1,8 @@
 // @copyright André Trettin
 
 import CoreRPG
-import SwiftData
 import Foundation
+import SwiftData
 
 @MainActor @Observable
 public final class AudioRootModel {

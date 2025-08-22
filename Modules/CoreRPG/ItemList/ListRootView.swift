@@ -176,3 +176,9 @@ private extension ListRootView {
         }
     }
 }
+
+#Preview("Split", traits: .mockData) {
+    @Previewable @Environment(FakeItemRootController.self) var root
+    
+    ListRootView(root: root, parentModel: nil)
+}

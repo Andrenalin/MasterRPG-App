@@ -4,7 +4,6 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-
 struct ItemController: ItemControllable, Sendable {
 
     let container: ModelContainer

@@ -150,3 +150,8 @@ private extension ItemRowView {
     }
 }
 
+#Preview("Split", traits: .mockData) {
+    @Previewable @Environment(FakeItemRootController.self) var root
+    
+    ItemRowView(root: root, model: ItemDataModel(), cacheItemListModel: CacheItemListModel())
+}
