@@ -61,7 +61,7 @@ private extension ListModelUpdatesViewModifier {
     func updateSelected() {
         if let id = listModel.selected, let item = displayItems.first(where: { $0.id == id }) {
             listModel.listSelection <=> Set(arrayLiteral: id)
-            //navigator.navigate(to: ItemRootRoute.detail(item.model.id), method: .push)
+            navigator.navigate(to: ItemRootRoute.detail(item.model.id), method: .push)
         } else {
             listModel.resetListSelection()
         }

@@ -57,7 +57,7 @@ private extension ListView {
                 try? await Task.sleep(for: .seconds(0.5))
                 withAnimation {
                     root.editController.resetFile(data: data, model: model)
-                    listModel.update(selection: [model.id])
+                    //root.listController.listModel.update(selection: [model.id])
                 }
             }
         }

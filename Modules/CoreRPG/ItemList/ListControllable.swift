@@ -31,7 +31,6 @@ extension ListControllable {
         }
         return subListModel
     }
-
 }
 
 public extension ListControllable {
@@ -40,19 +39,32 @@ public extension ListControllable {
     }
 
     private func update(items: [ItemDataModel], on listModel: ListModel) {
+        let previousSelectedId = listModel.selectedItemId
+        
         guard listModel.originalItems.map({ $0.model.id }) != items.map(\.id) else { return }
         listModel.originalItems = items.enumerated().flatMap { (index, model) in
             map(model: model, index: index, level: 0)
         }
         listModel.displayedItems = listModel.originalItems.compactMap { filter(item: $0) }
+        
+        if let addedItem = listModel.item(modelId: listModel.addedModelId) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(50))
+                listModel.listSelection = Set(arrayLiteral: addedItem.id)
+            }
+            listModel.addedModelId = nil
+        } else if let newSelected = listModel.item(modelId: previousSelectedId) {
+            listModel.listSelection = Set(arrayLiteral: newSelected.id)
+            listModel.selected = newSelected.id
+            
+            listModel.scrollId = newSelected.id
+        }
     }
 }
 
 extension ListControllable {
     func add(model: ItemDataModel) {
-        let newModel = map(model: model, index: 0, level: 0)
-        listModel.displayedItems.insert(contentsOf: newModel, at: 0)
-        listModel.selected = newModel.first?.id
+        listModel.addedModelId = model.id
     }
     
     func resetFilter() {

@@ -83,22 +83,30 @@ private extension ListRootView {
 
     @ViewBuilder
     var listView: some View {
-        @Bindable var listModel = listModel
+        ScrollViewReader { proxy in
+            Group {
+                @Bindable var listModel = listModel
 #if os(macOS)
-        if listController.listDisplayModel.isSelectionMode {
-            List(selection: $listModel.listSelection) {
-                itemRows()
-            }
-        } else {
-            List(selection: $listModel.selected) {
-                itemRows()
-            }
-        }
+                if listController.listDisplayModel.isSelectionMode {
+                    List(selection: $listModel.listSelection) {
+                        itemRows()
+                    }
+                } else {
+                    List(selection: $listModel.selected) {
+                        itemRows()
+                    }
+                }
 #else
-        List(selection: $listModel.listSelection) {
-            itemRows()
-        }
+                List(selection: $listModel.listSelection) {
+                    itemRows()
+                }
 #endif
+            }
+            .onChange(of: listModel.scrollId) {
+                guard let id = listModel.scrollId else { return }
+                proxy.scrollTo(id, anchor: .center)
+            }
+        }
     }
 
     func itemRows() -> some View {
@@ -145,13 +153,16 @@ private extension ListRootView {
         } else {
             for index in offsets {
                 if displayItems[index].id == listModel.selected {
+                    listModel.resetListSelection()
                     listModel.update(selection: Set())
                 }
+                let model = displayItems[index].model
                 Task { @MainActor in
-                    root.editControllable.delete(model: displayItems[index].model)
+                    root.editControllable.delete(model: model)
                 }
             }
         }
+        listModel.deleteItems(offsets: offsets)
     }
     
     func moveItems(source: IndexSet, destination: Int) {

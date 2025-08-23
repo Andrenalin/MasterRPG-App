@@ -23,7 +23,7 @@ public final class ListModel {
     public var originalItems: [ListItemModel] = []
     public var displayedItems: [ListItemModel] = []
     
-    //public var items:
+    var addedModelId: UUID?
     
     // MARK: - List navigation
     public var selectedParentId: UUID?
@@ -61,9 +61,25 @@ public final class ListModel {
 
     public var multiSelection: Bool = true
     
+    // MARK: - Scroll
+    
+    var scrollId: String?
+    
     // MARK: - ListModels
     @ObservationIgnored
     var subListModel: ListModel?
+}
+
+// MARK: - Items
+extension ListModel {
+    func deleteItems(offsets: IndexSet) {
+        displayedItems.remove(atOffsets: offsets)
+    }
+    
+    func item(modelId: UUID?) -> ListItemModel? {
+        guard let modelId else { return nil }
+        return displayedItems.first(where: { $0.model.id == modelId })
+    }
 }
 
 // MARK: - Selection
