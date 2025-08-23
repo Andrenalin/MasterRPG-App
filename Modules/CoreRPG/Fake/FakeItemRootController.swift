@@ -4,10 +4,12 @@ import Foundation
 import SwiftData
 
 @Observable
-final class FakeItemRootController: ItemRootControllable {
-    init(modelContext: ModelContext) {
+public final class FakeItemRootController: ItemRootControllable {
+    public init(modelContext: ModelContext) {
         self.modelContext = modelContext
         
+        let module = NetworkModules.audio
+        self.module = module
         let listModel = ListModel()
         self.listModel = listModel
         let listDisplayModel = ListDisplayModel()
@@ -16,19 +18,27 @@ final class FakeItemRootController: ItemRootControllable {
         self.searchModel = searchModel
 
         let itemController = FakeItemController(container: modelContext.container)
-        self.editControllable = FakeEditController(itemControllable: itemController, fileUrlDataController: nil)
         self.itemControllable = itemController
-        self.listControllable = FakeListController(listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        let editController = FakeEditController(itemControllable: itemController, fileUrlDataController: nil)
+        self.editControllable = editController
+        let listController = FakeListController(listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.listControllable = listController
+        
+        let rootController =
+            ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, editControllable: editController, itemControllable: itemController, listControllable: listController)
+        self.rootController = rootController
     }
 
     let modelContext: ModelContext
     
-    let module: NetworkModules = .audio
-    let listModel: ListModel
-    let listDisplayModel: ListDisplayModel
-    let searchModel: SearchModel
+    public let module: NetworkModules
+    public let listModel: ListModel
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
     
-    let editControllable: any EditControllable
-    let itemControllable: any ItemControllable
-    let listControllable: any ListControllable
+    public let editControllable: any EditControllable
+    public let itemControllable: any ItemControllable
+    public let listControllable: any ListControllable
+    
+    public var rootController: ItemRootController
 }

@@ -15,6 +15,8 @@ struct ListRootView: View {
     @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name, animation: .smooth) private var items: [ItemDataModel]
 
     var body: some View {
+        let _ = Self._printChanges()
+        
         listView
             .animation(.smooth, value: displayItems.count)
             .frame(minWidth: 250, idealWidth: 350)
@@ -177,8 +179,8 @@ private extension ListRootView {
     }
 }
 
-#Preview("Split", traits: .mockData) {
-    @Previewable @Environment(FakeItemRootController.self) var root
-    
-    ListRootView(root: root, parentModel: nil)
-}
+//#Preview("Split", traits: .mockData) {
+//    @Previewable @Environment(FakeItemRootController.self) var root
+//    
+//    ListRootView(root: root, parentModel: nil)
+//}

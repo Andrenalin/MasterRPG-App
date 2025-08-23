@@ -38,23 +38,21 @@ struct RootDestinationView: View {
     init(itemId: UUID, isRootView: Bool = true) {
         self.itemId = itemId
         self.isRootView = isRootView
-        self._items = Query(filter: #Predicate<ItemDataModel>{ $0.id == itemId })
     }
     
     let itemId: UUID
     let isRootView: Bool
 
-    @Query private var items: [ItemDataModel]
-
     var body: some View {
+        let _ = Self._printChanges()
+        let _ = print("*** itemId: \(itemId)")
+        
         Group {
-            if let item = items.first {
-                if isRootView {
-                    DetailRootView(model: item)
-                } else {
-                    DetailRootView(model: item)
-                    //DetailView(model: item)
-                }
+            if isRootView {
+                DetailRootView(itemId: itemId)
+            } else {
+                DetailRootView(itemId: itemId)
+                //DetailView(model: item)
             }
         }
     }

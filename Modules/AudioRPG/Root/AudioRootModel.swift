@@ -31,12 +31,14 @@ public final class AudioRootModel {
 
         let newItemController = ItemController(container: modelContext.container)
         self.newItemController = newItemController
-        self.newEditController = EditController(itemControllable: newItemController, fileUrlDataController: fileController.fileUrlDataController)
-        self.newListController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
+        let newEditController = EditController(itemControllable: newItemController, fileUrlDataController: fileController.fileUrlDataController)
+        self.newEditController = newEditController
+        let newListController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.newListController = newListController
+        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, editControllable: newEditController, itemControllable: newItemController, listControllable: newListController)
 
         self._viewController = ViewController(_root: self)
-
-
+        
         itemController.cleanDeleted()
     }
     
@@ -60,6 +62,7 @@ public final class AudioRootModel {
     @ObservationIgnored let newEditController: EditController
     @ObservationIgnored let newItemController: ItemController
     @ObservationIgnored let newListController: ListController
+    @ObservationIgnored let rootController: ItemRootController
 
     @ObservationIgnored private var _viewController: ViewController? = nil
     public var viewController: ViewController {

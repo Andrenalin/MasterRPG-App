@@ -3,7 +3,7 @@
 import CoreExternalRPG
 import SwiftUI
 
-extension View {
+public extension View {
     func applyItemRootRoute(listControllable: any ListControllable, route: Binding<ItemRootRoute?>) -> some View {
         modifier(ItemRootRouteViewModifier(listControllable: listControllable, route: route))
     }
@@ -46,7 +46,3 @@ struct ItemRootRouteViewModifier: ViewModifier {
             }
     }
 }
-
-
-
-

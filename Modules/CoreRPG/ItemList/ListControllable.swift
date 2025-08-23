@@ -40,6 +40,7 @@ public extension ListControllable {
     }
 
     private func update(items: [ItemDataModel], on listModel: ListModel) {
+        guard listModel.originalItems.map({ $0.model.id }) != items.map(\.id) else { return }
         listModel.originalItems = items.enumerated().flatMap { (index, model) in
             map(model: model, index: index, level: 0)
         }

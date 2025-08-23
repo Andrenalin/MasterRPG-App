@@ -10,26 +10,39 @@ struct AudioRootNewView: View {
     
     @Environment(AudioRootModel.self) private var root
 
+    var body: some View {
+        let _ = Self._printChanges()
+        
+        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+            .overlay {
+                SaveView(root: root)
+            }
+    }
+}
+
+struct SaveView: View {
+    let root: AudioRootModel
+    
     @SceneStorage("AudioNewRoute") private var route: ItemRootRoute?
     @SceneStorage("AudioDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
     @SceneStorage("AudioListModel") private var listMode: ListDisplayModel.ListMode = .list
 
     var body: some View {
-        ItemRootView(root: root, withoutNavigation: withoutNavigation, displayMode: $displayMode, listMode: $listMode, route: $route)
+        let _ = Self._printChanges()
+
+        Color.clear
+            .applyItemRootRoute(listControllable: root.listControllable, route: $route)
+            .syncListDisplay(listControllable: root.listControllable, displayMode: $displayMode, listMode: $listMode)
     }
 }
 
-#Preview("Small", traits: .mockData) {
-    @Previewable @Query var models: [AudioDataModel]
-
+#Preview("Small", traits: .mockCoreData) {
     ManagedNavigationStack {
-        AudioRootView(withoutNavigation: true)
+        AudioRootNewView(withoutNavigation: true)
     }
 }
 
 
-#Preview("Split", traits: .mockData) {
-    @Previewable @Query var models: [AudioDataModel]
-
-    AudioRootView(withoutNavigation: false)
+#Preview("Split", traits: .mockCoreData) {
+    AudioRootNewView(withoutNavigation: false)
 }

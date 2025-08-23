@@ -98,6 +98,10 @@ public extension ListModel {
         displayedItems.first(where: { $0.id == selected })?.model.id
     }
 
+    var selectedModel: ItemDataModel? {
+        displayedItems.first(where: { $0.id == selected })?.model
+    }
+
     var selectionItemIds: [UUID] {
         selection.compactMap { selected in
             displayedItems.first(where: { $0.id == selected })?.model.id

@@ -5,41 +5,28 @@ import SwiftData
 import SwiftUI
 
 public struct ItemRootView: View {
-    public init(root: any ItemRootControllable, withoutNavigation: Bool, displayMode: Binding<ListDisplayModel.DisplayMode>, listMode: Binding<ListDisplayModel.ListMode>, route: Binding<ItemRootRoute?>) {
+    public init(root: ItemRootController, withoutNavigation: Bool) {
         self.root = root
         self.withoutNavigation = withoutNavigation
-        self.displayMode = displayMode
-        self.listMode = listMode
-        self.route = route
-        
-        self._rootController = State(wrappedValue: ItemRootController(module: root.module, listDisplayModel: root.listDisplayModel, searchModel: root.searchModel, editControllable: root.editControllable, itemControllable: root.itemControllable, listControllable: root.listControllable))
     }
 
-    let root: ItemRootControllable
+    let root: ItemRootController
     let withoutNavigation: Bool
 
-    let displayMode: Binding<ListDisplayModel.DisplayMode>
-    let listMode: Binding<ListDisplayModel.ListMode>
-    let route: Binding<ItemRootRoute?>
-
     @Environment(DeviceRotationModel.self) private var deviceRotationModel
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-#endif
 
-    @State private var rootController: ItemRootController
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     @State private var cacheItemListModel = CacheItemListModel()
 
     public var body: some View {
+        let _ = Self._printChanges()
+        
         rootView
-            .applyItemRootRoute(listControllable: root.listControllable, route: route)
             .environment(cacheItemListModel)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
-            .environment(rootController)
-            .syncListDisplay(listControllable: root.listControllable, displayMode: displayMode, listMode: listMode)
+            .environment(root)
             .tabBarPlacementModifier(listControllable: root.listControllable)
     }
 }
@@ -48,13 +35,13 @@ private extension ItemRootView {
     @ViewBuilder var rootView: some View {
 #if os(iOS)
         Group {
-            if withoutNavigation || horizontalSizeClass == .compact {
+            if withoutNavigation {
                 listRoot
                     .navigationDestination(for: ItemRootRoute.self) { route in
                         route
                             .environment(cacheItemListModel)
                             .environment(deviceRotationModel)
-                            .environment(rootController)
+                            .environment(root)
                             .environment(root.listDisplayModel)
                             .environment(root.searchModel)
                     }
@@ -77,14 +64,7 @@ private extension ItemRootView {
                 listRoot
             }
         } detail: {
-            if let selected = listModel.selectedItemId {
-                ManagedNavigationStack {
-                    ItemRootRoute.detail(selected)
-                        .environment(rootController)
-                }
-            } else {
-                SplitContentUnavailableView(module: root.module)
-            }
+            ItemSplitDetailRootView(root: root)
         }
     }
 
@@ -98,16 +78,38 @@ private extension ItemRootView {
     }
 }
 
-#Preview("Small", traits: .mockData) {
-    @Previewable @Environment(FakeItemRootController.self) var root
+struct ItemSplitDetailRootView: View {
+    let root: ItemRootController
     
-    ManagedNavigationStack {
-        ItemRootView(root: root, withoutNavigation: true, displayMode: .constant(.regular), listMode: .constant(.list), route: .constant(.detail(UUID())))
+    var body: some View {
+        let _ = Self._printChanges()
+        
+        if let selected = listModel.selectedItemId {
+            ManagedNavigationStack {
+                ItemRootRoute.detail(selected)
+                    .environment(root)
+            }
+        } else {
+            SplitContentUnavailableView(module: root.module)
+        }
     }
+    
+    var listModel: ListModel {
+        root.listControllable.listModel
+    }
+
 }
 
-#Preview("Split", traits: .mockData) {
-    @Previewable @Environment(FakeItemRootController.self) var root
-    
-    ItemRootView(root: root, withoutNavigation: false, displayMode: .constant(.regular), listMode: .constant(.list), route: .constant(.detail(UUID())))
-}
+//#Preview("Small", traits: .mockData) {
+//    @Previewable @Environment(FakeItemRootController.self) var root
+//    
+//    ManagedNavigationStack {
+//        ItemRootView(root: root, withoutNavigation: true, displayMode: .constant(.regular), listMode: .constant(.list), route: .constant(.detail(UUID())))
+//    }
+//}
+//
+//#Preview("Split", traits: .mockData) {
+//    @Previewable @Environment(FakeItemRootController.self) var root
+//    
+//    ItemRootView(root: root, withoutNavigation: false, displayMode: .constant(.regular), listMode: .constant(.list), route: .constant(.detail(UUID())))
+//}

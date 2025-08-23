@@ -29,6 +29,8 @@ public struct ItemDetailEditorView: View {
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
 
     public var body: some View {
+        let _ = Self._printChanges()
+
         ZStack(alignment: .top) {
             Color.clear
                         
@@ -201,12 +203,12 @@ private extension ItemDetailEditorView {
     }
 }
 
-#Preview("Folder", traits: .mockData) {
-    @Previewable @Environment(FakeItemRootController.self) var root
-    @Previewable @Query var models: [ItemDataModel]
-    
-    NavigationStack {
-        DetailRootView(model: models.first(where: { $0.id == MockData.folderId })!)
-    }
-    .preferredColorScheme(.dark)
-}
+//#Preview("Folder", traits: .mockData) {
+//    @Previewable @Environment(FakeItemRootController.self) var root
+//    @Previewable @Query var models: [ItemDataModel]
+//    
+//    NavigationStack {
+//        DetailRootView(itemId: MockData.folderId)
+//    }
+//    .preferredColorScheme(.dark)
+//}

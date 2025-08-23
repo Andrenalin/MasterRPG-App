@@ -5,7 +5,7 @@ import SwiftData
 
 @Model
 public final class ItemDataModel {
-    init(
+    public init(
         id: UUID = UUID(),
         module: NetworkModules = .audio,
         name: String = "",

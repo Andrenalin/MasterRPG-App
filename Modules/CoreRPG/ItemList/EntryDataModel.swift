@@ -5,7 +5,7 @@ import SwiftData
 
 @Model 
 public final class EntryDataModel {
-    init(id: UUID = UUID(), index: Int = 0, parentId: UUID, childId: UUID, item: ItemDataModel? = nil) {
+    public init(id: UUID = UUID(), index: Int = 0, parentId: UUID, childId: UUID, item: ItemDataModel? = nil) {
         self.id = id
         self.index = index
         self.parentId = parentId

@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-extension View {
+public extension View {
     func syncListDisplay(listControllable: any ListControllable, displayMode: Binding<ListDisplayModel.DisplayMode>, listMode: Binding<ListDisplayModel.ListMode>) -> some View {
         modifier(SyncListDisplayViewModifier(listControllable: listControllable, displayMode: displayMode, listMode: listMode))
     }
