@@ -3,8 +3,12 @@
 import SwiftData
 import SwiftUI
 
-struct DetailRootView: View {
-    let itemId: UUID
+public struct DetailRootView<Header: View>: View {
+    public init(@ViewBuilder header: () -> Header) {
+        self.header = header()
+    }
+    
+    let header: Header
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
@@ -15,14 +19,15 @@ struct DetailRootView: View {
     @State private var selection = GroupItemSelectionModel()
     @State private var openFileWindowModel = OpenFileWindowModel()
 
-    var body: some View {
+    public var body: some View {
         let _ = Self._printChanges()
-        let _ = print("*** itemId: \(itemId)")
         
         if let selectedModel {
-            ItemDetailEditorView(root: root, model: selectedModel)
-                .environment(selection)
-                .environment(openFileWindowModel)
+            ItemDetailEditorView(root: root, model: selectedModel) {
+                header
+            }
+            .environment(selection)
+            .environment(openFileWindowModel)
         }
 //        DetailView(model: model)
 //            .navigationDestination(for: DetailRoute.self) { route in

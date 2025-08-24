@@ -5,16 +5,18 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-public struct ItemDetailEditorView: View {
-    public init(root: any ItemRootControllable, model: ItemDataModel) {
+struct ItemDetailEditorView<Header: View>: View {
+    init(root: any ItemRootControllable, model: ItemDataModel, @ViewBuilder header: () -> Header) {
         self.root = root
         self.model = model
         self.cacheItemListModel = CacheItemListModel()
+        self.header = header()
     }
 
     let root: any ItemRootControllable
     let model: ItemDataModel
     let cacheItemListModel: CacheItemListModel
+    let header: Header
 
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -119,15 +121,18 @@ private extension ItemDetailEditorView {
     }
 
     var backgroundView: some View {
-        //Rectangle().fill(model.module.color.gradient)
-        Color.clear.frame(height: 120)
-            .background {
-                //ConcentricRectangle()
-                UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 32, bottomTrailingRadius: 32, topTrailingRadius: 0, style: .continuous)
-                    .fill(model.module.color.gradient)
-                    .ignoresSafeArea(edges: .top)
-                    .backgroundExtensionEffect()
-            }
+        VStack {
+            header
+        } //Rectangle().fill(model.module.color.gradient)
+        //Color.clear
+        .frame(height: 120)
+        .background {
+            //ConcentricRectangle()
+            UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 32, bottomTrailingRadius: 32, topTrailingRadius: 0, style: .continuous)
+                .fill(model.module.color.gradient)
+                .ignoresSafeArea(edges: .top)
+                .backgroundExtensionEffect()
+        }
     }
     
     var canShowInspector: Bool {

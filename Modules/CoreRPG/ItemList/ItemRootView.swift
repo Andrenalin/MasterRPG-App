@@ -4,14 +4,16 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct ItemRootView: View {
-    public init(root: ItemRootController, withoutNavigation: Bool) {
+public struct ItemRootView<Detail: View>: View {
+    public init(root: ItemRootController, withoutNavigation: Bool, @ViewBuilder detail: () -> Detail) {
         self.root = root
         self.withoutNavigation = withoutNavigation
+        self.detail = detail()
     }
 
     let root: ItemRootController
     let withoutNavigation: Bool
+    let detail: Detail
 
     @Environment(DeviceRotationModel.self) private var deviceRotationModel
 
@@ -38,7 +40,7 @@ private extension ItemRootView {
             if withoutNavigation {
                 listRoot
                     .navigationDestination(for: ItemRootRoute.self) { route in
-                        route
+                        detail
                             .environment(cacheItemListModel)
                             .environment(deviceRotationModel)
                             .environment(root)
@@ -64,7 +66,9 @@ private extension ItemRootView {
                 listRoot
             }
         } detail: {
-            ItemSplitDetailRootView(root: root)
+            ItemSplitDetailRootView(root: root) {
+                detail
+            }
         }
     }
 
@@ -78,15 +82,17 @@ private extension ItemRootView {
     }
 }
 
-struct ItemSplitDetailRootView: View {
+struct ItemSplitDetailRootView<Detail: View>: View {
     let root: ItemRootController
+    @ViewBuilder let detail: Detail
     
     var body: some View {
         let _ = Self._printChanges()
         
         if let selected = listModel.selectedItemId {
             ManagedNavigationStack {
-                ItemRootRoute.detail(selected)
+                detail
+//                ItemRootRoute.detail(selected)
                     .environment(root)
             }
         } else {

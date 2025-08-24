@@ -13,7 +13,19 @@ struct AudioRootNewView: View {
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
+            CoreRPG.DetailRootView {
+#if os(visionOS)
+            AudioPlayerBarView()
+                .padding()
+#else
+            GlassEffectContainer {
+                AudioPlayerBarView()
+                    .padding()
+            }
+#endif
+            }
+        }
             .overlay {
                 SaveView(root: root)
             }
