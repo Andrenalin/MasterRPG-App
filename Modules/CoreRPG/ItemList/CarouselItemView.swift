@@ -3,16 +3,16 @@
 import SwiftData
 import SwiftUI
 
-public struct CarouselItemView<EditController: OldEditControllable, Content: View>: View {
-    public init(model: EditController.Model, editController: EditController, selection: GroupItemSelectionModel, @ViewBuilder content: () -> Content) {
+public struct CarouselItemView<Content: View>: View {
+    public init(root: any ItemRootControllable, model: ItemDataModel, selection: GroupItemSelectionModel, @ViewBuilder content: () -> Content) {
         self.model = model
-        self.editController = editController
+        self.root = root
         self.selection = selection
         self.content = content()
     }
     
-    let model: EditController.Model
-    let editController: EditController
+    let model: ItemDataModel
+    let root: ItemRootControllable
     let selection: GroupItemSelectionModel
     let content: Content
 
@@ -24,11 +24,11 @@ public struct CarouselItemView<EditController: OldEditControllable, Content: Vie
                 itemView(item: model, selectedItem: nil)
 
                 ForEach(model.entries) { entry in
-                    if let item = EditController.Model.model(modelContext: modelContext, id: entry.childId) {
+                    if let item = ItemDataModel.model(modelContext: modelContext, id: entry.childId) {
                         itemView(item: item, selectedItem: item)
                             .overlay(alignment: .topTrailing) {
                                 GlassButton {
-                                    withAnimation { editController.removeGroup(childId: item.id, model: model) }
+                                    withAnimation { root.editControllable.removeGroup(childId: item.id, model: model) }
                                 } label: {
                                     Image(systemName: "minus")
                                         .foregroundStyle(.white, .red)
@@ -39,16 +39,16 @@ public struct CarouselItemView<EditController: OldEditControllable, Content: Vie
                     }
                 }
 
-                dropPhotoView
+                dropItemView
             }
         }
     }
     
     @ViewBuilder
-    var dropPhotoView: some View {
+    var dropItemView: some View {
         DropItemArea {
             VStack {
-                Text("Drop \(EditController.Model.typeId.title)", bundle: .module)
+                Text("Drop \(root.module.title)", bundle: .module)
 
                 Image(systemName: "square.and.arrow.down")
                     .imageScale(.large)
@@ -65,13 +65,13 @@ public struct CarouselItemView<EditController: OldEditControllable, Content: Vie
     
     private func addLinks(links: [LinkData]) -> Bool {
         links.forEach { link in
-            guard link.module == EditController.Model.typeId else { return }
-            withAnimation { editController.addGroup(childId: link.itemId, model: model) }
+            guard link.module == root.module else { return }
+            withAnimation { root.editControllable.addGroup(childId: link.itemId, model: model) }
         }
         return true
     }
     
-    func itemView(item: EditController.Model, selectedItem: EditController.Model?) -> some View {
+    func itemView(item: ItemDataModel, selectedItem: ItemDataModel?) -> some View {
         content
             .environment(GroupItemSelectionModel(selectedItem: item.id))
             .frame(height: 128)
@@ -90,6 +90,5 @@ public struct CarouselItemView<EditController: OldEditControllable, Content: Vie
                 _ = addLinks(links: items)
             }
 #endif
-
     }
 }

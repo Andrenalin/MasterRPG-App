@@ -3,13 +3,11 @@
 import SwiftData
 import SwiftUI
 
-public typealias ModelType = ItemDataAccessable & ItemDataModelable & ListItemFolderable & PersistentModel
-
-public struct ItemGroupItemView<Model: ModelType>: View {
-    public init(model: Model) {
+public struct ItemGroupItemView: View {
+    public init(model: ItemDataModel) {
         self.model = model
     }
-    let model: Model
+    let model: ItemDataModel
 
     @Environment(\.modelContext) var modelContext
     @Environment(GroupItemSelectionModel.self) var selection
@@ -28,8 +26,8 @@ public struct ItemGroupItemView<Model: ModelType>: View {
         .padding()
     }
 
-    var item: Model {
+    var item: ItemDataModel {
         guard let id = selection.selectedItem else { return model }
-        return Model.model(modelContext: modelContext, id: id) ?? model
+        return ItemDataModel.model(modelContext: modelContext, id: id) ?? model
     }
 }

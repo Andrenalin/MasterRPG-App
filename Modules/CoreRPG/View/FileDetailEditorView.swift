@@ -169,7 +169,7 @@ private extension FileDetailEditorView {
     @ViewBuilder
     var bottomView: some View {
         if hasFile && model.specialCategory == false {
-            CarouselItemView(model: model, editController: editController, selection: selection) {
+            OldCarouselItemView(model: model, editController: editController, selection: selection) {
                 bottom
             }
             .frame(maxWidth: .infinity, alignment: .leading)

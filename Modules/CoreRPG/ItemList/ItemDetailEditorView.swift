@@ -41,7 +41,7 @@ public struct ItemDetailEditorView: View {
             VStack {
                 contentView
 
-                //bottomView
+                bottomView
             }
             .frame(maxHeight: .infinity, alignment: .bottom)
         }
@@ -163,21 +163,21 @@ private extension ItemDetailEditorView {
         .opacity(hasFile || model.specialCategory ? 0 : 1)
         .transition(.scale)
     }
-//
-//    @ViewBuilder
-//    var bottomView: some View {
-//        if hasFile && model.specialCategory == false {
-//            CarouselItemView(model: model, editController: editController, selection: selection) {
-//                bottom
-//            }
-//            .frame(maxWidth: .infinity, alignment: .leading)
-//            .fixedSize(horizontal: false, vertical: true)
-//            .padding(.top, 2)
-//            .environment(selection)
-//            .transition(.move(edge: .bottom))
-//        }
-//    }
-//
+
+    @ViewBuilder
+    var bottomView: some View {
+        if hasFile && model.specialCategory == false {
+            CarouselItemView(root: root, model: model, selection: selection) {
+                ItemGroupItemView(model: model)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 2)
+            .environment(selection)
+            .transition(.move(edge: .bottom))
+        }
+    }
+
     @ViewBuilder
     var contentView: some View {
         VStack(spacing: 8) {
@@ -185,13 +185,9 @@ private extension ItemDetailEditorView {
 
             // editor
             
-//            if model.specialCategory {
-//                ItemListView(listController: listController, editController: editController, menuController: menuController, parentModel: model, module: EditController.Model.typeId) { id in
-//                    route(id)
-//                } row: { itemId in
-//                    row(itemId)
-//                }
-//            }
+            if model.specialCategory {
+                ListRootView(root: root, parentModel: model)
+            }
         }
         .padding()
         .opacity(hasFile || model.specialCategory ? 1 : 0)

@@ -30,7 +30,7 @@ struct DetailView: View {
                 MainRowView(model: model)
             }
         } bottom: {
-            ItemGroupItemView(model: model)
+            OldItemGroupItemView(model: model)
         } inspector: {
             LinkRootView(isInspector: true)
         }
