@@ -25,7 +25,7 @@ struct DetailView: View {
                 MainRowView(model: model)
             }
         } bottom: {
-            GroupedPhotoView(cacheController: root.cacheController, model: model)
+            OldGroupedPhotoView(cacheController: root.cacheController, model: model)
         } inspector: {
             LinkRootView(isInspector: true)
         }

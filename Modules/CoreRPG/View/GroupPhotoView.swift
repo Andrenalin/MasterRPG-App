@@ -3,7 +3,7 @@
 import SwiftData
 import SwiftUI
 
-public struct GroupedPhotoView<Model: ItemDataModelable>: View where Model: ImageFileLoadable {
+public struct OldGroupedPhotoView<Model: ItemDataModelable>: View where Model: ImageFileLoadable {
     public init(cacheController: any ImageCacheControllable, model: Model) {
         self.cacheController = cacheController
         self.model = model

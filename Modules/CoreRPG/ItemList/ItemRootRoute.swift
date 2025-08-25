@@ -47,11 +47,9 @@ struct RootDestinationView: View {
         Group {
             if isRootView {
                 DetailRootView() {
-                    
                 }
             } else {
-                DetailRootView() {
-                    
+                DetailRootView() {                    
                 }
                 //DetailView(model: item)
             }

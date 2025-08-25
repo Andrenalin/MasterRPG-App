@@ -3,12 +3,16 @@
 import CoreRPG
 import SwiftUI
 
-public struct ViewController {
+public struct ViewController: Sendable {
     weak var _root: AudioRootModel?
     var root: AudioRootModel {
         _root.unsafelyUnwrapped
     }
+    
+    public let goupViewType: GroupViewType = .item
 }
+
+extension ViewController: ViewControllable {}
 
 // MARK: Viewer
 

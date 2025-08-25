@@ -17,6 +17,7 @@ public final class FakeItemRootController: ItemRootControllable {
         let searchModel = SearchModel(modelContext: modelContext, module: .audio, categoryTags: [.music, .sound])
         self.searchModel = searchModel
 
+        self.cacheControllable = nil
         let itemController = FakeItemController(container: modelContext.container)
         self.itemControllable = itemController
         let editController = FakeEditController(itemControllable: itemController, fileUrlDataController: nil)
@@ -25,9 +26,10 @@ public final class FakeItemRootController: ItemRootControllable {
         self.listControllable = listController
         let listLinkController = FakeListController(listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
         self.listLinkControllable = listController
+        self.viewControllable = FakeViewController(goupViewType: .item)
 
         let rootController =
-        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController)
+        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewControllable)
         self.rootController = rootController
     }
 
@@ -40,10 +42,12 @@ public final class FakeItemRootController: ItemRootControllable {
     
     public var currentSelectedItemId: UUID? = nil
     
+    public let cacheControllable: (any ImageCacheControllable)?
     public let editControllable: any EditControllable
     public let itemControllable: any ItemControllable
     public let listControllable: any ListControllable
     public let listLinkControllable: any ListControllable
+    public let viewControllable: any ViewControllable
     
     public var rootController: ItemRootController
 }

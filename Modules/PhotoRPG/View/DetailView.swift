@@ -36,7 +36,7 @@ struct DetailView: View {
                 MainRowView(model: model)
             }
         } bottom: {
-            GroupedPhotoView(cacheController: root.cacheController, model: model)
+            OldGroupedPhotoView(cacheController: root.cacheController, model: model)
         } inspector: {
             LinkRootView(isInspector: true)
         }
@@ -51,7 +51,7 @@ private extension DetailView {
         if model.specialCategory == false && model.url != nil {
             ScrollView(showsIndicators: false) {
                 LazyVStack(alignment: .leading, spacing: 8) {
-                    GroupedPhotoView(cacheController: root.cacheController, model: model)
+                    OldGroupedPhotoView(cacheController: root.cacheController, model: model)
                         .stretchy()
                 }
             }

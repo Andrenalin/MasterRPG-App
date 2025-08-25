@@ -88,7 +88,6 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
 #endif
         .sheet(isPresented: $isEditing) {
             ItemHeaderEditorView(editControllable: root.editControllable, model: model)
-            
                 .presentationContentInteraction(.resizes)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
@@ -165,9 +164,15 @@ private extension ItemDetailEditorView {
 
     @ViewBuilder
     var bottomView: some View {
-        if hasFile && model.specialCategory == false {
+        if hasFile && model.specialCategory == false && root.viewControllable.goupViewType != .none {
             CarouselItemView(root: root, model: model, selection: selection) {
-                ItemGroupItemView(model: model)
+                if root.viewControllable.goupViewType == .item {
+                    ItemGroupItemView(model: model)
+                } else {
+                    if let cacheControllable = root.cacheControllable {
+                        GroupedPhotoView(cacheController: cacheControllable, model: model)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)

@@ -11,22 +11,26 @@ public protocol ItemRootControllable {
     
     var currentSelectedItemId: UUID? { get }
 
+    var cacheControllable: (any ImageCacheControllable)? { get }
     var editControllable: any EditControllable { get }
     var itemControllable: any ItemControllable { get }
     var listControllable: any ListControllable { get }
     var listLinkControllable: any ListControllable { get }
+    var viewControllable: any ViewControllable { get }
 }
 
 @MainActor @Observable
 public final class ItemRootController: ItemRootControllable {
-    public init(module: NetworkModules, listDisplayModel: ListDisplayModel, searchModel: SearchModel, editControllable: any EditControllable, itemControllable: any ItemControllable, listControllable: any ListControllable, listLinkControllable: any ListControllable) {
+    public init(module: NetworkModules, listDisplayModel: ListDisplayModel, searchModel: SearchModel, cacheControllable: (any ImageCacheControllable)?, editControllable: any EditControllable, itemControllable: any ItemControllable, listControllable: any ListControllable, listLinkControllable: any ListControllable, viewControllable: any ViewControllable) {
         self.module = module
         self.listDisplayModel = listDisplayModel
         self.searchModel = searchModel
+        self.cacheControllable = cacheControllable
         self.editControllable = editControllable
         self.itemControllable = itemControllable
         self.listControllable = listControllable
         self.listLinkControllable = listLinkControllable
+        self.viewControllable = viewControllable
     }
     
     public let module: NetworkModules
@@ -37,8 +41,10 @@ public final class ItemRootController: ItemRootControllable {
         listControllable.listModel(for: nil).selectedItemId
     }
 
+    public let cacheControllable: (any ImageCacheControllable)?
     public let editControllable: any EditControllable
     public let itemControllable: any ItemControllable
     public let listControllable: any ListControllable
     public let listLinkControllable: any ListControllable
+    public let viewControllable: any ViewControllable
 }
