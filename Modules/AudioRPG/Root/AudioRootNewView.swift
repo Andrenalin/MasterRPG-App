@@ -16,20 +16,55 @@ struct AudioRootNewView: View {
         ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
             CoreRPG.DetailRootView {
 #if os(visionOS)
-            AudioPlayerBarView()
-                .padding()
-#else
-            GlassEffectContainer {
                 AudioPlayerBarView()
                     .padding()
-            }
+#else
+                GlassEffectContainer {
+                    AudioPlayerBarView()
+                        .padding()
+                }
 #endif
+            } editor: {
+                if let selectedModel {
+                    fileAndPlayerView(model: selectedModel)
+                }
             }
         }
-            .overlay {
-                SaveView(root: root)
-            }
+        .overlay {
+            SaveView(root: root)
+        }
     }
+    
+    func fileAndPlayerView(model: ItemDataModel) -> some View {
+        HStack {
+            HStack {
+                FileImporterView(editControllable: root.editControllable, model: model, fileTypes: root.editControllable.fileUrlDataController?.fileTypes ?? [])
+
+                Text(model.url?.absoluteString ?? "No file is set")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+            }
+            .opacity(model.specialCategory ? 0 : 1)
+
+            Button {
+                Task {
+                    let list = root.newItemController.audioList(itemId: model.id)
+                    await root.audioController.add(audio: list, replace: true)
+                    root.audioController.togglePlay(id: list.first?.id)
+                }
+            } label: {
+                Image(systemName: "play")
+                    .font(.largeTitle)
+            }
+            .disabled(!root.newItemController.hasAudio(itemId: model.id))
+        }
+        .padding()
+    }
+
+    var selectedModel: ItemDataModel? {
+        root.listControllable.listModel.selectedModel
+    }
+
 }
 
 struct SaveView: View {

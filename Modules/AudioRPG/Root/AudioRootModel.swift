@@ -35,7 +35,10 @@ public final class AudioRootModel {
         self.newEditController = newEditController
         let newListController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
         self.newListController = newListController
-        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, editControllable: newEditController, itemControllable: newItemController, listControllable: newListController)
+        let newListLinkController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.newListLinkController = newListLinkController
+
+        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, editControllable: newEditController, itemControllable: newItemController, listControllable: newListController, listLinkControllable: newListLinkController)
 
         self._viewController = ViewController(_root: self)
         
@@ -62,6 +65,7 @@ public final class AudioRootModel {
     @ObservationIgnored let newEditController: EditController
     @ObservationIgnored let newItemController: ItemController
     @ObservationIgnored let newListController: ListController
+    @ObservationIgnored let newListLinkController: ListController
     @ObservationIgnored let rootController: ItemRootController
 
     @ObservationIgnored private var _viewController: ViewController? = nil
@@ -69,7 +73,7 @@ public final class AudioRootModel {
         _viewController.unsafelyUnwrapped
     }
     
-    var currentSelectedItemId: UUID? {
+    public var currentSelectedItemId: UUID? {
         listModel.selectedItemId
     }
 }
@@ -78,6 +82,7 @@ extension AudioRootModel: ItemRootControllable {
     public var editControllable: any EditControllable { newEditController }
     public var itemControllable: any ItemControllable { newItemController }
     public var listControllable: any ListControllable { newListController }
+    public var listLinkControllable: any ListControllable { newListLinkController }
 }
 
 extension AudioRootModel {

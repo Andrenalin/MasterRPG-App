@@ -195,7 +195,7 @@ struct MockRootViewModifier: ViewModifier {
     }
     
     var rootController: ItemRootController {
-        ItemRootController(module: root.module, listDisplayModel: root.listDisplayModel, searchModel: root.searchModel, editControllable: root.editControllable, itemControllable: root.itemControllable, listControllable: root.listControllable)
+        ItemRootController(module: root.module, listDisplayModel: root.listDisplayModel, searchModel: root.searchModel, editControllable: root.editControllable, itemControllable: root.itemControllable, listControllable: root.listControllable, listLinkControllable: root.listLinkControllable)
     }
 }
 

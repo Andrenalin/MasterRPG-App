@@ -23,9 +23,11 @@ public final class FakeItemRootController: ItemRootControllable {
         self.editControllable = editController
         let listController = FakeListController(listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
         self.listControllable = listController
-        
+        let listLinkController = FakeListController(listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.listLinkControllable = listController
+
         let rootController =
-            ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, editControllable: editController, itemControllable: itemController, listControllable: listController)
+        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController)
         self.rootController = rootController
     }
 
@@ -36,9 +38,12 @@ public final class FakeItemRootController: ItemRootControllable {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     
+    public var currentSelectedItemId: UUID? = nil
+    
     public let editControllable: any EditControllable
     public let itemControllable: any ItemControllable
     public let listControllable: any ListControllable
+    public let listLinkControllable: any ListControllable
     
     public var rootController: ItemRootController
 }

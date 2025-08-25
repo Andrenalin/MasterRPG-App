@@ -3,12 +3,16 @@
 import SwiftData
 import SwiftUI
 
-public struct DetailRootView<Header: View>: View {
-    public init(@ViewBuilder header: () -> Header) {
+public struct DetailRootView<Header: View, Editor: View, Inspector: View>: View {
+    public init(@ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
         self.header = header()
+        self.editor = editor()
+        self.inspector = inspector()
     }
     
     let header: Header
+    let editor: Editor
+    let inspector: Inspector
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
@@ -25,6 +29,10 @@ public struct DetailRootView<Header: View>: View {
         if let selectedModel {
             ItemDetailEditorView(root: root, model: selectedModel) {
                 header
+            } editor: {
+                editor
+            } inspector: {
+                inspector
             }
             .environment(selection)
             .environment(openFileWindowModel)

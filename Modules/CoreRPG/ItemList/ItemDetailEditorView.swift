@@ -5,18 +5,22 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct ItemDetailEditorView<Header: View>: View {
-    init(root: any ItemRootControllable, model: ItemDataModel, @ViewBuilder header: () -> Header) {
+struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
+    init(root: any ItemRootControllable, model: ItemDataModel, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
         self.root = root
         self.model = model
         self.cacheItemListModel = CacheItemListModel()
         self.header = header()
+        self.editor = editor()
+        self.inspector = inspector()
     }
 
     let root: any ItemRootControllable
     let model: ItemDataModel
     let cacheItemListModel: CacheItemListModel
     let header: Header
+    let editor: Editor
+    let inspector: Inspector
 
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -77,7 +81,9 @@ struct ItemDetailEditorView<Header: View>: View {
 #endif
 #if !os(visionOS)
         .inspector(isPresented: $showInspector) {
-            Text("Inspector")
+            if model.specialCategory {
+                LinkRootView(root: root, isInspector: true)
+            }
         }
 #endif
         .sheet(isPresented: $isEditing) {
@@ -123,8 +129,7 @@ private extension ItemDetailEditorView {
     var backgroundView: some View {
         VStack {
             header
-        } //Rectangle().fill(model.module.color.gradient)
-        //Color.clear
+        }
         .frame(height: 120)
         .background {
             //ConcentricRectangle()
@@ -142,18 +147,7 @@ private extension ItemDetailEditorView {
         true
 #endif
     }
-//
-//
-//    @ViewBuilder
-//    var backgroundView: some View {
-//        background
-//            .background {
-//                Rectangle().fill(EditController.Model.typeId.color.gradient)
-//                    .ignoresSafeArea(edges: .top)
-//                    .backgroundExtensionEffect()
-//            }
-//    }
-//
+
     @ViewBuilder
     var initialFileImporterView: some View {
         HStack {
@@ -188,10 +182,10 @@ private extension ItemDetailEditorView {
         VStack(spacing: 8) {
             ItemDetailOverlayView(model: model)
 
-            // editor
-            
             if model.specialCategory {
                 ListRootView(root: root, parentModel: model)
+            } else {
+                editor
             }
         }
         .padding()

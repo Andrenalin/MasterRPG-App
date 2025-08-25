@@ -39,7 +39,7 @@ public struct FileUrlDataController: Sendable {
     private let fileBookmarkController: FileBookmarkController
     private let locationFileManager: LocationFileManager
     
-    let fileTypes: [UTType]
+    public let fileTypes: [UTType]
     let filenameExtension: String
     private let fileUrlAccess: any FileUrlAccessible
     
