@@ -24,8 +24,7 @@ extension ViewController: ViewControllable {
 public extension ViewController {
     @MainActor
     func linkWindow() -> some View {
-        Text("")
-//        LinkRootView(isInspector: false)
+        LinkRootView(isInspector: false)
             .environment(root)
     }
 }
