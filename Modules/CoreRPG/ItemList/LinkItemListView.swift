@@ -108,7 +108,13 @@ private extension LinkItemListView {
     func itemRows() -> some View {
         ForEach(listModel.displayedItems) { item in
             HStack {
-                ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false)
+                ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false) {
+                    if root.viewControllable.thumbnailRowViewType == .custom {
+                        root.viewControllable.thumbnailRowView(for: item.model.id)
+                    } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
+                        ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
+                    }
+                }
                 
                 specialCategoryFolderIndicator(item: item)
             }

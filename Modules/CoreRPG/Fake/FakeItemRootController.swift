@@ -26,7 +26,7 @@ public final class FakeItemRootController: ItemRootControllable {
         self.listControllable = listController
         let listLinkController = FakeListController(listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
         self.listLinkControllable = listController
-        self.viewControllable = FakeViewController(goupViewType: .item)
+        self.viewControllable = FakeViewController(goupViewType: .item, thumbnailRowViewType: .none)
 
         let rootController =
         ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewControllable)

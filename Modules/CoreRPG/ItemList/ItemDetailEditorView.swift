@@ -39,13 +39,14 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
 
         ZStack(alignment: .top) {
             Color.clear
-                        
+                                    
             initialFileImporterView
-
-            backgroundView
-
+            
             VStack {
+                headerView
+
                 contentView
+                    .frame(maxHeight: .infinity, alignment: .bottom)
 
                 bottomView
             }
@@ -125,13 +126,12 @@ private extension ItemDetailEditorView {
         model.url != nil || fileTypes.isEmpty
     }
 
-    var backgroundView: some View {
+    var headerView: some View {
         VStack {
             header
         }
         .frame(height: 120)
         .background {
-            //ConcentricRectangle()
             UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 32, bottomTrailingRadius: 32, topTrailingRadius: 0, style: .continuous)
                 .fill(model.module.color.gradient)
                 .ignoresSafeArea(edges: .top)

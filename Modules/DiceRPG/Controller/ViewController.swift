@@ -10,9 +10,14 @@ public struct ViewController {
     }
     
     public let goupViewType: GroupViewType = .none
+    public let thumbnailRowViewType: ThumbnailRowViewType = .custom
 }
 
-extension ViewController: ViewControllable {}
+extension ViewController: ViewControllable {
+    public func thumbnailRowView(for itemId: UUID) -> AnyView {
+        AnyView(ThumbnailDiceRow(itemId: itemId))
+    }
+}
 
 // MARK: Viewer
 

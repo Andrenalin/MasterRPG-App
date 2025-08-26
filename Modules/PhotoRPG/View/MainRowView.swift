@@ -12,7 +12,7 @@ struct MainRowView: View {
 
     var body: some View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheModel, isSelected: false, thumbnail: {
-            ThumbnailRowPhotoView(cacheController: root.cacheController, model: model)
+            OldThumbnailRowPhotoView(cacheController: root.cacheController, model: model)
         })
 #if !os(tvOS)
         .draggable(LinkData(itemId: model.id, module: PhotoDataModel.typeId, name: model.name))

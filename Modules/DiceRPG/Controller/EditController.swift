@@ -16,6 +16,7 @@ extension EditController {
         let counter = model.dice.count
         let duplicate = die.duplicate(index: counter)
         model.dice.append(duplicate)
+        try? model.modelContext?.save()
     }
     
     func remove(die: DieDataModel, from model: DiceConfigDataModel) {

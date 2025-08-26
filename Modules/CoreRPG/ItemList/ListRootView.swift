@@ -112,15 +112,21 @@ private extension ListRootView {
     func itemRows() -> some View {
         ForEach(displayItems) { item in
             HStack {
-                ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false)
-#if !os(tvOS)
-                    .draggable(LinkData(itemId: item.model.id, module: root.module, name: item.model.name))
-#endif
-                    .applyIf(!listController.listDisplayModel.isSelectionMode) { content in
-                        content.contextMenu {
-                            ItemListContextMenu(controller: menuController, currentSelected: item.model.id)
-                        }
+                ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false) {
+                    if root.viewControllable.thumbnailRowViewType == .custom {
+                        root.viewControllable.thumbnailRowView(for: item.model.id)
+                    } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
+                        ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
                     }
+                }
+#if !os(tvOS)
+                .draggable(LinkData(itemId: item.model.id, module: root.module, name: item.model.name))
+#endif
+                .applyIf(!listController.listDisplayModel.isSelectionMode) { content in
+                    content.contextMenu {
+                        ItemListContextMenu(controller: menuController, currentSelected: item.model.id)
+                    }
+                }
 
                 specialCategoryFolderIndicator(item: item)
             }

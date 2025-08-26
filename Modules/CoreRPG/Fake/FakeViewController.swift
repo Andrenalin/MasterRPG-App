@@ -4,4 +4,5 @@ import SwiftUI
 
 struct FakeViewController: ViewControllable {
     var goupViewType: GroupViewType
+    var thumbnailRowViewType: ThumbnailRowViewType
 }

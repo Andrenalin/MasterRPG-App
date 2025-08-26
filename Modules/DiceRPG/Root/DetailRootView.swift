@@ -9,6 +9,9 @@ struct DetailRootView: View {
     
     var body: some View {
         CoreRPG.DetailRootView {
+            if let model {
+                DiceViewer(model: model, isEditor: false)
+            }
         } editor: {
             if let model {
 #if os(macOS)

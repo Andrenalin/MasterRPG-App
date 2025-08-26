@@ -23,6 +23,7 @@ public struct ItemGroupItemView: View {
                 .
             font(.title)
         }
+        .frame(width: 128)
         .padding()
     }
 

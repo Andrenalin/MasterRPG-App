@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-public struct ThumbnailRowPhotoView: View {
+public struct OldThumbnailRowPhotoView: View {
     public init(cacheController: any ImageCacheControllable, model: any ImageFileLoadable) {
         self.cacheController = cacheController
         self.model = model
@@ -54,7 +54,7 @@ public struct ThumbnailRowPhotoView: View {
     }
 }
 
-private extension ThumbnailRowPhotoView {
+private extension OldThumbnailRowPhotoView {
     var width: CGFloat {
         switch listDisplayModel.displayMode {
             case .compact: 160

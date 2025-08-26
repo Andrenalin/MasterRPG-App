@@ -66,6 +66,7 @@ public final class AppModel: Sendable {
                 AudioEntryDataModel.self,
                 DiceDataModel.self,
                 DiceEntryDataModel.self,
+                DiceConfigDataModel.self,
                 PdfDataModel.self,
                 PdfEntryDataModel.self,
                 PhotoDataModel.self,

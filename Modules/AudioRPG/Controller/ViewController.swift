@@ -10,6 +10,7 @@ public struct ViewController: Sendable {
     }
     
     public let goupViewType: GroupViewType = .item
+    public let thumbnailRowViewType: ThumbnailRowViewType = .none
 }
 
 extension ViewController: ViewControllable {}
