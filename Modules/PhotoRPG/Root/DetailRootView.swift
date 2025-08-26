@@ -5,25 +5,35 @@ import SwiftData
 import SwiftUI
 
 struct DetailRootView: View {
-    let model: PhotoDataModel
-    
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(ListDisplayModel.self) private var listDisplayModel
-    @Environment(SearchModel.self) private var searchModel
+    @Environment(PhotoRootModel.self) private var root
     
     var body: some View {
-        DetailView(model: model)
-            .navigationDestination(for: DetailRoute.self) { route in
-                route
-                    .environment(cacheItemListModel)
-                    .environment(listDisplayModel)
-                    .environment(searchModel)
+        CoreRPG.DetailRootView {
+        } editor: {
+            if let model = selectedModel {
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        GroupedPhotoView(cacheController: root.cacheController, model: model)
+                            .stretchy()
+                    }
+                }
+
+                if !model.specialCategory {
+//                    OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
+                }
             }
+        }
+    }
+    var selectedModel: ItemDataModel? {
+        root.listControllable.listModel.selectedModel
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [PhotoDataModel]
+    @Previewable @Query var models: [ItemDataModel]
+    @Previewable @Environment(PhotoRootModel.self) var root
     
-    DetailRootView(model: models[0])
+    DetailRootView().onAppear {
+        root.listControllable.listModel.set(selectedItemId: models.first!.id)
+    }
 }

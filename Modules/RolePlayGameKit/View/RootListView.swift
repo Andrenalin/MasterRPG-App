@@ -13,7 +13,7 @@ struct RootListView: View {
 @Environment(\.tabBarPlacement) private var tabBarPlacement
 #endif
 
-    @State private var selectionModel = ListSelectionModel<PhotoDataModel>()
+    @State private var selectionModel = ListSelectionModel<ItemDataModel>()
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
@@ -45,8 +45,8 @@ struct ListView: View {
     let rootRoute: RootRoute
     
     @Environment(\.modelContext) private var modelContext
-    @Environment(ListSelectionModel<PhotoDataModel>.self) private var model
-    @Query private var items: [PhotoDataModel]
+    @Environment(ListSelectionModel<ItemDataModel>.self) private var model
+    @Query private var items: [ItemDataModel]
 
     @State private var selected: UUID?
     var body: some View {
@@ -64,7 +64,7 @@ struct ListView: View {
 }
 
 struct RowView: View {
-    let item: PhotoDataModel
+    let item: ItemDataModel
     var body: some View {
         VStack(alignment: .leading) {
             Text("Bla")
@@ -76,7 +76,7 @@ struct RowView: View {
 struct DetailView: View {
     @Environment(\.isSearching) private var isSearching
     
-    let item: PhotoDataModel
+    let item: ItemDataModel
     
     @State private var name = ""
     

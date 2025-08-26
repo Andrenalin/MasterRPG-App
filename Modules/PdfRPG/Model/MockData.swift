@@ -71,7 +71,6 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.listController.listModel)
             .environment(root.listDisplayModel)
             .environment(root.rootController)
-            .environment(root.listDisplayModel)
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
             .environment(TabTitleModel())

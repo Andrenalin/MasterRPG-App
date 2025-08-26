@@ -9,32 +9,39 @@ public final class PhotoRootModel {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         
-        let listModel = OldListModel()
-        self.listModel = listModel
+        let module: NetworkModules = .photo
+        self.module = module
+        
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = PhotoRootModel.newSearchModel(modelContext: modelContext)
+        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.adventure, .map, .value, .weather])
         self.searchModel = searchModel
 
         let fileController = FileController()
-        self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
-        self.editController = EditController(fileUrlDataController: fileController.fileUrlDataController)
         let itemController = ItemController(container: modelContext.container)
-        self.exportController = ExportController(itemController: itemController, fileController: fileController, gameExporter: false)
+        let editController = EditController(itemControllable: itemController, fileUrlDataController: fileController.fileUrlDataController)
+        let listController = ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        let listLinkController = ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        let viewController = ViewController()
+
+        self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
+        self.editController = editController
+        self.exportController = ExportController(module: module, itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
-        self.listController = ListController.listController(for: .main, modelContext: modelContext, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
-        self.listLinkController = ListController.listController(for: .link, modelContext: modelContext, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
-        self._viewController = ViewController(_root: self)
+        self.listController = listController
+        self.listLinkController = listLinkController
+        self.viewController = viewController
+        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, cacheControllable: cacheController, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
         
         itemController.cleanDeleted()
     }
 
     let modelContext: ModelContext
+    public let module: NetworkModules
     
-    let listModel: OldListModel
-    let listDisplayModel: ListDisplayModel
-    let searchModel: SearchModel
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
 
     @ObservationIgnored let cacheController: CacheController
     @ObservationIgnored let editController: EditController
@@ -43,25 +50,26 @@ public final class PhotoRootModel {
     @ObservationIgnored let itemController: ItemController
     @ObservationIgnored let listController: ListController
     @ObservationIgnored let listLinkController: ListController
-    @ObservationIgnored private var _viewController: ViewController? = nil
-    public var viewController: ViewController {
-        _viewController.unsafelyUnwrapped
-    }
+    @ObservationIgnored public let viewController: ViewController
+    @ObservationIgnored let rootController: ItemRootController
 
-    var currentSelectedItemId: UUID? {
-        listModel.selectedItemId
+    public var currentSelectedItemId: UUID? {
+        listController.listModel.selectedItemId
     }
 }
 
-extension PhotoRootModel {
-    static private func newSearchModel(modelContext: ModelContext) -> SearchModel {
-        SearchModel(modelContext: modelContext, module: PhotoDataModel.typeId, categoryTags: [.adventure, .map, .value, .weather])
-    }
+extension PhotoRootModel: ItemRootControllable {
+    public var cacheControllable: (any ImageCacheControllable)? { cacheController }
+    public var editControllable: any EditControllable { editController }
+    public var itemControllable: any ItemControllable { itemController }
+    public var listControllable: any ListControllable { listController }
+    public var listLinkControllable: any ListControllable { listLinkController }
+    public var viewControllable: any ViewControllable { viewController }
 }
 
 extension PhotoRootModel {
     func loadableUrl(for itemId: UUID) async -> URL? {
-        guard let fileUrl = await itemController.item(for: itemId)?.fileUrl else { return nil }
+        guard let fileUrl = itemController.modelSync(for: itemId)?.fileUrl else { return nil }
         return await fileController.fileUrlDataController.url(for: fileUrl, action: { $0 })
     }
     

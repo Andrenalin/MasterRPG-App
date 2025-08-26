@@ -76,12 +76,12 @@ enum PhotoImporterButtonType: String {
 }
 
 struct PhotoInlineImporterView: View {
-    init(model: PhotoDataModel) {
+    init(model: ItemDataModel) {
         self.model = model
         self.modelActor = model.modelActor()
     }
 
-    let model: PhotoDataModel
+    let model: ItemDataModel
     let modelActor: DataModelActor?
 
     @Environment(PhotoRootModel.self) private var root
@@ -169,8 +169,7 @@ struct PhotoInlineImporterView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [PhotoDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
+    @Previewable @Query var models: [ItemDataModel]
     ZStack {
         Color
             .blue

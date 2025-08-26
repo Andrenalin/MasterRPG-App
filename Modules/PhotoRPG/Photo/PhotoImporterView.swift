@@ -10,7 +10,7 @@ import ImagePlayground
 #endif
 
 struct PhotoImporterView: View {
-    let model: PhotoDataModel
+    let model: ItemDataModel
     let prominent: Bool
 
     var body: some View {
@@ -30,7 +30,7 @@ struct PhotoImporterView: View {
 }
 
 struct ImagePlaygroundImportView: View {
-    let model: PhotoDataModel
+    let model: ItemDataModel
     let prominent: Bool
 
     @Environment(\.supportsImagePlayground) private var supportsImagePlayground
@@ -53,13 +53,13 @@ struct ImagePlaygroundImportView: View {
 }
 
 struct CameraImporterView: View {
-    init(model: PhotoDataModel, prominent: Bool) {
+    init(model: ItemDataModel, prominent: Bool) {
         self.model = model
         self.prominent = prominent
         self.modelActor = model.modelActor()
     }
 
-    let model: PhotoDataModel
+    let model: ItemDataModel
     let prominent: Bool
     let modelActor: DataModelActor?
 
@@ -99,7 +99,7 @@ struct CameraImporterView: View {
 }
 
 struct FileImporterView: View {
-    let model: PhotoDataModel
+    let model: ItemDataModel
     let prominent: Bool
 
     @Environment(PhotoRootModel.self) private var root
@@ -124,13 +124,13 @@ struct FileImporterView: View {
 
 #if !os(tvOS)
 struct LibraryImporterView: View {
-    init(model: PhotoDataModel, prominent: Bool) {
+    init(model: ItemDataModel, prominent: Bool) {
         self.model = model
         self.prominent = prominent
         self.modelActor = model.modelActor()
     }
 
-    let model: PhotoDataModel
+    let model: ItemDataModel
     let prominent: Bool
     let modelActor: DataModelActor?
 
@@ -151,8 +151,7 @@ struct LibraryImporterView: View {
 
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [PhotoDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
+    @Previewable @Query var models: [ItemDataModel]
     VStack {
         Color
             .teal

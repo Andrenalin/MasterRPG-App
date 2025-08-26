@@ -11,57 +11,13 @@ internal import AppKit
 internal import UIKit
 #endif
 
-struct EditController {
+struct EditController: EditControllable {
+    let itemControllable: any ItemControllable
     let fileUrlDataController: FileUrlDataController?
-}
-
-extension EditController: OldEditControllable {
-    typealias Model = PhotoDataModel
-}
-
-// MARK: - Edit Data Model Properties
-extension EditController {
-    func createNewEntry(in model: PhotoDataModel, childId: UUID) -> PhotoEntryDataModel {
-        PhotoEntryDataModel(id: UUID(), index: model.entries.count, parentId: model.id, childId: childId, item: model)
-    }
-    
-    func duplicate(model: PhotoDataModel) {
-        let newId = UUID()
-        guard let actor = model.modelActor() else { return }
-        let id = model.id
-        Task.detached {
-            await actor.setup(id: id)
-            let fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: actor.fileUrl, for: newId)
-            await actor.duplicate(newId: newId, url: fileUrl?.rawUrl)
-            await actor.save()
-        }
-    }
-
-    func update(model: PhotoDataModel, name: String, information: String, category: ItemListCategory, tags: [String], degrees: Double) {
-        model.withTransaction { modelContext in
-            model.reset(name: name)
-            model.reset(information: information)
-            model.category = category
-            model.tags = tags
-            model.degrees = degrees
-        }
-        
-        updateTags(modelContext: model.modelContext)
-    }
 }
 
 // MARK: - File Editor
 extension EditController {
-    func resetFile(url: URL?, in model: PhotoDataModel) {
-        guard let actor = model.modelActor() else { return }
-        let id = model.id
-        Task.detached {
-            await actor.setup(id: id)
-            await resetFile(url: url, id: id, actor: actor)
-            await actor.save()
-        }
-    }
-    
     func resetFile(image: AKImage?, id: UUID, actor: DataModelActor) async {
         guard let image else { return }
         let data = image.jpegData(compressionQuality: 0.9)
@@ -70,7 +26,7 @@ extension EditController {
         await actor.save()
     }
 
-    func resetFile(data: Data, model: PhotoDataModel) {
+    func resetFile(data: Data, model: ItemDataModel) {
         guard let actor = model.modelActor() else { return }
         let id = model.id
         Task.detached {
@@ -79,25 +35,6 @@ extension EditController {
             await actor.save()
         }
     }
-
-    private func resetFile(url: URL?, id: UUID, actor: DataModelActor) async {
-        guard let fileUrlDataController else { return }
-        await fileUrlDataController.delete(await actor.fileUrl)
-        guard let url else {
-            await actor.update(url: url)
-            return
-        }
-        _ = url.startAccessingSecurityScopedResource()
-        defer { url.stopAccessingSecurityScopedResource() }
-        
-        if await actor.name.isEmpty {
-            let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"
-            let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
-            await actor.update(name: name)
-        }
-        let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: id, url: url, module: PhotoDataModel.typeId.token, category: actor.category.title)
-        await actor.update(url: updatedFileUrl?.rawUrl)
-    }
     
     private func resetFile(data: Data?, id: UUID, actor: DataModelActor) async {
         guard let fileUrlDataController else { return }
@@ -105,7 +42,7 @@ extension EditController {
         await actor.update(url: nil)
         guard let data else { return }
         
-        let module = PhotoDataModel.typeId.token
+        let module = NetworkModules.photo.token
         let filePath = await actor.name.isEmpty ? "\(await actor.category.title)/Image-\(id.uuidString).\(FileController.filenameExtension)" : "\(await actor.category.title)/\(await actor.name).\(FileController.filenameExtension)"
         var dataFileUrl = FileUrl(fileId: id, url: URL(string: filePath)!, location: .cloud, module: module)
         dataFileUrl.resetData(data)

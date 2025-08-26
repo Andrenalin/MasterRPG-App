@@ -18,15 +18,16 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: PhotoDataModel.self, TagDataModel.self,
+            for: ItemDataModel.self, TagDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
-        guard try! container.mainContext.fetch(FetchDescriptor<PhotoDataModel>()).isEmpty else {
+        guard try! container.mainContext.fetch(FetchDescriptor<ItemDataModel>()).isEmpty else {
             return container
         }
-        let model1 = PhotoDataModel(
+        let model1 = ItemDataModel(
             id: previewId,
+            module: .photo,
             name: "Mega Nice Photo",
             information: "A lot of information about this photo",
             category: .adventure,
@@ -34,8 +35,9 @@ struct MockData: PreviewModifier {
         )
         container.mainContext.insert(model1)
 
-        let model2 = PhotoDataModel(
+        let model2 = ItemDataModel(
             id: previewId2,
+            module: .photo,
             name: "Albert",
             information: "The is an example photo and the information is also set here",
             category: .character,
@@ -43,8 +45,9 @@ struct MockData: PreviewModifier {
         )
         container.mainContext.insert(model2)
 
-        let model3 = PhotoDataModel(
+        let model3 = ItemDataModel(
             id: previewId3,
+            module: .photo,
             name: "Zauberer",
             information: "A photo of a wizard.",
             category: .adventure,
@@ -54,30 +57,34 @@ struct MockData: PreviewModifier {
 
         let folderId = UUID()
         let subfolderId = UUID()
-        let folder = PhotoDataModel(
+        let folder = ItemDataModel(
             id: folderId,
+            module: .photo,
             name: "Project Folder",
             information: "A folder holding subfolders and photos.",
             category: .folder,
             tags: ["Folder", "Project"]
         )
-        let subfolder = PhotoDataModel(
+        let subfolder = ItemDataModel(
             id: subfolderId,
+            module: .photo,
             name: "Subfolder",
             information: "A subfolder inside the main folder.",
             category: .folder,
             tags: ["Subfolder"]
         )
-        let folderPhoto = PhotoDataModel(
+        let folderPhoto = ItemDataModel(
             id: UUID(),
+            module: .photo,
             name: "Folder Photo",
             information: "A photo inside the folder.",
             category: .adventure,
             tags: ["InFolder"],
             parentId: folderId
         )
-        let subfolderPhoto = PhotoDataModel(
+        let subfolderPhoto = ItemDataModel(
             id: UUID(),
+            module: .photo,
             name: "Subfolder Photo",
             information: "A photo inside the subfolder.",
             category: .adventure,
@@ -85,57 +92,63 @@ struct MockData: PreviewModifier {
             parentId: subfolderId
         )
         // Attach photos to folder and subfolder
-        folder.reset(entries: [PhotoEntryDataModel(index: 0, childId: subfolderId), PhotoEntryDataModel(index: 1, childId: folderPhoto.id)])
-        subfolder.reset(entries: [PhotoEntryDataModel(index: 0, childId: subfolderPhoto.id)])
+        folder.reset(entries: [EntryDataModel(index: 0, parentId: folderId, childId: subfolderId), EntryDataModel(index: 1, parentId: folderId, childId: folderPhoto.id)])
+        subfolder.reset(entries: [EntryDataModel(index: 0, parentId: folderId, childId: subfolderPhoto.id)])
         container.mainContext.insert(folder)
         container.mainContext.insert(subfolder)
         container.mainContext.insert(folderPhoto)
         container.mainContext.insert(subfolderPhoto)
 
         // Album with photos
-        let albumPhoto1 = PhotoDataModel(
+        let albumPhoto1 = ItemDataModel(
             id: UUID(),
+            module: .photo,
             name: "Album Photo 1",
             information: "A photo in the album.",
             category: .character,
             tags: ["Album"]
         )
-        let albumPhoto2 = PhotoDataModel(
+        let albumPhoto2 = ItemDataModel(
             id: UUID(),
+            module: .photo,
             name: "Album Photo 2",
             information: "Another album photo.",
             category: .adventure,
             tags: ["Album"]
         )
-        let album = PhotoDataModel(
+        let album = ItemDataModel(
             id: albumId,
+            module: .photo,
             name: "My Album",
             information: "This is a test album.",
             category: .album,
             tags: ["Album"],
-            entries: [PhotoEntryDataModel(index: 0, childId: albumPhoto1.id), PhotoEntryDataModel(index: 1, childId: albumPhoto2.id)]
+            entries: [EntryDataModel(index: 0, parentId: albumId, childId: albumPhoto1.id), EntryDataModel(index: 1, parentId: albumId, childId: albumPhoto2.id)]
         )
         container.mainContext.insert(album)
         container.mainContext.insert(albumPhoto1)
         container.mainContext.insert(albumPhoto2)
 
         // Additional standalone photos
-        let photoX = PhotoDataModel(
+        let photoX = ItemDataModel(
             id: UUID(),
+            module: .photo,
             name: "Extra Photo",
             information: "Just another example photo.",
             category: .adventure,
             tags: ["Extra"]
         )
-        let photoY = PhotoDataModel(
+        let photoY = ItemDataModel(
             id: UUID(),
+            module: .photo,
             name: "Standalone Photo",
             information: "Not in any folder or album.",
             category: .character,
             tags: ["Standalone"]
         )
-        let emptyfolder = PhotoDataModel(
+        let emptyfolder = ItemDataModel(
             id: emptyFolderId,
+            module: .photo,
             name: "Empty Folder",
             information: "This is empty for testing the new drop / add.",
             category: .folder,
@@ -160,8 +173,9 @@ struct MockRootViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content.environment(root)
             .environment(root.searchModel)
-            .environment(root.listModel)
+            .environment(root.listController.listModel)
             .environment(root.listDisplayModel)
+            .environment(root.rootController)
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
             .environment(TabTitleModel())

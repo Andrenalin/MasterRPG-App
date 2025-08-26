@@ -39,21 +39,16 @@ struct RootDestinationView: View {
     init(itemId: UUID, isRootView: Bool = true) {
         self.itemId = itemId
         self.isRootView = isRootView
-        self._items = Query(filter: #Predicate<PhotoDataModel>{ $0.id == itemId })
     }
     
     let itemId: UUID
     let isRootView: Bool
     
-    @Query private var items: [PhotoDataModel]
-    
     var body: some View {
-        if let item = items.first {
-            if isRootView {
-                DetailRootView(model: item)
-            } else {
-                DetailView(model: item)
-            }
+        if isRootView {
+            DetailRootView()
+        } else {
+            //DetailView(model: item)
         }
     }
 }
