@@ -60,7 +60,7 @@ struct AddItemButton: View {
 
     var body: some View {
         Button {
-            let item = root.editController.addNew(modelContext: root.modelContext, type: .item)
+            let item = root.editController.addNew(modelContext: root.modelContext, module: root.module, type: .item)
             navigator.perform(route: KnownRoutes.dice(item.id, nil))
         } label: {
             Label { Text("New Dice", bundle: .module) } icon: { Image(systemName: "plus") }
@@ -74,9 +74,9 @@ struct DuplicateItemButton: View {
 
     var body: some View {
         Button {
-            if let model {
-                root.editController.duplicate(model: model)
-            }
+//            if let model {
+//                root.editController.duplicate(model: model)
+//            }
         } label: {
             Text("Duplicate \(model?.name ?? "")", bundle: .module)
         }
@@ -86,7 +86,8 @@ struct DuplicateItemButton: View {
 
     var model: DiceDataModel? {
         guard let selectedItem = root.currentSelectedItemId else { return nil }
-        return root.itemController.modelSync(for: selectedItem)
+        return nil
+//        return root.itemController.modelSync(for: selectedItem)
     }
 }
 

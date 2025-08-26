@@ -8,14 +8,19 @@ public struct ViewController {
     var root: DiceRootModel {
         _root.unsafelyUnwrapped
     }
+    
+    public let goupViewType: GroupViewType = .none
 }
+
+extension ViewController: ViewControllable {}
 
 // MARK: Viewer
 
 public extension ViewController {
     @MainActor
     func linkWindow() -> some View {
-        LinkRootView(isInspector: false)
+        Text("")
+//        LinkRootView(isInspector: false)
             .environment(root)
     }
 }

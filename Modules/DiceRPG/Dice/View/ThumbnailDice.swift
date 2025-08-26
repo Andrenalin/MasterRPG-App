@@ -30,9 +30,9 @@ struct ThumbnailDice: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Query var models: [DiceConfigDataModel]
 
-    ThumbnailDice(die: models.first!.config.dice.first!, withoutResult: false)
+    ThumbnailDice(die: models[0].dice.first!, withoutResult: false)
     
-    ThumbnailDice(die: models[1].config.dice.first!, withoutResult: false)
+    ThumbnailDice(die: models[1].dice.first!, withoutResult: false)
 }

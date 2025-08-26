@@ -15,8 +15,7 @@ public final class DiceDataModel {
         displayState: Int = 0,
         parentId: UUID? = nil,
         url: URL? = nil,
-        entries: [DiceEntryDataModel] = [],
-        config: DiceConfigDataModel? = nil
+        entries: [DiceEntryDataModel] = []
     ) {
         self.id = id
         self.name = name
@@ -27,7 +26,6 @@ public final class DiceDataModel {
         self.parentId = parentId
         self.url = url
         self.entries_ = entries
-        self.config_ = config
     }
     
     @Attribute(.preserveValueOnDeletion)
@@ -48,7 +46,6 @@ public final class DiceDataModel {
     }
 
     @Relationship(deleteRule: .cascade) private var entries_: [DiceEntryDataModel]? = []
-    @Relationship(deleteRule: .cascade) private var config_: DiceConfigDataModel? = nil
 }
 
 extension DiceDataModel {
@@ -69,11 +66,6 @@ extension DiceDataModel {
         return DiceEntryDataModel(id: id)
     }
     
-    public var config: DiceConfigDataModel {
-        get { config_ ?? DiceConfigDataModel.twenty }
-        set { config_ = newValue }
-    }
-
     @MainActor public var specialCategory: Bool {
         category == .folder || category == DiceDataModel.collectionCategory
     }

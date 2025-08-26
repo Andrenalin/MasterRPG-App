@@ -5,18 +5,18 @@ import SwiftData
 import SwiftUI
 
 struct SpecialOptionEditor: View {
-    let model: DiceDataModel
+    let model: DiceConfigDataModel
     
     @Environment(DiceRootModel.self) private var root
 
     var body: some View {
-        @Bindable var config = model.config
+        @Bindable var model = model
         Section {
-            ToggleEditor(model: $config.reorderDice, title: "Reorder dice by value", bundle: .module, icon: "textformat.123")
+            ToggleEditor(model: $model.reorderDice, title: "Reorder dice by value", bundle: .module, icon: "textformat.123")
 
-            ToggleEditor(model: $config.addDiceActivate, title: "Add dice", bundle: .module, icon: "dice")
+            ToggleEditor(model: $model.addDiceActivate, title: "Add dice", bundle: .module, icon: "dice")
 
-            if config.addDiceActivate {
+            if model.addDiceActivate {
                 addDiceEditorView
             }
         } header: {
@@ -35,9 +35,9 @@ private extension SpecialOptionEditor {
 
     @ViewBuilder
     var addDiceEditorView: some View {
-        @Bindable var config = model.config
+        @Bindable var model = model
         LabeledContent {
-            TextIntEditor(model: $config.addDiceEvery, title: "Add Dice each Value", icon: "plus", prompt: "value", bundle: .module, range: config.minValue...config.maxValue)
+            TextIntEditor(model: $model.addDiceEvery, title: "Add Dice each Value", icon: "plus", prompt: "value", bundle: .module, range: model.minValue...model.maxValue)
         } label: {
             Text("Add", bundle: .module)
         }
@@ -45,7 +45,7 @@ private extension SpecialOptionEditor {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Query var models: [DiceConfigDataModel]
 
     SpecialOptionEditor(model: models.first!)
 }

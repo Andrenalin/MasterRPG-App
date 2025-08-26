@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct CoupEditor: View {
-    let model: DiceDataModel
+    let model: DiceConfigDataModel
     
     @Environment(DiceRootModel.self) private var root
 
@@ -13,12 +13,12 @@ struct CoupEditor: View {
     @State private var isDiceValueCoup = false
 
     var body: some View {
-        @Bindable var config = model.config
+        @Bindable var model = model
         Section {
             coupValueView
 
-            ToggleEditor(model: $config.coupOnlyOnFirstDie, title: "Only first die can coup", bundle: .module, icon: "dice")
-                .disabled(config.coupValues.contains(where: { $0.isResult }))
+            ToggleEditor(model: $model.coupOnlyOnFirstDie, title: "Only first die can coup", bundle: .module, icon: "dice")
+                .disabled(model.coupValues.contains(where: { $0.isResult }))
 
             coupEditorView
 
@@ -40,11 +40,10 @@ struct CoupEditor: View {
 
     @ViewBuilder
     var coupValueView: some View {
-        @Bindable var config = model.config
         LabeledContent {
             ScrollView(.horizontal) {
                 HStack(spacing: 4) {
-                    ForEach(config.coupValues) { coup in
+                    ForEach(model.coupValues) { coup in
                         Button {
                             withAnimation { root.editController.remove(coup: coup, from: model) }
                         } label: {
@@ -95,8 +94,6 @@ struct CoupEditor: View {
     
     @ViewBuilder
     var addView: some View {
-        @Bindable var config = model.config
-
         Button {
             addCurrentCoup()
         } label: {
@@ -106,7 +103,7 @@ struct CoupEditor: View {
         .padding(.horizontal, 16)
         .disabled(currentCoup == 0)
 
-        TextIntEditor(model: $currentCoup, title: "Coup Dice Value", icon: "plus", prompt: "coup", bundle: .module, range: config.minValue...config.maxValue)
+        TextIntEditor(model: $currentCoup, title: "Coup Dice Value", icon: "plus", prompt: "coup", bundle: .module, range: model.minValue...model.maxValue)
     }
 
     func addCurrentCoup() {
@@ -118,7 +115,7 @@ struct CoupEditor: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Query var models: [DiceConfigDataModel]
 
     CoupEditor(model: models.first!)
 }

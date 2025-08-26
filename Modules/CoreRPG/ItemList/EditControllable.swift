@@ -28,8 +28,9 @@ public extension EditControllable {
         }
     }
 
-    func addNew(modelContext: ModelContext, type: EditControllerAddType) -> ItemDataModel {
+    func addNew(modelContext: ModelContext, module: NetworkModules, type: EditControllerAddType) -> ItemDataModel {
         let newItem = ItemDataModel.newItem
+        newItem.module = module
         modelContext.insert(newItem)
         if type == .folder {
             newItem.reset(category: .folder)

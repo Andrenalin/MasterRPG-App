@@ -7,8 +7,8 @@ import SwiftUI
 
 @Model
 public final class DiceConfigDataModel {
-    init(parent: DiceDataModel? = nil, sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceConfigDataModel.CompareValue = DiceConfigDataModel.CompareValue.off, compareValue: Double = 0.0, coupValues: [DiceConfigDataModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceConfigDataModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [DiceConfigDataModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, dice: [DieDataModel] = []) {
-        self.parent = parent
+    init(itemId: UUID = UUID(), sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceConfigDataModel.CompareValue = DiceConfigDataModel.CompareValue.off, compareValue: Double = 0.0, coupValues: [DiceConfigDataModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceConfigDataModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [DiceConfigDataModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, dice: [DieDataModel] = []) {
+        self.itemId = itemId
         self.sumUp = sumUp
         self.modifier = modifier
         self.percentDice = percentDice
@@ -24,7 +24,7 @@ public final class DiceConfigDataModel {
         self.dice_ = dice
     }
     
-    var parent: DiceDataModel?
+    var itemId: UUID = UUID()
     
     var sumUp: Bool = true
     var modifier: Double = 0.0

@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct DiceViewer: View {
-    let model: DiceDataModel
+    let model: DiceConfigDataModel
     let isEditor: Bool
     
     @Environment(DiceRootModel.self) private var root
@@ -13,7 +13,7 @@ struct DiceViewer: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                ForEach(model.config.dice) { die in
+                ForEach(model.dice) { die in
                     Button {
                         if isEditor {
                             withAnimation { root.editController.remove(die: die, from: model) }
@@ -41,7 +41,7 @@ struct DiceViewer: View {
 
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Query var models: [DiceConfigDataModel]
 
     DiceViewer(model: models.first!, isEditor: true)
 }

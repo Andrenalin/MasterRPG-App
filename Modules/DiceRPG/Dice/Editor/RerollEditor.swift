@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct RerollEditor: View {
-    let model: DiceDataModel
+    let model: DiceConfigDataModel
     
     @Environment(DiceRootModel.self) private var root
 
@@ -43,11 +43,11 @@ private extension RerollEditor {
 
     @ViewBuilder
     var reroleValueView: some View {
-        @Bindable var config = model.config
+        @Bindable var model = model
         LabeledContent {
             ScrollView(.horizontal) {
                 HStack(spacing: 4) {
-                    ForEach(config.rerollOptions) { reroll in
+                    ForEach(model.rerollOptions) { reroll in
                         Button {
                             root.editController.remove(reroll: reroll, from: model)
                         } label: {
@@ -98,7 +98,7 @@ private extension RerollEditor {
 
     @ViewBuilder
     var rerollEditorView: some View {
-        @Bindable var config = model.config
+        @Bindable var model = model
         LabeledContent {
             HStack {
                 Button {
@@ -112,7 +112,7 @@ private extension RerollEditor {
                 .padding(.horizontal, 16)
                 .disabled(!isMaxDiceValue && currentReroll == 0)
 
-                TextIntEditor(model: $currentReroll, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: config.minValue...config.maxValue)
+                TextIntEditor(model: $currentReroll, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
@@ -148,7 +148,7 @@ private extension RerollEditor {
 
     @ViewBuilder
     var rerollReplaceEditorView: some View {
-        @Bindable var config = model.config
+        @Bindable var model = model
         LabeledContent {
             HStack {
                 Button {
@@ -162,7 +162,7 @@ private extension RerollEditor {
                 .padding(.horizontal, 16)
                 .disabled(currentReroll == 0 && currentValue == 0)
 
-                TextIntEditor(model: $currentValue, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: config.minValue...config.maxValue)
+                TextIntEditor(model: $currentValue, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
@@ -172,7 +172,7 @@ private extension RerollEditor {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Query var models: [DiceConfigDataModel]
 
     RerollEditor(model: models.first!)
 }

@@ -34,5 +34,4 @@ struct ItemController: ItemControllable, Sendable {
             entries: CRDTDataUpdate(wrappedValue: entries)
         )
     }
-
 }

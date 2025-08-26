@@ -5,30 +5,30 @@ import SwiftData
 import SwiftUI
 
 struct DiceOptionEditor: View {
-    let model: DiceDataModel
+    let model: DiceConfigDataModel
 
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        @Bindable var config = model.config
+        @Bindable var model = model
         Section {
-            ToggleEditor(model: $config.sumUp, title: "Sum up dice", bundle: .module, icon: "sum")
+            ToggleEditor(model: $model.sumUp, title: "Sum up dice", bundle: .module, icon: "sum")
 
-            TextDoubleEditor(model: $config.modifier, title: "Modifier", icon: "plus.forwardslash.minus", prompt: "+/- 5", bundle: .module, range: -10...10)
+            TextDoubleEditor(model: $model.modifier, title: "Modifier", icon: "plus.forwardslash.minus", prompt: "+/- 5", bundle: .module, range: -10...10)
                 .padding(.bottom, 8)
             
-            if config.canPercentDice {
-                ToggleEditor(model: $config.percentDice, title: "Percent dice", bundle: .module, icon: "percent")
+            if model.canPercentDice {
+                ToggleEditor(model: $model.percentDice, title: "Percent dice", bundle: .module, icon: "percent")
             }
 
-            ValuePickerEditor(model: $config.compareOption, allCategories: DiceConfigDataModel.CompareValue.allCases, title: "Check for", bundle: .module) { option in
+            ValuePickerEditor(model: $model.compareOption, allCategories: DiceConfigDataModel.CompareValue.allCases, title: "Check for", bundle: .module) { option in
                 Text(option.text, bundle: .module)
                     .tag(option)
 
             }
 
-            if config.compareOption != .off {
-                TextDoubleEditor(model: $config.compareValue, title: "Value", icon: config.compareOption.icon, prompt: "Value to compare against", bundle: .module, range: 1...41)
+            if model.compareOption != .off {
+                TextDoubleEditor(model: $model.compareValue, title: "Value", icon: model.compareOption.icon, prompt: "Value to compare against", bundle: .module, range: 1...41)
             }
         } header: {
 #if os(macOS)
@@ -42,7 +42,7 @@ struct DiceOptionEditor: View {
     }
     
     var modifierRange: ClosedRange<Double> {
-        let modifier = model.config.modifier
+        let modifier = model.modifier
         let min = modifier - 10
         let max = modifier + 10
                 
@@ -51,7 +51,7 @@ struct DiceOptionEditor: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Query var models: [DiceConfigDataModel]
 
     DiceOptionEditor(model: models.first!)
 }

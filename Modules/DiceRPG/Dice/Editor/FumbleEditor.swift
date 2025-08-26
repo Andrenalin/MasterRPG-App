@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct FumbleEditor: View {
-    let model: DiceDataModel
+    let model: DiceConfigDataModel
     
     @Environment(DiceRootModel.self) private var root
 
@@ -13,12 +13,12 @@ struct FumbleEditor: View {
     @State private var isDiceValueFumble = false
     
     var body: some View {
-        @Bindable var config = model.config
+        @Bindable var model = model
         Section {
             fumbleValueView
             
-            ToggleEditor(model: $config.fumbleOnlyOnFirstDie, title: "Only first die can fumble", bundle: .module, icon: "dice")
-                .disabled(config.fumbleValues.contains(where: { $0.isResult }))
+            ToggleEditor(model: $model.fumbleOnlyOnFirstDie, title: "Only first die can fumble", bundle: .module, icon: "dice")
+                .disabled(model.fumbleValues.contains(where: { $0.isResult }))
             
             fumbleEditorView
             
@@ -42,11 +42,10 @@ private extension FumbleEditor {
 
     @ViewBuilder
     var fumbleValueView: some View {
-        @Bindable var config = model.config
         LabeledContent {
             ScrollView(.horizontal) {
                 HStack(spacing: 4) {
-                    ForEach(config.fumbleValues) { fumble in
+                    ForEach(model.fumbleValues) { fumble in
                         Button {
                             withAnimation { root.editController.remove(fumble: fumble, from: model) }
                         } label: {
@@ -85,7 +84,6 @@ private extension FumbleEditor {
 
     @ViewBuilder
     var fumbleEditorView: some View {
-        @Bindable var config = model.config
         LabeledContent {
             HStack {
                 Button {
@@ -99,7 +97,7 @@ private extension FumbleEditor {
                 .padding(.horizontal, 16)
                 .disabled(currentFumble == 0)
 
-                TextIntEditor(model: $currentFumble, title: "Fumble Dice Value", icon: "plus", prompt: "fumble", bundle: .module, range: config.minValue...config.maxValue)
+                TextIntEditor(model: $currentFumble, title: "Fumble Dice Value", icon: "plus", prompt: "fumble", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
@@ -116,7 +114,7 @@ private extension FumbleEditor {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Query var models: [DiceConfigDataModel]
 
     FumbleEditor(model: models.first!)
 }

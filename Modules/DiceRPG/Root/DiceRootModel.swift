@@ -9,29 +9,33 @@ public final class DiceRootModel {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         
-        let listModel = OldListModel()
-        self.listModel = listModel
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
         let searchModel = DiceRootModel.newSearchModel(modelContext: modelContext)
         self.searchModel = searchModel
 
-        self.editController = EditController()
         let itemController = ItemController(container: modelContext.container)
-        self.exportController = ExportController(itemController: itemController, gameExporter: false)
         self.itemController = itemController
-        self.listController = ListController.listController(for: .main, modelContext: modelContext, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
-        self.listLinkController = ListController.listController(for: .link, modelContext: modelContext, listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        let editController = EditController(itemControllable: itemController, fileUrlDataController: nil)
+        self.editController = editController
+        let listController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.listController = listController
+        let listLinkController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.listLinkController = listLinkController
+
+        self.exportController = ExportController(itemController: itemController, gameExporter: false)
         self._viewController = ViewController(_root: self)
         
+        self._rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewControllable)
+
         itemController.cleanDeleted()
     }
 
     let modelContext: ModelContext
+    public let module: NetworkModules = .dice
     
-    let listModel: OldListModel
-    let listDisplayModel: ListDisplayModel
-    let searchModel: SearchModel
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
     
     @ObservationIgnored let editController: EditController
     @ObservationIgnored let exportController: ExportController
@@ -43,9 +47,23 @@ public final class DiceRootModel {
         _viewController.unsafelyUnwrapped
     }
 
-    var currentSelectedItemId: UUID? {
-        listModel.selectedItemId
+    @ObservationIgnored private var _rootController: ItemRootController? = nil
+    public var rootController: ItemRootController {
+        _rootController.unsafelyUnwrapped
     }
+
+    public var currentSelectedItemId: UUID? {
+        listController.listModel.selectedItemId
+    }
+}
+
+extension DiceRootModel: ItemRootControllable {
+    public var cacheControllable: (any ImageCacheControllable)? { nil }
+    public var editControllable: any EditControllable { editController }
+    public var itemControllable: any ItemControllable { itemController }
+    public var listControllable: any ListControllable { listController }
+    public var listLinkControllable: any ListControllable { listLinkController }
+    public var viewControllable: any ViewControllable { viewController }
 }
 
 extension DiceRootModel {

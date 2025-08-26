@@ -4,107 +4,70 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-struct EditController {
-    let fileUrlDataController: FileUrlDataController? = nil
-}
-
-extension EditController: OldEditControllable {
-    typealias Model = DiceDataModel
-}
-
-// MARK: - Edit Data Model Properties
-extension EditController {
-    func createNewEntry(in model: DiceDataModel, childId: UUID) -> DiceEntryDataModel {
-        DiceEntryDataModel(id: UUID(), index: model.entries.count, parentId: model.id, childId: childId, item: model)
-    }
-    
-    func duplicate(model: DiceDataModel) {
-        guard let actor = model.modelActor() else { return }
-        let id = model.id
-        Task.detached {
-            await actor.setup(id: id)
-            await actor.duplicate(url: nil)
-            await actor.save()
-        }
-    }
+struct EditController: EditControllable {
+    let itemControllable: any ItemControllable
+    let fileUrlDataController: FileUrlDataController?
 }
 
 // MARK: - Edit dice
 
 extension EditController {
-    func add(die: DieDataModel, to model: DiceDataModel) {
-        let counter = model.config.dice.count
+    func add(die: DieDataModel, to model: DiceConfigDataModel) {
+        let counter = model.dice.count
         let duplicate = die.duplicate(index: counter)
-        let config = model.config
-        config.dice.append(duplicate)
-        model.config = config
+        model.dice.append(duplicate)
     }
     
-    func remove(die: DieDataModel, from model: DiceDataModel) {
-        let config = model.config
-        var dice = config.dice
+    func remove(die: DieDataModel, from model: DiceConfigDataModel) {
+        var dice = model.dice
         dice.removeAll(where: { $0.id == die.id })
         dice.enumerated().forEach { index, die in
             die.index = index
         }
-        config.dice = dice
-        model.config = config
+        model.dice = dice
     }
     
-    func add(coup: Int, isDiceValueCoup: Bool, to model: DiceDataModel) {
-        let config = model.config
+    func add(coup: Int, isDiceValueCoup: Bool, to model: DiceConfigDataModel) {
         let newCoupOption: DiceConfigDataModel.CoupFumbleOption
         if isDiceValueCoup {
             newCoupOption = .diceValue(coup)
         } else {
             newCoupOption = .result(coup)
-            if config.coupOnlyOnFirstDie {
-                config.coupOnlyOnFirstDie = false
+            if model.coupOnlyOnFirstDie {
+                model.coupOnlyOnFirstDie = false
             }
         }
-        config.coupValues.append(newCoupOption)
-        model.config = config
+        model.coupValues.append(newCoupOption)
     }
 
     
-    func remove(coup: DiceConfigDataModel.CoupFumbleOption, from model: DiceDataModel) {
-        let config = model.config
-        config.coupValues.removeAll { $0.id == coup.id }
-        model.config = config
+    func remove(coup: DiceConfigDataModel.CoupFumbleOption, from model: DiceConfigDataModel) {
+        model.coupValues.removeAll { $0.id == coup.id }
     }
 
-    func add(fumble: Int, isDiceValueFumble: Bool, to model: DiceDataModel) {
-        let config = model.config
+    func add(fumble: Int, isDiceValueFumble: Bool, to model: DiceConfigDataModel) {
         let newFumbleOption: DiceConfigDataModel.CoupFumbleOption
         if isDiceValueFumble {
             newFumbleOption = .diceValue(fumble)
         } else {
             newFumbleOption = .result(fumble)
-            if config.fumbleOnlyOnFirstDie {
-                config.fumbleOnlyOnFirstDie = false
+            if model.fumbleOnlyOnFirstDie {
+                model.fumbleOnlyOnFirstDie = false
             }
         }
-        config.fumbleValues.append(newFumbleOption)
-        model.config = config
+        model.fumbleValues.append(newFumbleOption)
     }
 
-    func remove(fumble: DiceConfigDataModel.CoupFumbleOption, from model: DiceDataModel) {
-        let config = model.config
-        config.fumbleValues.removeAll { $0.id == fumble.id }
-        model.config = config
+    func remove(fumble: DiceConfigDataModel.CoupFumbleOption, from model: DiceConfigDataModel) {
+        model.fumbleValues.removeAll { $0.id == fumble.id }
     }
 
-    func add(reroll: Int, value: Int, isMaxDiceValue: Bool, to model: DiceDataModel) {
-        let config = model.config
+    func add(reroll: Int, value: Int, isMaxDiceValue: Bool, to model: DiceConfigDataModel) {
         let rerole = DiceConfigDataModel.RerollOption(number: reroll, value: value, maxDiceValue: isMaxDiceValue)
-        config.rerollOptions.append(rerole)
-        model.config = config
+        model.rerollOptions.append(rerole)
     }
 
-    func remove(reroll: DiceConfigDataModel.RerollOption, from model: DiceDataModel) {
-        let config = model.config
-        config.rerollOptions.removeAll { $0.id == reroll.id }
-        model.config = config
+    func remove(reroll: DiceConfigDataModel.RerollOption, from model: DiceConfigDataModel) {
+        model.rerollOptions.removeAll { $0.id == reroll.id }
     }
-
 }

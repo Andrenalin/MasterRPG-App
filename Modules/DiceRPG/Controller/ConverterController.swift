@@ -20,6 +20,7 @@ public struct ConverterController {
                 return dieModel
             }
             let config = DiceConfigDataModel(
+                itemId: item.id,
                 sumUp: item.sumUp,
                 modifier: item.modifier,
                 percentDice: item.percentDice,
@@ -36,7 +37,7 @@ public struct ConverterController {
             )
             modelContext.insert(config)
             modelContext.insert(
-                DiceDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, entries: [], config: config)
+                DiceDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, entries: [])
             )
         }
     }

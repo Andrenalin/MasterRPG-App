@@ -23,10 +23,11 @@ struct InternalRouteDestinationView: View {
     var body: some View {
         switch route {
         case .export(let ids):
-            ExportProgressFile(exportController: root.exportController) {
-                let exportIds = root.exportController.exporting(ids: Set(ids))
-                return root.exportController.export(ids: exportIds)
-            }
+            Text("Exporting...")
+//            ExportProgressFile(exportController: root.exportController) {
+//                let exportIds = root.exportController.exporting(ids: Set(ids))
+//                return root.exportController.export(ids: exportIds)
+//            }
             .presentationDetents([.height(160)])
         }
     }

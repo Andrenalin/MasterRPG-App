@@ -92,9 +92,9 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         let ids = root.itemController.allItemIds()
         var results: [DiceEntity] = []
         for id in ids {
-            guard let model = await root.itemController.item(for: id) else { continue }
-            let entity = DiceEntity(root: root, model: model)
-            results.append(entity)
+//            guard let model = await root.itemController.item(for: id) else { continue }
+//            let entity = DiceEntity(root: root, model: model)
+//            results.append(entity)
         }
         return results
     }
@@ -102,9 +102,9 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     func entities(for identifiers: [DiceEntity.ID]) async throws -> [DiceEntity] {
         var results: [DiceEntity] = []
         for id in identifiers {
-            guard let model = await root.itemController.item(for: id) else { continue }
-            let entity = DiceEntity(root: root, model: model)
-            results.append(entity)
+//            guard let model = await root.itemController.item(for: id) else { continue }
+//            let entity = DiceEntity(root: root, model: model)
+//            results.append(entity)
         }
         return results
     }
@@ -113,10 +113,10 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         let ids = root.itemController.allItemIds()
         var results: [DiceEntity] = []
         for id in ids {
-            guard let model = await root.itemController.item(for: id) else { continue }
-            guard model.name.contains(matching) || model.information.contains(matching) else { continue }
-            let entity = DiceEntity(root: root, model: model)
-            results.append(entity)
+//            guard let model = await root.itemController.item(for: id) else { continue }
+//            guard model.name.contains(matching) || model.information.contains(matching) else { continue }
+//            let entity = DiceEntity(root: root, model: model)
+//            results.append(entity)
         }
         return results
     }

@@ -50,9 +50,9 @@ struct RootDestinationView: View {
     var body: some View {
         if let item = items.first {
             if isRootView {
-                DetailRootView(model: item)
-            } else {
-                DetailView(model: item)
+                DetailRootView()
+//            } else {
+//                DetailView(model: item)
             }
         }
     }

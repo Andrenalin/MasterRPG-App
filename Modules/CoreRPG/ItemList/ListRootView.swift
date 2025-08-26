@@ -41,7 +41,7 @@ struct ListRootView: View {
                 }
             }
             .onChange(of: items, initial: true) {
-                withAnimation { root.listControllable.update(items: items) }
+                withAnimation { root.listControllable.update(items: items.filter { $0.module == root.module }) }
             }
             .listModelUpdatesModifier(listControllable: root.listControllable, parentModel: parentModel)
             .toolbarItemListModifier(root: root, parentModel: parentModel)

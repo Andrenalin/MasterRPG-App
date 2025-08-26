@@ -40,11 +40,11 @@ struct DetailDestinationView: View {
     
     @Environment(DiceRootModel.self) private var root
     var body: some View {
-        if itemId == DiceDataModel.dropItem.id {
-            SelectionRootView()
-                .environment(root.searchModel)
-        } else {
+//        if itemId == DiceDataModel.dropItem.id {
+//            SelectionRootView()
+//                .environment(root.searchModel)
+//        } else {
             RootDestinationView(itemId: itemId, isRootView: false)
-        }
+//        }
     }
 }

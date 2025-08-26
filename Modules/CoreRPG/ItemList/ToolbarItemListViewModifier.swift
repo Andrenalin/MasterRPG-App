@@ -107,7 +107,7 @@ private extension ToolbarItemListViewModifier {
     }
 
     func addItem(for type: EditControllerAddType) {
-        let newModel = root.editControllable.addNew(modelContext: modelContext, type: type)
+        let newModel = root.editControllable.addNew(modelContext: modelContext, module: root.module, type: type)
         withAnimation {
             if parentModel != nil {
                 root.editControllable.addItem(itemId: newModel.id, in: modelContext, parentId: listModel.selectedParentId, folderId:  listModel.lastFolderId)
