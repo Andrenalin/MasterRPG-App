@@ -10,7 +10,7 @@ import SwiftUI
 
 struct SelectionBar: View {
     let editController: EditController
-    let model: PdfDataModel
+    let model: ItemDataModel
     let searchModel: PdfSearchModel
     let withoutBookmark: Bool
     
@@ -77,9 +77,8 @@ private extension SelectionBar {
     }
 }
 
-
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [PdfDataModel]
+    @Previewable @Query var models: [ItemDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     @Previewable @Environment(PdfRootModel.self) var root
     @Previewable @State var searchModel = PdfSearchModel()
@@ -92,7 +91,7 @@ private extension SelectionBar {
             VStack {
                 Color.clear
                 Button {
-                    let entry = PdfBookmarkDataModel(id: UUID(), content: "This is the selection", pageLabel: "2")
+                    let entry = PdfBookmarkDataModel(id: UUID(), itemId: UUID(), content: "This is the selection", pageLabel: "2")
                     searchModel.selectedEntry = entry
                 } label: {
                     Text("Create")

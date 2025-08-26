@@ -28,16 +28,16 @@ struct PdfEntity: IndexedEntity {
     var id: UUID { model.id }
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name }
+    var name: String { model.name.wrappedValue }
 
     // Maps the description variable to the Spotlight indexing key `contentDescription`.
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.information }
+    var description: String { model.information.wrappedValue }
 
     var root: PdfRootModel
-    var model: PdfModel
+    var model: ItemDataCodableModel
     
-    init(root: PdfRootModel, model: PdfModel) {
+    init(root: PdfRootModel, model: ItemDataCodableModel) {
         self.root = root
         self.model = model
     }
@@ -92,7 +92,7 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         let ids = root.itemController.allItemIds()
         var results: [PdfEntity] = []
         for id in ids {
-            guard let model = await root.itemController.item(for: id) else { continue }
+            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
             let entity = PdfEntity(root: root, model: model)
             results.append(entity)
         }
@@ -102,7 +102,7 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     func entities(for identifiers: [PdfEntity.ID]) async throws -> [PdfEntity] {
         var results: [PdfEntity] = []
         for id in identifiers {
-            guard let model = await root.itemController.item(for: id) else { continue }
+            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
             let entity = PdfEntity(root: root, model: model)
             results.append(entity)
         }
@@ -113,8 +113,8 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         let ids = root.itemController.allItemIds()
         var results: [PdfEntity] = []
         for id in ids {
-            guard let model = await root.itemController.item(for: id) else { continue }
-            guard model.name.contains(matching) || model.information.contains(matching) else { continue }
+            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
             let entity = PdfEntity(root: root, model: model)
             results.append(entity)
         }

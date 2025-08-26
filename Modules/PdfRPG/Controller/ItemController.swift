@@ -4,21 +4,15 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-struct ItemController: OldItemControllable, Sendable {
-    typealias Model = PdfDataModel
-    typealias ExchangeModel = PdfModel
-
+struct ItemController: Sendable {
     let container: ModelContainer
-    
-    func item(for id: UUID) async -> PdfModel? {
-        let actor = DataModelActor(modelContainer: container)
-        await actor.setup(id: id)
-        return await actor.itemModel()
-    }
-        
-    func fileUrl(for id: UUID) async -> FileUrl? {
-        let actor = DataModelActor(modelContainer: container)
-        await actor.setup(id: id)
-        return await actor.fileUrl
+    let collectionCategory: ItemListCategory = .bookshelf
+}
+
+extension ItemController: ItemControllable {
+    func encodedItemData(for id: UUID) async throws -> Data? {
+        let encoder = JSONEncoder()
+        let model = await itemDataCodableModel(for: id)
+        return try encoder.encode(model)
     }
 }

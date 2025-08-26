@@ -19,6 +19,8 @@ public struct LinkRootView: View {
     
     public var body: some View {
         LinkItemListView(root: root, parentModel: nil, isInspector: isInspector)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)        
             .environment(DeviceRotationModel())
             .environment(CacheItemListModel())
             .onChange(of: items, initial: true) {

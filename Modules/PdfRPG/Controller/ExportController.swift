@@ -5,17 +5,19 @@ import Foundation
 
 struct ExportController: Sendable {
     @MainActor
-    init(itemController: any OldItemControllable, fileController: FileController, gameExporter: Bool) {
-        itemControllable = itemController
-        fileControllable = fileController
+    init(module: NetworkModules, itemController: any ItemControllable, fileUrlDataController: FileUrlDataController?, gameExporter: Bool) {
+        self.module = module
+        self.itemControllable = itemController
+        self.fileUrlDataController = fileUrlDataController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
     
     public let exportModel: ItemDataExportModel
-    var fileControllable: (any FileControllable)?
-    var itemControllable: any OldItemControllable
-
-    var module: NetworkModules { PdfDataModel.typeId }
+    var fileUrlDataController: FileUrlDataController?
+    var itemControllable: any ItemControllable
+    
+    var module: NetworkModules
     var version: Int { 2024 }
 }
 
+extension ExportController: ExportControllable {}

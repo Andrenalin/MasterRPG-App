@@ -8,17 +8,18 @@ import SwiftData
 
 public struct ConverterController {
     public static func insert(items: [RPGPdfs.PdfModel], into modelContext: ModelContext) {
-        let fetchDesc = FetchDescriptor<PdfDataModel>()
+        let fetchDesc = FetchDescriptor<CoreRPG.ItemDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
 
         items.forEach { item in
             guard let models, !models.contains(where: { $0.id == item.id }) else { return }
             
-            let bookmarks: [PdfBookmarkDataModel] = item.entries.enumerated().map { (index, entry) in
-                PdfBookmarkDataModel(id: entry.id, index: index, name: entry.name, content: entry.content, bounds: entry.bounds, pageLabel: entry.pageLabel, parent: nil)
+            item.entries.enumerated().forEach { (index, entry) in
+                let bookmark = PdfBookmarkDataModel(id: entry.id, itemId: item.id, index: index, name: entry.name, content: entry.content, bounds: entry.bounds, pageLabel: entry.pageLabel)
+                modelContext.insert(bookmark)
             }
             modelContext.insert(
-                PdfDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, url: item.fileUrl?.rawUrl, bookmarks: bookmarks)
+                ItemDataModel(id: item.id, module: .pdf, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, url: item.fileUrl?.rawUrl, displayState: item.displayState)
             )
         }
     }

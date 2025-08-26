@@ -73,7 +73,7 @@ private extension SearchBar {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [PdfDataModel]
+    @Previewable @Query var models: [ItemDataModel]
     @Previewable @Environment(\.modelContext) var modelContext
     @Previewable @Environment(PdfRootModel.self) var root
     @Previewable @State var searchModel = PdfSearchModel()
@@ -85,7 +85,7 @@ private extension SearchBar {
             
             VStack {
                 Button {
-                    let entry = PdfBookmarkDataModel(id: UUID(), content: "This is the selection", pageLabel: "2")
+                    let entry = PdfBookmarkDataModel(id: UUID(), itemId: UUID(), content: "This is the selection", pageLabel: "2")
                     searchModel.selectedEntry = entry
                     searchModel.matches = [PDFSelection()]
                 } label: {

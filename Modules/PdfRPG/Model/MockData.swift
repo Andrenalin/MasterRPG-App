@@ -16,16 +16,17 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: PdfDataModel.self, TagDataModel.self,
+            for: ItemDataModel.self, TagDataModel.self, PdfBookmarkDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
-        guard try! container.mainContext.fetch(FetchDescriptor<PdfDataModel>()).isEmpty else {
+        guard try! container.mainContext.fetch(FetchDescriptor<ItemDataModel>()).isEmpty else {
             print("*** Empty ***")
             return container
         }
-        let model1 = PdfDataModel(
+        let model1 = ItemDataModel(
             id: previewId,
+            module: .pdf,
             name: "Mega Nice Photo",
             information: "A lot of information about this photo",
             category: .adventure,
@@ -33,8 +34,9 @@ struct MockData: PreviewModifier {
         )
         container.mainContext.insert(model1)
         
-        let model2 = PdfDataModel(
+        let model2 = ItemDataModel(
             id: previewId2,
+            module: .pdf,
             name: "Albert",
             information: "The is an example photo and the information is also set here",
             category: .character,
@@ -42,8 +44,9 @@ struct MockData: PreviewModifier {
         )
         container.mainContext.insert(model2)
         
-        let model3 = PdfDataModel(
+        let model3 = ItemDataModel(
             id: previewId3,
+            module: .pdf,
             name: "Zauberer",
             information: "A photo of a wizard.",
             category: .adventure,
@@ -65,7 +68,9 @@ struct MockRootViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content.environment(root)
             .environment(root.searchModel)
-            .environment(root.listModel)
+            .environment(root.listController.listModel)
+            .environment(root.listDisplayModel)
+            .environment(root.rootController)
             .environment(root.listDisplayModel)
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())

@@ -23,15 +23,15 @@ public final class AudioRootModel {
         let fileController = FileController()
         let itemController = ItemController(container: modelContext.container)
         let editController = EditController(itemControllable: itemController, fileUrlDataController: fileController.fileUrlDataController)
-        let listController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
-        let listLinkController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
+        let listController = ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
+        let listLinkController = ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
         let viewController = ViewController()
 
         self.audioController = AudioController(fileController: fileController, model: audioPlayerModel)
+        self.editController = editController
         self.exportController = ExportController(module: module, itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, gameExporter: false)
         self.fileController = fileController
         self.itemController = itemController
-        self.editController = editController
         self.listController = listController
         self.listLinkController = listLinkController
         self.viewController = viewController

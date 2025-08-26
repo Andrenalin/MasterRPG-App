@@ -39,21 +39,17 @@ struct RootDestinationView: View {
     init(itemId: UUID, isRootView: Bool = true) {
         self.itemId = itemId
         self.isRootView = isRootView
-        self._items = Query(filter: #Predicate<PdfDataModel>{ $0.id == itemId })
     }
     
     let itemId: UUID
     let isRootView: Bool
 
-    @Query private var items: [PdfDataModel]
-    
     var body: some View {
-        if let item = items.first {
+        //if let item = items.first {
             if isRootView {
-                DetailRootView(model: item)
-            } else {
-                DetailView(model: item)
+                DetailRootView()
+//            } else {
+//                DetailView(model: item)
             }
-        }
     }
 }

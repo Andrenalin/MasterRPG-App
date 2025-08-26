@@ -12,7 +12,7 @@ struct WindowList: Scene {
     var body: some Scene {
         Group {
             WindowGroup("Pdf Viewer", id: WindowIdentifier.pdfViewer.rawValue, for: ItemSelectionModel.self) { $selection in
-                appModel.pdfRoot.viewController.pdfWindow(selection: selection ?? ItemSelectionModel(itemId: UUID()))
+                appModel.pdfRoot.viewController.pdfWindow(root: appModel.pdfRoot, selection: selection ?? ItemSelectionModel(itemId: UUID()))
                     .accentColor(.teal)
                     .tint(.teal)
                     .frame(minWidth: 600, minHeight: 400)

@@ -6,7 +6,7 @@ import SwiftUI
 
 struct DetailRootView: View {
     @Environment(AudioRootModel.self) private var root
-        
+    
     var body: some View {
         CoreRPG.DetailRootView {
 #if os(visionOS)
@@ -24,7 +24,9 @@ struct DetailRootView: View {
             }
         }
     }
-    
+}
+
+private extension DetailRootView {
     func fileAndPlayerView(model: ItemDataModel) -> some View {
         HStack {
             HStack {

@@ -15,10 +15,10 @@ struct ListController: ListControllable {
         case link
     }
     
-    static func listController(for type: ListType, listModel: ListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel) -> ListController {
+    static func listController(for type: ListType, listDisplayModel: ListDisplayModel, searchModel: SearchModel) -> ListController {
         switch type {
         case .main:
-            ListController(listModel: listModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
+            ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
         case .link:
             ListController(listModel: ListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel)
         }

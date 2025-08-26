@@ -9,7 +9,7 @@ import SwiftUI
 #endif
 
 struct PdfViewerView: View {
-    init(model: PdfDataModel, entryId: UUID? = nil, withoutBookmark: Bool = false, dismissAction: (() -> Void)? = nil) {
+    init(model: ItemDataModel, entryId: UUID? = nil, withoutBookmark: Bool = false, dismissAction: (() -> Void)? = nil) {
         self.model = model
         self.entryId = entryId
         self.withoutBookmark = withoutBookmark
@@ -17,7 +17,7 @@ struct PdfViewerView: View {
         self._dataModelActor = State(wrappedValue: model.modelActor())
     }
     
-    let model: PdfDataModel
+    let model: ItemDataModel
     let entryId: UUID?
     let withoutBookmark: Bool
     let dismissAction: (() -> Void)?
@@ -105,7 +105,7 @@ struct PdfViewerView: View {
 private extension PdfViewerView {
     var entry: PdfBookmarkDataModel? {
         guard let entryId else { return nil }
-        return model.bookmarkOrNew(for: entryId)
+        return PdfBookmarkDataModel(itemId: model.id)
     }
     
     var closeButton: some View {
@@ -124,8 +124,7 @@ private extension PdfViewerView {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [PdfDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
+    @Previewable @Query var models: [ItemDataModel]
         
     PdfViewerView(model: models[0])
 #if os(macOS)

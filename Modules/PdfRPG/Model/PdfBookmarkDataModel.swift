@@ -7,18 +7,19 @@ import CoreGraphics
 
 @Model
 public final class PdfBookmarkDataModel {
-    init(id: UUID = UUID(), index: Int = 0, name: String = "", content: String = "", bounds: CGRect = .zero, pageLabel: String = "", parent: PdfDataModel? = nil) {
+    init(id: UUID = UUID(), itemId: UUID, index: Int = 0, name: String = "", content: String = "", bounds: CGRect = .zero, pageLabel: String = "") {
         self.id = id
+        self.itemId = itemId
         self.index = index
         self.name = name
         self.content = content
         self.bounds = bounds
         self.pageLabel = pageLabel
-        self.parent = parent
     }
     
     @Attribute(.preserveValueOnDeletion)
     public var id: UUID = UUID()
+    public var itemId: UUID = UUID()
     var index: Int = 0
     public var name: String = ""
     var content: String = ""
@@ -30,5 +31,4 @@ public final class PdfBookmarkDataModel {
     private var bounds_: String = ""
 
     var pageLabel: String = ""
-    var parent: PdfDataModel?
 }

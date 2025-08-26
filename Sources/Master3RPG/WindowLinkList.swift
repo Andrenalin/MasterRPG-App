@@ -17,6 +17,7 @@ struct WindowLinkList: Scene {
         Group {
             WindowGroup("\(NetworkModules.pdf.title) Link", id: NetworkModules.pdf.linkWindowId) {
                 appModel.pdfRoot.viewController.linkWindow()
+                    .environment(appModel.pdfRoot)
                     .accentColor(.teal)
                     .tint(.teal)
                     .frame(minWidth: 350, minHeight: 400)
@@ -36,6 +37,7 @@ struct WindowLinkList: Scene {
 
             WindowGroup("\(NetworkModules.audio.title) Link", id: NetworkModules.audio.linkWindowId) {
                 appModel.audioRoot.viewController.linkWindow()
+                    .environment(appModel.audioRoot)
                     .accentColor(.teal)
                     .tint(.teal)
                     .frame(minWidth: 350, minHeight: 400)
@@ -55,6 +57,7 @@ struct WindowLinkList: Scene {
 
             WindowGroup("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkWindowId) {
                 appModel.diceRoot.viewController.linkWindow()
+                    .environment(appModel.diceRoot)
                     .accentColor(.teal)
                     .tint(.teal)
                     .frame(minWidth: 350, minHeight: 400)
@@ -74,6 +77,7 @@ struct WindowLinkList: Scene {
 
             WindowGroup("\(NetworkModules.photo.title) Link", id: NetworkModules.photo.linkWindowId) {
                 appModel.photoRoot.viewController.linkWindow()
+                    .environment(appModel.photoRoot)
                     .accentColor(.teal)
                     .tint(.teal)
                     .frame(minWidth: 350, minHeight: 400)
@@ -92,6 +96,7 @@ struct WindowLinkList: Scene {
 #endif
             WindowGroup("\(NetworkModules.space.title) Link", id: NetworkModules.space.linkWindowId) {
                 appModel.spaceRoot.viewController.linkWindow()
+                    .environment(appModel.spaceRoot)
                     .accentColor(.teal)
                     .tint(.teal)
                     .frame(minWidth: 350, minHeight: 400)

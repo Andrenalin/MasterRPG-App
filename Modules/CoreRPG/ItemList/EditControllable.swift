@@ -210,5 +210,4 @@ public extension EditControllable {
         let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: id, url: url, module: actor.module.token, category: actor.category.title)
         await actor.update(url: updatedFileUrl?.rawUrl)
     }
-
 }

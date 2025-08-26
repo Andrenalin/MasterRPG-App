@@ -25,7 +25,7 @@ struct FileController: Sendable {
     
     @MainActor
     init() {
-        _fileUrlDataController = FileUrlDataController(moduleFolder: PdfDataModel.typeId.token, fileTypes: FileController.fileTypes, filenameExtension: FileController.filenameExtension)
+        _fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.pdf.token, fileTypes: FileController.fileTypes, filenameExtension: FileController.filenameExtension)
     }
 
 #if !os(tvOS)
@@ -39,42 +39,4 @@ struct FileController: Sendable {
         }
     }
 #endif
-}
-
-extension FileController: FileControllable {
-    func fileUrl(item: any Observable) async -> FileUrl? {
-        guard let item = item as? PdfDataModel else { return nil }
-        return item.fileUrl
-//        guard let fileUrl = await root.itemController.item(for: item.id)?.fileUrl else {
-//            return item.fileUrl
-//        }
-//        return fileUrl
-    }
-    
-    func setFileUrl(_ fileUrl: FileUrl?, item: any Observable) async {
-        guard let item = item as? PdfDataModel else { return }
-//        if let oldFileUlr = item.fileUrl {
-//            await root.cacheController.remove(itemId: oldFileUlr.fileId)
-//        }
-        item.url = fileUrl?.rawUrl
-    }
-    
-    func fetchFileUrl() async -> [FileUrl] {
-        var fileUrls: [FileUrl] = []
-//        for itemId in await root.itemController.itemDataModel.items {
-//            if let fileUrl = await root.itemController.item(for: itemId)?.fileUrl {
-//                fileUrls.append(fileUrl)
-//            }
-//        }
-        return fileUrls
-    }
-
-    func saveFileUrl(fileUrl: FileUrl) async {
-//        guard let item = await root.itemController.item(for: fileUrl.fileId)?.copy() else { return }
-//        if let fileId = item.fileUrl?.fileId {
-//            await root.cacheController.remove(itemId: fileId)
-//        }
-//        item.fileUrl = fileUrl
-//        await root.itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
-    }
 }
