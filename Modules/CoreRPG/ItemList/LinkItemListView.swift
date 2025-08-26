@@ -1,36 +1,26 @@
-//
-//  OldLinkItemListView.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 26.08.25.
-//
-
-
 // @copyright André Trettin
 
 import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct OldLinkItemListView<ListController: OldListControllable, Row: View>: View where ListController.Model.ID == UUID {
-    public init(listController: ListController, parentModel: ListController.Model?, isInspector: Bool, @ViewBuilder row: @escaping (UUID) -> Row) {
-        self.listController = listController
+public struct LinkItemListView: View {
+    init(root: any ItemRootControllable, parentModel: ItemDataModel?, isInspector: Bool) {
+        self.root = root
         self.isInspector = isInspector
-        self.row = row
-        listController.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
+        //root.listLinkControllable.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
     }
 
-    let listController: ListController
+    let root: any ItemRootControllable
     let isInspector: Bool
-    let row: (UUID) -> Row
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
     
     public var body: some View {
         NavigationStack {
-            @Bindable var searchModel = listController.searchModel
-            @Bindable var inspectorDisplayModel = listController.listDisplayModel
+            @Bindable var searchModel = root.listLinkControllable.searchModel
+            @Bindable var inspectorDisplayModel = root.listLinkControllable.listDisplayModel
             
             if isInspector {
                 Picker(selection: $inspectorDisplayModel.listMode) {
@@ -44,7 +34,7 @@ public struct OldLinkItemListView<ListController: OldListControllable, Row: View
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
                 .onChange(of: inspectorDisplayModel.listMode) {
-                    withAnimation { listController.resetFilter() }
+                    withAnimation { root.listLinkControllable.resetFilter() }
                 }
                 
                 TextField("Filter", text: $searchModel.searchText)
@@ -54,11 +44,11 @@ public struct OldLinkItemListView<ListController: OldListControllable, Row: View
             contentView
                 .onChange(of: listDisplayModel.displayMode, initial: true) {
                     inspectorDisplayModel.displayMode = listDisplayModel.displayMode
-                    withAnimation { listController.resetFilter() }
+                    withAnimation { root.listLinkControllable.resetFilter() }
                 }
-                .onChange(of: listController.searchModel.searchText) {
+                .onChange(of: root.listLinkControllable.searchModel.searchText) {
                     withAnimation {
-                        listController.resetFilter()
+                        root.listLinkControllable.resetFilter()
                         cacheItemListModel.reset(search: searchModel.searchText)
                     }
                 }
@@ -73,23 +63,22 @@ public struct OldLinkItemListView<ListController: OldListControllable, Row: View
                             }
                         }
                         .searchable(text: $searchModel.searchText, placement: .automatic)
-                        .navigationTitle(ListController.Model.typeId.title)
+                        .navigationTitle(root.module.title)
                 }
         }
-        .environment(listController.listDisplayModel)
-        .environment(listModel)
-        .environment(listController.searchModel)
+        .environment(root.listLinkControllable.listDisplayModel)
+        .environment(root.listLinkControllable.searchModel)
     }
 
-    var listModel: OldListModel {
-        listController.listModel(for: nil)
+    var listModel: ListModel {
+        root.listLinkControllable.listModel(for: nil)
     }
 
     var contentView: some View {
         listView
             .frame(minWidth: 150, idealWidth: 250)
             .overlay {
-                if listModel.displayedItems.isEmpty && !listController.searchModel.searchText.isEmpty {
+                if listModel.displayedItems.isEmpty && !root.listLinkControllable.searchModel.searchText.isEmpty {
                     ContentUnavailableView.search
                 }
             }
@@ -107,7 +96,7 @@ public struct OldLinkItemListView<ListController: OldListControllable, Row: View
     }
 }
 
-private extension OldLinkItemListView {
+private extension LinkItemListView {
     @ViewBuilder
     var listView: some View {
         @Bindable var listModel = listModel
@@ -119,7 +108,7 @@ private extension OldLinkItemListView {
     func itemRows() -> some View {
         ForEach(listModel.displayedItems) { item in
             HStack {
-                row(item.itemId)
+                ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false)
                 
                 specialCategoryFolderIndicator(item: item)
             }
@@ -134,15 +123,15 @@ private extension OldLinkItemListView {
     }
     
     @ViewBuilder
-    func specialCategoryFolderIndicator(item: OldListItemModel) -> some View {
-        if item.isSpecial {
+    func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
+        if item.model.specialCategory {
             Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                 .imageScale(.small)
                 .padding(.trailing)
                 .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    withAnimation { listController.toggleFolder(item: item) }
+                    withAnimation { root.listLinkControllable.toggleFolder(item: item) }
                 }
         }
     }

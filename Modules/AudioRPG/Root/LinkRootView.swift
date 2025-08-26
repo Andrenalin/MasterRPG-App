@@ -10,7 +10,7 @@ struct LinkRootView: View {
     @Query(filter: #Predicate<AudioDataModel>{ $0.displayState == 0 }, sort: \AudioDataModel.name, animation: .smooth) private var items: [AudioDataModel]
     
     var body: some View {
-        LinkItemListView(listController: root.listLinkController, parentModel: selectedModel, isInspector: isInspector) { itemId in
+        OldLinkItemListView(listController: root.listLinkController, parentModel: selectedModel, isInspector: isInspector) { itemId in
             if let model = root.itemController.modelSync(for: itemId) {
                 MainRowView(model: model)
             }

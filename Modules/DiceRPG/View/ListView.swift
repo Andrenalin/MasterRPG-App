@@ -12,7 +12,7 @@
 //    @Query(filter: #Predicate<DiceDataModel>{ $0.displayState == 0 }, sort: \DiceDataModel.name, animation: .smooth) private var items: [DiceDataModel]
 //    
 //    var body: some View {
-//        ItemListView(listController: root.listController, editController: root.editController, menuController: menuController, parentModel: nil, module: DiceDataModel.typeId) { id in
+//        OldItemListView(listController: root.listController, editController: root.editController, menuController: menuController, parentModel: nil, module: DiceDataModel.typeId) { id in
 //            DiceRoute.detail(id)
 //        } row: { itemId in
 //            if let model = root.itemController.modelSync(for: itemId) {

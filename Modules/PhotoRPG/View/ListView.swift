@@ -13,7 +13,7 @@ struct ListView: View {
     @Query(filter: #Predicate<PhotoDataModel>{ $0.displayState == 0 }, sort: \PhotoDataModel.name, animation: .smooth) private var items: [PhotoDataModel]
     
     var body: some View {
-        ItemListView(listController: root.listController, editController: root.editController, menuController: menuController, parentModel: nil, module: PhotoDataModel.typeId) { id in
+        OldItemListView(listController: root.listController, editController: root.editController, menuController: menuController, parentModel: nil, module: PhotoDataModel.typeId) { id in
             PhotoRoute.detail(id)
         } row: { itemId in
             if let model = root.itemController.modelSync(for: itemId) {

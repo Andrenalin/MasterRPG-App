@@ -10,7 +10,7 @@ struct LinkRootView: View {
     @Query(filter: #Predicate<PdfDataModel>{ $0.displayState == 0 }, sort: \PdfDataModel.name, animation: .smooth) private var items: [PdfDataModel]
     
     var body: some View {
-        LinkItemListView(listController: root.listLinkController, parentModel: selectedModel, isInspector: isInspector) { itemId in
+        OldLinkItemListView(listController: root.listLinkController, parentModel: selectedModel, isInspector: isInspector) { itemId in
             if let model = root.itemController.modelSync(for: itemId) {
                 MainRowView(model: model)
             }

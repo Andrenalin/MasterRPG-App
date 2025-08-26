@@ -12,40 +12,12 @@ struct DiceRootView: View {
     
     var body: some View {
         ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
-            CoreRPG.DetailRootView {
-            } editor: {
-                if let model {
-#if os(macOS)
-                    ScrollView {
-                        detailEditorView(model: model)
-                    }
-#else
-                    
-                    detailEditorView(model: model)
-                        .padding(.horizontal, -20)
-#endif
-                }
-            }
+            DetailRootView()
         }
         .overlay {
             SaveView(root: root)
         }
-    }
-    
-    var model: DiceConfigDataModel? {
-        root.itemController.model(for: root.listControllable.listModel.selectedItemId)
-    }
-    
-    func detailEditorView(model: DiceConfigDataModel) -> some View {
-        Form {
-            DiceEditor(model: model)
-            DiceOptionEditor(model: model)
-            CoupEditor(model: model)
-            FumbleEditor(model: model)
-            RerollEditor(model: model)
-            SpecialOptionEditor(model: model)
-        }
-    }
+    }    
 }
 
 struct SaveView: View {

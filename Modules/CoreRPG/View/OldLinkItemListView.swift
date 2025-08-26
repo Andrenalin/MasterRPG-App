@@ -4,7 +4,7 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct LinkItemListView<ListController: OldListControllable, Row: View>: View where ListController.Model.ID == UUID {
+public struct OldLinkItemListView<ListController: OldListControllable, Row: View>: View where ListController.Model.ID == UUID {
     public init(listController: ListController, parentModel: ListController.Model?, isInspector: Bool, @ViewBuilder row: @escaping (UUID) -> Row) {
         self.listController = listController
         self.isInspector = isInspector
@@ -99,7 +99,7 @@ public struct LinkItemListView<ListController: OldListControllable, Row: View>: 
     }
 }
 
-private extension LinkItemListView {
+private extension OldLinkItemListView {
     @ViewBuilder
     var listView: some View {
         @Bindable var listModel = listModel

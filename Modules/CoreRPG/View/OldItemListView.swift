@@ -4,7 +4,7 @@ import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
-public struct ItemListView<ListController: OldListControllable, EditController: OldEditControllable, Row: View>: View where ListController.Model == EditController.Model, EditController.Model.ID == UUID {
+public struct OldItemListView<ListController: OldListControllable, EditController: OldEditControllable, Row: View>: View where ListController.Model == EditController.Model, EditController.Model.ID == UUID {
     public init(listController: ListController, editController: EditController, menuController: any ItemListContextMenuControllable, parentModel: EditController.Model? = nil, module: NetworkModules, route: @escaping (UUID) -> any NavigationDestination, @ViewBuilder row: @escaping (UUID) -> Row) {
         self.listController = listController
         self.editController = editController
@@ -105,7 +105,7 @@ public struct ItemListView<ListController: OldListControllable, EditController: 
     }
 }
 
-private extension ItemListView {
+private extension OldItemListView {
     var displayItems: [OldListItemModel] {
         listController.displayItems(for: parentModel)
     }
