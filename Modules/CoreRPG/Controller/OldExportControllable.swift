@@ -4,7 +4,7 @@ import Foundation
 import os.log
 import Observation
 
-public protocol ExportControllable: Sendable {
+public protocol OldExportControllable: Sendable {
     var itemControllable: any OldItemControllable { get }
     var fileControllable: (any FileControllable)? { get }
     var networkModule: NetworkModules { get }
@@ -17,7 +17,7 @@ public protocol ExportControllable: Sendable {
     func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor (Int?, Bool) async -> Void) async throws -> ItemModuleIds
 }
 
-public extension ExportControllable {
+public extension OldExportControllable {
     var fileControllable: (any FileControllable)? { nil }
 
     func exportUrl(isSaveGame: Bool) -> URL {
@@ -181,40 +181,5 @@ fileprivate actor ExportIndexModel {
     
     func update(index: Int) {
         self.index = index
-    }
-}
-
-extension OutputStream {
-    func append(fileHeader: GmzFileHeader) throws {
-        try append(counter: fileHeader.counter)
-        try append(counter: fileHeader.token)
-        try append(counter: fileHeader.version)
-    }
-
-    func append(counter: Int, token: Int) throws {
-        try append(counter: counter)
-        try append(counter: token)
-    }
-
-    func append(counter: Int) throws {
-        var readBuffer = [UInt8](repeating: 0, count: 4)
-        for i in 0...3 {
-            readBuffer[i] = UInt8((UInt32(counter) >> (i * 8)) & UInt32(0xFF))
-        }
-        let written = write(&readBuffer, maxLength: readBuffer.count)
-        guard written == readBuffer.count else {
-            throw ItemDataExportableError.writeError
-        }
-    }
-
-    func write(data: Data) throws {
-        var remaining = data[...]
-        while !remaining.isEmpty {
-            let bytesWritten = remaining.withUnsafeBytes { buf in
-                write(buf.baseAddress!.assumingMemoryBound(to: UInt8.self), maxLength: buf.count)
-            }
-            guard bytesWritten >= 0 else { throw ItemDataExportableError.streamError }
-            remaining = remaining.dropFirst(bytesWritten)
-        }
     }
 }

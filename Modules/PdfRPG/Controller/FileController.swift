@@ -25,7 +25,7 @@ struct FileController: Sendable {
     
     @MainActor
     init() {
-        _fileUrlDataController = FileUrlDataController(moduleFolder: PdfDataModel.typeId.token, fileTypes: FileController.fileTypes, filenameExtension: FileController.filenameExtension, fileUrlAccess: self)
+        _fileUrlDataController = FileUrlDataController(moduleFolder: PdfDataModel.typeId.token, fileTypes: FileController.fileTypes, filenameExtension: FileController.filenameExtension)
     }
 
 #if !os(tvOS)

@@ -47,8 +47,8 @@ public final class ItemDataModel {
     public var displayState: Int = 0
     public var parentId: UUID? = nil
 
-    private var _nameLWW: CRDT<String> = CRDT(wrappedValue: "")
-    private var _informationLWW: CRDT<String> = CRDT(wrappedValue: "")
+    private(set) var _nameLWW: CRDT<String> = CRDT(wrappedValue: "")
+    private(set) var _informationLWW: CRDT<String> = CRDT(wrappedValue: "")
 
     @Relationship(deleteRule: .cascade) private var entries_: [EntryDataModel]? = []
 }
@@ -157,21 +157,6 @@ extension ItemDataModel {
     public static var newItem: ItemDataModel {
         ItemDataModel(name: "", information: "", category: .music, tags: [])
     }
-    //@MainActor public static let dropItem: ItemDataModel = ItemDataModel(id: UUID(), name: "Audio", information: "Drop or select an audio", category: .drop)
-
-//    public var itemModel: AudioModel {
-//        let entries = entries.map { $0.entryModel }
-//        return AudioModel(
-//            id: id,
-//            name: _nameLWW,
-//            description: _informationLWW,
-//            tags: CRDT(wrappedValue: tags),
-//            category: CRDT(wrappedValue: category),
-//            displayState: displayState,
-//            fileUrl: CRDTDataUpdate(wrappedValue: fileUrl),
-//            entries: CRDTDataUpdate(wrappedValue: entries)
-//        )
-//    }
 }
 
 public extension ItemDataModel {

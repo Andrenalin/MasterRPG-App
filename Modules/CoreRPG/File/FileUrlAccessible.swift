@@ -41,19 +41,17 @@ public struct FileUrlDataController: Sendable {
     
     public let fileTypes: [UTType]
     let filenameExtension: String
-    private let fileUrlAccess: any FileUrlAccessible
     
     public let model: FileUrlDataModel
     
     @MainActor
-    public init(moduleFolder: String, fileTypes: [UTType], filenameExtension: String, fileUrlAccess: any FileUrlAccessible) {
+    public init(moduleFolder: String, fileTypes: [UTType], filenameExtension: String) {
         let fileBookmarkController = FileBookmarkController(module: moduleFolder)
         self.fileBookmarkController = fileBookmarkController
         self.locationFileManager = LocationFileManager(moduleFolder: moduleFolder)
         
         self.fileTypes = fileTypes
         self.filenameExtension = filenameExtension
-        self.fileUrlAccess = fileUrlAccess
         
         self.cloudDocumentController = CloudDocumentController(modulePath: moduleFolder)
         
@@ -114,10 +112,10 @@ public extension FileUrlDataController {
             _ = url.startAccessingSecurityScopedResource()
             defer { url.stopAccessingSecurityScopedResource() }
             if let updatedFileUrl = try? await createFileUrl(fileId: fileUrl.fileId, url: url, module: fileUrl.module, category: nil) {
-                let saveTask = Task { @MainActor in
-                    await fileUrlAccess.saveFileUrl(fileUrl: updatedFileUrl)
-                }
-                let _ = await saveTask.result
+//                let saveTask = Task { @MainActor in
+//                    await fileUrlAccess.saveFileUrl(fileUrl: updatedFileUrl)
+//                }
+//                let _ = await saveTask.result
                 newFileUrl = updatedFileUrl
             } else {
                 Logger.bookmarkStore.info("URL cannot repaired \(fileUrl.rawUrl.absoluteString, privacy: .public)")

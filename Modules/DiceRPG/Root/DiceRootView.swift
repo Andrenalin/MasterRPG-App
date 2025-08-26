@@ -37,8 +37,6 @@ struct SaveView: View {
 }
 
 #Preview("Small", traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
-
     ManagedNavigationStack {
         DiceRootView(withoutNavigation: true)
     }
@@ -46,7 +44,5 @@ struct SaveView: View {
 
 
 #Preview("Split", traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
-
     DiceRootView(withoutNavigation: false)
 }

@@ -9,30 +9,33 @@ public final class DiceRootModel {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         
+        let module: NetworkModules = .dice
+        self.module = module
+        
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = DiceRootModel.newSearchModel(modelContext: modelContext)
+        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.rules, .table, .value])
         self.searchModel = searchModel
 
         let itemController = ItemController(container: modelContext.container)
-        self.itemController = itemController
         let editController = EditController(itemControllable: itemController, fileUrlDataController: nil)
-        self.editController = editController
         let listController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
-        self.listController = listController
         let listLinkController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
-        self.listLinkController = listLinkController
+        let viewController = ViewController()
 
-        self.exportController = ExportController(itemController: itemController, gameExporter: false)
-        self._viewController = ViewController(_root: self)
-        
-        self._rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewControllable)
+        self.itemController = itemController
+        self.editController = editController
+        self.exportController = ExportController(module: module, itemController: itemController, gameExporter: false)
+        self.listController = listController
+        self.listLinkController = listLinkController
+        self.viewController = viewController
+        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
 
         itemController.cleanDeleted()
     }
 
     let modelContext: ModelContext
-    public let module: NetworkModules = .dice
+    public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
@@ -42,15 +45,8 @@ public final class DiceRootModel {
     @ObservationIgnored let itemController: ItemController
     @ObservationIgnored let listController: ListController
     @ObservationIgnored let listLinkController: ListController
-    @ObservationIgnored private var _viewController: ViewController? = nil
-    public var viewController: ViewController {
-        _viewController.unsafelyUnwrapped
-    }
-
-    @ObservationIgnored private var _rootController: ItemRootController? = nil
-    public var rootController: ItemRootController {
-        _rootController.unsafelyUnwrapped
-    }
+    @ObservationIgnored public let viewController: ViewController
+    @ObservationIgnored let rootController: ItemRootController
 
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
@@ -64,10 +60,4 @@ extension DiceRootModel: ItemRootControllable {
     public var listControllable: any ListControllable { listController }
     public var listLinkControllable: any ListControllable { listLinkController }
     public var viewControllable: any ViewControllable { viewController }
-}
-
-extension DiceRootModel {
-    static private func newSearchModel(modelContext: ModelContext) -> SearchModel {
-        SearchModel(modelContext: modelContext, module: DiceDataModel.typeId, categoryTags: [.rules, .table, .value])
-    }
 }

@@ -5,25 +5,62 @@ import SwiftData
 import SwiftUI
 
 struct DetailRootView: View {
-    let model: AudioDataModel
-    
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(ListDisplayModel.self) private var listDisplayModel
-    @Environment(SearchModel.self) private var searchModel
-    
+    @Environment(AudioRootModel.self) private var root
+        
     var body: some View {
-        DetailView(model: model)
-            .navigationDestination(for: DetailRoute.self) { route in
-                route
-                    .environment(cacheItemListModel)
-                    .environment(listDisplayModel)
-                    .environment(searchModel)
+        CoreRPG.DetailRootView {
+#if os(visionOS)
+            AudioPlayerBarView()
+                .padding()
+#else
+            GlassEffectContainer {
+                AudioPlayerBarView()
+                    .padding()
             }
+#endif
+        } editor: {
+            if let selectedModel {
+                fileAndPlayerView(model: selectedModel)
+            }
+        }
+    }
+    
+    func fileAndPlayerView(model: ItemDataModel) -> some View {
+        HStack {
+            HStack {
+                FileImporterView(editControllable: root.editControllable, model: model, fileTypes: root.editControllable.fileUrlDataController?.fileTypes ?? [])
+
+                Text(model.url?.absoluteString ?? "No file is set")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+            }
+            .opacity(model.specialCategory ? 0 : 1)
+
+            Button {
+                Task {
+                    let list = root.itemController.audioList(itemId: model.id)
+                    await root.audioController.add(audio: list, replace: true)
+                    root.audioController.togglePlay(id: list.first?.id)
+                }
+            } label: {
+                Image(systemName: "play")
+                    .font(.largeTitle)
+            }
+            .disabled(!root.itemController.hasAudio(itemId: model.id))
+        }
+        .padding()
+    }
+
+    var selectedModel: ItemDataModel? {
+        root.listControllable.listModel.selectedModel
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [AudioDataModel]
+    @Previewable @Query var models: [ItemDataModel]
+    @Previewable @Environment(AudioRootModel.self) var root
     
-    DetailRootView(model: models[0])
+    DetailRootView().onAppear {
+        root.listControllable.listModel.set(selectedItemId: models.first!.id)
+    }
 }

@@ -52,7 +52,7 @@ public final class AppModel: Sendable {
         self.photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
 
-        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.2", executionDelay: 0.4, verbosity: .info))
+        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.3", executionDelay: 0.4, verbosity: .info))
     }
     
     @MainActor
@@ -62,10 +62,6 @@ public final class AppModel: Sendable {
                 TagDataModel.self,
                 ItemDataModel.self,
                 EntryDataModel.self,
-                AudioDataModel.self,
-                AudioEntryDataModel.self,
-                DiceDataModel.self,
-                DiceEntryDataModel.self,
                 DiceConfigDataModel.self,
                 PdfDataModel.self,
                 PdfEntryDataModel.self,

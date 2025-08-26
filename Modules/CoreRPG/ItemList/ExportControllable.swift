@@ -1,0 +1,250 @@
+// @copyright André Trettin
+
+import Foundation
+import os.log
+import Observation
+
+public protocol ExportControllable: Sendable {
+    var itemControllable: any ItemControllable { get }
+    var fileUrlDataController: FileUrlDataController? { get }
+    var module: NetworkModules { get }
+    var version: Int { get }
+
+    var exportModel: ItemDataExportModel { get }
+
+    @MainActor func exportingAll() -> ItemModuleIds
+    @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds
+    func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor (Int?, Bool) async -> Void) async throws -> ItemModuleIds
+}
+
+public extension ExportControllable {
+    var fileUrlDataController: FileUrlDataController? { nil }
+
+    func exportUrl(isSaveGame: Bool) -> URL {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd"
+        let now = dateFormatter.string(from: Date())
+        let name = isSaveGame ? "SavedGame.gms" : "Export.gmz"
+        return URL.cachesDirectory.appending(path: "\(now)-\(name)")
+    }
+
+    @MainActor
+    func exportingAll() -> ItemModuleIds {
+        ItemModuleIds(dictionary: [module: itemControllable.allItemIds()])
+    }
+
+    @MainActor
+    func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+        exportingItemDataModel(itemIds: itemIds)
+    }
+
+    @MainActor
+    func exportingItemDataModel(itemIds: ItemModuleIds) -> ItemModuleIds {
+        var checkIds = itemIds.ids[module, default: []]
+        var results: Set<UUID> = []
+
+        while !checkIds.isEmpty {
+            let id = checkIds.removeLast()
+            guard let item = itemControllable.modelSync(for: id) else {
+                Task {
+                    await logExport(title: "exporting not found \(id.uuidString))", count: 1)
+                }
+                continue
+            }
+            results.insert(id)
+
+            let ids = item.entries.compactMap { entry -> UUID? in
+                let subId = entry.childId
+                if !(results.contains(subId) || checkIds.contains(subId)) && itemControllable.modelSync(for: subId) != nil {
+                    return subId
+                }
+                return nil
+            }
+            checkIds.append(contentsOf: ids)
+        }
+
+        var allIds = itemIds
+        allIds.ids[module] = Array(results)
+        return allIds
+
+    }
+
+    func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
+        itemIds
+    }
+
+    func createExport(itemIds: ItemModuleIds, into url: URL) -> Task<Void, any Error> {
+        Task.detached(priority: .userInitiated) {
+            await self.resetStartState()
+            let _ = url.startAccessingSecurityScopedResource()
+            defer { url.stopAccessingSecurityScopedResource() }
+            guard let outputStream = OutputStream(url: url, append: false) else { throw ItemDataExportableError.openError }
+
+            outputStream.open()
+            defer { outputStream.close() }
+
+            let itemIds = await self.exporting(itemIds: itemIds)
+            await self.updaterExport(itemCount: itemIds.count, increment: false)
+            do {
+                try outputStream.append(fileHeader: GmzFileHeader(counter: itemIds.count, token: ExportDataToken.counter.rawValue, version: ExportDataToken.version_2024.rawValue))
+                                        
+                _ = try await self.export(itemIds: itemIds, into: outputStream, counterUpdater: self.updaterExport(itemCount:increment:))
+                await setExportRunning(false)
+            } catch {
+                await setExportRunning(false)
+                throw error
+            }
+        }
+    }
+        
+    @MainActor
+    func setExportRunning(_ isRunning: Bool) async {
+        exportModel.isExportRunning = isRunning
+    }
+
+    @MainActor
+    func exporting(ids: Set<UUID>) -> ItemModuleIds {
+        exporting(itemIds: ItemModuleIds(ids: ids, module: module))
+    }
+
+    func export(ids: ItemModuleIds) -> (Task<Void, any Error>, URL) {
+        let url = exportUrl(isSaveGame: false)
+        return (createExport(itemIds: ids, into: url), url)
+    }
+
+    @MainActor
+    func updaterExport(itemCount: Int?, increment: Bool) async {
+        if let itemCount {
+            exportModel.totalExportingItems = itemCount
+        }
+        if increment {
+            exportModel.exportedItems += 1
+        }
+    }
+
+    func export(itemIds: ItemModuleIds, into stream: OutputStream, counterUpdater: @MainActor (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
+
+        await logExport(title: "export", count: itemIds.count)
+
+        var updatedIds = try await additionalExport(itemIds: itemIds, stream: stream, counterUpdater: counterUpdater)
+        
+        try await extract(itemIds: updatedIds, stream: stream) {
+            await counterUpdater(nil, true)
+        }
+        updatedIds.ids.removeValue(forKey: token())
+        await logExport(title: "export after extract", count: updatedIds.count)
+        return updatedIds
+    }
+
+    private func extract(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: () async -> Void) async throws {
+        let allIds = itemIds.ids[token(), default: []]
+
+        await logExport(title: "extract", count: allIds.count)
+        
+        let indexModel = ExportIndexModel(index: allIds.startIndex)
+
+        let dataStream = AsyncThrowingStream<ExportStream, Error> { () async throws -> ExportStream? in
+            let index = await indexModel.index
+            guard index < allIds.endIndex else { return nil }
+            let itemId = allIds[index]
+            await indexModel.update(index: allIds.index(after: index))
+            guard let item = try await self.itemControllable.encodedItemData(for: itemId) else {
+                throw ItemDataExportableError.writeError
+            }
+            return ExportStream(id: itemId, data: item)
+        }
+
+        try outputStream.append(fileHeader: GmzFileHeader(counter: allIds.count, token: token().rawValue, version: version))
+
+        for try await exportData in dataStream {
+            if let data = await inlineFiles(for: exportData.id) {
+                try outputStream.append(counter: data.count, token: ExportDataToken.file.rawValue)
+                try outputStream.write(data: data)
+            }
+            try outputStream.append(counter: exportData.data.count, token: ExportDataToken.item.rawValue)
+            try outputStream.write(data: exportData.data)
+            await counterUpdater()
+            try Task.checkCancellation()
+        }
+    }
+
+    func inlineFiles(for itemId: UUID) async -> Data? {
+        guard let fileUrlDataController else { return nil }
+        guard let fileUrl = await itemControllable.fileUrl(for: itemId) else { return nil }
+        return try? await fileUrlDataController.loadData(for: fileUrl)
+    }
+
+    func token()  -> NetworkModules {
+        module
+    }
+
+    @MainActor
+    func progress() async -> (count: Int, total: Int) {
+        (exportModel.exportedItems, exportModel.totalExportingItems)
+    }
+
+    func logExport(title: String, count: Int) async {
+        let token = token()
+        let counter = await progress()
+        Logger.exportController.info("\(title, privacy: .public) \(token.token, privacy: .public) currentItems \(count), exportedItems \(counter.count), total: \(counter.total)")
+    }
+
+    @MainActor
+    func resetStartState() async {
+        exportModel.isExportRunning = true
+        exportModel.exportedItems = 0
+        exportModel.totalExportingItems = 0
+    }
+}
+
+fileprivate struct ExportStream {
+    let id: UUID
+    let data: Data
+}
+
+fileprivate actor ExportIndexModel {
+    init(index: Int = 0) {
+        self.index = index
+    }
+    
+    var index: Int = 0
+    
+    func update(index: Int) {
+        self.index = index
+    }
+}
+
+extension OutputStream {
+    func append(fileHeader: GmzFileHeader) throws {
+        try append(counter: fileHeader.counter)
+        try append(counter: fileHeader.token)
+        try append(counter: fileHeader.version)
+    }
+
+    func append(counter: Int, token: Int) throws {
+        try append(counter: counter)
+        try append(counter: token)
+    }
+
+    func append(counter: Int) throws {
+        var readBuffer = [UInt8](repeating: 0, count: 4)
+        for i in 0...3 {
+            readBuffer[i] = UInt8((UInt32(counter) >> (i * 8)) & UInt32(0xFF))
+        }
+        let written = write(&readBuffer, maxLength: readBuffer.count)
+        guard written == readBuffer.count else {
+            throw ItemDataExportableError.writeError
+        }
+    }
+
+    func write(data: Data) throws {
+        var remaining = data[...]
+        while !remaining.isEmpty {
+            let bytesWritten = remaining.withUnsafeBytes { buf in
+                write(buf.baseAddress!.assumingMemoryBound(to: UInt8.self), maxLength: buf.count)
+            }
+            guard bytesWritten >= 0 else { throw ItemDataExportableError.streamError }
+            remaining = remaining.dropFirst(bytesWritten)
+        }
+    }
+}

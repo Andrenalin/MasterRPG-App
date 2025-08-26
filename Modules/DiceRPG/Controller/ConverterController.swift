@@ -8,7 +8,7 @@ import SwiftData
 
 public struct ConverterController {
     public static func insert(items: [RPGDie.DiceModel], into modelContext: ModelContext) {
-        let fetchDesc = FetchDescriptor<DiceDataModel>()
+        let fetchDesc = FetchDescriptor<CoreRPG.ItemDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
 
         items.forEach { item in
@@ -37,7 +37,7 @@ public struct ConverterController {
             )
             modelContext.insert(config)
             modelContext.insert(
-                DiceDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, entries: [])
+                ItemDataModel(id: item.id, module: .dice, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, displayState: item.displayState, entries: [])
             )
         }
     }

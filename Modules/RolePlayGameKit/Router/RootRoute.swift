@@ -138,9 +138,9 @@ struct RouteRouteDestionationView: View {
             ExtendedTabBar()
 #endif
         case .game:
-            AudioRootFactory.rootNewView(withoutNavigation: false)
+            AudioRootFactory.rootView(withoutNavigation: false)
         case .maps:
-            AudioRootFactory.rootNewView(withoutNavigation: false)
+            AudioRootFactory.rootView(withoutNavigation: false)
         case .pdfs:
             PdfRootFactory.rootView(withoutNavigation: false)
         case .photos:

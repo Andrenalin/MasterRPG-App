@@ -30,9 +30,3 @@ extension EntryDataModel {
         return entry.name
     }        
 }
-
-extension EntryDataModel {
-//    var entryModel: AudioEntryModel {
-//        AudioEntryModel(id: id, itemId: childId ?? UUID())
-//    }
-}

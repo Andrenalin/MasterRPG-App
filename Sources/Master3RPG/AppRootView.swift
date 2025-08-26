@@ -36,6 +36,6 @@ struct AppRootView: View {
 
 #Preview {
     AppRootView()
-        .modelContainer(for: [TagDataModel.self, AudioDataModel.self, DiceDataModel.self, PdfDataModel.self, PhotoDataModel.self, SpaceDataModel.self], inMemory: true)
+        .modelContainer(for: [TagDataModel.self, ItemDataModel.self], inMemory: true)
         .environment(AppModel())
 }

@@ -28,16 +28,16 @@ struct DiceEntity: IndexedEntity {
     var id: UUID { model.id }
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name }
+    var name: String { model.name.wrappedValue }
 
     // Maps the description variable to the Spotlight indexing key `contentDescription`.
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.information }
+    var description: String { model.information.wrappedValue }
 
     var root: DiceRootModel
-    var model: DiceModel
+    var model: ItemDataCodableModel
     
-    init(root: DiceRootModel, model: DiceModel) {
+    init(root: DiceRootModel, model: ItemDataCodableModel) {
         self.root = root
         self.model = model
     }
@@ -92,9 +92,9 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         let ids = root.itemController.allItemIds()
         var results: [DiceEntity] = []
         for id in ids {
-//            guard let model = await root.itemController.item(for: id) else { continue }
-//            let entity = DiceEntity(root: root, model: model)
-//            results.append(entity)
+            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
+            let entity = DiceEntity(root: root, model: model)
+            results.append(entity)
         }
         return results
     }
@@ -102,9 +102,9 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     func entities(for identifiers: [DiceEntity.ID]) async throws -> [DiceEntity] {
         var results: [DiceEntity] = []
         for id in identifiers {
-//            guard let model = await root.itemController.item(for: id) else { continue }
-//            let entity = DiceEntity(root: root, model: model)
-//            results.append(entity)
+            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
+            let entity = DiceEntity(root: root, model: model)
+            results.append(entity)
         }
         return results
     }
@@ -113,10 +113,10 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         let ids = root.itemController.allItemIds()
         var results: [DiceEntity] = []
         for id in ids {
-//            guard let model = await root.itemController.item(for: id) else { continue }
-//            guard model.name.contains(matching) || model.information.contains(matching) else { continue }
-//            let entity = DiceEntity(root: root, model: model)
-//            results.append(entity)
+            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
+            let entity = DiceEntity(root: root, model: model)
+            results.append(entity)
         }
         return results
     }

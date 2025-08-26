@@ -44,7 +44,7 @@ struct DetailRootView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Query var models: [ItemDataModel]
     @Previewable @Environment(DiceRootModel.self) var root
     
     DetailRootView().onAppear {

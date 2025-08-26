@@ -39,27 +39,21 @@ struct RootDestinationView: View {
     init(itemId: UUID, isRootView: Bool = true) {
         self.itemId = itemId
         self.isRootView = isRootView
-        self._items = Query(filter: #Predicate<AudioDataModel>{ $0.id == itemId })
     }
     
     let itemId: UUID
     let isRootView: Bool
-
-    @Environment(AudioRootModel.self) private var root
-    @Query private var items: [AudioDataModel]
     
     var body: some View {
         Group {
-            if let item = items.first {
-                if isRootView {
-                    DetailRootView(model: item)
-                } else {
-                    DetailView(model: item)
-                }
-            }
+            //if isRootView {
+            DetailRootView()
+            //} else {
+                //DetailView(model: item)
+            //}
         }
-        .environment(root.listDisplayModel)
-        .environment(root.searchModel)
+//        .environment(root.listDisplayModel)
+//        .environment(root.searchModel)
 
     }
 }
