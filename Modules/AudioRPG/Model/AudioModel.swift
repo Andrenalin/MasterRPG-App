@@ -95,7 +95,7 @@ extension AudioModel: Codable {
     }
 }
 
-extension AudioModel: ItemDataAccessable {
+extension AudioModel {
     public static var typeId: NetworkModules {
         .audio
     }

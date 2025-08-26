@@ -61,10 +61,6 @@ public actor DataModelActor {
         modelContext.insert(newModel)
     }
     
-//    func itemModel() -> AudioModel {
-//        model.itemModel
-//    }
-    
     public func save() {
         try? modelContext.save()
     }

@@ -3,13 +3,13 @@
 import SwiftUI
 
 public struct ExportProgressFile: View {
-    public init(exportController: any OldExportControllable, exporter: @escaping () -> (Task<Void, any Error>, URL), finishedAction: @escaping () -> Void = {}) {
+    public init(exportController: any ExportControllable, exporter: @escaping () -> (Task<Void, any Error>, URL), finishedAction: @escaping () -> Void = {}) {
         self.exportController = exportController
         self.exporter = exporter
         self.finishAction = finishedAction
     }
 
-    let exportController: any OldExportControllable
+    let exportController: any ExportControllable
     let exporter: () -> (Task<Void, any Error>, URL)
     let finishAction: () -> Void
 

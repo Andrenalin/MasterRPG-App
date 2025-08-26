@@ -15,9 +15,3 @@ public struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable, Senda
 
     public var displayState: Int = 0
 }
-
-extension AudioEntryModel: EntryDataAccessable {
-    public var name: String {
-        "Audio"
-    }
-}
