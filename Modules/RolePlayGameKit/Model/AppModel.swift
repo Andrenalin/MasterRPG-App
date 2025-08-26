@@ -64,8 +64,6 @@ public final class AppModel: Sendable {
                 EntryDataModel.self,
                 DiceConfigDataModel.self,
                 PdfBookmarkDataModel.self,
-                SpaceDataModel.self,
-                SpaceEntryDataModel.self,
             ]
         )
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))

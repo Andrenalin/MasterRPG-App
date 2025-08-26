@@ -24,6 +24,7 @@ struct DetailRootView: View {
             }
         }
     }
+    
     var selectedModel: ItemDataModel? {
         root.listControllable.listModel.selectedModel
     }

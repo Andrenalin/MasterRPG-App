@@ -8,7 +8,7 @@ import RealityKit
 
 struct SpaceViewer: View {
     let root: SpaceRootModel
-    let model: SpaceDataModel
+    let model: ItemDataModel
     
     var body: some View {
         #if os(visionOS)
@@ -53,7 +53,7 @@ struct SpaceVisionViewer: View {
 
 struct SpaceViewerOld: View {
     let root: SpaceRootModel
-    let model: SpaceDataModel
+    let model: ItemDataModel
 
     var animatableData: AnimatablePair<Float, Float> {
         get {

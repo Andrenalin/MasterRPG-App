@@ -23,21 +23,21 @@ struct SpaceEntity: IndexedEntity {
         )
     }
 
-    static let defaultQuery = PdfEntityQuery()
+    static let defaultQuery = SpaceEntityQuery()
 
     var id: UUID { model.id }
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name }
+    var name: String { model.name.wrappedValue }
 
     // Maps the description variable to the Spotlight indexing key `contentDescription`.
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.information }
+    var description: String { model.information.wrappedValue }
 
     var root: SpaceRootModel
-    var model: SpaceModel
+    var model: ItemDataCodableModel
     
-    init(root: SpaceRootModel, model: SpaceModel) {
+    init(root: SpaceRootModel, model: ItemDataCodableModel) {
         self.root = root
         self.model = model
     }
@@ -85,14 +85,14 @@ extension SpaceEntity: Transferable {
 }
 
 @MainActor
-struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
+struct SpaceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: SpaceRootModel
 
     func suggestedEntities() async throws -> [SpaceEntity] {
         let ids = root.itemController.allItemIds()
         var results: [SpaceEntity] = []
         for id in ids {
-            guard let model = await root.itemController.item(for: id) else { continue }
+            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
             let entity = SpaceEntity(root: root, model: model)
             results.append(entity)
         }
@@ -102,7 +102,7 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     func entities(for identifiers: [SpaceEntity.ID]) async throws -> [SpaceEntity] {
         var results: [SpaceEntity] = []
         for id in identifiers {
-            guard let model = await root.itemController.item(for: id) else { continue }
+            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
             let entity = SpaceEntity(root: root, model: model)
             results.append(entity)
         }
@@ -113,8 +113,8 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         let ids = root.itemController.allItemIds()
         var results: [SpaceEntity] = []
         for id in ids {
-            guard let model = await root.itemController.item(for: id) else { continue }
-            guard model.name.contains(matching) || model.information.contains(matching) else { continue }
+            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
             let entity = SpaceEntity(root: root, model: model)
             results.append(entity)
         }

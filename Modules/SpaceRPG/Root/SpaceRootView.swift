@@ -10,36 +10,41 @@ struct SpaceRootView: View {
 
     @Environment(SpaceRootModel.self) private var root
 
-    @SceneStorage("SpaceRoute") private var route: SpaceRoute?
+    var body: some View {
+        let _ = Self._printChanges()
+        
+        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
+            DetailRootView()
+        }
+        .overlay {
+            SaveView(root: root)
+        }
+    }
+}
+
+struct SaveView: View {
+    let root: SpaceRootModel
+    
+    @SceneStorage("SpaceRoute") private var route: ItemRootRoute?
     @SceneStorage("SpaceDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
     @SceneStorage("SpaceListModel") private var listMode: ListDisplayModel.ListMode = .list
-    
+
     var body: some View {
-        RootView(module: SpaceDataModel.typeId, listController: root.listController, displayMode: $displayMode, listMode: $listMode, withoutNavigation: withoutNavigation, route: $route) {
-            .detail($0)
-        } detailId: {
-            switch $0 {
-            case .detail(let itemId): itemId
-            }
-        } list: {
-            ListView()
-        }
-        .environment(root.listDisplayModel)
-        .environment(root.searchModel)
+        let _ = Self._printChanges()
+
+        Color.clear
+            .applyItemRootRoute(listControllable: root.listControllable, route: $route)
+            .syncListDisplay(listControllable: root.listControllable, displayMode: $displayMode, listMode: $listMode)
     }
 }
 
 #Preview("Embed", traits: .mockData) {
-    @Previewable @Query var models: [SpaceDataModel]
-
     ManagedNavigationStack {
         SpaceRootView(withoutNavigation: true)
     }
 }
 
 #Preview("Split", traits: .mockData) {
-    @Previewable @Query var models: [SpaceDataModel]
-
     SpaceRootView(withoutNavigation: false)
 }
 

@@ -3,12 +3,12 @@
 import CoreRPG
 import SwiftUI
 
-public struct ViewController {
-    weak var _root: SpaceRootModel?
-    var root: SpaceRootModel {
-        _root.unsafelyUnwrapped
-    }
+public struct ViewController: Sendable {
+    public let goupViewType: GroupViewType = .photo
+    public let thumbnailRowViewType: ThumbnailRowViewType = .photo
 }
+
+extension ViewController: ViewControllable {}
 
 // MARK: Viewer
 
@@ -16,6 +16,5 @@ public extension ViewController {
     @MainActor
     func linkWindow() -> some View {
         LinkRootView(isInspector: false)
-            .environment(root)
     }
 }

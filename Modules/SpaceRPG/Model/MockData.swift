@@ -16,12 +16,13 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: SpaceDataModel.self, TagDataModel.self,
+            for: ItemDataModel.self, TagDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
-        let model1 = SpaceDataModel(
+        let model1 = ItemDataModel(
             id: previewId,
+            module: .space,
             name: "Mega Nice",
             information: "A lot of information about this item",
             category: .adventure,
@@ -29,8 +30,9 @@ struct MockData: PreviewModifier {
         )
         container.mainContext.insert(model1)
 
-        let model2 = SpaceDataModel(
+        let model2 = ItemDataModel(
             id: previewId2,
+            module: .space,
             name: "Albert",
             information: "The is an example photo and the information is also set here",
             category: .character,
@@ -38,8 +40,9 @@ struct MockData: PreviewModifier {
         )
         container.mainContext.insert(model2)
 
-        let model3 = SpaceDataModel(
+        let model3 = ItemDataModel(
             id: previewId3,
+            module: .space,
             name: "Zauberer",
             information: "A photo of a wizard.",
             category: .adventure,
@@ -60,8 +63,9 @@ struct MockRootViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content.environment(root)
             .environment(root.searchModel)
-            .environment(root.listModel)
+            .environment(root.listController.listModel)
             .environment(root.listDisplayModel)
+            .environment(root.rootController)
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
             .environment(TabTitleModel())

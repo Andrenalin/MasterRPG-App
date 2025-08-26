@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import SwiftData
 import SwiftUI
 import CoreExternalRPG
 
@@ -14,7 +13,6 @@ public struct PhotoCommands: Commands {
     
     let root: PhotoRootModel
     let navigator: Navigator
-    @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
     public var body: some Commands {
         ModuleCommands(root: root, navigator: navigator, key: "8")
