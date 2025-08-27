@@ -13,6 +13,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import WeatherRPG
 import RPGAdventures
 import RPGDie
 import RPGAudios
@@ -44,6 +45,7 @@ public final class AppStore: Sendable {
     public var pdfRootModel: PdfRootModel
     public var photoRootModel: PhotoRootModel
     public var spaceRootModel: SpaceRootModel
+    public var weatherRootModel: WeatherRootModel
 
     var isNewUICode: Bool = true
 
@@ -51,18 +53,9 @@ public final class AppStore: Sendable {
     private static func initModelContainer() -> ModelContainer {
         let schema = Schema([
             //TagDataModel.self,
-            AudioDataModel.self,
-            AudioEntryDataModel.self,
-            DiceDataModel.self,
-            DiceEntryDataModel.self,
             DiceConfigDataModel.self,
             DieDataModel.self,
-            PdfDataModel.self,
-            PdfEntryDataModel.self,
-            PhotoDataModel.self,
-            PhotoEntryDataModel.self,
-            SpaceDataModel.self,
-            SpaceEntryDataModel.self,
+            PdfBookmarkDataModel.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
         do {
@@ -135,6 +128,7 @@ public final class AppStore: Sendable {
         self.pdfRootModel = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.photoRootModel = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.spaceRootModel = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.weatherRootModel = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext)
     }
 
     public func resetData() async {

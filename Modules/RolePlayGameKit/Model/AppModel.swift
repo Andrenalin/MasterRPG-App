@@ -11,6 +11,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import WeatherRPG
 
 extension Logger {
     private static let subsystem = Bundle.main.bundleIdentifier!
@@ -34,6 +35,7 @@ public final class AppModel: Sendable {
     public var pdfRoot: PdfRootModel
     public var photoRoot: PhotoRootModel
     public var spaceRoot: SpaceRootModel
+    public var weatherRoot: WeatherRootModel
 
     // Routing models
     public var navigator: Navigator
@@ -51,8 +53,9 @@ public final class AppModel: Sendable {
         self.pdfRoot = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.weatherRoot = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext)
 
-        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.3", executionDelay: 0.4, verbosity: .info))
+        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.4", executionDelay: 0.4, verbosity: .info))
     }
     
     @MainActor

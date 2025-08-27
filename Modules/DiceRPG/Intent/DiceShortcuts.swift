@@ -18,5 +18,5 @@ struct DiceShortcuts: AppShortcutsProvider {
     }
 }
 
-public struct PhotoFrameworkPackage: AppIntentsPackage { }
+public struct DiceFrameworkPackage: AppIntentsPackage { }
 

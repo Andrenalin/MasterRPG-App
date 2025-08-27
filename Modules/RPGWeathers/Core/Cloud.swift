@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-class Cloud {
-    enum Thickness: Int, CaseIterable, Hashable, Codable {
+public class Cloud {
+    public enum Thickness: Int, CaseIterable, Hashable, Codable {
         case none, thin, light, regular, thick, ultra
         
         var localizedTitle: LocalizedStringKey {
@@ -29,17 +29,17 @@ class Cloud {
         }
     }
 
-    var position: CGPoint = .zero
-    let imageNumber: Int
-    let speed = Double.random(in: 4 ... 12)
-    let scale: Double
+    public var position: CGPoint = .zero
+    public let imageNumber: Int
+    public let speed = Double.random(in: 4 ... 12)
+    public let scale: Double
 
-    init(imageNumber: Int, scale: Double) {
+    public init(imageNumber: Int, scale: Double) {
         self.imageNumber = imageNumber
         self.scale = scale
     }
 
-    func change(size: CGSize) {
+    public func change(size: CGSize) {
         let startX = Double.random(in: -(size.width + 100) ... (size.width + 100))
         let startY = Double.random(in: -50 ... (size.height / 5))
         position = CGPoint(x: startX, y: startY)

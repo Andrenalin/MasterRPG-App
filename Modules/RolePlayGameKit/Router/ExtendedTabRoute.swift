@@ -7,6 +7,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import WeatherRPG
 import SwiftUI
 
 public enum ExtendedTabRoute: String, Hashable, Codable {
@@ -100,7 +101,7 @@ struct ExtendedTabRouteDestionationView: View {
             case .tables:
                 AudioRootFactory.rootView(withoutNavigation: true)
             case .weathers:
-                RootListView(rootRoute: .weathers)
+                WeatherRootFactory.rootView(withoutNavigation: true)
             case .settings:
                 Text("Cooming soon")
         }

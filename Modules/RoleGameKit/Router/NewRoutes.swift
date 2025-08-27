@@ -8,12 +8,14 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import WeatherRPG
 
 import RPGAudios
 import RPGDie
 import RPGPdfs
 import RPGPhotos
 import RPGSpaces
+import RPGWeathers
 import SwiftUI
 
 struct NewAudioRoute: View {
@@ -169,6 +171,38 @@ struct NewSpaceRoute: View {
             } else {
                 SpaceFactory.rootView(for: appStore.spaceRoot, tabId: tabId)
                     .environment(appStore.spaceRoot)
+            }
+        }
+    }
+}
+
+struct NewWeatherRoute: View {
+    let appStore: AppStore
+    let tabId: UUID
+    let isExtended: Bool
+
+    @State private var cacheModel = CacheItemListModel()
+    @State private var deviceRotationModel = DeviceRotationModel()
+    @State private var tabTitleModel = TabTitleModel()
+
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        if appStore.isNewUICode {
+            WeatherRootFactory.rootView(withoutNavigation: isExtended)
+                .environment(deviceRotationModel)
+                .environment(tabTitleModel)
+                .task {
+                    try? await Task.sleep(for: .seconds(3))
+                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
+                }
+        } else {
+            if isExtended {
+                WeatherFactory.rootExtendedView(for: appStore.weatherRoot, tabId: tabId)
+                    .environment(appStore.weatherRoot)
+            } else {
+                WeatherFactory.rootView(for: appStore.weatherRoot, tabId: tabId)
+                    .environment(appStore.weatherRoot)
             }
         }
     }

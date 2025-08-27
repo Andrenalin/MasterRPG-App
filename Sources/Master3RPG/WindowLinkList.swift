@@ -9,6 +9,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import WeatherRPG
 
 struct WindowLinkList: Scene {
     let appModel: AppModel
@@ -113,6 +114,28 @@ struct WindowLinkList: Scene {
 #if os(macOS)
             .keyboardShortcut("9", modifiers: [.command, .option])
 #endif
+            
+            WindowGroup("\(NetworkModules.weather.title) Link", id: NetworkModules.weather.linkWindowId) {
+                appModel.weatherRoot.viewController.linkWindow()
+                    .environment(appModel.weatherRoot)
+                    .accentColor(.teal)
+                    .tint(.teal)
+                    .frame(minWidth: 350, minHeight: 400)
+                    .onDisappear {
+                        appModel.windowStateModel.openWindowState[.weather] = false
+                    }
+                    .handlesExternalEvents(preferring: [], allowing: [])
+#if os(macOS)
+                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+#endif
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .weather))
+#if os(macOS)
+            .keyboardShortcut("0", modifiers: [.command, .option])
+#endif
+
+
         }
         .defaultSize(CGSize(width: 400, height: 800))
     }

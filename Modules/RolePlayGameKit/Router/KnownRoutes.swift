@@ -3,8 +3,11 @@
 import CoreExternalRPG
 import CoreRPG
 import AudioRPG
+import DiceRPG
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import WeatherRPG
 import SwiftUI
 
 struct RootRouteRouter: NavigationRouteHandling {
@@ -23,13 +26,19 @@ struct RootRouteRouter: NavigationRouteHandling {
                 return [.send(RootRoute.audios), .send(AudioRoute.detail(itemId))]
             }
             return [.send(RootRoute.audios)]
-        case .dice(_, _):
+        case .dice(let itemId, _):
+            if let itemId {
+                return [.send(RootRoute.dice), .send(DiceRoute.detail(itemId))]
+            }
             return [.send(RootRoute.dice)]
         case .game:
             return [.send(RootRoute.game)]
         case .maps(_, _):
             return [.send(RootRoute.maps)]
-        case .pdfs(_, _):
+        case .pdfs(let itemId, _):
+            if let itemId {
+                return [.send(RootRoute.pdfs), .send(PdfRoute.detail(itemId))]
+            }
             return [.send(RootRoute.pdfs)]
         case .photos(let itemId, _):
             if let itemId {
@@ -49,7 +58,10 @@ struct RootRouteRouter: NavigationRouteHandling {
             return [.send(RootRoute.tables)]
         case .values(_, _):
             return [.send(RootRoute.values)]
-        case .weathers(_, _):
+        case .weathers(let itemId, _):
+            if let itemId {
+                return [.send(RootRoute.weathers), .send(WeatherRoute.detail(itemId))]
+            }
             return [.send(RootRoute.weathers)]
         @unknown default:
             fatalError()
@@ -75,14 +87,22 @@ struct RootFiveRouteRouter: NavigationRouteHandling {
                 routes.append(.send(AudioRoute.detail(itemId)))
             }
             return routes
-        case .dice(_, _):
-            return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.dice)]
+        case .dice(let itemId, _):
+            var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.dice)]
+            if let itemId {
+                routes.append(.send(DiceRoute.detail(itemId)))
+            }
+            return routes
         case .game:
             return [.send(RootRoute.game)]
         case .maps(_, _):
             return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.maps)]
-        case .pdfs(_, _):
-            return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.pdfs)]
+        case .pdfs(let itemId, _):
+            var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.pdfs)]
+            if let itemId {
+                routes.append(.send(PdfRoute.detail(itemId)))
+            }
+            return routes
         case .photos(let itemId, _):
             var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.photos)]
             if let itemId {
@@ -103,8 +123,12 @@ struct RootFiveRouteRouter: NavigationRouteHandling {
             return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.tables)]
         case .values(_, _):
             return [.send(RootRoute.values)]
-        case .weathers(_, _):
-            return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.weathers)]
+        case .weathers(let itemId, _):
+            var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.weathers)]
+            if let itemId {
+                routes.append(.send(WeatherRoute.detail(itemId)))
+            }
+            return routes
         @unknown default:
             fatalError()
         }

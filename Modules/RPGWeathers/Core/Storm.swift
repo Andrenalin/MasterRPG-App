@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-class Storm {
-    enum Contents: Int, CaseIterable, Hashable, Codable {
+public class Storm {
+    public enum Contents: Int, CaseIterable, Hashable, Codable {
         case none, rain, snow
         
         var localizedTitle: LocalizedStringKey {
@@ -24,10 +24,10 @@ class Storm {
     }
 
     var drops = [StormDrop]()
-    var lastUpdate = Date.now
-    var image: Image
+    public var lastUpdate = Date.now
+    public var image: Image
 
-    init(type: Contents, direction: Angle, strength: Int) {
+    public init(type: Contents, direction: Angle, strength: Int) {
         switch type {
         case .snow:
             image = Image.bundleImage(name: "snow")
@@ -40,7 +40,7 @@ class Storm {
         }
     }
 
-    func update(date: Date, size: CGSize) {
+    public func update(date: Date, size: CGSize) {
         let delta = date.timeIntervalSince1970 - lastUpdate.timeIntervalSince1970
         let divisor = size.height / size.width
 

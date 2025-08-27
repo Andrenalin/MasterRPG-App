@@ -55,6 +55,7 @@ public struct TabNavigation: View {
         .environment(appStore.pdfRootModel)
         .environment(appStore.photoRootModel)
         .environment(appStore.spaceRootModel)
+        .environment(appStore.weatherRootModel)
         .onNavigationOpenURL(RootURLHandler(appStore: appStore))
         .focusedSceneValue(\.selectedModule, tabSelectedModule)
     }

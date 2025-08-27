@@ -18,7 +18,7 @@ public struct ConverterController {
                 EntryDataModel(id: entry.id, index: index, parentId: item.id, childId: entry.spaceId, item: nil)
             }
             modelContext.insert(
-                ItemDataModel(id: item.id, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, url: item.fileUrl?.rawUrl, displayState: item.displayState, entries: entries)
+                ItemDataModel(id: item.id, module: .space, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure, tags: item.tags, url: item.fileUrl?.rawUrl, displayState: item.displayState, entries: entries)
             )
         }
     }

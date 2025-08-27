@@ -5,8 +5,8 @@ import Foundation
 import Observation
 
 @Observable
-final class WeatherModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String, tags: [String], category: ItemListCategory = .scenario, displayState: Int = 0, weatherUpdate: UUID = UUID(), time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?) {
+public final class WeatherModel: Identifiable, @unchecked Sendable {
+    public init(id: UUID, name: String, description: String, tags: [String], category: ItemListCategory = .scenario, displayState: Int = 0, weatherUpdate: UUID = UUID(), time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -44,7 +44,7 @@ final class WeatherModel: Identifiable, @unchecked Sendable {
         self.photoId = photoId
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<WeatherModel.CodingKeys> = try decoder.container(keyedBy: WeatherModel.CodingKeys.self)
 
         self._id = try container.decode(UUID.self, forKey: WeatherModel.CodingKeys._id)
@@ -65,49 +65,49 @@ final class WeatherModel: Identifiable, @unchecked Sendable {
         self._photoId = try container.decodeIfPresent(UUID.self, forKey: WeatherModel.CodingKeys._photoId)
     }
 
-    var id: UUID
-    var name: String {
+    public var id: UUID
+    public var name: String {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
     var name_: CRDT<String>
 
-    var description: String {
+    public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
     var description_: CRDT<String>
 
-    var tags: [String] {
+    public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
     var tags_: CRDT<[String]>
 
-    var category: ItemListCategory {
+    public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
     var category_: CRDT<ItemListCategory>
 
-    var displayState: Int
+    public var displayState: Int
 
-    var entries: [EmtpyEntryViewModel] = []
+    public var entries: [EmtpyEntryViewModel] = []
 
     var weatherUpdate_: CRDT<UUID>
 
-    var time: Double
-    var cloudThickness: Cloud.Thickness
+    public var time: Double
+    public var cloudThickness: Cloud.Thickness
 
-    var stormType: Storm.Contents
-    var rainAngle: Double
-    var rainIntensity: Double
+    public var stormType: Storm.Contents
+    public var rainAngle: Double
+    public var rainIntensity: Double
 
-    var lightningFrequency: Double
-    var lightningMaxBolts: Double
-    var lightningForkProbability: Double
+    public var lightningFrequency: Double
+    public var lightningMaxBolts: Double
+    public var lightningForkProbability: Double
 
-    var photoId: UUID?
+    public var photoId: UUID?
 }
 
 extension WeatherModel {
@@ -122,14 +122,14 @@ extension WeatherModel {
 }
 
 extension WeatherModel: Comparable {
-    static func < (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
+    public static func < (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
         lhs.name < rhs.name
     }
 }
 
 extension WeatherModel: ItemLinkRegistable {
     @MainActor
-    var linkRegisterModels: [LinkRegisterModel] {
+    public var linkRegisterModels: [LinkRegisterModel] {
         let source = ItemRowModel(itemId: id, typeId: .weather)
         if let photoId {
             return [LinkRegisterModel(source: source, destination: ItemRowModel(itemId: photoId, typeId: .photo))]
@@ -139,7 +139,7 @@ extension WeatherModel: ItemLinkRegistable {
 }
 
 extension WeatherModel: ItemDiffComparable {
-    func merge(_ other: WeatherModel) -> WeatherModel {
+    public func merge(_ other: WeatherModel) -> WeatherModel {
         let merged = weatherUpdate_.merged(other: other.weatherUpdate_)
         let shouldUpdate = merged.wrappedValue == weatherUpdate_.wrappedValue
         return WeatherModel(
@@ -162,7 +162,7 @@ extension WeatherModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: WeatherModel) -> Bool {
+    public func isSame(_ other: WeatherModel) -> Bool {
         name == other.name &&
         description == other.description &&
         tags == other.tags &&
@@ -181,34 +181,34 @@ extension WeatherModel: ItemDiffComparable {
 }
 
 extension WeatherModel: ItemDuplicatable {
-    func duplicate() -> WeatherModel {
+    public func duplicate() -> WeatherModel {
         let copyName = duplicateName(from: name)
         return WeatherModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId)
     }
 }
 
 extension WeatherModel: ItemDataAccessable {
-    typealias Entry = EmtpyEntryViewModel
+    public typealias Entry = EmtpyEntryViewModel
 
-    static var empty: WeatherModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> WeatherModel {
+    public static var empty: WeatherModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> WeatherModel {
         WeatherModel(id: id, name: "", description: "", tags: [], time: 0.0, cloudThickness: .none, stormType: .none, rainAngle: 0, rainIntensity: 0, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
     }
-    static let typeId: NetworkModules = .weather
+    public static let typeId: NetworkModules = .weather
 
-    func copy() -> WeatherModel {
+    public func copy() -> WeatherModel {
         WeatherModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, weatherUpdate: weatherUpdate_, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId)
     }
 
-    func filter(_ filter: String) -> Bool {
+    public func filter(_ filter: String) -> Bool {
         (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
     }
 
-    func isEqual(other: WeatherModel) -> Bool {
+    public func isEqual(other: WeatherModel) -> Bool {
         self == other
     }
 
-    var isGroupHiddenToggle: Bool {
+    public var isGroupHiddenToggle: Bool {
         get { isGroupHidden }
         set {
             if newValue {
@@ -219,7 +219,7 @@ extension WeatherModel: ItemDataAccessable {
         }
     }
     
-    func replace(with model: WeatherModel) -> Bool {
+    public func replace(with model: WeatherModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_
@@ -239,22 +239,22 @@ extension WeatherModel: ItemDataAccessable {
         return true
     }
 
-    subscript(id: UUID) -> EmtpyEntryViewModel {
+    public subscript(id: UUID) -> EmtpyEntryViewModel {
         get { .empty }
         set {}
     }
 
-    func urlName(entryId: UUID) -> String {
+    public func urlName(entryId: UUID) -> String {
         urlName()
     }
 
-    func url(linkNumber: Int, entryId: UUID) -> String {
+    public func url(linkNumber: Int, entryId: UUID) -> String {
         url(linkNumber: 0)
     }
 }
 
 extension WeatherModel: Codable {
-    enum CodingKeys: CodingKey {
+    public enum CodingKeys: CodingKey {
         case _id
         case _name_
         case _description_
@@ -273,7 +273,7 @@ extension WeatherModel: Codable {
         case _photoId
     }
 
-    final func encode(to encoder: Encoder) throws {
+    public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<WeatherModel.CodingKeys> = encoder.container(keyedBy: WeatherModel.CodingKeys.self)
 
         try container.encode(self._id, forKey: WeatherModel.CodingKeys._id)
@@ -296,11 +296,11 @@ extension WeatherModel: Codable {
 }
 
 extension WeatherModel: Equatable, Hashable {
-    static func == (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
+    public static func == (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
         lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     }
 
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

@@ -8,6 +8,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import WeatherRPG
 import SwiftUI
 
 struct MenuCommandList: Commands {
@@ -31,7 +32,7 @@ struct MenuCommandList: Commands {
                 SpaceCommands(root: appModel.spaceRoot, navigator: appModel.navigator)
             }
 
-            //        WeatherCommands(root: appStore.weatherRoot)
+            WeatherCommands(root: appModel.weatherRoot, navigator: appModel.navigator)
         }
     }
 }

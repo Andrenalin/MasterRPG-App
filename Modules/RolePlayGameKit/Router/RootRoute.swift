@@ -7,6 +7,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import WeatherRPG
 import SwiftUI
 
 public enum RootRoute: Hashable, Codable {
@@ -158,7 +159,7 @@ struct RouteRouteDestionationView: View {
         case .values:
             RootListView(rootRoute: route)
         case .weathers:
-            RootListView(rootRoute: route)
+            WeatherRootFactory.rootView(withoutNavigation: false)
         case .search:
             RootListView(rootRoute: route)
         }

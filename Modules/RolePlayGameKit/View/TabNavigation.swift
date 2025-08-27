@@ -103,6 +103,8 @@ private extension TabNavigation {
                     .customizationID("Tab.\(NetworkModules.value.token)")
                 pageTab(for: .maps)
                     .customizationID("Tab.\(NetworkModules.map.token)")
+                pageTab(for: .weathers)
+                    .customizationID("Tab.\(NetworkModules.weather.token)")
             } header: {
                 Text("Library", bundle: .module)
             }

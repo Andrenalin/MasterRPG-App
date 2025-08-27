@@ -17,6 +17,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
     // collections
     case album = 7000
     case bookshelf = 7001
+    case collection = 7004
     case diceBag = 7003
     case playlist = 3001
     case models = 7002
@@ -78,6 +79,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
 
             case .album: "Album"
             case .bookshelf: "Bookshelf"
+            case .collection: "Collection"
             case .diceBag: "Dice Bag"
             case .models: "Models"
             case .playlist: "Playlist"
@@ -120,9 +122,10 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
             case .drop: "square.and.arrow.down.on.square"
             case .folder: "folder"
 
-            case .album:"rectangle.stack"
-            case .bookshelf:"books.vertical"
-            case .diceBag:"bag"
+            case .album: "rectangle.stack"
+            case .bookshelf: "books.vertical"
+            case .collection: "tray.2"
+            case .diceBag: "bag"
             case .models: "square.3.layers.3d.down.right"
             case .playlist:"play.square.stack"
 
