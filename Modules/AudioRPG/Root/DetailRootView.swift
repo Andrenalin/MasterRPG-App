@@ -21,7 +21,7 @@ struct DetailRootView: View {
         } editor: {
             if let selectedModel {
                 fileAndPlayerView(model: selectedModel)
-            }
+            }            
         }
     }
 }

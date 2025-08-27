@@ -44,15 +44,16 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
 
             initialFileImporterView
 
-            VStack(spacing: 0) {
+            HeaderFooterContentScrollView {
                 headerView
-
+            } content: {
                 contentView
-                    .frame(maxHeight: .infinity, alignment: .bottom)
-                
+            } footer: {
                 bottomView
+            } background: {
+                Rectangle()
+                    .fill(model.module.color.gradient)
             }
-            .frame(maxHeight: .infinity, alignment: .bottom)
         }
         .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -141,16 +142,9 @@ private extension ItemDetailEditorView {
                     .padding()
             }
         }
-        .background {
-            Rectangle()
-            //UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 32, bottomTrailingRadius: 32, topTrailingRadius: 0, style: .continuous)
-                .fill(model.module.color.gradient)
-                .backgroundExtensionEffect()
-                .overlay(alignment: .top) {
-                    navigationHeader.font(.title)
-                        .padding(.top, 64)
-                }
-                .ignoresSafeArea(edges: .top)
+        .overlay(alignment: .top) {
+            navigationHeader.font(.title)
+                .padding(.top, -64)
         }
     }
     
@@ -193,30 +187,27 @@ private extension ItemDetailEditorView {
             .fixedSize(horizontal: false, vertical: true)
             .environment(selection)
             .transition(.move(edge: .bottom))
-            .background {
-                Rectangle()
-                    .fill(model.module.color.gradient)
-                    .ignoresSafeArea(edges: .bottom)
-            }
         }
     }
 
     @ViewBuilder
     var contentView: some View {
-        VStack(spacing: 8) {
-            if moveDetails {
-                ItemDetailOverlayView(model: model)
-                    .padding()
+            VStack(spacing: 8) {
+                Spacer()
+                
+                if moveDetails {
+                    ItemDetailOverlayView(model: model)
+                        .padding()
+                }
+                
+                if model.specialCategory {
+                    ListRootView(root: root, parentModel: model)
+                } else {
+                    editor
+                }
             }
-
-            if model.specialCategory {
-                ListRootView(root: root, parentModel: model)
-            } else {
-                editor
-            }
-        }
-        .opacity(hasFile || model.specialCategory ? 1 : 0)
-        .transition(.scale)
+            .opacity(hasFile || model.specialCategory ? 1 : 0)
+            .transition(.scale)
     }
 
     func updateFile(url: URL) {
