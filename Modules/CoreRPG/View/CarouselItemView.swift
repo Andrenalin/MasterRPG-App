@@ -53,14 +53,20 @@ public struct CarouselItemView<Content: View>: View {
                 Image(systemName: "square.and.arrow.down")
                     .imageScale(.large)
             }
+            .padding(.horizontal, 12)
+            .frame(height: 128)
         } dropAction: { links in
             addLinks(links: links)
         }
-        .padding(.horizontal, 12)
-        .frame(height: 128)
-        .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.accentColor.secondary, lineWidth: 2)
+        .background {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.accentColor.tertiary)
         }
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.accentColor.secondary, lineWidth: 2)
+        }
+        .padding(1)
     }
     
     private func addLinks(links: [LinkData]) -> Bool {

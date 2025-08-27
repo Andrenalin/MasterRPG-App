@@ -8,7 +8,7 @@ struct DetailRootView: View {
     @Environment(AudioRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.DetailRootView {
+        CoreRPG.DetailRootView(moveDetails: true) {
 #if os(visionOS)
             AudioPlayerBarView()
                 .padding()

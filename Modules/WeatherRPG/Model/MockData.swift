@@ -16,7 +16,7 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: ItemDataModel.self, TagDataModel.self,
+            for: WeatherDataModel.self, ItemDataModel.self, TagDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
@@ -29,6 +29,8 @@ struct MockData: PreviewModifier {
             tags: ["Example", "Title", "Ouside"]
         )
         container.mainContext.insert(model1)
+        let weather1 = WeatherDataModel(itemId: previewId)
+        container.mainContext.insert(weather1)
 
         let model2 = ItemDataModel(
             id: previewId2,
@@ -39,6 +41,8 @@ struct MockData: PreviewModifier {
             tags: ["Player", "Mega", "Gnome"]
         )
         container.mainContext.insert(model2)
+        let weather2 = WeatherDataModel(itemId: previewId2)
+        container.mainContext.insert(weather2)
 
         let model3 = ItemDataModel(
             id: previewId3,
@@ -49,6 +53,8 @@ struct MockData: PreviewModifier {
             tags: ["NPC", "Wizward", "Schwarzmagier"]
         )
         container.mainContext.insert(model3)
+        let weather3 = WeatherDataModel(itemId: previewId)
+        container.mainContext.insert(weather3)
         return container
     }
 }

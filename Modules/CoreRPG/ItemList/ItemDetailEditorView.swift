@@ -6,9 +6,10 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
-    init(root: any ItemRootControllable, model: ItemDataModel, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
+    init(root: any ItemRootControllable, model: ItemDataModel, moveDetails: Bool, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
         self.root = root
         self.model = model
+        self.moveDetails = moveDetails
         self.cacheItemListModel = CacheItemListModel()
         self.header = header()
         self.editor = editor()
@@ -17,6 +18,7 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
 
     let root: any ItemRootControllable
     let model: ItemDataModel
+    let moveDetails: Bool
     let cacheItemListModel: CacheItemListModel
     let header: Header
     let editor: Editor
@@ -39,15 +41,15 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
 
         ZStack(alignment: .top) {
             Color.clear
-                                    
+
             initialFileImporterView
-            
-            VStack {
+
+            VStack(spacing: 0) {
                 headerView
 
                 contentView
                     .frame(maxHeight: .infinity, alignment: .bottom)
-
+                
                 bottomView
             }
             .frame(maxHeight: .infinity, alignment: .bottom)
@@ -126,16 +128,29 @@ private extension ItemDetailEditorView {
         model.url != nil || fileTypes.isEmpty
     }
 
+    var navigationHeader: Text {
+        Text("\(Image(systemName: root.module.icon)) \(root.module.title)")
+    }
+    
     var headerView: some View {
-        VStack {
+        ZStack(alignment: .bottom) {
             header
+              
+            if !moveDetails {
+                ItemDetailOverlayView(model: model)
+                    .padding()
+            }
         }
-        .frame(height: 120)
         .background {
-            UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 32, bottomTrailingRadius: 32, topTrailingRadius: 0, style: .continuous)
+            Rectangle()
+            //UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 32, bottomTrailingRadius: 32, topTrailingRadius: 0, style: .continuous)
                 .fill(model.module.color.gradient)
-                .ignoresSafeArea(edges: .top)
                 .backgroundExtensionEffect()
+                .overlay(alignment: .top) {
+                    navigationHeader.font(.title)
+                        .padding(.top, 64)
+                }
+                .ignoresSafeArea(edges: .top)
         }
     }
     
@@ -176,16 +191,23 @@ private extension ItemDetailEditorView {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 2)
             .environment(selection)
             .transition(.move(edge: .bottom))
+            .background {
+                Rectangle()
+                    .fill(model.module.color.gradient)
+                    .ignoresSafeArea(edges: .bottom)
+            }
         }
     }
 
     @ViewBuilder
     var contentView: some View {
         VStack(spacing: 8) {
-            ItemDetailOverlayView(model: model)
+            if moveDetails {
+                ItemDetailOverlayView(model: model)
+                    .padding()
+            }
 
             if model.specialCategory {
                 ListRootView(root: root, parentModel: model)
@@ -193,7 +215,6 @@ private extension ItemDetailEditorView {
                 editor
             }
         }
-        .padding()
         .opacity(hasFile || model.specialCategory ? 1 : 0)
         .transition(.scale)
     }

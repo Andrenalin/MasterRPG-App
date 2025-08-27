@@ -16,3 +16,19 @@ extension ItemController: ItemControllable {
         return try encoder.encode(model)
     }
 }
+
+extension ItemController {
+    @MainActor func model(for itemId: UUID?) -> WeatherDataModel? {
+        guard let itemId else { return nil }
+        let predicate = #Predicate<WeatherDataModel> { $0.itemId == itemId }
+        let fetchDesc = FetchDescriptor<WeatherDataModel>(predicate: predicate)
+        let models: [WeatherDataModel] = (try? container.mainContext.fetch(fetchDesc)) ?? []
+        guard let model = models.first else {
+            let weather = WeatherDataModel(itemId: itemId)
+            container.mainContext.insert(weather)
+            try? container.mainContext.save()
+            return weather
+        }
+        return model
+    }
+}

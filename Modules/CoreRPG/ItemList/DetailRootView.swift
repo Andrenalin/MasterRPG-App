@@ -4,12 +4,14 @@ import SwiftData
 import SwiftUI
 
 public struct DetailRootView<Header: View, Editor: View, Inspector: View>: View {
-    public init(@ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
+    public init(moveDetails: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
+        self.moveDetails = moveDetails
         self.header = header()
         self.editor = editor()
         self.inspector = inspector()
     }
     
+    let moveDetails: Bool
     let header: Header
     let editor: Editor
     let inspector: Inspector
@@ -27,7 +29,7 @@ public struct DetailRootView<Header: View, Editor: View, Inspector: View>: View 
         let _ = Self._printChanges()
         
         if let selectedModel {
-            ItemDetailEditorView(root: root, model: selectedModel) {
+            ItemDetailEditorView(root: root, model: selectedModel, moveDetails: moveDetails) {
                 header
             } editor: {
                 editor

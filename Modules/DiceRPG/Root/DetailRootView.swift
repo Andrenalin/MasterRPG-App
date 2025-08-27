@@ -8,7 +8,7 @@ struct DetailRootView: View {
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.DetailRootView {
+        CoreRPG.DetailRootView(moveDetails: true) {
             if let model {
                 DiceViewer(model: model, isEditor: false)
             }

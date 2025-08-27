@@ -10,25 +10,48 @@ struct DetailRootView: View {
     var body: some View {
         CoreRPG.DetailRootView {
         } editor: {
-            if let model = selectedModel {
-                if !model.specialCategory {
-                    // OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
+            if let model {
+                if let weatherModel {
+                    if !model.specialCategory {
+                        // OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
+                    }
+#if os(macOS)
+                    ScrollView {
+                        detailEditorView(model: weatherModel)
+                    }
+#else
+                    detailEditorView(model: weatherModel)
+                        //.padding(-20)
+#endif
                 }
             }
         }
     }
     
-    var selectedModel: ItemDataModel? {
+    var model: ItemDataModel? {
         root.listControllable.listModel.selectedModel
     }
 
+    var weatherModel: WeatherDataModel? {
+        root.itemController.model(for: model?.id)
+    }
+
+    func detailEditorView(model: WeatherDataModel) -> some View {
+        Form {
+            WeatherEditor(model: model)
+        }
+    }
 }
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [ItemDataModel]
     @Previewable @Environment(WeatherRootModel.self) var root
     
-    DetailRootView().onAppear {
+    NavigationStack {
+        DetailRootView()
+    }
+    .onAppear {
+        root.listControllable.update(items: models)
         root.listControllable.listModel.set(selectedItemId: models.first!.id)
     }
 }
