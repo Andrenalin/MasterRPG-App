@@ -174,4 +174,11 @@ public extension WeatherRoot {
         editController.model.photoId = photoId
         editController.save(with: String(localized: "Create new").localizedString)
     }
+    
+    @MainActor
+    func listItems() -> [WeatherModel] {
+        itemController.itemDataModel.items.map {
+            itemController.itemOrEmpty(for: $0)
+        }
+    }
 }

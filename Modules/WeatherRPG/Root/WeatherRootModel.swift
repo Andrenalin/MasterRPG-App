@@ -9,7 +9,7 @@ public final class WeatherRootModel {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         
-        let module: NetworkModules = .photo
+        let module: NetworkModules = .weather
         self.module = module
         
         let listDisplayModel = ListDisplayModel()

@@ -215,8 +215,7 @@ struct RouteRouteDestionationView: View {
             ValueFactory.rootView(for: appStore.valueRoot, tabId: tabId)
                 .environment(appStore.valueRoot)
         case .weathers(let tabId):
-            WeatherFactory.rootView(for: appStore.weatherRoot, tabId: tabId)
-                .environment(appStore.weatherRoot)
+            NewWeatherRoute(appStore: appStore, tabId: tabId, isExtended: false)
         }
     }
 }

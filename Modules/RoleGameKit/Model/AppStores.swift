@@ -49,22 +49,6 @@ public final class AppStore: Sendable {
 
     var isNewUICode: Bool = true
 
-    @MainActor
-    private static func initModelContainer() -> ModelContainer {
-        let schema = Schema([
-            //TagDataModel.self,
-            DiceConfigDataModel.self,
-            DieDataModel.self,
-            PdfBookmarkDataModel.self
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }
-
     // Other Models
     public let windowStateModel: WindowStateModel
     public let optionKeyDownModel: OptionKeyDownModel
@@ -119,8 +103,8 @@ public final class AppStore: Sendable {
         self.selectionSheetLinkModel = SelectionSheetLinkModel()
         self.deviceRotationModel = DeviceRotationModel()
         self.inAppController = InAppController(model: inAppModel)
-        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.0", executionDelay: 0.4, verbosity: .info))
-        let modelContainer = Self.initModelContainer()
+        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.1", executionDelay: 0.4, verbosity: .info))
+        let modelContainer = NewSwiftDatabaseInit.initModelContainer()
         self.modelContainer = modelContainer
         
         self.audioRootModel = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)

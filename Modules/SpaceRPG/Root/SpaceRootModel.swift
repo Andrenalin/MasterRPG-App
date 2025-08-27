@@ -9,7 +9,7 @@ public final class SpaceRootModel {
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         
-        let module: NetworkModules = .photo
+        let module: NetworkModules = .space
         self.module = module
         
         let listDisplayModel = ListDisplayModel()

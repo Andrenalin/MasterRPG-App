@@ -107,8 +107,7 @@ struct ExtendedTabRouteDestionationView: View {
                 TableFactory.rootExtendedView(for: appStore.tableRoot, tabId: tabId)
                     .environment(appStore.tableRoot)
             case .weathers:
-                WeatherFactory.rootExtendedView(for: appStore.weatherRoot, tabId: tabId)
-                    .environment(appStore.weatherRoot)
+                NewWeatherRoute(appStore: appStore, tabId: tabId, isExtended: true)
         }
     }
 }
