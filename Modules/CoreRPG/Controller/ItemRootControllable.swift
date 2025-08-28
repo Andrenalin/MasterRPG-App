@@ -10,6 +10,8 @@ public protocol ItemRootControllable {
     var searchModel: SearchModel { get }
     
     var currentSelectedItemId: UUID? { get }
+    var singleSelectionModel: SingleSelectionModel { get }
+    var multiSelectionModel: MultiSelectionModel { get}
 
     var cacheControllable: (any ImageCacheControllable)? { get }
     var editControllable: any EditControllable { get }
@@ -21,10 +23,12 @@ public protocol ItemRootControllable {
 
 @MainActor @Observable
 public final class ItemRootController: ItemRootControllable {
-    public init(module: NetworkModules, listDisplayModel: ListDisplayModel, searchModel: SearchModel, cacheControllable: (any ImageCacheControllable)?, editControllable: any EditControllable, itemControllable: any ItemControllable, listControllable: any ListControllable, listLinkControllable: any ListControllable, viewControllable: any ViewControllable) {
+    public init(module: NetworkModules, listDisplayModel: ListDisplayModel, searchModel: SearchModel, singleSelectionModel: SingleSelectionModel, multiSelectionModel: MultiSelectionModel, cacheControllable: (any ImageCacheControllable)?, editControllable: any EditControllable, itemControllable: any ItemControllable, listControllable: any ListControllable, listLinkControllable: any ListControllable, viewControllable: any ViewControllable) {
         self.module = module
         self.listDisplayModel = listDisplayModel
         self.searchModel = searchModel
+        self.singleSelectionModel = singleSelectionModel
+        self.multiSelectionModel = multiSelectionModel
         self.cacheControllable = cacheControllable
         self.editControllable = editControllable
         self.itemControllable = itemControllable
@@ -37,6 +41,8 @@ public final class ItemRootController: ItemRootControllable {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     
+    public var singleSelectionModel: SingleSelectionModel
+    public var multiSelectionModel: MultiSelectionModel
     public var currentSelectedItemId: UUID? {
         listControllable.listModel(for: nil).selectedItemId
     }

@@ -3,6 +3,7 @@
 import CoreRPG
 import SwiftData
 import SwiftUI
+import PhotoRPG
 
 struct DetailRootView: View {
     @Environment(WeatherRootModel.self) private var root
@@ -21,10 +22,15 @@ struct DetailRootView: View {
                     }
 #else
                     detailEditorView(model: weatherModel)
-                        //.padding(-20)
 #endif
                 }
             }
+        } inspector: {
+            root.photoRoot.viewController.linkWindow(isInspector: true)
+        }
+        .navigationDestination(for: SelectionPhotoRoute.self) { route in
+            route
+                .environment(root.editController.selectionPhoto)
         }
     }
     

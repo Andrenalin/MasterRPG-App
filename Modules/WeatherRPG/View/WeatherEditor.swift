@@ -11,6 +11,18 @@ struct WeatherEditor: View {
     
     var body: some View {
         Section {
+            root.viewController.photoSelection(root: root, selectionModel: root.editController.selectionPhoto)
+        } header: {
+#if os(macOS)
+            Divider()
+                .padding(.top)
+#endif
+            Text("Photo", bundle: .module)
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+
+        Section {
             timeEditorView
             
             cloudsEditorView
@@ -56,6 +68,32 @@ struct WeatherEditor: View {
 }
 
 private extension WeatherEditor {
+    @ViewBuilder
+    var dropItemView: some View {
+        DropItemArea {
+            VStack {
+                Text("Drop \(root.module.title)", bundle: .module)
+
+                Image(systemName: "square.and.arrow.down")
+                    .imageScale(.large)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 128)
+        } dropAction: { links in
+            //addLinks(links: links)
+            return true
+        }
+        .background {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.accentColor.tertiary)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.accentColor.secondary, lineWidth: 2)
+        }
+        .padding(1)
+    }
+
     @ViewBuilder
     var timeEditorView: some View {
         @Bindable var model = model

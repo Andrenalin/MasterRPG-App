@@ -19,7 +19,7 @@ public struct DropItemArea<Content: View>: View {
             .padding(4)
             .foregroundStyle(dropForegroundColor)
             .background {
-                RoundedRectangle(cornerRadius: 8).fill(dropBackgroundColor)
+                RoundedRectangle(cornerRadius: 24, style: .continuous).fill(dropBackgroundColor)
             }
 #if !os(tvOS)
             .dropDestination(for: LinkData.self) { items, _ in

@@ -47,13 +47,14 @@ public final class AppModel: Sendable {
 
         self.deviceRotationModel = DeviceRotationModel()
         self.windowStateModel = WindowStateModel()
-        
+                
         self.audioRoot = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.diceRoot = DiceRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.pdfRoot = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        self.photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        let photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.photoRoot = photoRoot
         self.spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        self.weatherRoot = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.weatherRoot = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRoot)
 
         self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.4", executionDelay: 0.4, verbosity: .info))
     }

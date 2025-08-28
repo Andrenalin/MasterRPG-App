@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import PhotoRPG
 import SwiftUI
 
 public struct ViewController: Sendable {
@@ -10,11 +11,20 @@ public struct ViewController: Sendable {
 
 extension ViewController: ViewControllable {}
 
+// MARK: External Views
+
+extension ViewController {
+    @MainActor
+    func photoSelection(root: WeatherRootModel, selectionModel: SingleSelectionModel) -> some View {
+        root.photoRoot.viewController.selectionView(root: root.photoRoot, model: selectionModel)
+    }
+}
+
 // MARK: Viewer
 
 public extension ViewController {
     @MainActor
     func linkWindow() -> some View {
-        LinkRootView(isInspector: false)
+        LinkRootView(type: .window)
     }
 }

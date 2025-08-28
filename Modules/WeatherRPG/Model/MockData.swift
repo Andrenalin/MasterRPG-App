@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import PhotoRPG
 import SwiftUI
 import SwiftData
 
@@ -61,7 +62,7 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        self._root = State(wrappedValue: WeatherRootModel(modelContext: modelContext))
+        self._root = State(wrappedValue: WeatherRootModel(modelContext: modelContext, photoRoot: PhotoRootFactory.rootModel(modelContext: modelContext)))
     }
 
     @State private var root: WeatherRootModel
@@ -75,6 +76,7 @@ struct MockRootViewModifier: ViewModifier {
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
             .environment(TabTitleModel())
+            .environment(root.photoRoot)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

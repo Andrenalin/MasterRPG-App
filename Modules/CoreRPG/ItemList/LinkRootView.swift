@@ -3,22 +3,29 @@
 import SwiftData
 import SwiftUI
 
+public enum LinkRootType {
+    case window
+    case inspector
+    case singleSelection
+    case mulitpleSelection
+}
+
 public struct LinkRootView: View {
-    public init(root: any ItemRootControllable, isInspector: Bool) {
+    public init(root: any ItemRootControllable, type: LinkRootType) {
         self.root = root
-        self.isInspector = isInspector
+        self.type = type
         let predicate = #Predicate<ItemDataModel> { $0.displayState == 0 }
         let query = Query(filter: predicate, sort: \ItemDataModel.name, animation: .smooth)
         self._items = query
     }
     
     let root: any ItemRootControllable
-    let isInspector: Bool
+    let type: LinkRootType
     
     @Query private var items: [ItemDataModel]
     
     public var body: some View {
-        LinkItemListView(root: root, parentModel: nil, isInspector: isInspector)
+        LinkItemListView(root: root, type: type, parentModel: nil)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)        
             .environment(DeviceRotationModel())

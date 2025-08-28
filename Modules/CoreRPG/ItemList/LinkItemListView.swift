@@ -5,14 +5,14 @@ import SwiftData
 import SwiftUI
 
 public struct LinkItemListView: View {
-    init(root: any ItemRootControllable, parentModel: ItemDataModel?, isInspector: Bool) {
+    init(root: any ItemRootControllable, type: LinkRootType, parentModel: ItemDataModel?) {
         self.root = root
-        self.isInspector = isInspector
-        //root.listLinkControllable.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
+        self.type = type
+        root.listLinkControllable.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
     }
 
     let root: any ItemRootControllable
-    let isInspector: Bool
+    let type: LinkRootType
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
@@ -22,7 +22,7 @@ public struct LinkItemListView: View {
             @Bindable var searchModel = root.listLinkControllable.searchModel
             @Bindable var inspectorDisplayModel = root.listLinkControllable.listDisplayModel
             
-            if isInspector {
+            if type == .inspector {
                 Picker(selection: $inspectorDisplayModel.listMode) {
                     ForEach(ListDisplayModel.ListMode.allCases) { mode in
                         Text(mode.title)
@@ -52,7 +52,7 @@ public struct LinkItemListView: View {
                         cacheItemListModel.reset(search: searchModel.searchText)
                     }
                 }
-                .applyIf(!isInspector) { content in
+                .applyIf(type != .inspector) { content in
                     content
                         .toolbar {
                             ToolbarItem(placement: .secondaryAction) {
@@ -115,8 +115,16 @@ private extension LinkItemListView {
                         ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
                     }
                 }
-                
+#if !os(tvOS)
+                .draggable(LinkData(itemId: item.model.id, module: root.module, name: item.model.name))
+#endif
+
                 specialCategoryFolderIndicator(item: item)
+            }
+            .selectListItem(isActive: type == .singleSelection || type == .mulitpleSelection) {
+                root.singleSelectionModel.itemId = root.singleSelectionModel.itemId == item.model.id ? nil : item.model.id
+            } isSelected: {
+                root.singleSelectionModel.itemId == item.model.id
             }
             .padding(.leading, CGFloat(item.level * 16))
             .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))

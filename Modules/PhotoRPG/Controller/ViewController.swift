@@ -14,7 +14,12 @@ extension ViewController: ViewControllable {}
 
 public extension ViewController {
     @MainActor
-    func linkWindow() -> some View {
-        LinkRootView(isInspector: false)
+    func linkWindow(isInspector: Bool = false) -> some View {
+        LinkRootView(type: isInspector ? .inspector : .window)
+    }
+    
+    func selectionView(root: PhotoRootModel, model: SingleSelectionModel) -> some View {
+        PhotoDropChooseView(model: model)
+            .environment(root)
     }
 }

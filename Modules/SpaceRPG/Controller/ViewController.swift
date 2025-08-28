@@ -15,6 +15,6 @@ extension ViewController: ViewControllable {}
 public extension ViewController {
     @MainActor
     func linkWindow() -> some View {
-        LinkRootView(isInspector: false)
+        LinkRootView(type: .window)
     }
 }

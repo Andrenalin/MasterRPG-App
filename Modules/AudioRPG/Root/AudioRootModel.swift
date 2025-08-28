@@ -16,16 +16,20 @@ public final class AudioRootModel {
         self.listDisplayModel = listDisplayModel
         let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.music, .sound])
         self.searchModel = searchModel
-
-        let audioPlayerModel = AudioPlayerModel()
-        self.audioPlayerModel = audioPlayerModel
         
+        let singleSelectionModel = SingleSelectionModel()
+        self.singleSelectionModel = singleSelectionModel
+        let multiSelectionModel = MultiSelectionModel()
+        self.multiSelectionModel = multiSelectionModel
+
         let fileController = FileController()
         let itemController = ItemController(container: modelContext.container)
         let editController = EditController(itemControllable: itemController, fileUrlDataController: fileController.fileUrlDataController)
         let listController = ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
         let listLinkController = ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
         let viewController = ViewController()
+        
+        let audioPlayerModel = AudioPlayerModel()
 
         self.audioController = AudioController(fileController: fileController, model: audioPlayerModel)
         self.editController = editController
@@ -35,8 +39,10 @@ public final class AudioRootModel {
         self.listController = listController
         self.listLinkController = listLinkController
         self.viewController = viewController
-        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
-
+        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, singleSelectionModel: singleSelectionModel, multiSelectionModel: multiSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+        
+        self.audioPlayerModel = audioPlayerModel
+        
         itemController.cleanDeleted()
     }
     
@@ -46,8 +52,12 @@ public final class AudioRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     
-    public let audioPlayerModel: AudioPlayerModel
-
+    public var singleSelectionModel: SingleSelectionModel
+    public var multiSelectionModel: MultiSelectionModel
+    public var currentSelectedItemId: UUID? {
+        listController.listModel.selectedItemId
+    }
+    
     @ObservationIgnored let audioController: AudioController
     @ObservationIgnored let editController: EditController
     @ObservationIgnored let exportController: ExportController
@@ -57,10 +67,8 @@ public final class AudioRootModel {
     @ObservationIgnored let listLinkController: ListController
     @ObservationIgnored public let viewController: ViewController
     @ObservationIgnored let rootController: ItemRootController
-
-    public var currentSelectedItemId: UUID? {
-        listController.listModel.selectedItemId
-    }
+    
+    public let audioPlayerModel: AudioPlayerModel
 }
 
 extension AudioRootModel: ItemRootControllable {

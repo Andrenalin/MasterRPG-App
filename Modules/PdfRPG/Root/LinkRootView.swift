@@ -5,15 +5,15 @@ import SwiftData
 import SwiftUI
 
 struct LinkRootView: View {
-    let isInspector: Bool
+    let type: LinkRootType
 
     @Environment(PdfRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.LinkRootView(root: root, isInspector: isInspector)
+        CoreRPG.LinkRootView(root: root, type: type)
     }
 }
 
 #Preview(traits: .mockData) {
-    LinkRootView(isInspector: false)
+    LinkRootView(type: .window)
 }

@@ -1,14 +1,14 @@
 // @copyright André Trettin
 
 import CoreRPG
+import PhotoRPG
 import SwiftData
 import Foundation
 
 @MainActor @Observable
 public final class WeatherRootModel {
-    init(modelContext: ModelContext) {
+    init(modelContext: ModelContext, photoRoot: PhotoRootModel) {
         self.modelContext = modelContext
-        
         let module: NetworkModules = .weather
         self.module = module
         
@@ -16,13 +16,20 @@ public final class WeatherRootModel {
         self.listDisplayModel = listDisplayModel
         let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.building, .item, .supplement])
         self.searchModel = searchModel
-        
+        let singleSelectionModel = SingleSelectionModel()
+        self.singleSelectionModel = singleSelectionModel
+        let multiSelectionModel = MultiSelectionModel()
+        self.multiSelectionModel = multiSelectionModel
+
+        self.photoRoot = photoRoot
+
         let itemController = ItemController(container: modelContext.container)
         let editController = EditController(itemControllable: itemController, fileUrlDataController: nil)
         let listController = ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
         let listLinkController = ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
         let viewController = ViewController()
-        
+        let rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, singleSelectionModel: singleSelectionModel, multiSelectionModel: multiSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+
         //self.cacheController = CacheController(fileUrlDataController: nil)
         self.editController = editController
         self.exportController = ExportController(module: module, itemController: itemController, fileUrlDataController: nil, gameExporter: false)
@@ -30,17 +37,24 @@ public final class WeatherRootModel {
         self.listController = listController
         self.listLinkController = listLinkController
         self.viewController = viewController
-        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+        self.rootController = rootController
         
         itemController.cleanDeleted()
     }
     
     let modelContext: ModelContext
     public let module: NetworkModules
-    
+
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
-    
+    public var singleSelectionModel: SingleSelectionModel
+    public var multiSelectionModel: MultiSelectionModel
+    public var currentSelectedItemId: UUID? {
+        listController.listModel.selectedItemId
+    }
+
+    @ObservationIgnored let photoRoot: PhotoRootModel
+
     //@ObservationIgnored let cacheController: CacheController
     @ObservationIgnored let editController: EditController
     @ObservationIgnored let exportController: ExportController
@@ -49,10 +63,6 @@ public final class WeatherRootModel {
     @ObservationIgnored let listLinkController: ListController
     @ObservationIgnored public let viewController: ViewController
     @ObservationIgnored let rootController: ItemRootController
-    
-    public var currentSelectedItemId: UUID? {
-        listController.listModel.selectedItemId
-    }
 }
 
 extension WeatherRootModel: ItemRootControllable {

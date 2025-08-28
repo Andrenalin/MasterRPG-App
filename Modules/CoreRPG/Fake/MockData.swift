@@ -183,7 +183,7 @@ struct MockRootViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content.environment(root)
             .environment(root.searchModel)
-            .environment(root.listModel)
+            .environment(root.listControllable.listModel)
             .environment(root.listDisplayModel)
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
@@ -195,7 +195,7 @@ struct MockRootViewModifier: ViewModifier {
     }
     
     var rootController: ItemRootController {
-        ItemRootController(module: root.module, listDisplayModel: root.listDisplayModel, searchModel: root.searchModel, cacheControllable: root.cacheControllable, editControllable: root.editControllable, itemControllable: root.itemControllable, listControllable: root.listControllable, listLinkControllable: root.listLinkControllable, viewControllable: root.viewControllable)
+        ItemRootController(module: root.module, listDisplayModel: root.listDisplayModel, searchModel: root.searchModel, singleSelectionModel: root.singleSelectionModel, multiSelectionModel: root.multiSelectionModel, cacheControllable: root.cacheControllable, editControllable: root.editControllable, itemControllable: root.itemControllable, listControllable: root.listControllable, listLinkControllable: root.listLinkControllable, viewControllable: root.viewControllable)
     }
 }
 

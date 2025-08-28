@@ -86,7 +86,9 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
 #if !os(visionOS)
         .inspector(isPresented: $showInspector) {
             if model.specialCategory {
-                LinkRootView(root: root, isInspector: true)
+                LinkRootView(root: root, type: .inspector)
+            } else {
+                inspector
             }
         }
 #endif

@@ -16,15 +16,22 @@ public final class PdfRootModel {
         self.listDisplayModel = listDisplayModel
         let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.adventure, .character, .rules, .supplement])
         self.searchModel = searchModel
+        
+        let singleSelectionModel = SingleSelectionModel()
+        self.singleSelectionModel = singleSelectionModel
+        let multiSelectionModel = MultiSelectionModel()
+        self.multiSelectionModel = multiSelectionModel
 
         let fileController = FileController()
+        let cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
         let itemController = ItemController(container: modelContext.container)
         let editController = EditController(itemControllable: itemController, fileUrlDataController: fileController.fileUrlDataController)
         let listController = ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
         let listLinkController = ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
         let viewController = ViewController()
+        let rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, singleSelectionModel: singleSelectionModel, multiSelectionModel: multiSelectionModel, cacheControllable: cacheController, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
 
-        self.cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
+        self.cacheController = cacheController
         self.editController = editController
         self.exportController = ExportController(module: module, itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, gameExporter: false)
         self.fileController = fileController
@@ -32,7 +39,7 @@ public final class PdfRootModel {
         self.listController = listController
         self.listLinkController = listLinkController
         self.viewController = viewController
-        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, cacheControllable: cacheController, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+        self.rootController = rootController
 
         itemController.cleanDeleted()
     }
@@ -42,6 +49,11 @@ public final class PdfRootModel {
     
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
+    public var singleSelectionModel: SingleSelectionModel
+    public var multiSelectionModel: MultiSelectionModel
+    public var currentSelectedItemId: UUID? {
+        listController.listModel.selectedItemId
+    }
 
     @ObservationIgnored let cacheController: CacheController
     @ObservationIgnored let editController: EditController
@@ -52,10 +64,6 @@ public final class PdfRootModel {
     @ObservationIgnored let listLinkController: ListController
     @ObservationIgnored public let viewController: ViewController
     @ObservationIgnored let rootController: ItemRootController
-
-    public var currentSelectedItemId: UUID? {
-        listController.listModel.selectedItemId
-    }
 }
 
 extension PdfRootModel: ItemRootControllable {
