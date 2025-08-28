@@ -10,16 +10,16 @@ extension View {
 
 struct SearchItemListViewModifier: ViewModifier {
     let listControllable: any ListControllable
-
+    
     @Environment(CacheItemListModel.self) private var cacheItemListModel
-
+    
     func body(content: Content) -> some View {
         @Bindable var searchModel = listControllable.searchModel
         content
-        #if os(tvOS)
+#if os(tvOS)
             .searchable(text: $searchModel.searchFieldText, placement: .automatic, prompt: Text("Search for items", bundle: .module))
-        #else
-            .searchable(text: $searchModel.searchFieldText, tokens: $searchModel.selectedTokens, placement: .automatic, prompt: Text("Search or use @ for tags", bundle: .module), token: { token in
+#else
+            .searchable(text: $searchModel.searchFieldText, tokens: $searchModel.selectedTokens, placement: searchPlacement, prompt: Text("Search or use @ for tags", bundle: .module), token: { token in
                 Label(token.tag.prefix(3), systemImage: "tag")
             })
             .searchSuggestions {
@@ -35,7 +35,7 @@ struct SearchItemListViewModifier: ViewModifier {
                     }
                 }
             }
-        #endif
+#endif
             .searchPresentationToolbarBehavior(.avoidHidingContent)
             .onChange(of: searchModel.searchFieldText) {
                 guard searchModel.searchFieldText.starts(with: "@") == false else { return }

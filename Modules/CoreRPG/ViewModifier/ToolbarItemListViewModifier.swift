@@ -4,16 +4,20 @@ import SwiftData
 import SwiftUI
 
 extension View {
-    func toolbarItemListModifier(root: any ItemRootControllable, parentModel: ItemDataModel?) -> some View {
-        modifier(ToolbarItemListViewModifier(root: root, parentModel: parentModel))
+    func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any ListControllable, parentModel: ItemDataModel?, modal: Bool = false) -> some View {
+        modifier(ToolbarItemListViewModifier(root: root, listController: listControllable, parentModel: parentModel, modal: modal))
     }
 }
 
 struct ToolbarItemListViewModifier: ViewModifier {
     let root: any ItemRootControllable
+    let listController: any ListControllable
     let parentModel: ItemDataModel?
+    let modal: Bool
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    
 
     func body(content: Content) -> some View {
         content
@@ -33,7 +37,15 @@ struct ToolbarItemListViewModifier: ViewModifier {
                     }
                 } else {
                     ToolbarItem(placement: .primaryAction) {
-                        addItemButton(for: .item)
+                        if modal == false {
+                            addItemButton(for: .item)
+                        }
+                    }
+                }
+                
+                ToolbarItem(placement: .cancellationAction) {
+                    if modal == true {
+                        dismissButton
                     }
                 }
             }
@@ -41,10 +53,6 @@ struct ToolbarItemListViewModifier: ViewModifier {
 }
 
 private extension ToolbarItemListViewModifier {
-    var listController: any ListControllable {
-        root.listControllable
-    }
-
     var listModel: ListModel {
         listController.listModel(for: parentModel)
     }
@@ -56,8 +64,8 @@ private extension ToolbarItemListViewModifier {
     @ViewBuilder
     var actionMenu: some View {
         Menu {
-            MenuDisplayModeToggle(listDisplayModel: listDisplayModel, showSelectionButton: false) {
-                if parentModel == nil {
+            MenuDisplayModeToggle(listDisplayModel: listDisplayModel, showSelectionButton: false, modal: modal) {
+                if parentModel == nil && modal == false {
                     addItemButton(for: .folder)
                         .disabled(listDisplayModel.isListMode)
                     addItemButton(for: .collection)
@@ -72,15 +80,16 @@ private extension ToolbarItemListViewModifier {
 
     @ViewBuilder
     var secondaryActionMenu: some View {
-        if !listDisplayModel.isSelectionMode {
+        if !listDisplayModel.isSelectionMode && modal == false {
             MenuSelectionButtonView(listDisplayModel: listDisplayModel)
         }
-        ControlGroup {
-            addItemButton(for: .folder)
-            addItemButton(for: .collection)
+        if modal == false {
+            ControlGroup {
+                addItemButton(for: .folder)
+                addItemButton(for: .collection)
+            }
+            .disabled(listDisplayModel.isListMode)
         }
-        .disabled(listDisplayModel.isListMode)
-
         ControlGroup {
             CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
             MediumDisplayModeToggle(listDisplayModel: listDisplayModel)
@@ -113,6 +122,14 @@ private extension ToolbarItemListViewModifier {
                 root.editControllable.addItem(itemId: newModel.id, in: modelContext, parentId: listModel.selectedParentId, folderId:  listModel.lastFolderId)
             }
             listController.add(model: newModel)
+        }
+    }
+    
+    var dismissButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "xmark")
         }
     }
 

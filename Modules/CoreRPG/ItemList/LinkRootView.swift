@@ -34,9 +34,4 @@ public struct LinkRootView: View {
                 withAnimation { root.listLinkControllable.update(items: items.filter { $0.module == root.module }) }
             }
     }
-    
-    var selectedModel: ItemDataModel? {
-        guard let itemId = root.currentSelectedItemId else { return nil }
-        return root.itemControllable.modelSync(for: itemId)
-    }
 }

@@ -44,25 +44,14 @@ struct ListRootView: View {
                 withAnimation { root.listControllable.update(items: items.filter { $0.module == root.module }) }
             }
             .listModelUpdatesModifier(listControllable: root.listControllable, parentModel: parentModel)
-            .toolbarItemListModifier(root: root, parentModel: parentModel)
-//#if !os(tvOS)
-//        .onDrop(of: [.fileURL], delegate: FileDropDelegate(for: FileController.fileTypes, updateFile: updateFile))
-//#endif
+            .toolbarItemListModifier(root: root, listControllable: root.listControllable, parentModel: parentModel)
+#if !os(tvOS)
+            .applyIf(!fileTypes.isEmpty) {
+                $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: updateFile))
+            }
+#endif
     }
 }
-
-//private extension ListRootView {
-//    func updateFile(url: URL) {
-//        Task { @MainActor in
-//            let model = root.editControllable.addNew(modelContext: modelContext, type: .item)
-//            try? await Task.sleep(for: .seconds(0.5))
-//            withAnimation {
-//                root.editControllable.resetFile(url: url, in: model)
-//                root.listControllable.listModel.set(selectedItemId: model.id)
-//            }
-//        }
-//    }
-//}
 
 private extension ListRootView {
     var listController: any ListControllable {
@@ -77,8 +66,27 @@ private extension ListRootView {
         listController.listModel(for: parentModel)
     }
     
+    var fileTypes: [UTType] {
+        root.editControllable.fileUrlDataController?.fileTypes ?? []
+    }
+    
     var menuController: any ItemListContextMenuControllable {
         ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: listModel)
+    }
+
+    func updateFile(url: URL) {
+        Task { @MainActor in
+            let modelContext = root.itemControllable.container.mainContext
+            let model = root.editControllable.addNew(modelContext: modelContext, module: root.module, type: .item)
+            try? await Task.sleep(for: .seconds(0.5))
+            withAnimation {
+                root.editControllable.resetFile(url: url, in: model)
+                if parentModel != nil {
+                    root.editControllable.addItem(itemId: model.id, in: modelContext, parentId: listModel.selectedParentId, folderId:  listModel.lastFolderId)
+                }
+                listController.add(model: model)
+            }
+        }
     }
 
     @ViewBuilder

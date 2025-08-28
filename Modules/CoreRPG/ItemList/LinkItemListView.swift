@@ -33,12 +33,15 @@ public struct LinkItemListView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
-                .onChange(of: inspectorDisplayModel.listMode) {
-                    withAnimation { root.listLinkControllable.resetFilter() }
-                }
                 
                 TextField("Filter", text: $searchModel.searchText)
                     .padding(.horizontal)
+                    .onChange(of: searchModel.searchText) {
+                        withAnimation {
+                            root.listLinkControllable.resetFilter()
+                            cacheItemListModel.reset(search: searchModel.searchText)
+                        }
+                    }
             }
 
             contentView
@@ -46,23 +49,13 @@ public struct LinkItemListView: View {
                     inspectorDisplayModel.displayMode = listDisplayModel.displayMode
                     withAnimation { root.listLinkControllable.resetFilter() }
                 }
-                .onChange(of: root.listLinkControllable.searchModel.searchText) {
-                    withAnimation {
-                        root.listLinkControllable.resetFilter()
-                        cacheItemListModel.reset(search: searchModel.searchText)
-                    }
+                .onChange(of: inspectorDisplayModel.listMode) {
+                    withAnimation { root.listLinkControllable.resetFilter() }
                 }
                 .applyIf(type != .inspector) { content in
                     content
-                        .toolbar {
-                            ToolbarItem(placement: .secondaryAction) {
-                                ControlGroup {
-                                    ListModeToggle(listDisplayModel: inspectorDisplayModel)
-                                    FolderModeToggle(listDisplayModel: inspectorDisplayModel)
-                                }
-                            }
-                        }
-                        .searchable(text: $searchModel.searchText, placement: .automatic)
+                        .toolbarItemListModifier(root: root, listControllable: root.listLinkControllable, parentModel: nil, modal: true)
+                        .searchItemList(listControllable: root.listControllable)
                         .navigationTitle(root.module.title)
                 }
         }

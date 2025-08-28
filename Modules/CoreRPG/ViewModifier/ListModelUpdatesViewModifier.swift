@@ -24,9 +24,9 @@ struct ListModelUpdatesViewModifier: ViewModifier {
 #if os(iOS) || os(visionOS)
             .environment(\.editMode, $editMode)
 #endif
-            .onAppear {
-                withAnimation { listModel.resetListModel() }
-            }
+//            .onAppear {
+//                withAnimation { listModel.resetListModel() }
+//            }
             .onChange(of: listModel.listSelection) {
                 withAnimation {  updateListSelection() }
             }

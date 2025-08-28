@@ -16,11 +16,6 @@ struct PhotoDropChooseView: View {
 #endif
     
     var body: some View {
-        dropItemView
-    }
-    
-    @ViewBuilder
-    var dropItemView: some View {
         DropItemArea {
             Group {
                 if let itemId = model.itemId, let item = root.itemController.modelSync(for: itemId) {
@@ -53,7 +48,9 @@ struct PhotoDropChooseView: View {
                     .imageScale(.large)
                     .foregroundStyle(.white, .red, .red)
             }
+#if !os(visionOS)
             .glassEffect()
+#endif
             .opacity(model.itemId != nil ? 1.0 : 0.0)
         }
     }
@@ -61,7 +58,7 @@ struct PhotoDropChooseView: View {
     private var emptyDrop: some View {
         Button {
             root.singleSelectionModel = model
-            navigator.navigate(to: SelectionPhotoRoute.selection, method: .sheet)
+            navigator.navigate(to: SelectionPhotoRoute.selection, method: .managedSheet)
         } label: {
             VStack {
                 if showDrop {
@@ -77,11 +74,11 @@ struct PhotoDropChooseView: View {
     }
     
     private var showDrop: Bool {
-    #if os(iOS)
+#if os(iOS)
         horizontalSizeClass == .regular
-        #else
+#else
         true
-        #endif
+#endif
     }
     
     private func addLinks(links: [LinkData]) -> Bool {
@@ -94,7 +91,6 @@ struct PhotoDropChooseView: View {
         }
         return true
     }
-
 }
 
 #Preview(traits: .mockData) {

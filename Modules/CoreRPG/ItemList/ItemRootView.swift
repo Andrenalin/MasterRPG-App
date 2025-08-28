@@ -48,6 +48,7 @@ private extension ItemRootView {
                             .environment(root.searchModel)
                     }
                     .onAppear {
+                        print("*** reset list state")
                         listModel.resetListSelection()
                         listModel.update(selection: Set())
                     }
@@ -89,10 +90,9 @@ struct ItemSplitDetailRootView<Detail: View>: View {
     var body: some View {
         let _ = Self._printChanges()
         
-        if let selected = listModel.selectedItemId {
+        if listModel.selectedItemId != nil {
             ManagedNavigationStack {
                 detail
-//                ItemRootRoute.detail(selected)
                     .environment(root)
             }
         } else {
@@ -103,7 +103,6 @@ struct ItemSplitDetailRootView<Detail: View>: View {
     var listModel: ListModel {
         root.listControllable.listModel
     }
-
 }
 
 //#Preview("Small", traits: .mockData) {

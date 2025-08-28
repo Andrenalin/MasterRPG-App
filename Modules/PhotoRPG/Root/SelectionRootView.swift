@@ -14,9 +14,13 @@ struct SelectionRootView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Environment(PhotoRootModel.self) var root
-    
-    ManagedNavigationStack {
-        SelectionRootView()
+    ZStack {
+        Color.red
+            .sheet(isPresented: .constant(true)) {
+                ManagedNavigationStack {
+                    SelectionRootView()
+                }
+            }
+            .ignoresSafeArea()
     }
 }
