@@ -19,37 +19,18 @@ public struct LinkItemListView: View {
     
     public var body: some View {
         NavigationStack {
-            @Bindable var searchModel = root.listLinkControllable.searchModel
-            @Bindable var inspectorDisplayModel = root.listLinkControllable.listDisplayModel
-            
             if type == .inspector {
-                Picker(selection: $inspectorDisplayModel.listMode) {
-                    ForEach(ListDisplayModel.ListMode.allCases) { mode in
-                        Text(mode.title)
-                            .tag(mode)
-                    }
-                } label: {
-                    Text("List Mode")
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
+                pickerView
                 
-                TextField("Filter", text: $searchModel.searchText)
-                    .padding(.horizontal)
-                    .onChange(of: searchModel.searchText) {
-                        withAnimation {
-                            root.listLinkControllable.resetFilter()
-                            cacheItemListModel.reset(search: searchModel.searchText)
-                        }
-                    }
+                filterFieldView
             }
 
             contentView
                 .onChange(of: listDisplayModel.displayMode, initial: true) {
-                    inspectorDisplayModel.displayMode = listDisplayModel.displayMode
+                    root.listLinkControllable.listDisplayModel.displayMode = listDisplayModel.displayMode
                     withAnimation { root.listLinkControllable.resetFilter() }
                 }
-                .onChange(of: inspectorDisplayModel.listMode) {
+                .onChange(of: root.listLinkControllable.listDisplayModel.listMode) {
                     withAnimation { root.listLinkControllable.resetFilter() }
                 }
                 .applyIf(type != .inspector) { content in
@@ -62,11 +43,56 @@ public struct LinkItemListView: View {
         .environment(root.listLinkControllable.listDisplayModel)
         .environment(root.listLinkControllable.searchModel)
     }
+}
 
+private extension LinkItemListView {
     var listModel: ListModel {
         root.listLinkControllable.listModel(for: nil)
     }
 
+    @ViewBuilder
+    var pickerView: some View {
+        @Bindable var inspectorDisplayModel = root.listLinkControllable.listDisplayModel
+        
+        Picker(selection: $inspectorDisplayModel.listMode) {
+            ForEach(ListDisplayModel.ListMode.allCases) { mode in
+                Text(mode.title)
+                    .tag(mode)
+            }
+        } label: {
+            Text("List Mode", bundle: .module)
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+    }
+    
+    @ViewBuilder
+    var filterFieldView: some View {
+        @Bindable var searchModel = root.listLinkControllable.searchModel
+        
+        TextField(text: $searchModel.searchText, prompt: textFieldText) {
+            textFieldText
+        }
+        .labelsHidden()
+        .textFieldStyle(.plain)
+        .padding(6)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(.secondary, lineWidth: 1)
+        }
+        .padding(.horizontal)
+        .onChange(of: searchModel.searchText) {
+            withAnimation {
+                root.listLinkControllable.resetFilter()
+                cacheItemListModel.reset(search: searchModel.searchText)
+            }
+        }
+    }
+    
+    var textFieldText: Text {
+        Text("\(Image(systemName: "magnifyingglass")) Filter", bundle: .module)
+    }
+    
     var contentView: some View {
         listView
             .frame(minWidth: 150, idealWidth: 250)
@@ -87,9 +113,7 @@ public struct LinkItemListView: View {
             .scrollDismissesKeyboard(.immediately)
 #endif
     }
-}
 
-private extension LinkItemListView {
     @ViewBuilder
     var listView: some View {
         @Bindable var listModel = listModel

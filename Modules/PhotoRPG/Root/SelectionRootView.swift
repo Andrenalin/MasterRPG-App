@@ -14,6 +14,12 @@ struct SelectionRootView: View {
 }
 
 #Preview(traits: .mockData) {
+
+    #if os(macOS)
+    ManagedNavigationStack {
+        SelectionRootView()
+    }
+    #else
     ZStack {
         Color.red
             .sheet(isPresented: .constant(true)) {
@@ -23,4 +29,5 @@ struct SelectionRootView: View {
             }
             .ignoresSafeArea()
     }
+    #endif
 }
