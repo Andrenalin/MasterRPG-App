@@ -17,17 +17,15 @@ public final class DiceRootModel {
         let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.rules, .table, .value])
         self.searchModel = searchModel
 
-        let singleSelectionModel = SingleSelectionModel()
-        self.singleSelectionModel = singleSelectionModel
-        let multiSelectionModel = MultiSelectionModel()
-        self.multiSelectionModel = multiSelectionModel
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
 
         let itemController = ItemController(container: modelContext.container)
         let editController = EditController(itemControllable: itemController, fileUrlDataController: nil)
         let listController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
         let listLinkController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
         let viewController = ViewController()
-        let rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, singleSelectionModel: singleSelectionModel, multiSelectionModel: multiSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+        let rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
 
         self.itemController = itemController
         self.editController = editController
@@ -45,8 +43,7 @@ public final class DiceRootModel {
     
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
-    public var singleSelectionModel: SingleSelectionModel
-    public var multiSelectionModel: MultiSelectionModel
+    public var itemSelectionModel: ItemSelectionModel
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }

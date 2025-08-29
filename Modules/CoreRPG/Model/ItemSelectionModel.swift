@@ -2,12 +2,36 @@
 
 import Foundation
 
-public struct ItemSelectionModel: Equatable, Hashable, Codable {
-    public init(itemId: UUID, entryId: UUID? = nil) {
-        self.itemId = itemId
-        self.entryId = entryId
+@MainActor @Observable
+public final class ItemSelectionModel {
+    public init(selection: [WindowItemSelection] = [], isSingleSelection: Bool = true, allowCollections: Bool = false) {
+        self.selection = selection
+        self.isSingleSelection = isSingleSelection
+        self.allowCollections = allowCollections
     }
-    public let itemId: UUID
-    public let entryId: UUID?
+    
+    public var selection: [WindowItemSelection] = []
+    public var isSingleSelection: Bool = true
+    public var allowCollections: Bool = false
+    
+    public var itemId: UUID? {
+        selection.first?.itemId
+    }
+    
+    public func toggleSelection(itemId: UUID, isCollection: Bool) {
+        guard allowCollections == true || isCollection == false else { return }
+        if let index = selection.firstIndex(where: { $0.itemId == itemId }) {
+            selection.remove(at: index)
+        } else {
+            if isSingleSelection {
+                selection = [WindowItemSelection(itemId: itemId)]
+            } else {
+                selection.append(WindowItemSelection(itemId: itemId))
+            }
+        }
+    }
+    
+    func canSelect(isCollection: Bool) -> Bool {
+        allowCollections || !isCollection
+    }
 }
-

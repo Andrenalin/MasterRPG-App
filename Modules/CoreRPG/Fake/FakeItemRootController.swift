@@ -16,10 +16,8 @@ public final class FakeItemRootController: ItemRootControllable {
         let searchModel = SearchModel(modelContext: modelContext, module: .audio, categoryTags: [.music, .sound])
         self.searchModel = searchModel
 
-        let singleSelectionModel = SingleSelectionModel()
-        self.singleSelectionModel = singleSelectionModel
-        let multiSelectionModel = MultiSelectionModel()
-        self.multiSelectionModel = multiSelectionModel
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
 
         self.cacheControllable = nil
         let itemController = FakeItemController(container: modelContext.container)
@@ -33,7 +31,7 @@ public final class FakeItemRootController: ItemRootControllable {
         self.viewControllable = FakeViewController(goupViewType: .item, thumbnailRowViewType: .none)
         
         let rootController =
-        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, singleSelectionModel: singleSelectionModel, multiSelectionModel: multiSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewControllable)
+        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewControllable)
         self.rootController = rootController
     }
 
@@ -43,8 +41,7 @@ public final class FakeItemRootController: ItemRootControllable {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     
-    public var singleSelectionModel: SingleSelectionModel
-    public var multiSelectionModel: MultiSelectionModel
+    public var itemSelectionModel: ItemSelectionModel
     public var currentSelectedItemId: UUID? = nil
 
     public let cacheControllable: (any ImageCacheControllable)?

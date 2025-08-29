@@ -15,7 +15,7 @@ extension ViewController: ViewControllable {}
 
 extension ViewController {
     @MainActor
-    func photoSelection(root: WeatherRootModel, selectionModel: SingleSelectionModel) -> some View {
+    func photoSelection(root: WeatherRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.photoRoot.viewController.selectionView(root: root.photoRoot, model: selectionModel)
     }
 }

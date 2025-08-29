@@ -17,10 +17,8 @@ public final class AudioRootModel {
         let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.music, .sound])
         self.searchModel = searchModel
         
-        let singleSelectionModel = SingleSelectionModel()
-        self.singleSelectionModel = singleSelectionModel
-        let multiSelectionModel = MultiSelectionModel()
-        self.multiSelectionModel = multiSelectionModel
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
 
         let fileController = FileController()
         let itemController = ItemController(container: modelContext.container)
@@ -39,7 +37,7 @@ public final class AudioRootModel {
         self.listController = listController
         self.listLinkController = listLinkController
         self.viewController = viewController
-        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, singleSelectionModel: singleSelectionModel, multiSelectionModel: multiSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+        self.rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
         
         self.audioPlayerModel = audioPlayerModel
         
@@ -52,8 +50,7 @@ public final class AudioRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     
-    public var singleSelectionModel: SingleSelectionModel
-    public var multiSelectionModel: MultiSelectionModel
+    public var itemSelectionModel: ItemSelectionModel
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }

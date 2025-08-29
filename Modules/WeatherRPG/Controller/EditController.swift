@@ -9,11 +9,11 @@ struct EditController: EditControllable {
     init(itemControllable: any ItemControllable, fileUrlDataController: FileUrlDataController? = nil) {
         self.itemControllable = itemControllable
         self.fileUrlDataController = fileUrlDataController
-        self.selectionPhoto = SingleSelectionModel()
+        self.selectionPhoto = ItemSelectionModel()
     }
     
     let itemControllable: any ItemControllable
     let fileUrlDataController: FileUrlDataController?
     
-    let selectionPhoto: SingleSelectionModel
+    let selectionPhoto: ItemSelectionModel
 }

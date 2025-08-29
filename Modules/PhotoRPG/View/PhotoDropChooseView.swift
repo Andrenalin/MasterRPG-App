@@ -6,7 +6,7 @@ import SwiftData
 import SwiftUI
 
 struct PhotoDropChooseView: View {
-    let model: SingleSelectionModel
+    let model: ItemSelectionModel
     
     @Environment(PhotoRootModel.self) private var root
     @Environment(\.navigator) private var navigator
@@ -40,8 +40,7 @@ struct PhotoDropChooseView: View {
         .overlay(alignment: .topTrailing) {
             Button(role: .destructive) {
                 withAnimation {
-                    model.itemId = nil
-                    model.entryId = nil
+                    model.selection = []
                 }
             } label: {
                 Image(systemName: "minus.circle.fill")
@@ -57,7 +56,7 @@ struct PhotoDropChooseView: View {
     
     private var emptyDrop: some View {
         Button {
-            root.singleSelectionModel = model
+            root.itemSelectionModel = model
             navigator.navigate(to: SelectionPhotoRoute.selection, method: .managedSheet)
         } label: {
             VStack {
@@ -82,17 +81,14 @@ struct PhotoDropChooseView: View {
     }
     
     private func addLinks(links: [LinkData]) -> Bool {
-        links.forEach { link in
-            guard link.module == root.module else { return }
-            withAnimation {
-                model.itemId = link.itemId
-                model.entryId = link.entryId
-            }
+        model.selection = links.compactMap { link -> WindowItemSelection? in
+            guard link.module == root.module else { return nil }
+            return WindowItemSelection(itemId: link.itemId, entryId: link.entryId)
         }
         return true
     }
 }
 
 #Preview(traits: .mockData) {
-    PhotoDropChooseView(model: SingleSelectionModel())
+    PhotoDropChooseView(model: ItemSelectionModel())
 }

@@ -47,7 +47,7 @@ public struct OpenFileWindowView: View {
             Menu {
                 if UIDevice.current.userInterfaceIdiom == .pad {
                     Button {
-                        openWindow(id: windowId, value: ItemSelectionModel(itemId: model.itemId, entryId: model.entryId))
+                        openWindow(id: windowId, value: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
                     } label: {
                         Label {
                             Text("Open in Window", bundle: .module)
@@ -81,7 +81,7 @@ public struct OpenFileWindowView: View {
     
     private func actionHandler() {
 #if os(visionOS) || os(macOS)
-        openWindow(id: windowId, value: ItemSelectionModel(itemId: model.itemId, entryId: model.entryId))
+        openWindow(id: windowId, value: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
 #elseif os(iOS)
         if horizontalSizeClass == .compact {
             navigator.navigate(to: route, method: .cover)

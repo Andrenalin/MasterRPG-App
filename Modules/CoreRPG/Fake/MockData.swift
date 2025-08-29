@@ -195,7 +195,7 @@ struct MockRootViewModifier: ViewModifier {
     }
     
     var rootController: ItemRootController {
-        ItemRootController(module: root.module, listDisplayModel: root.listDisplayModel, searchModel: root.searchModel, singleSelectionModel: root.singleSelectionModel, multiSelectionModel: root.multiSelectionModel, cacheControllable: root.cacheControllable, editControllable: root.editControllable, itemControllable: root.itemControllable, listControllable: root.listControllable, listLinkControllable: root.listLinkControllable, viewControllable: root.viewControllable)
+        ItemRootController(module: root.module, listDisplayModel: root.listDisplayModel, searchModel: root.searchModel, itemSelectionModel: root.itemSelectionModel, cacheControllable: root.cacheControllable, editControllable: root.editControllable, itemControllable: root.itemControllable, listControllable: root.listControllable, listLinkControllable: root.listLinkControllable, viewControllable: root.viewControllable)
     }
 }
 

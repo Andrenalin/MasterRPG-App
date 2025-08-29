@@ -6,8 +6,7 @@ import SwiftUI
 public enum LinkRootType {
     case window
     case inspector
-    case singleSelection
-    case mulitpleSelection
+    case selection
 }
 
 public struct LinkRootView: View {

@@ -9,7 +9,7 @@ struct SelectionRootView: View {
     @Environment(PhotoRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.LinkRootView(root: root, type: .singleSelection)
+        CoreRPG.LinkRootView(root: root, type: .selection)
     }
 }
 

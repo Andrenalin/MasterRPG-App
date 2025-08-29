@@ -19,7 +19,7 @@ public extension ViewController {
     }
 
     @MainActor
-    func pdfWindow(root: PdfRootModel, selection: ItemSelectionModel) -> some View {
+    func pdfWindow(root: PdfRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.modelSync(for: selection.itemId) ?? .newItem
         
         return PdfViewerView(model: model, entryId: selection.entryId, withoutBookmark: false)

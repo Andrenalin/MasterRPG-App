@@ -18,7 +18,7 @@ public extension ViewController {
         LinkRootView(type: isInspector ? .inspector : .window)
     }
     
-    func selectionView(root: PhotoRootModel, model: SingleSelectionModel) -> some View {
+    func selectionView(root: PhotoRootModel, model: ItemSelectionModel) -> some View {
         PhotoDropChooseView(model: model)
             .environment(root)
     }
