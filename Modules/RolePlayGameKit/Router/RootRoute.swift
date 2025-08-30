@@ -7,6 +7,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import TableRPG
 import WeatherRPG
 import SwiftUI
 
@@ -155,7 +156,7 @@ struct RouteRouteDestionationView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .tables:
-            RootListView(rootRoute: route)
+            TableRootFactory.rootView(withoutNavigation: false)
         case .values:
             RootListView(rootRoute: route)
         case .weathers:

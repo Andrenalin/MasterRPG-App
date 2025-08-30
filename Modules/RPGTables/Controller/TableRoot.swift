@@ -193,4 +193,11 @@ extension TableRoot {
     public func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         SheetController(root: self).sheet(for: itemId, level: level)
     }
+    
+    @MainActor
+    public func listItems() -> [TableModel] {
+        itemController.itemDataModel.items.map {
+            itemController.itemOrEmpty(for: $0)
+        }
+    }
 }

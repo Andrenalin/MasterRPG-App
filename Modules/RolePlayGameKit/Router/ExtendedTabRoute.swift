@@ -7,6 +7,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import TableRPG
 import WeatherRPG
 import SwiftUI
 
@@ -99,7 +100,7 @@ struct ExtendedTabRouteDestionationView: View {
             case .space:
                 SpaceRootFactory.rootView(withoutNavigation: true)
             case .tables:
-                AudioRootFactory.rootView(withoutNavigation: true)
+                TableRootFactory.rootView(withoutNavigation: true)
             case .weathers:
                 WeatherRootFactory.rootView(withoutNavigation: true)
             case .settings:

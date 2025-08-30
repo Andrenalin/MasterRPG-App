@@ -11,6 +11,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import TableRPG
 import WeatherRPG
 
 extension Logger {
@@ -35,6 +36,7 @@ public final class AppModel: Sendable {
     public var pdfRoot: PdfRootModel
     public var photoRoot: PhotoRootModel
     public var spaceRoot: SpaceRootModel
+    public var tableRoot: TableRootModel
     public var weatherRoot: WeatherRootModel
 
     // Routing models
@@ -49,11 +51,13 @@ public final class AppModel: Sendable {
         self.windowStateModel = WindowStateModel()
                 
         self.audioRoot = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        self.diceRoot = DiceRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        let diceRoot = DiceRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.diceRoot = diceRoot
         self.pdfRoot = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
         let photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.photoRoot = photoRoot
         self.spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.tableRoot = TableRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRoot)
         self.weatherRoot = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRoot)
 
         self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.4", executionDelay: 0.4, verbosity: .info))
@@ -68,6 +72,8 @@ public final class AppModel: Sendable {
                 EntryDataModel.self,
                 DiceConfigDataModel.self,
                 PdfBookmarkDataModel.self,
+                TableDataModel.self,
+                TableEntryDataModel.self,
             ]
         )
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))

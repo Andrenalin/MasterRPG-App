@@ -28,6 +28,7 @@ struct AppRootView: View {
             .environment(appModel.pdfRoot)
             .environment(appModel.photoRoot)
             .environment(appModel.spaceRoot)
+            .environment(appModel.tableRoot)
             .environment(appModel.weatherRoot)
             .frame(minWidth: 375.0, minHeight: 600.0)
             .tint(Color.teal)

@@ -8,6 +8,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import TableRPG
 import WeatherRPG
 import SwiftUI
 
@@ -20,7 +21,7 @@ struct MenuCommandList: Commands {
             //            AdventureCommands(root: appStore.adventureRoot)
             //            ValueCommands(root: appStore.valueRoot)
             PdfCommands(root: appModel.pdfRoot, navigator: appModel.navigator)
-            //            TableCommands(root: appStore.tableRoot)
+            TableCommands(root: appModel.tableRoot, navigator: appModel.navigator)
             //        }
             //
             //        MapCommands(root: appStore.mapRoot)

@@ -5,6 +5,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import TableRPG
 import WeatherRPG
 
 import RPGAudios
@@ -12,6 +13,7 @@ import RPGDie
 import RPGPdfs
 import RPGPhotos
 import RPGSpaces
+import RPGTables
 import RPGWeathers
 
 import SwiftData
@@ -33,6 +35,9 @@ struct DBConverter {
         
         let spaces = appStore.spaceRoot.listItems()
         SpaceRPG.ConverterController.insert(items: spaces, into: appStore.modelContainer.mainContext)
+
+        let tables = appStore.tableRoot.listItems()
+        TableRPG.ConverterController.insert(items: tables, into: appStore.modelContainer.mainContext)
 
         let weather = appStore.weatherRoot.listItems()
         WeatherRPG.ConverterController.insert(items: weather, into: appStore.modelContainer.mainContext)

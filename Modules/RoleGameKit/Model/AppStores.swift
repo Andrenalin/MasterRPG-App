@@ -13,6 +13,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import TableRPG
 import WeatherRPG
 import RPGAdventures
 import RPGDie
@@ -45,6 +46,7 @@ public final class AppStore: Sendable {
     public var pdfRootModel: PdfRootModel
     public var photoRootModel: PhotoRootModel
     public var spaceRootModel: SpaceRootModel
+    public var tableRootModel: TableRootModel
     public var weatherRootModel: WeatherRootModel
 
     var isNewUICode: Bool = true
@@ -108,11 +110,13 @@ public final class AppStore: Sendable {
         self.modelContainer = modelContainer
         
         self.audioRootModel = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        self.diceRootModel = DiceRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        let diceRootModel = DiceRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.diceRootModel = diceRootModel
         self.pdfRootModel = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
         let photoRootModel = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.photoRootModel = photoRootModel
         self.spaceRootModel = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.tableRootModel = TableRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRootModel)
         self.weatherRootModel = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRootModel)
     }
 

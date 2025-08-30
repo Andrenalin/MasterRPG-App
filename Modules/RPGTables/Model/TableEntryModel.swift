@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 
-struct TableEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
+public struct TableEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
     init(id: UUID, name: String, content: String, displayState: Int = 0, diceResult: String? = nil) {
         self.id = id
         self.name = name
@@ -22,37 +22,37 @@ struct TableEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked S
         self.diceResult = diceResult
     }
 
-    let id: UUID
-    @CRDT var name: String
-    @CRDT var content: String
-    var displayState: Int = 0
+    public let id: UUID
+    @CRDT public var name: String
+    @CRDT public var content: String
+    public var displayState: Int = 0
 
-    var diceResult: String? = nil
+    public var diceResult: String? = nil
 }
 
 // MARK: - EntryDataAccessable
 
 extension TableEntryModel: EntryDataAccessable {
-    static var empty: TableEntryModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> TableEntryModel {
+    public static var empty: TableEntryModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> TableEntryModel {
         TableEntryModel(id: id, name: "", content: "")
     }
 
-    func duplicate() -> TableEntryModel {
+    public func duplicate() -> TableEntryModel {
         TableEntryModel(id: UUID(), name: name, content: content, displayState: displayState, diceResult: nil)
     }
 
-    func filter(with search: String) -> Bool {
+    public func filter(with search: String) -> Bool {
         (search.isEmpty || name.localizedCaseInsensitiveContains(search) || content.localizedCaseInsensitiveContains(search))
     }
     
-    func linkContent() -> String { content }
+    public func linkContent() -> String { content }
 }
 
 // MARK: - ItemDiffComparable
 
 extension TableEntryModel: ItemDiffComparable {
-    func merge(_ other: TableEntryModel) -> TableEntryModel {
+    public func merge(_ other: TableEntryModel) -> TableEntryModel {
         TableEntryModel(
             id: id,
             name: $name.merged(other: other.$name),
@@ -62,7 +62,7 @@ extension TableEntryModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: TableEntryModel) -> Bool {
+    public func isSame(_ other: TableEntryModel) -> Bool {
         name == other.name && content == other.content
     }
 }
@@ -70,7 +70,7 @@ extension TableEntryModel: ItemDiffComparable {
 // MARK: - Links
 
 extension TableEntryModel: ItemLinkEditable {
-    var textLinkContent: String {
+    public var textLinkContent: String {
         entryLinkText(otherValue: "")
     }
 }
@@ -80,17 +80,17 @@ extension TableEntryModel: ItemReferencable {}
 // MARK: - Attributed Text with links
 
 extension TableEntryModel {
-    func entryLinkText(otherValue: String) -> String {
+    public func entryLinkText(otherValue: String) -> String {
         let bold = name.starts(with: "**") ? "" : "**"
         return "\(bold)\(name.trimmingCharacters(in: .whitespacesAndNewlines))\(bold): \(content)\(otherValue)"
     }
 
-    var nameLinkText: String {
+    public var nameLinkText: String {
         let bold = name.starts(with: "**") ? "" : "**"
         return "\(bold)\(name.trimmingCharacters(in: .whitespacesAndNewlines))\(bold)"
     }
 
-    func contentLinkText(otherValue: String) -> String {
+    public func contentLinkText(otherValue: String) -> String {
         return "\(content)\(otherValue)"
     }
 }

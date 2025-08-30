@@ -7,6 +7,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import TableRPG
 import WeatherRPG
 import SwiftUI
 
@@ -54,7 +55,10 @@ struct RootRouteRouter: NavigationRouteHandling {
             return [.send(RootRoute.search)]
         case .settings:
             return [.send(RootRoute.editors)]
-        case .tables(_, _):
+        case .tables(let itemId, _):
+            if let itemId {
+                return [.send(RootRoute.tables), .send(TableRoute.detail(itemId))]
+            }
             return [.send(RootRoute.tables)]
         case .values(_, _):
             return [.send(RootRoute.values)]
@@ -119,8 +123,12 @@ struct RootFiveRouteRouter: NavigationRouteHandling {
             return [.send(RootRoute.search)]
         case .settings:
             return [.send(RootRoute.settings)]
-        case .tables(_, _):
-            return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.tables)]
+        case .tables(let itemId, _):
+            var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.tables)]
+            if let itemId {
+                routes.append(.send(TableRoute.detail(itemId)))
+            }
+            return routes
         case .values(_, _):
             return [.send(RootRoute.values)]
         case .weathers(let itemId, _):

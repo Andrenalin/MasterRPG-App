@@ -34,6 +34,8 @@ struct Master3RPGApp: App {
         AppDependencyManager.shared.add(dependency: photoRootModel)
         let spaceRootModel = appModel.spaceRoot
         AppDependencyManager.shared.add(dependency: spaceRootModel)
+        let tableRootModel = appModel.tableRoot
+        AppDependencyManager.shared.add(dependency: tableRootModel)
         let weatherRootModel = appModel.weatherRoot
         AppDependencyManager.shared.add(dependency: weatherRootModel)
     }
