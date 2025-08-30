@@ -36,6 +36,7 @@ struct ItemRootSplitListView<Detail: View>: View {
     let withoutNavigation: Bool
     @ViewBuilder let detail: Detail
     
+    @Environment(CacheItemListModel.self) private var cacheItemListModel
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
@@ -46,13 +47,13 @@ struct ItemRootSplitListView<Detail: View>: View {
 #if os(iOS)
         Group {
             if withoutNavigation {
-                ItemRootSingleListView(root: root) {
+                ItemRootSingleListView(root: root, cacheItemListModel: cacheItemListModel) {
                     detail
                 }
             } else {
                 if horizontalSizeClass == .compact {
                     ManagedNavigationStack {
-                        ItemRootSingleListView(root: root) {
+                        ItemRootSingleListView(root: root, cacheItemListModel: cacheItemListModel) {
                             detail
                         }
                     }
@@ -73,6 +74,7 @@ struct ItemRootSplitListView<Detail: View>: View {
 
 struct ItemRootSingleListView<Detail: View>: View {
     let root: ItemRootController
+    let cacheItemListModel: CacheItemListModel
     @ViewBuilder let detail: Detail
     
     var body: some View {
@@ -83,6 +85,7 @@ struct ItemRootSingleListView<Detail: View>: View {
                 ItemDetailRooteNavigationView(root: root, route: route) {
                     detail
                 }
+                .environment(cacheItemListModel)
             }
             .onAppear {
                 listModel.resetListSelection()
@@ -101,13 +104,11 @@ struct ItemDetailRooteNavigationView<Detail: View>: View {
     @ViewBuilder let detail: Detail
     
     @Environment(DeviceRotationModel.self) private var deviceRotationModel
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
 
     var body: some View {
         let _ = Self._printChanges()
 
         detail
-            .environment(cacheItemListModel)
             .environment(deviceRotationModel)
             .environment(root)
             .environment(root.listDisplayModel)
