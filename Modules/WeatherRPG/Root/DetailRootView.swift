@@ -29,7 +29,7 @@ struct DetailRootView: View {
                 }
             }
         } inspector: {
-            root.photoRoot.viewController.linkWindow(isInspector: true)
+            root.photoRoot.viewController.linkWindow(root: root.photoRoot, isInspector: true)
         }
         .navigationDestination(for: SelectionPhotoRoute.self) { route in
             route

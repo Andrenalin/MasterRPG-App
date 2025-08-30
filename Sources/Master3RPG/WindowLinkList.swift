@@ -4,11 +4,13 @@
 import CoreRPG
 import RolePlayGameKit
 import SwiftUI
+
 import AudioRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import TableRPG
 import WeatherRPG
 
 struct WindowLinkList: Scene {
@@ -16,128 +18,42 @@ struct WindowLinkList: Scene {
     
     var body: some Scene {
         Group {
-            WindowGroup("\(NetworkModules.pdf.title) Link", id: NetworkModules.pdf.linkWindowId) {
-                appModel.pdfRoot.viewController.linkWindow()
-                    .environment(appModel.pdfRoot)
-                    .accentColor(.teal)
-                    .tint(.teal)
-                    .frame(minWidth: 350, minHeight: 400)
-                    .onDisappear {
-                        appModel.windowStateModel.openWindowState[.pdf] = false
-                    }
-                    .handlesExternalEvents(preferring: [], allowing: [])
-#if os(macOS)
-                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-#endif
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .pdf))
-#if os(macOS)
-            .keyboardShortcut("3", modifiers: [.command, .option])
-#endif
+            windowGroup(model: appModel, module: .pdf, key: "3", content:                 appModel.pdfRoot.viewController.linkWindow(root: appModel.pdfRoot))
 
-            WindowGroup("\(NetworkModules.audio.title) Link", id: NetworkModules.audio.linkWindowId) {
-                appModel.audioRoot.viewController.linkWindow()
-                    .environment(appModel.audioRoot)
-                    .accentColor(.teal)
-                    .tint(.teal)
-                    .frame(minWidth: 350, minHeight: 400)
-                    .onDisappear {
-                        appModel.windowStateModel.openWindowState[.audio] = false
-                    }
-                    .handlesExternalEvents(preferring: [], allowing: [])
-#if os(macOS)
-                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-#endif
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .audio))
-#if os(macOS)
-            .keyboardShortcut("6", modifiers: [.command, .option])
-#endif
+            windowGroup(model: appModel, module: .table, key: "4", content:                 appModel.tableRoot.viewController.linkWindow(root: appModel.tableRoot))
 
-            WindowGroup("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkWindowId) {
-                appModel.diceRoot.viewController.linkWindow()
-                    .environment(appModel.diceRoot)
-                    .accentColor(.teal)
-                    .tint(.teal)
-                    .frame(minWidth: 350, minHeight: 400)
-                    .onDisappear {
-                        appModel.windowStateModel.openWindowState[.dice] = false
-                    }
-                    .handlesExternalEvents(preferring: [], allowing: [])
-#if os(macOS)
-                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-#endif
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .dice))
-#if os(macOS)
-            .keyboardShortcut("7", modifiers: [.command, .option])
-#endif
+            windowGroup(model: appModel, module: .audio, key: "6", content:                 appModel.audioRoot.viewController.linkWindow(root: appModel.audioRoot))
 
-            WindowGroup("\(NetworkModules.photo.title) Link", id: NetworkModules.photo.linkWindowId) {
-                appModel.photoRoot.viewController.linkWindow()
-                    .environment(appModel.photoRoot)
-                    .accentColor(.teal)
-                    .tint(.teal)
-                    .frame(minWidth: 350, minHeight: 400)
-                    .onDisappear {
-                        appModel.windowStateModel.openWindowState[.photo] = false
-                    }
-                    .handlesExternalEvents(preferring: [], allowing: [])
-#if os(macOS)
-                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-#endif
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .photo))
-#if os(macOS)
-            .keyboardShortcut("8", modifiers: [.command, .option])
-#endif
-            WindowGroup("\(NetworkModules.space.title) Link", id: NetworkModules.space.linkWindowId) {
-                appModel.spaceRoot.viewController.linkWindow()
-                    .environment(appModel.spaceRoot)
-                    .accentColor(.teal)
-                    .tint(.teal)
-                    .frame(minWidth: 350, minHeight: 400)
-                    .onDisappear {
-                        appModel.windowStateModel.openWindowState[.space] = false
-                    }
-                    .handlesExternalEvents(preferring: [], allowing: [])
-#if os(macOS)
-                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-#endif
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .space))
-#if os(macOS)
-            .keyboardShortcut("9", modifiers: [.command, .option])
-#endif
-            
-            WindowGroup("\(NetworkModules.weather.title) Link", id: NetworkModules.weather.linkWindowId) {
-                appModel.weatherRoot.viewController.linkWindow()
-                    .environment(appModel.weatherRoot)
-                    .accentColor(.teal)
-                    .tint(.teal)
-                    .frame(minWidth: 350, minHeight: 400)
-                    .onDisappear {
-                        appModel.windowStateModel.openWindowState[.weather] = false
-                    }
-                    .handlesExternalEvents(preferring: [], allowing: [])
-#if os(macOS)
-                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-#endif
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .weather))
-#if os(macOS)
-            .keyboardShortcut("0", modifiers: [.command, .option])
-#endif
+            windowGroup(model: appModel, module: .dice, key: "7", content:                 appModel.diceRoot.viewController.linkWindow(root: appModel.diceRoot))
 
+            windowGroup(model: appModel, module: .photo, key: "8", content:                 appModel.photoRoot.viewController.linkWindow(root: appModel.photoRoot))
 
+            windowGroup(model: appModel, module: .space, key: "9", content:                 appModel.spaceRoot.viewController.linkWindow(root: appModel.spaceRoot))
+
+            windowGroup(model: appModel, module: .weather, key: "0", content:                 appModel.weatherRoot.viewController.linkWindow(root: appModel.weatherRoot))
         }
         .defaultSize(CGSize(width: 400, height: 800))
+    }
+    
+    private func windowGroup<Content: View>(model: AppModel, module: NetworkModules, key: KeyEquivalent, content: Content) -> some Scene {
+        WindowGroup("\(module.title) Link", id: module.linkWindowId) {
+            content
+                .accentColor(.teal)
+                .tint(.teal)
+                .frame(minWidth: 350, minHeight: 400)
+                .onDisappear {
+                    model.windowStateModel.openWindowState[module] = false
+                }
+                .handlesExternalEvents(preferring: [], allowing: [])
+#if os(macOS)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+#endif
+        }
+        .windowResizability(.contentSize)
+        .defaultWindowPlacementAll(model.windowPlacement(for: module))
+#if os(macOS)
+        .keyboardShortcut(key, modifiers: [.command, .option])
+#endif
     }
 }
 

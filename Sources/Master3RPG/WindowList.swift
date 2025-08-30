@@ -16,12 +16,12 @@ struct WindowList: Scene {
                     .accentColor(.teal)
                     .tint(.teal)
                     .frame(minWidth: 600, minHeight: 400)
-                .handlesExternalEvents(preferring: [], allowing: [])
+                    .handlesExternalEvents(preferring: [], allowing: [])
             }
             .windowResizability(.contentSize)
-            #if !os(iOS)
+#if !os(iOS)
             .restorationBehavior(.disabled)
-            #endif
+#endif
             .defaultWindowPlacementAll(.below(WindowIdentifier.game.rawValue))
         }
         .defaultSize(CGSize(width: 600, height: 800))

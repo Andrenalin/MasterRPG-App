@@ -14,7 +14,8 @@ extension ViewController: ViewControllable {}
 
 public extension ViewController {
     @MainActor
-    func linkWindow() -> some View {
-        LinkRootView(type: .window)
+    func linkWindow(root: SpaceRootModel, isInspector: Bool = false) -> some View {
+        LinkRootView(type: isInspector ? .inspector : .window)
+            .environment(root)
     }
 }

@@ -1,9 +1,9 @@
 // @copyright André Trettin
 
 import CoreRPG
+import DiceRPG
 import SwiftData
 import SwiftUI
-import PhotoRPG
 
 struct DetailRootView: View {
     let selectedId: UUID?
@@ -21,7 +21,7 @@ struct DetailRootView: View {
                     }
 #if os(macOS)
                     ScrollView {
-                        detailEditorView(model: weatherModel)
+                        detailEditorView(model: tableModel)
                     }
 #else
                     detailEditorView(model: tableModel)
@@ -29,11 +29,11 @@ struct DetailRootView: View {
                 }
             }
         } inspector: {
-            //root.diceRoot.viewController.linkWindow(isInspector: true)
+            root.diceRoot.viewController.linkWindow(root: root.diceRoot, isInspector: true)
         }
-        .navigationDestination(for: SelectionPhotoRoute.self) { route in
+        .navigationDestination(for: SelectionDiceRoute.self) { route in
             route
-                .environment(root.editController.selectionPhoto)
+                .environment(root.editController.selectionDice)
         }
     }
     
@@ -47,6 +47,7 @@ struct DetailRootView: View {
 
     func detailEditorView(model: TableDataModel) -> some View {
         Form {
+            root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.selectionDice)
             Text("Empty - comming soon")
         }
     }

@@ -209,7 +209,7 @@ struct RouteRouteDestionationView: View {
         case .settings:
             SettingsView(store: appStore)
         case .tables(let tabId):
-            NewTableRoute(appStore: appStore, tabId: tabId, isExtended: true)
+            NewTableRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .values(let tabId):
             ValueFactory.rootView(for: appStore.valueRoot, tabId: tabId)
                 .environment(appStore.valueRoot)
