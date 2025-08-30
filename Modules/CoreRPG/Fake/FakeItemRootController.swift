@@ -5,15 +5,15 @@ import SwiftData
 
 @Observable
 public final class FakeItemRootController: ItemRootControllable {
-    public init(modelContext: ModelContext) {
+    public init(modelContext: ModelContext, module: NetworkModules) {
         self.modelContext = modelContext
         
-        let module = NetworkModules.audio
+        let module = module
         self.module = module
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContext: modelContext, module: .audio, categoryTags: [.music, .sound])
+        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.music, .sound])
         self.searchModel = searchModel
 
         let itemSelectionModel = ItemSelectionModel()

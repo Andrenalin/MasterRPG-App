@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "23777BDD-C253-43DE-90DB-F429A527F169",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "8E3620B42E1A810000E5C99A",
+        "name" : "CoreRPGTests"
+      }
+    }
+  ],
+  "version" : 1
+}

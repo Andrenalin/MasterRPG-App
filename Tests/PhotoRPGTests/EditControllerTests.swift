@@ -26,7 +26,7 @@ struct EditControllerTests {
     @Test func addNewPhotoItem() async throws {
         let root = try makeRoot()
         #expect(models(in: root).isEmpty)
-        let model = root.editController.addNew(modelContext: root.modelContext, type: .item)        
+        let model = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .item)        
         #expect(model.category == .adventure)
         #expect(models(in: root).count == 1)
     }
@@ -35,7 +35,7 @@ struct EditControllerTests {
     @Test func addNewAlbum() async throws {
         let root = try makeRoot()
         #expect(models(in: root).isEmpty)
-        let model = root.editController.addNew(modelContext: root.modelContext, type: .collection)
+        let model = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .collection)
         #expect(model.category == .album)
         #expect(models(in: root).count == 1)
     }
@@ -44,7 +44,7 @@ struct EditControllerTests {
     @Test func addNewFolder() async throws {
         let root = try makeRoot()
         #expect(models(in: root).isEmpty)
-        let model = root.editController.addNew(modelContext: root.modelContext, type: .folder)
+        let model = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .folder)
         #expect(model.category == .folder)
         #expect(models(in: root).count == 1)
     }
@@ -55,13 +55,13 @@ struct EditControllerTests {
         #expect(models(in: root).isEmpty)
 
         // Create a main folder
-        let folder = root.editController.addNew(modelContext: root.modelContext, type: .folder)
+        let folder = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .folder)
         #expect(folder.category == .folder)
         #expect(models(in: root).count == 1)
 
         // Create subfolder and album
-        let subfolder = root.editController.addNew(modelContext: root.modelContext, type: .folder)
-        let album = root.editController.addNew(modelContext: root.modelContext, type: .collection)
+        let subfolder = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .folder)
+        let album = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .collection)
         #expect(subfolder.category == .folder)
         #expect(album.category == .album)
 
@@ -70,8 +70,8 @@ struct EditControllerTests {
         root.editController.addItem(itemId: album.id, in: root.modelContext, parentId: folder.id, folderId: nil)
 
         // Add photo item to subfolder and to album
-        let photo1 = root.editController.addNew(modelContext: root.modelContext, type: .item)
-        let photo2 = root.editController.addNew(modelContext: root.modelContext, type: .item)
+        let photo1 = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .item)
+        let photo2 = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .item)
         root.editController.addItem(itemId: photo1.id, in: root.modelContext, parentId: subfolder.id, folderId: nil)
         root.editController.addItem(itemId: photo2.id, in: root.modelContext, parentId: album.id, folderId: nil)
 
@@ -101,7 +101,7 @@ struct EditControllerTests {
         #expect(models(in: root).isEmpty)
 
         // Create a folder
-        let folder = root.editController.addNew(modelContext: root.modelContext, type: .folder)
+        let folder = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .folder)
         #expect(folder.category == .folder)
         #expect(models(in: root).count == 1)
 
@@ -120,14 +120,14 @@ struct EditControllerTests {
         #expect(models(in: root).isEmpty)
 
         // Create two albums
-        let album1 = root.editController.addNew(modelContext: root.modelContext, type: .collection)
-        let album2 = root.editController.addNew(modelContext: root.modelContext, type: .collection)
+        let album1 = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .collection)
+        let album2 = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .collection)
         #expect(album1.category == .album)
         #expect(album2.category == .album)
 
         // Create two photos
-        let photo1 = root.editController.addNew(modelContext: root.modelContext, type: .item)
-        let photo2 = root.editController.addNew(modelContext: root.modelContext, type: .item)
+        let photo1 = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .item)
+        let photo2 = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .item)
         #expect(photo1.category == .adventure) // Assuming .adventure is the photo category
         #expect(photo2.category == .adventure)
 
@@ -184,9 +184,9 @@ struct EditControllerTests {
         #expect(models(in: root).isEmpty)
 
         // Create an album, a folder, and another album
-        let album = root.editController.addNew(modelContext: root.modelContext, type: .collection)
-        let folder = root.editController.addNew(modelContext: root.modelContext, type: .folder)
-        let album2 = root.editController.addNew(modelContext: root.modelContext, type: .collection)
+        let album = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .collection)
+        let folder = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .folder)
+        let album2 = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .collection)
         #expect(album.category == .album)
         #expect(folder.category == .folder)
         #expect(album2.category == .album)

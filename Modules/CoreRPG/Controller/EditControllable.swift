@@ -70,10 +70,11 @@ public extension EditControllable {
 
     func addItem(itemId: UUID, in model: ItemDataModel, folderId: UUID?) {
         guard itemId != model.id else { return }
-        //let specdialType = Model.collectionCategory
         model.withTransaction { modelContext in
             guard let item = ItemDataModel.model(modelContext: modelContext, id: itemId) else { return }
-            //guard model.category == specdialType && item.specialCategory else { return }
+            if item.specialCategory && !model.isFolder {
+                return
+            }
             var entries: [EntryDataModel] = model.entries
             let entry = createNewEntry(in: model, childId: itemId)
             entries.append(entry)
@@ -124,6 +125,7 @@ public extension EditControllable {
 // MARK: - Group Items
 public extension EditControllable {
     func addGroup(childId: UUID, model: ItemDataModel) {
+        guard model.id != childId else { return }
         model.withTransaction { modelContext in
             var entries: [EntryDataModel] = model.entries
 
@@ -138,6 +140,7 @@ public extension EditControllable {
     }
 
     func removeGroup(childId: UUID, model: ItemDataModel) {
+        guard model.id != childId else { return }
         model.withTransaction { modelContext in
             var entries: [EntryDataModel] = model.entries
             let entry = model[childId]

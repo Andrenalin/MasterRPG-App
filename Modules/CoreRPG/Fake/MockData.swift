@@ -175,7 +175,7 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        self._root = State(wrappedValue: FakeItemRootController(modelContext: modelContext))
+        self._root = State(wrappedValue: FakeItemRootController(modelContext: modelContext, module: .audio))
     }
     
     @State private var root: FakeItemRootController

@@ -155,7 +155,7 @@ extension ItemDataModel {
 
 extension ItemDataModel {
     public static var newItem: ItemDataModel {
-        ItemDataModel(name: "", information: "", category: .music, tags: [])
+        ItemDataModel(name: "", information: "", category: .all, tags: [])
     }
 }
 

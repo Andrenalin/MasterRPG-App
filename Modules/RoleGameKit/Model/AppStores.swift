@@ -110,9 +110,10 @@ public final class AppStore: Sendable {
         self.audioRootModel = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.diceRootModel = DiceRootFactory.rootModel(modelContext: modelContainer.mainContext)
         self.pdfRootModel = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        self.photoRootModel = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        let photoRootModel = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.photoRootModel = photoRootModel
         self.spaceRootModel = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        self.weatherRootModel = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        self.weatherRootModel = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRootModel)
     }
 
     public func resetData() async {
