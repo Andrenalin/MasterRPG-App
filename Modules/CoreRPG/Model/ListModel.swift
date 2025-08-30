@@ -20,8 +20,15 @@ public final class ListModel {
     }
     
     // MARK: - Items
-    public var originalItems: [ListItemModel] = []
-    public var displayedItems: [ListItemModel] = []
+    @ObservationIgnored var originalItems: [ListItemModel] = []
+    public var displayedItems: [ListItemModel] = [] {
+        willSet {
+            print("will set displayedItems on \(selectedParentId?.uuidString ?? "No parent") \(displayedItems.count)")
+        }
+        didSet {
+            print("did set displayedItems on \(selectedParentId?.uuidString ?? "No parent") \(displayedItems.count)")
+        }
+    }
     
     var addedModelId: UUID?
     
@@ -30,8 +37,7 @@ public final class ListModel {
     public var lastFolderId: UUID?
     private var subItemModels: [UUID: ListSubItemModel] = [:]
     var level: Int = 0
-    
-    
+        
     public func isFolderOpen(itemId: UUID) -> Bool {
         subItemModels[itemId]?.isOpen ?? false
     }
@@ -59,15 +65,12 @@ public final class ListModel {
     public var selected: String?
     public var listSelection: Set<String>
 
-    public var multiSelection: Bool = true
-    
     // MARK: - Scroll
     
     var scrollId: String?
     
     // MARK: - ListModels
-    @ObservationIgnored
-    var subListModel: ListModel?
+    @ObservationIgnored var subListModel: ListModel?
 }
 
 // MARK: - Items
@@ -85,24 +88,24 @@ extension ListModel {
 // MARK: - Selection
 
 public extension ListModel {
-    func resetListSelection() {
-        listSelection = []
+    func resetListSelection() {        
+        listSelection <=> []
     }
 
     func update(selectionMode: Bool) {
-        isSelectionMode = selectionMode
+        isSelectionMode <=> selectionMode
         if isSelectionMode {
-            selection = []
+            selection <=> []
         } else if let selected {
-            selection = [selected]
+            selection <=> [selected]
         }
     }
 
     func update(selection: Set<String>) {
         if isSelectionMode {
-            self.selection = Array(selection)
+            self.selection <=> Array(selection)
         } else {
-            selected = selection.first
+            selected <=> selection.first
         }
     }
 
@@ -145,7 +148,7 @@ public extension ListModel {
     }
     
     func resetListModel() {
-        selected = nil
+        selected <=> nil
         subListModel = nil
     }
 }
@@ -177,4 +180,13 @@ public final class ListItemModel: Identifiable {
     let model: ItemDataModel
     var isOpen: Bool
     public let level: Int
+}
+
+extension ListItemModel: Equatable {
+    public static func == (lhs: ListItemModel, rhs: ListItemModel) -> Bool {
+        lhs.id == rhs.id
+        && lhs.model.id == rhs.model.id
+        && lhs.isOpen == rhs.isOpen
+        && lhs.level == rhs.level
+    }
 }

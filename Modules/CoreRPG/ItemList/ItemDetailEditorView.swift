@@ -38,22 +38,15 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
 
     public var body: some View {
         let _ = Self._printChanges()
-
-        ZStack(alignment: .top) {
-            Color.clear
-
-            initialFileImporterView
-
-            HeaderFooterContentScrollView {
-                headerView
-            } content: {
-                contentView
-            } footer: {
-                bottomView
-            } background: {
-                Rectangle()
-                    .fill(model.module.color.gradient)
-            }
+        HeaderFooterContentScrollView {
+            headerView
+        } content: {
+            contentView
+        } footer: {
+            bottomView
+        } background: {
+            Rectangle()
+                .fill(model.module.color.gradient)
         }
         .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -85,11 +78,13 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
 #endif
 #if !os(visionOS)
         .inspector(isPresented: $showInspector) {
-            if model.specialCategory {
-                LinkRootView(root: root, type: .inspector)
-            } else {
-                inspector
+#if os(iOS)
+            if horizontalSizeClass == .regular {
+                inspectorView
             }
+#else
+            inspectorView
+#endif
         }
 #endif
         .sheet(isPresented: $isEditing) {
@@ -194,22 +189,38 @@ private extension ItemDetailEditorView {
 
     @ViewBuilder
     var contentView: some View {
-            VStack(spacing: 8) {
-                Spacer()
-                
-                if moveDetails {
-                    ItemDetailOverlayView(model: model)
-                        .padding()
-                }
-                
-                if model.specialCategory {
-                    ListRootView(root: root, parentModel: model)
-                } else {
-                    editor
-                }
+        ZStack {
+            initialFileImporterView
+            
+            editorContentView
+        }
+    }
+    
+    var editorContentView: some View {
+        VStack(spacing: 8) {
+            if moveDetails {
+                ItemDetailOverlayView(model: model)
+                    .padding()
             }
-            .opacity(hasFile || model.specialCategory ? 1 : 0)
-            .transition(.scale)
+            
+            if model.specialCategory {
+                ListRootView(root: root, parentModel: model)
+            } else {
+                editor
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .opacity(hasFile || model.specialCategory ? 1 : 0)
+        .transition(.scale)
+    }
+    
+    @ViewBuilder
+    var inspectorView: some View {
+        if model.specialCategory {
+            LinkRootView(root: root, type: .inspector)
+        } else {
+            inspector
+        }
     }
 
     func updateFile(url: URL) {

@@ -38,11 +38,11 @@ struct SaveView: View {
     }
 }
 
-#Preview("Small", traits: .mockData) {
-    ManagedNavigationStack {
-        PhotoRootView(withoutNavigation: true)
-    }
-}
+//#Preview("Small", traits: .mockData) {
+//    ManagedNavigationStack {
+//        PhotoRootView(withoutNavigation: true)
+//    }
+//}
 
 
 #Preview("Split", traits: .mockData) {

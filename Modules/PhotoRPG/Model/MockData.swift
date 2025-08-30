@@ -8,6 +8,7 @@ struct MockData: PreviewModifier {
     static let previewId = UUID()
     static let previewId2 = UUID()
     static let previewId3 = UUID()
+    static let folderId = UUID()
     static let emptyFolderId = UUID()
     static let albumId = UUID()
         
@@ -54,8 +55,7 @@ struct MockData: PreviewModifier {
             tags: ["NPC", "Wizward", "Schwarzmagier"]
         )
         container.mainContext.insert(model3)
-
-        let folderId = UUID()
+        
         let subfolderId = UUID()
         let folder = ItemDataModel(
             id: folderId,
@@ -65,6 +65,8 @@ struct MockData: PreviewModifier {
             category: .folder,
             tags: ["Folder", "Project"]
         )
+        container.mainContext.insert(folder)
+        
         let subfolder = ItemDataModel(
             id: subfolderId,
             module: .photo,
@@ -73,6 +75,8 @@ struct MockData: PreviewModifier {
             category: .folder,
             tags: ["Subfolder"]
         )
+        container.mainContext.insert(subfolder)
+
         let folderPhoto = ItemDataModel(
             id: UUID(),
             module: .photo,
@@ -82,6 +86,7 @@ struct MockData: PreviewModifier {
             tags: ["InFolder"],
             parentId: folderId
         )
+        container.mainContext.insert(folderPhoto)
         let subfolderPhoto = ItemDataModel(
             id: UUID(),
             module: .photo,
@@ -91,13 +96,11 @@ struct MockData: PreviewModifier {
             tags: ["InSubfolder"],
             parentId: subfolderId
         )
+        container.mainContext.insert(subfolderPhoto)
+        
         // Attach photos to folder and subfolder
         folder.reset(entries: [EntryDataModel(index: 0, parentId: folderId, childId: subfolderId), EntryDataModel(index: 1, parentId: folderId, childId: folderPhoto.id)])
         subfolder.reset(entries: [EntryDataModel(index: 0, parentId: folderId, childId: subfolderPhoto.id)])
-        container.mainContext.insert(folder)
-        container.mainContext.insert(subfolder)
-        container.mainContext.insert(folderPhoto)
-        container.mainContext.insert(subfolderPhoto)
 
         // Album with photos
         let albumPhoto1 = ItemDataModel(
@@ -108,6 +111,7 @@ struct MockData: PreviewModifier {
             category: .character,
             tags: ["Album"]
         )
+        container.mainContext.insert(albumPhoto1)
         let albumPhoto2 = ItemDataModel(
             id: UUID(),
             module: .photo,
@@ -116,6 +120,7 @@ struct MockData: PreviewModifier {
             category: .adventure,
             tags: ["Album"]
         )
+        container.mainContext.insert(albumPhoto2)
         let album = ItemDataModel(
             id: albumId,
             module: .photo,
@@ -126,9 +131,7 @@ struct MockData: PreviewModifier {
             entries: [EntryDataModel(index: 0, parentId: albumId, childId: albumPhoto1.id), EntryDataModel(index: 1, parentId: albumId, childId: albumPhoto2.id)]
         )
         container.mainContext.insert(album)
-        container.mainContext.insert(albumPhoto1)
-        container.mainContext.insert(albumPhoto2)
-
+                
         // Additional standalone photos
         let photoX = ItemDataModel(
             id: UUID(),

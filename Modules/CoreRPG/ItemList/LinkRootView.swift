@@ -30,7 +30,7 @@ public struct LinkRootView: View {
             .environment(DeviceRotationModel())
             .environment(CacheItemListModel())
             .onChange(of: items, initial: true) {
-                withAnimation { root.listLinkControllable.update(items: items.filter { $0.module == root.module }) }
+                withAnimation { root.listLinkControllable.update(items: items.filter { $0.module == root.module }, parentModel: nil) }
             }
     }
 }

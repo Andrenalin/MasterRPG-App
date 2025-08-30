@@ -57,7 +57,7 @@ struct DetailRootView: View {
         DetailRootView()
     }
     .onAppear {
-        root.listControllable.update(items: models)
+        root.listControllable.update(items: models, parentModel: nil)
         root.listControllable.listModel.set(selectedItemId: models.first!.id)
     }
 }

@@ -34,7 +34,11 @@ struct DetailRootView: View {
     @Previewable @Query var models: [ItemDataModel]
     @Previewable @Environment(PhotoRootModel.self) var root
     
-    DetailRootView().onAppear {
-        root.listControllable.listModel.set(selectedItemId: models.first!.id)
+    NavigationStack {
+        DetailRootView()
+    }
+    .onAppear {
+        root.listControllable.update(items: models, parentModel: nil)
+        root.listControllable.listModel.set(selectedItemId: MockData.previewId3)
     }
 }

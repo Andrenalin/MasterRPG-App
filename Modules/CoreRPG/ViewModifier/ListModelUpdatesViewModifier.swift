@@ -34,7 +34,7 @@ struct ListModelUpdatesViewModifier: ViewModifier {
                 withAnimation { updateSelected() }
             }
             .onChange(of: listControllable.listDisplayModel.listMode) {
-                withAnimation { listControllable.resetFilter() }
+                withAnimation { listControllable.resetFilter(parentModel: parentModel) }
             }
             .onChange(of: listControllable.listDisplayModel.isSelectionMode) {
                 withAnimation { listModel.update(selectionMode: listControllable.listDisplayModel.isSelectionMode) }

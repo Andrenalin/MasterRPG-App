@@ -16,6 +16,7 @@ struct ListRootView: View {
 
     var body: some View {
         let _ = Self._printChanges()
+        let _ = print(parentModel?.name ?? "No parent")
         
         listView
             .animation(.smooth, value: displayItems.count)
@@ -41,7 +42,7 @@ struct ListRootView: View {
                 }
             }
             .onChange(of: items, initial: true) {
-                withAnimation { root.listControllable.update(items: items.filter { $0.module == root.module }) }
+                withAnimation { root.listControllable.update(items: items.filter { $0.module == root.module }, parentModel: parentModel) }
             }
             .listModelUpdatesModifier(listControllable: root.listControllable, parentModel: parentModel)
             .toolbarItemListModifier(root: root, listControllable: root.listControllable, parentModel: parentModel)
@@ -198,7 +199,7 @@ private extension ListRootView {
                 .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    withAnimation { root.listControllable.toggleFolder(item: item) }
+                    withAnimation { root.listControllable.toggleFolder(item: item, parentModel: parentModel) }
                 }
         }
     }

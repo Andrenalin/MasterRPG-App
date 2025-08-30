@@ -18,6 +18,7 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
         
         content
             .frame(maxWidth: .infinity)
+            .scrollBounceBehavior(.basedOnSize)
             .onScrollGeometryChange(for: CGFloat.self) {
                 max($0.contentOffset.y + $0.contentInsets.top, 0)
             } action: { oldValue, newValue in

@@ -15,16 +15,14 @@ public struct ItemRootView<Detail: View>: View {
     let withoutNavigation: Bool
     let detail: Detail
 
-    @Environment(DeviceRotationModel.self) private var deviceRotationModel
-
-    @State private var column: NavigationSplitViewVisibility = .all
-    @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     @State private var cacheItemListModel = CacheItemListModel()
 
     public var body: some View {
         let _ = Self._printChanges()
         
-        rootView
+        ItemRootSplitListView(root: root, withoutNavigation: withoutNavigation) {
+            detail
+        }
             .environment(cacheItemListModel)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
@@ -33,38 +31,103 @@ public struct ItemRootView<Detail: View>: View {
     }
 }
 
-private extension ItemRootView {
-    @ViewBuilder var rootView: some View {
+struct ItemRootSplitListView<Detail: View>: View {
+    let root: ItemRootController
+    let withoutNavigation: Bool
+    @ViewBuilder let detail: Detail
+    
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#endif
+        
+    var body: some View {
+        let _ = Self._printChanges()
+        
 #if os(iOS)
         Group {
             if withoutNavigation {
-                listRoot
-                    .navigationDestination(for: ItemRootRoute.self) { route in
-                        detail
-                            .environment(cacheItemListModel)
-                            .environment(deviceRotationModel)
-                            .environment(root)
-                            .environment(root.listDisplayModel)
-                            .environment(root.searchModel)
-                    }
-                    .onAppear {
-                        print("*** reset list state")
-                        listModel.resetListSelection()
-                        listModel.update(selection: Set())
-                    }
+                ItemRootSingleListView(root: root) {
+                    detail
+                }
             } else {
-                splitRoot
+                if horizontalSizeClass == .compact {
+                    ManagedNavigationStack {
+                        ItemRootSingleListView(root: root) {
+                            detail
+                        }
+                    }
+                } else {
+                    ItemRootSplitView(root: root) {
+                        detail
+                    }
+                }
             }
         }
 #else
-        splitRoot
+        ItemRootSplitView(root: root) {
+            detail
+        }
 #endif
     }
+}
 
-    @ViewBuilder var splitRoot: some View {
+struct ItemRootSingleListView<Detail: View>: View {
+    let root: ItemRootController
+    @ViewBuilder let detail: Detail
+    
+    var body: some View {
+        let _ = Self._printChanges()
+        
+        ItemRootListView(root: root)
+            .navigationDestination(for: ItemRootRoute.self) { route in
+                ItemDetailRooteNavigationView(root: root, route: route) {
+                    detail
+                }
+            }
+            .onAppear {
+                listModel.resetListSelection()
+                listModel.update(selection: Set())
+            }
+    }
+    
+    var listModel: ListModel {
+        root.listControllable.listModel(for: nil)
+    }
+}
+
+struct ItemDetailRooteNavigationView<Detail: View>: View {
+    let root: ItemRootController
+    let route: ItemRootRoute
+    @ViewBuilder let detail: Detail
+    
+    @Environment(DeviceRotationModel.self) private var deviceRotationModel
+    @Environment(CacheItemListModel.self) private var cacheItemListModel
+
+    var body: some View {
+        let _ = Self._printChanges()
+
+        detail
+            .environment(cacheItemListModel)
+            .environment(deviceRotationModel)
+            .environment(root)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+    }
+}
+
+struct ItemRootSplitView<Detail: View>: View {
+    let root: ItemRootController
+    @ViewBuilder let detail: Detail
+    
+    @State private var column: NavigationSplitViewVisibility = .all
+    @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
+    
+    var body: some View {
+        let _ = Self._printChanges()
+        
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             ManagedPresentationView {
-                listRoot
+                ItemRootListView(root: root)
             }
         } detail: {
             ItemSplitDetailRootView(root: root) {
@@ -72,14 +135,16 @@ private extension ItemRootView {
             }
         }
     }
+}
 
-    @ViewBuilder var listRoot: some View {
+struct ItemRootListView: View {
+    let root: ItemRootController
+    
+    var body: some View {
+        let _ = Self._printChanges()
+        
         ListRootView(root: root, parentModel: nil)
-            .searchItemList(listControllable: root.listControllable)
-    }
-
-    var listModel: ListModel {
-        root.listControllable.listModel
+            .searchItemList(listControllable: root.listControllable, parentModel: nil)
     }
 }
 
@@ -91,10 +156,10 @@ struct ItemSplitDetailRootView<Detail: View>: View {
         let _ = Self._printChanges()
         
         if listModel.selectedItemId != nil {
-            ManagedNavigationStack {
+            //ManagedNavigationStack {
                 detail
                     .environment(root)
-            }
+            //}
         } else {
             SplitContentUnavailableView(module: root.module)
         }

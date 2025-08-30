@@ -28,15 +28,15 @@ public struct LinkItemListView: View {
             contentView
                 .onChange(of: listDisplayModel.displayMode, initial: true) {
                     root.listLinkControllable.listDisplayModel.displayMode = listDisplayModel.displayMode
-                    withAnimation { root.listLinkControllable.resetFilter() }
+                    withAnimation { root.listLinkControllable.resetFilter(parentModel: nil) }
                 }
                 .onChange(of: root.listLinkControllable.listDisplayModel.listMode) {
-                    withAnimation { root.listLinkControllable.resetFilter() }
+                    withAnimation { root.listLinkControllable.resetFilter(parentModel: nil) }
                 }
                 .applyIf(type != .inspector) { content in
                     content
                         .toolbarItemListModifier(root: root, listControllable: root.listLinkControllable, parentModel: nil, modal: true)
-                        .searchItemList(listControllable: root.listControllable)
+                        .searchItemList(listControllable: root.listControllable, parentModel: nil)
                         .navigationTitle(root.module.title)
                 }
         }
@@ -83,7 +83,7 @@ private extension LinkItemListView {
         .padding(.horizontal)
         .onChange(of: searchModel.searchText) {
             withAnimation {
-                root.listLinkControllable.resetFilter()
+                root.listLinkControllable.resetFilter(parentModel: nil)
                 cacheItemListModel.reset(search: searchModel.searchText)
             }
         }
@@ -162,7 +162,7 @@ private extension LinkItemListView {
                 .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    withAnimation { root.listLinkControllable.toggleFolder(item: item) }
+                    withAnimation { root.listLinkControllable.toggleFolder(item: item, parentModel: nil) }
                 }
         }
     }

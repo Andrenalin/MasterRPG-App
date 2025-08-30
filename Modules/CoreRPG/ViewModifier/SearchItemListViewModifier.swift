@@ -3,13 +3,14 @@
 import SwiftUI
 
 extension View {
-    func searchItemList(listControllable: any ListControllable) -> some View {
-        modifier(SearchItemListViewModifier(listControllable: listControllable))
+    func searchItemList(listControllable: any ListControllable, parentModel: ItemDataModel?) -> some View {
+        modifier(SearchItemListViewModifier(listControllable: listControllable, parentModel: parentModel))
     }
 }
 
 struct SearchItemListViewModifier: ViewModifier {
     let listControllable: any ListControllable
+    let parentModel: ItemDataModel?
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     
@@ -28,7 +29,7 @@ struct SearchItemListViewModifier: ViewModifier {
                         withAnimation {
                             searchModel.selectedTokens.append(suggestion)
                             searchModel.searchFieldText = ""
-                            listControllable.resetFilter()
+                            listControllable.resetFilter(parentModel: parentModel)
                         }
                     } label: {
                         Label(suggestion.tag, systemImage: "tag")
@@ -43,7 +44,7 @@ struct SearchItemListViewModifier: ViewModifier {
             }
             .onChange(of: searchModel.searchText, initial: true) {
                 withAnimation {
-                    listControllable.resetFilter()
+                    listControllable.resetFilter(parentModel: parentModel)
                     cacheItemListModel.reset(search: searchModel.searchText)
                 }
             }

@@ -24,28 +24,37 @@ extension ListControllable {
 
     private func lastListModel(for parentModel: ItemDataModel) -> ListModel {
         guard let subListModel = listModel.subListModel, subListModel.selectedParentId == parentModel.id else {
-            let listModel = ListModel(listModel: listModel, parentId: parentModel.id, lastFolderId: parentModel.isFolder ? parentModel.id : listModel.lastFolderId)
-            listModel.subListModel = listModel
-            update(items: parentModel.subItems.0, on: listModel)
-            return listModel
+            let newListModel = ListModel(listModel: listModel, parentId: parentModel.id, lastFolderId: parentModel.isFolder ? parentModel.id : listModel.lastFolderId)
+            listModel.subListModel = newListModel
+            return newListModel
         }
         return subListModel
     }
 }
 
 public extension ListControllable {
-    func update(items: [ItemDataModel]) {
-        update(items: items, on: listModel)
+    func update(items: [ItemDataModel], parentModel: ItemDataModel?) {
+        print("*** update: \(parentModel?.name ?? "nil") \(items.count)")
+        if let parentModel {
+            let subItems = items.filter { $0.parentId == parentModel.id }
+            update(items: subItems, on: listModel(for: parentModel), parentModel: parentModel)
+        } else {
+            update(items: items, on: listModel(for: parentModel), parentModel: parentModel)
+        }
     }
 
-    private func update(items: [ItemDataModel], on listModel: ListModel) {
+    private func update(items: [ItemDataModel], on listModel: ListModel, parentModel: ItemDataModel?) {
         let previousSelectedId = listModel.selectedItemId
         
-        guard listModel.originalItems.map({ $0.model.id }) != items.map(\.id) else { return }
+        guard listModel.originalItems.map({ $0.model.id }) != items.map(\.id) else {
+            resetFilter(on: listModel, parentModel: parentModel)
+            return
+        }
         listModel.originalItems = items.enumerated().flatMap { (index, model) in
             map(model: model, index: index, level: 0)
         }
-        listModel.displayedItems = listModel.originalItems.compactMap { filter(item: $0) }
+        
+        resetFilter(on: listModel, parentModel: parentModel)
         
         if let addedItem = listModel.item(modelId: listModel.addedModelId) {
             Task { @MainActor in
@@ -67,11 +76,18 @@ extension ListControllable {
         listModel.addedModelId = model.id
     }
     
-    func resetFilter() {
-        listModel.displayedItems = listModel.originalItems.compactMap { filter(item: $0) }
+    func resetFilter(parentModel: ItemDataModel?) {
+        resetFilter(on: listModel(for: parentModel), parentModel: parentModel)
     }
     
-    func toggleFolder(item: ListItemModel) {
+    private func resetFilter(on listModel: ListModel, parentModel: ItemDataModel?) {
+        let newlyfilteredOnes = listModel.originalItems.compactMap { filter(item: $0, parentModel: parentModel) }
+        if listModel.displayedItems != newlyfilteredOnes {
+            listModel.displayedItems <=> newlyfilteredOnes
+        }
+    }
+    
+    func toggleFolder(item: ListItemModel, parentModel: ItemDataModel?) {
         guard item.model.specialCategory else { return }
         guard let index = listModel.originalItems.firstIndex(where: { item.id == $0.id }) else { return }
         if item.isOpen {
@@ -91,18 +107,22 @@ extension ListControllable {
                 listModel.originalItems.insert(contentsOf: newItems, at: nextIndex)
         }
         item.isOpen.toggle()
-        listModel.displayedItems = listModel.originalItems.compactMap { filter(item: $0) }
+        resetFilter(on: listModel, parentModel: parentModel)
     }
 }
 
 private extension ListControllable {
-    func filter(item: ListItemModel) -> ListItemModel? {
+    func filter(item: ListItemModel, parentModel: ItemDataModel?) -> ListItemModel? {
         if listDisplayModel.listMode == .list {
             if item.model.specialCategory {
                 return nil
             }
         } else {
-            if item.level == 0 {
+            if let parentId = parentModel?.id {
+                if item.model.parentId != parentId {
+                    return nil
+                }
+            } else if item.level == 0 {
                 if item.model.parentId != nil {
                     return nil
                 }
