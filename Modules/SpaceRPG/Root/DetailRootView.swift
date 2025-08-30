@@ -5,10 +5,13 @@ import SwiftData
 import SwiftUI
 
 struct DetailRootView: View {
+    let selectedId: UUID?
+    
+    @Environment(\.modelContext) private var modelContext
     @Environment(SpaceRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.DetailRootView {
+        CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
             if let model = selectedModel {
                 GeometryReader { geometry in
@@ -32,16 +35,10 @@ struct DetailRootView: View {
     }
     
     var selectedModel: ItemDataModel? {
-        root.listControllable.listModel.selectedModel
+        root.listControllable.selectedModel(for: selectedId, modelContext: modelContext)
     }
-
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
-    @Previewable @Environment(SpaceRootModel.self) var root
-    
-    DetailRootView().onAppear {
-        root.listControllable.listModel.set(selectedItemId: models.first!.id)
-    }
+    DetailRootView(selectedId: MockData.previewId)
 }

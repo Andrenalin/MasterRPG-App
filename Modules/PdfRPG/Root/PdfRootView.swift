@@ -14,7 +14,7 @@ struct PdfRootView: View {
         let _ = Self._printChanges()
         
         ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
-            DetailRootView()
+            DetailRootView(selectedId: nil)
         }
         .overlay {
             SaveView(root: root)

@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import SwiftData
 import SwiftUI
 
 @Observable
@@ -148,7 +149,8 @@ public extension ListModel {
     }
     
     func resetListModel() {
-        selected <=> nil
+        resetListSelection()
+        update(selection: Set())
         subListModel = nil
     }
 }

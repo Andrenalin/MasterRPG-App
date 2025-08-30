@@ -5,10 +5,13 @@ import SwiftData
 import SwiftUI
 
 struct DetailRootView: View {
+    let selectedId: UUID?
+    
+    @Environment(\.modelContext) private var modelContext
     @Environment(PhotoRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.DetailRootView {
+        CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
             if let model = selectedModel {
                 ScrollView(showsIndicators: false) {
@@ -26,7 +29,7 @@ struct DetailRootView: View {
     }
     
     var selectedModel: ItemDataModel? {
-        root.listControllable.listModel.selectedModel
+        root.listControllable.selectedModel(for: selectedId, modelContext: modelContext)
     }
 }
 
@@ -35,7 +38,7 @@ struct DetailRootView: View {
     @Previewable @Environment(PhotoRootModel.self) var root
     
     NavigationStack {
-        DetailRootView()
+        DetailRootView(selectedId: MockData.previewId)
     }
     .onAppear {
         root.listControllable.update(items: models, parentModel: nil)

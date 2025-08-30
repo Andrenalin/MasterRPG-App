@@ -28,30 +28,8 @@ extension ItemRootRoute: RawRepresentable {
 extension ItemRootRoute: NavigationDestination {
     public var body: some View {
         switch self {
-        case .detail(_):
-            RootDestinationView()
-        }
-    }
-}
-
-struct RootDestinationView: View {
-    init(isRootView: Bool = true) {
-        self.isRootView = isRootView
-    }
-    
-    let isRootView: Bool
-
-    var body: some View {
-        let _ = Self._printChanges()
-        
-        Group {
-            if isRootView {
-                DetailRootView() {
-                }
-            } else {
-                DetailRootView() {                    
-                }
-                //DetailView(model: item)
+        case .detail(let itemId):
+            DetailRootView(selectedId: itemId) {
             }
         }
     }

@@ -5,10 +5,13 @@ import SwiftData
 import SwiftUI
 
 struct DetailRootView: View {
+    let selectedId: UUID?
+    
+    @Environment(\.modelContext) private var modelContext
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.DetailRootView(moveDetails: true) {
+        CoreRPG.DetailRootView(selectedId: selectedId, moveDetails: true) {
             if let model {
                 DiceViewer(model: model, isEditor: false)
             }
@@ -28,7 +31,7 @@ struct DetailRootView: View {
     }
     
     var model: DiceConfigDataModel? {
-        root.itemController.model(for: root.listControllable.listModel.selectedItemId)
+        root.itemController.model(for: selectedId ?? root.listControllable.listModel.selectedItemId)
     }
     
     func detailEditorView(model: DiceConfigDataModel) -> some View {
@@ -44,10 +47,5 @@ struct DetailRootView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
-    @Previewable @Environment(DiceRootModel.self) var root
-    
-    DetailRootView().onAppear {
-        root.listControllable.listModel.set(selectedItemId: models.first!.id)
-    }
+    DetailRootView(selectedId: MockData.previewId)
 }

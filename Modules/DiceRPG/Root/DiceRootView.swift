@@ -12,7 +12,7 @@ struct DiceRootView: View {
     
     var body: some View {
         ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
-            DetailRootView()
+            DetailRootView(selectedId: nil)
         }
         .overlay {
             SaveView(root: root)

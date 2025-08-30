@@ -4,17 +4,21 @@ import SwiftData
 import SwiftUI
 
 public struct DetailRootView<Header: View, Editor: View, Inspector: View>: View {
-    public init(moveDetails: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
+    public init(selectedId: UUID?, moveDetails: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
+        self.selectedId = selectedId
         self.moveDetails = moveDetails
         self.header = header()
         self.editor = editor()
         self.inspector = inspector()
     }
     
+    let selectedId: UUID?
     let moveDetails: Bool
     let header: Header
     let editor: Editor
     let inspector: Inspector
+    
+    @Environment(\.modelContext) private var modelContext
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
@@ -49,7 +53,11 @@ public struct DetailRootView<Header: View, Editor: View, Inspector: View>: View 
     }
     
     var selectedModel: ItemDataModel? {
-        root.listControllable.listModel.selectedModel
+        if let selectedId {
+            return ItemDataModel.model(modelContext: modelContext, id: selectedId)
+        } else {
+            return root.listControllable.listModel.selectedModel
+        }
     }
 }
 

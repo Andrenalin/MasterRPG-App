@@ -6,14 +6,17 @@ import SwiftUI
 import PhotoRPG
 
 struct DetailRootView: View {
+    let selectedId: UUID?
+    
+    @Environment(\.modelContext) private var modelContext
     @Environment(WeatherRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.DetailRootView {
+        CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
-            if let model {
+            if let selectedModel {
                 if let weatherModel {
-                    if !model.specialCategory {
+                    if !selectedModel.specialCategory {
                         // OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
                     }
 #if os(macOS)
@@ -34,12 +37,12 @@ struct DetailRootView: View {
         }
     }
     
-    var model: ItemDataModel? {
-        root.listControllable.listModel.selectedModel
+    var selectedModel: ItemDataModel? {
+        root.listControllable.selectedModel(for: selectedId, modelContext: modelContext)
     }
 
     var weatherModel: WeatherDataModel? {
-        root.itemController.model(for: model?.id)
+        root.itemController.model(for: selectedId ?? root.listControllable.listModel.selectedItemId)
     }
 
     func detailEditorView(model: WeatherDataModel) -> some View {
@@ -54,7 +57,7 @@ struct DetailRootView: View {
     @Previewable @Environment(WeatherRootModel.self) var root
     
     NavigationStack {
-        DetailRootView()
+        DetailRootView(selectedId: MockData.previewId)
     }
     .onAppear {
         root.listControllable.update(items: models, parentModel: nil)

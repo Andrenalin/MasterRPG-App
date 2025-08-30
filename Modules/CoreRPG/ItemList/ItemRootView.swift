@@ -88,8 +88,7 @@ struct ItemRootSingleListView<Detail: View>: View {
                 .environment(cacheItemListModel)
             }
             .onAppear {
-                listModel.resetListSelection()
-                listModel.update(selection: Set())
+                listModel.resetListModel()
             }
     }
     

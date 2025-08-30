@@ -30,25 +30,7 @@ extension PhotoRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            RootDestinationView(itemId: itemId)
-        }
-    }
-}
-
-struct RootDestinationView: View {
-    init(itemId: UUID, isRootView: Bool = true) {
-        self.itemId = itemId
-        self.isRootView = isRootView
-    }
-    
-    let itemId: UUID
-    let isRootView: Bool
-    
-    var body: some View {
-        if isRootView {
-            DetailRootView()
-        } else {
-            //DetailView(model: item)
+            DetailRootView(selectedId: itemId)
         }
     }
 }

@@ -30,6 +30,14 @@ extension ListControllable {
         }
         return subListModel
     }
+    
+    public func selectedModel(for selectedId: UUID?, modelContext: ModelContext) -> ItemDataModel? {
+        guard let selectedId else {
+            let subListmodel = listModel.lastSubListModel()
+            return subListmodel.selectedModel
+        }
+        return ItemDataModel.model(modelContext: modelContext, id: selectedId)
+    }
 }
 
 public extension ListControllable {

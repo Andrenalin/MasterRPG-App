@@ -5,10 +5,13 @@ import SwiftData
 import SwiftUI
 
 struct DetailRootView: View {
+    let selectedId: UUID?
+    
+    @Environment(\.modelContext) private var modelContext
     @Environment(AudioRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.DetailRootView(moveDetails: true) {
+        CoreRPG.DetailRootView(selectedId: selectedId) {
 #if os(visionOS)
             AudioPlayerBarView()
                 .padding()
@@ -54,15 +57,10 @@ private extension DetailRootView {
     }
 
     var selectedModel: ItemDataModel? {
-        root.listControllable.listModel.selectedModel
+        root.listControllable.selectedModel(for: selectedId, modelContext: modelContext)
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
-    @Previewable @Environment(AudioRootModel.self) var root
-    
-    DetailRootView().onAppear {
-        root.listControllable.listModel.set(selectedItemId: models.first!.id)
-    }
+    DetailRootView(selectedId: MockData.folderId)
 }
