@@ -25,5 +25,7 @@ public struct ConverterController {
                 ItemDataModel(id: item.id, module: .table, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .rules, tags: item.tags, url: nil, displayState: item.displayState)
             )
         }
+        
+        try? modelContext.save()
     }
 }

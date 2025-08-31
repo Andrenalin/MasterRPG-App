@@ -54,8 +54,10 @@ struct DetailRootView: View {
                 .onChange(of: model.diceId, initial: true) {
                     withAnimation { root.editController.selectionDice.resetSelection(itemId: model.diceId) }
                 }
-            Text("Empty - comming soon")
+            
+            EntryList(itemId: model.itemId)
         }
+        .scrollBounceBehavior(.basedOnSize)
     }
 }
 

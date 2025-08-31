@@ -25,6 +25,7 @@ struct NewSwiftDatabaseInit {
             PdfDataModel.self,
             TableDataModel.self,
             TableEntryDataModel.self,
+            WeatherDataModel.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
         do {

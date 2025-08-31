@@ -4,8 +4,8 @@ import Foundation
 import SwiftData
 
 @Model
-final class WeatherDataModel {
-    init(itemId: UUID = UUID(), photoId: UUID? = nil, time: Double = 0, cloudThickness: Cloud.Thickness = Cloud.Thickness.none, stormType: Storm.Contents = Storm.Contents.none, rainAngle: Double = 0, rainIntensity: Double = 0, lightningFrequency: Double = 0, lightningMaxBolts: Double = 0, lightningForkProbability: Double = 0) {
+public final class WeatherDataModel {
+    public init(itemId: UUID = UUID(), photoId: UUID? = nil, time: Double = 0, cloudThickness: Cloud.Thickness = Cloud.Thickness.none, stormType: Storm.Contents = Storm.Contents.none, rainAngle: Double = 0, rainIntensity: Double = 0, lightningFrequency: Double = 0, lightningMaxBolts: Double = 0, lightningForkProbability: Double = 0) {
         self.itemId = itemId
         self.photoId = photoId
         self.time = time

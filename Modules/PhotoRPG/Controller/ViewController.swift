@@ -23,4 +23,11 @@ public extension ViewController {
         PhotoDropChooseView(model: model)
             .environment(root)
     }
+    
+    @ViewBuilder @MainActor
+    func thumbnailRow(root: PhotoRootModel, for itemId: UUID) -> some View {
+        if let model = root.itemController.modelSync(for: itemId) {
+            ThumbnailRowPhotoView(cacheController: root.cacheController, model: model)
+        }
+    }
 }

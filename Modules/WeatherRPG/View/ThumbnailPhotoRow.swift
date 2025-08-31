@@ -13,7 +13,7 @@ struct ThumbnailPhotoRow: View {
     var body: some View {
         let _ = Self._printChanges()
         if let photoId = model?.photoId {
-            root.photoRoot.viewController.thumbnailRowView(for: photoId)
+            root.photoRoot.viewController.thumbnailRow(root: root.photoRoot, for: photoId)
         }
     }
     
