@@ -15,7 +15,7 @@ public struct ConverterController {
             guard let models, !models.contains(where: { $0.id == item.id }) else { return }
             
             item.entries.enumerated().forEach { (index, entry) in
-                let bookmark = PdfBookmarkDataModel(id: entry.id, itemId: item.id, index: index, name: entry.name, content: entry.content, bounds: entry.bounds, pageLabel: entry.pageLabel)
+                let bookmark = PdfDataModel(id: entry.id, itemId: item.id, index: index, name: entry.name, content: entry.content, bounds: entry.bounds, pageLabel: entry.pageLabel)
                 modelContext.insert(bookmark)
             }
             modelContext.insert(

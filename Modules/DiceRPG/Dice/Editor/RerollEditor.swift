@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct RerollEditor: View {
-    let model: DiceConfigDataModel
+    let model: DiceDataModel
     
     @Environment(DiceRootModel.self) private var root
 
@@ -71,7 +71,7 @@ private extension RerollEditor {
         }
     }
     
-    func labelText(for reroll: DiceConfigDataModel.RerollOption) -> LocalizedStringKey {
+    func labelText(for reroll: DiceDataModel.RerollOption) -> LocalizedStringKey {
         if reroll.maxDiceValue {
             return "\(reroll.number) --> Max Value"
         }
@@ -172,7 +172,7 @@ private extension RerollEditor {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceConfigDataModel]
+    @Previewable @Query var models: [DiceDataModel]
 
     RerollEditor(model: models.first!)
 }

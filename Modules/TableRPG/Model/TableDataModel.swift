@@ -5,12 +5,12 @@ import SwiftData
 
 @Model
 public final class TableDataModel {
-    public init(id: UUID = UUID(), diceId: UUID? = nil) {
-        self.id = id
+    public init(itemId: UUID = UUID(), diceId: UUID? = nil) {
+        self.itemId = itemId
         self.diceId = diceId
     }
     
-    public var id: UUID = UUID()
+    var itemId: UUID = UUID()
     var diceId: UUID?
 }
 
@@ -18,7 +18,7 @@ extension TableDataModel {
     var entries: [TableEntryDataModel] {
         guard let modelContext else { return [] }
         let predicate = #Predicate<TableEntryDataModel> {
-            $0.parentId == id
+            $0.itemId == itemId
         }
         let fetch = FetchDescriptor<TableEntryDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.index)])
         return (try? modelContext.fetch(fetch)) ?? []

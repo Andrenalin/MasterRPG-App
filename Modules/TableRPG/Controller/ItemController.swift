@@ -20,11 +20,11 @@ extension ItemController: ItemControllable {
 extension ItemController {
     @MainActor func model(for itemId: UUID?) -> TableDataModel? {
         guard let itemId else { return nil }
-        let predicate = #Predicate<TableDataModel> { $0.id == itemId }
+        let predicate = #Predicate<TableDataModel> { $0.itemId == itemId }
         let fetchDesc = FetchDescriptor<TableDataModel>(predicate: predicate)
         let models: [TableDataModel] = (try? container.mainContext.fetch(fetchDesc)) ?? []
         guard let model = models.first else {
-            let item = TableDataModel(id: itemId)
+            let item = TableDataModel(itemId: itemId)
             container.mainContext.insert(item)
             try? container.mainContext.save()
             return item

@@ -30,11 +30,11 @@ struct DetailRootView: View {
         }
     }
     
-    var model: DiceConfigDataModel? {
+    var model: DiceDataModel? {
         root.itemController.model(for: selectedId ?? root.listControllable.listModel.selectedItemId)
     }
     
-    func detailEditorView(model: DiceConfigDataModel) -> some View {
+    func detailEditorView(model: DiceDataModel) -> some View {
         Form {
             DiceEditor(model: model)
             DiceOptionEditor(model: model)

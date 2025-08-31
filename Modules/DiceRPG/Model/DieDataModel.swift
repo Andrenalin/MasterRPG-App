@@ -7,7 +7,7 @@ import SwiftUI
 
 @Model
 public final class DieDataModel {
-    public init(id: UUID, index: Int = 0, die: RawDie = .twenty, color: String = "", rotation: Double = 0, result: [Int] = [], parent: DiceConfigDataModel? = nil) {
+    public init(id: UUID, index: Int = 0, die: RawDie = .twenty, color: String = "", rotation: Double = 0, result: [Int] = [], parent: DiceDataModel? = nil) {
         self.id = id
         self.index = index
         self.die = die
@@ -26,7 +26,7 @@ public final class DieDataModel {
     @Transient
     var result: [Int] = []
     
-    var parent: DiceConfigDataModel? = nil
+    var parent: DiceDataModel? = nil
 }
 
 extension DieDataModel {
@@ -82,7 +82,7 @@ extension DieDataModel {
         result = []
     }
     
-    func role(resetResults: Bool = false, reroleOptions: [DiceConfigDataModel.RerollOption]) {
+    func role(resetResults: Bool = false, reroleOptions: [DiceDataModel.RerollOption]) {
         var roleResult: [Int] = []
         var role: Int
         repeat {

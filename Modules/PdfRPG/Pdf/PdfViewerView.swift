@@ -103,9 +103,9 @@ struct PdfViewerView: View {
 }
 
 private extension PdfViewerView {
-    var entry: PdfBookmarkDataModel? {
+    var entry: PdfDataModel? {
         guard let entryId else { return nil }
-        return PdfBookmarkDataModel(itemId: model.id)
+        return PdfDataModel(itemId: model.id)
     }
     
     var closeButton: some View {

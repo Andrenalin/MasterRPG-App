@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct FumbleEditor: View {
-    let model: DiceConfigDataModel
+    let model: DiceDataModel
     
     @Environment(DiceRootModel.self) private var root
 
@@ -114,7 +114,7 @@ private extension FumbleEditor {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceConfigDataModel]
+    @Previewable @Query var models: [DiceDataModel]
 
     FumbleEditor(model: models.first!)
 }

@@ -91,7 +91,7 @@ private extension SelectionBar {
             VStack {
                 Color.clear
                 Button {
-                    let entry = PdfBookmarkDataModel(id: UUID(), itemId: UUID(), content: "This is the selection", pageLabel: "2")
+                    let entry = PdfDataModel(id: UUID(), itemId: UUID(), content: "This is the selection", pageLabel: "2")
                     searchModel.selectedEntry = entry
                 } label: {
                     Text("Create")

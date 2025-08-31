@@ -14,10 +14,10 @@ public struct ConverterController {
         items.forEach { item in
             guard let models, !models.contains(where: { $0.id == item.id }) else { return }
             
-            let table = TableRPG.TableDataModel(id: item.id, diceId: item.diceId)
+            let table = TableRPG.TableDataModel(itemId: item.id, diceId: item.diceId)
             modelContext.insert(table)
             let entries = item.entries.enumerated().map { (index, entry) in
-                TableEntryDataModel(parentId: item.id, id: entry.id, index: index, name: entry.name, content: entry.content)
+                TableEntryDataModel(itemId: item.id, entryId: entry.id, index: index, name: entry.name, content: entry.content)
             }
             entries.forEach { modelContext.insert($0) }
             

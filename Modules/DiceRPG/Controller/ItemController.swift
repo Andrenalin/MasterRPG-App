@@ -18,13 +18,13 @@ extension ItemController: ItemControllable {
 }
 
 extension ItemController {
-    @MainActor func model(for itemId: UUID?) -> DiceConfigDataModel? {
+    @MainActor func model(for itemId: UUID?) -> DiceDataModel? {
         guard let itemId else { return nil }
-        let predicate = #Predicate<DiceConfigDataModel> { $0.itemId == itemId }
-        let fetchDesc = FetchDescriptor<DiceConfigDataModel>(predicate: predicate)
-        let models: [DiceConfigDataModel] = (try? container.mainContext.fetch(fetchDesc)) ?? []
+        let predicate = #Predicate<DiceDataModel> { $0.itemId == itemId }
+        let fetchDesc = FetchDescriptor<DiceDataModel>(predicate: predicate)
+        let models: [DiceDataModel] = (try? container.mainContext.fetch(fetchDesc)) ?? []
         guard let model = models.first else {
-            let config = DiceConfigDataModel(itemId: itemId)
+            let config = DiceDataModel(itemId: itemId)
             container.mainContext.insert(config)
             try? container.mainContext.save()
             return config

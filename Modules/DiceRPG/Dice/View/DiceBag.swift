@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct DiceBag: View {
-    let model: DiceConfigDataModel
+    let model: DiceDataModel
 
     let diceBagA: [DieDataModel] = [.die4(color: .A), .die20(color: .A)]
     let diceBagG: [DieDataModel] = [.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
@@ -39,7 +39,7 @@ struct DiceBag: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceConfigDataModel]
+    @Previewable @Query var models: [DiceDataModel]
     
     DiceBag(model: models.first!)
 }

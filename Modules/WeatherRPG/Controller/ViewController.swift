@@ -6,10 +6,14 @@ import SwiftUI
 
 public struct ViewController: Sendable {
     public let goupViewType: GroupViewType = .photo
-    public let thumbnailRowViewType: ThumbnailRowViewType = .photo
+    public let thumbnailRowViewType: ThumbnailRowViewType = .custom
 }
 
-extension ViewController: ViewControllable {}
+extension ViewController: ViewControllable {
+    public func thumbnailRowView(for itemId: UUID) -> AnyView {
+        AnyView(ThumbnailPhotoRow(itemId: itemId))
+    }
+}
 
 // MARK: External Views
 

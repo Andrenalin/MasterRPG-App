@@ -19,7 +19,7 @@ public struct ConverterController {
                 modelContext.insert(dieModel)
                 return dieModel
             }
-            let config = DiceConfigDataModel(
+            let config = DiceDataModel(
                 itemId: item.id,
                 sumUp: item.sumUp,
                 modifier: item.modifier,
@@ -55,7 +55,7 @@ public struct ConverterController {
         }
     }
     
-    private static func convertCompareOption(compareOption: RPGDie.DiceModel.CompareValue) -> DiceConfigDataModel.CompareValue {
+    private static func convertCompareOption(compareOption: RPGDie.DiceModel.CompareValue) -> DiceDataModel.CompareValue {
         switch compareOption {
         case .off: return .off
         case .lower: return .lower
@@ -67,7 +67,7 @@ public struct ConverterController {
         }
     }
     
-    private static func convertCoupFumbleValues(values: [RPGDie.DiceModel.CoupFumbleOption]) -> [DiceConfigDataModel.CoupFumbleOption] {
+    private static func convertCoupFumbleValues(values: [RPGDie.DiceModel.CoupFumbleOption]) -> [DiceDataModel.CoupFumbleOption] {
         values.map { value in
             switch value {
             case .result(let n): return .result(n)
@@ -78,9 +78,9 @@ public struct ConverterController {
         }
     }
     
-    private static func convertRerollOptions(options: [RPGDie.DiceModel.RerollOption]) -> [DiceConfigDataModel.RerollOption] {
+    private static func convertRerollOptions(options: [RPGDie.DiceModel.RerollOption]) -> [DiceDataModel.RerollOption] {
         options.map { option in
-            DiceConfigDataModel.RerollOption(number: option.number, value: option.value, maxDiceValue: option.maxDiceValue)
+            DiceDataModel.RerollOption(number: option.number, value: option.value, maxDiceValue: option.maxDiceValue)
         }
     }
 }

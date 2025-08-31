@@ -30,7 +30,7 @@ struct MockData: PreviewModifier {
             tags: ["Example", "Title", "Ouside"]
         )
         container.mainContext.insert(model1)
-        let weather1 = TableDataModel(id: previewId)
+        let weather1 = TableDataModel(itemId: previewId)
         container.mainContext.insert(weather1)
 
         let model2 = ItemDataModel(
@@ -42,7 +42,7 @@ struct MockData: PreviewModifier {
             tags: ["Player", "Mega", "Gnome"]
         )
         container.mainContext.insert(model2)
-        let weather2 = TableDataModel(id: previewId2)
+        let weather2 = TableDataModel(itemId: previewId2)
         container.mainContext.insert(weather2)
 
         let model3 = ItemDataModel(
@@ -54,7 +54,7 @@ struct MockData: PreviewModifier {
             tags: ["NPC", "Wizward", "Schwarzmagier"]
         )
         container.mainContext.insert(model3)
-        let weather3 = TableDataModel(id: previewId)
+        let weather3 = TableDataModel(itemId: previewId)
         container.mainContext.insert(weather3)
         return container
     }

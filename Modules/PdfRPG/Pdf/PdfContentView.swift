@@ -8,7 +8,7 @@ import SwiftUI
 struct PdfContentView: View {
     let searchModel: PdfSearchModel
     let horizontal: Bool
-    let entry: PdfBookmarkDataModel?
+    let entry: PdfDataModel?
     
     @Environment(PdfRootModel.self) private var root
     @State private var showThumbnail = false

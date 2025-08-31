@@ -12,14 +12,14 @@ struct EditController: EditControllable {
 // MARK: - Edit dice
 
 extension EditController {
-    func add(die: DieDataModel, to model: DiceConfigDataModel) {
+    func add(die: DieDataModel, to model: DiceDataModel) {
         let counter = model.dice.count
         let duplicate = die.duplicate(index: counter)
         model.dice.append(duplicate)
         try? model.modelContext?.save()
     }
     
-    func remove(die: DieDataModel, from model: DiceConfigDataModel) {
+    func remove(die: DieDataModel, from model: DiceDataModel) {
         var dice = model.dice
         dice.removeAll(where: { $0.id == die.id })
         dice.enumerated().forEach { index, die in
@@ -28,8 +28,8 @@ extension EditController {
         model.dice = dice
     }
     
-    func add(coup: Int, isDiceValueCoup: Bool, to model: DiceConfigDataModel) {
-        let newCoupOption: DiceConfigDataModel.CoupFumbleOption
+    func add(coup: Int, isDiceValueCoup: Bool, to model: DiceDataModel) {
+        let newCoupOption: DiceDataModel.CoupFumbleOption
         if isDiceValueCoup {
             newCoupOption = .diceValue(coup)
         } else {
@@ -42,12 +42,12 @@ extension EditController {
     }
 
     
-    func remove(coup: DiceConfigDataModel.CoupFumbleOption, from model: DiceConfigDataModel) {
+    func remove(coup: DiceDataModel.CoupFumbleOption, from model: DiceDataModel) {
         model.coupValues.removeAll { $0.id == coup.id }
     }
 
-    func add(fumble: Int, isDiceValueFumble: Bool, to model: DiceConfigDataModel) {
-        let newFumbleOption: DiceConfigDataModel.CoupFumbleOption
+    func add(fumble: Int, isDiceValueFumble: Bool, to model: DiceDataModel) {
+        let newFumbleOption: DiceDataModel.CoupFumbleOption
         if isDiceValueFumble {
             newFumbleOption = .diceValue(fumble)
         } else {
@@ -59,16 +59,16 @@ extension EditController {
         model.fumbleValues.append(newFumbleOption)
     }
 
-    func remove(fumble: DiceConfigDataModel.CoupFumbleOption, from model: DiceConfigDataModel) {
+    func remove(fumble: DiceDataModel.CoupFumbleOption, from model: DiceDataModel) {
         model.fumbleValues.removeAll { $0.id == fumble.id }
     }
 
-    func add(reroll: Int, value: Int, isMaxDiceValue: Bool, to model: DiceConfigDataModel) {
-        let rerole = DiceConfigDataModel.RerollOption(number: reroll, value: value, maxDiceValue: isMaxDiceValue)
+    func add(reroll: Int, value: Int, isMaxDiceValue: Bool, to model: DiceDataModel) {
+        let rerole = DiceDataModel.RerollOption(number: reroll, value: value, maxDiceValue: isMaxDiceValue)
         model.rerollOptions.append(rerole)
     }
 
-    func remove(reroll: DiceConfigDataModel.RerollOption, from model: DiceConfigDataModel) {
+    func remove(reroll: DiceDataModel.RerollOption, from model: DiceDataModel) {
         model.rerollOptions.removeAll { $0.id == reroll.id }
     }
 }

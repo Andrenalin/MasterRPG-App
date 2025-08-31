@@ -54,7 +54,7 @@ struct DiceDropChooseView: View {
         }
     }
     
-    private var diceModel: DiceConfigDataModel? {
+    private var diceModel: DiceDataModel? {
         root.itemController.model(for: model.itemId)
     }
     

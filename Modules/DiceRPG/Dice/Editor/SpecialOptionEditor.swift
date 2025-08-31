@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct SpecialOptionEditor: View {
-    let model: DiceConfigDataModel
+    let model: DiceDataModel
     
     @Environment(DiceRootModel.self) private var root
 
@@ -45,7 +45,7 @@ private extension SpecialOptionEditor {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceConfigDataModel]
+    @Previewable @Query var models: [DiceDataModel]
 
     SpecialOptionEditor(model: models.first!)
 }

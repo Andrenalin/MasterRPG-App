@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct DiceOptionEditor: View {
-    let model: DiceConfigDataModel
+    let model: DiceDataModel
 
     @Environment(DiceRootModel.self) private var root
     
@@ -21,7 +21,7 @@ struct DiceOptionEditor: View {
                 ToggleEditor(model: $model.percentDice, title: "Percent dice", bundle: .module, icon: "percent")
             }
 
-            ValuePickerEditor(model: $model.compareOption, allCategories: DiceConfigDataModel.CompareValue.allCases, title: "Check for", bundle: .module) { option in
+            ValuePickerEditor(model: $model.compareOption, allCategories: DiceDataModel.CompareValue.allCases, title: "Check for", bundle: .module) { option in
                 Text(option.text, bundle: .module)
                     .tag(option)
 
@@ -51,7 +51,7 @@ struct DiceOptionEditor: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceConfigDataModel]
+    @Previewable @Query var models: [DiceDataModel]
 
     DiceOptionEditor(model: models.first!)
 }

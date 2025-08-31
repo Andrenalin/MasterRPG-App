@@ -6,8 +6,8 @@ import SwiftData
 import SwiftUI
 
 @Model
-public final class DiceConfigDataModel {
-    init(itemId: UUID = UUID(), sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceConfigDataModel.CompareValue = DiceConfigDataModel.CompareValue.off, compareValue: Double = 0.0, coupValues: [DiceConfigDataModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceConfigDataModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [DiceConfigDataModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, dice: [DieDataModel] = []) {
+public final class DiceDataModel {
+    init(itemId: UUID = UUID(), sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceDataModel.CompareValue = DiceDataModel.CompareValue.off, compareValue: Double = 0.0, coupValues: [DiceDataModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceDataModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [DiceDataModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, dice: [DieDataModel] = []) {
         self.itemId = itemId
         self.sumUp = sumUp
         self.modifier = modifier
@@ -31,7 +31,7 @@ public final class DiceConfigDataModel {
     var percentDice: Bool = false
     
     // Compare
-    var compareOption: CompareValue = DiceConfigDataModel.CompareValue.off
+    var compareOption: CompareValue = DiceDataModel.CompareValue.off
     var compareValue: Double = 0.0 {
         didSet {
             resetDice()
@@ -63,7 +63,7 @@ public final class DiceConfigDataModel {
     //    var resultCategory: ResultCategory? = nil
 }
 
-extension DiceConfigDataModel {
+extension DiceDataModel {
     var dice: [DieDataModel] {
         get {
             guard let all = dice_ else { return [] }
@@ -81,12 +81,12 @@ extension DiceConfigDataModel {
         return DieDataModel(id: id)
     }
     
-    static var twenty: DiceConfigDataModel {
-        DiceConfigDataModel(dice: [DieDataModel.die20])
+    static var twenty: DiceDataModel {
+        DiceDataModel(dice: [DieDataModel.die20])
     }
 }
 
-extension DiceConfigDataModel {
+extension DiceDataModel {
     var addDiceActivate: Bool {
         get { addDiceEvery > 0 }
         set { reset(addDice: newValue) }
@@ -152,7 +152,7 @@ extension DiceConfigDataModel {
     }
 }
 
-extension DiceConfigDataModel {
+extension DiceDataModel {
     enum CompareValue: Int, Identifiable, Equatable, Hashable, Codable, CaseIterable {
         case off
         case lower
@@ -206,7 +206,7 @@ extension DiceConfigDataModel {
     }
 }
 
-extension DiceConfigDataModel {
+extension DiceDataModel {
     enum CoupFumbleOption: Identifiable, Equatable, Hashable, Codable, RawRepresentable {
         case result(Int)
         case diceValue(Int)
@@ -273,7 +273,7 @@ extension DiceConfigDataModel {
     
 }
 
-extension DiceConfigDataModel {
+extension DiceDataModel {
     struct RerollOption: Identifiable, Equatable, Hashable, Codable {
         let number: Int
         let value: Int

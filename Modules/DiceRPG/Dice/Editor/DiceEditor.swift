@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct DiceEditor: View {
-    let model: DiceConfigDataModel
+    let model: DiceDataModel
     
     @Environment(DiceRootModel.self) private var root
     
@@ -43,7 +43,7 @@ struct DiceEditor: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceConfigDataModel]
+    @Previewable @Query var models: [DiceDataModel]
     
     DiceEditor(model: models.first!)
 

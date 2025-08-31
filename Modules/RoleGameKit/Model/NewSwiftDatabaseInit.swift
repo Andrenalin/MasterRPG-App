@@ -17,9 +17,9 @@ struct NewSwiftDatabaseInit {
         let schema = Schema([
             TagDataModel.self,
             ItemDataModel.self,
-            DiceConfigDataModel.self,
+            DiceDataModel.self,
             DieDataModel.self,
-            PdfBookmarkDataModel.self
+            PdfDataModel.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
         do {

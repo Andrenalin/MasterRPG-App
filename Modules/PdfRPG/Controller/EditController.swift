@@ -12,13 +12,13 @@ struct EditController: EditControllable {
 // MARK: - Bookmarks
 
 extension EditController {
-    func addBookmark(model: ItemDataModel, bookmark: PdfBookmarkDataModel) {
+    func addBookmark(model: ItemDataModel, bookmark: PdfDataModel) {
         bookmark.itemId = model.id
         try? model.modelContext?.save()
     }
     
-    func createBookmark(itemId: UUID, content: String, page: String, bounds: CGRect) -> PdfBookmarkDataModel {
+    func createBookmark(itemId: UUID, content: String, page: String, bounds: CGRect) -> PdfDataModel {
         let name = String(content.split(separator: " ").first ?? "Unnamed")
-        return PdfBookmarkDataModel(id: UUID(), itemId: itemId, name: name, content: content, bounds: bounds, pageLabel: page)
+        return PdfDataModel(id: UUID(), itemId: itemId, name: name, content: content, bounds: bounds, pageLabel: page)
     }
 }

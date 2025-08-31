@@ -6,7 +6,7 @@ import SwiftData
 import CoreGraphics
 
 @Model
-public final class PdfBookmarkDataModel {
+public final class PdfDataModel {
     init(id: UUID = UUID(), itemId: UUID, index: Int = 0, name: String = "", content: String = "", bounds: CGRect = .zero, pageLabel: String = "") {
         self.id = id
         self.itemId = itemId

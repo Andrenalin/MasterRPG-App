@@ -16,13 +16,13 @@ struct ThumbnailDiceRow: View {
         }
     }
     
-    private var model: DiceConfigDataModel? {
+    private var model: DiceDataModel? {
         root.itemController.model(for: itemId)
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceConfigDataModel]
+    @Previewable @Query var models: [DiceDataModel]
 
     ThumbnailDice(die: models[0].dice.first!, withoutResult: false)
     

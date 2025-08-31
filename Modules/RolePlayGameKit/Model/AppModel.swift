@@ -70,8 +70,8 @@ public final class AppModel: Sendable {
                 TagDataModel.self,
                 ItemDataModel.self,
                 EntryDataModel.self,
-                DiceConfigDataModel.self,
-                PdfBookmarkDataModel.self,
+                DiceDataModel.self,
+                PdfDataModel.self,
                 TableDataModel.self,
                 TableEntryDataModel.self,
             ]
