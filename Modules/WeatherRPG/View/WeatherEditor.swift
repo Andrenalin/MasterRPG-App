@@ -12,6 +12,12 @@ struct WeatherEditor: View {
     var body: some View {
         Section {
             root.viewController.photoSelection(root: root, selectionModel: root.editController.selectionPhoto)
+                .onChange(of: root.editController.selectionPhoto.selection) {
+                    withAnimation { root.editController.add(photoId: root.editController.selectionPhoto.itemId, model: model) }
+                }
+                .onChange(of: model.photoId, initial: true) {
+                    withAnimation { root.editController.selectionPhoto.resetSelection(itemId: model.photoId) }
+                }
         } header: {
 #if os(macOS)
             Divider()

@@ -31,6 +31,14 @@ public final class ItemSelectionModel {
         }
     }
     
+    public func resetSelection(itemId: UUID?) {
+        guard let itemId else {
+            selection <=> []
+            return
+        }
+        selection <=> [WindowItemSelection(itemId: itemId)]
+    }
+    
     func canSelect(isCollection: Bool) -> Bool {
         allowCollections || !isCollection
     }

@@ -48,16 +48,11 @@ struct DetailRootView: View {
     func detailEditorView(model: TableDataModel) -> some View {
         Form {
             root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.selectionDice)
-                .onChange(of: root.editController.selectionDice.itemId) {
-                    model.diceId <=> root.editController.selectionDice.itemId
+                .onChange(of: root.editController.selectionDice.selection) {
+                    withAnimation { root.editController.add(diceId: root.editController.selectionDice.itemId, model: model) }
                 }
                 .onChange(of: model.diceId, initial: true) {
-                    guard model.diceId != root.editController.selectionDice.itemId else { return }
-                    if let diceId = model.diceId {
-                        root.editController.selectionDice.toggleSelection(itemId: diceId, isCollection: false)
-                    } else {
-                        root.editController.selectionDice.selection = []
-                    }
+                    withAnimation { root.editController.selectionDice.resetSelection(itemId: model.diceId) }
                 }
             Text("Empty - comming soon")
         }

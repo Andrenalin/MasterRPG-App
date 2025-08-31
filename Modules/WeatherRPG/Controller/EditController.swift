@@ -17,3 +17,10 @@ struct EditController: EditControllable {
     
     let selectionPhoto: ItemSelectionModel
 }
+
+extension EditController {
+    func add(photoId: UUID?, model: WeatherDataModel) {
+        model.photoId = photoId
+        try? model.modelContext?.save()
+    }
+}

@@ -17,3 +17,10 @@ struct EditController: EditControllable {
     
     let selectionDice: ItemSelectionModel
 }
+
+extension EditController {
+    func add(diceId: UUID?, model: TableDataModel) {
+        model.diceId = diceId
+        try? model.modelContext?.save()
+    }
+}

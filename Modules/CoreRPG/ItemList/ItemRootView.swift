@@ -156,10 +156,10 @@ struct ItemSplitDetailRootView<Detail: View>: View {
         let _ = Self._printChanges()
         
         if listModel.selectedItemId != nil {
-            //ManagedNavigationStack {
+            ManagedPresentationView {
                 detail
                     .environment(root)
-            //}
+            }
         } else {
             SplitContentUnavailableView(module: root.module)
         }
