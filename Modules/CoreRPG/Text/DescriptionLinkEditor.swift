@@ -138,7 +138,7 @@ public struct DescriptionLinkEditor: View {
     
     func addLinks() {
         let name = content.text[content.selection]
-        let link = LinkDataModel(name: AttributedString(name), sourceId: UUID(), sourceModule: .pdf, destinationId: UUID(), destinationEntryId: nil, destinationModel: .photo)
+        let link = LinkDataModel(name: "Not working yet", sourceId: UUID(), sourceModule: .pdf, destinationId: UUID(), destinationEntryId: nil, destinationModel: .photo)
         content.model.links.append(link)
         var updatedName = AttributedString(name)
         updatedName.linkContent = link.id

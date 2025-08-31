@@ -36,6 +36,10 @@ public actor DataModelActor {
         model.fileUrl
     }
 
+    public var url: URL? {
+        model.url
+    }
+
     public func update(name: String) {
         model.reset(name: name)
     }

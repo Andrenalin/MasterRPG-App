@@ -11,7 +11,7 @@ struct DetailRootView: View {
     @Environment(AudioRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.DetailRootView(selectedId: selectedId) {
+        CoreRPG.DetailRootView(selectedId: selectedId, moveDetails: true) {
 #if os(visionOS)
             AudioPlayerBarView()
                 .padding()

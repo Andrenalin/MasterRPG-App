@@ -7,7 +7,8 @@ public protocol ItemControllable: Sendable {
     var container: ModelContainer { get }
     var collectionCategory: ItemListCategory { get }
     
-    func encodedItemData(for id: UUID) async throws -> Data?
+    @MainActor func encodedItemData(for id: UUID) throws -> Data?
+    @MainActor func fileUrl(id: UUID, url: URL?) -> FileUrl?
 }
 
 public extension ItemControllable {
@@ -43,13 +44,16 @@ public extension ItemControllable {
     func fileUrl(for id: UUID) async -> FileUrl? {
         let actor = DataModelActor(modelContainer: container)
         await actor.setup(id: id)
-        return await actor.fileUrl
+        let url = await actor.url
+        return await fileUrl(id: id, url: url)
     }
     
-    func itemDataCodableModel(for id: UUID) async -> ItemDataCodableModel? {
+    @MainActor func fileUrl(id: UUID, url: URL?) -> FileUrl? { nil }
+    
+    @MainActor func itemDataCodableModel(for id: UUID) -> ItemDataCodableModel? {
         guard let model = ItemDataModel.model(modelContext: ModelContext(container), id: id) else { return nil }
         
         let entries = model.entries.map { EntryDataCodableModel(id: $0.id, index: $0.index, parentId: $0.parentId, childId: $0.childId) }
-        return ItemDataCodableModel(id: model.id, module: model.module, name: model._nameLWW, information: model._informationLWW, category: model.category, tags: model.tags, url: model.url, displayState: model.displayState, parentId: model.parentId, entries: entries)
+        return ItemDataCodableModel(id: model.id, module: model.module, name: model._nameLWW, information: model._informationLWW, category: model.category, tags: model.tags, fileUrl: fileUrl(id: model.id, url: model.url), displayState: model.displayState, parentId: model.parentId, entries: entries)
     }
 }

@@ -11,7 +11,7 @@ public struct ItemDataCodableModel: Codable, Hashable, Equatable, Sendable {
         information: CRDT<String>,
         category: ItemListCategory,
         tags: [String] = [],
-        url: URL?,
+        fileUrl: FileUrl?,
         displayState: Int,
         parentId: UUID?,
         entries: [EntryDataCodableModel]
@@ -24,7 +24,7 @@ public struct ItemDataCodableModel: Codable, Hashable, Equatable, Sendable {
 
         self.category = category
         self.tags = tags
-        self.url = url
+        self.fileUrl = fileUrl
 
         self.displayState = displayState
         self.parentId = parentId
@@ -40,7 +40,7 @@ public struct ItemDataCodableModel: Codable, Hashable, Equatable, Sendable {
 
     public var category: ItemListCategory
     public var tags: [String]
-    public var url: URL?
+    public var fileUrl: FileUrl?
 
     public var displayState: Int
     public var parentId: UUID?

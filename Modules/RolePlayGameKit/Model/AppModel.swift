@@ -67,10 +67,12 @@ public final class AppModel: Sendable {
     private static func initModelContainer() -> ModelContainer {
         let schema = Schema(
             [
-                TagDataModel.self,
                 ItemDataModel.self,
                 EntryDataModel.self,
+                LinkDataModel.self,
+                TagDataModel.self,
                 DiceDataModel.self,
+                DieDataModel.self,
                 PdfDataModel.self,
                 TableDataModel.self,
                 TableEntryDataModel.self,

@@ -9,5 +9,5 @@ struct FakeItemController: ItemControllable, Sendable {
     let container: ModelContainer
     let collectionCategory: ItemListCategory = .album
     
-    func encodedItemData(for: UUID) async -> Data? { nil }
+    @MainActor func encodedItemData(for: UUID) -> Data? { nil }
 }

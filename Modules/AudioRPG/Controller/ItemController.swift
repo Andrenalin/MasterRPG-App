@@ -10,10 +10,15 @@ struct ItemController: Sendable {
 }
 
 extension ItemController: ItemControllable {
-    func encodedItemData(for id: UUID) async throws -> Data? {
+    @MainActor func encodedItemData(for id: UUID) throws -> Data? {
         let encoder = JSONEncoder()
-        let model = await itemDataCodableModel(for: id)
+        let model = itemDataCodableModel(for: id)
         return try encoder.encode(model)
+    }
+    
+    @MainActor func fileUrl(id: UUID, url: URL?) -> FileUrl? {
+        guard let url else { return nil }
+        return FileUrl(fileId: id, url: url, location: .cloud, module: NetworkModules.audio.token)
     }
     
     func hasAudio(itemId: UUID) -> Bool {
@@ -22,23 +27,16 @@ extension ItemController: ItemControllable {
         return model.entries.contains { hasAudio(itemId: $0.childId) }
     }
     
-    func audioList(itemId: UUID) -> [AudioModel] {
+    @MainActor func audioList(itemId: UUID) -> [ItemDataCodableModel] {
         guard let model = modelSync(for: itemId) else { return [] }
-        guard model.specialCategory else { return model.url == nil ? [] : [itemModel(model: model)] }
+        guard model.specialCategory else {
+            guard model.url != nil, let item = itemModel(model: model) else { return [] }
+            return [item]
+        }
         return model.entries.flatMap { audioList(itemId: $0.childId) }
     }
 
-    public func itemModel(model: ItemDataModel) -> AudioModel {
-        let entries = model.entries.map { AudioEntryModel(id: $0.id, itemId: $0.childId) }
-        return AudioModel(
-            id: model.id,
-            name: CRDT(wrappedValue: model.name),
-            description: CRDT(wrappedValue: model.information),
-            tags: CRDT(wrappedValue: model.tags),
-            category: CRDT(wrappedValue: model.category),
-            displayState: model.displayState,
-            fileUrl: CRDTDataUpdate(wrappedValue: model.fileUrl),
-            entries: CRDTDataUpdate(wrappedValue: entries)
-        )
+    @MainActor func itemModel(model: ItemDataModel) -> ItemDataCodableModel? {
+        itemDataCodableModel(for: model.id)
     }
 }

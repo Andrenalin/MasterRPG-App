@@ -4,33 +4,35 @@ import SwiftData
 import Foundation
 
 @Model
-final class LinkDataModel: Identifiable {
-    var id: UUID
+public final class LinkDataModel: Identifiable {
+    public var id: UUID = UUID()
+    
+    var name: String = ""
     // source
-    var sourceId: UUID
-    var sourceEntryId: UUID?
-    var sourceModule: NetworkModules
+    var sourceId: UUID = UUID()
+    var sourceEntryId: UUID? = nil
+    var sourceModule: NetworkModules = NetworkModules.none
     // destination
-    var destinationId: UUID
-    var destinationEntryId: UUID?
-    var destinationModule: NetworkModules
+    var destinationId: UUID = UUID()
+    var destinationEntryId: UUID? = nil
+    var destinationModule: NetworkModules = NetworkModules.none
+//    var name: AttributedString {
+//        get { nameModel.value }
+//        set { nameModel.value = newValue }
+//    }
+//
+//    @Relationship(deleteRule: .cascade)
+//    private var nameModel: AttributedStringModel
 
-    var name: AttributedString {
-        get { nameModel.value }
-        set { nameModel.value = newValue }
-    }
-
-    @Relationship(deleteRule: .cascade)
-    private var nameModel: AttributedStringModel
-
-    init(name: AttributedString, sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID?, destinationModel: NetworkModules) {
+    public init(name: String, sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModel: NetworkModules) {
         self.id = UUID()
+        self.name = name
         self.sourceId = sourceId
         self.sourceEntryId = sourceEntryId
         self.sourceModule = sourceModule
         self.destinationId = destinationId
         self.destinationEntryId = destinationEntryId
         self.destinationModule = destinationModel
-        self.nameModel = AttributedStringModel(value: name, scope: .link)
+        // self.nameModel = AttributedStringModel(value: name, scope: .link)
     }
 }

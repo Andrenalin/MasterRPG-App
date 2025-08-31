@@ -85,7 +85,7 @@ extension AudioController {
 // MARK: - Playlist
 
 extension AudioController {
-    func add(audio models: [AudioModel], replace: Bool = false) async {
+    func add(audio models: [ItemDataCodableModel], replace: Bool = false) async {
         if replace {
             let resetTask = Task { @MainActor in
                 model.playList = []
@@ -106,7 +106,7 @@ extension AudioController {
         }
     }
     
-    private func audioAsset(for item: AudioModel) async -> PlaylistItem? {
+    private func audioAsset(for item: ItemDataCodableModel) async -> PlaylistItem? {
         guard let fileUrl = item.fileUrl else { return nil }
 
         var audioAsset: PlaylistItem? = nil
@@ -120,8 +120,8 @@ extension AudioController {
                 try data.write(to: tempUrl)
                 let asset = AVURLAsset(url: tempUrl)
                 let duration = try await asset.load(.duration)
-                let description = item.description.isEmpty ? "MasterRPG" : item.description
-                return PlaylistItem(id: item.id, url: asset.url, title: item.name, artist: description, duration: duration)
+                let description = item.information.wrappedValue.isEmpty ? "MasterRPG" : item.information.wrappedValue
+                return PlaylistItem(id: item.id, url: asset.url, title: item.name.wrappedValue, artist: description, duration: duration)
             }
         } catch {
             Logger.audioController.error("Cannot read audio from file url: \(error.localizedDescription, privacy: .public)")
@@ -133,8 +133,8 @@ extension AudioController {
                 try data.write(to: tempUrl)
                 let asset = AVURLAsset(url: tempUrl)
                 let duration = try await asset.load(.duration)
-                let description = item.description.isEmpty ? "MasterRPG" : item.description
-                return PlaylistItem(id: item.id, url: asset.url, title: item.name, artist: description, duration: duration)
+                let description = item.information.wrappedValue.isEmpty ? "MasterRPG" : item.information.wrappedValue
+                return PlaylistItem(id: item.id, url: asset.url, title: item.name.wrappedValue, artist: description, duration: duration)
             }
         } catch {
             Logger.audioController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")
