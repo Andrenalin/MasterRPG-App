@@ -11,11 +11,12 @@ struct EntryList: View {
     
     @Environment(TableRootModel.self) private var root
     @Environment(\.modelContext) private var modelContext
-    
+    @Environment(CacheItemListModel.self) private var cacheItemListModel
+
     var body: some View {
         List {
             ForEach(entries) { entry in
-                Text("\(entry.name): \(entry.content)")
+                EntryRow(entryId: entry.entryId, name: entry.name, content: entry.content, cacheItemListModel: cacheItemListModel)
             }
             .onDelete { indexSet in
                 indexSet.forEach { index in
