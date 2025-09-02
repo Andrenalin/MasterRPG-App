@@ -86,7 +86,7 @@ struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         let ids = root.itemController.allItemIds()
         var results: [TableEntity] = []
         for id in ids {
-            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
             let entity = TableEntity(root: root, model: model)
             results.append(entity)
         }
@@ -96,7 +96,7 @@ struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     func entities(for identifiers: [TableEntity.ID]) async throws -> [TableEntity] {
         var results: [TableEntity] = []
         for id in identifiers {
-            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
             let entity = TableEntity(root: root, model: model)
             results.append(entity)
         }
@@ -107,7 +107,7 @@ struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
         let ids = root.itemController.allItemIds()
         var results: [TableEntity] = []
         for id in ids {
-            guard let model = await root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
             guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
             let entity = TableEntity(root: root, model: model)
             results.append(entity)

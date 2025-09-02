@@ -83,7 +83,7 @@ extension DiceDataModel {
     
     static var twenty: DiceDataModel {
         DiceDataModel(dice: [DieDataModel.die20])
-    }
+    }    
 }
 
 extension DiceDataModel {
@@ -150,6 +150,62 @@ extension DiceDataModel {
     var maxValue: Int {
         dice.reduce(0) { $0 + $1.die.max }
     }
+}
+
+extension DiceDataModel {
+    convenience init(_ model: DiceDataCodableModel) {
+        self.init(
+            itemId: model.itemId,
+            sumUp: model.sumUp,
+            modifier: model.modifier,
+            percentDice: model.percentDice,
+            compareOption: model.compareOption,
+            compareValue: model.compareValue,
+            coupValues: model.coupValues,
+            coupOnlyOnFirstDie: model.coupOnlyOnFirstDie,
+            fumbleValues: model.fumbleValues,
+            fumbleOnlyOnFirstDie: model.fumbleOnlyOnFirstDie,
+            rerollOptions: model.rerollOptions,
+            reorderDice: model.reorderDice,
+            addDiceEvery: model.addDiceEvery,
+            dice: model.dice.map { DieDataModel($0)}
+        )
+    }
+    var codableModel: DiceDataCodableModel {
+        DiceDataCodableModel(
+            itemId: itemId,
+            sumUp: sumUp,
+            modifier: modifier,
+            percentDice: percentDice,
+            compareOption: compareOption,
+            compareValue: compareValue,
+            coupValues: coupValues,
+            coupOnlyOnFirstDie: coupOnlyOnFirstDie,
+            fumbleValues: fumbleValues,
+            fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie,
+            rerollOptions: rerollOptions,
+            reorderDice: reorderDice,
+            addDiceEvery: addDiceEvery,
+            dice: dice.map { $0.codableModel }
+        )
+    }
+    func replace(_ model: DiceDataCodableModel) {
+        itemId = model.itemId
+        sumUp = model.sumUp
+        modifier = model.modifier
+        percentDice = model.percentDice
+        compareOption = model.compareOption
+        compareValue = model.compareValue
+        coupValues = model.coupValues
+        coupOnlyOnFirstDie = model.coupOnlyOnFirstDie
+        fumbleValues = model.fumbleValues
+        fumbleOnlyOnFirstDie = model.fumbleOnlyOnFirstDie
+        rerollOptions = model.rerollOptions
+        reorderDice = model.reorderDice
+        addDiceEvery = model.addDiceEvery
+        dice = model.dice.map { DieDataModel($0) }
+    }
+
 }
 
 extension DiceDataModel {

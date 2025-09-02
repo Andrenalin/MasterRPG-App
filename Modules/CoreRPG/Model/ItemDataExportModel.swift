@@ -14,6 +14,11 @@ public final class ItemDataExportModel: Sendable {
     public var exportedItems: Int = 0
     public var totalExportingItems: Int = 0
     public var isExportRunning: Bool = false
+
+    public enum Version: Int {
+        case version_2024 = 2024
+        case version_2025 = 2025
+    }
 }
 
 public enum ItemDataExportableError: Error {

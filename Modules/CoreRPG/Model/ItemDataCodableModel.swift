@@ -14,7 +14,8 @@ public struct ItemDataCodableModel: Codable, Hashable, Equatable, Sendable {
         fileUrl: FileUrl?,
         displayState: Int,
         parentId: UUID?,
-        entries: [EntryDataCodableModel]
+        entries: [EntryDataCodableModel],
+        externalData: Data?
     ) {
         self.id = id
         self.module = module
@@ -30,6 +31,8 @@ public struct ItemDataCodableModel: Codable, Hashable, Equatable, Sendable {
         self.parentId = parentId
 
         self.entries = entries
+
+        self.externalData = externalData
     }
     
     public var id: UUID
@@ -45,5 +48,7 @@ public struct ItemDataCodableModel: Codable, Hashable, Equatable, Sendable {
     public var displayState: Int
     public var parentId: UUID?
 
-    private var entries: [EntryDataCodableModel]
+    public var entries: [EntryDataCodableModel]
+
+    public var externalData: Data?
 }

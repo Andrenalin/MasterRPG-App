@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
-import PhotoRPG
+import DiceRPG
 import SwiftUI
 
 public struct ViewController: Sendable {
@@ -20,8 +20,7 @@ extension ViewController: ViewControllable {
 extension ViewController {
     @MainActor
     func diceSelection(root: TableRootModel, selectionModel: ItemSelectionModel) -> some View {
-        Text("coming")
-        //root.diceRoot.viewController.selectionView(root: root.diceRoot, model: selectionModel)
+        root.diceRoot.viewController.selectionView(root: root.diceRoot, model: selectionModel)
     }
 }
 

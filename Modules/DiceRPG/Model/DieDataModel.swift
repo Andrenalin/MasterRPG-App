@@ -150,3 +150,35 @@ extension DieDataModel {
         DieDataModel(id: UUID(), die: RawDie.twenty, color: color.rawValue)
     }
 }
+
+extension DieDataModel {
+    convenience init(_ model: DieDataCodableModel) {
+        self.init(
+            id: model.id,
+            index: model.index,
+            die: model.die,
+            color: model.color,
+            rotation: model.rotation,
+            result: model.result,
+            parent: nil
+        )
+    }
+    var codableModel: DieDataCodableModel {
+        DieDataCodableModel(
+            id: id,
+            index: index,
+            die: die,
+            color: color,
+            rotation: rotation,
+            result: result
+        )
+    }
+
+    func replace(_ model: DieDataCodableModel) {
+        index = model.index
+        die = model.die
+        color = model.color
+        rotation = model.rotation
+        result = model.result
+    }
+}

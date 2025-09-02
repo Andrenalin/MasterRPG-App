@@ -2,7 +2,7 @@
 
 import CoreRPG
 
-public struct RawDie: Equatable, Hashable, Codable {
+public struct RawDie: Equatable, Hashable, Codable, Sendable {
     // MARK: - static
 
     public static func role(_ sides: Sides) -> Int {
@@ -71,7 +71,7 @@ public struct RawDie: Equatable, Hashable, Codable {
         "d\(sides.number())"
     }
 
-    public enum Sides: Equatable, Hashable, Codable {
+    public enum Sides: Equatable, Hashable, Codable, Sendable {
         case four
         case six
         case eight

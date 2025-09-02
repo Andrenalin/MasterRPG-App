@@ -10,6 +10,11 @@ struct ItemController: Sendable {
 }
 
 extension ItemController: ItemControllable {
+    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
+        let decoder = JSONDecoder()
+        return try decoder.decode(ItemDataCodableModel.self, from: data)
+    }
+
     @MainActor func encodedItemData(for id: UUID) throws -> Data? {
         let encoder = JSONEncoder()
         let model = itemDataCodableModel(for: id)
