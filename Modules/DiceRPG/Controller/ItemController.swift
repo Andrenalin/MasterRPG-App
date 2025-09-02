@@ -33,7 +33,7 @@ extension ItemController: ItemControllable {
     @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let data else { return }
         let decoder = JSONDecoder()
-        guard let newDice = try? decoder.decode(DiceDataCodableModel.self, from: data) else { return }
+        guard let newDice = try? decoder.decode(DiceDataModel.DiceDataModelCodable.self, from: data) else { return }
         if let oldDice = model(for: id) {
             oldDice.sumUp = newDice.sumUp
         } else {

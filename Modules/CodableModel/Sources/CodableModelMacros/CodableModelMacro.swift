@@ -212,11 +212,11 @@ public struct CodableModelMacro: MemberMacro {
     }
     
     private static func getCodableArrayType(_ type: String) -> String {
-        // Convert [DieDataModel] to [DieDataModelCodable]
+        // Convert [DieDataModel] to [DieDataModel.DieDataModelCodable]
         if type.hasPrefix("[") && type.hasSuffix("]") {
             let innerType = String(type.dropFirst().dropLast())
             if innerType.hasSuffix("DataModel") {
-                return "[\(innerType)Codable]"
+                return "[\(innerType).\(innerType)Codable]"
             }
         }
         return type
@@ -286,21 +286,35 @@ public struct CodableModelMacro: MemberMacro {
             }
         }.joined(separator: "\n        ")
         
-        // Generate assignments for the convenience initializer body
-        let assignmentStatements = properties.map { property in
+
+        
+        // Generate convenience initializer that calls the main initializer with all parameters
+        let initParametersList = properties.map { property in
             if property.isCodableArray {
-                // Convert array of Codable models back to SwiftData models
+                // For arrays, we'll assign after initialization
+                return "\(property.name): []"
+            } else if property.isRelationship {
+                // For relationships, use nil or default
+                return "\(property.name): nil"
+            } else {
+                // For regular properties, use the model value
+                return "\(property.name): model.\(property.name)"
+            }
+        }.joined(separator: ", ")
+        
+        // Generate post-initialization assignments for arrays and relationships
+        let postInitAssignments = properties.compactMap { property in
+            if property.isCodableArray {
                 let innerType = property.originalType.dropFirst().dropLast() // Remove [ ]
                 return "self.\(property.name) = model.\(property.name).map { \(innerType)($0) }"
-            } else {
-                return "self.\(property.name) = model.\(property.name)"
             }
+            return nil
         }.joined(separator: "\n        ")
         
         let convenienceInit = try! InitializerDeclSyntax("convenience init(_ model: \(raw: codableStructName))") {
             """
-            self.init()
-            \(raw: assignmentStatements)
+            self.init(\(raw: initParametersList))
+            \(raw: postInitAssignments.isEmpty ? "" : postInitAssignments)
             """
         }
         
