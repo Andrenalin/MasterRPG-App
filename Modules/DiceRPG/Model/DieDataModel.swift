@@ -1,11 +1,12 @@
 // @copyright André Trettin
 
+import CodableModel
 import Foundation
 import RPGResources
 import SwiftData
 import SwiftUI
 
-@Model
+@Model @CodableModel
 public final class DieDataModel {
     public init(id: UUID, index: Int = 0, die: RawDie = .twenty, color: String = "", rotation: Double = 0, result: [Int] = [], parent: DiceDataModel? = nil) {
         self.id = id
@@ -25,7 +26,7 @@ public final class DieDataModel {
     var rotation: Double = 0
     @Transient
     var result: [Int] = []
-    
+    @CodableIgnored
     var parent: DiceDataModel? = nil
 }
 
@@ -148,37 +149,5 @@ extension DieDataModel {
     
     static func die20(color: ColorCode) -> DieDataModel {
         DieDataModel(id: UUID(), die: RawDie.twenty, color: color.rawValue)
-    }
-}
-
-extension DieDataModel {
-    convenience init(_ model: DieDataCodableModel) {
-        self.init(
-            id: model.id,
-            index: model.index,
-            die: model.die,
-            color: model.color,
-            rotation: model.rotation,
-            result: model.result,
-            parent: nil
-        )
-    }
-    var codableModel: DieDataCodableModel {
-        DieDataCodableModel(
-            id: id,
-            index: index,
-            die: die,
-            color: color,
-            rotation: rotation,
-            result: result
-        )
-    }
-
-    func replace(_ model: DieDataCodableModel) {
-        index = model.index
-        die = model.die
-        color = model.color
-        rotation = model.rotation
-        result = model.result
     }
 }

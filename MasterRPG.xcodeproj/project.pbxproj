@@ -30,6 +30,7 @@
 		594686152E1E1016004DC406 /* PhotoRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5946861B2E1E136D004DC406 /* RPGPhotos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE8952CD8EB5F0010A25B /* RPGPhotos.framework */; };
 		5946861C2E1E136D004DC406 /* RPGPhotos.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE8952CD8EB5F0010A25B /* RPGPhotos.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		596BF93A2E671A18006638F0 /* CodableModel in Frameworks */ = {isa = PBXBuildFile; productRef = 596BF9392E671A18006638F0 /* CodableModel */; };
 		5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		59DC213D2BD75537001140B1 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 59DC213C2BD75537001140B1 /* Localizable.xcstrings */; };
@@ -2530,6 +2531,7 @@
 		593994062B28649100AB9BBE /* AboutMenuCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutMenuCommand.swift; sourceTree = "<group>"; };
 		593D0D2C2E31F2D000410232 /* AudioRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		593D0D342E31F2D000410232 /* AudioRPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AudioRPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		596BF9382E66E5C1006638F0 /* CodableModel */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = CodableModel; path = Modules/CodableModel; sourceTree = "<group>"; };
 		5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalPlayerWindow.swift; sourceTree = "<group>"; };
 		59DC213C2BD75537001140B1 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		8E00BC5D2990942C00C484A1 /* MasterRPGUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MasterRPGUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -3020,6 +3022,7 @@
 			files = (
 				8EB640682E47477A00799690 /* CoreExternalRPG.framework in Frameworks */,
 				8EB640702E47477A00799690 /* RPGDie.framework in Frameworks */,
+				596BF93A2E671A18006638F0 /* CodableModel in Frameworks */,
 				8EB640752E47478400799690 /* RPGResources.framework in Frameworks */,
 				8EB6406C2E47477A00799690 /* CoreRPG.framework in Frameworks */,
 			);
@@ -3455,6 +3458,7 @@
 		8EC4E46028DDA29600D0279F = {
 			isa = PBXGroup;
 			children = (
+				596BF9382E66E5C1006638F0 /* CodableModel */,
 				8E8EEC3E2CD8EC3A0010A25B /* Modules */,
 				8EC4E48A28DDAAF300D0279F /* Resources */,
 				8EC4E47C28DDAAF300D0279F /* Sources */,
@@ -4549,6 +4553,7 @@
 			);
 			name = DiceRPG;
 			packageProductDependencies = (
+				596BF9392E671A18006638F0 /* CodableModel */,
 			);
 			productName = DiceRPG;
 			productReference = 8EB640062E47471400799690 /* DiceRPG.framework */;
@@ -12139,6 +12144,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		596BF9392E671A18006638F0 /* CodableModel */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CodableModel;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8EC4E46128DDA29600D0279F /* Project object */;
 }

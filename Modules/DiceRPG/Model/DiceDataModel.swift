@@ -1,11 +1,12 @@
 // @copyright André Trettin
 
+import CodableModel
 import CoreRPG
 import Foundation
 import SwiftData
 import SwiftUI
 
-@Model
+@Model @CodableModel
 public final class DiceDataModel {
     init(itemId: UUID = UUID(), sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceDataModel.CompareValue = DiceDataModel.CompareValue.off, compareValue: Double = 0.0, coupValues: [DiceDataModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceDataModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [DiceDataModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, dice: [DieDataModel] = []) {
         self.itemId = itemId
@@ -59,8 +60,8 @@ public final class DiceDataModel {
     
     @Relationship(deleteRule: .cascade) private var dice_: [DieDataModel]? = []
 
-    // temporary values
-    //    var resultCategory: ResultCategory? = nil
+    @Transient
+    var resultCategory: ResultCategory? = nil
 }
 
 extension DiceDataModel {
@@ -74,13 +75,6 @@ extension DiceDataModel {
         }
     }
 
-    func entryOrNew(for id: UUID) -> DieDataModel {
-        if let entry = dice.first(where: { $0.id == id }) {
-            return entry
-        }
-        return DieDataModel(id: id)
-    }
-    
     static var twenty: DiceDataModel {
         DiceDataModel(dice: [DieDataModel.die20])
     }    
@@ -150,62 +144,6 @@ extension DiceDataModel {
     var maxValue: Int {
         dice.reduce(0) { $0 + $1.die.max }
     }
-}
-
-extension DiceDataModel {
-    convenience init(_ model: DiceDataCodableModel) {
-        self.init(
-            itemId: model.itemId,
-            sumUp: model.sumUp,
-            modifier: model.modifier,
-            percentDice: model.percentDice,
-            compareOption: model.compareOption,
-            compareValue: model.compareValue,
-            coupValues: model.coupValues,
-            coupOnlyOnFirstDie: model.coupOnlyOnFirstDie,
-            fumbleValues: model.fumbleValues,
-            fumbleOnlyOnFirstDie: model.fumbleOnlyOnFirstDie,
-            rerollOptions: model.rerollOptions,
-            reorderDice: model.reorderDice,
-            addDiceEvery: model.addDiceEvery,
-            dice: model.dice.map { DieDataModel($0)}
-        )
-    }
-    var codableModel: DiceDataCodableModel {
-        DiceDataCodableModel(
-            itemId: itemId,
-            sumUp: sumUp,
-            modifier: modifier,
-            percentDice: percentDice,
-            compareOption: compareOption,
-            compareValue: compareValue,
-            coupValues: coupValues,
-            coupOnlyOnFirstDie: coupOnlyOnFirstDie,
-            fumbleValues: fumbleValues,
-            fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie,
-            rerollOptions: rerollOptions,
-            reorderDice: reorderDice,
-            addDiceEvery: addDiceEvery,
-            dice: dice.map { $0.codableModel }
-        )
-    }
-    func replace(_ model: DiceDataCodableModel) {
-        itemId = model.itemId
-        sumUp = model.sumUp
-        modifier = model.modifier
-        percentDice = model.percentDice
-        compareOption = model.compareOption
-        compareValue = model.compareValue
-        coupValues = model.coupValues
-        coupOnlyOnFirstDie = model.coupOnlyOnFirstDie
-        fumbleValues = model.fumbleValues
-        fumbleOnlyOnFirstDie = model.fumbleOnlyOnFirstDie
-        rerollOptions = model.rerollOptions
-        reorderDice = model.reorderDice
-        addDiceEvery = model.addDiceEvery
-        dice = model.dice.map { DieDataModel($0) }
-    }
-
 }
 
 extension DiceDataModel {
