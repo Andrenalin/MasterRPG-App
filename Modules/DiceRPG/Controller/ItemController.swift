@@ -35,9 +35,10 @@ extension ItemController: ItemControllable {
         let decoder = JSONDecoder()
         guard let newDice = try? decoder.decode(DiceDataModel.DiceDataModelCodable.self, from: data) else { return }
         if let oldDice = model(for: id) {
-            oldDice.sumUp = newDice.sumUp
+            oldDice.replace(newDice)
         } else {
             let newModel = DiceDataModel(newDice)
+            container.mainContext.insert(newModel)
         }
     }
 }

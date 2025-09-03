@@ -150,11 +150,7 @@ struct RouteRouteDestionationView: View {
         case .space:
             SpaceRootFactory.rootView(withoutNavigation: false)
         case .settings:
-            VStack {
-                Text("\(route.title) Coming soon")
-                    .font(.largeTitle)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            SettingsView(model: appModel)
         case .tables:
             TableRootFactory.rootView(withoutNavigation: false)
         case .values:

@@ -2,6 +2,7 @@
 
 import CoreExternalRPG
 import CoreRPG
+import RPGResources
 import SwiftData
 import SwiftUI
 import os.log
@@ -28,6 +29,7 @@ public final class AppModel: Sendable {
 
     // other models
     public let deviceRotationModel: DeviceRotationModel
+    public let settingsModel: AppSettingsModel
     public let windowStateModel: WindowStateModel
     
     // Module roots
@@ -48,6 +50,7 @@ public final class AppModel: Sendable {
         self.modelContainer = modelContainer
 
         self.deviceRotationModel = DeviceRotationModel()
+        self.settingsModel = AppSettingsModel()
         self.windowStateModel = WindowStateModel()
                 
         self.audioRoot = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
@@ -135,6 +138,19 @@ public extension AppModel {
             return .below(NetworkModules.map.linkWindowId, fallback: WindowIdentifier.game.rawValue)
         @unknown default:
             fatalError()
+        }
+    }
+}
+
+extension AppModel {
+    func installExampleData(isGerman: Bool = false) {
+        let importController = diceRoot.importControllable
+        let bundle = Resources.bundle
+        let name = isGerman ? Resources.exampleFirstGermanData : Resources.exampleFirstData
+        guard let url = bundle.url(forResource: name, withExtension: "gmz") else { return }
+        let task = importController.importUrl(from: url)
+        Task {
+            let _ = await task.result
         }
     }
 }

@@ -20,21 +20,6 @@ public final class DiceRootModel {
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
 
-        let itemController = ItemController(container: modelContext.container)
-        let editController = EditController(itemControllable: itemController, fileUrlDataController: nil)
-        let listController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
-        let listLinkController = ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
-        let viewController = ViewController()
-        let rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
-
-        self.itemController = itemController
-        self.editController = editController
-        self.exportController = ExportController(module: module, itemController: itemController, gameExporter: false)
-        self.listController = listController
-        self.listLinkController = listLinkController
-        self.viewController = viewController
-        self.rootController = rootController
-
         itemController.cleanDeleted()
     }
 
@@ -48,18 +33,35 @@ public final class DiceRootModel {
         listController.listModel.selectedItemId
     }
 
-    @ObservationIgnored let editController: EditController
-    @ObservationIgnored let exportController: ExportController
-    @ObservationIgnored let itemController: ItemController
-    @ObservationIgnored let listController: ListController
-    @ObservationIgnored let listLinkController: ListController
-    @ObservationIgnored public let viewController: ViewController
-    @ObservationIgnored let rootController: ItemRootController
+    @ObservationIgnored lazy var editController: EditController = { EditController(itemControllable: itemController, fileUrlDataController: nil)
+    }()
+    @ObservationIgnored lazy var exportController: ExportController = {
+        ExportController(module: module, itemController: itemController, gameExporter: false)
+    }()
+    @ObservationIgnored lazy var importController: ImportController = {
+        ImportController(itemController: itemController, module: module)
+    }()
+    @ObservationIgnored lazy var itemController: ItemController = {
+        ItemController(container: modelContext.container)
+    }()
+    @ObservationIgnored lazy var listController: ListController = {
+        ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
+    }()
+    @ObservationIgnored lazy var listLinkController: ListController = {
+        ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
+    }()
+    @ObservationIgnored public lazy var viewController: ViewController = {
+        ViewController()
+    }()
+    @ObservationIgnored lazy var rootController: ItemRootController = {
+        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+    }()
 }
 
 extension DiceRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
+    public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var listControllable: any ListControllable { listController }
     public var listLinkControllable: any ListControllable { listLinkController }
