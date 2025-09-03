@@ -1,11 +1,12 @@
 // @copyright André Trettin
 
+import CodableModel
 import CoreRPG
 import Foundation
 import SwiftData
 import CoreGraphics
 
-@Model
+@Model @CodableModel
 public final class PdfDataModel {
     init(id: UUID = UUID(), itemId: UUID, index: Int = 0, name: String = "", content: String = "", bounds: CGRect = .zero, pageLabel: String = "") {
         self.id = id

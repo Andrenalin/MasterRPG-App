@@ -21,16 +21,7 @@ public final class TableRootModel {
 
         self.diceRoot = diceRoot
 
-        let itemController = ItemController(container: modelContext.container)
-        let editController = EditController(itemControllable: itemController, fileUrlDataController: nil)
-        let listController = ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
-        let listLinkController = ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
 
-        self.editController = editController
-        self.exportController = ExportController(module: module, itemController: itemController, fileUrlDataController: nil, gameExporter: false)
-        self.itemController = itemController
-        self.listController = listController
-        self.listLinkController = listLinkController
         
         itemController.cleanDeleted()
     }
@@ -47,13 +38,27 @@ public final class TableRootModel {
 
     @ObservationIgnored let diceRoot: DiceRootModel
 
-    //@ObservationIgnored let cacheController: CacheController
-    @ObservationIgnored let editController: EditController
-    @ObservationIgnored let exportController: ExportController
-    @ObservationIgnored let itemController: ItemController
-    @ObservationIgnored let listController: ListController
-    @ObservationIgnored let listLinkController: ListController
-    @ObservationIgnored public lazy var viewController: ViewController = { ViewController() }()
+    @ObservationIgnored lazy var editController: EditController = {
+        EditController(itemControllable: itemController, fileUrlDataController: nil)
+    }()
+    @ObservationIgnored lazy var exportController: ExportController = {
+        ExportController(module: module, itemController: itemController, fileUrlDataController: nil, gameExporter: false)
+    }()
+    @ObservationIgnored lazy var importController: ImportController = {
+        ImportController(itemController: itemController, module: module)
+    }()
+    @ObservationIgnored lazy var itemController: ItemController = {
+        ItemController(container: modelContext.container)
+    }()
+    @ObservationIgnored lazy var listController: ListController = {
+        ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
+    }()
+    @ObservationIgnored lazy var listLinkController: ListController = {
+        ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
+    }()
+    @ObservationIgnored public lazy var viewController: ViewController = {
+        ViewController()
+    }()
     @ObservationIgnored lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
@@ -73,6 +78,7 @@ public final class TableRootModel {
 extension TableRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
+    public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var listControllable: any ListControllable { listController }
     public var listLinkControllable: any ListControllable { listLinkController }

@@ -20,26 +20,7 @@ public final class SpaceRootModel {
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
         
-        let fileController = FileController()
-        let cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
-        let itemController = ItemController(container: modelContext.container)
-        let editController = EditController(itemControllable: itemController, fileUrlDataController: fileController.fileUrlDataController)
-        let listController = ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
-        let listLinkController = ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
-        let viewController = ViewController()
-        let rootController = ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: cacheController, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
-
-        self.cacheController = cacheController
-        self.editController = editController
-        self.exportController = ExportController(module: module, itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, gameExporter: false)
-        self.fileController = fileController
-        self.itemController = itemController
-        self.listController = listController
-        self.listLinkController = listLinkController
-        self.viewController = viewController
-        self.rootController = rootController
-        
-        itemController.cleanDeleted()
+                itemController.cleanDeleted()
     }
     
     let modelContext: ModelContext
@@ -52,20 +33,42 @@ public final class SpaceRootModel {
         listController.listModel.selectedItemId
     }
 
-    @ObservationIgnored let cacheController: CacheController
-    @ObservationIgnored let editController: EditController
-    @ObservationIgnored let exportController: ExportController
-    @ObservationIgnored let fileController: FileController
-    @ObservationIgnored let itemController: ItemController
-    @ObservationIgnored let listController: ListController
-    @ObservationIgnored let listLinkController: ListController
-    @ObservationIgnored public let viewController: ViewController
-    @ObservationIgnored let rootController: ItemRootController
+    @ObservationIgnored lazy var cacheController: CacheController = {
+        CacheController(fileUrlDataController: fileController.fileUrlDataController)
+    }()
+    @ObservationIgnored lazy var editController: EditController = {
+        EditController(itemControllable: itemController, fileUrlDataController: fileController.fileUrlDataController)
+    }()
+    @ObservationIgnored lazy var exportController: ExportController = {
+        ExportController(module: module, itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, gameExporter: false)
+    }()
+    @ObservationIgnored lazy var fileController: FileController = {
+        FileController()
+    }()
+    @ObservationIgnored lazy var importController: ImportController = {
+        ImportController(itemController: itemController, module: module)
+    }()
+    @ObservationIgnored lazy var itemController: ItemController = {
+        ItemController(container: modelContext.container)
+    }()
+    @ObservationIgnored lazy var listController: ListController = {
+        ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
+    }()
+    @ObservationIgnored lazy var listLinkController: ListController = {
+        ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
+    }()
+    @ObservationIgnored public lazy var viewController: ViewController = {
+        ViewController()
+    }()
+    @ObservationIgnored lazy var rootController: ItemRootController = {
+        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: cacheController, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+    }()
 }
 
 extension SpaceRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { cacheController }
     public var editControllable: any EditControllable { editController }
+    public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var listControllable: any ListControllable { listController }
     public var listLinkControllable: any ListControllable { listLinkController }

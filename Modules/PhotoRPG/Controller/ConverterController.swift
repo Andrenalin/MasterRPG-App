@@ -7,6 +7,7 @@ import RPGPhotos
 import SwiftData
 
 public struct ConverterController {
+    @MainActor
     public static func insert(items: [RPGPhotos.PhotoModel], into modelContext: ModelContext, root: PhotoRootModel) {
         let fetchDesc = FetchDescriptor<CoreRPG.ItemDataModel>()
         var models = (try? modelContext.fetch(fetchDesc)) ?? []
