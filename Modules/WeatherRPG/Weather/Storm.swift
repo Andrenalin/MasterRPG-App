@@ -8,7 +8,7 @@
 import SwiftUI
 
 public class Storm {
-    public enum Contents: Int, CaseIterable, Hashable, Codable {
+    public enum Contents: Int, CaseIterable, Hashable, Codable, Sendable {
         case none, rain, snow
         
         var localizedTitle: LocalizedStringKey {

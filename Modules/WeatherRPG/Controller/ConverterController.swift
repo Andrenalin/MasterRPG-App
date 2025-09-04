@@ -46,6 +46,22 @@ public struct ConverterController {
         }
         try? modelContext.save()
     }
+    
+    static func convert(old: WeatherModel) -> ItemDataCodableModel {
+        ItemDataCodableModel(
+            id: old.id,
+            module: .weather,
+            name: old.name,
+            information: old.description,
+            category: old.category.wrappedValue,
+            tags: old.tags.wrappedValue,
+            fileUrl: nil,
+            displayState: old.displayState,
+            parentId: nil,
+            entries: [],
+            externalData: nil
+        )
+    }
 }
 
 private extension ConverterController {

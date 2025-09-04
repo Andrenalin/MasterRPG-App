@@ -23,4 +23,20 @@ public struct ConverterController {
             )
         }
     }
+    
+    static func convert(old: PdfModel) -> ItemDataCodableModel {
+        ItemDataCodableModel(
+            id: old.id,
+            module: .pdf,
+            name: CRDT(wrappedValue: old.name),
+            information: CRDT(wrappedValue: old.description),
+            category: old.category,
+            tags: old.tags,
+            fileUrl: old.fileUrl,
+            displayState: old.displayState,
+            parentId: nil,
+            entries: [],
+            externalData: nil
+        )
+    }
 }

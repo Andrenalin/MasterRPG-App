@@ -12,13 +12,39 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
         let decoder = JSONDecoder()
-        return try decoder.decode(ItemDataCodableModel.self, from: data)
+        if version == ItemDataExportModel.Version.version_2025.rawValue {
+            return try decoder.decode(ItemDataCodableModel.self, from: data)
+        } else {
+            do {
+                let oldModel = try decoder.decode(WeatherModel.self, from: data)
+                return ConverterController.convert(old: oldModel)
+            } catch {
+                print(error)
+                fatalError()
+            }
+        }
     }
 
     @MainActor func encodedItemData(for id: UUID) throws -> Data? {
         let encoder = JSONEncoder()
-        let model = itemDataCodableModel(for: id)
+        var externalData: Data? = nil
+        if let weatherModel = model(for: id)?.codableModel {
+            externalData = try encoder.encode(weatherModel)
+        }
+        let model = itemDataCodableModel(for: id, externalData: externalData)
         return try encoder.encode(model)
+    }
+    
+    @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool) {
+        guard let data else { return }
+        let decoder = JSONDecoder()
+        guard let newWeather = try? decoder.decode(WeatherDataModel.WeatherDataModelCodable.self, from: data) else { return }
+        if let oldWeather = model(for: id) {
+            oldWeather.replace(newWeather)
+        } else {
+            let newModel = WeatherDataModel(newWeather)
+            container.mainContext.insert(newModel)
+        }
     }
 }
 

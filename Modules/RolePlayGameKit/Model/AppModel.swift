@@ -144,7 +144,8 @@ public extension AppModel {
 
 extension AppModel {
     func installExampleData(isGerman: Bool = false) {
-        let importController = diceRoot.importControllable
+        let importController = ImportController(appModel: self)
+        //let importController = diceRoot.importControllable
         let bundle = Resources.bundle
         let name = isGerman ? Resources.exampleFirstGermanData : Resources.exampleFirstData
         guard let url = bundle.url(forResource: name, withExtension: "gmz") else { return }

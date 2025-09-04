@@ -28,4 +28,20 @@ public struct ConverterController {
         
         try? modelContext.save()
     }
+    
+    static func convert(old: TableModel) -> ItemDataCodableModel {
+        ItemDataCodableModel(
+            id: old.id,
+            module: .table,
+            name: CRDT(wrappedValue: old.name),
+            information: CRDT(wrappedValue: old.description),
+            category: old.category,
+            tags: old.tags,
+            fileUrl: nil,
+            displayState: old.displayState,
+            parentId: nil,
+            entries: [],
+            externalData: nil
+        )
+    }
 }
