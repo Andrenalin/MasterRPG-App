@@ -76,20 +76,19 @@ public struct FileUrlDataController: Sendable {
     }
 }
 
-// MARK: - Confirmed 
+// MARK: - Confirmed
 
 public extension FileUrlDataController {
     func delete(_ fileUrl: FileUrl?) async {
         guard let fileUrl else { return }
         switch fileUrl.location {
-        case .cloud:
+        case .url:
+            fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
+        default:
             guard let accessUrl = await url(for: fileUrl, action: { $0 }) else { return }
             // ignore any exception. If the file cannot be remove we cannot recover
             try? await FileManager.default.removeItem(coordinatingAccessAt: accessUrl)
             fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
-        case .url:
-            fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
-            break
         }
     }
 }
@@ -112,10 +111,10 @@ public extension FileUrlDataController {
             _ = url.startAccessingSecurityScopedResource()
             defer { url.stopAccessingSecurityScopedResource() }
             if let updatedFileUrl = try? await createFileUrl(fileId: fileUrl.fileId, url: url, module: fileUrl.module, category: nil) {
-//                let saveTask = Task { @MainActor in
-//                    await fileUrlAccess.saveFileUrl(fileUrl: updatedFileUrl)
-//                }
-//                let _ = await saveTask.result
+                //                let saveTask = Task { @MainActor in
+                //                    await fileUrlAccess.saveFileUrl(fileUrl: updatedFileUrl)
+                //                }
+                //                let _ = await saveTask.result
                 newFileUrl = updatedFileUrl
             } else {
                 Logger.bookmarkStore.info("URL cannot repaired \(fileUrl.rawUrl.absoluteString, privacy: .public)")
@@ -242,7 +241,9 @@ public extension FileUrlDataController {
         guard let unconverted = fileUrl, let _ = try await loadData(for: unconverted) else { return nil }
         var fullURL: URL? = nil
         switch unconverted.location {
-        case .cloud:
+        case .url:
+            fullURL = unconverted.rawUrl
+        default:
             // try to get access to the old location
             let oldUrl = locationFileManager.absoluteUrl(for: unconverted.rawUrl, at: unconverted.location) ?? unconverted.rawUrl
             let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
@@ -251,10 +252,6 @@ public extension FileUrlDataController {
                 let newUrl = await fileBookmarkController.loadBookmark(fileId: unconverted.fileId)
                 fullURL = newUrl
             }
-            break
-        case .url:
-            fullURL = unconverted.rawUrl
-            break
         }
         guard let fullURL else { return nil }
         do {

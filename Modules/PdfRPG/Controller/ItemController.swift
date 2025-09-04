@@ -15,8 +15,13 @@ extension ItemController: ItemControllable {
         if version == ItemDataExportModel.Version.version_2025.rawValue {
             return try decoder.decode(ItemDataCodableModel.self, from: data)
         } else {
-            let oldModel = try decoder.decode(PdfModel.self, from: data)
-            return ConverterController.convert(old: oldModel)
+            do {
+                let oldModel = try decoder.decode(PdfModel.self, from: data)
+                return ConverterController.convert(old: oldModel)
+            } catch {
+                print(error)
+                fatalError()
+            }
         }
     }
 

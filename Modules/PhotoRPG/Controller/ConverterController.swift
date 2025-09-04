@@ -75,8 +75,23 @@ public struct ConverterController {
                 root.editController.addGroup(childId: $0, model: model)
             }
         }
-        
-        
+    }
+    
+    static func convert(old: PhotoModel) -> ItemDataCodableModel {
+        ItemDataCodableModel(
+            id: old.id,
+            module: .photo,
+            name: old.name,
+            information: old.description,
+            category: old.category.wrappedValue,
+            tags: old.tags.wrappedValue,
+            fileUrl: old.fileUrl.wrappedValue,
+            displayState: old.displayState,
+            parentId: nil,
+            entries: old.entries.wrappedValue.enumerated().map { (index, element) in
+                EntryDataCodableModel(id: element.id,  index: index, parentId: old.id, childId: element.photoId)
+            },
+            externalData: nil
+        )
     }
 }
-

@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CodableModel
+import CoreRPG
 import Foundation
 import SwiftData
 
@@ -26,25 +27,25 @@ extension TableDataModel {
     }
 }
 
-// MARK: - Conversion methods for Version2024 compatibility
-extension TableDataModel {
-    convenience init(_ model: TableModel) {
-        self.init(
-            itemId: model.id,
-            diceId: model.diceId
-        )
-    }
-    
-    var tableModel: TableModel {
-        TableModel(
-            id: itemId,
-            diceId: diceId,
-            entries: entries.map { $0.tableEntryModel }
-        )
-    }
-    
-    func replace(_ model: TableModel) {
-        diceId = model.diceId
-        // Note: entries would need to be handled separately in a real implementation
-    }
-}
+//// MARK: - Conversion methods for Version2024 compatibility
+//extension TableDataModel {
+//    convenience init(_ model: TableModel) {
+//        self.init(
+//            itemId: model.id,
+//            diceId: model.diceId.wrappedValue
+//        )
+//    }
+//    
+//    var tableModel: TableModel {
+//        TableModel(
+//            id: itemId,
+//            diceId: diceId,
+//            entries: entries.map { $0.tableEntryModel }
+//        )
+//    }
+//    
+//    func replace(_ model: TableModel) {
+//        diceId = model.diceId
+//        // Note: entries would need to be handled separately in a real implementation
+//    }
+//}

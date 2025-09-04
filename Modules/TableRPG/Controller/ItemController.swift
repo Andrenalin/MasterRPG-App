@@ -9,14 +9,21 @@ struct ItemController: Sendable {
     let collectionCategory: ItemListCategory = .collection
 }
 
+// MARK: - Import Controller
+
 extension ItemController: ItemControllable {
     @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
         let decoder = JSONDecoder()
         if version == ItemDataExportModel.Version.version_2025.rawValue {
             return try decoder.decode(ItemDataCodableModel.self, from: data)
         } else {
-            let oldModel = try decoder.decode(TableModel.self, from: data)
-            return ConverterController.convert(old: oldModel)
+            do {
+                let oldModel = try decoder.decode(TableModel.self, from: data)
+                return ConverterController.convert(old: oldModel)
+            } catch {
+                print(error)
+                fatalError()
+            }
         }
     }
 

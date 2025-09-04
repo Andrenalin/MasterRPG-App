@@ -184,3 +184,24 @@ public extension ItemDataModel {
         "[\(urlName(entryId: entryId))](\(urlAdr(linkNumber: linkNumber, entryId: entryId)))"
     }
 }
+
+extension ItemDataModel {
+    func replace(codableModel: ItemDataCodableModel) {
+        guard id == codableModel.id else { return }
+        self.module = codableModel.module
+        
+        self._nameLWW = codableModel.name
+        self._informationLWW = codableModel.information
+        
+        self.category = codableModel.category
+        self.tags = codableModel.tags
+        self.url = codableModel.fileUrl?.rawUrl
+        
+        self.displayState = codableModel.displayState
+        self.parentId = codableModel.parentId
+        
+        self.entries = codableModel.entries.map {
+            EntryDataModel(id: $0.id, index: $0.index, parentId: $0.parentId, childId: $0.childId)
+        }
+    }
+}

@@ -67,9 +67,13 @@ public extension ItemControllable {
 
     @MainActor func replace(model: ItemDataCodableModel?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let model else { return }
-        let entries = model.entries.map { EntryDataModel(id: $0.id, index: $0.index, parentId: $0.parentId, childId: $0.childId, item: nil)}
-        let dataModel = ItemDataModel(id: model.id, module: model.module, name: model.name.wrappedValue, information: model.information.wrappedValue, category: model.category, tags: model.tags, url: model.fileUrl?.rawUrl, displayState: model.displayState, parentId: model.parentId, entries: entries)
-        container.mainContext.insert(dataModel)
+        if let existingModel = modelSync(for: model.id) {
+            existingModel.replace(codableModel: model)
+        } else {
+            let entries = model.entries.map { EntryDataModel(id: $0.id, index: $0.index, parentId: $0.parentId, childId: $0.childId, item: nil)}
+            let dataModel = ItemDataModel(id: model.id, module: model.module, name: model.name.wrappedValue, information: model.information.wrappedValue, category: model.category, tags: model.tags, url: model.fileUrl?.rawUrl, displayState: model.displayState, parentId: model.parentId, entries: entries)
+            container.mainContext.insert(dataModel)
+        }
         replace(id: model.id, data: model.externalData, isInsert: isInsert, shouldRepairLinks: shouldRepairLinks)
     }
 

@@ -21,35 +21,3 @@ public final class TableEntryDataModel {
     var name: String = ""
     var content: String = ""
 }
-
-// MARK: - Conversion methods for Version2024 compatibility
-extension TableEntryDataModel {
-    convenience init(_ model: TableEntryModel) {
-        self.init(
-            itemId: model.itemId,
-            entryId: model.entryId,
-            index: model.index,
-            name: model.name,
-            content: model.content
-        )
-    }
-    
-    var tableEntryModel: TableEntryModel {
-        TableEntryModel(
-            id: entryId,
-            itemId: itemId,
-            entryId: entryId,
-            index: index,
-            name: name,
-            content: content
-        )
-    }
-    
-    func replace(_ model: TableEntryModel) {
-        itemId = model.itemId
-        entryId = model.entryId
-        index = model.index
-        name = model.name
-        content = model.content
-    }
-}
