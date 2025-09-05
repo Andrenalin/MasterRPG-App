@@ -5,8 +5,8 @@ import Foundation
 import Observation
 
 @Observable
-final class ValueModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .character, displayState: Int = 0, photoId: UUID? = nil, photos: [UUID] = [], entries: [ValueEntryModel] = []) {
+public final class ValueModel: Identifiable, @unchecked Sendable {
+    public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .character, displayState: Int = 0, photoId: UUID? = nil, photos: [UUID] = [], entries: [ValueEntryModel] = []) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -18,7 +18,7 @@ final class ValueModel: Identifiable, @unchecked Sendable {
         entries_ = CRDTDataUpdate(wrappedValue: entries)
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, photos: CRDTDataUpdate<[UUID]>, entries: CRDTDataUpdate<[ValueEntryModel]>, parentId: UUID?) {
+    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, photos: CRDTDataUpdate<[UUID]>, entries: CRDTDataUpdate<[ValueEntryModel]>, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -31,7 +31,7 @@ final class ValueModel: Identifiable, @unchecked Sendable {
         self.parentId = parentId
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<ValueModel.CodingKeys> = try decoder.container(keyedBy: ValueModel.CodingKeys.self)
 
         self._id = try container.decode(UUID.self, forKey: ValueModel.CodingKeys._id)
@@ -45,65 +45,65 @@ final class ValueModel: Identifiable, @unchecked Sendable {
         self._entries_ = try container.decode(CRDTDataUpdate<[ValueEntryModel]>.self, forKey: ValueModel.CodingKeys._entries_)
     }
 
-    var id: UUID
+    public var id: UUID
 
-    var name: String {
+    public var name: String {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
     var name_: CRDT<String>
 
-    var description: String {
+    public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
-    var description_: CRDT<String>
+    public var description_: CRDT<String>
 
-    var tags: [String] {
+    public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
     var tags_: CRDT<[String]>
 
-    var category: ItemListCategory {
+    public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
     var category_: CRDT<ItemListCategory>
 
-    var displayState: Int
+    public var displayState: Int
 
-    var photoId: UUID? {
+    public var photoId: UUID? {
         get { photoId_.wrappedValue }
         set { photoId_.wrappedValue = newValue }
     }
     var photoId_: CRDT<UUID?>
 
-    var photos: [UUID] {
+    public var photos: [UUID] {
         get { photos_.wrappedValue }
         set { photos_.wrappedValue = newValue }
     }
     var photos_: CRDTDataUpdate<[UUID]>
 
-    var entries: [ValueEntryModel] {
+    public var entries: [ValueEntryModel] {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
     var entries_: CRDTDataUpdate<[ValueEntryModel]>
     
-    var parentId: UUID?
-    var quickEditEntries: Set<UUID> = []
+    public var parentId: UUID?
+    public var quickEditEntries: Set<UUID> = []
 }
 
 extension ValueModel: Comparable {
-    static func < (lhs: ValueModel, rhs: ValueModel) -> Bool {
+    public static func < (lhs: ValueModel, rhs: ValueModel) -> Bool {
         lhs.name < rhs.name
     }
 }
 
 extension ValueModel: ItemLinkRegistable {
     @MainActor
-    var linkRegisterModels: [LinkRegisterModel] {
+    public var linkRegisterModels: [LinkRegisterModel] {
         let modelSource = ItemRowModel(itemId: id, typeId: .value)
         let linkModels = photos.map {
             LinkRegisterModel(source: modelSource, destination: ItemRowModel(itemId: $0, typeId: .photo))
@@ -126,7 +126,7 @@ extension ValueModel: ItemLinkRegistable {
 }
 
 extension ValueModel: ItemDiffComparable {
-    func merge(_ other: ValueModel) -> ValueModel {
+    public func merge(_ other: ValueModel) -> ValueModel {
         ValueModel(
             id: id,
             name: name_.merged(other: other.name_),
@@ -141,7 +141,7 @@ extension ValueModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: ValueModel) -> Bool {
+    public func isSame(_ other: ValueModel) -> Bool {
         name == other.name &&
         description == other.description &&
         tags == other.tags &&
@@ -159,16 +159,16 @@ extension ValueModel: ItemDiffComparable {
 }
 
 extension ValueModel: ItemDuplicatable {
-    func duplicate() -> ValueModel {
+    public func duplicate() -> ValueModel {
         let copyName = duplicateName(from: name)
         return ValueModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, photos: photos, entries: entries.map { $0.duplicate() })
     }
 
-    func duplicateWithoutCopy() -> ValueModel {
+    public func duplicateWithoutCopy() -> ValueModel {
         ValueModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, photos: photos, entries: entries.map { $0.duplicate() })
     }
 
-    func duplicateSubValueIds() -> [UUID] {
+    public func duplicateSubValueIds() -> [UUID] {
         entries.compactMap { $0.valueId }
     }
 }
@@ -176,25 +176,25 @@ extension ValueModel: ItemDuplicatable {
 extension ValueModel: ItemReferencable {}
 
 extension ValueModel: ItemDataAccessable {
-    static var empty: ValueModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> ValueModel {
+    public static var empty: ValueModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> ValueModel {
         ValueModel(id: id, name: "", description: "", tags: [], category: .item, displayState: 0, entries: [])
     }
-    static let typeId: NetworkModules = .value
+    public static let typeId: NetworkModules = .value
 
-    func copy() -> ValueModel {
+    public func copy() -> ValueModel {
         ValueModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, photos: photos_, entries: entries_, parentId: parentId)
     }
 
-    func filter(_ filter: String) -> Bool {
+    public func filter(_ filter: String) -> Bool {
         (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
     }
 
-    func isEqual(other: ValueModel) -> Bool {
+    public func isEqual(other: ValueModel) -> Bool {
         self == other
     }
 
-    var isGroupHiddenToggle: Bool {
+    public var isGroupHiddenToggle: Bool {
         get { isGroupHidden }
         set {
             if newValue {
@@ -205,7 +205,7 @@ extension ValueModel: ItemDataAccessable {
         }
     }
 
-    func replace(with model: ValueModel) -> Bool {
+    public func replace(with model: ValueModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_
@@ -219,7 +219,7 @@ extension ValueModel: ItemDataAccessable {
         return true
     }
 
-    subscript(id: UUID) -> ValueEntryModel {
+    public subscript(id: UUID) -> ValueEntryModel {
         get {
             guard let index = entries.firstIndex(where: { $0.id == id }) else { return .empty(id) }
             return entries[index]
@@ -245,7 +245,7 @@ extension ValueModel: Codable {
         case _parentId
     }
 
-    final func encode(to encoder: Encoder) throws {
+    public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<ValueModel.CodingKeys> = encoder.container(keyedBy: ValueModel.CodingKeys.self)
 
         try container.encode(self._id, forKey: ValueModel.CodingKeys._id)
@@ -262,11 +262,11 @@ extension ValueModel: Codable {
 }
 
 extension ValueModel: Equatable, Hashable {
-    static func == (lhs: ValueModel, rhs: ValueModel) -> Bool {
+    public static func == (lhs: ValueModel, rhs: ValueModel) -> Bool {
         lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     }
 
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

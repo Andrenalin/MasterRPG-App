@@ -248,6 +248,7 @@
 		8EA5A8412E6A8FDE00E70E9C /* RPGResources.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EA5A8442E6A8FF400E70E9C /* RPGValues.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECE5E2CD8EE9D004E7103 /* RPGValues.framework */; };
 		8EA5A8452E6A8FF400E70E9C /* RPGValues.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECE5E2CD8EE9D004E7103 /* RPGValues.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8EA5A8492E6A918D00E70E9C /* CodableModel in Frameworks */ = {isa = PBXBuildFile; productRef = 8EA5A8482E6A918D00E70E9C /* CodableModel */; };
 		8EA8045A2E62EBC70009479F /* TableRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; };
 		8EA804642E62EBC70009479F /* TableRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; };
 		8EA804652E62EBC70009479F /* TableRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -3134,6 +3135,7 @@
 				8EA5A83B2E6A8FD500E70E9C /* TableRPG.framework in Frameworks */,
 				8EA5A82B2E6A8FD500E70E9C /* CoreRPG.framework in Frameworks */,
 				8EA5A8402E6A8FDE00E70E9C /* RPGResources.framework in Frameworks */,
+				8EA5A8492E6A918D00E70E9C /* CodableModel in Frameworks */,
 				8EA5A8332E6A8FD500E70E9C /* PdfRPG.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -4671,6 +4673,7 @@
 			);
 			name = CharacterRPG;
 			packageProductDependencies = (
+				8EA5A8482E6A918D00E70E9C /* CodableModel */,
 			);
 			productName = CharacterRPG;
 			productReference = 8EA5A7D32E6A8EDB00E70E9C /* CharacterRPG.framework */;
@@ -12606,6 +12609,10 @@
 			productName = CodableModel;
 		};
 		596BF9392E671A18006638F0 /* CodableModel */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CodableModel;
+		};
+		8EA5A8482E6A918D00E70E9C /* CodableModel */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = CodableModel;
 		};

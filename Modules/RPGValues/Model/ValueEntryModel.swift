@@ -3,8 +3,8 @@
 import AndrenalinKit
 import SwiftUI
 
-struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
-    init(id: UUID, name: String, type: ValueEntryModel.ValueType, isGenerator: Bool = false, value: String, diceId: UUID? = nil, valueId: UUID? = nil, displayState: Int = 0) {
+public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
+    public init(id: UUID, name: String, type: ValueEntryModel.ValueType, isGenerator: Bool = false, value: String, diceId: UUID? = nil, valueId: UUID? = nil, displayState: Int = 0) {
         self.id = id
         self.name = name
         self.type = type
@@ -15,7 +15,7 @@ struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked S
         self.displayState = displayState
     }
 
-    init(id: UUID, name: CRDT<String>, type: CRDT<ValueEntryModel.ValueType>, isGenerator: CRDT<Bool>, value: CRDT<String>, diceId: CRDT<UUID?>, valueId: CRDT<UUID?>, displayState: Int = 0) {
+    public init(id: UUID, name: CRDT<String>, type: CRDT<ValueEntryModel.ValueType>, isGenerator: CRDT<Bool>, value: CRDT<String>, diceId: CRDT<UUID?>, valueId: CRDT<UUID?>, displayState: Int = 0) {
         self.id = id
         _name = name
         _type = type
@@ -26,17 +26,17 @@ struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked S
         self.displayState = displayState
     }
 
-    enum ValueType: Int, Equatable, Hashable, Codable, CaseIterable, Identifiable {
+    public enum ValueType: Int, Equatable, Hashable, Codable, CaseIterable, Identifiable {
         case text = 0
         case number = 1
         case decimal = 2
         case selection = 4
 
-        var id: Int {
+        public var id: Int {
             rawValue
         }
 
-        var localizedTitle: LocalizedStringResource {
+        public var localizedTitle: LocalizedStringResource {
             switch self {
             case .text: "Text"
             case .number: "Number"
@@ -45,11 +45,11 @@ struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked S
             }
         }
 
-        var title: String {
+        public var title: String {
             String(localized: localizedTitle).localizedString
         }
 
-        var icon: String {
+        public var icon: String {
             switch self {
                 case .text: "doc.text"
                 case .number: "textformat.12"
@@ -59,15 +59,15 @@ struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked S
         }
     }
 
-    let id: UUID
-    @CRDT var name: String
-    @CRDT var type: ValueType
-    @CRDT var isGenerator: Bool
-    @CRDT var value: String
-    @CRDT var diceId: UUID?
-    @CRDT var valueId: UUID?
+    public let id: UUID
+    @CRDT public var name: String
+    @CRDT public var type: ValueType
+    @CRDT public var isGenerator: Bool
+    @CRDT public var value: String
+    @CRDT public var diceId: UUID?
+    @CRDT public var valueId: UUID?
 
-    var displayState: Int = 0
+    public var displayState: Int = 0
 
     mutating func reset(isGenerator: Bool) {
         if self.isGenerator != isGenerator {
@@ -209,38 +209,38 @@ extension ValueEntryModel {
 }
 
 extension ValueEntryModel: EntryDataAccessable, ItemDuplicatable {    
-    static var empty: ValueEntryModel {
+    public static var empty: ValueEntryModel {
         empty(UUID())
     }
 
-    static func empty(_ id: UUID) -> ValueEntryModel {
+    public static func empty(_ id: UUID) -> ValueEntryModel {
         ValueEntryModel(id: id, name: "", type: .text, value: "")
     }
 
-    func duplicate() -> ValueEntryModel {
+    public func duplicate() -> ValueEntryModel {
         ValueEntryModel(id: UUID(), name: name, type: type, isGenerator: isGenerator, value: value, diceId: diceId, valueId: valueId, displayState: displayState)
     }
 
-    func filter(with search: String) -> Bool {
+    public func filter(with search: String) -> Bool {
         (search.isEmpty || name.localizedCaseInsensitiveContains(search) || value.localizedCaseInsensitiveContains(search))
     }
     
-    func linkContent() -> String { value }
+    public func linkContent() -> String { value }
 }
 
 extension ValueEntryModel: ItemLinkEditable {
-    var textLinkContent: String {
+    public var textLinkContent: String {
         entryText(otherValue: "")
     }
 
-    func entryText(otherValue: String) -> String {
+    public func entryText(otherValue: String) -> String {
         let bold = name.starts(with: "**") ? "" : "**"
         return "\(bold)\(name.trimmingCharacters(in: .whitespacesAndNewlines))\(bold): \(value)\(otherValue)"
     }
 }
 
 extension ValueEntryModel: ItemDiffComparable {
-    func merge(_ other: ValueEntryModel) -> ValueEntryModel {
+    public func merge(_ other: ValueEntryModel) -> ValueEntryModel {
         ValueEntryModel(
             id: id,
             name: $name.merged(other: other.$name),
@@ -253,7 +253,7 @@ extension ValueEntryModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: ValueEntryModel) -> Bool {
+    public func isSame(_ other: ValueEntryModel) -> Bool {
         name == other.name &&
         type == other.type &&
         isGenerator == other.isGenerator &&

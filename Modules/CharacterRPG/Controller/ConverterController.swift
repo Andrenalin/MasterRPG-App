@@ -3,21 +3,21 @@
 import AndrenalinKit
 import CoreRPG
 import Foundation
-import RPGTables
+import RPGValues
 import SwiftData
 
 public struct ConverterController {
-    public static func insert(items: [RPGTables.TableModel], into modelContext: ModelContext) {
+    public static func insert(items: [RPGValues.ValueModel], into modelContext: ModelContext) {
         let fetchDesc = FetchDescriptor<CoreRPG.ItemDataModel>()
         let models = try? modelContext.fetch(fetchDesc)
 
         items.forEach { item in
             guard let models, !models.contains(where: { $0.id == item.id }) else { return }
             
-            let table = TableRPG.TableDataModel(itemId: item.id, diceId: item.diceId)
+            let table = CharacterRPG.TableDataModel(itemId: item.id, diceId: nil)
             modelContext.insert(table)
             let entries = item.entries.enumerated().map { (index, entry) in
-                TableEntryDataModel(itemId: item.id, entryId: entry.id, index: index, name: entry.name, content: entry.content)
+                TableEntryDataModel(itemId: item.id, entryId: entry.id, index: index, name: entry.name, content: entry.value)
             }
             entries.forEach { modelContext.insert($0) }
             
