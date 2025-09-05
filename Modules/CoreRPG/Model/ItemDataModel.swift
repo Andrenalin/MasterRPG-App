@@ -51,6 +51,9 @@ public final class ItemDataModel {
     private(set) var _informationLWW: CRDT<String> = CRDT(wrappedValue: "")
 
     @Relationship(deleteRule: .cascade) private var entries_: [EntryDataModel]? = []
+    
+    @Transient
+    private var fileUrl_: FileUrl? = nil
 }
 
 public extension ItemDataModel {
@@ -65,8 +68,14 @@ public extension ItemDataModel {
     }
 
     var fileUrl: FileUrl? {
-        guard let url else { return nil }
-        return FileUrl(fileId: id, url: url, location: .cloud, module: module.token)
+        get {
+            guard let url else { return fileUrl_ }
+            return fileUrl_ ?? FileUrl(fileId: id, url: url, location: .cloud, module: module.token)
+        }
+        set {
+            fileUrl_ = newValue
+            url = newValue?.rawUrl
+        }
     }
 
     var isFolder: Bool {
@@ -195,7 +204,7 @@ extension ItemDataModel {
         
         self.category = codableModel.category
         self.tags = codableModel.tags
-        self.url = codableModel.fileUrl?.rawUrl
+        self.fileUrl = codableModel.fileUrl
         
         self.displayState = codableModel.displayState
         self.parentId = codableModel.parentId

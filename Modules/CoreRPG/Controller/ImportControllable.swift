@@ -96,9 +96,9 @@ public extension ImportControllable {
                 case ExportDataToken.item.rawValue:
                     counter += 1
                     do {
-                        let newItem = try await itemControllable.decodedItem(data: data, version: version)
+                        var newItem = try await itemControllable.decodedItem(data: data, version: version)
                         if let currentFile {
-                            try await addFile(data: currentFile, to: newItem)
+                            newItem = try await addFile(data: currentFile, to: newItem)
                         }
                         try await addItem(importedItem: newItem, counterUpdater: counterUpdater)
                     } catch {
@@ -174,16 +174,18 @@ private extension ImportControllable {
         let _ = await updateTask.result
     }
 
-    func addFile(data: Data, to item: ItemDataCodableModel) async throws {
-//        guard let fileUrlDataController, var fileUrl = await itemControllable.fileUrl(id: item.id, url: item.fileUrl) else { return }
-//        fileUrl.resetData(data)
-//        do {
-//            let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
-//            await fileUrlDataController.setFileUrl(updated, item: item)
-//        } catch {
-//            await logImport(title: "Cannot save bookmark the file will be stored as data", count: 0)
-//            await fileUrlDataController.setFileUrl(fileUrl, item: item)
-//        }
+    func addFile(data: Data, to item: ItemDataCodableModel) async throws -> ItemDataCodableModel {
+        guard let fileUrlDataController, var fileUrl = item.fileUrl else { return item }
+        fileUrl.resetData(data)
+        var updatedItem = item
+        do {
+            let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
+            updatedItem.fileUrl = updated
+        } catch {
+            await logImport(title: "Cannot save bookmark the file will be stored as data", count: 0)
+            updatedItem.fileUrl = fileUrl
+        }
+        return updatedItem
     }
 }
 

@@ -25,7 +25,12 @@ public struct ConverterController {
     }
     
     static func convert(old: PdfModel) -> ItemDataCodableModel {
-        ItemDataCodableModel(
+        let bookmarks = old.entries.wrappedValue.enumerated().map { (index, entry) in
+            PdfDataModel.PdfDataModelCodable(id: entry.id, itemId: old.id, index: index, name: entry.name, content: entry.content, bounds: entry.bounds, pageLabel: entry.pageLabel)
+        }
+        let externalData = try? JSONEncoder().encode(bookmarks)
+        
+        return ItemDataCodableModel(
             id: old.id,
             module: .pdf,
             name: old.name,
@@ -36,7 +41,7 @@ public struct ConverterController {
             displayState: old.displayState,
             parentId: nil,
             entries: [],
-            externalData: nil
+            externalData: externalData
         )
     }
 }

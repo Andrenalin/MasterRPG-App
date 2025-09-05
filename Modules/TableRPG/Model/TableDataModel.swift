@@ -7,45 +7,32 @@ import SwiftData
 
 @Model @CodableModel
 public final class TableDataModel {
-    public init(itemId: UUID = UUID(), diceId: UUID? = nil) {
+    public init(itemId: UUID = UUID(), diceId: UUID? = nil, entries: [TableEntryDataModel] = []) {
         self.itemId = itemId
         self.diceId = diceId
+        self.entries = entries
     }
     
     var itemId: UUID = UUID()
     var diceId: UUID?
+    
+    @Relationship(deleteRule: .cascade) private var entries_: [TableEntryDataModel]? = []
 }
 
 extension TableDataModel {
     var entries: [TableEntryDataModel] {
-        guard let modelContext else { return [] }
-        let predicate = #Predicate<TableEntryDataModel> {
-            $0.itemId == itemId
+        get {
+            guard let all = entries_ else { return [] }
+            return all.sorted { $0.index < $1.index }
         }
-        let fetch = FetchDescriptor<TableEntryDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.index)])
-        return (try? modelContext.fetch(fetch)) ?? []
+        set {
+            entries_ = newValue
+        }
+//        guard let modelContext else { return [] }
+//        let predicate = #Predicate<TableEntryDataModel> {
+//            $0.itemId == itemId
+//        }
+//        let fetch = FetchDescriptor<TableEntryDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.index)])
+//        return (try? modelContext.fetch(fetch)) ?? []
     }
 }
-
-//// MARK: - Conversion methods for Version2024 compatibility
-//extension TableDataModel {
-//    convenience init(_ model: TableModel) {
-//        self.init(
-//            itemId: model.id,
-//            diceId: model.diceId.wrappedValue
-//        )
-//    }
-//    
-//    var tableModel: TableModel {
-//        TableModel(
-//            id: itemId,
-//            diceId: diceId,
-//            entries: entries.map { $0.tableEntryModel }
-//        )
-//    }
-//    
-//    func replace(_ model: TableModel) {
-//        diceId = model.diceId
-//        // Note: entries would need to be handled separately in a real implementation
-//    }
-//}

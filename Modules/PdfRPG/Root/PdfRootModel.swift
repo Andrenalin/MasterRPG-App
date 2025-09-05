@@ -46,7 +46,7 @@ public final class PdfRootModel {
         FileController()
     }()
     @ObservationIgnored lazy var importController: ImportController = {
-        ImportController(itemController: itemController, module: module)
+        ImportController(itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, module: module)
     }()
     @ObservationIgnored lazy var itemController: ItemController = {
         ItemController(container: modelContext.container)

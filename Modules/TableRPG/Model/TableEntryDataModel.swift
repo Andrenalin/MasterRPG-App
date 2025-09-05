@@ -6,7 +6,7 @@ import SwiftData
 
 @Model @CodableModel
 public final class TableEntryDataModel {
-    public init(itemId: UUID = UUID(), entryId: UUID = UUID(), index: Int = 0, name: String = "", content: String = "") {
+    public init(itemId: UUID = UUID(), entryId: UUID = UUID(), index: Int = 0, name: String = "", content: String = "", parent: TableDataModel? = nil) {
         self.itemId = itemId
         self.entryId = entryId
         self.index = index
@@ -20,4 +20,7 @@ public final class TableEntryDataModel {
     
     var name: String = ""
     var content: String = ""
+    
+    @CodableIgnored
+    var parent: TableDataModel? = nil
 }

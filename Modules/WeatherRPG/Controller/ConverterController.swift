@@ -48,7 +48,21 @@ public struct ConverterController {
     }
     
     static func convert(old: WeatherModel) -> ItemDataCodableModel {
-        ItemDataCodableModel(
+        let model = WeatherDataModel.WeatherDataModelCodable(
+            itemId: old.id,
+            photoId: old.photoId,
+            time: old.time,
+            cloudThickness: old.cloudThickness,
+            stormType: old.stormType,
+            rainAngle: old.rainAngle,
+            rainIntensity: old.rainIntensity,
+            lightningFrequency: old.lightningFrequency,
+            lightningMaxBolts: old.lightningMaxBolts,
+            lightningForkProbability: old.lightningForkProbability
+        )
+        let externalData = try? JSONEncoder().encode(model)
+
+        return ItemDataCodableModel(
             id: old.id,
             module: .weather,
             name: old.name,
@@ -59,7 +73,7 @@ public struct ConverterController {
             displayState: old.displayState,
             parentId: nil,
             entries: [],
-            externalData: nil
+            externalData: externalData
         )
     }
 }

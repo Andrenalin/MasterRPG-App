@@ -30,7 +30,23 @@ public struct ConverterController {
     }
     
     static func convert(old: TableModel) -> ItemDataCodableModel {
-        ItemDataCodableModel(
+        let entries = old.entries.wrappedValue.enumerated().map { (index, entry) in
+            TableEntryDataModel.TableEntryDataModelCodable(
+                itemId: old.id,
+                entryId: entry.id,
+                index: index,
+                name: entry.name,
+                content: entry.content
+            )
+        }
+        let model = TableDataModel.TableDataModelCodable(
+            itemId: old.id,
+            diceId: old.diceId.wrappedValue,
+            entries: entries
+        )
+        let externalData = try? JSONEncoder().encode(model)
+        
+        return ItemDataCodableModel(
             id: old.id,
             module: .table,
             name: old.name,
@@ -41,7 +57,7 @@ public struct ConverterController {
             displayState: old.displayState,
             parentId: nil,
             entries: [],
-            externalData: nil
+            externalData: externalData
         )
     }
 }
