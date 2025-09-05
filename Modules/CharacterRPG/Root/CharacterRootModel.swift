@@ -6,15 +6,15 @@ import SwiftData
 import Foundation
 
 @MainActor @Observable
-public final class TableRootModel {
+public final class CharacterRootModel {
     init(modelContext: ModelContext, diceRoot: DiceRootModel) {
         self.modelContext = modelContext
-        let module: NetworkModules = .table
+        let module: NetworkModules = .value
         self.module = module
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.rules, .loot, .supplement])
+        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.character, .item, .supplement])
         self.searchModel = searchModel
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
@@ -75,7 +75,7 @@ public final class TableRootModel {
     }()
 }
 
-extension TableRootModel: ItemRootControllable {
+extension CharacterRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var importControllable: any ImportControllable { importController }

@@ -19,7 +19,7 @@ extension ViewController: ViewControllable {
 
 extension ViewController {
     @MainActor
-    func diceSelection(root: TableRootModel, selectionModel: ItemSelectionModel) -> some View {
+    func diceSelection(root: CharacterRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.diceRoot.viewController.selectionView(root: root.diceRoot, model: selectionModel)
     }
 }
@@ -28,7 +28,7 @@ extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func linkWindow(root: TableRootModel, isInspector: Bool = false) -> some View {
+    func linkWindow(root: CharacterRootModel, isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
     }

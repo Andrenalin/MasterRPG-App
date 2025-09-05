@@ -6,7 +6,7 @@ import SwiftData
 
 struct ItemController: Sendable {
     let container: ModelContainer
-    let collectionCategory: ItemListCategory = .collection
+    let collectionCategory: ItemListCategory = .character
 }
 
 // MARK: - Import Controller
@@ -18,7 +18,7 @@ extension ItemController: ItemControllable {
             return try decoder.decode(ItemDataCodableModel.self, from: data)
         } else {
             do {
-                let oldModel = try decoder.decode(TableModel.self, from: data)
+                let oldModel = try decoder.decode(CharacterModel.self, from: data)
                 return ConverterController.convert(old: oldModel)
             } catch {
                 print(error)
@@ -30,8 +30,8 @@ extension ItemController: ItemControllable {
     @MainActor func encodedItemData(for id: UUID) throws -> Data? {
         let encoder = JSONEncoder()
         var externalData: Data? = nil
-        if let tableModel = model(for: id)?.codableModel {
-            externalData = try encoder.encode(tableModel)
+        if let characterModel = model(for: id)?.codableModel {
+            externalData = try encoder.encode(characterModel)
         }
         let model = itemDataCodableModel(for: id, externalData: externalData)
         return try encoder.encode(model)
@@ -40,27 +40,27 @@ extension ItemController: ItemControllable {
     @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let data else { return }
         let decoder = JSONDecoder()
-        guard let newTable = try? decoder.decode(TableDataModel.TableDataModelCodable.self, from: data) else { return }
-        if let oldTable = model(for: id) {
-            oldTable.replace(newTable)
+        guard let newCharacter = try? decoder.decode(CharacterDataModel.CharacterDataModelCodable.self, from: data) else { return }
+        if let oldCharacter = model(for: id) {
+            oldCharacter.replace(newCharacter)
         } else {
-            let newModel = TableDataModel(newTable)
+            let newModel = CharacterDataModel(newCharacter)
             container.mainContext.insert(newModel)
         }
     }
 }
 
 extension ItemController {
-    @MainActor func model(for itemId: UUID?) -> TableDataModel? {
+    @MainActor func model(for itemId: UUID?) -> CharacterDataModel? {
         guard let itemId else { return nil }
-        let predicate = #Predicate<TableDataModel> { $0.itemId == itemId }
-        let fetchDesc = FetchDescriptor<TableDataModel>(predicate: predicate)
-        let models: [TableDataModel] = (try? container.mainContext.fetch(fetchDesc)) ?? []
+        let predicate = #Predicate<CharacterDataModel> { $0.itemId == itemId }
+        let fetchDesc = FetchDescriptor<CharacterDataModel>(predicate: predicate)
+        let models: [CharacterDataModel] = (try? container.mainContext.fetch(fetchDesc)) ?? []
         guard let model = models.first else {
-            let item = TableDataModel(itemId: itemId)
-            container.mainContext.insert(item)
+            let character = CharacterDataModel(itemId: itemId)
+            container.mainContext.insert(character)
             try? container.mainContext.save()
-            return item
+            return character
         }
         return model
     }

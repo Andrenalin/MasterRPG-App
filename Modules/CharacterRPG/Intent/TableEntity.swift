@@ -7,11 +7,11 @@ import SwiftUI
 import PDFKit
 import CoreRPG
 
-struct TableEntity: IndexedEntity {
+struct CharacterEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
-            name: LocalizedStringResource("Table"),
-            numericFormat: "\(placeholder: .int) Table"
+            name: LocalizedStringResource("Character"),
+            numericFormat: "\(placeholder: .int) Character"
         )
     }
 
@@ -21,7 +21,7 @@ struct TableEntity: IndexedEntity {
         )
     }
 
-    static let defaultQuery = TableEntityQuery()
+    static let defaultQuery = CharacterEntityQuery()
 
     var id: UUID { model.id }
 
@@ -32,16 +32,16 @@ struct TableEntity: IndexedEntity {
     @ComputedProperty(indexingKey: \.contentDescription)
     var description: String { model.information.wrappedValue }
 
-    var root: TableRootModel
+    var root: CharacterRootModel
     var model: ItemDataCodableModel
     
-    init(root: TableRootModel, model: ItemDataCodableModel) {
+    init(root: CharacterRootModel, model: ItemDataCodableModel) {
         self.root = root
         self.model = model
     }
 }
 
-extension TableEntity: Transferable {
+extension CharacterEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
             let url = URL.documentsDirectory.appending(path: "\(landmark.name).pdf")
@@ -71,7 +71,7 @@ extension TableEntity: Transferable {
 
         DataRepresentation(exportedContentType: .plainText) {
             """
-            Pdf: \($0.name)
+            Character: \($0.name)
             Description: \($0.description)
             """.data(using: .utf8)!
         }
@@ -79,49 +79,49 @@ extension TableEntity: Transferable {
 }
 
 @MainActor
-struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
-    @Dependency var root: TableRootModel
+struct CharacterEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
+    @Dependency var root: CharacterRootModel
 
-    func suggestedEntities() async throws -> [TableEntity] {
+    func suggestedEntities() async throws -> [CharacterEntity] {
         let ids = root.itemController.allItemIds()
-        var results: [TableEntity] = []
+        var results: [CharacterEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
-            let entity = TableEntity(root: root, model: model)
+            let entity = CharacterEntity(root: root, model: model)
             results.append(entity)
         }
         return results
     }
 
-    func entities(for identifiers: [TableEntity.ID]) async throws -> [TableEntity] {
-        var results: [TableEntity] = []
+    func entities(for identifiers: [CharacterEntity.ID]) async throws -> [CharacterEntity] {
+        var results: [CharacterEntity] = []
         for id in identifiers {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
-            let entity = TableEntity(root: root, model: model)
+            let entity = CharacterEntity(root: root, model: model)
             results.append(entity)
         }
         return results
     }
 
-    func entities(matching: String) async throws -> [TableEntity] {
+    func entities(matching: String) async throws -> [CharacterEntity] {
         let ids = root.itemController.allItemIds()
-        var results: [TableEntity] = []
+        var results: [CharacterEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
             guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
-            let entity = TableEntity(root: root, model: model)
+            let entity = CharacterEntity(root: root, model: model)
             results.append(entity)
         }
         return results
     }
 
-    func allEntities() async throws -> [TableEntity] {
+    func allEntities() async throws -> [CharacterEntity] {
         try await suggestedEntities()
     }
 }
 
-extension TableEntity {
+extension CharacterEntity {
     var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "tablecells.fill"))
+        SharePreview(name, icon: Image(systemName: "person.fill"))
     }
 }
