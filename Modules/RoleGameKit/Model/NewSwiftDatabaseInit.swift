@@ -5,6 +5,7 @@ import CoreRPG
 import SwiftData
 
 import AudioRPG
+import CharacterRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
@@ -20,6 +21,8 @@ struct NewSwiftDatabaseInit {
             EntryDataModel.self,
             LinkDataModel.self,
             TagDataModel.self,
+            CharacterDataModel.self,
+            CharacterEntryDataModel.self,
             DiceDataModel.self,
             DieDataModel.self,
             PdfDataModel.self,

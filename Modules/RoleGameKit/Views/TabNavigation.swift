@@ -51,6 +51,7 @@ public struct TabNavigation: View {
 #endif
         }
         .environment(appStore.audioRootModel)
+        .environment(appStore.characterRootModel)
         .environment(appStore.diceRootModel)
         .environment(appStore.pdfRootModel)
         .environment(appStore.photoRootModel)
