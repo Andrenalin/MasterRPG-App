@@ -1,0 +1,35 @@
+// @copyright André Trettin
+
+import CoreRPG
+import DiceRPG
+import SwiftUI
+
+public struct ViewController: Sendable {
+    public let goupViewType: GroupViewType = .item
+    public let thumbnailRowViewType: ThumbnailRowViewType = .custom
+}
+
+extension ViewController: ViewControllable {
+    public func thumbnailRowView(for itemId: UUID) -> AnyView {
+        AnyView(ThumbnailDiceRow(itemId: itemId))
+    }
+}
+
+// MARK: External Views
+
+extension ViewController {
+    @MainActor
+    func diceSelection(root: TableRootModel, selectionModel: ItemSelectionModel) -> some View {
+        root.diceRoot.viewController.selectionView(root: root.diceRoot, model: selectionModel)
+    }
+}
+
+// MARK: Viewer
+
+public extension ViewController {
+    @MainActor
+    func linkWindow(root: TableRootModel, isInspector: Bool = false) -> some View {
+        LinkRootView(type: isInspector ? .inspector : .window)
+            .environment(root)
+    }
+}
