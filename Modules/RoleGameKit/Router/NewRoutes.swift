@@ -4,6 +4,7 @@ import CoreRPG
 import Foundation
 
 import AudioRPG
+import CharacterRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
@@ -17,6 +18,7 @@ import RPGPdfs
 import RPGPhotos
 import RPGSpaces
 import RPGTables
+import RPGValues
 import RPGWeathers
 import SwiftUI
 
@@ -205,6 +207,38 @@ struct NewTableRoute: View {
             } else {
                 TableFactory.rootView(for: appStore.tableRoot, tabId: tabId)
                     .environment(appStore.tableRoot)
+            }
+        }
+    }
+}
+
+struct NewValueRoute: View {
+    let appStore: AppStore
+    let tabId: UUID
+    let isExtended: Bool
+
+    @State private var cacheModel = CacheItemListModel()
+    @State private var deviceRotationModel = DeviceRotationModel()
+    @State private var tabTitleModel = TabTitleModel()
+
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        if appStore.isNewUICode {
+            CharacterRootFactory.rootView(withoutNavigation: isExtended)
+                .environment(deviceRotationModel)
+                .environment(tabTitleModel)
+                .task {
+                    try? await Task.sleep(for: .seconds(3))
+                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
+                }
+        } else {
+            if isExtended {
+                ValueFactory.rootExtendedView(for: appStore.valueRoot, tabId: tabId)
+                    .environment(appStore.valueRoot)
+            } else {
+                ValueFactory.rootView(for: appStore.valueRoot, tabId: tabId)
+                    .environment(appStore.valueRoot)
             }
         }
     }

@@ -122,6 +122,6 @@ struct CharacterEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
 
 extension CharacterEntity {
     var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "person.fill"))
+        SharePreview(name, icon: Image(systemName: "list.bullet.rectangle"))
     }
 }

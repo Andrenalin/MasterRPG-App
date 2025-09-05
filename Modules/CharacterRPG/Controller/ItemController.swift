@@ -6,7 +6,7 @@ import SwiftData
 
 struct ItemController: Sendable {
     let container: ModelContainer
-    let collectionCategory: ItemListCategory = .character
+    let collectionCategory: ItemListCategory = .collection
 }
 
 // MARK: - Import Controller

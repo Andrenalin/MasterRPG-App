@@ -3,12 +3,6 @@
 import CoreRPG
 import RolePlayGameKit
 
-import AudioRPG
-import DiceRPG
-import PdfRPG
-import PhotoRPG
-import SpaceRPG
-
 import SwiftUI
 import SwiftData
 
@@ -24,6 +18,7 @@ struct AppRootView: View {
             .environment(\.navigator, appModel.navigator)
             .environment(appModel.deviceRotationModel)
             .environment(appModel.audioRoot)
+            .environment(appModel.characterRoot)
             .environment(appModel.diceRoot)
             .environment(appModel.pdfRoot)
             .environment(appModel.photoRoot)

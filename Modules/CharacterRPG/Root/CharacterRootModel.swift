@@ -1,27 +1,32 @@
 // @copyright André Trettin
 
+import Foundation
+import SwiftData
+
 import CoreRPG
 import DiceRPG
-import SwiftData
-import Foundation
+import PdfRPG
+import PhotoRPG
+import TableRPG
 
 @MainActor @Observable
 public final class CharacterRootModel {
-    init(modelContext: ModelContext, diceRoot: DiceRootModel) {
+    init(modelContext: ModelContext, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
         self.modelContext = modelContext
         let module: NetworkModules = .value
         self.module = module
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.character, .item, .supplement])
+        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.character, .gameMaster, .item, .monster])
         self.searchModel = searchModel
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
 
         self.diceRoot = diceRoot
-
-
+        self.pdfRoot = pdfRoot
+        self.photoRoot = photoRoot
+        self.tableRoot = tableRoot
         
         itemController.cleanDeleted()
     }
@@ -37,6 +42,9 @@ public final class CharacterRootModel {
     }
 
     @ObservationIgnored let diceRoot: DiceRootModel
+    @ObservationIgnored let pdfRoot: PdfRootModel
+    @ObservationIgnored let photoRoot: PhotoRootModel
+    @ObservationIgnored let tableRoot: TableRootModel
 
     @ObservationIgnored lazy var editController: EditController = {
         EditController(itemControllable: itemController, fileUrlDataController: nil)
@@ -84,4 +92,3 @@ extension CharacterRootModel: ItemRootControllable {
     public var listLinkControllable: any ListControllable { listLinkController }
     public var viewControllable: any ViewControllable { viewController }
 }
-

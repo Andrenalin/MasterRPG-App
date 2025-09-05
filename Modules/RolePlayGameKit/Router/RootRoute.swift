@@ -3,6 +3,7 @@
 import CoreExternalRPG
 import CoreRPG
 import AudioRPG
+import CharacterRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
@@ -154,7 +155,7 @@ struct RouteRouteDestionationView: View {
         case .tables:
             TableRootFactory.rootView(withoutNavigation: false)
         case .values:
-            RootListView(rootRoute: route)
+            CharacterRootFactory.rootView(withoutNavigation: false)
         case .weathers:
             WeatherRootFactory.rootView(withoutNavigation: false)
         case .search:

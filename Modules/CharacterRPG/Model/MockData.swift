@@ -2,6 +2,9 @@
 
 import CoreRPG
 import DiceRPG
+import PdfRPG
+import PhotoRPG
+import TableRPG
 import SwiftUI
 import SwiftData
 
@@ -71,7 +74,8 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        self._root = State(wrappedValue: CharacterRootModel(modelContext: modelContext, diceRoot: DiceRootFactory.rootModel(modelContext: modelContext)))
+        let diceRoot = DiceRootFactory.rootModel(modelContext: modelContext)
+        self._root = State(wrappedValue: CharacterRootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: PdfRootFactory.rootModel(modelContext: modelContext), photoRoot: PhotoRootFactory.rootModel(modelContext: modelContext), tableRoot: TableRootFactory.rootModel(modelContext: modelContext, diceRoot: diceRoot)))
     }
 
     @State private var root: CharacterRootModel
@@ -86,6 +90,9 @@ struct MockRootViewModifier: ViewModifier {
             .environment(DeviceRotationModel())
             .environment(TabTitleModel())
             .environment(root.diceRoot)
+            .environment(root.pdfRoot)
+            .environment(root.photoRoot)
+            .environment(root.tableRoot)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

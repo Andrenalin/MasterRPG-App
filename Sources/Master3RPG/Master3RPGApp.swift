@@ -26,6 +26,8 @@ struct Master3RPGApp: App {
 
         let audioRootModel = appModel.audioRoot
         AppDependencyManager.shared.add(dependency: audioRootModel)
+        let characterRootModel = appModel.characterRoot
+        AppDependencyManager.shared.add(dependency: characterRootModel)
         let diceRootModel = appModel.diceRoot
         AppDependencyManager.shared.add(dependency: diceRootModel)
         let pdfRootModel = appModel.pdfRoot

@@ -13,7 +13,7 @@ struct CharacterShortcuts: AppShortcutsProvider {
                 "Show \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Open Character",
-            systemImageName: "tablecells.fill"
+            systemImageName: "list.bullet.rectangle"
         )
     }
 }

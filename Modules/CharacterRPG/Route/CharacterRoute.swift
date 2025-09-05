@@ -5,11 +5,11 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 
-public enum TableRoute: Equatable, Hashable, Codable {
+public enum CharacterRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }
 
-extension TableRoute: RawRepresentable {
+extension CharacterRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
             case .detail(let id): "detail/\(id.uuidString)"
@@ -26,7 +26,7 @@ extension TableRoute: RawRepresentable {
     }
 }
 
-extension TableRoute: NavigationDestination {
+extension CharacterRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):

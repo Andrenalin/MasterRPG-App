@@ -8,6 +8,7 @@ import SwiftUI
 import os.log
 
 import AudioRPG
+import CharacterRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
@@ -34,6 +35,7 @@ public final class AppModel: Sendable {
     
     // Module roots
     public var audioRoot: AudioRootModel
+    public var characterRoot: CharacterRootModel
     public var diceRoot: DiceRootModel
     public var pdfRoot: PdfRootModel
     public var photoRoot: PhotoRootModel
@@ -53,17 +55,25 @@ public final class AppModel: Sendable {
         self.settingsModel = AppSettingsModel()
         self.windowStateModel = WindowStateModel()
                 
-        self.audioRoot = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        let audioRoot = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
         let diceRoot = DiceRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        self.diceRoot = diceRoot
-        self.pdfRoot = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        let pdfRoot = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
         let photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        self.photoRoot = photoRoot
-        self.spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        self.tableRoot = TableRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRoot)
-        self.weatherRoot = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRoot)
+        let spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        let tableRoot = TableRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRoot)
+        let weatherRoot = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRoot)
+        let characterRoot = CharacterRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
 
-        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.4", executionDelay: 0.4, verbosity: .info))
+        self.audioRoot = audioRoot
+        self.characterRoot = characterRoot
+        self.diceRoot = diceRoot
+        self.pdfRoot = pdfRoot
+        self.photoRoot = photoRoot
+        self.spaceRoot = spaceRoot
+        self.tableRoot = tableRoot
+        self.weatherRoot = weatherRoot
+        
+        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.5", executionDelay: 0.4, verbosity: .info))
     }
     
     @MainActor
@@ -74,6 +84,8 @@ public final class AppModel: Sendable {
                 EntryDataModel.self,
                 LinkDataModel.self,
                 TagDataModel.self,
+                CharacterDataModel.self,
+                CharacterEntryDataModel.self,
                 DiceDataModel.self,
                 DieDataModel.self,
                 PdfDataModel.self,

@@ -5,7 +5,7 @@ import SwiftUI
 import CoreExternalRPG
 
 #if !os(tvOS)
-public struct TableCommands: Commands {
+public struct CharacterCommands: Commands {
     public init(root: CharacterRootModel, navigator: Navigator) {
         self.root = root
         self.navigator = navigator
@@ -15,7 +15,7 @@ public struct TableCommands: Commands {
     let navigator: Navigator
 
     public var body: some Commands {
-        ModuleCommands(root: root, navigator: navigator, key: "4")
+        ModuleCommands(root: root, navigator: navigator, key: "2")
     }
 }
 

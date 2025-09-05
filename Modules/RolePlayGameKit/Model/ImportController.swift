@@ -3,6 +3,7 @@
 import CoreRPG
 import Foundation
 import AudioRPG
+import CharacterRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
@@ -15,7 +16,7 @@ struct ImportController: Sendable {
     init(appModel: AppModel) {
         self.root = appModel
         self.module = .none
-        self.itemControllable = appModel.tableRoot.itemControllable
+        self.itemControllable = appModel.characterRoot.itemControllable
         self.importModel = ItemDataImportModel(gameImporter: false)
     }
     
@@ -36,6 +37,7 @@ extension ImportController: ImportControllable {
             try await root.photoRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.spaceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.tableRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+            try await root.characterRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.weatherRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
         } else {
             await setOverwite()
@@ -45,6 +47,7 @@ extension ImportController: ImportControllable {
             try await root.photoRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.spaceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.tableRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+            try await root.characterRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.weatherRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
         }
     }
@@ -57,6 +60,7 @@ extension ImportController: ImportControllable {
         root.photoRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
         root.spaceRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
         root.tableRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
+        root.characterRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
         root.weatherRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
     }
 }

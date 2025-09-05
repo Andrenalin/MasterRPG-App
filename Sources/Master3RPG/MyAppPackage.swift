@@ -3,6 +3,7 @@
 import AppIntents
 import RolePlayGameKit
 import AudioRPG
+import CharacterRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
@@ -15,6 +16,7 @@ struct MyAppPackage: AppIntentsPackage {
        [
         RPGFrameworkPackage.self,
         AudioFrameworkPackage.self,
+        CharacterFrameworkPackage.self,
         DiceFrameworkPackage.self,
         PdfFrameworkPackage.self,
         PhotoFrameworkPackage.self,

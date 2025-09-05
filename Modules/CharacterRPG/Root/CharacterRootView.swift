@@ -5,7 +5,7 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 
-struct TableRootView: View {
+struct CharacterRootView: View {
     let withoutNavigation: Bool
 
     @Environment(CharacterRootModel.self) private var root
@@ -25,9 +25,9 @@ struct TableRootView: View {
 struct SaveView: View {
     let root: CharacterRootModel
     
-    @SceneStorage("TableRoute") private var route: ItemRootRoute?
-    @SceneStorage("TableDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
-    @SceneStorage("TableListModel") private var listMode: ListDisplayModel.ListMode = .list
+    @SceneStorage("CharacterRoute") private var route: ItemRootRoute?
+    @SceneStorage("CharacterDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
+    @SceneStorage("CharacterListModel") private var listMode: ListDisplayModel.ListMode = .list
 
     var body: some View {
         let _ = Self._printChanges()
@@ -40,11 +40,11 @@ struct SaveView: View {
 
 #Preview("Embed", traits: .mockData) {
     ManagedNavigationStack {
-        TableRootView(withoutNavigation: true)
+        CharacterRootView(withoutNavigation: true)
     }
 }
 
 #Preview("Split", traits: .mockData) {
-    TableRootView(withoutNavigation: false)
+    CharacterRootView(withoutNavigation: false)
 }
 

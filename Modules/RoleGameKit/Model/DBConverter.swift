@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import AudioRPG
+import CharacterRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
@@ -14,6 +15,7 @@ import RPGPdfs
 import RPGPhotos
 import RPGSpaces
 import RPGTables
+import RPGValues
 import RPGWeathers
 
 import SwiftData
@@ -23,6 +25,9 @@ struct DBConverter {
     static func convert(appStore: AppStore, modelContext: ModelContext) async {
         let audios = appStore.audioRoot.listItems()
         AudioRPG.ConverterController.insert(items: audios, into: appStore.modelContainer.mainContext)
+
+        let characters = appStore.valueRoot.listItems()
+        CharacterRPG.ConverterController.insert(items: characters, into: appStore.modelContainer.mainContext)
 
         let dice = appStore.diceRoot.listItems()
         DiceRPG.ConverterController.insert(items: dice, into: appStore.modelContainer.mainContext)

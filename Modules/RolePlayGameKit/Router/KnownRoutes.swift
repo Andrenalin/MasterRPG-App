@@ -3,6 +3,7 @@
 import CoreExternalRPG
 import CoreRPG
 import AudioRPG
+import CharacterRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
@@ -38,7 +39,7 @@ struct RootRouteRouter: NavigationRouteHandling {
             return [.send(RootRoute.maps)]
         case .pdfs(let itemId, _):
             if let itemId {
-                return [.send(RootRoute.pdfs), .send(PdfRoute.detail(itemId))]
+                return [.send(RootRoute.pdfs), .reset, .send(PdfRoute.detail(itemId))]
             }
             return [.send(RootRoute.pdfs)]
         case .photos(let itemId, _):
@@ -60,7 +61,10 @@ struct RootRouteRouter: NavigationRouteHandling {
                 return [.send(RootRoute.tables), .send(TableRoute.detail(itemId))]
             }
             return [.send(RootRoute.tables)]
-        case .values(_, _):
+        case .values(let itemId, _):
+            if let itemId {
+                return [.send(RootRoute.values), .reset, .send(CharacterRoute.detail(itemId))]
+            }
             return [.send(RootRoute.values)]
         case .weathers(let itemId, _):
             if let itemId {
@@ -129,8 +133,12 @@ struct RootFiveRouteRouter: NavigationRouteHandling {
                 routes.append(.send(TableRoute.detail(itemId)))
             }
             return routes
-        case .values(_, _):
-            return [.send(RootRoute.values)]
+        case .values(let itemId, _):
+            var routes: [NavigationAction] = [.send(RootRoute.values), .reset]
+            if let itemId {
+                routes.append(.send(CharacterRoute.detail(itemId)))
+            }
+            return routes
         case .weathers(let itemId, _):
             var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.weathers)]
             if let itemId {
