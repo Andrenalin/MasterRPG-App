@@ -19,8 +19,8 @@ struct EditController: EditControllable {
 }
 
 extension EditController {
-    func add(photoId: UUID?, model: CharacterDataModel) {
-        model.photoId = photoId
+    func add(diceId: UUID?, model: CharacterDataModel) {
+        model.diceId = diceId
         try? model.modelContext?.save()
     }
 }

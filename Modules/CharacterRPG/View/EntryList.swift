@@ -9,7 +9,7 @@ import SwiftUI
 struct EntryList: View {
     let itemId: UUID
     
-    @Environment(TableRootModel.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(\.modelContext) private var modelContext
     @Environment(CacheItemListModel.self) private var cacheItemListModel
 
@@ -34,11 +34,11 @@ struct EntryList: View {
         }
     }
     
-    var model: TableDataModel? {
+    var model: CharacterDataModel? {
         root.itemController.model(for: itemId)
     }
     
-    var entries: [TableEntryDataModel] {
+    var entries: [CharacterEntryDataModel] {
         model?.entries ?? []
     }
 }

@@ -18,7 +18,7 @@ extension ItemController: ItemControllable {
             return try decoder.decode(ItemDataCodableModel.self, from: data)
         } else {
             do {
-                let oldModel = try decoder.decode(CharacterModel.self, from: data)
+                let oldModel = try decoder.decode(ValueModel.self, from: data)
                 return ConverterController.convert(old: oldModel)
             } catch {
                 print(error)

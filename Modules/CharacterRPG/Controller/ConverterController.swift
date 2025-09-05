@@ -17,7 +17,7 @@ public struct ConverterController {
             let character = CharacterRPG.CharacterDataModel(itemId: item.id, photoId: item.photoId, photos: item.photos, parentId: item.parentId)
             modelContext.insert(character)
             let entries = item.entries.enumerated().map { (index, entry) in
-                CharacterEntryDataModel(itemId: item.id, entryId: entry.id, index: index, name: entry.name, value: entry.value, valueId: entry.valueId)
+                CharacterEntryDataModel(itemId: item.id, entryId: entry.id, index: index, name: entry.name, content: entry.value, valueType: toCharacterValueType(entry.type), diceId: entry.diceId, valueId: entry.valueId)
             }
             entries.forEach { modelContext.insert($0) }
             
@@ -29,21 +29,28 @@ public struct ConverterController {
         try? modelContext.save()
     }
     
-    static func convert(old: CharacterModel) -> ItemDataCodableModel {
-        let entries = old.entries.enumerated().map { (index, entry) in
+    static func toCharacterValueType(_ value: RPGValues.ValueEntryModel.ValueType) -> CharacterRPG.CharacterEntryDataModel.ValueType {
+        CharacterRPG.CharacterEntryDataModel.ValueType(rawValue: value.rawValue) ?? .text
+    }
+
+    static func convert(old: CharacterRPG.ValueModel) -> ItemDataCodableModel {
+        let entries = old.entries.wrappedValue.enumerated().map { (index, entry) in
             CharacterEntryDataModel.CharacterEntryDataModelCodable(
                 itemId: old.id,
-                entryId: entry.entryId,
+                entryId: entry.id,
                 index: index,
                 name: entry.name,
-                value: entry.value,
+                content: entry.value,
+                valueType: entry.type,
+                diceId: entry.diceId,
                 valueId: entry.valueId
             )
         }
         let model = CharacterDataModel.CharacterDataModelCodable(
             itemId: old.id,
-            photoId: old.photoId,
-            photos: old.photos,
+            diceId: entries.first { $0.diceId != nil }?.diceId,
+            photoId: old.photoId.wrappedValue,
+            photos: old.photos.wrappedValue,
             parentId: old.parentId,
             entries: entries
         )
@@ -54,8 +61,8 @@ public struct ConverterController {
             module: .value,
             name: old.name,
             information: old.description,
-            category: old.category,
-            tags: old.tags,
+            category: old.category.wrappedValue,
+            tags: old.tags.wrappedValue,
             fileUrl: nil,
             displayState: old.displayState,
             parentId: old.parentId,

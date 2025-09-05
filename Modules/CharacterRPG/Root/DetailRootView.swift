@@ -9,7 +9,7 @@ struct DetailRootView: View {
     let selectedId: UUID?
     
     @Environment(\.modelContext) private var modelContext
-    @Environment(TableRootModel.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
@@ -41,11 +41,11 @@ struct DetailRootView: View {
         root.listControllable.selectedModel(for: selectedId, modelContext: modelContext)
     }
 
-    var tableModel: TableDataModel? {
+    var tableModel: CharacterDataModel? {
         root.itemController.model(for: selectedId ?? root.listControllable.listModel.selectedItemId)
     }
 
-    func detailEditorView(model: TableDataModel) -> some View {
+    func detailEditorView(model: CharacterDataModel) -> some View {
         Form {
             root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.selectionDice)
                 .onChange(of: root.editController.selectionDice.selection) {
@@ -63,7 +63,7 @@ struct DetailRootView: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Query var models: [ItemDataModel]
-    @Previewable @Environment(TableRootModel.self) var root
+    @Previewable @Environment(CharacterRootModel.self) var root
     
     NavigationStack {
         DetailRootView(selectedId: MockData.previewId)

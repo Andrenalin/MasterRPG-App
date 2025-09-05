@@ -6,55 +6,31 @@ import SwiftData
 
 @Model @CodableModel
 public final class CharacterDataModel {
-    public init(itemId: UUID = UUID(), photoId: UUID? = nil, photos: [UUID] = [], parentId: UUID? = nil) {
+    public init(itemId: UUID = UUID(), diceId: UUID? = nil, photoId: UUID? = nil, photos: [UUID] = [], parentId: UUID? = nil, entries: [CharacterEntryDataModel] = []) {
         self.itemId = itemId
+        self.diceId = diceId
         self.photoId = photoId
         self.photos = photos
         self.parentId = parentId
     }
     
     var itemId: UUID = UUID()
+    var diceId: UUID? = nil
     var photoId: UUID? = nil
     var photos: [UUID] = []
     var parentId: UUID? = nil
+    
+    @Relationship(deleteRule: .cascade) private var entries_: [CharacterEntryDataModel]? = []
 }
 
 extension CharacterDataModel {
     var entries: [CharacterEntryDataModel] {
-        guard let modelContext else { return [] }
-        let predicate = #Predicate<CharacterEntryDataModel> {
-            $0.itemId == itemId
+        get {
+            guard let all = entries_ else { return [] }
+            return all.sorted { $0.index < $1.index }
         }
-        let fetch = FetchDescriptor<CharacterEntryDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.index)])
-        return (try? modelContext.fetch(fetch)) ?? []
-    }
-}
-
-// MARK: - Conversion methods for Version2024 compatibility
-extension CharacterDataModel {
-    convenience init(_ model: CharacterModel) {
-        self.init(
-            itemId: model.id,
-            photoId: model.photoId,
-            photos: model.photos,
-            parentId: model.parentId
-        )
-    }
-    
-    var characterModel: CharacterModel {
-        CharacterModel(
-            id: itemId,
-            photoId: photoId,
-            photos: photos,
-            parentId: parentId,
-            entries: entries.map { $0.characterEntryModel }
-        )
-    }
-    
-    func replace(_ model: CharacterModel) {
-        photoId = model.photoId
-        photos = model.photos
-        parentId = model.parentId
-        // Note: entries would need to be handled separately in a real implementation
+        set {
+            entries_ = newValue
+        }
     }
 }

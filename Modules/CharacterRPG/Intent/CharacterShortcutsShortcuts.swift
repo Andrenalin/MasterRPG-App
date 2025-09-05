@@ -4,19 +4,19 @@ import CoreRPG
 import AppIntents
 import Foundation
 
-struct TableShortcuts: AppShortcutsProvider {
+struct CharacterShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
-            intent: OpenTableIntent(),
+            intent: OpenCharacterIntent(),
             phrases: [
                 "Open in \(.applicationName)",
                 "Show \(\.$target) in \(.applicationName)"
             ],
-            shortTitle: "Open Table",
+            shortTitle: "Open Character",
             systemImageName: "tablecells.fill"
         )
     }
 }
 
-public struct TableFrameworkPackage: AppIntentsPackage { }
+public struct CharacterFrameworkPackage: AppIntentsPackage { }
 

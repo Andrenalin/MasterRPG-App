@@ -8,7 +8,7 @@ import SwiftUI
 struct TableRootView: View {
     let withoutNavigation: Bool
 
-    @Environment(TableRootModel.self) private var root
+    @Environment(CharacterRootModel.self) private var root
 
     var body: some View {
         let _ = Self._printChanges()
@@ -23,7 +23,7 @@ struct TableRootView: View {
 }
 
 struct SaveView: View {
-    let root: TableRootModel
+    let root: CharacterRootModel
     
     @SceneStorage("TableRoute") private var route: ItemRootRoute?
     @SceneStorage("TableDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium

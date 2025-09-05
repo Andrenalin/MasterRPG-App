@@ -8,7 +8,7 @@ import SwiftUI
 struct ThumbnailDiceRow: View {
     let itemId: UUID
     
-    @Environment(TableRootModel.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     
     var body: some View {
         let _ = Self._printChanges()
@@ -17,7 +17,7 @@ struct ThumbnailDiceRow: View {
         }
     }
     
-    private var model: TableDataModel? {
+    private var model: CharacterDataModel? {
         root.itemController.model(for: itemId)
     }
 }

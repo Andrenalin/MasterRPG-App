@@ -7,7 +7,7 @@ import SwiftUI
 struct LinkRootView: View {
     let type: LinkRootType
 
-    @Environment(TableRootModel.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     
     var body: some View {
         CoreRPG.LinkRootView(root: root, type: type)

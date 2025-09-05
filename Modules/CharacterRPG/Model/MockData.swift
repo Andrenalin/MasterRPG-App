@@ -17,7 +17,7 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: TableDataModel.self, TableEntryDataModel.self, ItemDataModel.self, TagDataModel.self,
+            for: CharacterDataModel.self, CharacterEntryDataModel.self, ItemDataModel.self, TagDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
@@ -31,14 +31,14 @@ struct MockData: PreviewModifier {
         )
         container.mainContext.insert(model1)
         
-        let item1 = TableDataModel(itemId: previewId)
+        let item1 = CharacterDataModel(itemId: previewId)
         container.mainContext.insert(item1)
         let entries = [
-            TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 0, name: "1", content: "Really only Cooper"),
-            TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 1, name: "2-9", content: "You found some Silver"),
-            TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 2, name: "10-15", content: "Some Gold and Silver"),
-            TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 3, name: "16-19", content: "Rich on Gold and Silver"),
-            TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 4, name: "20", content: "Mega Loot Gold- dold"),
+            CharacterEntryDataModel(itemId: previewId, entryId: UUID(), index: 0, name: "1", content: "Really only Cooper"),
+            CharacterEntryDataModel(itemId: previewId, entryId: UUID(), index: 1, name: "2-9", content: "You found some Silver"),
+            CharacterEntryDataModel(itemId: previewId, entryId: UUID(), index: 2, name: "10-15", content: "Some Gold and Silver"),
+            CharacterEntryDataModel(itemId: previewId, entryId: UUID(), index: 3, name: "16-19", content: "Rich on Gold and Silver"),
+            CharacterEntryDataModel(itemId: previewId, entryId: UUID(), index: 4, name: "20", content: "Mega Loot Gold- dold"),
         ]
         entries.forEach { container.mainContext.insert($0) }
 
@@ -51,7 +51,7 @@ struct MockData: PreviewModifier {
             tags: ["Player", "Mega", "Gnome"]
         )
         container.mainContext.insert(model2)
-        let weather2 = TableDataModel(itemId: previewId2)
+        let weather2 = CharacterDataModel(itemId: previewId2)
         container.mainContext.insert(weather2)
 
         let model3 = ItemDataModel(
@@ -63,7 +63,7 @@ struct MockData: PreviewModifier {
             tags: ["NPC", "Wizward", "Schwarzmagier"]
         )
         container.mainContext.insert(model3)
-        let weather3 = TableDataModel(itemId: previewId)
+        let weather3 = CharacterDataModel(itemId: previewId)
         container.mainContext.insert(weather3)
         return container
     }
@@ -71,10 +71,10 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        self._root = State(wrappedValue: TableRootModel(modelContext: modelContext, diceRoot: DiceRootFactory.rootModel(modelContext: modelContext)))
+        self._root = State(wrappedValue: CharacterRootModel(modelContext: modelContext, diceRoot: DiceRootFactory.rootModel(modelContext: modelContext)))
     }
 
-    @State private var root: TableRootModel
+    @State private var root: CharacterRootModel
 
     func body(content: Content) -> some View {
         content.environment(root)

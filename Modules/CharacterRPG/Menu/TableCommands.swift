@@ -6,12 +6,12 @@ import CoreExternalRPG
 
 #if !os(tvOS)
 public struct TableCommands: Commands {
-    public init(root: TableRootModel, navigator: Navigator) {
+    public init(root: CharacterRootModel, navigator: Navigator) {
         self.root = root
         self.navigator = navigator
     }
     
-    let root: TableRootModel
+    let root: CharacterRootModel
     let navigator: Navigator
 
     public var body: some Commands {
