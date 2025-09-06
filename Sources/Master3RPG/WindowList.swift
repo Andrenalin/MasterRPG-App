@@ -13,8 +13,7 @@ struct WindowList: Scene {
         Group {
             WindowGroup("Pdf Viewer", id: WindowIdentifier.pdfViewer.rawValue, for: WindowItemSelection.self) { $selection in
                 appModel.pdfRoot.viewController.pdfWindow(root: appModel.pdfRoot, selection: selection ?? WindowItemSelection(itemId: UUID()))
-                    .accentColor(.teal)
-                    .tint(.teal)
+                    .modifier(WindowListSetUpViewModifier(model: appModel, module: .pdf))
                     .frame(minWidth: 600, minHeight: 400)
                     .handlesExternalEvents(preferring: [], allowing: [])
             }
@@ -27,4 +26,21 @@ struct WindowList: Scene {
         .defaultSize(CGSize(width: 600, height: 800))
     }
 }
+
+struct WindowListSetUpViewModifier: ViewModifier {
+    let model: AppModel
+    let module: NetworkModules
+    
+    @Environment(\.colorScheme) private var colorScheme
+    
+    func body(content: Content) -> some View {
+        content
+            .tint(module.tint)
+            .handlesExternalEvents(preferring: [], allowing: [])
+#if os(iOS)
+            .environment(\.colorScheme, model.settingsModel.appColorScheme.colorScheme(for: colorScheme))
+#endif
+    }
+}
+
 #endif

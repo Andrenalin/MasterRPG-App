@@ -3152,13 +3152,20 @@
 			);
 			target = 8E7C79F42E14C73600C98D17 /* Master3RPG */;
 		};
+		8EA5D5062E6C5A9E001A1571 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Resources/Assets.xcassets,
+			);
+			target = 8E7C79F42E14C73600C98D17 /* Master3RPG */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		593D0D2D2E31F2D000410232 /* AudioRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AudioRPG; sourceTree = "<group>"; };
 		593D0D3A2E31F2D000410232 /* AudioRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AudioRPGTests; sourceTree = "<group>"; };
 		8E33767F2DB1140B00F9C14C /* RPGWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E33768D2DB1140C00F9C14C /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = RPGWidget; sourceTree = "<group>"; };
-		8E3620AE2E1A80FF00E5C99A /* CoreRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E3621142E1AA5CD00E5C99A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = CoreRPG; sourceTree = "<group>"; };
+		8E3620AE2E1A80FF00E5C99A /* CoreRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8EA5D5062E6C5A9E001A1571 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 8E3621142E1AA5CD00E5C99A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = CoreRPG; sourceTree = "<group>"; };
 		8E3620BB2E1A810000E5C99A /* CoreRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CoreRPGTests; sourceTree = "<group>"; };
 		8E3620DC2E1A9EAF00E5C99A /* PhotoRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PhotoRPG; sourceTree = "<group>"; };
 		8E3620E92E1A9EAF00E5C99A /* PhotoRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PhotoRPGTests; sourceTree = "<group>"; };

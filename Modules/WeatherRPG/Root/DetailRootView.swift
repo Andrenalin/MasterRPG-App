@@ -19,13 +19,7 @@ struct DetailRootView: View {
                     if !selectedModel.specialCategory {
                         // OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
                     }
-#if os(macOS)
-                    ScrollView {
-                        detailEditorView(model: weatherModel)
-                    }
-#else
                     detailEditorView(model: weatherModel)
-#endif
                 }
             }
         } inspector: {
@@ -46,9 +40,7 @@ struct DetailRootView: View {
     }
 
     func detailEditorView(model: WeatherDataModel) -> some View {
-        Form {
-            WeatherEditor(model: model)
-        }
+        WeatherEditor(model: model)
     }
 }
 

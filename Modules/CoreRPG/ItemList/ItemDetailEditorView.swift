@@ -32,6 +32,7 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
     @State private var showInspector = false
     @State private var itemIdHasUrl = UUID()
 
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(SearchModel.self) private var searchModel
     @Environment(GroupItemSelectionModel.self) private var selection
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
@@ -46,7 +47,8 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
             bottomView
         } background: {
             Rectangle()
-                .fill(model.module.color.gradient)
+                .fill(model.module.color)
+                //.fill(colorScheme == .dark ? model.module.color.gradient : model.module.tint.gradient)
         }
         .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -192,21 +194,32 @@ private extension ItemDetailEditorView {
         ZStack {
             initialFileImporterView
             
+#if os(macOS)
+            ScrollView {
+                editorContentView
+            }
+#else
             editorContentView
+
+#endif
         }
     }
     
     var editorContentView: some View {
-        VStack(spacing: 8) {
-            if moveDetails {
-                ItemDetailOverlayView(model: model)
-                    .padding()
-            }
-            
+        Group {
             if model.specialCategory {
+                ItemDetailOverlayView(model: model, fullHeader: moveDetails, onlyDescription: true)
+                    .padding()
+                
                 ListRootView(root: root, parentModel: model)
             } else {
-                editor
+                Form {
+                    ItemDetailOverlayView(model: model, fullHeader: moveDetails, onlyDescription: true)
+                        .padding()
+
+                    editor
+                }
+                .scrollBounceBehavior(.basedOnSize)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)

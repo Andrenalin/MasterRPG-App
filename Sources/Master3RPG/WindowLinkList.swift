@@ -47,21 +47,36 @@ struct WindowLinkList: Scene {
     private func windowGroup<Content: View>(model: AppModel, module: NetworkModules, key: KeyEquivalent, content: Content) -> some Scene {
         WindowGroup("\(module.title) Link", id: module.linkWindowId) {
             content
-                .accentColor(.teal)
-                .tint(.teal)
-                .frame(minWidth: 350, minHeight: 400)
-                .onDisappear {
-                    model.windowStateModel.openWindowState[module] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-#if os(macOS)
-                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-#endif
+                .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(model.windowPlacement(for: module))
 #if os(macOS)
         .keyboardShortcut(key, modifiers: [.command, .option])
+#endif
+    }
+}
+
+struct WindowLinkSetUpViewModifier: ViewModifier {
+    let model: AppModel
+    let module: NetworkModules
+    
+    @Environment(\.colorScheme) private var colorScheme
+    
+    func body(content: Content) -> some View {
+        content
+            //.tint(colorScheme == .dark ? module.tint : module.color)
+            .tint(module.tint)
+            .frame(minWidth: 350, minHeight: 400)
+            .onDisappear {
+                model.windowStateModel.openWindowState[module] = false
+            }
+            .handlesExternalEvents(preferring: [], allowing: [])
+#if os(iOS)
+            .environment(\.colorScheme, model.settingsModel.appColorScheme.colorScheme(for: colorScheme))
+#endif
+#if os(macOS)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
 #endif
     }
 }

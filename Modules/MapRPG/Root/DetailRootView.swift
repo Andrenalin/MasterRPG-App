@@ -20,13 +20,7 @@ struct DetailRootView: View {
                     if !selectedModel.specialCategory {
                         // OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
                     }
-#if os(macOS)
-                    ScrollView {
                         detailEditorView(model: tableModel)
-                    }
-#else
-                    detailEditorView(model: tableModel)
-#endif
                 }
             }
         } inspector: {
@@ -46,8 +40,8 @@ struct DetailRootView: View {
         root.itemController.model(for: selectedId ?? root.listControllable.listModel.selectedItemId)
     }
 
+    @ViewBuilder
     func detailEditorView(model: MapDataModel) -> some View {
-        Form {
             root.photoRoot.viewController.selectionView(root: root.photoRoot, model: root.editController.selectionPhoto)
                 .onChange(of: root.editController.selectionPhoto.selection) {
                     withAnimation { root.editController.add(photoId: root.editController.selectionPhoto.itemId, model: model) }
@@ -57,8 +51,6 @@ struct DetailRootView: View {
                 }
             
             EntryList(itemId: model.itemId)
-        }
-        .scrollBounceBehavior(.basedOnSize)
     }
 }
 

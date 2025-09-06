@@ -49,6 +49,7 @@ struct Master3RPGApp: App {
                 .toolbar(removing: .title)
 #endif
                 .environment(appModel)
+                .modifier(UserSettingsViewModifier(appModel: appModel))
                 .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
                     handle(userActivity: userActivity)
                 }

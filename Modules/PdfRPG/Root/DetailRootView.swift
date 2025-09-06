@@ -14,12 +14,12 @@ struct DetailRootView: View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
             if let model = selectedModel {
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(alignment: .leading, spacing: 8) {
+//                ScrollView(showsIndicators: false) {
+//                    LazyVStack(alignment: .leading, spacing: 8) {
                         GroupedPhotoView(cacheController: root.cacheController, model: model)
                             .stretchy()
-                    }
-                }
+//                    }
+//                }
 
                 if !model.specialCategory {
 //                    OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))

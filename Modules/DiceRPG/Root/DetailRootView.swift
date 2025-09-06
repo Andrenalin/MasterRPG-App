@@ -17,15 +17,7 @@ struct DetailRootView: View {
             }
         } editor: {
             if let model {
-#if os(macOS)
-                ScrollView {
-                    detailEditorView(model: model)
-                }
-#else
-                
                 detailEditorView(model: model)
-                    .padding(.horizontal, -20)
-#endif
             }
         }
     }
@@ -33,16 +25,15 @@ struct DetailRootView: View {
     var model: DiceDataModel? {
         root.itemController.model(for: selectedId ?? root.listControllable.listModel.selectedItemId)
     }
-    
+
+    @ViewBuilder
     func detailEditorView(model: DiceDataModel) -> some View {
-        Form {
             DiceEditor(model: model)
             DiceOptionEditor(model: model)
             CoupEditor(model: model)
             FumbleEditor(model: model)
             RerollEditor(model: model)
             SpecialOptionEditor(model: model)
-        }
     }
 }
 

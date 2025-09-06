@@ -4,31 +4,37 @@ import SwiftData
 import SwiftUI
 
 public struct ItemDetailOverlayView: View {
-    public init(model: ItemDataModel) {
+    public init(model: ItemDataModel, fullHeader: Bool = false, onlyDescription: Bool = false) {
         self.model = model
+        self.fullHeader = fullHeader
+        self.onlyDesctiption = onlyDescription
         self.cacheItemListModel = CacheItemListModel()
     }
     
     let model: ItemDataModel
+    let fullHeader: Bool
+    let onlyDesctiption: Bool
     let cacheItemListModel: CacheItemListModel
 
     public var body: some View {
         VStack(alignment: .leading) {
-            NameItemRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-            HStack {
-                TagItemRow(tags: [model.category.title])
-                
-                TagItemRow(tags: model.tags)
+            if fullHeader || onlyDesctiption == false {
+                NameItemRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                HStack {
+                    TagItemRow(tags: [model.category.title])
+                    
+                    TagItemRow(tags: model.tags)
+                }
             }
-            DescriptionItemRow(itemId: model.id, description: model.information, cacheItemListModel: cacheItemListModel)
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-                .opacity(0.8)
-                .lineLimit(6)
+            if fullHeader || onlyDesctiption {
+                DescriptionItemRow(itemId: model.id, description: model.information, cacheItemListModel: cacheItemListModel)
+                    .foregroundColor(.primary)
+                    .opacity(0.8)
+                    .lineLimit(20)
+            }
         }
     }
 }

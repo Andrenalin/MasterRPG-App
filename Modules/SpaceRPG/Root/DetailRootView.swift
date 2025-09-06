@@ -14,18 +14,9 @@ struct DetailRootView: View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
             if let model = selectedModel {
-                GeometryReader { geometry in
-                    ScrollViewReader { proxy in
-                        ScrollView(showsIndicators: false) {
-                            VStack {
-                                SpaceViewer(root: root, model: model)
-                                    .id(model.id)
-                                    .frame(minHeight: 600)
-                            }
-                        }
-                        .frame(height: geometry.size.height)
-                    }
-                }
+                SpaceViewer(root: root, model: model)
+                    .id(model.id)
+                    .frame(minHeight: 800)
 
                 if !model.specialCategory {
                     //                    OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))

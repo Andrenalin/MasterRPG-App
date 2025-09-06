@@ -14,7 +14,6 @@ struct AppRootView: View {
         let _ = Self._printChanges()
         
         TabNavigation()
-            .environment(\.colorScheme, .dark)
             .environment(\.navigator, appModel.navigator)
             .environment(appModel.deviceRotationModel)
             .environment(appModel.adventureRoot)
@@ -28,7 +27,6 @@ struct AppRootView: View {
             .environment(appModel.tableRoot)
             .environment(appModel.weatherRoot)
             .frame(minWidth: 375.0, minHeight: 600.0)
-            .tint(Color.teal)
             .observeRotate(with: appModel.deviceRotationModel)
     }
 }

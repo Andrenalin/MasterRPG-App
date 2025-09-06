@@ -15,6 +15,7 @@ public struct ItemRootView<Detail: View>: View {
     let withoutNavigation: Bool
     let detail: Detail
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var cacheItemListModel = CacheItemListModel()
 
     public var body: some View {
@@ -28,6 +29,7 @@ public struct ItemRootView<Detail: View>: View {
             .environment(root.searchModel)
             .environment(root)
             .tabBarPlacementModifier(listControllable: root.listControllable)
+            .tint(root.module.tint)
     }
 }
 
