@@ -5,7 +5,7 @@ import PhotoRPG
 import SwiftData
 import SwiftUI
 
-struct ThumbnailDiceRow: View {
+struct ThumbnailPhotoRow: View {
     let itemId: UUID
     
     @Environment(MapRootModel.self) private var root
@@ -23,5 +23,5 @@ struct ThumbnailDiceRow: View {
 }
 
 #Preview(traits: .mockData) {
-    ThumbnailDiceRow(itemId: MockData.previewId)
+    ThumbnailPhotoRow(itemId: MockData.previewId)
 }

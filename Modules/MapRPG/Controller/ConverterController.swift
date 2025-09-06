@@ -44,7 +44,7 @@ public struct ConverterController {
             modelContext.insert(
                 ItemDataModel(
                     id: item.id,
-                    module: .value,
+                    module: .map,
                     name: item.name,
                     information: item.description,
                     category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .character,
@@ -86,7 +86,7 @@ public struct ConverterController {
         
         return ItemDataCodableModel(
             id: old.id,
-            module: .value,
+            module: .map,
             name: old.name,
             information: old.description,
             category: old.category.wrappedValue,
