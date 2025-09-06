@@ -2,9 +2,11 @@
 
 import AppIntents
 import RolePlayGameKit
+import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -18,6 +20,7 @@ struct MyAppPackage: AppIntentsPackage {
         AudioFrameworkPackage.self,
         CharacterFrameworkPackage.self,
         DiceFrameworkPackage.self,
+        MapFrameworkPackage.self,
         PdfFrameworkPackage.self,
         PhotoFrameworkPackage.self,
         SpaceFrameworkPackage.self,

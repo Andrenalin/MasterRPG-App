@@ -30,6 +30,8 @@ struct Master3RPGApp: App {
         AppDependencyManager.shared.add(dependency: characterRootModel)
         let diceRootModel = appModel.diceRoot
         AppDependencyManager.shared.add(dependency: diceRootModel)
+        let mapRootModel = appModel.mapRoot
+        AppDependencyManager.shared.add(dependency: mapRootModel)
         let pdfRootModel = appModel.pdfRoot
         AppDependencyManager.shared.add(dependency: pdfRootModel)
         let photoRootModel = appModel.photoRoot

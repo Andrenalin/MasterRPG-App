@@ -10,8 +10,8 @@ enum MapPinId {
 }
 
 @Observable
-final class MapModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .dungeon, displayState: Int = 0, entries: [MapEntryModel] = [], displayConfig: DisplayConfigModel = DisplayConfigModel(id: UUID(), tileCoordinates: [], border: DisplayBorderViewModel(id: UUID())), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, mapPins: [MapPinModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, degrees: Double = 0) {
+public final class MapModel: Identifiable, @unchecked Sendable {
+    public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .dungeon, displayState: Int = 0, entries: [MapEntryModel] = [], displayConfig: DisplayConfigModel = DisplayConfigModel(id: UUID(), tileCoordinates: [], border: DisplayBorderViewModel(id: UUID())), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, mapPins: [MapPinModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, degrees: Double = 0) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -30,7 +30,7 @@ final class MapModel: Identifiable, @unchecked Sendable {
         self.degrees = degrees
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[MapEntryModel]>, displayConfig: CRDTDataUpdate<DisplayConfigModel>, photoId: CRDTDataUpdate<UUID?>, width: CGFloat, height: CGFloat, mapPins: CRDTDataUpdate<[MapPinModel]>, pinScale: CGFloat, hexMapScale: CRDT<Double>, scale: CGFloat, degrees: Double) {
+    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[MapEntryModel]>, displayConfig: CRDTDataUpdate<DisplayConfigModel>, photoId: CRDTDataUpdate<UUID?>, width: CGFloat, height: CGFloat, mapPins: CRDTDataUpdate<[MapPinModel]>, pinScale: CGFloat, hexMapScale: CRDT<Double>, scale: CGFloat, degrees: Double) {
         self.id = id
         name_ = name
         description_ = description
@@ -49,7 +49,7 @@ final class MapModel: Identifiable, @unchecked Sendable {
         self.degrees = degrees
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<MapModel.CodingKeys> = try decoder.container(keyedBy: MapModel.CodingKeys.self)
 
         self._id = try container.decode(UUID.self, forKey: MapModel.CodingKeys._id)
@@ -70,73 +70,73 @@ final class MapModel: Identifiable, @unchecked Sendable {
         self._degrees = try container.decode(Double.self, forKey: MapModel.CodingKeys._degrees)
     }
 
-    var id: UUID
+    public var id: UUID
 
-    var name: String {
+    public var name: String {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
     var name_: CRDT<String>
 
-    var description: String {
+    public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
     var description_: CRDT<String>
 
-    var tags: [String] {
+    public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
     var tags_: CRDT<[String]>
 
-    var category: ItemListCategory {
+    public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
     var category_: CRDT<ItemListCategory>
 
-    var displayState: Int = 0 {
+    public var displayState: Int = 0 {
         didSet { resetEntries() }
     }
 
-    var entries: [MapEntryModel] {
+    public var entries: [MapEntryModel] {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
     var entries_: CRDTDataUpdate<[MapEntryModel]>
 
-    var displayConfig: DisplayConfigModel {
+    public var displayConfig: DisplayConfigModel {
         get { displayConfig_.wrappedValue }
         set { displayConfig_.wrappedValue = newValue }
     }
     var displayConfig_: CRDTDataUpdate<DisplayConfigModel>
 
-    var photoId: UUID? {
+    public var photoId: UUID? {
         get { photoId_.wrappedValue }
         set { photoId_.wrappedValue = newValue }
     }
     var photoId_: CRDTDataUpdate<UUID?>
 
-    private(set) var width: CGFloat = 1200
-    private(set) var height: CGFloat = 800
+    private(set) public var width: CGFloat = 1200
+    private(set) public var height: CGFloat = 800
 
-    var mapPins: [MapPinModel] {
+    public var mapPins: [MapPinModel] {
         get { mapPins_.wrappedValue }
         set { mapPins_.wrappedValue = newValue }
     }
     var mapPins_: CRDTDataUpdate<[MapPinModel]>
 
-    var pinScale: CGFloat = 1.0
-    var hexMapScale: Double {
+    public var pinScale: CGFloat = 1.0
+    public var hexMapScale: Double {
         get { hexMapScale_.wrappedValue }
         set { hexMapScale_.wrappedValue = newValue }
     }
     var hexMapScale_: CRDT<Double>
 
     // play infos
-    var scale: CGFloat = 1.0
-    var pointer: MapPinModel = MapPinModel(id: UUID(), name: "Pointer", color: .red, isShown: false)
+    public var scale: CGFloat = 1.0
+    public var pointer: MapPinModel = MapPinModel(id: UUID(), name: "Pointer", color: .red, isShown: false)
 
     private(set) var degrees: Double = 0
 }
@@ -248,14 +248,14 @@ extension MapModel {
 }
 
 extension MapModel: Comparable {
-    static func < (lhs: MapModel, rhs: MapModel) -> Bool {
+    public static func < (lhs: MapModel, rhs: MapModel) -> Bool {
         lhs.name < rhs.name
     }
 }
 
 extension MapModel: ItemLinkRegistable {
     @MainActor
-    var linkRegisterModels: [LinkRegisterModel] {
+    public var linkRegisterModels: [LinkRegisterModel] {
         let modelSource = ItemRowModel(itemId: id, typeId: .map)
         var linkModels = mapPins.compactMap { pin -> LinkRegisterModel? in
             guard let photoId = pin.photoId else { return nil }
@@ -279,7 +279,7 @@ extension MapModel: ItemLinkRegistable {
 }
 
 extension MapModel: ItemDiffComparable {
-    func merge(_ other: MapModel) -> MapModel {
+    public func merge(_ other: MapModel) -> MapModel {
         let mergedPhotoId = photoId_.merged(other: other.photoId_)
         let mergedMapPins = mapPins_.merged(other: other.mapPins_)
         return MapModel(
@@ -302,7 +302,7 @@ extension MapModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: MapModel) -> Bool {
+    public func isSame(_ other: MapModel) -> Bool {
         name == other.name &&
         description == other.description &&
         tags == other.tags &&
@@ -324,13 +324,13 @@ extension MapModel: ItemDiffComparable {
         }
     }
     
-    var version: Int {
+    public var version: Int {
         (hexMapScale + pinScale).hashValue
     }
 }
 
 extension MapModel: ItemDuplicatable {
-    func duplicate() -> MapModel {
+    public func duplicate() -> MapModel {
         let copyName = duplicateName(from: name)
         return MapModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, displayConfig: displayConfig, photoId: photoId, width: width, height: height, mapPins: mapPins, pinScale: pinScale, hexMapScale: hexMapScale, scale: scale, degrees: degrees)
     }
@@ -352,25 +352,25 @@ extension MapModel {
 }
 
 extension MapModel: ItemDataAccessable {  
-    static var empty: MapModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> MapModel {
+    public static var empty: MapModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> MapModel {
         MapModel(id: id, name: "")
     }
-    static let typeId: NetworkModules = .map
+    public static let typeId: NetworkModules = .map
 
-    func copy() -> MapModel {
+    public func copy() -> MapModel {
         MapModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, displayConfig: displayConfig_, photoId: photoId_, width: width, height: height, mapPins: mapPins_, pinScale: pinScale, hexMapScale: hexMapScale_, scale: scale, degrees: degrees)
     }
 
-    func filter(_ filter: String) -> Bool {
+    public func filter(_ filter: String) -> Bool {
         (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
     }
 
-    func isEqual(other: MapModel) -> Bool {
+    public func isEqual(other: MapModel) -> Bool {
         self == other
     }
 
-    var isGroupHiddenToggle: Bool {
+    public var isGroupHiddenToggle: Bool {
         get { isGroupHidden }
         set {
             if newValue {
@@ -381,7 +381,7 @@ extension MapModel: ItemDataAccessable {
         }
     }
     
-    func replace(with model: MapModel) -> Bool {
+    public func replace(with model: MapModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_
@@ -401,7 +401,7 @@ extension MapModel: ItemDataAccessable {
         return true
     }
 
-    subscript(id: UUID) -> MapEntryModel {
+    public subscript(id: UUID) -> MapEntryModel {
         get {
             guard let index = entries.firstIndex(where: { $0.id == id }) else { return .empty(id) }
             return entries[index]
@@ -433,7 +433,7 @@ extension MapModel: Codable {
         case _degrees
     }
 
-    final func encode(to encoder: Encoder) throws {
+    public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<MapModel.CodingKeys> = encoder.container(keyedBy: MapModel.CodingKeys.self)
 
         try container.encode(self._id, forKey: MapModel.CodingKeys._id)
@@ -456,11 +456,11 @@ extension MapModel: Codable {
 }
 
 extension MapModel: Equatable, Hashable {
-    static func == (lhs: MapModel, rhs: MapModel) -> Bool {
+    public static func == (lhs: MapModel, rhs: MapModel) -> Bool {
         lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     }
 
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

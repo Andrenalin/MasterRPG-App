@@ -4,28 +4,35 @@ import AndrenalinKit
 import CoreGraphics
 import SwiftUI
 
-struct DisplayConfigModel: Identifiable, Equatable, Hashable {
-    let id: UUID
-    var tileCoordinates: [CGPoint]
-    var color: Color = .black
-    var border: DisplayBorderViewModel
+public struct DisplayConfigModel: Identifiable, Equatable, Hashable {
+    public init(id: UUID = UUID(), tileCoordinates: [CGPoint], color: Color = .black, border: DisplayBorderViewModel) {
+        self.id = id
+        self.tileCoordinates = tileCoordinates
+        self.color = color
+        self.border = border
+    }
+    
+    public let id: UUID
+    public var tileCoordinates: [CGPoint]
+    public var color: Color = .black
+    public var border: DisplayBorderViewModel
 
-    var borderColor: Color {
+    public var borderColor: Color {
         get { border.color }
         set { border.color = newValue }
     }
 
-    var borderThickness: CGFloat {
+    public var borderThickness: CGFloat {
         get { border.thickness }
         set { border.thickness = newValue }
     }
 
-    var borderThicknessDouble: Double {
+    public var borderThicknessDouble: Double {
         get { Double(border.thickness) }
         set { border.thickness = CGFloat(newValue) }
     }
 
-    var borderText: String {
+    public var borderText: String {
         get { String("\(border.thickness)") }
         set {
             let value = Double(newValue) ?? 0
@@ -33,7 +40,7 @@ struct DisplayConfigModel: Identifiable, Equatable, Hashable {
         }
     }
 
-    var hasBorder: Bool {
+    public var hasBorder: Bool {
         get { borderThickness > 0 }
         set {
             if newValue {
@@ -55,7 +62,7 @@ extension DisplayConfigModel: Codable {
         case border
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(tileCoordinates, forKey: .tileCoordinates)
@@ -63,7 +70,7 @@ extension DisplayConfigModel: Codable {
         try container.encode(border, forKey: .border)
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(UUID.self, forKey: .id)
         tileCoordinates = try values.decode([CGPoint].self, forKey: .tileCoordinates)
@@ -73,10 +80,16 @@ extension DisplayConfigModel: Codable {
     }
 }
 
-struct DisplayBorderViewModel: Identifiable, Equatable, Hashable {
-    let id: UUID
-    var thickness: CGFloat = 0
-    var color: Color = .red
+public struct DisplayBorderViewModel: Identifiable, Equatable, Hashable {
+    public init(id: UUID = UUID(), thickness: CGFloat = 0, color: Color = .red) {
+        self.id = id
+        self.thickness = thickness
+        self.color = color
+    }
+    
+    public let id: UUID
+    public var thickness: CGFloat = 0
+    public var color: Color = .red
 }
 
 extension DisplayBorderViewModel: Codable {
@@ -86,14 +99,14 @@ extension DisplayBorderViewModel: Codable {
         case color
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(thickness, forKey: .thickness)
         try container.encode(CodableColor(color), forKey: .color)
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(UUID.self, forKey: .id)
         thickness = try values.decode(CGFloat.self, forKey: .thickness)

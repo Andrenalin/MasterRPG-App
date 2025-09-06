@@ -25,8 +25,8 @@ enum MapDisplayMode: Int, Identifiable, Equatable, Hashable, CaseIterable {
     }
 }
 
-struct MapEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
-    init(id: UUID, name: String, content: String, coordinates: [CGPoint], isHexGrid: Bool = false, isShown: Bool = false, focused: Bool = false, displayState: Int = 0) {
+public struct MapEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
+    public init(id: UUID, name: String, content: String, coordinates: [CGPoint], isHexGrid: Bool = false, isShown: Bool = false, focused: Bool = false, displayState: Int = 0) {
         self.id = id
         self.name = name
         self.content = content
@@ -37,7 +37,7 @@ struct MapEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sen
         self.displayState = displayState
     }
 
-    init(id: UUID, name: CRDT<String>, content: CRDT<String>, coordinates: CRDTDataUpdate<[CGPoint]>, isHexGrid: Bool, isShown: Bool) {
+    public init(id: UUID, name: CRDT<String>, content: CRDT<String>, coordinates: CRDTDataUpdate<[CGPoint]>, isHexGrid: Bool, isShown: Bool) {
         self.id = id
         _name = name
         _content = content
@@ -48,17 +48,17 @@ struct MapEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sen
         self.displayState = isHexGrid ? DisplayStateMask.groupHidden.rawValue : 0
     }
 
-    var id: UUID
-    @CRDT var name: String
-    @CRDT var content: String
-    @CRDTDataUpdate var coordinates: [CGPoint]
-    var isHexGrid: Bool = false
-    var isShown: Bool = false
+    public var id: UUID
+    @CRDT public var name: String
+    @CRDT public var content: String
+    @CRDTDataUpdate public var coordinates: [CGPoint]
+    public var isHexGrid: Bool = false
+    public var isShown: Bool = false
 
-    var focused: Bool = false
-    var displayState: Int = 0
+    public var focused: Bool = false
+    public var displayState: Int = 0
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<MapEntryModel.CodingKeys> = try decoder.container(keyedBy: MapEntryModel.CodingKeys.self)
         
         self.id = try container.decode(UUID.self, forKey: MapEntryModel.CodingKeys.id)
@@ -113,33 +113,33 @@ extension MapEntryModel {
 }
 
 extension MapEntryModel: EntryDataAccessable {
-    static var empty: MapEntryModel {
+    public static var empty: MapEntryModel {
         empty(UUID())
     }
 
-    static func empty(_ id: UUID) -> MapEntryModel {
+    public static func empty(_ id: UUID) -> MapEntryModel {
         MapEntryModel(id: id, name: "", content: "", coordinates: [])
     }
 
-    func duplicate() -> MapEntryModel {
+    public func duplicate() -> MapEntryModel {
         MapEntryModel(id: UUID(), name: name, content: content, coordinates: coordinates, isHexGrid: isHexGrid, isShown: isShown, focused: focused, displayState: displayState)
     }
 
-    func filter(with search: String) -> Bool {
+    public func filter(with search: String) -> Bool {
         (search.isEmpty || name.localizedCaseInsensitiveContains(search) || content.localizedCaseInsensitiveContains(search))
     }
     
-    func linkContent() -> String { content }
+    public func linkContent() -> String { content }
 }
 
 extension MapEntryModel: ItemLinkEditable {
-    var textLinkContent: String {
+    public var textLinkContent: String {
         content
     }
 }
 
 extension MapEntryModel: ItemDiffComparable {
-    func merge(_ other: MapEntryModel) -> MapEntryModel {
+    public func merge(_ other: MapEntryModel) -> MapEntryModel {
         MapEntryModel(
             id: id,
             name: $name.merged(other: other.$name),
@@ -150,7 +150,7 @@ extension MapEntryModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: MapEntryModel) -> Bool {
+    public func isSame(_ other: MapEntryModel) -> Bool {
         name == other.name &&
         content == other.content &&
         coordinates == other.coordinates &&
@@ -173,7 +173,7 @@ extension MapEntryModel {
         case displayState
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<MapEntryModel.CodingKeys> = encoder.container(keyedBy: MapEntryModel.CodingKeys.self)
 
         try container.encode(self.id, forKey: MapEntryModel.CodingKeys.id)

@@ -5,10 +5,9 @@ import Foundation
 
 struct ExportController: Sendable {
     @MainActor
-    init(module: NetworkModules, itemController: any ItemControllable, fileUrlDataController: FileUrlDataController?, gameExporter: Bool) {
+    init(module: NetworkModules, itemController: any ItemControllable, gameExporter: Bool) {
         self.module = module
         self.itemControllable = itemController
-        self.fileUrlDataController = fileUrlDataController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
     
@@ -17,5 +16,7 @@ struct ExportController: Sendable {
     var itemControllable: any ItemControllable
     
     var module: NetworkModules
-    var version: Int { 2024 }
+    var version: Int { ItemDataExportModel.Version.version_2025.rawValue }
 }
+
+extension ExportController: ExportControllable {}

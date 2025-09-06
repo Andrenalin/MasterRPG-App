@@ -1,13 +1,15 @@
 // @copyright André Trettin
 
+import Foundation
+import SwiftData
+
 import CoreRPG
 import DiceRPG
-import SwiftData
-import Foundation
+import PdfRPG
 
 @MainActor @Observable
 public final class TableRootModel {
-    init(modelContext: ModelContext, diceRoot: DiceRootModel) {
+    init(modelContext: ModelContext, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) {
         self.modelContext = modelContext
         let module: NetworkModules = .table
         self.module = module
@@ -20,9 +22,8 @@ public final class TableRootModel {
         self.itemSelectionModel = itemSelectionModel
 
         self.diceRoot = diceRoot
+        self.pdfRoot = pdfRoot
 
-
-        
         itemController.cleanDeleted()
     }
     
@@ -37,6 +38,7 @@ public final class TableRootModel {
     }
 
     @ObservationIgnored let diceRoot: DiceRootModel
+    @ObservationIgnored let pdfRoot: PdfRootModel
 
     @ObservationIgnored lazy var editController: EditController = {
         EditController(itemControllable: itemController, fileUrlDataController: nil)

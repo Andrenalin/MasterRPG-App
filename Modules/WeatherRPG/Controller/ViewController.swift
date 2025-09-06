@@ -31,5 +31,6 @@ public extension ViewController {
     func linkWindow(root: WeatherRootModel, isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
+            .environment(root.photoRoot)
     }
 }

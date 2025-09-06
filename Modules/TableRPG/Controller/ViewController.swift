@@ -31,5 +31,7 @@ public extension ViewController {
     func linkWindow(root: TableRootModel, isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
+            .environment(root.diceRoot)
+            .environment(root.pdfRoot)
     }
 }

@@ -75,7 +75,16 @@ struct MockData: PreviewModifier {
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
         let diceRoot = DiceRootFactory.rootModel(modelContext: modelContext)
-        self._root = State(wrappedValue: CharacterRootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: PdfRootFactory.rootModel(modelContext: modelContext), photoRoot: PhotoRootFactory.rootModel(modelContext: modelContext), tableRoot: TableRootFactory.rootModel(modelContext: modelContext, diceRoot: diceRoot)))
+        let pdfRoot = PdfRootFactory.rootModel(modelContext: modelContext)
+        self._root = State(
+            wrappedValue: CharacterRootModel(
+                modelContext: modelContext,
+                diceRoot: diceRoot,
+                pdfRoot: pdfRoot,
+                photoRoot: PhotoRootFactory.rootModel(modelContext: modelContext),
+                tableRoot: TableRootFactory.rootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: pdfRoot)
+            )
+        )
     }
 
     @State private var root: CharacterRootModel

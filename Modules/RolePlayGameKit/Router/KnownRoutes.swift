@@ -5,6 +5,7 @@ import CoreRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -35,7 +36,10 @@ struct RootRouteRouter: NavigationRouteHandling {
             return [.send(RootRoute.dice)]
         case .game:
             return [.send(RootRoute.game)]
-        case .maps(_, _):
+        case .maps(let itemId, _):
+            if let itemId {
+                return [.send(RootRoute.maps), .send(MapRoute.detail(itemId))]
+            }
             return [.send(RootRoute.maps)]
         case .pdfs(let itemId, _):
             if let itemId {
@@ -103,8 +107,12 @@ struct RootFiveRouteRouter: NavigationRouteHandling {
             return routes
         case .game:
             return [.send(RootRoute.game)]
-        case .maps(_, _):
-            return [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.maps)]
+        case .maps(let itemId, _):
+            var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.maps)]
+            if let itemId {
+                routes.append(.send(MapRoute.detail(itemId)))
+            }
+            return routes
         case .pdfs(let itemId, _):
             var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.pdfs)]
             if let itemId {

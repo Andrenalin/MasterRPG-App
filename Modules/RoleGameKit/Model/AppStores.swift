@@ -116,7 +116,7 @@ public final class AppStore: Sendable {
         let pdfRootModel = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
         let photoRootModel = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         let spaceRootModel = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        let tableRootModel = TableRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRootModel)
+        let tableRootModel = TableRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRootModel, pdfRoot: pdfRootModel)
         let weatherRootModel = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRootModel)
         let characterRootModel = CharacterRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRootModel, pdfRoot: pdfRootModel, photoRoot: photoRootModel, tableRoot: tableRootModel)
 

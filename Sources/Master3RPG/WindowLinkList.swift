@@ -5,9 +5,11 @@ import CoreRPG
 import RolePlayGameKit
 import SwiftUI
 
+import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -24,6 +26,8 @@ struct WindowLinkList: Scene {
             windowGroup(model: appModel, module: .pdf, key: "3", content:                 appModel.pdfRoot.viewController.linkWindow(root: appModel.pdfRoot))
 
             windowGroup(model: appModel, module: .table, key: "4", content:                 appModel.tableRoot.viewController.linkWindow(root: appModel.tableRoot))
+
+            windowGroup(model: appModel, module: .table, key: "5", content:                 appModel.mapRoot.viewController.linkWindow(root: appModel.mapRoot))
 
             windowGroup(model: appModel, module: .audio, key: "6", content:                 appModel.audioRoot.viewController.linkWindow(root: appModel.audioRoot))
 

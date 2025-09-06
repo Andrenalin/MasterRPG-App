@@ -31,5 +31,9 @@ public extension ViewController {
     func linkWindow(root: CharacterRootModel, isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
+            .environment(root.diceRoot)
+            .environment(root.pdfRoot)
+            .environment(root.photoRoot)
+            .environment(root.tableRoot)
     }
 }

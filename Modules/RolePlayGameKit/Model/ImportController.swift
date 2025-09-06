@@ -2,9 +2,11 @@
 
 import CoreRPG
 import Foundation
+import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -16,7 +18,7 @@ struct ImportController: Sendable {
     init(appModel: AppModel) {
         self.root = appModel
         self.module = .none
-        self.itemControllable = appModel.characterRoot.itemControllable
+        self.itemControllable = appModel.mapRoot.itemControllable
         self.importModel = ItemDataImportModel(gameImporter: false)
     }
     
@@ -33,6 +35,7 @@ extension ImportController: ImportControllable {
         if await importModel.gameImporter {
             try await root.audioRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.diceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+            try await root.mapRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.pdfRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.photoRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.spaceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
@@ -43,6 +46,7 @@ extension ImportController: ImportControllable {
             await setOverwite()
             try await root.audioRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.diceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+            try await root.mapRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.pdfRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.photoRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.spaceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
@@ -56,6 +60,7 @@ extension ImportController: ImportControllable {
     private func setOverwite() async {
         root.audioRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
         root.diceRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
+        root.mapRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
         root.pdfRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
         root.photoRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
         root.spaceRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite

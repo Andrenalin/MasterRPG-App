@@ -2,9 +2,11 @@
 
 import CoreExternalRPG
 import CoreRPG
+import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -143,7 +145,7 @@ struct RouteRouteDestionationView: View {
         case .game:
             AudioRootFactory.rootView(withoutNavigation: false)
         case .maps:
-            AudioRootFactory.rootView(withoutNavigation: false)
+            MapRootFactory.rootView(withoutNavigation: false)
         case .pdfs:
             PdfRootFactory.rootView(withoutNavigation: false)
         case .photos:

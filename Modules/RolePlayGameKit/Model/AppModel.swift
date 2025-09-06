@@ -7,9 +7,11 @@ import SwiftData
 import SwiftUI
 import os.log
 
+import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -37,6 +39,7 @@ public final class AppModel: Sendable {
     public var audioRoot: AudioRootModel
     public var characterRoot: CharacterRootModel
     public var diceRoot: DiceRootModel
+    public var mapRoot: MapRootModel
     public var pdfRoot: PdfRootModel
     public var photoRoot: PhotoRootModel
     public var spaceRoot: SpaceRootModel
@@ -60,13 +63,15 @@ public final class AppModel: Sendable {
         let pdfRoot = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
         let photoRoot = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
         let spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        let tableRoot = TableRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRoot)
+        let tableRoot = TableRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRoot, pdfRoot: pdfRoot)
         let weatherRoot = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRoot)
         let characterRoot = CharacterRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+        let mapRoot = MapRootFactory.rootModel(modelContext: modelContainer.mainContext, characterRoot: characterRoot,  diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
 
         self.audioRoot = audioRoot
         self.characterRoot = characterRoot
         self.diceRoot = diceRoot
+        self.mapRoot = mapRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
         self.spaceRoot = spaceRoot
@@ -88,6 +93,8 @@ public final class AppModel: Sendable {
                 CharacterEntryDataModel.self,
                 DiceDataModel.self,
                 DieDataModel.self,
+                MapDataModel.self,
+                MapEntryDataModel.self,
                 PdfDataModel.self,
                 TableDataModel.self,
                 TableEntryDataModel.self,
@@ -157,7 +164,6 @@ public extension AppModel {
 extension AppModel {
     func installExampleData(isGerman: Bool = false) {
         let importController = ImportController(appModel: self)
-        //let importController = diceRoot.importControllable
         let bundle = Resources.bundle
         let name = isGerman ? Resources.exampleFirstGermanData : Resources.exampleFirstData
         guard let url = bundle.url(forResource: name, withExtension: "gmz") else { return }

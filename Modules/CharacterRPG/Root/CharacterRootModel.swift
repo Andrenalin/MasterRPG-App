@@ -50,7 +50,7 @@ public final class CharacterRootModel {
         EditController(itemControllable: itemController, fileUrlDataController: nil)
     }()
     @ObservationIgnored lazy var exportController: ExportController = {
-        ExportController(module: module, itemController: itemController, fileUrlDataController: nil, gameExporter: false)
+        ExportController(module: module, itemController: itemController, gameExporter: false)
     }()
     @ObservationIgnored lazy var importController: ImportController = {
         ImportController(itemController: itemController, module: module)

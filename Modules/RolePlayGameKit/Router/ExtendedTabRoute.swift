@@ -4,6 +4,7 @@ import CoreExternalRPG
 import CoreRPG
 import AudioRPG
 import DiceRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -92,7 +93,7 @@ struct ExtendedTabRouteDestionationView: View {
             case .dice:
                 DiceRootFactory.rootView(withoutNavigation: true)
             case .maps:
-                AudioRootFactory.rootView(withoutNavigation: true)
+                MapRootFactory.rootView(withoutNavigation: true)
             case .pdfs:
                 PdfRootFactory.rootView(withoutNavigation: true)
             case .photos:

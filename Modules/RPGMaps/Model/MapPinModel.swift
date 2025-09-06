@@ -3,8 +3,21 @@
 import AndrenalinKit
 import SwiftUI
 
-struct MapPinModel: Identifiable, Equatable, Hashable {
-    enum MapPinSize: Int, Identifiable, Hashable, Equatable, Codable, CaseIterable {
+public struct MapPinModel: Identifiable, Equatable, Hashable {
+    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0) {
+        self.id = id
+        self.name = name
+        self.color = color
+        self.photoId = photoId
+        self.location = location
+        self.size = size
+        self.isShown = isShown
+        self.isPlayer = isPlayer
+        self.players = players
+        self.timeInterval = timeInterval
+    }
+    
+    public enum MapPinSize: Int, Identifiable, Hashable, Equatable, Codable, CaseIterable {
         case tiny = 0
         case small = 1
         case normal = 2
@@ -12,7 +25,7 @@ struct MapPinModel: Identifiable, Equatable, Hashable {
         case huge = 4
         case colossal = 5
 
-        var id: Int {
+        public var id: Int {
             rawValue
         }
 
@@ -51,16 +64,16 @@ struct MapPinModel: Identifiable, Equatable, Hashable {
         }
     }
 
-    var id: UUID
-    var name: String
-    var color: Color = .red
-    var photoId: UUID?
-    var location: CGPoint = .zero
-    var size: MapPinSize = .normal
-    var isShown: Bool = true
-    var isPlayer: Bool = false
-    var players: [UUID] = []
-    var timeInterval: TimeInterval = 0
+    public var id: UUID
+    public var name: String
+    public var color: Color = .red
+    public var photoId: UUID?
+    public var location: CGPoint = .zero
+    public var size: MapPinSize = .normal
+    public var isShown: Bool = true
+    public var isPlayer: Bool = false
+    public var players: [UUID] = []
+    public var timeInterval: TimeInterval = 0
 }
 
 extension MapPinModel: Codable {
@@ -77,7 +90,7 @@ extension MapPinModel: Codable {
         case timeInterval
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
@@ -91,7 +104,7 @@ extension MapPinModel: Codable {
         try container.encode(timeInterval, forKey: .timeInterval)
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(UUID.self, forKey: .id)
         name = try values.decode(String.self, forKey: .name)
@@ -108,22 +121,22 @@ extension MapPinModel: Codable {
 }
 
 extension MapPinModel {
-    static let typeId: NetworkModules = .map
-    static var empty: MapPinModel {
+    public static let typeId: NetworkModules = .map
+    public static var empty: MapPinModel {
         empty(UUID())
     }
 
-    static func empty(_ id: UUID) -> MapPinModel {
+    public static func empty(_ id: UUID) -> MapPinModel {
         MapPinModel(id: id, name: "")
     }
 
-    func filter(_ filter: String, selectedTags _: [TagFilterSelection]) -> Bool {
+    public func filter(_ filter: String, selectedTags _: [TagFilterSelection]) -> Bool {
         filter.isEmpty || name.localizedCaseInsensitiveContains(filter)
     }
 }
 
 extension MapPinModel: ItemDuplicatable {
-    func duplicate() -> MapPinModel {
+    public func duplicate() -> MapPinModel {
         var dup = self
         dup.id = UUID()
         return dup

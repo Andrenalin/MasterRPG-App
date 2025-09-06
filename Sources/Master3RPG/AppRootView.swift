@@ -20,6 +20,7 @@ struct AppRootView: View {
             .environment(appModel.audioRoot)
             .environment(appModel.characterRoot)
             .environment(appModel.diceRoot)
+            .environment(appModel.mapRoot)
             .environment(appModel.pdfRoot)
             .environment(appModel.photoRoot)
             .environment(appModel.spaceRoot)
