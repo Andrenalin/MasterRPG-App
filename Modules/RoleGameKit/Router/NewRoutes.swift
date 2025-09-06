@@ -3,17 +3,21 @@
 import CoreRPG
 import Foundation
 
+import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import TableRPG
 import WeatherRPG
 
+import RPGAdventures
 import RPGAudios
 import RPGDie
+import RPGMaps
 import RPGPdfs
 import RPGPhotos
 import RPGSpaces
@@ -21,6 +25,38 @@ import RPGTables
 import RPGValues
 import RPGWeathers
 import SwiftUI
+
+struct NewAdventureRoute: View {
+    let appStore: AppStore
+    let tabId: UUID
+    let isExtended: Bool
+
+    @State private var cacheModel = CacheItemListModel()
+    @State private var deviceRotationModel = DeviceRotationModel()
+    @State private var tabTitleModel = TabTitleModel()
+
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        if appStore.isNewUICode {
+            AdventureRootFactory.rootView(withoutNavigation: isExtended)
+                .environment(deviceRotationModel)
+                .environment(tabTitleModel)
+                .task {
+                    try? await Task.sleep(for: .seconds(3))
+                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
+                }
+        } else {
+            if isExtended {
+                AdventureFactory.rootExtendedView(for: appStore.adventureRoot, tabId: tabId)
+                    .environment(appStore.adventureRoot)
+            } else {
+                AdventureFactory.rootView(for: appStore.adventureRoot, tabId: tabId)
+                    .environment(appStore.adventureRoot)
+            }
+        }
+    }
+}
 
 struct NewAudioRoute: View {
     let appStore: AppStore
@@ -81,6 +117,37 @@ struct NewDiceRoute: View {
             } else {
                 DiceFactory.rootView(for: appStore.diceRoot, tabId: tabId)
                     .environment(appStore.diceRoot)
+            }
+        }
+    }
+}
+struct NewMapRoute: View {
+    let appStore: AppStore
+    let tabId: UUID
+    let isExtended: Bool
+
+    @State private var cacheModel = CacheItemListModel()
+    @State private var deviceRotationModel = DeviceRotationModel()
+    @State private var tabTitleModel = TabTitleModel()
+
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        if appStore.isNewUICode {
+            MapRootFactory.rootView(withoutNavigation: isExtended)
+                .environment(deviceRotationModel)
+                .environment(tabTitleModel)
+                .task {
+                    try? await Task.sleep(for: .seconds(3))
+                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
+                }
+        } else {
+            if isExtended {
+                MapFactory.rootExtendedView(for: appStore.mapRoot, tabId: tabId)
+                    .environment(appStore.mapRoot)
+            } else {
+                MapFactory.rootView(for: appStore.mapRoot, tabId: tabId)
+                    .environment(appStore.mapRoot)
             }
         }
     }

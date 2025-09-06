@@ -2,6 +2,7 @@
 
 import CoreExternalRPG
 import CoreRPG
+import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
@@ -22,23 +23,26 @@ struct RootRouteRouter: NavigationRouteHandling {
     
     @MainActor func actions(for route: KnownRoutes) -> [NavigationAction] {
         switch route {
-        case .adventures(_, _):
+        case .adventures(let itemId, _):
+            if let itemId {
+                return [.send(RootRoute.adventures), .reset, .send(AdventureRoute.detail(itemId))]
+            }
             return [.send(RootRoute.adventures)]
         case .audios(let itemId, _):
             if let itemId {
-                return [.send(RootRoute.audios), .send(AudioRoute.detail(itemId))]
+                return [.send(RootRoute.audios), .reset, .send(AudioRoute.detail(itemId))]
             }
             return [.send(RootRoute.audios)]
         case .dice(let itemId, _):
             if let itemId {
-                return [.send(RootRoute.dice), .send(DiceRoute.detail(itemId))]
+                return [.send(RootRoute.dice), .reset, .send(DiceRoute.detail(itemId))]
             }
             return [.send(RootRoute.dice)]
         case .game:
             return [.send(RootRoute.game)]
         case .maps(let itemId, _):
             if let itemId {
-                return [.send(RootRoute.maps), .send(MapRoute.detail(itemId))]
+                return [.send(RootRoute.maps), .reset, .send(MapRoute.detail(itemId))]
             }
             return [.send(RootRoute.maps)]
         case .pdfs(let itemId, _):
@@ -48,12 +52,12 @@ struct RootRouteRouter: NavigationRouteHandling {
             return [.send(RootRoute.pdfs)]
         case .photos(let itemId, _):
             if let itemId {
-                return [.send(RootRoute.photos), .send(PhotoRoute.detail(itemId))]
+                return [.send(RootRoute.photos), .reset, .send(PhotoRoute.detail(itemId))]
             }
             return [.send(RootRoute.photos)]
         case .spaces(let itemId, _):
             if let itemId {
-                return [.send(RootRoute.space), .send(SpaceRoute.detail(itemId))]
+                return [.send(RootRoute.space), .reset, .send(SpaceRoute.detail(itemId))]
             }
             return [.send(RootRoute.space)]
         case .search:
@@ -62,7 +66,7 @@ struct RootRouteRouter: NavigationRouteHandling {
             return [.send(RootRoute.editors)]
         case .tables(let itemId, _):
             if let itemId {
-                return [.send(RootRoute.tables), .send(TableRoute.detail(itemId))]
+                return [.send(RootRoute.tables), .reset, .send(TableRoute.detail(itemId))]
             }
             return [.send(RootRoute.tables)]
         case .values(let itemId, _):
@@ -72,7 +76,7 @@ struct RootRouteRouter: NavigationRouteHandling {
             return [.send(RootRoute.values)]
         case .weathers(let itemId, _):
             if let itemId {
-                return [.send(RootRoute.weathers), .send(WeatherRoute.detail(itemId))]
+                return [.send(RootRoute.weathers), .reset, .send(WeatherRoute.detail(itemId))]
             }
             return [.send(RootRoute.weathers)]
         @unknown default:
@@ -91,8 +95,12 @@ struct RootFiveRouteRouter: NavigationRouteHandling {
     
     @MainActor func actions(for route: KnownRoutes) -> [NavigationAction] {
         switch route {
-        case .adventures(_, _):
-            return [.send(RootRoute.adventures)]
+        case .adventures(let itemId, _):
+            var routes: [NavigationAction] = [.send(RootRoute.adventures), .reset]
+            if let itemId {
+                routes.append(.send(AdventureRoute.detail(itemId)))
+            }
+            return routes
         case .audios(let itemId, _):
             var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.audios)]
             if let itemId {

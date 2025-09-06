@@ -131,7 +131,7 @@ struct RouteRouteDestionationView: View {
     var body: some View {
         switch route {
         case .adventures:
-            RootListView(rootRoute: route)
+            AdventureRootFactory.rootView(withoutNavigation: false)
         case .audios:
             AudioRootFactory.rootView(withoutNavigation: false)
         case .dice:

@@ -8,14 +8,17 @@ import SwiftData
 import SwiftUI
 import os.log
 
+import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import TableRPG
 import WeatherRPG
+
 import RPGAdventures
 import RPGDie
 import RPGAudios
@@ -42,9 +45,11 @@ public final class AppStore: Sendable {
 
     public let modelContainer: ModelContainer
 
+    public var adventureRootModel: AdventureRootModel
     public var audioRootModel: AudioRootModel
     public var characterRootModel: CharacterRootModel
     public var diceRootModel: DiceRootModel
+    public var mapRootModel: MapRootModel
     public var pdfRootModel: PdfRootModel
     public var photoRootModel: PhotoRootModel
     public var spaceRootModel: SpaceRootModel
@@ -119,10 +124,14 @@ public final class AppStore: Sendable {
         let tableRootModel = TableRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRootModel, pdfRoot: pdfRootModel)
         let weatherRootModel = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRootModel)
         let characterRootModel = CharacterRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRootModel, pdfRoot: pdfRootModel, photoRoot: photoRootModel, tableRoot: tableRootModel)
-
+        let mapRootModel = MapRootFactory.rootModel(modelContext: modelContainer.mainContext, characterRoot: characterRootModel, diceRoot: diceRootModel, pdfRoot: pdfRootModel, photoRoot: photoRootModel, tableRoot: tableRootModel)
+        let adventureRootModel = AdventureRootFactory.rootModel(modelContext: modelContainer.mainContext, audioRoot: audioRootModel, characterRoot: characterRootModel, diceRoot: diceRootModel, mapRoot: mapRootModel, pdfRoot: pdfRootModel, photoRoot: photoRootModel, spaceRoot: spaceRootModel, tableRoot: tableRootModel, weatherRoot: weatherRootModel)
+        
+        self.adventureRootModel = adventureRootModel
         self.audioRootModel = audioRootModel
         self.characterRootModel = characterRootModel
         self.diceRootModel = diceRootModel
+        self.mapRootModel = mapRootModel
         self.pdfRootModel = pdfRootModel
         self.photoRootModel = photoRootModel
         self.spaceRootModel = spaceRootModel

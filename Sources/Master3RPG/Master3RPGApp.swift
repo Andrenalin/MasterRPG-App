@@ -1,9 +1,4 @@
-//
-//  Master3RPGApp.swift
-//  Master3RPG
-//
-//  Created by Andre Trettin on 02.07.25.
-//
+// @copyright André Trettin
 
 import AppIntents
 import CoreRPG
@@ -24,6 +19,8 @@ struct Master3RPGApp: App {
         let navigator = appModel.navigator
         AppDependencyManager.shared.add(dependency: navigator)
 
+        let adventureRootModel = appModel.adventureRoot
+        AppDependencyManager.shared.add(dependency: adventureRootModel)
         let audioRootModel = appModel.audioRoot
         AppDependencyManager.shared.add(dependency: audioRootModel)
         let characterRootModel = appModel.characterRoot

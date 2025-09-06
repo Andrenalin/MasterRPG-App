@@ -259,4 +259,11 @@ public extension AdventureRoot {
         editController.model.entries = [entry]
         editController.save(with: String(localized: "Create new").localizedString)
     }
+    
+    @MainActor
+    func listItems() -> [AdventureModel] {
+        itemController.itemDataModel.items.map {
+            itemController.itemOrEmpty(for: $0)
+        }
+    }
 }

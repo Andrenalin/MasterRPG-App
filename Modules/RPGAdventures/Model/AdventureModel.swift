@@ -5,7 +5,7 @@ import Foundation
 import Observation
 
 @Observable
-final class AdventureModel: Identifiable, @unchecked Sendable {
+public final class AdventureModel: Identifiable, @unchecked Sendable {
     init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, photoId: UUID? = nil, entries: [AdventureEntryModel] = []) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
@@ -17,7 +17,7 @@ final class AdventureModel: Identifiable, @unchecked Sendable {
         entries_ = CRDTDataUpdate(wrappedValue: entries)
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, entries: CRDTDataUpdate<[AdventureEntryModel]>) {
+    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, entries: CRDTDataUpdate<[AdventureEntryModel]>) {
         self.id = id
         name_ = name
         description_ = description
@@ -28,7 +28,7 @@ final class AdventureModel: Identifiable, @unchecked Sendable {
         entries_ = entries
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<AdventureModel.CodingKeys> = try decoder.container(keyedBy: AdventureModel.CodingKeys.self)
 
         self._id = try container.decode(UUID.self, forKey: AdventureModel.CodingKeys._id)
@@ -41,41 +41,41 @@ final class AdventureModel: Identifiable, @unchecked Sendable {
         self._entries_ = try container.decode(CRDTDataUpdate<[AdventureEntryModel]>.self, forKey: AdventureModel.CodingKeys._entries_)
     }
 
-    var id: UUID
+    public var id: UUID
 
-    var name: String {
+    public var name: String {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
     var name_: CRDT<String>
 
-    var description: String {
+    public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
     var description_: CRDT<String>
 
-    var tags: [String] {
+    public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
     var tags_: CRDT<[String]>
 
-    var category: ItemListCategory {
+    public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
     var category_: CRDT<ItemListCategory>
 
-    var displayState: Int
+    public var displayState: Int
 
-    var photoId: UUID? {
+    public var photoId: UUID? {
         get { photoId_.wrappedValue }
         set { photoId_.wrappedValue = newValue }
     }
     var photoId_: CRDT<UUID?>
 
-    var entries: [AdventureEntryModel] {
+    public var entries: [AdventureEntryModel] {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
@@ -84,7 +84,7 @@ final class AdventureModel: Identifiable, @unchecked Sendable {
 
 extension AdventureModel: ItemLinkRegistable {
     @MainActor
-    var linkRegisterModels: [LinkRegisterModel] {
+    public var linkRegisterModels: [LinkRegisterModel] {
         let modelSource = ItemRowModel(itemId: id, typeId: .adventure)
         var linkModels: [LinkRegisterModel] = []
         if let photoId {
@@ -105,7 +105,7 @@ extension AdventureModel: ItemLinkRegistable {
 }
 
 extension AdventureModel: ItemDiffComparable {
-    func merge(_ other: AdventureModel) -> AdventureModel {
+    public func merge(_ other: AdventureModel) -> AdventureModel {
         AdventureModel(
             id: id,
             name: name_.merged(other: other.name_),
@@ -118,7 +118,7 @@ extension AdventureModel: ItemDiffComparable {
         )
     }
 
-    func isSame(_ other: AdventureModel) -> Bool {
+    public func isSame(_ other: AdventureModel) -> Bool {
         name == other.name &&
         description == other.description &&
         tags == other.tags &&
@@ -134,7 +134,7 @@ extension AdventureModel: ItemDiffComparable {
 }
 
 extension AdventureModel: ItemDuplicatable {
-    func duplicate() -> AdventureModel {
+    public func duplicate() -> AdventureModel {
         let copyName = duplicateName(from: name)
         return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, entries: entries.map { $0.duplicate() })
     }
@@ -143,25 +143,25 @@ extension AdventureModel: ItemDuplicatable {
 extension AdventureModel: ItemReferencable {}
 
 extension AdventureModel: ItemDataAccessable {
-    static var empty: AdventureModel { empty(UUID()) }
-    static func empty(_ id: UUID) -> AdventureModel {
+    public static var empty: AdventureModel { empty(UUID()) }
+    public static func empty(_ id: UUID) -> AdventureModel {
         AdventureModel(id: id, name: "", description: "")
     }
-    static let typeId: NetworkModules = .adventure
+    public static let typeId: NetworkModules = .adventure
 
-    func copy() -> AdventureModel {
+    public func copy() -> AdventureModel {
         AdventureModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, entries: entries_)
     }
 
-    func filter(_ filter: String) -> Bool {
+    public func filter(_ filter: String) -> Bool {
         (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
     }
 
-    func isEqual(other: AdventureModel) -> Bool {
+    public func isEqual(other: AdventureModel) -> Bool {
         self == other
     }
 
-    var isGroupHiddenToggle: Bool {
+    public var isGroupHiddenToggle: Bool {
         get { isGroupHidden }
         set {
             if newValue {
@@ -172,7 +172,7 @@ extension AdventureModel: ItemDataAccessable {
         }
     }
 
-    func replace(with model: AdventureModel) -> Bool {
+    public func replace(with model: AdventureModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_
@@ -184,7 +184,7 @@ extension AdventureModel: ItemDataAccessable {
         return true
     }
 
-    subscript(id: UUID) -> AdventureEntryModel {
+    public subscript(id: UUID) -> AdventureEntryModel {
         get {
             guard let index = entries.firstIndex(where: { $0.id == id }) else { return .empty(id) }
             return entries[index]
@@ -197,7 +197,7 @@ extension AdventureModel: ItemDataAccessable {
 }
 
 extension AdventureModel: Comparable {
-    static func < (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
+    public static func < (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
         lhs.name < rhs.name
     }
 }
@@ -214,7 +214,7 @@ extension AdventureModel: Codable {
         case _entries_
     }
 
-    final func encode(to encoder: Encoder) throws {
+    public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<AdventureModel.CodingKeys> = encoder.container(keyedBy: AdventureModel.CodingKeys.self)
 
         try container.encode(self._id, forKey: AdventureModel.CodingKeys._id)
@@ -229,11 +229,11 @@ extension AdventureModel: Codable {
 }
 
 extension AdventureModel: Equatable, Hashable {
-    static func == (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
+    public static func == (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
         lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     }
 
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }

@@ -17,6 +17,7 @@ struct MyAppPackage: AppIntentsPackage {
    static var includedPackages: [any AppIntentsPackage.Type] {
        [
         RPGFrameworkPackage.self,
+        AdventureFrameworkPackage.self,
         AudioFrameworkPackage.self,
         CharacterFrameworkPackage.self,
         DiceFrameworkPackage.self,

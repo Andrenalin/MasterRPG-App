@@ -17,6 +17,7 @@ struct AppRootView: View {
             .environment(\.colorScheme, .dark)
             .environment(\.navigator, appModel.navigator)
             .environment(appModel.deviceRotationModel)
+            .environment(appModel.adventureRoot)
             .environment(appModel.audioRoot)
             .environment(appModel.characterRoot)
             .environment(appModel.diceRoot)

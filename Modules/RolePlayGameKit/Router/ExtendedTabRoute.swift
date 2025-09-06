@@ -105,7 +105,7 @@ struct ExtendedTabRouteDestionationView: View {
             case .weathers:
                 WeatherRootFactory.rootView(withoutNavigation: true)
             case .settings:
-                Text("Cooming soon")
+                SettingsView(model: appModel)
         }
     }
 }

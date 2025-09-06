@@ -183,8 +183,7 @@ struct RouteRouteDestionationView: View {
     var body: some View {
         switch route {
         case .adventures(let tabId):
-            AdventureFactory.rootView(for: appStore.adventureRoot, tabId: tabId)
-                .environment(appStore.adventureRoot)
+            NewAdventureRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .audios(let tabId):
             NewAudioRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .dice(let tabId):
@@ -198,8 +197,7 @@ struct RouteRouteDestionationView: View {
         case .game:
             appStore.gameRoot.viewController.gameTabItem()
         case .maps(let tabId):
-            MapFactory.rootView(for: appStore.mapRoot, tabId: tabId)
-                .environment(appStore.mapRoot)
+            NewMapRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .pdfs(let tabId):
             NewPdfRoute(appStore: appStore, tabId: tabId, isExtended: false)
         case .photos(let tabId):

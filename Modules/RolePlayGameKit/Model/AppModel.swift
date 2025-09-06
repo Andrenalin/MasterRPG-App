@@ -36,6 +36,7 @@ public final class AppModel: Sendable {
     public let windowStateModel: WindowStateModel
     
     // Module roots
+    public var adventureRoot: AdventureRootModel
     public var audioRoot: AudioRootModel
     public var characterRoot: CharacterRootModel
     public var diceRoot: DiceRootModel
@@ -67,7 +68,9 @@ public final class AppModel: Sendable {
         let weatherRoot = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRoot)
         let characterRoot = CharacterRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         let mapRoot = MapRootFactory.rootModel(modelContext: modelContainer.mainContext, characterRoot: characterRoot,  diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-
+        let adventureRoot = AdventureRootFactory.rootModel(modelContext: modelContainer.mainContext, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
+        
+        self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
         self.characterRoot = characterRoot
         self.diceRoot = diceRoot
@@ -78,7 +81,7 @@ public final class AppModel: Sendable {
         self.tableRoot = tableRoot
         self.weatherRoot = weatherRoot
         
-        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.5", executionDelay: 0.4, verbosity: .info))
+        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.6", executionDelay: 0.4, verbosity: .info))
     }
     
     @MainActor
@@ -89,15 +92,16 @@ public final class AppModel: Sendable {
                 EntryDataModel.self,
                 LinkDataModel.self,
                 TagDataModel.self,
+                AdventureDataModel.self,
                 CharacterDataModel.self,
-                CharacterEntryDataModel.self,
+                //CharacterEntryDataModel.self,
                 DiceDataModel.self,
-                DieDataModel.self,
+                //DieDataModel.self,
                 MapDataModel.self,
-                MapEntryDataModel.self,
+                //MapEntryDataModel.self,
                 PdfDataModel.self,
                 TableDataModel.self,
-                TableEntryDataModel.self,
+                //TableEntryDataModel.self,
                 WeatherDataModel.self,
             ]
         )

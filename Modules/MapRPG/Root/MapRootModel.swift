@@ -19,7 +19,7 @@ public final class MapRootModel {
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.character, .gameMaster, .item, .monster])
+        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.building, .dungeon, .map])
         self.searchModel = searchModel
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel

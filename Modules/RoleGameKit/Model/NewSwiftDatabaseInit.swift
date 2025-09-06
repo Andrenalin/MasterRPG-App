@@ -4,9 +4,11 @@ import CoreExternalRPG
 import CoreRPG
 import SwiftData
 
+import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -21,13 +23,12 @@ struct NewSwiftDatabaseInit {
             EntryDataModel.self,
             LinkDataModel.self,
             TagDataModel.self,
+            AdventureDataModel.self,
             CharacterDataModel.self,
-            CharacterEntryDataModel.self,
             DiceDataModel.self,
-            DieDataModel.self,
+            MapDataModel.self,
             PdfDataModel.self,
             TableDataModel.self,
-            TableEntryDataModel.self,
             WeatherDataModel.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))

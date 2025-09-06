@@ -18,7 +18,7 @@ struct ImportController: Sendable {
     init(appModel: AppModel) {
         self.root = appModel
         self.module = .none
-        self.itemControllable = appModel.mapRoot.itemControllable
+        self.itemControllable = appModel.adventureRoot.itemControllable
         self.importModel = ItemDataImportModel(gameImporter: false)
     }
     
@@ -42,6 +42,7 @@ extension ImportController: ImportControllable {
             try await root.tableRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.characterRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.weatherRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+            try await root.adventureRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
         } else {
             await setOverwite()
             try await root.audioRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
@@ -53,6 +54,7 @@ extension ImportController: ImportControllable {
             try await root.tableRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.characterRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
             try await root.weatherRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+            try await root.adventureRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
         }
     }
     
@@ -67,5 +69,6 @@ extension ImportController: ImportControllable {
         root.tableRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
         root.characterRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
         root.weatherRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
+        root.adventureRoot.importControllable.importModel.withOverwrite = importModel.withOverwrite
     }
 }
