@@ -13,7 +13,7 @@ struct DetailRootView: View {
     
     @Environment(TableRootModel.self) private var root
     
-    @State private var showSheet: Bool = false
+    @State private var tableSheetModel: TableSheetModel?
     
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
@@ -33,12 +33,10 @@ struct DetailRootView: View {
             route
                 .environment(root.editController.selectionDice)
         }
-        .sheet(isPresented: $showSheet) {
-            if showSheet, let tableModel {
-                TableSheet(model: tableModel, showTopImage: true) {
-                    showSheet = false
-                }
-            }
+        .onChange(of: selectedModel?.id, initial: true) {
+            guard let tableModel else { return }
+            let sheetModel = SheetController(itemController: root.itemController).sheet(for: tableModel.itemId)
+            tableSheetModel = TableSheetModel(linkControllable: root.linkControllable, sheetModel: sheetModel, searchText: root.searchModel.searchText)
         }
     }
     
@@ -52,12 +50,6 @@ struct DetailRootView: View {
 
     @ViewBuilder
     func detailEditorView(model: TableDataModel) -> some View {
-        Button {
-            showSheet.toggle()
-        } label: {
-            Image(systemName: root.module.icon)
-        }
-        
         root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.selectionDice)
             .onChange(of: root.editController.selectionDice.selection) {
                 withAnimation { root.editController.add(diceId: root.editController.selectionDice.itemId, model: model) }
@@ -66,7 +58,10 @@ struct DetailRootView: View {
                 withAnimation { root.editController.selectionDice.resetSelection(itemId: model.diceId) }
             }
         
-        EntryList(itemId: model.itemId)
+        if let tableSheetModel {
+            SheetView(model: tableSheetModel)
+        }
+        //EntryList(itemId: model.itemId)
     }
 }
 

@@ -48,7 +48,6 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
         } background: {
             Rectangle()
                 .fill(model.module.color)
-                //.fill(colorScheme == .dark ? model.module.color.gradient : model.module.tint.gradient)
         }
         .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -214,8 +213,8 @@ private extension ItemDetailEditorView {
                 ListRootView(root: root, parentModel: model)
             } else {
                 Form {
-                    ItemDetailOverlayView(model: model, fullHeader: moveDetails, onlyDescription: true)
-                        .padding()
+//                    ItemDetailOverlayView(model: model, fullHeader: moveDetails, onlyDescription: true)
+//                        .padding()
 
                     editor
                 }

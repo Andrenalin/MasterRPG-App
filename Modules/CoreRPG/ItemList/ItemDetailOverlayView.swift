@@ -20,7 +20,7 @@ public struct ItemDetailOverlayView: View {
         VStack(alignment: .leading) {
             if fullHeader || onlyDesctiption == false {
                 NameItemRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
-                    .font(.title)
+                    .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 HStack {

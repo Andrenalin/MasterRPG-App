@@ -10,26 +10,26 @@ public struct ItemRootView<Detail: View>: View {
         self.withoutNavigation = withoutNavigation
         self.detail = detail()
     }
-
+    
     let root: ItemRootController
     let withoutNavigation: Bool
     let detail: Detail
-
+    
     @Environment(\.colorScheme) private var colorScheme
     @State private var cacheItemListModel = CacheItemListModel()
-
+    
     public var body: some View {
         let _ = Self._printChanges()
         
         ItemRootSplitListView(root: root, withoutNavigation: withoutNavigation) {
             detail
         }
-            .environment(cacheItemListModel)
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root)
-            .tabBarPlacementModifier(listControllable: root.listControllable)
-            .tint(root.module.tint)
+        .environment(cacheItemListModel)
+        .environment(root.listDisplayModel)
+        .environment(root.searchModel)
+        .environment(root)
+        .tabBarPlacementModifier(listControllable: root.listControllable)
+        .tint(root.module.tint)
     }
 }
 
@@ -42,7 +42,7 @@ struct ItemRootSplitListView<Detail: View>: View {
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
-        
+    
     var body: some View {
         let _ = Self._printChanges()
         
@@ -105,10 +105,10 @@ struct ItemDetailRooteNavigationView<Detail: View>: View {
     @ViewBuilder let detail: Detail
     
     @Environment(DeviceRotationModel.self) private var deviceRotationModel
-
+    
     var body: some View {
         let _ = Self._printChanges()
-
+        
         detail
             .environment(deviceRotationModel)
             .environment(root)
@@ -174,7 +174,7 @@ struct ItemSplitDetailRootView<Detail: View>: View {
 
 //#Preview("Small", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root
-//    
+//
 //    ManagedNavigationStack {
 //        ItemRootView(root: root, withoutNavigation: true, displayMode: .constant(.regular), listMode: .constant(.list), route: .constant(.detail(UUID())))
 //    }
@@ -182,6 +182,6 @@ struct ItemSplitDetailRootView<Detail: View>: View {
 //
 //#Preview("Split", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root
-//    
+//
 //    ItemRootView(root: root, withoutNavigation: false, displayMode: .constant(.regular), listMode: .constant(.list), route: .constant(.detail(UUID())))
 //}

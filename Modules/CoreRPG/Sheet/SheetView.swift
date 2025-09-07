@@ -2,10 +2,14 @@
 
 import SwiftUI
 
-struct SheetView: View {
+public struct SheetView: View {
+    public init(model: TableSheetModel) {
+        self.model = model
+    }
+    
     let model: TableSheetModel
 
-    var body: some View {
+    public var body: some View {
         if let description = model.description(for: model.sheetModel) {
             LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
                 .foregroundStyle(.secondary)

@@ -22,18 +22,6 @@ struct MockData: PreviewModifier {
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
-        let model1 = ItemDataModel(
-            id: previewId,
-            module: .weather,
-            name: "Mega Nice",
-            information: "A lot of information about this item",
-            category: .adventure,
-            tags: ["Example", "Title", "Ouside"]
-        )
-        container.mainContext.insert(model1)
-        
-        let item1 = TableDataModel(itemId: previewId)
-        container.mainContext.insert(item1)
         let entries = [
             TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 0, name: "1", content: "Really only Cooper"),
             TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 1, name: "2-9", content: "You found some Silver"),
@@ -41,11 +29,23 @@ struct MockData: PreviewModifier {
             TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 3, name: "16-19", content: "Rich on Gold and Silver"),
             TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 4, name: "20", content: "Mega Loot Gold- dold"),
         ]
-        entries.forEach { container.mainContext.insert($0) }
 
+        let item1 = TableDataModel(itemId: previewId, diceId: nil, entries: entries)
+        container.mainContext.insert(item1)
+        
+        let model1 = ItemDataModel(
+            id: previewId,
+            module: .table,
+            name: "Mega Nice",
+            information: "A lot of information about this item",
+            category: .adventure,
+            tags: ["Example", "Title", "Ouside"]
+        )
+        container.mainContext.insert(model1)
+        
         let model2 = ItemDataModel(
             id: previewId2,
-            module: .weather,
+            module: .table,
             name: "Albert",
             information: "The is an example photo and the information is also set here",
             category: .character,
@@ -57,7 +57,7 @@ struct MockData: PreviewModifier {
 
         let model3 = ItemDataModel(
             id: previewId3,
-            module: .weather,
+            module: .table,
             name: "Zauberer",
             information: "A photo of a wizard.",
             category: .adventure,

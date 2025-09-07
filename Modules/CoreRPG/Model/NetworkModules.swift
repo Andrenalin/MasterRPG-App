@@ -114,14 +114,14 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .audio: .pink
         case .dice: .purple
         case .editor: .gray
-        case .map: .indigo
+        case .map: Color("MapBackground", bundle: .module)
         case .none: .clear
         case .game: .pink
         case .pdf: .red
         case .photo: .yellow
         case .space: .brown
         case .setting: .mint
-        case .table: Color("TableBackground", bundle: .module) // Color(.displayP3, red: 39.0/255.0, green: 57.0/255.0, blue: 28.0/255.0, opacity: 1)
+        case .table: Color("TableBackground", bundle: .module)
         case .value: .teal
         case .weather: .orange
         case .search: .blue
@@ -134,14 +134,14 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .audio: .red
         case .dice: .green
         case .editor: .green
-        case .map: .green
+        case .map: Color("MapTint", bundle: .module)
         case .none: .black
         case .game: .yellow
         case .pdf: .yellow
         case .photo: .green
         case .space: .green
         case .setting: .green
-        case .table: Color("TableTint", bundle: .module) //Color(.displayP3, red: 31.0/255.0, green: 125.0/255.0, blue: 83.0/255.0, opacity: 1)
+        case .table: Color("TableTint", bundle: .module)
         case .value: .red
         case .weather: .green
         case .search: .green

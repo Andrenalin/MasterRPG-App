@@ -3,8 +3,8 @@
 import SwiftUI
 
 @Observable
-final class TableSheetModel {
-    init(linkControllable: any LinkControllable, sheetModel: SheetModel, searchText: String = "") {
+public final class TableSheetModel {
+    public init(linkControllable: any LinkControllable, sheetModel: SheetModel, searchText: String = "") {
         self.linkControllable = linkControllable
         self.sheetModel = sheetModel
         self.searchText = searchText
