@@ -21,7 +21,7 @@ extension ViewController {
     @MainActor
     func diceSelection(root: TableRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.diceRoot.viewController.selectionView(root: root.diceRoot, model: selectionModel)
-    }
+    }    
 }
 
 // MARK: Viewer
