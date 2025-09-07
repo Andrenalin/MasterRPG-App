@@ -9,7 +9,11 @@ struct DetailRootView: View {
     let selectedId: UUID?
     
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.navigator) private var navigator
+    
     @Environment(TableRootModel.self) private var root
+    
+    @State private var showSheet: Bool = false
     
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
@@ -29,6 +33,13 @@ struct DetailRootView: View {
             route
                 .environment(root.editController.selectionDice)
         }
+        .sheet(isPresented: $showSheet) {
+            if showSheet, let tableModel {
+                TableSheet(model: tableModel, showTopImage: true) {
+                    showSheet = false
+                }
+            }
+        }
     }
     
     var selectedModel: ItemDataModel? {
@@ -41,6 +52,12 @@ struct DetailRootView: View {
 
     @ViewBuilder
     func detailEditorView(model: TableDataModel) -> some View {
+        Button {
+            showSheet.toggle()
+        } label: {
+            Image(systemName: root.module.icon)
+        }
+        
         root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.selectionDice)
             .onChange(of: root.editController.selectionDice.selection) {
                 withAnimation { root.editController.add(diceId: root.editController.selectionDice.itemId, model: model) }

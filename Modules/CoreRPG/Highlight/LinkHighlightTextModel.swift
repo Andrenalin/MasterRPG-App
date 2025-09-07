@@ -4,31 +4,16 @@ import Foundation
 import SwiftUI
 
 @MainActor @Observable
-public final class LinkHighlightTextModel {    
-//    public init(linkControllable: LinkControllable?, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules) async -> Void)? = nil, shareResult: ShareValueResult? = nil, editAction: ((ItemRowModel) -> Bool)? = nil) {
-//        self.linkControllable = linkControllable
-//        self.text = text
-//        self.highlightedText = highlightedText
-//        self.linkLocations = LinkHighLightLocations()
-//        self.toggler = toggler
-//        self.shareResult = shareResult
-//        self.editAction = editAction
-//    }
-
-    public init(text: String, highlightedText: String? = nil) {
+public final class LinkHighlightTextModel {
+    public init(linkControllable: LinkControllable? = nil, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules) async -> Void)? = nil) {
+        self.linkControllable = linkControllable
         self.text = text
         self.highlightedText = highlightedText
         self.linkLocations = LinkHighLightLocations()
     }
 
-//    @ObservationIgnored
-//    let linkControllable: (any LinkControllable)?
-//    @ObservationIgnored
-//    let toggler: ((UUID, NetworkModules) async -> Void)?
-//    @ObservationIgnored
-//    let shareResult: ShareValueResult?
-//    @ObservationIgnored
-//    let editAction: ((ItemRowModel) -> Bool)?
+    @ObservationIgnored
+    let linkControllable: (any LinkControllable)?
     
     private(set) public var text: String
     private var highlightedText: String?
@@ -62,16 +47,16 @@ public final class LinkHighlightTextModel {
     }
 
     func handle(link: LinkReplaceModel) {
-//        guard let linkControllable else { return }
-//        let searchUrl = link.markDown.split(separator: "]").last!.trimmingCharacters(in: CharacterSet(charactersIn: "()"))
-//        guard let url = URL(string: searchUrl) else { return }
-//
-//        var repariedText = text
-//        _ = LinkReplaceController.linksRepair(for: &repariedText)
-//        
-//        let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: toggler, editAction: editAction)
-//
-//        reset(text: updatedText)
+        guard let linkControllable else { return }
+        let searchUrl = link.markDown.split(separator: "]").last!.trimmingCharacters(in: CharacterSet(charactersIn: "()"))
+        guard let url = URL(string: searchUrl) else { return }
+
+        var repariedText = text
+        _ = LinkReplaceController.linksRepair(for: &repariedText)
+        
+        let updatedText = linkControllable.handleTextLink(url: url, in: repariedText)
+
+        reset(text: updatedText)
     }
 }
 

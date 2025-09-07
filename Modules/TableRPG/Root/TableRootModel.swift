@@ -52,6 +52,9 @@ public final class TableRootModel {
     @ObservationIgnored lazy var itemController: ItemController = {
         ItemController(container: modelContext.container)
     }()
+    @ObservationIgnored lazy var linkController: LinkController = {
+        LinkController()
+    }()
     @ObservationIgnored lazy var listController: ListController = {
         ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
     }()
@@ -82,6 +85,7 @@ extension TableRootModel: ItemRootControllable {
     public var editControllable: any EditControllable { editController }
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
+    public var linkControllable: any LinkControllable { linkController }
     public var listControllable: any ListControllable { listController }
     public var listLinkControllable: any ListControllable { listLinkController }
     public var viewControllable: any ViewControllable { viewController }
