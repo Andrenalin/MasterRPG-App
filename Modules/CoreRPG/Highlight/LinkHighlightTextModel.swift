@@ -5,16 +5,25 @@ import SwiftUI
 
 @MainActor @Observable
 public final class LinkHighlightTextModel {
-    public init(linkControllable: LinkControllable? = nil, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules) async -> Void)? = nil) {
+    public init(linkControllable: LinkControllable? = nil, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules) -> Void)? = nil, shareResult: ShareValueResult? = nil, editAction: ((ItemRowModel) -> Bool)? = nil) {
         self.linkControllable = linkControllable
         self.text = text
         self.highlightedText = highlightedText
         self.linkLocations = LinkHighLightLocations()
+        self.toggler = toggler
+        self.shareResult = shareResult
+        self.editAction = editAction
     }
 
     @ObservationIgnored
     let linkControllable: (any LinkControllable)?
-    
+    @ObservationIgnored
+    let toggler: ((UUID, NetworkModules) -> Void)?
+    @ObservationIgnored
+    let shareResult: ShareValueResult?
+    @ObservationIgnored
+    let editAction: ((ItemRowModel) -> Bool)?
+
     private(set) public var text: String
     private var highlightedText: String?
     
@@ -54,7 +63,7 @@ public final class LinkHighlightTextModel {
         var repariedText = text
         _ = LinkReplaceController.linksRepair(for: &repariedText)
         
-        let updatedText = linkControllable.handleTextLink(url: url, in: repariedText)
+        let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: toggler, editAction: editAction)
 
         reset(text: updatedText)
     }

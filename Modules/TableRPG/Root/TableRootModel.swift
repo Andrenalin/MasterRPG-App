@@ -53,7 +53,7 @@ public final class TableRootModel {
         ItemController(container: modelContext.container)
     }()
     @ObservationIgnored lazy var linkController: LinkController = {
-        LinkController()
+        LinkController(module: module, itemController: itemController)
     }()
     @ObservationIgnored lazy var listController: ListController = {
         ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)

@@ -28,11 +28,13 @@ extension TableDataModel {
         set {
             entries_ = newValue
         }
-//        guard let modelContext else { return [] }
-//        let predicate = #Predicate<TableEntryDataModel> {
-//            $0.itemId == itemId
-//        }
-//        let fetch = FetchDescriptor<TableEntryDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.index)])
-//        return (try? modelContext.fetch(fetch)) ?? []
+    }
+    
+    subscript(id: UUID) -> TableEntryDataModel {
+        get { entries.first(where: { $0.entryId == id }) ?? TableEntryDataModel(itemId: itemId) }
+        set(newValue) {
+            guard let index = entries.firstIndex(where: { $0.entryId == id }) else { return }
+            entries[index] = newValue
+        }
     }
 }

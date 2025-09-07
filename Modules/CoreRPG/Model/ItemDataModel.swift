@@ -189,8 +189,8 @@ public extension ItemDataModel {
         "[\(urlName())](\(urlAdr(linkNumber: linkNumber)))"
     }
     
-    func url(linkNumber: Int, entryId: UUID) -> String {
-        "[\(urlName(entryId: entryId))](\(urlAdr(linkNumber: linkNumber, entryId: entryId)))"
+    func url(linkNumber: Int, entryId: UUID, name: String) -> String {
+        "[\(name)](\(urlAdr(linkNumber: linkNumber, entryId: entryId)))"
     }
 }
 
