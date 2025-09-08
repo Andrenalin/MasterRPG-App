@@ -72,6 +72,7 @@ public final class TableRootModel {
             itemSelectionModel: itemSelectionModel,
             cacheControllable: nil,
             editControllable: editController,
+            exportControllable: exportControllable,
             itemControllable: itemController,
             listControllable: listController,
             listLinkControllable: listLinkController,
@@ -83,6 +84,7 @@ public final class TableRootModel {
 extension TableRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
+    public var exportControllable: any ExportControllable { exportController }
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var linkControllable: any LinkControllable { linkController }

@@ -20,5 +20,4 @@ struct ExportController: Sendable {
     var version: Int { ItemDataExportModel.Version.version_2025.rawValue }
 }
 
-
 extension ExportController: ExportControllable {}

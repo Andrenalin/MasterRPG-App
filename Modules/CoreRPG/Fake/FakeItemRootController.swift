@@ -24,14 +24,27 @@ public final class FakeItemRootController: ItemRootControllable {
         self.itemControllable = itemController
         let editController = FakeEditController(itemControllable: itemController, fileUrlDataController: nil)
         self.editControllable = editController
+        let exportController = FakeExportController(itemControllable: itemController)
+        self.exportControllable = exportController
         let listController = FakeListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
         self.listControllable = listController
         let listLinkController = FakeListController(listModel: ListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel)
         self.listLinkControllable = listController
         self.viewControllable = FakeViewController(goupViewType: .item, thumbnailRowViewType: .none)
         
-        let rootController =
-        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewControllable)
+        let rootController = ItemRootController(
+            module: module,
+            listDisplayModel: listDisplayModel,
+            searchModel: searchModel,
+            itemSelectionModel: itemSelectionModel,
+            cacheControllable: nil,
+            editControllable: editController,
+            exportControllable: exportController,
+            itemControllable: itemController,
+            listControllable: listController,
+            listLinkControllable: listLinkController,
+            viewControllable: viewControllable
+        )
         self.rootController = rootController
     }
 
@@ -46,6 +59,7 @@ public final class FakeItemRootController: ItemRootControllable {
 
     public let cacheControllable: (any ImageCacheControllable)?
     public let editControllable: any EditControllable
+    public let exportControllable: any ExportControllable
     public let itemControllable: any ItemControllable
     public let listControllable: any ListControllable
     public let listLinkControllable: any ListControllable

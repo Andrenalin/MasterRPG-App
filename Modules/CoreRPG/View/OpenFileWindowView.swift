@@ -5,31 +5,62 @@ import SwiftUI
 
 @MainActor @Observable
 public final class OpenFileWindowModel {
-    public init(showItem: Bool = false, itemId: UUID = UUID(), entryId: UUID? = nil, url: URL? = nil) {
-        self.showItem = showItem
-        self.itemId = itemId
-        self.entryId = entryId
-        self.url = url
+    public init() {}
+
+    public init(windowId: String, route: @escaping (UUID) -> any NavigationDestination) {
+        self.windowId = windowId
+        self.route = route
     }
     
     public var showItem: Bool = false
     public var itemId: UUID = UUID()
     public var entryId: UUID?
     public var url: URL?
+    
+    public var windowId: String? = nil
+    public var route: ((UUID) -> any NavigationDestination)?
 }
 
-public struct OpenFileWindowView: View {
-    public init(model: OpenFileWindowModel, module: NetworkModules, windowId: String, route: any NavigationDestination) {
-        self.model = model
-        self.module = module
-        self.windowId = windowId
-        self.route = route
+struct OpenFileViewerViewModifier: ViewModifier {
+    let model: ItemDataModel
+    let module: NetworkModules
+
+    @Environment(OpenFileWindowModel.self) private var openFileWindowModel
+    @Environment(GroupItemSelectionModel.self) private var selection
+    
+    func body(content: Content) -> some View {
+        content.toolbar {
+            ToolbarItem(placement: secondaryMenuPlacement) {
+                if !model.specialCategory && openFileWindowModel.showItem == false {
+                    OpenFileWindowView(model: openFileWindowModel, module: module)
+                }
+            }
+        }
+        .onChange(of: model.id, initial: true) {
+            openFileWindowModel.itemId = model.id
+            openFileWindowModel.url = model.url
+        }
+        .onChange(of: model.url) {
+            openFileWindowModel.url = model.url
+        }
+        .onChange(of: selection.selectedItem) {
+            openFileWindowModel.itemId = selection.selectedItem ?? model.id
+        }
     }
     
+    var secondaryMenuPlacement: ToolbarItemPlacement {
+#if os(tvOS)
+        .automatic
+#else
+        .secondaryAction
+#endif
+    }
+}
+
+
+struct OpenFileWindowView: View {
     let model: OpenFileWindowModel
     let module: NetworkModules
-    let windowId: String
-    let route: any NavigationDestination
     
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -41,49 +72,49 @@ public struct OpenFileWindowView: View {
     
     @Environment(\.navigator) private var navigator
     
-    public var body: some View {
-        HStack {
+    var body: some View {
+        if let windowId = model.windowId {
+            menuButton(windowId: windowId)
+        }
+    }
+    
+    @ViewBuilder
+    func menuButton(windowId: String) -> some View {
+        ControlGroup {
 #if os(iOS)
-            Menu {
-                if UIDevice.current.userInterfaceIdiom == .pad {
-                    Button {
-                        openWindow(id: windowId, value: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
-                    } label: {
-                        Label {
-                            Text("Open in Window", bundle: .module)
-                        } icon: {
-                            Image(systemName: "macwindow.badge.plus")
-                        }
-                    }
-                }
-            } label: {
-                Image(systemName: module.icon)
-            } primaryAction: {
-                actionHandler()
-            }
-            
-#else
-            
             Button {
-                actionHandler()
+                openWindow(id: windowId, value: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
             } label: {
-                Image(systemName: module.icon)
+                Label {
+                    Text("Open in Window", bundle: .module)
+                } icon: {
+                    Image(systemName: "macwindow.badge.plus")
+                }
             }
 #endif
+            
+            Button {
+                actionHandler(windowId: windowId)
+            } label: {
+                Label {
+                    Text("View", bundle: .module)
+                } icon: {
+                    Image(systemName: module.icon)
+                }
+            }
         }
         .disabled(model.url == nil)
-        .frame(maxWidth: .infinity, alignment: .trailing)
         .onChange(of: model.url) {
             guard model.url == nil else { return }
             withAnimation { model.showItem <=> false }
         }
     }
     
-    private func actionHandler() {
+    private func actionHandler(windowId: String) {
 #if os(visionOS) || os(macOS)
         openWindow(id: windowId, value: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
 #elseif os(iOS)
-        if horizontalSizeClass == .compact {
+        if horizontalSizeClass == .compact, let route = model.route?(model.itemId) {
             navigator.navigate(to: route, method: .cover)
         } else {
             withAnimation { model.showItem.toggle() }
@@ -93,4 +124,3 @@ public struct OpenFileWindowView: View {
 #endif
     }
 }
-

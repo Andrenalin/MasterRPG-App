@@ -65,7 +65,7 @@ public final class AudioRootModel {
         ViewController()
     }()
     @ObservationIgnored lazy var rootController: ItemRootController = {
-        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: nil, editControllable: editController, exportControllable: exportControllable, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
     }()
     
     public let audioPlayerModel: AudioPlayerModel
@@ -75,6 +75,7 @@ extension AudioRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var importControllable: any ImportControllable { importController }
+    public var exportControllable: any ExportControllable { exportController }
     public var itemControllable: any ItemControllable { itemController }
     public var listControllable: any ListControllable { listController }
     public var listLinkControllable: any ListControllable { listLinkController }

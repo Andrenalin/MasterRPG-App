@@ -10,6 +10,8 @@ struct DetailRootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(SpaceRootModel.self) private var root
     
+    @State private var openFileWindowModel = OpenFileWindowModel()
+
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
@@ -17,12 +19,9 @@ struct DetailRootView: View {
                 SpaceViewer(root: root, model: model)
                     .id(model.id)
                     .frame(minHeight: 800)
-
-                if !model.specialCategory {
-                    //                    OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
-                }
             }
         }
+        .environment(openFileWindowModel)
     }
     
     var selectedModel: ItemDataModel? {

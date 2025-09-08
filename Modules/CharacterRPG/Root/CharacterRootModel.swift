@@ -75,6 +75,7 @@ public final class CharacterRootModel {
             itemSelectionModel: itemSelectionModel,
             cacheControllable: nil,
             editControllable: editController,
+            exportControllable: exportControllable,
             itemControllable: itemController,
             listControllable: listController,
             listLinkControllable: listLinkController,
@@ -86,6 +87,7 @@ public final class CharacterRootModel {
 extension CharacterRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
+    public var exportControllable: any ExportControllable { exportController }
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var listControllable: any ListControllable { listController }

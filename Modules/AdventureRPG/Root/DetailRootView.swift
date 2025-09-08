@@ -12,14 +12,13 @@ struct DetailRootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AdventureRootModel.self) private var root
     
+    @State private var openFileWindowModel = OpenFileWindowModel()
+
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
             if let selectedModel {
                 if let tableModel {
-                    if !selectedModel.specialCategory {
-                        // OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
-                    }
                     detailEditorView(model: tableModel)
                 }
             }
@@ -30,6 +29,7 @@ struct DetailRootView: View {
             route
                 .environment(root.editController.selectionDice)
         }
+        .environment(openFileWindowModel)
     }
     
     var selectedModel: ItemDataModel? {

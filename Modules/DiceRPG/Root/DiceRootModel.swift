@@ -54,13 +54,26 @@ public final class DiceRootModel {
         ViewController()
     }()
     @ObservationIgnored lazy var rootController: ItemRootController = {
-        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: nil, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+        ItemRootController(
+            module: module,
+            listDisplayModel: listDisplayModel,
+            searchModel: searchModel,
+            itemSelectionModel: itemSelectionModel,
+            cacheControllable: nil,
+            editControllable: editController,
+            exportControllable: exportControllable,
+            itemControllable: itemController,
+            listControllable: listController,
+            listLinkControllable: listLinkController,
+            viewControllable: viewController
+        )
     }()
 }
 
 extension DiceRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
+    public var exportControllable: any ExportControllable { exportController }
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var listControllable: any ListControllable { listController }

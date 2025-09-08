@@ -17,5 +17,7 @@ struct ExportController: Sendable {
     var itemControllable: any ItemControllable
     
     var module: NetworkModules
-    var version: Int { 2024 }
+    var version: Int { ItemDataExportModel.Version.version_2025.rawValue }
 }
+
+extension ExportController: ExportControllable {}

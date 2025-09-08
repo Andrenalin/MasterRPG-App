@@ -60,13 +60,26 @@ public final class PhotoRootModel {
         ViewController()
     }()
     @ObservationIgnored lazy var rootController: ItemRootController = {
-        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: itemSelectionModel, cacheControllable: cacheController, editControllable: editController, itemControllable: itemController, listControllable: listController, listLinkControllable: listLinkController, viewControllable: viewController)
+        ItemRootController(
+            module: module,
+            listDisplayModel: listDisplayModel,
+            searchModel: searchModel,
+            itemSelectionModel: itemSelectionModel,
+            cacheControllable: cacheController,
+            editControllable: editController,
+            exportControllable: exportControllable,
+            itemControllable: itemController,
+            listControllable: listController,
+            listLinkControllable: listLinkController,
+            viewControllable: viewController
+        )
     }()
 }
 
 extension PhotoRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { cacheController }
     public var editControllable: any EditControllable { editController }
+    public var exportControllable: any ExportControllable { exportController }
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var listControllable: any ListControllable { listController }

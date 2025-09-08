@@ -27,7 +27,6 @@ public struct DetailRootView<Header: View, Editor: View, Inspector: View, Overla
     @Environment(ItemRootController.self) private var root
     
     @State private var selection = GroupItemSelectionModel()
-    @State private var openFileWindowModel = OpenFileWindowModel()
 
     public var body: some View {
         let _ = Self._printChanges()
@@ -43,7 +42,6 @@ public struct DetailRootView<Header: View, Editor: View, Inspector: View, Overla
                 overlay
             }
             .environment(selection)
-            .environment(openFileWindowModel)
         }
     }
     

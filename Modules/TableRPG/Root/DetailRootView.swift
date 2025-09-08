@@ -15,6 +15,7 @@ struct DetailRootView: View {
     
     @Environment(TableRootModel.self) private var root
     
+    @State private var openFileWindowModel = OpenFileWindowModel()
     @State private var tableSheetModel: TableSheetModel?
     @State private var showQuickEditor: Bool = false
     
@@ -23,9 +24,6 @@ struct DetailRootView: View {
         } editor: {
             if let selectedModel {
                 if let tableModel {
-                    if !selectedModel.specialCategory {
-                        // OpenFileWindowView(model: openFileWindowModel, module: root.module, windowId: WindowIdentifier.pdfViewer.rawValue, route: DetailRoute.viewer(selection.selectedItem ?? model.id))
-                    }
                     detailEditorView(model: tableModel)
                 }
             }

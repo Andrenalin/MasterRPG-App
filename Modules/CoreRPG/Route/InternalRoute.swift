@@ -17,16 +17,15 @@ extension InternalRoute: NavigationDestination {
 struct InternalRouteDestinationView: View {
     let route: InternalRoute
     
-    //@Environment(AudioRootModel.self) private var root
+    @Environment(ItemRootController.self) private var root
     
     var body: some View {
         switch route {
         case .export(let ids):
-            Text("Hello")
-//            ExportProgressFile(exportController: root.exportController) {
-//                let exportIds = root.exportController.exporting(ids: Set(ids))
-//                return root.exportController.export(ids: exportIds)
-//            }
+            ExportProgressFile(exportController: root.exportControllable) {
+                let exportIds = root.exportControllable.exporting(ids: Set(ids))
+                return root.exportControllable.export(ids: exportIds)
+            }
             .presentationDetents([.height(160)])
         }
     }

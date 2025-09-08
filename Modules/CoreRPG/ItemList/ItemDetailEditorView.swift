@@ -56,8 +56,6 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
         .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id, initial: true) {
-            openFileWindowModel.itemId = model.id
-            openFileWindowModel.url = model.url
             guard model.url != nil else {
                 itemIdHasUrl = hasFile ? model.id : UUID()
                 return
@@ -72,9 +70,6 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
             guard oldValue == nil else { return }
             guard itemIdHasUrl != model.id else { return }
             withAnimation { isEditing = true }
-        }
-        .onChange(of: selection.selectedItem) {
-            openFileWindowModel.itemId = selection.selectedItem ?? model.id
         }
 #if !os(tvOS)
         .applyIf(model.category != .folder && !fileTypes.isEmpty) {
@@ -108,9 +103,9 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
                     }
                 }
             }
-            
-            ToolbarItem(placement: .primaryAction) {                
-                if canShowInspector {
+
+            ToolbarItem(placement: .primaryAction) {
+                if canShowInspector && openFileWindowModel.showItem == false {
                     Button {
                         withAnimation { showInspector.toggle() }
                     } label: {
@@ -119,6 +114,7 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
                 }
             }
         }
+        .modifier(OpenFileViewerViewModifier(model: model, module: root.module))
     }
 }
 
@@ -201,7 +197,6 @@ private extension ItemDetailEditorView {
             }
 #else
             editorContentView
-
 #endif
         }
     }
