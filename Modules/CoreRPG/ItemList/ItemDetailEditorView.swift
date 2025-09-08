@@ -5,24 +5,24 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
-    init(root: any ItemRootControllable, model: ItemDataModel, moveDetails: Bool, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
+struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay: View>: View {
+    init(root: any ItemRootControllable, model: ItemDataModel, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder overlay: () -> Overlay = EmptyView.init) {
         self.root = root
         self.model = model
-        self.moveDetails = moveDetails
         self.cacheItemListModel = CacheItemListModel()
         self.header = header()
         self.editor = editor()
         self.inspector = inspector()
+        self.overlay = overlay()
     }
 
     let root: any ItemRootControllable
     let model: ItemDataModel
-    let moveDetails: Bool
     let cacheItemListModel: CacheItemListModel
     let header: Header
     let editor: Editor
     let inspector: Inspector
+    let overlay: Overlay
 
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -45,6 +45,10 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View>: View {
             contentView
         } footer: {
             bottomView
+                .overlay(alignment: .top) {
+                    overlay
+                        .offset(y: -100)
+                }
         } background: {
             Rectangle()
                 .fill(model.module.color)
@@ -135,10 +139,8 @@ private extension ItemDetailEditorView {
         ZStack(alignment: .bottom) {
             header
               
-            if !moveDetails {
-                ItemDetailOverlayView(model: model)
-                    .padding()
-            }
+            ItemDetailOverlayView(model: model)
+                .padding()
         }
         .overlay(alignment: .top) {
             navigationHeader.font(.title)
@@ -207,15 +209,12 @@ private extension ItemDetailEditorView {
     var editorContentView: some View {
         Group {
             if model.specialCategory {
-                ItemDetailOverlayView(model: model, fullHeader: moveDetails, onlyDescription: true)
+                ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
                     .padding()
                 
                 ListRootView(root: root, parentModel: model)
             } else {
                 Form {
-//                    ItemDetailOverlayView(model: model, fullHeader: moveDetails, onlyDescription: true)
-//                        .padding()
-
                     editor
                 }
                 .scrollBounceBehavior(.basedOnSize)
@@ -224,6 +223,9 @@ private extension ItemDetailEditorView {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .opacity(hasFile || model.specialCategory ? 1 : 0)
         .transition(.scale)
+        .safeAreaInset(edge: .bottom) {
+            overlay
+        }
     }
     
     @ViewBuilder

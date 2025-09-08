@@ -11,12 +11,11 @@ struct DetailRootView: View {
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.DetailRootView(selectedId: selectedId, moveDetails: true) {
-            if let model {
-                DiceViewer(model: model, isEditor: false)
-            }
+        CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
             if let model {
+                DiceViewer(model: model, isEditor: false)
+
                 detailEditorView(model: model)
             }
         }

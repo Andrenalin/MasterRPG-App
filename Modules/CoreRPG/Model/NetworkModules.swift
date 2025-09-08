@@ -111,13 +111,13 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     public var color: Color {
         switch self {
         case .adventure: .blue
-        case .audio: .pink
+        case .audio: Color("AudioBackground", bundle: .module)
         case .dice: .purple
         case .editor: .gray
         case .map: Color("MapBackground", bundle: .module)
         case .none: .clear
         case .game: .pink
-        case .pdf: .red
+        case .pdf: Color("PdfBackground", bundle: .module)
         case .photo: .yellow
         case .space: .brown
         case .setting: .mint
@@ -131,13 +131,13 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     public var tint: Color {
         switch self {
         case .adventure: .green
-        case .audio: .red
+        case .audio: Color("AudioTint", bundle: .module)
         case .dice: .green
         case .editor: .green
         case .map: Color("MapTint", bundle: .module)
         case .none: .black
         case .game: .yellow
-        case .pdf: .yellow
+        case .pdf: Color("PdfTint", bundle: .module)
         case .photo: .green
         case .space: .green
         case .setting: .green

@@ -3,20 +3,20 @@
 import SwiftData
 import SwiftUI
 
-public struct DetailRootView<Header: View, Editor: View, Inspector: View>: View {
-    public init(selectedId: UUID?, moveDetails: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init) {
+public struct DetailRootView<Header: View, Editor: View, Inspector: View, Overlay: View>: View {
+    public init(selectedId: UUID?, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder overlay: () -> Overlay = EmptyView.init) {
         self.selectedId = selectedId
-        self.moveDetails = moveDetails
         self.header = header()
         self.editor = editor()
         self.inspector = inspector()
+        self.overlay = overlay()
     }
     
     let selectedId: UUID?
-    let moveDetails: Bool
     let header: Header
     let editor: Editor
     let inspector: Inspector
+    let overlay: Overlay
     
     @Environment(\.modelContext) private var modelContext
     
@@ -33,23 +33,18 @@ public struct DetailRootView<Header: View, Editor: View, Inspector: View>: View 
         let _ = Self._printChanges()
         
         if let selectedModel {
-            ItemDetailEditorView(root: root, model: selectedModel, moveDetails: moveDetails) {
+            ItemDetailEditorView(root: root, model: selectedModel) {
                 header
             } editor: {
                 editor
             } inspector: {
                 inspector
+            } overlay: {
+                overlay
             }
             .environment(selection)
             .environment(openFileWindowModel)
         }
-//        DetailView(model: model)
-//            .navigationDestination(for: DetailRoute.self) { route in
-//                route
-//                    .environment(cacheItemListModel)
-//                    .environment(listDisplayModel)
-//                    .environment(searchModel)
-//            }
     }
     
     var selectedModel: ItemDataModel? {
