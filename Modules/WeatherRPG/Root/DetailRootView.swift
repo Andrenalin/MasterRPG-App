@@ -11,15 +11,13 @@ struct DetailRootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(WeatherRootModel.self) private var root
     
-    @State private var openFileWindowModel = OpenFileWindowModel()
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: WindowIdentifier.pdfViewer.rawValue, canShow: true, route: { DetailRoute.viewer($0) })
     
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
-            if let selectedModel {
-                if let weatherModel {
-                    detailEditorView(model: weatherModel)
-                }
+            if let weatherModel {
+                detailEditorView(model: weatherModel)
             }
         } inspector: {
             root.photoRoot.viewController.linkWindow(root: root.photoRoot, isInspector: true)
@@ -27,6 +25,13 @@ struct DetailRootView: View {
         .navigationDestination(for: SelectionPhotoRoute.self) { route in
             route
                 .environment(root.editController.selectionPhoto)
+        }
+        .overlay {
+            if openFileWindowModel.showItem {
+                root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId) {
+                    openFileWindowModel.showItem = false
+                }
+            }
         }
         .environment(openFileWindowModel)
     }

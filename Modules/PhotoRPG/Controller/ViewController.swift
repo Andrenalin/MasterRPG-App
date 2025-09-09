@@ -30,4 +30,12 @@ public extension ViewController {
             ThumbnailRowPhotoView(cacheController: root.cacheController, model: model)
         }
     }
+    
+    @ViewBuilder @MainActor
+    func inlineViewer(root: PhotoRootModel, for itemId: UUID) -> some View {
+        if let model = root.itemController.modelSync(for: itemId) {
+            GroupedPhotoView(cacheController: root.cacheController, model: model)
+                .environment(root)
+        }
+    }
 }

@@ -42,9 +42,9 @@ struct ViewerRouteDestinationView: View {
     
     let itemId: UUID
 
-    @Environment(PdfRootModel.self) private var root: PdfRootModel
+    @Environment(PdfRootModel.self) private var root
     
     var body: some View {
-        root.viewController.viewPdfInline(root: root, with: itemId, withoutBookmark: false)
+        root.viewController.inlineViewer(root: root, with: itemId, withoutBookmark: false)
     }
 }

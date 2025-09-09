@@ -33,4 +33,19 @@ public extension ViewController {
             .environment(root)
             .environment(root.photoRoot)
     }
+    
+    @MainActor
+    func windowViewer(root: WeatherRootModel, selection: WindowItemSelection) -> some View {
+        let model = root.itemController.modelSync(for: selection.itemId) ?? .newItem
+        return ViewerRootView(model: model)
+            .environment(root)
+    }
+
+    @MainActor
+    func inlineViewer(root: WeatherRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.modelSync(for: id) ?? .newItem
+        return ViewerRootView(model: model, dismissAction: dismissAction)
+            .environment(root)
+    }
+
 }

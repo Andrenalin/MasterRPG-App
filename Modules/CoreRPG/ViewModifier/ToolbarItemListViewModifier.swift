@@ -43,7 +43,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
                     }
                 }
                 
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .confirmationAction) {
                     if modal == true {
                         dismissButton
                     }
@@ -129,7 +129,7 @@ private extension ToolbarItemListViewModifier {
         Button {
             dismiss()
         } label: {
-            Image(systemName: "xmark")
+            Image(systemName: "checkmark")
         }
     }
 

@@ -20,17 +20,15 @@ public extension ViewController {
     }
 
     @MainActor
-    func pdfWindow(root: PdfRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.modelSync(for: selection.itemId) ?? .newItem
-        
+    func windowViewer(root: PdfRootModel, selection: WindowItemSelection) -> some View {
+        let model = root.itemController.modelSync(for: selection.itemId) ?? .newItem        
         return PdfViewerView(model: model, entryId: selection.entryId, withoutBookmark: false)
             .environment(root)
     }
 
     @MainActor
-    func viewPdfInline(root: PdfRootModel, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
+    func inlineViewer(root: PdfRootModel, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.modelSync(for: id) ?? .newItem
-        
         return PdfViewerView(model: model, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
             .environment(root)
     }

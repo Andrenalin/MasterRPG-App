@@ -15,13 +15,13 @@ struct DetailRootView: View {
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
-            if let model = selectedModel {
-                GroupedPhotoView(cacheController: root.cacheController, model: model)
+            if let selectedModel {
+                GroupedPhotoView(cacheController: root.cacheController, model: selectedModel)
             }
         }
         .overlay {
             if openFileWindowModel.showItem {
-                root.viewController.viewPdfInline(root: root, with: openFileWindowModel.itemId, withoutBookmark: false) {
+                root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId, withoutBookmark: false) {
                     openFileWindowModel.showItem = false
                 }
             }

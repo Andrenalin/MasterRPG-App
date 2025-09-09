@@ -7,8 +7,9 @@ import SwiftUI
 public final class OpenFileWindowModel {
     public init() {}
 
-    public init(windowId: String, route: @escaping (UUID) -> any NavigationDestination) {
+    public init(windowId: String, canShow: Bool = false, route: @escaping (UUID) -> any NavigationDestination) {
         self.windowId = windowId
+        self.canShow = canShow
         self.route = route
     }
     
@@ -16,9 +17,14 @@ public final class OpenFileWindowModel {
     public var itemId: UUID = UUID()
     public var entryId: UUID?
     public var url: URL?
+    public var canShow: Bool = false
     
     public var windowId: String? = nil
     public var route: ((UUID) -> any NavigationDestination)?
+    
+    public var enabled: Bool {
+        canShow || url != nil
+    }
 }
 
 struct OpenFileViewerViewModifier: ViewModifier {
@@ -31,7 +37,7 @@ struct OpenFileViewerViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content.toolbar {
             ToolbarItem(placement: secondaryMenuPlacement) {
-                if !model.specialCategory && openFileWindowModel.showItem == false {
+                if !model.specialCategory && openFileWindowModel.showItem == false && openFileWindowModel.enabled {
                     OpenFileWindowView(model: openFileWindowModel, module: module)
                 }
             }
@@ -102,11 +108,6 @@ struct OpenFileWindowView: View {
                     Image(systemName: module.icon)
                 }
             }
-        }
-        .disabled(model.url == nil)
-        .onChange(of: model.url) {
-            guard model.url == nil else { return }
-            withAnimation { model.showItem <=> false }
         }
     }
     

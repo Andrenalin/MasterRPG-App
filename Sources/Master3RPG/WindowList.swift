@@ -12,7 +12,7 @@ struct WindowList: Scene {
     var body: some Scene {
         Group {
             WindowGroup("Pdf Viewer", id: WindowIdentifier.pdfViewer.rawValue, for: WindowItemSelection.self) { $selection in
-                appModel.pdfRoot.viewController.pdfWindow(root: appModel.pdfRoot, selection: selection ?? WindowItemSelection(itemId: UUID()))
+                appModel.pdfRoot.viewController.windowViewer(root: appModel.pdfRoot, selection: selection ?? WindowItemSelection(itemId: UUID()))
                     .modifier(WindowListSetUpViewModifier(model: appModel, module: .pdf))
                     .frame(minWidth: 600, minHeight: 400)
                     .handlesExternalEvents(preferring: [], allowing: [])
