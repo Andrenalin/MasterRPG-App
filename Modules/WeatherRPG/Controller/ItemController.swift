@@ -17,7 +17,7 @@ extension ItemController: ItemControllable {
         } else {
             do {
                 let oldModel = try decoder.decode(WeatherModel.self, from: data)
-                return ConverterController.convert(old: oldModel)
+                return ConverterController.convert(old: oldModel, container: container)
             } catch {
                 print(error)
                 fatalError()

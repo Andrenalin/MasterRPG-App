@@ -49,14 +49,19 @@ public struct ConverterController {
         try? modelContext.save()
     }
     
-    static func convert(old: AdventureRPG.AdventureModel) -> ItemDataCodableModel {
+    static func convert(old: AdventureRPG.AdventureModel, container: ModelContainer) -> ItemDataCodableModel {
+        let linkRegisterController = LinkRegisterController(container: container)
+        
         let entries = old.entries.wrappedValue.enumerated().map { (index, entry) in
-            AdventureEntryDataModel.AdventureEntryDataModelCodable(
+            // Scan and register links in entry name and content
+            let updatedContent = scanAndRegisterLinks(in: entry.content, destinationId: old.id, destinationEntryId: entry.id, destinationModule: .adventure, linkRegisterController: linkRegisterController)
+            
+            return AdventureEntryDataModel.AdventureEntryDataModelCodable(
                 itemId: old.id,
                 entryId: entry.id,
                 index: index,
                 name: entry.name,
-                content: entry.content
+                content: updatedContent
             )
         }
         let model = AdventureDataModel.AdventureDataModelCodable(
@@ -65,6 +70,11 @@ public struct ConverterController {
             entries: entries,
         )
         let externalData = try? JSONEncoder().encode(model)
+        
+        // Register photoId as a link if present
+        if let photoId = old.photoId.wrappedValue {
+            _ = linkRegisterController.register(sourceId: old.id, sourceModule: .adventure, destinationId: photoId, destinationModule: .photo)
+        }
         
         return ItemDataCodableModel(
             id: old.id,
@@ -79,5 +89,19 @@ public struct ConverterController {
             entries: [],
             externalData: externalData
         )
+    }
+    
+    private static func scanAndRegisterLinks(in text: String, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules, linkRegisterController: LinkRegisterController) -> String {
+        let linkReplaceModels = LinkReplaceController.links(for: text)
+        
+        var updatedText = text
+        
+        for link in linkReplaceModels {
+            let linkId = linkRegisterController.register(link: link, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModule: destinationModule)
+            let newLinkFormat = "[\(link.name)](RPG://\(linkId.uuidString))"
+            updatedText = updatedText.replacingOccurrences(of: link.markDown, with: newLinkFormat)
+        }
+        
+        return updatedText
     }
 }

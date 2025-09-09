@@ -13,10 +13,11 @@ struct LinkRegisterController {
 }
 
 extension LinkRegisterController {
-    func register(link: LinkReplaceModel, targetId: UUID, targetEntryId: UUID? = nil, targetModule: NetworkModules) {
-        let model = LinkDataModel(name: link.name, sourceId: link.itemId, sourceEntryId: link.entryId, sourceModule: link.module, destinationId: targetId, destinationEntryId: targetEntryId, destinationModel: targetModule)
+    func register(link: LinkReplaceModel, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> UUID {
+        let model = LinkDataModel(name: link.name, sourceId: link.itemId, sourceEntryId: link.entryId, sourceModule: link.module, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModel: destinationModule)
         container.mainContext.insert(model)
         try? container.mainContext.save()
+        return model.id
     }
         
     func remove(linkId: UUID) {
@@ -29,6 +30,21 @@ extension LinkRegisterController {
             container.mainContext.delete($0)
         }
         try? container.mainContext.save()
+    }
+    
+    func register(sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> UUID {
+        let model = LinkDataModel(
+            name: destinationModule.title,
+            sourceId: sourceId,
+            sourceEntryId: sourceEntryId,
+            sourceModule: sourceModule,
+            destinationId: destinationId,
+            destinationEntryId: destinationEntryId,
+            destinationModel: destinationModule
+        )
+        container.mainContext.insert(model)
+        try? container.mainContext.save()
+        return model.id
     }
     
     func effectedItems(targetId: UUID, targetEntryId: UUID? = nil, targetModule: NetworkModules) -> [EffectedItemModel] {

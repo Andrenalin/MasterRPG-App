@@ -47,7 +47,7 @@ public struct ConverterController {
         try? modelContext.save()
     }
     
-    static func convert(old: WeatherModel) -> ItemDataCodableModel {
+    static func convert(old: WeatherModel, container: ModelContainer) -> ItemDataCodableModel {
         let model = WeatherDataModel.WeatherDataModelCodable(
             itemId: old.id,
             photoId: old.photoId,
@@ -61,6 +61,12 @@ public struct ConverterController {
             lightningForkProbability: old.lightningForkProbability
         )
         let externalData = try? JSONEncoder().encode(model)
+
+        // Register photoId as a link if present
+        if let photoId = old.photoId {
+            let linkRegisterController = LinkRegisterController(container: container)
+            _ = linkRegisterController.register(sourceId: old.id, sourceModule: .weather, destinationId: photoId, destinationModule: .photo)
+        }
 
         return ItemDataCodableModel(
             id: old.id,

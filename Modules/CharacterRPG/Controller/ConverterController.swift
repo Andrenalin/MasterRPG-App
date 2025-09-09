@@ -33,14 +33,30 @@ public struct ConverterController {
         CharacterRPG.CharacterEntryDataModel.ValueType(rawValue: value.rawValue) ?? .text
     }
 
-    static func convert(old: CharacterRPG.ValueModel) -> ItemDataCodableModel {
+    static func convert(old: CharacterRPG.ValueModel, container: ModelContainer) -> ItemDataCodableModel {
+        let linkRegisterController = LinkRegisterController(container: container)
+        
         let entries = old.entries.wrappedValue.enumerated().map { (index, entry) in
-            CharacterEntryDataModel.CharacterEntryDataModelCodable(
+            // Scan and register links in entry name and content
+            let updatedName = scanAndRegisterLinks(in: entry.name, destinationId: old.id, destinationEntryId: entry.id, destinationModule: .value, linkRegisterController: linkRegisterController)
+            let updatedContent = scanAndRegisterLinks(in: entry.value, destinationId: old.id, destinationEntryId: entry.id, destinationModule: .value, linkRegisterController: linkRegisterController)
+            
+            // Register entry dice if present
+            if let diceId = entry.diceId {
+                _ = linkRegisterController.register(sourceId: old.id, sourceEntryId: entry.id, sourceModule: .value, destinationId: diceId, destinationModule: .dice)
+            }
+            
+            // Register entry valueId if present
+            if let valueId = entry.valueId {
+                _ = linkRegisterController.register(sourceId: old.id, sourceEntryId: entry.id, sourceModule: .value, destinationId: valueId, destinationModule: .value)
+            }
+            
+            return CharacterEntryDataModel.CharacterEntryDataModelCodable(
                 itemId: old.id,
                 entryId: entry.id,
                 index: index,
-                name: entry.name,
-                content: entry.value,
+                name: updatedName,
+                content: updatedContent,
                 valueType: entry.type,
                 diceId: entry.diceId,
                 valueId: entry.valueId
@@ -56,6 +72,21 @@ public struct ConverterController {
         )
         let externalData = try? JSONEncoder().encode(model)
         
+        // Register main model photoId if present
+        if let photoId = old.photoId.wrappedValue {
+            _ = linkRegisterController.register(sourceId: old.id, sourceModule: .value, destinationId: photoId, destinationModule: .photo)
+        }
+        
+        // Register photos array
+        old.photos.wrappedValue.forEach { photoId in
+            _ = linkRegisterController.register(sourceId: old.id, sourceModule: .value, destinationId: photoId, destinationModule: .photo)
+        }
+        
+        // Register main model diceId if present (from first entry that has one)
+        if let diceId = entries.first(where: { $0.diceId != nil })?.diceId {
+            _ = linkRegisterController.register(sourceId: old.id, sourceModule: .value, destinationId: diceId, destinationModule: .dice)
+        }
+        
         return ItemDataCodableModel(
             id: old.id,
             module: .value,
@@ -69,5 +100,19 @@ public struct ConverterController {
             entries: [],
             externalData: externalData
         )
+    }
+    
+    private static func scanAndRegisterLinks(in text: String, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules, linkRegisterController: LinkRegisterController) -> String {
+        let linkReplaceModels = LinkReplaceController.links(for: text)
+        
+        var updatedText = text
+        
+        for link in linkReplaceModels {
+            let linkId = linkRegisterController.register(link: link, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModule: destinationModule)
+            let newLinkFormat = "[\(link.name)](RPG://\(linkId.uuidString))"
+            updatedText = updatedText.replacingOccurrences(of: link.markDown, with: newLinkFormat)
+        }
+        
+        return updatedText
     }
 }
