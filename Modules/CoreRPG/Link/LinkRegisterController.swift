@@ -14,6 +14,22 @@ struct LinkRegisterController {
 
 extension LinkRegisterController {
     func register(link: LinkReplaceModel, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> UUID {
+        // Check if link already exists
+        let predicate = #Predicate<LinkDataModel> {
+            $0.sourceId == link.itemId && 
+            $0.sourceEntryId == link.entryId && 
+            $0.sourceModule == link.module && 
+            $0.destinationId == destinationId && 
+            $0.destinationEntryId == destinationEntryId && 
+            $0.destinationModule == destinationModule
+        }
+        let fetchDescriptor = FetchDescriptor<LinkDataModel>(predicate: predicate)
+        
+        if let existingLink = try? container.mainContext.fetch(fetchDescriptor).first {
+            return existingLink.id
+        }
+        
+        // Create new link if it doesn't exist
         let model = LinkDataModel(name: link.name, sourceId: link.itemId, sourceEntryId: link.entryId, sourceModule: link.module, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModel: destinationModule)
         container.mainContext.insert(model)
         try? container.mainContext.save()
@@ -33,6 +49,22 @@ extension LinkRegisterController {
     }
     
     func register(sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> UUID {
+        // Check if link already exists
+        let predicate = #Predicate<LinkDataModel> {
+            $0.sourceId == sourceId && 
+            $0.sourceEntryId == sourceEntryId && 
+            $0.sourceModule == sourceModule && 
+            $0.destinationId == destinationId && 
+            $0.destinationEntryId == destinationEntryId && 
+            $0.destinationModule == destinationModule
+        }
+        let fetchDescriptor = FetchDescriptor<LinkDataModel>(predicate: predicate)
+        
+        if let existingLink = try? container.mainContext.fetch(fetchDescriptor).first {
+            return existingLink.id
+        }
+        
+        // Create new link if it doesn't exist
         let model = LinkDataModel(
             name: destinationModule.title,
             sourceId: sourceId,
@@ -45,6 +77,25 @@ extension LinkRegisterController {
         container.mainContext.insert(model)
         try? container.mainContext.save()
         return model.id
+    }
+    
+    func register(links: [LinkReplaceModel], destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> [UUID] {
+        var registeredIds: [UUID] = []
+        var seenLinks: Set<String> = []
+        
+        for link in links {
+            // Create a unique key for this link (excluding linkNumber for deduplication)
+            let linkKey = "\(link.itemId)|\(link.entryId?.uuidString ?? "nil")|\(link.module.rawValue)|\(destinationId)|\(destinationEntryId?.uuidString ?? "nil")|\(destinationModule.rawValue)"
+            
+            // Only register if we haven't seen this exact link in this batch
+            if !seenLinks.contains(linkKey) {
+                seenLinks.insert(linkKey)
+                let linkId = register(link: link, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModule: destinationModule)
+                registeredIds.append(linkId)
+            }
+        }
+        
+        return registeredIds
     }
     
     func effectedItems(targetId: UUID, targetEntryId: UUID? = nil, targetModule: NetworkModules) -> [EffectedItemModel] {
