@@ -4,7 +4,7 @@ import SwiftUI
 
 @Observable
 public final class TableSheetModel {
-    public init(linkController: LinkRegisterController, sheetModel: SheetModel, searchText: String = "") {
+    public init(linkController: LinkRootController, sheetModel: SheetModel, searchText: String = "") {
         self.linkController = linkController
         self.sheetModel = sheetModel
         self.searchText = searchText
@@ -15,7 +15,7 @@ public final class TableSheetModel {
     var searchText: String = ""
 
     @ObservationIgnored
-    var linkController: LinkRegisterController
+    var linkController: LinkRootController
 
     @ObservationIgnored
     var sheets: [UUID: TableSheetModel] = [:]

@@ -62,7 +62,7 @@ public struct ConverterController {
 
         // Register photoId as a link if present
         if let photoId = old.photoId {
-            let linkController = LinkRegisterController(itemController: itemController, module: .weather)
+            let linkController = LinkRootController(itemController: itemController, module: .weather)
             _ = linkController.register(sourceId: old.id, sourceModule: .weather, destinationId: photoId, destinationModule: .photo)
         }
 

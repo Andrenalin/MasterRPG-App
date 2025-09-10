@@ -7,7 +7,7 @@ struct NameItemRow: View {
     let name: String
     let cacheItemListModel: CacheItemListModel
     
-    @Environment(LinkRegisterController.self) private var linkController
+    @Environment(LinkRootController.self) private var linkController
     @Environment(SearchModel.self) private var searchModel
 
     var body: some View {

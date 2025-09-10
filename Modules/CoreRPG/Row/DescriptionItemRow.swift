@@ -8,7 +8,7 @@ struct DescriptionItemRow: View {
     let cacheItemListModel: CacheItemListModel
 
     @Environment(SearchModel.self) private var searchModel
-    @Environment(LinkRegisterController.self) private var linkController
+    @Environment(LinkRootController.self) private var linkController
 
     var body: some View {    
         Group {

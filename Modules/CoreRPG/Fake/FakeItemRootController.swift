@@ -109,14 +109,14 @@ public final class FakeItemRootController: ItemRootControllable {
     public var rootController: ItemRootController
 }
 
-extension LinkRegisterController {
-    static var fake: LinkRegisterController = {
+extension LinkRootController {
+    static var fake: LinkRootController = {
         let modelContainer = try! ModelContainer(for: ItemDataModel.self, LinkDataModel.self, TagDataModel.self, configurations: .init(isStoredInMemoryOnly: true))
         let fakeRoot = FakeItemRootController(
             modelContext: modelContainer.mainContext,
             module: .adventure
         )
-        return LinkRegisterController(
+        return LinkRootController(
             container: modelContainer,
             adventureRoot: fakeRoot,
             audioRoot: fakeRoot,

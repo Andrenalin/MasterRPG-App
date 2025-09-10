@@ -3,95 +3,24 @@
 import Foundation
 import SwiftData
 
-
-@MainActor @Observable
-public final class LinkRegisterController: LinkControllable {
-    public init(
-        itemController: any ItemControllable,
-        module: NetworkModules
-    ) {
-        self.container = itemController.container
-        let fakeRoot = FakeItemRootController(itemController: itemController, module: module)
-        self.adventureRoot = fakeRoot
-        self.audioRoot = fakeRoot
-        self.characterRoot = fakeRoot
-        self.diceRoot = fakeRoot
-        self.mapRoot = fakeRoot
-        self.pdfRoot = fakeRoot
-        self.photoRoot = fakeRoot
-        self.spaceRoot = fakeRoot
-        self.tableRoot = fakeRoot
-        self.weatherRoot = fakeRoot
-    }
-
-    public init(
-        container: ModelContainer,
-        adventureRoot: any ItemRootControllable,
-        audioRoot: any ItemRootControllable,
-        characterRoot: any ItemRootControllable,
-        diceRoot: any ItemRootControllable,
-        mapRoot: any ItemRootControllable,
-        pdfRoot: any ItemRootControllable,
-        photoRoot: any ItemRootControllable,
-        spaceRoot: any ItemRootControllable,
-        tableRoot: any ItemRootControllable,
-        weatherRoot: any ItemRootControllable
-    ) {
+@MainActor
+public struct LinkRegisterController {
+    public  init(container: ModelContainer) {
         self.container = container
-        self.adventureRoot = adventureRoot
-        self.audioRoot = audioRoot
-        self.characterRoot = characterRoot
-        self.diceRoot = diceRoot
-        self.mapRoot = mapRoot
-        self.pdfRoot = pdfRoot
-        self.photoRoot = photoRoot
-        self.spaceRoot = spaceRoot
-        self.tableRoot = tableRoot
-        self.weatherRoot = weatherRoot
     }
-
+    
     let container: ModelContainer
-    public let module: NetworkModules = .none
-    
-    @ObservationIgnored let adventureRoot: ItemRootControllable
-    @ObservationIgnored let audioRoot: ItemRootControllable
-    @ObservationIgnored let characterRoot: ItemRootControllable
-    @ObservationIgnored let diceRoot: ItemRootControllable
-    @ObservationIgnored let mapRoot: ItemRootControllable
-    @ObservationIgnored let pdfRoot: ItemRootControllable
-    @ObservationIgnored let photoRoot: ItemRootControllable
-    @ObservationIgnored let spaceRoot: ItemRootControllable
-    @ObservationIgnored let tableRoot: ItemRootControllable
-    @ObservationIgnored let weatherRoot: ItemRootControllable
-}
-
-extension LinkRegisterController {
-    public var itemControllable: ItemControllable {
-        adventureRoot.itemControllable
-    }
-    
-    @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
-        text
-    }
-    
-    @MainActor public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
-        ""
-    }
-    
-    @MainActor public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
-        nil
-    }
 }
 
 public extension LinkRegisterController {
-    func register(link: LinkReplaceModel, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> UUID {
+    func register(link: LinkReplaceModel, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> LinkDataModel {
         let model = LinkDataModel(name: link.name, sourceId: link.itemId, sourceEntryId: link.entryId, sourceModule: link.module, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModel: destinationModule)
         container.mainContext.insert(model)
         try? container.mainContext.save()
-        return model.id
+        return model
     }
 
-    func register(name: String = "", sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> UUID {
+    func register(name: String = "", sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> LinkDataModel {
         let model = LinkDataModel(
             name: name,
             sourceId: sourceId,
@@ -103,7 +32,7 @@ public extension LinkRegisterController {
         )
         container.mainContext.insert(model)
         try? container.mainContext.save()
-        return model.id
+        return model
     }
     
     func remove(linkId: UUID) {
@@ -185,4 +114,3 @@ public extension LinkRegisterController {
         "[\(link.name)](\(URL.appScheme)://\(link.id))"
     }
 }
-

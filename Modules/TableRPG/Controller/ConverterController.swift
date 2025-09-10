@@ -48,7 +48,7 @@ public struct ConverterController {
         
         // Register diceId as a link if present
         if let diceId = old.diceId.wrappedValue {
-            let linkRegisterController = LinkRegisterController(itemController: itemController, module: .table)
+            let linkRegisterController = LinkRegisterController(container: itemController.container)
             _ = linkRegisterController.register(sourceId: old.id, sourceModule: .table, destinationId: diceId, destinationModule: .dice)
         }
         
@@ -68,15 +68,15 @@ public struct ConverterController {
     }
     
     @MainActor
-    static func scanAndRegisterLinks(in text: String, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: CoreRPG.NetworkModules, itemController: ItemController) -> String {
-        let linkReplaceModels = CoreRPG.LinkReplaceController.links(for: text)
-        let linkRegisterController = CoreRPG.LinkRegisterController(itemController: itemController, module: .table)
+    static func scanAndRegisterLinks(in text: String, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules, itemController: ItemController) -> String {
+        let linkReplaceModels = LinkReplaceController.links(for: text)
+        let linkRegisterController = LinkRegisterController(container: itemController.container)
         
         var updatedText = text
         
         for link in linkReplaceModels {
-            let linkId = linkRegisterController.register(link: link, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModule: destinationModule)
-            let newLinkFormat = "[\(link.name)](RPG://\(linkId.uuidString))"
+            let linkModel = linkRegisterController.register(link: link, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModule: destinationModule)
+            let newLinkFormat = linkRegisterController.markDown(for: linkModel)
             updatedText = updatedText.replacingOccurrences(of: link.markDown, with: newLinkFormat)
         }
         

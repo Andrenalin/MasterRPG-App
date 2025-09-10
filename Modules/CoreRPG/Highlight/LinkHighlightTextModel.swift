@@ -5,7 +5,7 @@ import SwiftUI
 
 @MainActor @Observable
 public final class LinkHighlightTextModel {
-    public init(linkController: LinkRegisterController, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules) -> Void)? = nil, shareResult: ShareValueResult? = nil, editAction: ((ItemRowModel) -> Bool)? = nil) {
+    public init(linkController: LinkRootController, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules) -> Void)? = nil, shareResult: ShareValueResult? = nil, editAction: ((ItemRowModel) -> Bool)? = nil) {
         self.linkController = linkController
         self.text = text
         self.highlightedText = highlightedText
@@ -16,7 +16,7 @@ public final class LinkHighlightTextModel {
     }
 
     @ObservationIgnored
-    let linkController: LinkRegisterController
+    let linkController: LinkRootController
     @ObservationIgnored
     let toggler: ((UUID, NetworkModules) -> Void)?
     @ObservationIgnored

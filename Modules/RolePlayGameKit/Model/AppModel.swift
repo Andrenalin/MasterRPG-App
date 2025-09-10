@@ -51,7 +51,7 @@ public final class AppModel: Sendable {
     public let navigator: Navigator
 
     // Root Controllers
-    public let linkRootController: LinkRegisterController
+    public let linkRootController: LinkRootController
     
     @MainActor
     public init() {
@@ -86,7 +86,7 @@ public final class AppModel: Sendable {
         
         self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.6", executionDelay: 0.4, verbosity: .info))
         
-        self.linkRootController = LinkRegisterController(
+        self.linkRootController = LinkRootController(
             container: modelContainer,
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,

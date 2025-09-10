@@ -8,7 +8,7 @@ struct TableSheet: View {
     let showTopImage: Bool
     let dismissAction: (() -> Void)?
 
-    @Environment(LinkRegisterController.self) private var linkController
+    @Environment(LinkRootController.self) private var linkController
     @Environment(TableRootModel.self) private var root
 
     @State private var sheetModel: SheetModel = SheetModel(id: UUID())

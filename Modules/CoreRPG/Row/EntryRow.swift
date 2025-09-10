@@ -15,7 +15,7 @@ public struct EntryRow: View {
     let content: String
     let cacheItemListModel: CacheItemListModel
     
-    @Environment(LinkRegisterController.self) private var linkController
+    @Environment(LinkRootController.self) private var linkController
     @Environment(SearchModel.self) private var searchModel
 
     public var body: some View {

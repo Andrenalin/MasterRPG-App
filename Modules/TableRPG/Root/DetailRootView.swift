@@ -13,7 +13,7 @@ struct DetailRootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.navigator) private var navigator
     
-    @Environment(LinkRegisterController.self) private var linkController
+    @Environment(LinkRootController.self) private var linkController
     @Environment(TableRootModel.self) private var root
     
     @State private var openFileWindowModel = OpenFileWindowModel()
