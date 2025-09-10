@@ -146,7 +146,7 @@ public extension LinkRegisterController {
     func links(in text: String) -> [LinkReplaceModel] {
         // Extract UUIDs using the ReferenceScanner's UUID-only parser.
         let uuidLinks = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
-        let ids = uuidLinks.map { $0.table }
+        let ids = uuidLinks.map { $0.linkId }
         guard !ids.isEmpty else { return [] }
         
         // Build an OR predicate over all IDs.
@@ -164,15 +164,25 @@ public extension LinkRegisterController {
         let fetch = FetchDescriptor<LinkDataModel>(predicate: combined)
         let linkModels = (try? container.mainContext.fetch(fetch)) ?? []
         return linkModels.map {
-            let range = text.range(of: text) ?? text.startIndex..<text.endIndex
             let id = $0.id
-            let command = uuidLinks.first(where: { $0.table == id })?.command
-            return LinkReplaceModel(name: $0.name, module: $0.sourceModule, linkNumber: 0, itemId: $0.sourceId, entryId: $0.sourceEntryId, markDown: markDown(for: $0), command: command, range: range)
+            let markDown: String
+            let range: Range<String.Index>
+            let command: String?
+            if let link = uuidLinks.first(where: { $0.linkId == id }) {
+                markDown = link.markDown(for: URL.appScheme)
+                range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
+                command = link.command
+            } else {
+                markDown = self.markDown(for: $0)
+                range = text.startIndex..<text.endIndex
+                command = nil
+            }
+            return LinkReplaceModel(name: $0.name, module: $0.sourceModule, linkNumber: 0, itemId: $0.sourceId, entryId: $0.sourceEntryId, markDown: markDown, command: command, range: range)
         }
     }
     
     func markDown(for link: LinkDataModel) -> String {
-        "[\(link.name)](\(URL.appScheme)://\(link.id)"
+        "[\(link.name)](\(URL.appScheme)://\(link.id))"
     }
 }
 

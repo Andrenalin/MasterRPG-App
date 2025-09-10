@@ -2,6 +2,27 @@
 
 import SwiftUI
 
+public struct ReferenceShortLink: Equatable, Hashable {
+    public let name: String
+    public let linkId: UUID
+    public let command: String?
+
+    public init(name: String, linkId: UUID, command: String? = nil) {
+        self.name = name
+        self.linkId = linkId
+        self.command = command
+    }
+
+    public func url(for scheme: String) -> String {
+        "(\(scheme)://\(linkId.uuidString)\(command != nil ? "/\(command!)" : ""))"
+    }
+
+    public func markDown(for scheme: String) -> String {
+        "[\(name)]\(url(for: scheme))"
+    }
+}
+
+
 public struct ReferenceTableLink: Equatable, Hashable {
     public let name: String
     public let module: String
