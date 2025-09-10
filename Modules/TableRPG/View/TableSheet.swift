@@ -8,12 +8,13 @@ struct TableSheet: View {
     let showTopImage: Bool
     let dismissAction: (() -> Void)?
 
+    @Environment(LinkRegisterController.self) private var linkController
     @Environment(TableRootModel.self) private var root
 
     @State private var sheetModel: SheetModel = SheetModel(id: UUID())
 
     var body: some View {
-        TableRootSheet(linkControllable: root.linkControllable, model: sheetModel, showImage: showTopImage, dismissAction: dismissAction)
+        TableRootSheet(linkController: linkController, model: sheetModel, showImage: showTopImage, dismissAction: dismissAction)
             .onChange(of: model, initial: true) {
                 resetModels()
             }

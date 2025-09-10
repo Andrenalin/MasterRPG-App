@@ -4,8 +4,8 @@ import SwiftUI
 
 @Observable
 public final class TableSheetModel {
-    public init(linkControllable: any LinkControllable, sheetModel: SheetModel, searchText: String = "") {
-        self.linkControllable = linkControllable
+    public init(linkController: LinkRegisterController, sheetModel: SheetModel, searchText: String = "") {
+        self.linkController = linkController
         self.sheetModel = sheetModel
         self.searchText = searchText
         id = UUID()
@@ -15,7 +15,7 @@ public final class TableSheetModel {
     var searchText: String = ""
 
     @ObservationIgnored
-    var linkControllable: any LinkControllable
+    var linkController: LinkRegisterController
 
     @ObservationIgnored
     var sheets: [UUID: TableSheetModel] = [:]
@@ -31,7 +31,7 @@ public final class TableSheetModel {
     @MainActor
     func linkTextModel(for id: LinkHighlightTextModelId, text: String) -> LinkHighlightTextModel {
         guard let model = linkTextModel[id] else {
-            let model = LinkHighlightTextModel(linkControllable: linkControllable, text: text, highlightedText: searchText) {
+            let model = LinkHighlightTextModel(linkController: linkController, text: text, highlightedText: searchText) {
                 self.toggle(id: id, itemId: $0, module: $1)
             }
             linkTextModel[id] = model
@@ -64,7 +64,7 @@ public final class TableSheetModel {
     func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules) {
         switch id {
         case .description:
-            let sheets = linkControllable.toggleSheet(itemId: itemId, level: 0, module: module)
+            let sheets = linkController.toggleSheet(itemId: itemId, level: 0, module: module)
             sheetModel.groups.insert(contentsOf: sheets?.groups ?? [], at: 0)
         case .group(let uuid):
             guard let groupIndex = sheetModel.groups.firstIndex(where: { $0.id == uuid }) else { return }
@@ -72,8 +72,8 @@ public final class TableSheetModel {
             if group.sheetIds.contains(itemId) {
                 group.sheetIds.removeAll(where: { $0 == itemId })
             } else {
-                guard let sheet = linkControllable.toggleSheet(itemId: itemId, level: group.level + 1, module: module) else { return }
-                let tableSheetModel = TableSheetModel(linkControllable: linkControllable, sheetModel: sheet, searchText: searchText)
+                guard let sheet = linkController.toggleSheet(itemId: itemId, level: group.level + 1, module: module) else { return }
+                let tableSheetModel = TableSheetModel(linkController: linkController, sheetModel: sheet, searchText: searchText)
                 tableSheetModel.id = itemId
                 sheets[tableSheetModel.id] = tableSheetModel
                 group.sheetIds.append(tableSheetModel.id)

@@ -5,6 +5,47 @@ import SwiftData
 
 @Observable
 public final class FakeItemRootController: ItemRootControllable {
+    public init(itemController: any ItemControllable, module: NetworkModules) {
+        modelContext = itemController.container.mainContext
+        self.module = module
+
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.music, .sound])
+        self.searchModel = searchModel
+
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
+
+        self.cacheControllable = nil
+        self.itemControllable = itemController
+
+        let editController = FakeEditController(itemControllable: itemController, fileUrlDataController: nil)
+        self.editControllable = editController
+        let exportController = FakeExportController(itemControllable: itemController)
+        self.exportControllable = exportController
+        let listController = FakeListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
+        self.listControllable = listController
+        let listLinkController = FakeListController(listModel: ListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel)
+        self.listLinkControllable = listController
+        self.viewControllable = FakeViewController(goupViewType: .item, thumbnailRowViewType: .none)
+        
+        let rootController = ItemRootController(
+            module: module,
+            listDisplayModel: listDisplayModel,
+            searchModel: searchModel,
+            itemSelectionModel: itemSelectionModel,
+            cacheControllable: nil,
+            editControllable: editController,
+            exportControllable: exportController,
+            itemControllable: itemController,
+            listControllable: listController,
+            listLinkControllable: listLinkController,
+            viewControllable: viewControllable
+        )
+        self.rootController = rootController
+    }
+    
     public init(modelContext: ModelContext, module: NetworkModules) {
         self.modelContext = modelContext
         
@@ -66,4 +107,27 @@ public final class FakeItemRootController: ItemRootControllable {
     public let viewControllable: any ViewControllable
     
     public var rootController: ItemRootController
+}
+
+extension LinkRegisterController {
+    static var fake: LinkRegisterController = {
+        let modelContainer = try! ModelContainer(for: ItemDataModel.self, LinkDataModel.self, TagDataModel.self, configurations: .init(isStoredInMemoryOnly: true))
+        let fakeRoot = FakeItemRootController(
+            modelContext: modelContainer.mainContext,
+            module: .adventure
+        )
+        return LinkRegisterController(
+            container: modelContainer,
+            adventureRoot: fakeRoot,
+            audioRoot: fakeRoot,
+            characterRoot: fakeRoot,
+            diceRoot: fakeRoot,
+            mapRoot: fakeRoot,
+            pdfRoot: fakeRoot,
+            photoRoot: fakeRoot,
+            spaceRoot: fakeRoot,
+            tableRoot: fakeRoot,
+            weatherRoot: fakeRoot
+        )
+    }()
 }

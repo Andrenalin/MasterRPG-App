@@ -8,6 +8,7 @@ struct DescriptionItemRow: View {
     let cacheItemListModel: CacheItemListModel
 
     @Environment(SearchModel.self) private var searchModel
+    @Environment(LinkRegisterController.self) private var linkController
 
     var body: some View {    
         Group {
@@ -20,7 +21,7 @@ struct DescriptionItemRow: View {
 
     private var linkTextModel: LinkHighlightTextModel {
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .description, itemId: itemId) else {
-            let model = LinkHighlightTextModel(text: description.markDownText(), highlightedText: searchModel.searchText)
+            let model = LinkHighlightTextModel(linkController: linkController, text: description.markDownText(), highlightedText: searchModel.searchText)
             cacheItemListModel.setItemLink(cacheType: .description, itemId: itemId, linkModel: model)
             return model
         }

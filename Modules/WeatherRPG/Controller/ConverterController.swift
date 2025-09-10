@@ -47,7 +47,7 @@ public struct ConverterController {
         try? modelContext.save()
     }
     
-    static func convert(old: WeatherModel, container: ModelContainer) -> ItemDataCodableModel {
+    @MainActor static func convert(old: WeatherModel, itemController: ItemController) -> ItemDataCodableModel {
         let model = WeatherDataModel.WeatherDataModelCodable(
             itemId: old.id,
             photoId: old.photoId,
@@ -64,8 +64,8 @@ public struct ConverterController {
 
         // Register photoId as a link if present
         if let photoId = old.photoId {
-            let linkRegisterController = LinkRegisterController(container: container)
-            _ = linkRegisterController.register(sourceId: old.id, sourceModule: .weather, destinationId: photoId, destinationModule: .photo)
+            let linkController = LinkRegisterController(itemController: itemController, module: .weather)
+            _ = linkController.register(sourceId: old.id, sourceModule: .weather, destinationId: photoId, destinationModule: .photo)
         }
 
         return ItemDataCodableModel(

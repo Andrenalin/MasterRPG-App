@@ -19,7 +19,7 @@ extension ItemController: ItemControllable {
         } else {
             do {
                 let oldModel = try decoder.decode(AdventureModel.self, from: data)
-                return ConverterController.convert(old: oldModel, container: container)
+                return ConverterController.convert(old: oldModel, itemController: self)
             } catch {
                 print(error)
                 fatalError()

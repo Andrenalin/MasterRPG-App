@@ -15,6 +15,7 @@ public struct EntryRow: View {
     let content: String
     let cacheItemListModel: CacheItemListModel
     
+    @Environment(LinkRegisterController.self) private var linkController
     @Environment(SearchModel.self) private var searchModel
 
     public var body: some View {
@@ -25,7 +26,7 @@ public struct EntryRow: View {
     private var linkTextModel: LinkHighlightTextModel {
         let nameText = name.isEmpty ? content : "\(name.markDownText()): \(content)"
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entryId) else {
-            let model = LinkHighlightTextModel(text: nameText, highlightedText: searchModel.searchText)
+            let model = LinkHighlightTextModel(linkController: linkController, text: nameText, highlightedText: searchModel.searchText)
             cacheItemListModel.setItemLink(cacheType: .row, itemId: entryId, linkModel: model)
             return model
         }

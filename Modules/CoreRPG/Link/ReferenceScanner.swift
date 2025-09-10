@@ -16,6 +16,24 @@ public enum ReferenceScanner {
         let tableEntries = parseUrlsEntryWithCommand(for: scheme, in: text) + parseUrlsEntry(for: scheme, in: text)
         return AllReferenceLinks(tables: tables, tableEntries: tableEntries)
     }
+
+    // [name](SCHEME://UUID)
+    public static func parseUrlsUuid(for scheme: String, in content: String) -> [ReferenceTableLink] {
+        var links: [ReferenceTableLink] = []
+        let pattern = "\\[(?<Name>\(namePattern))\\]\\(\(scheme):\\/\\/(?<Id>\(uuidPattern))\\/(?<Command>\(commandPattern))\\)"
+        let results = RegularExpressionParser.parse(content, with: pattern, extract: ["Name", "Id", "Command"])
+        for i in 0 ..< (results.count / 3) {
+            let name = results[i * 3]
+            let idString = results[i * 3 + 1]
+            let command = results[i * 3 + 2]
+            if let id = UUID(uuidString: idString) {
+                links.append(ReferenceTableLink(name: name, module: "", linkNumber: "", table: id, command: command))
+            } else {
+                Logger.linkController.error("ReferenceScanner Parse error UUID nil for id:\(idString). Link will be ignored")
+            }
+        }
+        return links
+    }
 }
 
 private extension ReferenceScanner {
@@ -99,3 +117,4 @@ private extension ReferenceScanner {
         return links
     }
 }
+

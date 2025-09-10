@@ -29,10 +29,11 @@ public struct ConverterController {
         try? modelContext.save()
     }
     
-    static func convert(old: TableModel, container: ModelContainer) -> ItemDataCodableModel {
+    @MainActor
+    static func convert(old: TableModel, itemController: ItemController) -> ItemDataCodableModel {
         let entries = old.entries.wrappedValue.enumerated().map { (index, entry) in
-            let updatedContent = scanAndRegisterLinks(in: entry.content, destinationId: old.id, destinationEntryId: entry.id, destinationModule: .table, container: container)
-            TableEntryDataModel.TableEntryDataModelCodable(
+            let updatedContent = scanAndRegisterLinks(in: entry.content, destinationId: old.id, destinationEntryId: entry.id, destinationModule: CoreRPG.NetworkModules.table, itemController: itemController)
+            return TableEntryDataModel.TableEntryDataModelCodable(
                 itemId: old.id,
                 entryId: entry.id,
                 index: index,
@@ -49,7 +50,7 @@ public struct ConverterController {
         
         // Register diceId as a link if present
         if let diceId = old.diceId.wrappedValue {
-            let linkRegisterController = LinkRegisterController(container: container)
+            let linkRegisterController = LinkRegisterController(itemController: itemController, module: .table)
             _ = linkRegisterController.register(sourceId: old.id, sourceModule: .table, destinationId: diceId, destinationModule: .dice)
         }
         
@@ -68,9 +69,10 @@ public struct ConverterController {
         )
     }
     
-    static func scanAndRegisterLinks(in text: String, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules, container: ModelContainer) -> String {
-        let linkReplaceModels = LinkReplaceController.links(for: text)
-        let linkRegisterController = LinkRegisterController(container: container)
+    @MainActor
+    static func scanAndRegisterLinks(in text: String, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: CoreRPG.NetworkModules, itemController: ItemController) -> String {
+        let linkReplaceModels = CoreRPG.LinkReplaceController.links(for: text)
+        let linkRegisterController = CoreRPG.LinkRegisterController(itemController: itemController, module: .table)
         
         var updatedText = text
         

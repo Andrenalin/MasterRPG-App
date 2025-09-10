@@ -49,8 +49,9 @@ public struct ConverterController {
         try? modelContext.save()
     }
     
-    static func convert(old: AdventureRPG.AdventureModel, container: ModelContainer) -> ItemDataCodableModel {
-        let linkRegisterController = LinkRegisterController(container: container)
+    @MainActor
+    static func convert(old: AdventureRPG.AdventureModel, itemController: ItemController) -> ItemDataCodableModel {
+        let linkRegisterController = LinkRegisterController(itemController: itemController, module: .adventure)
         
         let entries = old.entries.wrappedValue.enumerated().map { (index, entry) in
             // Scan and register links in entry name and content
@@ -91,8 +92,9 @@ public struct ConverterController {
         )
     }
     
-    private static func scanAndRegisterLinks(in text: String, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules, linkRegisterController: LinkRegisterController) -> String {
-        let linkReplaceModels = LinkReplaceController.links(for: text)
+    @MainActor
+    private static func scanAndRegisterLinks(in text: String, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: CoreRPG.NetworkModules, linkRegisterController: LinkRegisterController) -> String {
+        let linkReplaceModels = CoreRPG.LinkReplaceController.links(for: text)
         
         var updatedText = text
         

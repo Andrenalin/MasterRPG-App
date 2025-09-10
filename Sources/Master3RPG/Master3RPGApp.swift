@@ -48,6 +48,7 @@ struct Master3RPGApp: App {
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
                 .toolbar(removing: .title)
 #endif
+                .environment(appModel.linkRootController)
                 .environment(appModel)
                 .modifier(UserSettingsViewModifier(appModel: appModel))
                 .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in

@@ -5,8 +5,8 @@ import SwiftUI
 
 @MainActor @Observable
 public final class LinkHighlightTextModel {
-    public init(linkControllable: LinkControllable? = nil, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules) -> Void)? = nil, shareResult: ShareValueResult? = nil, editAction: ((ItemRowModel) -> Bool)? = nil) {
-        self.linkControllable = linkControllable
+    public init(linkController: LinkRegisterController, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules) -> Void)? = nil, shareResult: ShareValueResult? = nil, editAction: ((ItemRowModel) -> Bool)? = nil) {
+        self.linkController = linkController
         self.text = text
         self.highlightedText = highlightedText
         self.linkLocations = LinkHighLightLocations()
@@ -16,7 +16,7 @@ public final class LinkHighlightTextModel {
     }
 
     @ObservationIgnored
-    let linkControllable: (any LinkControllable)?
+    let linkController: LinkRegisterController
     @ObservationIgnored
     let toggler: ((UUID, NetworkModules) -> Void)?
     @ObservationIgnored
@@ -56,25 +56,23 @@ public final class LinkHighlightTextModel {
     }
 
     func handle(link: LinkReplaceModel) {
-        guard let linkControllable else { return }
-        let searchUrl = link.markDown.split(separator: "]").last!.trimmingCharacters(in: CharacterSet(charactersIn: "()"))
-        guard let url = URL(string: searchUrl) else { return }
-
-        var repariedText = text
-        _ = LinkReplaceController.linksRepair(for: &repariedText)
-        
-        let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: toggler, editAction: editAction)
-
-        reset(text: updatedText)
+//        let searchUrl = link.markDown.split(separator: "]").last!.trimmingCharacters(in: CharacterSet(charactersIn: "()"))
+//        guard let url = URL(string: searchUrl) else { return }
+//
+//        var repariedText = text
+//        _ = LinkReplaceController.linksRepair(for: &repariedText)
+//        
+//        let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: toggler, editAction: editAction)
+//
+//        reset(text: updatedText)
     }
 }
 
 extension LinkHighlightTextModel {
     var displayText: [HighlightedTextComponent] {
         var boldRange: Range<String.Index>? = nil
-        var repairedText = text
-        let links = LinkReplaceController.linksRepair(for: &repairedText)
-        return components(for: repairedText, range: repairedText.startIndex..<repairedText.endIndex, links: links, boldRange: &boldRange)
+        let links = linkController.links(in: text)
+        return components(for: text, range: text.startIndex..<text.endIndex, links: links, boldRange: &boldRange)
     }
     
     func components(for text: String, range: Range<String.Index>, links: [LinkReplaceModel], boldRange: inout Range<String.Index>?, isBold: Bool = false, deep: Int = 0) -> [HighlightedTextComponent] {

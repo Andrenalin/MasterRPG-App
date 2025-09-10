@@ -92,7 +92,7 @@ private extension TableSheetView {
 #Preview {
     TableSheetView(
         model: TableSheetModel(
-            linkControllable: FakeLinkController.fake,
+            linkController: .fake,
             sheetModel: SheetModel(
                 id: UUID(),
                 name: "Hallo",

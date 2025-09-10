@@ -100,7 +100,7 @@ public struct DescriptionLinkEditor: View {
     public init() {}
     
     @State private var content = EditableContentText(content: ContentText(content: AttributedString("Example ohne Example"), links: []))
-    @State private var model: LinkHighlightTextModel = LinkHighlightTextModel(text: "Example ohne Example")
+    @State private var model: LinkHighlightTextModel = LinkHighlightTextModel(linkController: .fake, text: "Example ohne Example")
     
     public var body: some View {
         VStack {

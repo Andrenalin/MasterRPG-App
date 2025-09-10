@@ -1,72 +1,99 @@
-// @copyright André Trettin
+// © André Trettin
 
 import Foundation
 import SwiftData
 
-@MainActor
-struct LinkRegisterController {
-    let container: ModelContainer
-    
-    init(container: ModelContainer) {
-        self.container = container
+
+@MainActor @Observable
+public final class LinkRegisterController: LinkControllable {
+    public init(
+        itemController: any ItemControllable,
+        module: NetworkModules
+    ) {
+        self.container = itemController.container
+        let fakeRoot = FakeItemRootController(itemController: itemController, module: module)
+        self.adventureRoot = fakeRoot
+        self.audioRoot = fakeRoot
+        self.characterRoot = fakeRoot
+        self.diceRoot = fakeRoot
+        self.mapRoot = fakeRoot
+        self.pdfRoot = fakeRoot
+        self.photoRoot = fakeRoot
+        self.spaceRoot = fakeRoot
+        self.tableRoot = fakeRoot
+        self.weatherRoot = fakeRoot
     }
+
+    public init(
+        container: ModelContainer,
+        adventureRoot: any ItemRootControllable,
+        audioRoot: any ItemRootControllable,
+        characterRoot: any ItemRootControllable,
+        diceRoot: any ItemRootControllable,
+        mapRoot: any ItemRootControllable,
+        pdfRoot: any ItemRootControllable,
+        photoRoot: any ItemRootControllable,
+        spaceRoot: any ItemRootControllable,
+        tableRoot: any ItemRootControllable,
+        weatherRoot: any ItemRootControllable
+    ) {
+        self.container = container
+        self.adventureRoot = adventureRoot
+        self.audioRoot = audioRoot
+        self.characterRoot = characterRoot
+        self.diceRoot = diceRoot
+        self.mapRoot = mapRoot
+        self.pdfRoot = pdfRoot
+        self.photoRoot = photoRoot
+        self.spaceRoot = spaceRoot
+        self.tableRoot = tableRoot
+        self.weatherRoot = weatherRoot
+    }
+
+    let container: ModelContainer
+    public let module: NetworkModules = .none
+    
+    @ObservationIgnored let adventureRoot: ItemRootControllable
+    @ObservationIgnored let audioRoot: ItemRootControllable
+    @ObservationIgnored let characterRoot: ItemRootControllable
+    @ObservationIgnored let diceRoot: ItemRootControllable
+    @ObservationIgnored let mapRoot: ItemRootControllable
+    @ObservationIgnored let pdfRoot: ItemRootControllable
+    @ObservationIgnored let photoRoot: ItemRootControllable
+    @ObservationIgnored let spaceRoot: ItemRootControllable
+    @ObservationIgnored let tableRoot: ItemRootControllable
+    @ObservationIgnored let weatherRoot: ItemRootControllable
 }
 
 extension LinkRegisterController {
+    public var itemControllable: ItemControllable {
+        adventureRoot.itemControllable
+    }
+    
+    @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+        text
+    }
+    
+    @MainActor public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
+        ""
+    }
+    
+    @MainActor public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
+        nil
+    }
+}
+
+public extension LinkRegisterController {
     func register(link: LinkReplaceModel, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> UUID {
-        // Check if link already exists
-        let predicate = #Predicate<LinkDataModel> {
-            $0.sourceId == link.itemId && 
-            $0.sourceEntryId == link.entryId && 
-            $0.sourceModule == link.module && 
-            $0.destinationId == destinationId && 
-            $0.destinationEntryId == destinationEntryId && 
-            $0.destinationModule == destinationModule
-        }
-        let fetchDescriptor = FetchDescriptor<LinkDataModel>(predicate: predicate)
-        
-        if let existingLink = try? container.mainContext.fetch(fetchDescriptor).first {
-            return existingLink.id
-        }
-        
-        // Create new link if it doesn't exist
         let model = LinkDataModel(name: link.name, sourceId: link.itemId, sourceEntryId: link.entryId, sourceModule: link.module, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModel: destinationModule)
         container.mainContext.insert(model)
         try? container.mainContext.save()
         return model.id
     }
-        
-    func remove(linkId: UUID) {
-        let predicate = #Predicate<LinkDataModel> {
-            $0.id == linkId
-        }
-        let fetchDescription = FetchDescriptor<LinkDataModel>(predicate: predicate)
-        let models = try? container.mainContext.fetch(fetchDescription)
-        models?.forEach {
-            container.mainContext.delete($0)
-        }
-        try? container.mainContext.save()
-    }
-    
-    func register(sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> UUID {
-        // Check if link already exists
-        let predicate = #Predicate<LinkDataModel> {
-            $0.sourceId == sourceId && 
-            $0.sourceEntryId == sourceEntryId && 
-            $0.sourceModule == sourceModule && 
-            $0.destinationId == destinationId && 
-            $0.destinationEntryId == destinationEntryId && 
-            $0.destinationModule == destinationModule
-        }
-        let fetchDescriptor = FetchDescriptor<LinkDataModel>(predicate: predicate)
-        
-        if let existingLink = try? container.mainContext.fetch(fetchDescriptor).first {
-            return existingLink.id
-        }
-        
-        // Create new link if it doesn't exist
+
+    func register(name: String = "", sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> UUID {
         let model = LinkDataModel(
-            name: destinationModule.title,
+            name: name,
             sourceId: sourceId,
             sourceEntryId: sourceEntryId,
             sourceModule: sourceModule,
@@ -79,23 +106,16 @@ extension LinkRegisterController {
         return model.id
     }
     
-    func register(links: [LinkReplaceModel], destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> [UUID] {
-        var registeredIds: [UUID] = []
-        var seenLinks: Set<String> = []
-        
-        for link in links {
-            // Create a unique key for this link (excluding linkNumber for deduplication)
-            let linkKey = "\(link.itemId)|\(link.entryId?.uuidString ?? "nil")|\(link.module.rawValue)|\(destinationId)|\(destinationEntryId?.uuidString ?? "nil")|\(destinationModule.rawValue)"
-            
-            // Only register if we haven't seen this exact link in this batch
-            if !seenLinks.contains(linkKey) {
-                seenLinks.insert(linkKey)
-                let linkId = register(link: link, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModule: destinationModule)
-                registeredIds.append(linkId)
-            }
+    func remove(linkId: UUID) {
+        let predicate = #Predicate<LinkDataModel> {
+            $0.id == linkId
         }
-        
-        return registeredIds
+        let fetchDescription = FetchDescriptor<LinkDataModel>(predicate: predicate)
+        let models = try? container.mainContext.fetch(fetchDescription)
+        models?.forEach {
+            container.mainContext.delete($0)
+        }
+        try? container.mainContext.save()
     }
     
     func effectedItems(targetId: UUID, targetEntryId: UUID? = nil, targetModule: NetworkModules) -> [EffectedItemModel] {
@@ -117,3 +137,42 @@ extension LinkRegisterController {
         }
     }
 }
+
+public extension LinkRegisterController {
+    /// Scans the given text for links of the form `[name](SCHEME://UUID)`, then fetches matching LinkDataModel rows by ID.
+    /// - Parameters:
+    ///   - text: The text to scan.
+    /// - Returns: All LinkDataModel instances whose `id` is referenced in the text.
+    func links(in text: String) -> [LinkReplaceModel] {
+        // Extract UUIDs using the ReferenceScanner's UUID-only parser.
+        let uuidLinks = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
+        let ids = uuidLinks.map { $0.table }
+        guard !ids.isEmpty else { return [] }
+        
+        // Build an OR predicate over all IDs.
+        // If the set is large, consider chunking to keep predicate size manageable.
+        let predicates: [Predicate<LinkDataModel>] = ids.map { linkId in
+            #Predicate<LinkDataModel> { $0.id == linkId }
+        }
+        
+        let combined: Predicate<LinkDataModel> = predicates.dropFirst().reduce(predicates.first!) { partial, next in
+            #Predicate<LinkDataModel> { model in
+                partial.evaluate(model) || next.evaluate(model)
+            }
+        }
+        
+        let fetch = FetchDescriptor<LinkDataModel>(predicate: combined)
+        let linkModels = (try? container.mainContext.fetch(fetch)) ?? []
+        return linkModels.map {
+            let range = text.range(of: text) ?? text.startIndex..<text.endIndex
+            let id = $0.id
+            let command = uuidLinks.first(where: { $0.table == id })?.command
+            return LinkReplaceModel(name: $0.name, module: $0.sourceModule, linkNumber: 0, itemId: $0.sourceId, entryId: $0.sourceEntryId, markDown: markDown(for: $0), command: command, range: range)
+        }
+    }
+    
+    func markDown(for link: LinkDataModel) -> String {
+        "[\(link.name)](\(URL.appScheme)://\(link.id)"
+    }
+}
+

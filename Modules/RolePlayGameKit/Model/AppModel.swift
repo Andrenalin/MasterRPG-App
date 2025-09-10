@@ -36,20 +36,23 @@ public final class AppModel: Sendable {
     public let windowStateModel: WindowStateModel
     
     // Module roots
-    public var adventureRoot: AdventureRootModel
-    public var audioRoot: AudioRootModel
-    public var characterRoot: CharacterRootModel
-    public var diceRoot: DiceRootModel
-    public var mapRoot: MapRootModel
-    public var pdfRoot: PdfRootModel
-    public var photoRoot: PhotoRootModel
-    public var spaceRoot: SpaceRootModel
-    public var tableRoot: TableRootModel
-    public var weatherRoot: WeatherRootModel
+    public let adventureRoot: AdventureRootModel
+    public let audioRoot: AudioRootModel
+    public let characterRoot: CharacterRootModel
+    public let diceRoot: DiceRootModel
+    public let mapRoot: MapRootModel
+    public let pdfRoot: PdfRootModel
+    public let photoRoot: PhotoRootModel
+    public let spaceRoot: SpaceRootModel
+    public let tableRoot: TableRootModel
+    public let weatherRoot: WeatherRootModel
 
     // Routing models
-    public var navigator: Navigator
+    public let navigator: Navigator
 
+    // Root Controllers
+    public let linkRootController: LinkRegisterController
+    
     @MainActor
     public init() {
         let modelContainer = Self.initModelContainer()
@@ -82,6 +85,20 @@ public final class AppModel: Sendable {
         self.weatherRoot = weatherRoot
         
         self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.6", executionDelay: 0.4, verbosity: .info))
+        
+        self.linkRootController = LinkRegisterController(
+            container: modelContainer,
+            adventureRoot: adventureRoot,
+            audioRoot: audioRoot,
+            characterRoot: characterRoot,
+            diceRoot: diceRoot,
+            mapRoot: mapRoot,
+            pdfRoot: pdfRoot,
+            photoRoot: photoRoot,
+            spaceRoot: spaceRoot,
+            tableRoot: tableRoot,
+            weatherRoot: weatherRoot
+        )
     }
     
     @MainActor
@@ -94,14 +111,10 @@ public final class AppModel: Sendable {
                 TagDataModel.self,
                 AdventureDataModel.self,
                 CharacterDataModel.self,
-                //CharacterEntryDataModel.self,
                 DiceDataModel.self,
-                //DieDataModel.self,
                 MapDataModel.self,
-                //MapEntryDataModel.self,
                 PdfDataModel.self,
                 TableDataModel.self,
-                //TableEntryDataModel.self,
                 WeatherDataModel.self,
             ]
         )
