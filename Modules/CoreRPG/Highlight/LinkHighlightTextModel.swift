@@ -56,15 +56,14 @@ public final class LinkHighlightTextModel {
     }
 
     func handle(link: LinkReplaceModel) {
-//        let searchUrl = link.markDown.split(separator: "]").last!.trimmingCharacters(in: CharacterSet(charactersIn: "()"))
-//        guard let url = URL(string: searchUrl) else { return }
-//
+        let searchUrl = link.markDown.split(separator: "]").last!.trimmingCharacters(in: CharacterSet(charactersIn: "()"))
+        guard let url = URL(string: searchUrl) else { return }
+
 //        var repariedText = text
 //        _ = LinkReplaceController.linksRepair(for: &repariedText)
 //        
-//        let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: toggler, editAction: editAction)
-//
-//        reset(text: updatedText)
+        let updatedText = linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+        reset(text: updatedText)
     }
 }
 

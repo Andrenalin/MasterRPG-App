@@ -19,10 +19,11 @@ public extension LinkControllable {
     func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] { [] }
 
     @MainActor func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
-        guard module == url.moduleIdentifier, let itemId = url.itemId else { return text }
+        //guard module == url.moduleIdentifier, let itemId = url.itemId else { return text }
+        guard let itemId = url.linkId else { return text }
         
         guard let brokenLink = brokenTextLinkToggle(url: url, itemId: itemId, entryId: nil, in: text) else {
-            let linkText = toggleTextLink(linkNumber: url.linkNumber, itemId: itemId, entryId: url.childId, command: url.commandKey, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            let linkText = toggleTextLink(linkNumber: 0, itemId: itemId, entryId: nil, command: url.linkCommand, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
             return linkText
         }
         return brokenLink
