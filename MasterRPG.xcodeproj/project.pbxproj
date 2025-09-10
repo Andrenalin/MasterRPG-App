@@ -335,8 +335,6 @@
 		8EB640692E47477A00799690 /* CoreExternalRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8ABBD72E2A662300E877CF /* CoreExternalRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EB6406C2E47477A00799690 /* CoreRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; };
 		8EB6406D2E47477A00799690 /* CoreRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		8EB640702E47477A00799690 /* RPGDie.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECD912CD8EDED004E7103 /* RPGDie.framework */; };
-		8EB640712E47477A00799690 /* RPGDie.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECD912CD8EDED004E7103 /* RPGDie.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EB640752E47478400799690 /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
 		8EB640762E47478400799690 /* RPGResources.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EB640792E476A7F00799690 /* DiceRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EB640062E47471400799690 /* DiceRPG.framework */; };
@@ -1582,13 +1580,6 @@
 			remoteGlobalIDString = 8E3620AC2E1A80FF00E5C99A;
 			remoteInfo = CoreRPG;
 		};
-		8EB640722E47477A00799690 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 8EBECD902CD8EDED004E7103;
-			remoteInfo = RPGDie;
-		};
 		8EB640772E47478400799690 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
@@ -2788,7 +2779,6 @@
 			dstSubfolderSpec = 10;
 			files = (
 				8EB640692E47477A00799690 /* CoreExternalRPG.framework in Embed Frameworks */,
-				8EB640712E47477A00799690 /* RPGDie.framework in Embed Frameworks */,
 				8EB640762E47478400799690 /* RPGResources.framework in Embed Frameworks */,
 				8EB6406D2E47477A00799690 /* CoreRPG.framework in Embed Frameworks */,
 			);
@@ -3603,7 +3593,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				8EB640682E47477A00799690 /* CoreExternalRPG.framework in Frameworks */,
-				8EB640702E47477A00799690 /* RPGDie.framework in Frameworks */,
 				596BF93A2E671A18006638F0 /* CodableModel in Frameworks */,
 				8EB640752E47478400799690 /* RPGResources.framework in Frameworks */,
 				8EB6406C2E47477A00799690 /* CoreRPG.framework in Frameworks */,
@@ -5350,7 +5339,6 @@
 				8EC95D7A2E712CDA00476F1D /* PBXTargetDependency */,
 				8EB6406B2E47477A00799690 /* PBXTargetDependency */,
 				8EB6406F2E47477A00799690 /* PBXTargetDependency */,
-				8EB640732E47477A00799690 /* PBXTargetDependency */,
 				8EB640782E47478400799690 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
@@ -8130,11 +8118,6 @@
 			isa = PBXTargetDependency;
 			target = 8E3620AC2E1A80FF00E5C99A /* CoreRPG */;
 			targetProxy = 8EB6406E2E47477A00799690 /* PBXContainerItemProxy */;
-		};
-		8EB640732E47477A00799690 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 8EBECD902CD8EDED004E7103 /* RPGDie */;
-			targetProxy = 8EB640722E47477A00799690 /* PBXContainerItemProxy */;
 		};
 		8EB640782E47478400799690 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

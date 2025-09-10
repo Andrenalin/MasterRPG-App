@@ -1,12 +1,11 @@
 // @copyright André Trettin
 
-import CodableModel
 import Foundation
 import RPGResources
 import SwiftData
 import SwiftUI
 
-@Model @CodableModel
+@Model 
 public final class DieDataModel {
     public init(id: UUID, index: Int = 0, die: RawDie = .twenty, color: String = "", rotation: Double = 0, result: [Int] = [], parent: DiceDataModel? = nil) {
         self.id = id
@@ -26,8 +25,52 @@ public final class DieDataModel {
     var rotation: Double = 0
     @Transient
     var result: [Int] = []
-    @CodableIgnored
+
+    //@CodableIgnored
     var parent: DiceDataModel? = nil
+
+    // MARK: - Codable
+    
+    struct DieDataModelCodable: Equatable, Hashable, Codable, Sendable {
+        init(id: UUID = UUID(), index: Int = 0, die: RawDie = RawDie.twenty, color: String = ColorCode.Random.rawValue, rotation: Double = 0, result: [Int] = []) {
+            self.id = id
+            self.index = index
+            self.die = die
+            self.color = color
+            self.rotation = rotation
+            self.result = result
+        }
+        var id: UUID = UUID()
+        var index: Int = 0
+        var die: RawDie = RawDie.twenty
+        var color: String = ColorCode.Random.rawValue
+        var rotation: Double = 0
+        var result: [Int] = []
+    }
+    
+    convenience init(_ model: DieDataModelCodable) {
+        self.init(id: model.id, index: model.index, die: model.die, color: model.color, rotation: model.rotation, result: model.result)
+    }
+    
+    var codableModel: DieDataModelCodable {
+        DieDataModelCodable(
+            id: id,
+            index: index,
+            die: die,
+            color: color,
+            rotation: rotation,
+            result: result
+        )
+    }
+    
+    func replace(_ model: DieDataModelCodable) {
+        id = model.id
+        index = model.index
+        die = model.die
+        color = model.color
+        rotation = model.rotation
+        result = model.result
+    }
 }
 
 extension DieDataModel {
