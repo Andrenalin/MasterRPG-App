@@ -1,10 +1,9 @@
 // @copyright André Trettin
 
-import CodableModel
 import Foundation
 import SwiftData
 
-@Model @CodableModel
+@Model 
 public final class CharacterEntryDataModel {
     public init(itemId: UUID = UUID(), entryId: UUID = UUID(), index: Int = 0, name: String = "", content: String = "", valueType: CharacterEntryDataModel.ValueType = CharacterEntryDataModel.ValueType.text, diceId: UUID? = nil, valueId: UUID? = nil, parent: CharacterDataModel? = nil) {
         self.itemId = itemId
@@ -28,7 +27,7 @@ public final class CharacterEntryDataModel {
     var diceId: UUID? = nil
     var valueId: UUID? = nil
     
-    @CodableIgnored
+    //@CodableIgnored
     var parent: CharacterDataModel? = nil
     
     public enum ValueType: Int, Equatable, Hashable, Codable, CaseIterable, Identifiable, Sendable {
@@ -62,5 +61,56 @@ public final class CharacterEntryDataModel {
                 case .selection: "checkmark.square"
             }
         }
+    }
+    
+    // MARK: Codable
+    
+    struct CharacterEntryDataModelCodable: Equatable, Hashable, Codable, Sendable {
+        init(itemId: UUID = UUID(), entryId: UUID = UUID(), index: Int = 0, name: String = "", content: String = "", valueType: ValueType = ValueType.text, diceId: UUID? = nil, valueId: UUID? = nil) {
+            self.itemId = itemId
+            self.entryId = entryId
+            self.index = index
+            self.name = name
+            self.content = content
+            self.valueType = valueType
+            self.diceId = diceId
+            self.valueId = valueId
+        }
+        var itemId: UUID = UUID()
+        var entryId: UUID = UUID()
+        var index: Int = 0
+        var name: String = ""
+        var content: String = ""
+        var valueType: ValueType = ValueType.text
+        var diceId: UUID? = nil
+        var valueId: UUID? = nil
+    }
+    
+    convenience init(_ model: CharacterEntryDataModelCodable) {
+        self.init(itemId: model.itemId, entryId: model.entryId, index: model.index, name: model.name, content: model.content, valueType: model.valueType, diceId: model.diceId, valueId: model.valueId)
+    }
+    
+    var codableModel: CharacterEntryDataModelCodable {
+        CharacterEntryDataModelCodable(
+            itemId: itemId,
+            entryId: entryId,
+            index: index,
+            name: name,
+            content: content,
+            valueType: valueType,
+            diceId: diceId,
+            valueId: valueId
+        )
+    }
+    
+    func replace(_ model: CharacterEntryDataModelCodable) {
+        itemId = model.itemId
+        entryId = model.entryId
+        index = model.index
+        name = model.name
+        content = model.content
+        valueType = model.valueType
+        diceId = model.diceId
+        valueId = model.valueId
     }
 }

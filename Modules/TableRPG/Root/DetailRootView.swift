@@ -23,10 +23,8 @@ struct DetailRootView: View {
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
         } editor: {
-            if let selectedModel {
-                if let tableModel {
-                    detailEditorView(model: tableModel)
-                }
+            if let tableModel {
+                detailEditorView(model: tableModel)
             }
         } inspector: {
             root.diceRoot.viewController.linkWindow(root: root.diceRoot, isInspector: true)

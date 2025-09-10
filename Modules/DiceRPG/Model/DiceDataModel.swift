@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import CodableModel
 import CoreRPG
 import Foundation
 import SwiftData
@@ -63,6 +62,7 @@ public final class DiceDataModel {
     @Transient
     var resultCategory: ResultCategory? = nil
     
+    // MARK: Codable
     
     struct DiceDataModelCodable: Equatable, Hashable, Codable, Sendable {
         init(itemId: UUID = UUID(), sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: CompareValue = DiceDataModel.CompareValue.off, compareValue: Double = 0.0 , coupValues: [CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0 , dice: [DieDataModel.DieDataModelCodable] = [], resultCategory: ResultCategory? = nil) {

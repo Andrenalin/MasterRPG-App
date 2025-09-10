@@ -18,7 +18,6 @@ struct ViewerRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.showGame) private var showGame
         
     var body: some View {
         let _ = Self._printChanges()
@@ -76,7 +75,7 @@ private extension ViewerRootView {
         } label: {
             Image(systemName: "xmark.circle")
         }
-        .opacity(showGame ? 0 : 1)
+        //.opacity(showGame ? 0 : 1)
     }
 }
 

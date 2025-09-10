@@ -1,62 +1,60 @@
 // @copyright André Trettin
 
-import AndrenalinKit
 import CoreRPG
 import Foundation
-import RPGMaps
 import SwiftData
 
 public struct ConverterController {
-    public static func insert(items: [RPGMaps.MapModel], into modelContext: ModelContext) {
-        let fetchDesc = FetchDescriptor<CoreRPG.ItemDataModel>()
-        let models = try? modelContext.fetch(fetchDesc)
-
-        items.forEach { item in
-            guard let models, !models.contains(where: { $0.id == item.id }) else { return }
-
-            let entries = item.entries.enumerated().map { (index, entry) in
-                MapEntryDataModel(
-                    itemId: item.id,
-                    entryId: entry.id,
-                    index: index,
-                    name: entry.name,
-                    content: entry.content,
-                    coordinates: entry.coordinates,
-                    isHexGrid: entry.isHexGrid,
-                    isShown: entry.isShown,
-                    focused: entry.focused
-                )
-            }
-            entries.forEach { modelContext.insert($0) }
-
-            let character = MapRPG.MapDataModel(
-                itemId: item.id,
-                photoId: item.photoId,
-                width: item.width,
-                height: item.height,
-                entries: entries,
-                pinScale: item.pinScale,
-                hexMapScale: item.hexMapScale,
-                scale: item.scale
-            )
-            modelContext.insert(character)
-            
-            modelContext.insert(
-                ItemDataModel(
-                    id: item.id,
-                    module: .map,
-                    name: item.name,
-                    information: item.description,
-                    category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .character,
-                    tags: item.tags,
-                    url: nil,
-                    displayState: item.displayState
-                )
-            )
-        }
-        
-        try? modelContext.save()
-    }
+//    public static func insert(items: [RPGMaps.MapModel], into modelContext: ModelContext) {
+//        let fetchDesc = FetchDescriptor<CoreRPG.ItemDataModel>()
+//        let models = try? modelContext.fetch(fetchDesc)
+//
+//        items.forEach { item in
+//            guard let models, !models.contains(where: { $0.id == item.id }) else { return }
+//
+//            let entries = item.entries.enumerated().map { (index, entry) in
+//                MapEntryDataModel(
+//                    itemId: item.id,
+//                    entryId: entry.id,
+//                    index: index,
+//                    name: entry.name,
+//                    content: entry.content,
+//                    coordinates: entry.coordinates,
+//                    isHexGrid: entry.isHexGrid,
+//                    isShown: entry.isShown,
+//                    focused: entry.focused
+//                )
+//            }
+//            entries.forEach { modelContext.insert($0) }
+//
+//            let character = MapRPG.MapDataModel(
+//                itemId: item.id,
+//                photoId: item.photoId,
+//                width: item.width,
+//                height: item.height,
+//                entries: entries,
+//                pinScale: item.pinScale,
+//                hexMapScale: item.hexMapScale,
+//                scale: item.scale
+//            )
+//            modelContext.insert(character)
+//            
+//            modelContext.insert(
+//                ItemDataModel(
+//                    id: item.id,
+//                    module: .map,
+//                    name: item.name,
+//                    information: item.description,
+//                    category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .character,
+//                    tags: item.tags,
+//                    url: nil,
+//                    displayState: item.displayState
+//                )
+//            )
+//        }
+//        
+//        try? modelContext.save()
+//    }
     
     @MainActor
     static func convert(old: MapRPG.MapModel, itemController: ItemController) -> ItemDataCodableModel {

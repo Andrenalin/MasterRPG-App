@@ -18,7 +18,6 @@ struct SelectionBar: View {
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.showGame) private var showGame
     
     var body: some View {
         textSelection

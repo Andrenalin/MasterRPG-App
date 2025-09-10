@@ -27,7 +27,6 @@ struct PdfViewerView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.showGame) private var showGame
     
     @State private var dataModelActor: DataModelActor?
     @State private var searchModel = PdfSearchModel()
@@ -104,7 +103,7 @@ struct PdfViewerView: View {
 
 private extension PdfViewerView {
     var entry: PdfDataModel? {
-        guard let entryId else { return nil }
+        guard entryId == nil else { return nil }
         return PdfDataModel(itemId: model.id)
     }
     
@@ -118,7 +117,7 @@ private extension PdfViewerView {
         } label: {
             Image(systemName: "xmark.circle")
         }
-        .opacity(showGame ? 0 : 1)
+        //.opacity(showGame ? 0 : 1)
     }
 
 }

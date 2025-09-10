@@ -1,37 +1,35 @@
 // @copyright André Trettin
 
-import AndrenalinKit
 import CoreRPG
 import Foundation
-import RPGValues
 import SwiftData
 
 public struct ConverterController {
-    public static func insert(items: [RPGValues.ValueModel], into modelContext: ModelContext) {
-        let fetchDesc = FetchDescriptor<CoreRPG.ItemDataModel>()
-        let models = try? modelContext.fetch(fetchDesc)
-
-        items.forEach { item in
-            guard let models, !models.contains(where: { $0.id == item.id }) else { return }
-            
-            let character = CharacterRPG.CharacterDataModel(itemId: item.id, photoId: item.photoId, photos: item.photos, parentId: item.parentId)
-            modelContext.insert(character)
-            let entries = item.entries.enumerated().map { (index, entry) in
-                CharacterEntryDataModel(itemId: item.id, entryId: entry.id, index: index, name: entry.name, content: entry.value, valueType: toCharacterValueType(entry.type), diceId: entry.diceId, valueId: entry.valueId)
-            }
-            entries.forEach { modelContext.insert($0) }
-            
-            modelContext.insert(
-                ItemDataModel(id: item.id, module: .value, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .character, tags: item.tags, url: nil, displayState: item.displayState)
-            )
-        }
-        
-        try? modelContext.save()
-    }
-    
-    static func toCharacterValueType(_ value: RPGValues.ValueEntryModel.ValueType) -> CharacterRPG.CharacterEntryDataModel.ValueType {
-        CharacterRPG.CharacterEntryDataModel.ValueType(rawValue: value.rawValue) ?? .text
-    }
+//    public static func insert(items: [RPGValues.ValueModel], into modelContext: ModelContext) {
+//        let fetchDesc = FetchDescriptor<CoreRPG.ItemDataModel>()
+//        let models = try? modelContext.fetch(fetchDesc)
+//
+//        items.forEach { item in
+//            guard let models, !models.contains(where: { $0.id == item.id }) else { return }
+//            
+//            let character = CharacterRPG.CharacterDataModel(itemId: item.id, photoId: item.photoId, photos: item.photos, parentId: item.parentId)
+//            modelContext.insert(character)
+//            let entries = item.entries.enumerated().map { (index, entry) in
+//                CharacterEntryDataModel(itemId: item.id, entryId: entry.id, index: index, name: entry.name, content: entry.value, valueType: toCharacterValueType(entry.type), diceId: entry.diceId, valueId: entry.valueId)
+//            }
+//            entries.forEach { modelContext.insert($0) }
+//            
+//            modelContext.insert(
+//                ItemDataModel(id: item.id, module: .value, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .character, tags: item.tags, url: nil, displayState: item.displayState)
+//            )
+//        }
+//        
+//        try? modelContext.save()
+//    }
+//    
+//    static func toCharacterValueType(_ value: RPGValues.ValueEntryModel.ValueType) -> CharacterRPG.CharacterEntryDataModel.ValueType {
+//        CharacterRPG.CharacterEntryDataModel.ValueType(rawValue: value.rawValue) ?? .text
+//    }
 
     @MainActor
     static func convert(old: CharacterRPG.ValueModel, itemController: ItemController) -> ItemDataCodableModel {
