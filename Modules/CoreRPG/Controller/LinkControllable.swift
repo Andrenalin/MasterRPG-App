@@ -7,6 +7,7 @@ public protocol LinkControllable: Sendable {
     var module: NetworkModules { get }
     @MainActor var itemControllable: ItemControllable { get }
 
+    @MainActor func remove(linkModel: LinkDataModel)
     @MainActor func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((LinkDataModel) -> Bool)?) -> String
     @MainActor func validate(itemId: UUID, entryId: UUID?) -> Bool
 
@@ -15,6 +16,8 @@ public protocol LinkControllable: Sendable {
 }
 
 public extension LinkControllable {
+    @MainActor func remove(linkModel: LinkDataModel) {}
+    
     @MainActor func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((LinkDataModel) -> Bool)?) -> String {
         text
     }

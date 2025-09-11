@@ -50,12 +50,12 @@ public final class LinkRootController {
     private let linkRegisterController: LinkRegisterController
 }
 
-extension LinkRootController {
-    public func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((LinkDataModel) -> Bool)?) -> String {
+public extension LinkRootController {
+    func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((LinkDataModel) -> Bool)?) -> String {
         guard let linkId = url.linkId, let model = linkRegisterController.linkDataModel(linkId: linkId) else { return text }
         
         guard let brokenLink = brokenTextLinkToggle(url: url, model: model, in: text) else {
-            let controller = linkController(for: model.destinationModule)
+            let controller = linkController(for: model.sourceModule)
             return controller.toggleTextLink(model: model, command: url.linkCommand, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         }
         return brokenLink
@@ -67,9 +67,10 @@ extension LinkRootController: LinkControllable {
         adventureRoot.itemControllable
     }
     
-//    public func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
-//        linkController(for: model.destinationModule).toggleTextLink(model: model, command: command, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-//    }
+    @MainActor public func remove(linkModel: LinkDataModel) {
+        linkController(for: linkModel.destinationModule).remove(linkModel: linkModel)
+        linkRegisterController.remove(linkId: linkModel.id)
+    }
 
     public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
         linkController(for: module).toggleSheet(itemId: itemId, level: level, module: module)

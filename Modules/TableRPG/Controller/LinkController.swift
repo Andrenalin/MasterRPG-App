@@ -13,6 +13,21 @@ struct LinkController: Sendable {
 }
 
 extension LinkController: LinkControllable {
+    @MainActor public func remove(linkModel: LinkDataModel) {
+        guard let item = itemController.modelSync(for: linkModel.destinationId), let model = itemController.model(for: linkModel.destinationId) else { return }
+        if let entryId = linkModel.destinationEntryId {
+            let entry = model[entryId]
+            let name = entry.name.replacingOccurrences(of: linkModel.url, with: linkModel.name)
+            item.name <=> name
+            let information = entry.content.replacingOccurrences(of: linkModel.url, with: linkModel.name)
+            entry.content <=> information
+        } else {
+            let name = item.name.replacingOccurrences(of: linkModel.url, with: linkModel.name)
+            item.name <=> name
+            let information = item.information.replacingOccurrences(of: linkModel.url, with: linkModel.name)
+            item.information <=> information
+        }
+    }
     
     @MainActor public func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((LinkDataModel) -> Bool)?) -> String {
         let itemId = model.sourceId
@@ -22,7 +37,7 @@ extension LinkController: LinkControllable {
         if let command {
             if command == LinkType.remove.rawValue {
                 if let editAction, editAction(model)  {
-                    return text.toggleLink(url: model.url, with: "", remove: true)
+                    return text.toggleLink(url: model.url, with: model.name, remove: true)
                 }
                 return text
             }

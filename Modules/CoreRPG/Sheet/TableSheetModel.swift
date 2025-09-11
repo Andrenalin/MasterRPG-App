@@ -68,7 +68,7 @@ public final class TableSheetModel {
     @MainActor
     func editActions(for id: LinkHighlightTextModelId, linkModel: LinkDataModel) -> Bool {
         toggle(id: id, itemId: linkModel.sourceId, module: linkModel.sourceModule, close: true)
-        // remove from data
+        linkController.remove(linkModel: linkModel)
         return true
     }
     
@@ -84,6 +84,7 @@ public final class TableSheetModel {
             if group.sheetIds.contains(itemId) {
                 group.sheetIds.removeAll(where: { $0 == itemId })
             } else {
+                guard close == false else { return }
                 guard let sheet = linkController.toggleSheet(itemId: itemId, level: group.level + 1, module: module) else { return }
                 let tableSheetModel = TableSheetModel(linkController: linkController, sheetModel: sheet, searchModel: searchModel, editEnabled: editEnabled)
                 tableSheetModel.id = itemId
@@ -91,7 +92,7 @@ public final class TableSheetModel {
                 group.sheetIds.append(tableSheetModel.id)
             }
             sheetModel.groups[groupIndex] = group
-        case .entry(let uuid):
+        case .entry(let uuid):            
             //let group = sheetModel.groups.first(where: { $0.id == uuid })
             //level = 0
             break
