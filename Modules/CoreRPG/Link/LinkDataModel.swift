@@ -16,15 +16,29 @@ public final class LinkDataModel: Identifiable {
         self.destinationModule = destinationModel
     }
 
-    public var id: UUID = UUID()
+    public internal(set) var id: UUID = UUID()
 
-    var name: String = ""
+    public internal(set) var name: String = ""
     // source
-    var sourceId: UUID = UUID()
-    var sourceEntryId: UUID? = nil
-    var sourceModule: NetworkModules = NetworkModules.none
+    public internal(set) var sourceId: UUID = UUID()
+    public internal(set) var sourceEntryId: UUID? = nil
+    public internal(set) var sourceModule: NetworkModules = NetworkModules.none
     // destination
-    var destinationId: UUID = UUID()
-    var destinationEntryId: UUID? = nil
-    var destinationModule: NetworkModules = NetworkModules.none
+    public internal(set) var destinationId: UUID = UUID()
+    public internal(set) var destinationEntryId: UUID? = nil
+    public internal(set) var destinationModule: NetworkModules = NetworkModules.none
+}
+
+public extension LinkDataModel {
+    var urlAdr: String {
+        "\(URL.appScheme)://\(id)"
+    }
+    
+    var urlName: String {
+        name.withoutLink()
+    }
+    
+    var url: String {
+        "[\(urlName)](\(urlAdr))"
+    }    
 }

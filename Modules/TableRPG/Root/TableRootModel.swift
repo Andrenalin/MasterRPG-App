@@ -74,6 +74,7 @@ public final class TableRootModel {
             editControllable: editController,
             exportControllable: exportControllable,
             itemControllable: itemController,
+            linkControllable: linkController,
             listControllable: listController,
             listLinkControllable: listLinkController,
             viewControllable: viewController

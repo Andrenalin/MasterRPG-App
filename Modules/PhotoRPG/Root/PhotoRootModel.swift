@@ -50,6 +50,9 @@ public final class PhotoRootModel {
     @ObservationIgnored lazy var itemController: ItemController = {
         ItemController(container: modelContext.container)
     }()
+    @ObservationIgnored lazy var linkController: LinkController = {
+        LinkController(module: module, itemController: itemController)
+    }()
     @ObservationIgnored lazy var listController: ListController = {
         ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
     }()
@@ -69,6 +72,7 @@ public final class PhotoRootModel {
             editControllable: editController,
             exportControllable: exportControllable,
             itemControllable: itemController,
+            linkControllable: linkController,
             listControllable: listController,
             listLinkControllable: listLinkController,
             viewControllable: viewController
@@ -82,6 +86,7 @@ extension PhotoRootModel: ItemRootControllable {
     public var exportControllable: any ExportControllable { exportController }
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
+    public var linkControllable: any LinkControllable { linkController }
     public var listControllable: any ListControllable { listController }
     public var listLinkControllable: any ListControllable { listLinkController }
     public var viewControllable: any ViewControllable { viewController }

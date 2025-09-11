@@ -6,28 +6,28 @@ import SwiftUI
 public protocol LinkControllable: Sendable {
     var module: NetworkModules { get }
     @MainActor var itemControllable: ItemControllable { get }
+
+    @MainActor func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String
+    @MainActor func validate(itemId: UUID, entryId: UUID?) -> Bool
+
     
-    @MainActor func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String
-    @MainActor func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String
-    
-    // Sheet Entries
     @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel?
 }
 
 public extension LinkControllable {
+    @MainActor func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+        text
+    }
+
+    @MainActor func validate(itemId: UUID, entryId: UUID?) -> Bool {
+        guard let item = itemControllable.modelSync(for: itemId) else { return false }
+        return item.hasEntry(id: entryId)
+    }
+    
+
+
     @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? { nil }
     func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] { [] }
-
-    @MainActor func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
-        //guard module == url.moduleIdentifier, let itemId = url.itemId else { return text }
-        guard let itemId = url.linkId else { return text }
-        
-        guard let brokenLink = brokenTextLinkToggle(url: url, itemId: itemId, entryId: nil, in: text) else {
-            let linkText = toggleTextLink(linkNumber: 0, itemId: itemId, entryId: nil, command: url.linkCommand, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-            return linkText
-        }
-        return brokenLink
-    }
     
     @MainActor func name(for id: UUID, entryId: UUID? = nil) -> String {
         guard let item = itemControllable.modelSync(for: id) else { return "" }
@@ -37,30 +37,8 @@ public extension LinkControllable {
         return item.name
     }
     
-    @MainActor func specialLink(linkType: LinkType, linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
-        let linkNumber = linkNumber >= 100 ? linkNumber : linkType.linkNumberAddition + linkNumber
-        let urlAdr = generateLinkAdr(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
+    @MainActor func specialLink(linkType: LinkType, model: LinkDataModel) -> String {
+        let urlAdr = model.urlAdr
         return "[\(linkType.title)](\(urlAdr)/\(linkType.rawValue))"
-    }
-    
-    @MainActor func generateLinkAdr(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
-        guard let item = itemControllable.modelSync(for: itemId) else { return "" }
-        guard let entryId else { return item.urlAdr(linkNumber: linkNumber) }
-        return item.urlAdr(linkNumber: linkNumber, entryId: entryId)
-    }
-}
-
-private extension LinkControllable {
-    @MainActor func brokenTextLinkToggle(url: URL, itemId: UUID, entryId: UUID?, in text: String) -> String? {
-        guard !validateLink(itemId: itemId, entryId: entryId) else { return nil }
-        return text.toggleLink(url: url.absoluteString, with: "🚨 \(String(localized: module.localizedTitle)) Link is broken")
-    }
-
-    @MainActor func validateLink(itemId: UUID, entryId: UUID? = nil) -> Bool {
-        guard let item = itemControllable.modelSync(for: itemId) else { return false }
-        if let entryId {
-            return item.entries.firstIndex(where: { $0.id == entryId }) != nil
-        }
-        return true
     }
 }

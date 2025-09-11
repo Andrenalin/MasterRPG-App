@@ -16,6 +16,7 @@ public protocol ItemRootControllable {
     var editControllable: any EditControllable { get }
     var exportControllable: any ExportControllable { get }
     var itemControllable: any ItemControllable { get }
+    var linkControllable: any LinkControllable { get }
     var listControllable: any ListControllable { get }
     var listLinkControllable: any ListControllable { get }
     var viewControllable: any ViewControllable { get }
@@ -23,7 +24,20 @@ public protocol ItemRootControllable {
 
 @MainActor @Observable
 public final class ItemRootController: ItemRootControllable {
-    public init(module: NetworkModules, listDisplayModel: ListDisplayModel, searchModel: SearchModel, itemSelectionModel: ItemSelectionModel, cacheControllable: (any ImageCacheControllable)?, editControllable: any EditControllable, exportControllable: any ExportControllable, itemControllable: any ItemControllable, listControllable: any ListControllable, listLinkControllable: any ListControllable, viewControllable: any ViewControllable) {
+    public init(
+        module: NetworkModules,
+        listDisplayModel: ListDisplayModel,
+        searchModel: SearchModel,
+        itemSelectionModel: ItemSelectionModel,
+        cacheControllable: (any ImageCacheControllable)?,
+        editControllable: any EditControllable,
+        exportControllable: any ExportControllable,
+        itemControllable: any ItemControllable,
+        linkControllable: any LinkControllable,
+        listControllable: any ListControllable,
+        listLinkControllable: any ListControllable,
+        viewControllable: any ViewControllable
+    ) {
         self.module = module
         self.listDisplayModel = listDisplayModel
         self.searchModel = searchModel
@@ -32,6 +46,7 @@ public final class ItemRootController: ItemRootControllable {
         self.editControllable = editControllable
         self.exportControllable = exportControllable
         self.itemControllable = itemControllable
+        self.linkControllable = linkControllable
         self.listControllable = listControllable
         self.listLinkControllable = listLinkControllable
         self.viewControllable = viewControllable
@@ -50,6 +65,7 @@ public final class ItemRootController: ItemRootControllable {
     public let editControllable: any EditControllable
     public let exportControllable: any ExportControllable
     public let itemControllable: any ItemControllable
+    public let linkControllable: any LinkControllable
     public let listControllable: any ListControllable
     public let listLinkControllable: any ListControllable
     public let viewControllable: any ViewControllable

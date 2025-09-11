@@ -60,4 +60,12 @@ extension AdventureDataModel {
             entries_ = newValue
         }
     }
+    
+    subscript(id: UUID) -> AdventureEntryDataModel {
+        get { entries.first(where: { $0.entryId == id }) ?? AdventureEntryDataModel(itemId: itemId) }
+        set(newValue) {
+            guard let index = entries.firstIndex(where: { $0.entryId == id }) else { return }
+            entries[index] = newValue
+        }
+    }
 }

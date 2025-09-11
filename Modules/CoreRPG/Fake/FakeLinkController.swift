@@ -11,10 +11,6 @@ struct FakeLinkController: LinkControllable {
         itemController
     }
     
-    @MainActor func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
-        text
-    }
-    
     func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
         "Not set"
     }

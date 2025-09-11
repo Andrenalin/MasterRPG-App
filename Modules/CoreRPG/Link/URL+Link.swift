@@ -57,12 +57,8 @@ public extension URL {
     // MARK: - New Links
     
     var linkId: UUID? {
-        guard pathComponents.count > 0,
-              let uuid = UUID(uuidString: pathComponents[0])
-        else {
-            return nil
-        }
-        return uuid
+        guard let hostName = host() else { return nil }
+        return UUID(uuidString: hostName)
     }
     
     var linkCommand: String? {

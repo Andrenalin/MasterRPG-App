@@ -66,6 +66,12 @@ public extension ItemDataModel {
             entries_ = newValue
         }
     }
+    
+    func hasEntry(id: UUID?) -> Bool {
+        guard let id else { return true }
+        guard let entries_ else { return false }
+        return entries_.contains(where: { $0.childId == id })
+    }
 
     var fileUrl: FileUrl? {
         get {
