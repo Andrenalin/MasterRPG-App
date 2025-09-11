@@ -14,7 +14,7 @@ struct TableSheet: View {
     @State private var sheetModel: SheetModel = SheetModel(id: UUID())
 
     var body: some View {
-        TableRootSheet(linkController: linkController, model: sheetModel, showImage: showTopImage, dismissAction: dismissAction)
+        TableRootSheet(linkController: linkController, model: sheetModel, searchModel: root.searchModel, showImage: showTopImage, dismissAction: dismissAction)
             .onChange(of: model, initial: true) {
                 resetModels()
             }

@@ -43,7 +43,7 @@ struct DetailRootView: View {
         .onChange(of: selectedModel?.id, initial: true) {
             guard let tableModel else { return }
             let sheetModel = SheetController(itemController: root.itemController).sheet(for: tableModel.itemId)
-            tableSheetModel = TableSheetModel(linkController: linkController, sheetModel: sheetModel, searchText: root.searchModel.searchText)
+            tableSheetModel = TableSheetModel(linkController: linkController, sheetModel: sheetModel, searchModel: root.searchModel, editEnabled: true)
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

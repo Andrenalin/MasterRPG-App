@@ -7,7 +7,7 @@ public protocol LinkControllable: Sendable {
     var module: NetworkModules { get }
     @MainActor var itemControllable: ItemControllable { get }
 
-    @MainActor func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String
+    @MainActor func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((LinkDataModel) -> Bool)?) -> String
     @MainActor func validate(itemId: UUID, entryId: UUID?) -> Bool
 
     
@@ -15,7 +15,7 @@ public protocol LinkControllable: Sendable {
 }
 
 public extension LinkControllable {
-    @MainActor func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+    @MainActor func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((LinkDataModel) -> Bool)?) -> String {
         text
     }
 
@@ -24,8 +24,13 @@ public extension LinkControllable {
         return item.hasEntry(id: entryId)
     }
     
+    @MainActor func specialLink(linkType: LinkType, model: LinkDataModel) -> String {
+        let urlAdr = model.urlAdr
+        return "[\(linkType.title)](\(urlAdr)/\(linkType.rawValue))"
+    }
 
 
+    // not validated
     @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? { nil }
     func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] { [] }
     
@@ -37,8 +42,4 @@ public extension LinkControllable {
         return item.name
     }
     
-    @MainActor func specialLink(linkType: LinkType, model: LinkDataModel) -> String {
-        let urlAdr = model.urlAdr
-        return "[\(linkType.title)](\(urlAdr)/\(linkType.rawValue))"
-    }
 }

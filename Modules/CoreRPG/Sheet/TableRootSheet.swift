@@ -3,12 +3,12 @@
 import SwiftUI
 
 public struct TableRootSheet<ImageContent: View>: View {
-    public init(linkController: LinkRootController, model: SheetModel, showImage: Bool, dismissAction: (() -> Void)? = nil, @ViewBuilder imageContent: @escaping (CGSize) -> ImageContent = { _ in EmptyView() }) {
+    public init(linkController: LinkRootController, model: SheetModel, searchModel: SearchModel, showImage: Bool, dismissAction: (() -> Void)? = nil, @ViewBuilder imageContent: @escaping (CGSize) -> ImageContent = { _ in EmptyView() }) {
         self.model = model
         self.showImage = showImage
         self.dismissAction = dismissAction
         self.imageContent = imageContent
-        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkController: linkController, sheetModel: model))
+        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkController: linkController, sheetModel: model, searchModel: searchModel))
     }
     
     let model: SheetModel

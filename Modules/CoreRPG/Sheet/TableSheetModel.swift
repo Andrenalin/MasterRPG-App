@@ -4,15 +4,17 @@ import SwiftUI
 
 @Observable
 public final class TableSheetModel {
-    public init(linkController: LinkRootController, sheetModel: SheetModel, searchText: String = "") {
+    public init(linkController: LinkRootController, sheetModel: SheetModel, searchModel: SearchModel, editEnabled: Bool = false) {
         self.linkController = linkController
         self.sheetModel = sheetModel
-        self.searchText = searchText
+        self.searchModel = searchModel
         id = UUID()
+        self.editEnabled = editEnabled
     }
     var id: UUID
     var sheetModel: SheetModel
-    var searchText: String = ""
+    var searchModel: SearchModel
+    let editEnabled: Bool
 
     @ObservationIgnored
     var linkController: LinkRootController
@@ -23,17 +25,20 @@ public final class TableSheetModel {
     @ObservationIgnored
     private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
 
+    @MainActor
     func description(for sheetModel: SheetModel) -> String? {
-        guard !searchText.isEmpty else { return sheetModel.description }
-        return sheetModel.description.localizedCaseInsensitiveContains(searchText) ? sheetModel.description : nil
+        guard !searchModel.searchText.isEmpty else { return sheetModel.description }
+        return sheetModel.description.localizedCaseInsensitiveContains(searchModel.searchText) ? sheetModel.description : nil
     }
     
     @MainActor
     func linkTextModel(for id: LinkHighlightTextModelId, text: String) -> LinkHighlightTextModel {
         guard let model = linkTextModel[id] else {
-            let model = LinkHighlightTextModel(linkController: linkController, text: text, highlightedText: searchText) {
+            let editAction = editEnabled ? { link in self.editActions(for: id, linkModel: link) } : nil
+            let model = LinkHighlightTextModel(linkController: linkController, text: text, highlightedText: searchModel.searchText, toggler: {
                 self.toggle(id: id, itemId: $0, module: $1)
-            }
+            }, editAction: editAction)
+            
             linkTextModel[id] = model
             return model
         }
@@ -43,7 +48,7 @@ public final class TableSheetModel {
     @MainActor
     func updateSearch() {
         linkTextModel.forEach {
-            $0.value.reset(highlightedText: searchText)
+            $0.value.reset(highlightedText: searchModel.searchText)
         }
         sheets.forEach {
             $0.value.updateSearch()
@@ -61,7 +66,14 @@ public final class TableSheetModel {
     }
     
     @MainActor
-    func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules) {
+    func editActions(for id: LinkHighlightTextModelId, linkModel: LinkDataModel) -> Bool {
+        toggle(id: id, itemId: linkModel.sourceId, module: linkModel.sourceModule, close: true)
+        // remove from data
+        return true
+    }
+    
+    @MainActor
+    func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules, close: Bool = false) {
         switch id {
         case .description:
             let sheets = linkController.toggleSheet(itemId: itemId, level: 0, module: module)
@@ -73,7 +85,7 @@ public final class TableSheetModel {
                 group.sheetIds.removeAll(where: { $0 == itemId })
             } else {
                 guard let sheet = linkController.toggleSheet(itemId: itemId, level: group.level + 1, module: module) else { return }
-                let tableSheetModel = TableSheetModel(linkController: linkController, sheetModel: sheet, searchText: searchText)
+                let tableSheetModel = TableSheetModel(linkController: linkController, sheetModel: sheet, searchModel: searchModel, editEnabled: editEnabled)
                 tableSheetModel.id = itemId
                 sheets[tableSheetModel.id] = tableSheetModel
                 group.sheetIds.append(tableSheetModel.id)

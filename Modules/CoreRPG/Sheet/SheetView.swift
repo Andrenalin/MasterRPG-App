@@ -16,14 +16,14 @@ public struct SheetView: View {
                 .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
         }
 
-        ForEach(model.sheetModel.filteredGroups(for: model.searchText)) { group in
+        ForEach(model.sheetModel.filteredGroups(for: model.searchModel.searchText)) { group in
 
             SheetGroupView(model: model, group: group)
                 .font(.body)
                 .listRowBackground(rowColor(for: group.level))
                 .listRowInsets(EdgeInsets(top: 4, leading: 8 + CGFloat(group.level * 20), bottom: 4, trailing: 8))
 
-            ForEach(group.filteredEntries(for: model.searchText)) { entry in
+            ForEach(group.filteredEntries(for: model.searchModel.searchText)) { entry in
                 SheetEntryView(model: model, entry: entry)
                     .foregroundStyle(.secondary)
                     .font(.subheadline)
@@ -31,7 +31,7 @@ public struct SheetView: View {
                     .listRowInsets(EdgeInsets(top: 8, leading: 18 + CGFloat(group.level * 20), bottom: 8, trailing: 8))
             }
         }
-        .onChange(of: model.searchText) {
+        .onChange(of: model.searchModel.searchText) {
             withAnimation { model.updateSearch() }
         }
     }

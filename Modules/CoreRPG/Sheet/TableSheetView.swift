@@ -30,7 +30,7 @@ struct TableSheetView<ImageContent: View>: View {
     var listContentView: some View {
         List {
             SheetView(model: model)
-                .animation(.default, value: model.searchText)
+                .animation(.default, value: model.searchModel.searchText)
         }
         .listStyle(.plain)
         .contentMargins(.horizontal, 12, for: .scrollContent)
@@ -69,7 +69,7 @@ private extension TableSheetView {
 
     @ViewBuilder
     var searchBarView: some View {
-        @Bindable var model = model
+        @Bindable var model = model.searchModel
         TextField(text: $model.searchText, prompt: searchPlaceHolder) {
             Label {
                 Text("Search", bundle: .module)
@@ -108,7 +108,7 @@ private extension TableSheetView {
                     ])
                 ]
             ),
-            searchText: "in"
+            searchModel: SearchModel.preview(search: "in")
         ),
         showImage: false,
         dismissAction: nil,

@@ -14,15 +14,17 @@ struct LinkController: Sendable {
 
 extension LinkController: LinkControllable {
     
-    @MainActor public func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+    @MainActor public func toggleTextLink(model: LinkDataModel, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((LinkDataModel) -> Bool)?) -> String {
         let itemId = model.sourceId
         let entryId = model.sourceEntryId
         let module = model.sourceModule
         
         if let command {
             if command == LinkType.remove.rawValue {
-                let url = model.url
-                return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
+                if let editAction, editAction(model)  {
+                    return text.toggleLink(url: model.url, with: "", remove: true)
+                }
+                return text
             }
             if command == LinkType.show.rawValue {
                 toggler?(itemId, module)
@@ -38,7 +40,7 @@ extension LinkController: LinkControllable {
             guard let item = itemController.modelSync(for: itemId), let moduleModel = itemController.model(for: itemId) else { return text }
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? specialLink(linkType: .share, model: model) : ""
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, model: model))" : ""
-            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: item.module)) ?? false
+            let editLine = editAction != nil
             let removeAction = editLine ? " \(specialLink(linkType: .remove, model: model))" : ""
             let description: String
             if let entryId {

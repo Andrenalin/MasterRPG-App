@@ -88,9 +88,14 @@ struct MockRootViewModifier: ViewModifier {
             .environment(TabTitleModel())
             .environment(root.diceRoot)
             .environment(root.pdfRoot)
+            .environment(linkRootController)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif
+    }
+    
+    var linkRootController: LinkRootController {
+        LinkRootController(container: root.itemController.container, adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root, spaceRoot: root, tableRoot: root, weatherRoot: root)
     }
 }
 

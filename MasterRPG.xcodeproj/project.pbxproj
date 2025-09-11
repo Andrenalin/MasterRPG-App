@@ -280,7 +280,6 @@
 		8EA5A83C2E6A8FD500E70E9C /* TableRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EA5A8402E6A8FDE00E70E9C /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
 		8EA5A8412E6A8FDE00E70E9C /* RPGResources.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		8EA5A8452E6A8FF400E70E9C /* RPGValues.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECE5E2CD8EE9D004E7103 /* RPGValues.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EA8045A2E62EBC70009479F /* TableRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; };
 		8EA804642E62EBC70009479F /* TableRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; };
 		8EA804652E62EBC70009479F /* TableRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -292,7 +291,6 @@
 		8EA804752E62EBF60009479F /* DiceRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EB640062E47471400799690 /* DiceRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EA804792E62EC030009479F /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
 		8EA8047A2E62EC030009479F /* RPGResources.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		8EA8047E2E62EC080009479F /* RPGTables.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EBECE3D2CD8EE92004E7103 /* RPGTables.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EA804812E62EC160009479F /* TableRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; };
 		8EA804822E62EC160009479F /* TableRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8EA804852E62EC230009479F /* TableRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; };
@@ -2578,7 +2576,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				8EA5A8452E6A8FF400E70E9C /* RPGValues.framework in Embed Frameworks */,
 				8EA5A8382E6A8FD500E70E9C /* PhotoRPG.framework in Embed Frameworks */,
 				8EA5A8302E6A8FD500E70E9C /* DiceRPG.framework in Embed Frameworks */,
 				8EA5A8282E6A8FD500E70E9C /* CoreExternalRPG.framework in Embed Frameworks */,
@@ -2599,7 +2596,6 @@
 				8EA804752E62EBF60009479F /* DiceRPG.framework in Embed Frameworks */,
 				8E79C4762E6ADD8400893928 /* PdfRPG.framework in Embed Frameworks */,
 				8EA8046D2E62EBF60009479F /* CoreExternalRPG.framework in Embed Frameworks */,
-				8EA8047E2E62EC080009479F /* RPGTables.framework in Embed Frameworks */,
 				8EA8047A2E62EC030009479F /* RPGResources.framework in Embed Frameworks */,
 				8EA804712E62EBF60009479F /* CoreRPG.framework in Embed Frameworks */,
 			);

@@ -51,7 +51,7 @@ public final class LinkRootController {
 }
 
 extension LinkRootController {
-    public func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+    public func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) -> Void)?, editAction: ((LinkDataModel) -> Bool)?) -> String {
         guard let linkId = url.linkId, let model = linkRegisterController.linkDataModel(linkId: linkId) else { return text }
         
         guard let brokenLink = brokenTextLinkToggle(url: url, model: model, in: text) else {
