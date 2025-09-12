@@ -4,33 +4,7 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-public struct ConverterController {
-//    public static func insert(items: [RPGValues.ValueModel], into modelContext: ModelContext) {
-//        let fetchDesc = FetchDescriptor<CoreRPG.ItemDataModel>()
-//        let models = try? modelContext.fetch(fetchDesc)
-//
-//        items.forEach { item in
-//            guard let models, !models.contains(where: { $0.id == item.id }) else { return }
-//            
-//            let character = CharacterRPG.CharacterDataModel(itemId: item.id, photoId: item.photoId, photos: item.photos, parentId: item.parentId)
-//            modelContext.insert(character)
-//            let entries = item.entries.enumerated().map { (index, entry) in
-//                CharacterEntryDataModel(itemId: item.id, entryId: entry.id, index: index, name: entry.name, content: entry.value, valueType: toCharacterValueType(entry.type), diceId: entry.diceId, valueId: entry.valueId)
-//            }
-//            entries.forEach { modelContext.insert($0) }
-//            
-//            modelContext.insert(
-//                ItemDataModel(id: item.id, module: .value, name: item.name, information: item.description, category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .character, tags: item.tags, url: nil, displayState: item.displayState)
-//            )
-//        }
-//        
-//        try? modelContext.save()
-//    }
-//    
-//    static func toCharacterValueType(_ value: RPGValues.ValueEntryModel.ValueType) -> CharacterRPG.CharacterEntryDataModel.ValueType {
-//        CharacterRPG.CharacterEntryDataModel.ValueType(rawValue: value.rawValue) ?? .text
-//    }
-
+public struct ConverterController: ConverterControllable {
     @MainActor
     static func convert(old: ValueModel, itemController: ItemController) -> ItemDataCodableModel {
         let linkRegisterController = LinkRegisterController(container: itemController.container)
@@ -86,13 +60,14 @@ public struct ConverterController {
             _ = linkRegisterController.register(sourceId: old.id, sourceModule: .value, destinationId: diceId, destinationModule: .dice)
         }
         
+        let (category, tags) = convert(category: old.category.wrappedValue, tags: old.tags.wrappedValue, module: .value, collection: .collection)
         return ItemDataCodableModel(
             id: old.id,
             module: .value,
             name: old.name,
             information: old.description,
-            category: old.category.wrappedValue,
-            tags: old.tags.wrappedValue,
+            category: category,
+            tags: tags,
             fileUrl: nil,
             displayState: old.displayState,
             parentId: old.parentId,

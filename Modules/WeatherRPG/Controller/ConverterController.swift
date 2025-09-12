@@ -4,47 +4,7 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-public struct ConverterController {
-//    public static func insert(items: [RPGWeathers.WeatherModel], into modelContext: ModelContext) {
-//        let fetchDesc = FetchDescriptor<CoreRPG.ItemDataModel>()
-//        let models = try? modelContext.fetch(fetchDesc)
-//
-//        items.forEach { item in
-//            guard let models, !models.contains(where: { $0.id == item.id }) else { return }
-//            
-//            let mappedThickness = toWeatherThickness(item.cloudThickness)
-//            let mappedStorm = toWeatherStorm(item.stormType)
-//
-//            let model = WeatherDataModel(
-//                itemId: item.id,
-//                photoId: item.photoId,
-//                time: item.time,
-//                cloudThickness: mappedThickness,
-//                stormType: mappedStorm,
-//                rainAngle: item.rainAngle,
-//                rainIntensity: item.rainIntensity,
-//                lightningFrequency: item.lightningFrequency,
-//                lightningMaxBolts: item.lightningMaxBolts,
-//                lightningForkProbability: item.lightningForkProbability
-//            )
-//            modelContext.insert(model)
-//            
-//            modelContext.insert(
-//                ItemDataModel(
-//                    id: item.id,
-//                    module: .weather,
-//                    name: item.name,
-//                    information: item.description,
-//                    category: CoreRPG.ItemListCategory(rawValue: item.category.rawValue) ?? .adventure,
-//                    tags: item.tags,
-//                    url: nil,
-//                    displayState: item.displayState
-//                )
-//            )
-//        }
-//        try? modelContext.save()
-//    }
-    
+public struct ConverterController: ConverterControllable {
     @MainActor static func convert(old: WeatherModel, itemController: ItemController) -> ItemDataCodableModel {
         let model = WeatherDataModel.WeatherDataModelCodable(
             itemId: old.id,
@@ -66,13 +26,14 @@ public struct ConverterController {
             _ = linkController.register(sourceId: old.id, sourceModule: .weather, destinationId: photoId, destinationModule: .photo)
         }
 
+        let (category, tags) = convert(category: old.category.wrappedValue, tags: old.tags.wrappedValue, module: .weather, collection: .collection)
         return ItemDataCodableModel(
             id: old.id,
             module: .weather,
             name: old.name,
             information: old.description,
-            category: old.category.wrappedValue,
-            tags: old.tags.wrappedValue,
+            category: category,
+            tags: tags,
             fileUrl: nil,
             displayState: old.displayState,
             parentId: nil,
@@ -81,13 +42,3 @@ public struct ConverterController {
         )
     }
 }
-
-//private extension ConverterController {
-//    static func toWeatherThickness(_ value: RPGWeathers.Cloud.Thickness) -> WeatherRPG.Cloud.Thickness {
-//        WeatherRPG.Cloud.Thickness(rawValue: value.rawValue) ?? .none
-//    }
-//
-//    static func toWeatherStorm(_ value: RPGWeathers.Storm.Contents) -> WeatherRPG.Storm.Contents {
-//        WeatherRPG.Storm.Contents(rawValue: value.rawValue) ?? .none
-//    }
-//}

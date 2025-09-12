@@ -3,10 +3,7 @@
 import SwiftData
 import SwiftUI
 
-public struct ItemGroupItemView: View {
-    public init(model: ItemDataModel) {
-        self.model = model
-    }
+struct ItemGroupItemView: View {
     let model: ItemDataModel
 
     @Environment(\.modelContext) var modelContext
@@ -18,10 +15,9 @@ public struct ItemGroupItemView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Image(systemName: item.category.icon)
+            Image(systemName: model.module.icon)
                 .imageScale(.large)
-                .
-            font(.title)
+                .font(.title)
         }
         .frame(width: 128)
         .padding()
