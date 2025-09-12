@@ -14,7 +14,7 @@ struct EntryList: View {
     @Environment(CacheItemListModel.self) private var cacheItemListModel
 
     var body: some View {
-        List {
+        //List {
             ForEach(entries) { entry in
                 EntryRow(entryId: entry.entryId, name: entry.name, content: entry.content, cacheItemListModel: cacheItemListModel)
             }
@@ -31,7 +31,7 @@ struct EntryList: View {
                     element.index = index
                 }
             }
-        }
+        //}
     }
     
     var model: TableDataModel? {

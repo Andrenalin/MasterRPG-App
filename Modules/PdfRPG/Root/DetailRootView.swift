@@ -10,7 +10,7 @@ struct DetailRootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(PdfRootModel.self) private var root
     
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: WindowIdentifier.pdfViewer.rawValue, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.pdf.viewerkWindowId, route: { DetailRoute.viewer($0) })
 
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {

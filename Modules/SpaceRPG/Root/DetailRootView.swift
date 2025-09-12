@@ -10,7 +10,7 @@ struct DetailRootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(SpaceRootModel.self) private var root
     
-    @State private var openFileWindowModel = OpenFileWindowModel()
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerkWindowId, route: { DetailRoute.viewer($0) })
 
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {

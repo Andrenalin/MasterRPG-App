@@ -103,7 +103,11 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .search: "NoWindow"
         }
     }
-    
+
+    public var viewerkWindowId: String {
+        linkWindowId + "Viewer"
+    }
+
     public var linkAltWindowId: String {
         linkWindowId + "Alt"
     }

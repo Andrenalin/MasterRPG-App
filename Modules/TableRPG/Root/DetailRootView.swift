@@ -16,7 +16,7 @@ struct DetailRootView: View {
     @Environment(LinkRootController.self) private var linkController
     @Environment(TableRootModel.self) private var root
     
-    @State private var openFileWindowModel = OpenFileWindowModel()
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.table.viewerkWindowId, canShow: true, route: { DetailRoute.viewer($0) })
     @State private var tableSheetModel: TableSheetModel?
     @State private var showQuickEditor: Bool = false
     
@@ -40,20 +40,22 @@ struct DetailRootView: View {
         .navigationDestination(for: TableEditorRoute.self) { route in
             route
         }
-        .onChange(of: selectedModel?.id, initial: true) {
-            guard let tableModel else { return }
-            let sheetModel = SheetController(itemController: root.itemController).sheet(for: tableModel.itemId)
-            tableSheetModel = TableSheetModel(linkController: linkController, sheetModel: sheetModel, searchModel: root.searchModel, editEnabled: true)
-        }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    navigator.navigate(to: TableEditorRoute.quickEditor, method: .managedCover)
-                } label: {
-                    Image(systemName: "table.badge.more")
+        .overlay {
+            if openFileWindowModel.showItem {
+                root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId) {
+                    openFileWindowModel.showItem = false
                 }
             }
         }
+//        .toolbar {
+//            ToolbarItem(placement: .primaryAction) {
+//                Button {
+//                    navigator.navigate(to: TableEditorRoute.quickEditor, method: .managedCover)
+//                } label: {
+//                    Image(systemName: "table.badge.more")
+//                }
+//            }
+//        }
         .environment(openFileWindowModel)
     }
     
@@ -74,10 +76,8 @@ struct DetailRootView: View {
             .onChange(of: model.diceId, initial: true) {
                 withAnimation { root.editController.selectionDice.resetSelection(itemId: model.diceId) }
             }
-                
-        if let tableSheetModel {
-            SheetView(model: tableSheetModel)
-        }
+
+        EntryList(itemId: model.itemId)
     }
 }
 

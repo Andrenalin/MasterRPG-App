@@ -34,4 +34,20 @@ public extension ViewController {
             .environment(root.diceRoot)
             .environment(root.pdfRoot)
     }
+    
+    @MainActor @ViewBuilder
+    func windowViewer(root: TableRootModel, selection: WindowItemSelection) -> some View {
+        if let model = root.itemController.model(for: selection.itemId) {
+            TableSheet(model: model, showTopImage: false, dismissAction: nil)
+                .environment(root)
+        }
+    }
+
+    @MainActor @ViewBuilder
+    func inlineViewer(root: TableRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        if let model = root.itemController.model(for: id) {
+            TableSheet(model: model, showTopImage: false, dismissAction: dismissAction)
+                .environment(root)
+        }
+    }
 }

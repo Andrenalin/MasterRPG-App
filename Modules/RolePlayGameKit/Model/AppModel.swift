@@ -176,6 +176,13 @@ public extension AppModel {
             fatalError()
         }
     }
+    
+    func windowViewerPlacement(for module: NetworkModules) -> WindowPlacementPosition {
+        switch module {
+        case .pdf: .below(WindowIdentifier.game.rawValue)
+        default: .trailing(WindowIdentifier.game.rawValue, fallback: nil)
+        }
+    }
 }
 
 extension AppModel {

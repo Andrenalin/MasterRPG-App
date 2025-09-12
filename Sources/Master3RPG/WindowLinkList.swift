@@ -65,18 +65,17 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            //.tint(colorScheme == .dark ? module.tint : module.color)
-            .tint(module.tint)
             .frame(minWidth: 350, minHeight: 400)
+            .handlesExternalEvents(preferring: [], allowing: [])
             .onDisappear {
                 model.windowStateModel.openWindowState[module] = false
             }
-            .handlesExternalEvents(preferring: [], allowing: [])
+            .tint(module.tint)
 #if os(iOS)
             .environment(\.colorScheme, model.settingsModel.appColorScheme.colorScheme(for: colorScheme))
 #endif
 #if os(macOS)
-                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
 #endif
     }
 }

@@ -4,7 +4,7 @@ import Foundation
 
 public enum WindowIdentifier: String {
     case additionalEditor
-    case adventureViewer
+//    case adventureViewer
     case editor
     case game
     case generatorTableEditor
@@ -12,10 +12,10 @@ public enum WindowIdentifier: String {
     case logs
     case mapBookViewer
     case mapEditor
-    case pdfViewer
-    case photoViewer
-    case spaceViewer
-    case tableViewer
-    case valueViewer
-    case weatherViewer
+//    case pdfViewer
+//    case photoViewer
+//    case spaceViewer
+//    case tableViewer
+//    case valueViewer
+//    case weatherViewer
 }

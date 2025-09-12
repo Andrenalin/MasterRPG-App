@@ -58,6 +58,12 @@ struct SheetGroupView: View {
                 SheetView(model: sheetModel)
             }
         }
+        .applyIf(model.editEnabled) { content in
+            content.onDelete { indexSet in
+                print(indexSet)
+                //group.sheetIds.remove(atOffsets: indexSet)
+            }
+        }
     }
     
     var text: String {

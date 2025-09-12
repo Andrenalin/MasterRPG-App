@@ -4,6 +4,7 @@ import CoreExternalRPG
 import CoreRPG
 import PdfRPG
 import SwiftUI
+import DiceRPG
 
 struct QuickEntryEditor: View {
     init(editController: EditController, currentModel: TableDataModel) {
@@ -33,6 +34,7 @@ struct QuickEntryEditor: View {
     @State private var entries: [TableEntryDataModel.TableEntryDataModelCodable] = []
     
     @State private var showHelp = false
+    @State private var showInspector = false
     @State private var showResult = false
     
     @State private var showEffectedLinksAlert: Bool = false
@@ -99,6 +101,11 @@ struct QuickEntryEditor: View {
 #if os(macOS)
         .frame(minWidth: 800, minHeight: 600)
 #endif
+#if !os(visionOS)
+        .inspector(isPresented: $showInspector) {
+            LinkRootView(type: .inspector)
+        }
+#endif
     }
 }
 
@@ -124,6 +131,9 @@ private extension QuickEntryEditor {
     
     @ViewBuilder
     var secondaryActionMenu: some View {
+        ControlGroup {
+            showInspectorButton
+        }
         ControlGroup {
             showResultButton
             removeLineBreak
@@ -153,11 +163,14 @@ private extension QuickEntryEditor {
         .overlay {
 #if os(iOS) || os(tvOS)
             if let selectedPdf = editController.selectionPdf.itemId {
-                root.pdfRoot.viewController.inlineViewer(root: root.pdfRoot, with: selectedPdf, withoutBookmark: true) {
-                    withAnimation { editController.selectionPdf.resetSelection(itemId: nil) }
+                VStack {
+                    Text("SelectedPdf")
+                    root.pdfRoot.viewController.inlineViewer(root: root.pdfRoot, with: selectedPdf, withoutBookmark: true) {
+                        withAnimation { editController.selectionPdf.resetSelection(itemId: nil) }
+                    }
+                    .background(.black)
+                    //.pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
                 }
-                .background(.black)
-                //.pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
             }
 #endif
         }
@@ -305,6 +318,18 @@ private extension QuickEntryEditor {
                 Text("Remove Line Breaks", bundle: .module)
             } icon: {
                 Image(systemName: "text.insert")
+            }
+        }
+    }
+
+    var showInspectorButton: some View {
+        Button {
+            withAnimation { showInspector.toggle() }
+        } label: {
+            Label {
+                Text("Show Inspector", bundle: .module)
+            } icon: {
+                Image(systemName: "scope")
             }
         }
     }

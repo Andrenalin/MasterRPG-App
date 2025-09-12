@@ -47,5 +47,4 @@ public extension ViewController {
         return ViewerRootView(model: model, dismissAction: dismissAction)
             .environment(root)
     }
-
 }

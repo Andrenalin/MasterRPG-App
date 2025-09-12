@@ -11,7 +11,7 @@ struct DetailRootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(WeatherRootModel.self) private var root
     
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: WindowIdentifier.pdfViewer.rawValue, canShow: true, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.weather.viewerkWindowId, canShow: true, route: { DetailRoute.viewer($0) })
     
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {

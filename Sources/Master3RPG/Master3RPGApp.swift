@@ -79,7 +79,7 @@ struct Master3RPGApp: App {
 #endif
         
 #if !os(tvOS)
-        WindowList(appModel: appModel)
+        WindowViewerList(appModel: appModel)
             .modelContainer(appModel.modelContainer)
         WindowLinkList(appModel: appModel)
             .modelContainer(appModel.modelContainer)
