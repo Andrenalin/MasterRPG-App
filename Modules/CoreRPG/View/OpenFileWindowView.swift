@@ -27,9 +27,11 @@ public final class OpenFileWindowModel {
     }
 }
 
-struct OpenFileViewerViewModifier: ViewModifier {
+struct OpenFileViewerViewModifier<ToolBar: View>: ViewModifier {
     let model: ItemDataModel
     let module: NetworkModules
+    
+    @ViewBuilder let toolbarSecondaryButton: ToolBar
 
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(GroupItemSelectionModel.self) private var selection
@@ -37,6 +39,8 @@ struct OpenFileViewerViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content.toolbar {
             ToolbarItem(placement: secondaryMenuPlacement) {
+                toolbarSecondaryButton
+                
                 if !model.specialCategory && openFileWindowModel.showItem == false && openFileWindowModel.enabled {
                     OpenFileWindowView(model: openFileWindowModel, module: module)
                 }

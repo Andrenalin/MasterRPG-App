@@ -47,15 +47,15 @@ struct DetailRootView: View {
                 }
             }
         }
-//        .toolbar {
-//            ToolbarItem(placement: .primaryAction) {
-//                Button {
-//                    navigator.navigate(to: TableEditorRoute.quickEditor, method: .managedCover)
-//                } label: {
-//                    Image(systemName: "table.badge.more")
-//                }
-//            }
-//        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    navigator.navigate(to: TableEditorRoute.quickEditor, method: .managedCover)
+                } label: {
+                    Image(systemName: "table.badge.more")
+                }
+            }
+        }
         .environment(openFileWindowModel)
     }
     

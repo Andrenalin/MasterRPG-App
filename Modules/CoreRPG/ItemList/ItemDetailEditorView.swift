@@ -15,7 +15,7 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
         self.inspector = inspector()
         self.overlay = overlay()
     }
-
+    
     let root: any ItemRootControllable
     let model: ItemDataModel
     let cacheItemListModel: CacheItemListModel
@@ -23,20 +23,20 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
     let editor: Editor
     let inspector: Inspector
     let overlay: Overlay
-
+    
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
-
+    
     @State private var isEditing = false
     @State private var showInspector = false
     @State private var itemIdHasUrl = UUID()
-
+    
     @Environment(\.colorScheme) private var colorScheme
     @Environment(SearchModel.self) private var searchModel
     @Environment(GroupItemSelectionModel.self) private var selection
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
-
+    
     public var body: some View {
         let _ = Self._printChanges()
         HeaderFooterContentScrollView {
@@ -103,18 +103,12 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
                     }
                 }
             }
-
+            
             ToolbarItem(placement: .primaryAction) {
-                if canShowInspector && openFileWindowModel.showItem == false {
-                    Button {
-                        withAnimation { showInspector.toggle() }
-                    } label: {
-                        Image(systemName: "scope")
-                    }
-                }
+                inspectorButton()
             }
         }
-        .modifier(OpenFileViewerViewModifier(model: model, module: root.module))
+        .modifier(OpenFileViewerViewModifier(model: model, module: root.module, toolbarSecondaryButton: EmptyView.init))
     }
 }
 
@@ -126,7 +120,7 @@ private extension ItemDetailEditorView {
     var hasFile: Bool {
         model.url != nil || fileTypes.isEmpty
     }
-
+    
     var navigationHeader: Text {
         Text("\(Image(systemName: root.module.icon)) \(root.module.title)")
     }
@@ -134,7 +128,7 @@ private extension ItemDetailEditorView {
     var headerView: some View {
         ZStack(alignment: .bottom) {
             header
-              
+            
             ItemDetailOverlayView(model: model)
                 .padding()
         }
@@ -151,7 +145,7 @@ private extension ItemDetailEditorView {
         true
 #endif
     }
-
+    
     @ViewBuilder
     var initialFileImporterView: some View {
         HStack {
@@ -166,7 +160,7 @@ private extension ItemDetailEditorView {
         .opacity(hasFile || model.specialCategory ? 0 : 1)
         .transition(.scale)
     }
-
+    
     @ViewBuilder
     var bottomView: some View {
         if hasFile && model.specialCategory == false && root.viewControllable.goupViewType != .none {
@@ -185,7 +179,7 @@ private extension ItemDetailEditorView {
             .transition(.move(edge: .bottom))
         }
     }
-
+    
     @ViewBuilder
     var contentView: some View {
         ZStack {
@@ -231,16 +225,29 @@ private extension ItemDetailEditorView {
             inspector
         }
     }
-
+    
     func updateFile(url: URL) {
         root.editControllable.resetFile(url: url, in: model)
+    }
+    
+    @ViewBuilder
+    func inspectorButton() -> some View {
+        ControlGroup {
+            if canShowInspector && openFileWindowModel.showItem == false {
+                Button {
+                    withAnimation { showInspector.toggle() }
+                } label: {
+                    Image(systemName: "scope")
+                }
+            }
+        }
     }
 }
 
 //#Preview("Folder", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root
 //    @Previewable @Query var models: [ItemDataModel]
-//    
+//
 //    NavigationStack {
 //        DetailRootView(itemId: MockData.folderId)
 //    }
