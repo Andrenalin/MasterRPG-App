@@ -9,6 +9,8 @@ struct DetailRootView: View {
     
     @Environment(\.modelContext) private var modelContext
     @Environment(DiceRootModel.self) private var root
+        
+    @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
         CoreRPG.DetailRootView(selectedId: selectedId) {
@@ -19,6 +21,7 @@ struct DetailRootView: View {
                 detailEditorView(model: model)
             }
         }
+        .environment(openFileWindowModel)
     }
     
     var model: DiceDataModel? {

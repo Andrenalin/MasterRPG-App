@@ -113,21 +113,6 @@ private extension ItemHeaderEditorView {
     var categoryTagsSection: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading) {
-                Text("Category", bundle: .module)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker(selection: $category) {
-                    ForEach(ItemListCategory.allCases, id: \.self) { cat in
-                        Text(cat.title)
-                            .tag(cat)
-                    }
-                } label: {
-                    Text("Category", bundle: .module)
-                }
-                .pickerStyle(.menu)
-            }
-            
-            VStack(alignment: .leading) {
                 Text("Tags", bundle: .module)
                     .font(.caption)
                     .foregroundStyle(.secondary)

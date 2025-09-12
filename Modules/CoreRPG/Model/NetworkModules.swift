@@ -114,41 +114,41 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     
     public var color: Color {
         switch self {
-        case .adventure: .blue
+        case .adventure: Color("AdventureBackground", bundle: .module)
         case .audio: Color("AudioBackground", bundle: .module)
-        case .dice: .purple
-        case .editor: .gray
+        case .dice: Color("DiceBackground", bundle: .module)
+        case .editor: .blue
         case .map: Color("MapBackground", bundle: .module)
-        case .none: .clear
-        case .game: .pink
+        case .none: .blue
+        case .game: .blue
         case .pdf: Color("PdfBackground", bundle: .module)
-        case .photo: .yellow
-        case .space: .brown
-        case .setting: .mint
+        case .photo: Color("PhotoBackground", bundle: .module)
+        case .space: Color("SpaceBackground", bundle: .module)
+        case .setting: .blue
         case .table: Color("TableBackground", bundle: .module)
-        case .value: .teal
-        case .weather: .orange
+        case .value: Color("CharacterBackground", bundle: .module)
+        case .weather: Color("WeatherBackground", bundle: .module)
         case .search: .blue
         }
     }
     
     public var tint: Color {
         switch self {
-        case .adventure: .green
+        case .adventure: Color("AdventureTint", bundle: .module)
         case .audio: Color("AudioTint", bundle: .module)
-        case .dice: .green
-        case .editor: .green
+        case .dice: Color("DiceTint", bundle: .module)
+        case .editor: .blue
         case .map: Color("MapTint", bundle: .module)
-        case .none: .black
-        case .game: .yellow
+        case .none: .blue
+        case .game: .blue
         case .pdf: Color("PdfTint", bundle: .module)
-        case .photo: .green
-        case .space: .green
-        case .setting: .green
+        case .photo: Color("PhotoTint", bundle: .module)
+        case .space: Color("SpaceTint", bundle: .module)
+        case .setting: .blue
         case .table: Color("TableTint", bundle: .module)
-        case .value: .red
-        case .weather: .green
-        case .search: .green
+        case .value: Color("CharacterTint", bundle: .module)
+        case .weather: Color("WeatherTint", bundle: .module)
+        case .search: .blue
         }
     }
 }

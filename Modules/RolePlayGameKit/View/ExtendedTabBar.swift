@@ -72,7 +72,7 @@ private extension ExtendedTabBar {
     }
 
     func gridButtonView(for route: ExtendedTabRoute, in navigator: Navigator) -> some View {
-        GridButtonView(value: route.module, color: colorScheme == .dark ? route.module.color : route.module.tint) {
+        GridButtonView(value: route.module, color: route.module.tint) {
             navigator.push(route)
         }
         .modifier(ZoomDestinationViewModifier(sourceID: route.module.token, namespace: zoomNamespace))

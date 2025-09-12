@@ -27,7 +27,6 @@ public struct LinkRootView: View {
         LinkItemListView(root: root, type: type, parentModel: nil)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)        
-            .environment(DeviceRotationModel())
             .environment(CacheItemListModel())
             .onChange(of: items, initial: true) {
                 withAnimation { root.listLinkControllable.update(items: items.filter { $0.module == root.module }, parentModel: nil) }

@@ -32,7 +32,6 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
     @State private var showInspector = false
     @State private var itemIdHasUrl = UUID()
     
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(SearchModel.self) private var searchModel
     @Environment(GroupItemSelectionModel.self) private var selection
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
@@ -92,6 +91,7 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
                 .presentationContentInteraction(.resizes)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+                .tint(root.module.tint)
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -152,8 +152,8 @@ private extension ItemDetailEditorView {
             FileImporterView(editControllable: root.editControllable, model: model, fileTypes: fileTypes)
                 .padding(32)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.accentColor, lineWidth: 2)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)                    
+                        .stroke(.tint, lineWidth: 2)
                 }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)

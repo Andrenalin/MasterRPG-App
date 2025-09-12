@@ -17,7 +17,7 @@ struct ColoredEditRowViewModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .padding(6)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {

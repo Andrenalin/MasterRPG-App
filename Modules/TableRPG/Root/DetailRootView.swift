@@ -27,7 +27,7 @@ struct DetailRootView: View {
                 detailEditorView(model: tableModel)
             }
         } inspector: {
-            root.diceRoot.viewController.linkWindow(root: root.diceRoot, isInspector: true)
+            LinkRootView(type: .inspector)
         }
         .navigationDestination(for: SelectionDiceRoute.self) { route in
             route

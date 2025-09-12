@@ -2962,20 +2962,6 @@
 			);
 			target = 8E7C79F42E14C73600C98D17 /* Master3RPG */;
 		};
-		8EA29AF52E6F152800BA3C3A /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Resources/Assets.xcassets,
-			);
-			target = 8EF512862E5E03C200B4CE44 /* WeatherRPG */;
-		};
-		8EA29AF62E6F152800BA3C3A /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Resources/Assets.xcassets,
-			);
-			target = 8EBECE7E2CD8EEA9004E7103 /* RPGWeathers */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -3033,7 +3019,7 @@
 		8ED3ABA72E2B45B000FF3AE8 /* RolePlayGameKitTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RolePlayGameKitTests; sourceTree = "<group>"; };
 		8EEF8E062E3639E200393DAD /* PdfRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PdfRPG; sourceTree = "<group>"; };
 		8EEF8E132E3639E200393DAD /* PdfRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PdfRPGTests; sourceTree = "<group>"; };
-		8EF512882E5E03C200B4CE44 /* WeatherRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8EA29AF52E6F152800BA3C3A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 8EA29AF62E6F152800BA3C3A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = WeatherRPG; sourceTree = "<group>"; };
+		8EF512882E5E03C200B4CE44 /* WeatherRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = WeatherRPG; sourceTree = "<group>"; };
 		8EF512952E5E03C200B4CE44 /* WeatherRPGTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = WeatherRPGTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 

@@ -27,6 +27,7 @@ public struct FileImporterView: View {
                 .imageScale(isProminent ? .large : .medium)
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
         }
+        .background(.tint)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: fileTypes) { result in
             guard let url = try? result.get() else { return }
             editControllable.resetFile(url: url, in: model)
