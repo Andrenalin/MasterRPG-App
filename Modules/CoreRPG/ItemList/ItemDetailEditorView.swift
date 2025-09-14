@@ -6,7 +6,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay: View>: View {
-    init(root: any ItemRootControllable, model: ItemDataModel, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder overlay: () -> Overlay = EmptyView.init) {
+    init(root: any ItemRootControllable, model: ItemDataModel, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder overlay: () -> Overlay = EmptyView.init, hasOverlay: Bool) {
         self.root = root
         self.model = model
         self.cacheItemListModel = CacheItemListModel()
@@ -14,6 +14,7 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
         self.editor = editor()
         self.inspector = inspector()
         self.overlay = overlay()
+        self.hasOverlay = hasOverlay
     }
     
     let root: any ItemRootControllable
@@ -23,6 +24,7 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
     let editor: Editor
     let inspector: Inspector
     let overlay: Overlay
+    let hasOverlay: Bool
     
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -44,13 +46,17 @@ struct ItemDetailEditorView<Header: View, Editor: View, Inspector: View, Overlay
             contentView
         } footer: {
             bottomView
-                .overlay(alignment: .top) {
-                    overlay
-                        .offset(y: -100)
-                }
         } background: {
             Rectangle()
                 .fill(model.module.color)
+        }
+        .overlay(alignment: .bottom) {
+            if hasOverlay {
+                overlay
+                    .safeAreaInset(edge: .bottom) {
+                        bottomView.opacity(0)
+                    }
+            }
         }
         .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -204,6 +210,10 @@ private extension ItemDetailEditorView {
                 ListRootView(root: root, parentModel: model)
             } else {
                 Form {
+                    if model.information.isEmpty == false {
+                        ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
+                    }
+
                     editor
                 }
                 .scrollBounceBehavior(.basedOnSize)
@@ -212,8 +222,11 @@ private extension ItemDetailEditorView {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .opacity(hasFile || model.specialCategory ? 1 : 0)
         .transition(.scale)
-        .safeAreaInset(edge: .bottom) {
-            overlay
+        .applyIf(hasOverlay) {
+            $0
+                .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+                    overlay.opacity(0)
+                }
         }
     }
     

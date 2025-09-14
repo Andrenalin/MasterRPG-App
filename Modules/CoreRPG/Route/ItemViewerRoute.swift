@@ -29,7 +29,7 @@ extension ItemViewerRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DetailRootView(selectedId: itemId)
+            ItemDetailRootView(selectedId: itemId)
         }
     }
 }

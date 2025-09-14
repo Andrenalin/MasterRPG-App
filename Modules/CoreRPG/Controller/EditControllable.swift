@@ -157,6 +157,12 @@ public extension EditControllable {
 
 // MARK: - Editor
 public extension EditControllable {
+    func duplicateName(from original: String) -> String {
+        let copyKey: LocalizedStringResource = "Copy"
+        let copyString = String(localized: copyKey).localizedString
+        return "\(original) \(copyString)"
+    }
+
     func update(model: ItemDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
         model.withTransaction { modelContext in
             model.reset(name: name)

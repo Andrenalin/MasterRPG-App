@@ -13,13 +13,15 @@ struct DetailRootView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
-        CoreRPG.DetailRootView(selectedId: selectedId) {
+        ItemDetailRootView(selectedId: selectedId) {
         } editor: {
             if let model {
                 DiceViewer(model: model, isEditor: false)
 
                 detailEditorView(model: model)
             }
+        } overlay: {
+            diceOverlay
         }
         .environment(openFileWindowModel)
     }
@@ -36,6 +38,21 @@ struct DetailRootView: View {
             FumbleEditor(model: model)
             RerollEditor(model: model)
             SpecialOptionEditor(model: model)
+    }
+    
+    @ViewBuilder
+    var diceOverlay: some View {
+        if let model {
+            GlassEffectContainerView {
+                DiceViewer(model: model, isEditor: false)
+                    .padding()
+#if !os(visionOS)
+            .glassEffect(.clear)
+#endif
+            }
+            .padding()
+        }
+
     }
 }
 

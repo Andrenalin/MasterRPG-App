@@ -11,6 +11,10 @@ struct MockData: PreviewModifier {
     static let previewId2 = UUID()
     static let previewId3 = UUID()
 
+    static let previewEntryId = UUID()
+    static let previewEntryId2 = UUID()
+    static let previewEntryId3 = UUID()
+
     func body(content: Content, context: ModelContainer) -> some View {
         content
             .modifier(MockRootViewModifier(modelContext: context.mainContext))
@@ -18,14 +22,14 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: TableDataModel.self, TableEntryDataModel.self, ItemDataModel.self, TagDataModel.self,
+            for: TableDataModel.self, TableEntryDataModel.self, ItemDataModel.self, LinkDataModel.self, TagDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
         let entries = [
-            TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 0, name: "1", content: "Really only Cooper"),
-            TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 1, name: "2-9", content: "You found some Silver"),
-            TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 2, name: "10-15", content: "Some Gold and Silver"),
+            TableEntryDataModel(itemId: previewId, entryId: previewEntryId, index: 0, name: "1", content: "Really only Cooper"),
+            TableEntryDataModel(itemId: previewId, entryId: previewEntryId2, index: 1, name: "2-9", content: "You found some Silver"),
+            TableEntryDataModel(itemId: previewId, entryId: previewEntryId3, index: 2, name: "10-15", content: "Some Gold and Silver"),
             TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 3, name: "16-19", content: "Rich on Gold and Silver"),
             TableEntryDataModel(itemId: previewId, entryId: UUID(), index: 4, name: "20", content: "Mega Loot Gold- dold"),
         ]
@@ -42,7 +46,9 @@ struct MockData: PreviewModifier {
             tags: ["Example", "Title", "Ouside"]
         )
         container.mainContext.insert(model1)
-        
+
+        let item2 = TableDataModel(itemId: previewId2)
+        container.mainContext.insert(item2)
         let model2 = ItemDataModel(
             id: previewId2,
             module: .table,
@@ -52,9 +58,9 @@ struct MockData: PreviewModifier {
             tags: ["Player", "Mega", "Gnome"]
         )
         container.mainContext.insert(model2)
-        let weather2 = TableDataModel(itemId: previewId2)
-        container.mainContext.insert(weather2)
 
+        let item3 = TableDataModel(itemId: previewId)
+        container.mainContext.insert(item3)
         let model3 = ItemDataModel(
             id: previewId3,
             module: .table,
@@ -64,8 +70,11 @@ struct MockData: PreviewModifier {
             tags: ["NPC", "Wizward", "Schwarzmagier"]
         )
         container.mainContext.insert(model3)
-        let weather3 = TableDataModel(itemId: previewId)
-        container.mainContext.insert(weather3)
+        do {
+            try container.mainContext.save()
+        } catch {
+            print("Save error \(error.localizedDescription)")
+        }
         return container
     }
 }

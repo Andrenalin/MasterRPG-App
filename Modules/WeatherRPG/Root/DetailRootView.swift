@@ -14,7 +14,7 @@ struct DetailRootView: View {
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.weather.viewerkWindowId, canShow: true, route: { DetailRoute.viewer($0) })
     
     var body: some View {
-        CoreRPG.DetailRootView(selectedId: selectedId) {
+        ItemDetailRootView(selectedId: selectedId) {
         } editor: {
             if let weatherModel {
                 detailEditorView(model: weatherModel)

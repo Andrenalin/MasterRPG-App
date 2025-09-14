@@ -13,7 +13,7 @@ struct DetailRootView: View {
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.pdf.viewerkWindowId, route: { DetailRoute.viewer($0) })
 
     var body: some View {
-        CoreRPG.DetailRootView(selectedId: selectedId) {
+        ItemDetailRootView(selectedId: selectedId) {
         } editor: {
             if let selectedModel {
                 GroupedPhotoView(cacheController: root.cacheController, model: selectedModel)

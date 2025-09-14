@@ -12,7 +12,7 @@ public final class TableDataModel {
         self.entries = entries
     }
     
-    var itemId: UUID = UUID()
+    public var itemId: UUID = UUID()
     var diceId: UUID?
     
     @Relationship(deleteRule: .cascade) private var entries_: [TableEntryDataModel]? = []
@@ -53,7 +53,7 @@ public final class TableDataModel {
 }
 
 extension TableDataModel {
-    var entries: [TableEntryDataModel] {
+    public var entries: [TableEntryDataModel] {
         get {
             guard let all = entries_ else { return [] }
             return all.sorted { $0.index < $1.index }
@@ -63,7 +63,7 @@ extension TableDataModel {
         }
     }
     
-    subscript(id: UUID) -> TableEntryDataModel {
+    public subscript(id: UUID) -> TableEntryDataModel {
         get { entries.first(where: { $0.entryId == id }) ?? TableEntryDataModel(itemId: itemId) }
         set(newValue) {
             guard let index = entries.firstIndex(where: { $0.entryId == id }) else { return }
@@ -71,3 +71,5 @@ extension TableDataModel {
         }
     }
 }
+
+extension TableDataModel: EntryEditModel {}

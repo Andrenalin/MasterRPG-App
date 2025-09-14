@@ -14,7 +14,7 @@ struct DetailRootView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
-        CoreRPG.DetailRootView(selectedId: selectedId) {
+        ItemDetailRootView(selectedId: selectedId) {
         } editor: {
                 if let tableModel {
                     detailEditorView(model: tableModel)

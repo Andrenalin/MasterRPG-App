@@ -21,13 +21,17 @@ struct DetailRootView: View {
     @State private var showQuickEditor: Bool = false
     
     var body: some View {
-        CoreRPG.DetailRootView(selectedId: selectedId) {
+        ItemDetailRootView(selectedId: selectedId) {
         } editor: {
             if let tableModel {
                 detailEditorView(model: tableModel)
             }
         } inspector: {
             LinkRootView(type: .inspector)
+        } entryEditor: {
+            if let tableModel {
+                EntryEditorView(entryEditController: root.entryEditController, model: tableModel)
+            }
         }
         .navigationDestination(for: SelectionDiceRoute.self) { route in
             route
@@ -76,8 +80,8 @@ struct DetailRootView: View {
             .onChange(of: model.diceId, initial: true) {
                 withAnimation { root.editController.selectionDice.resetSelection(itemId: model.diceId) }
             }
-
-        EntryList(itemId: model.itemId)
+        
+        EntryListView(entryEditController: root.entryEditController, model: model)
     }
 }
 
@@ -90,6 +94,6 @@ struct DetailRootView: View {
     }
     .onAppear {
         root.listControllable.update(items: models, parentModel: nil)
-        root.listControllable.listModel.set(selectedItemId: models.first!.id)
+        root.listControllable.listModel.set(selectedItemId: MockData.previewId)
     }
 }

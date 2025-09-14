@@ -43,6 +43,9 @@ public final class TableRootModel {
     @ObservationIgnored lazy var editController: EditController = {
         EditController(itemControllable: itemController, fileUrlDataController: nil)
     }()
+    @ObservationIgnored lazy var entryEditController: EntryEditController = {
+        EntryEditController(editController: editController)
+    }()
     @ObservationIgnored lazy var exportController: ExportController = {
         ExportController(module: module, itemController: itemController, fileUrlDataController: nil, gameExporter: false)
     }()

@@ -62,3 +62,21 @@ public final class AppSettingsModel: Sendable {
     private static let firstLunchKey = "FirstLunchMasterRPG"
     private static let appColorSchemeKey = "appColorScheme"
 }
+
+public extension View {
+    func resetAppColorScheme() -> some View {
+        modifier(AppColorSchemeReset())
+    }
+}
+
+struct AppColorSchemeReset: ViewModifier {
+    @Environment(AppSettingsModel.self) private var settings
+    @Environment(\.colorScheme) private var colorScheme
+    
+    func body(content: Content) -> some View {
+        content
+#if os(iOS)
+            .environment(\.colorScheme, settings.appColorScheme.colorScheme(for: colorScheme))
+#endif
+    }
+}

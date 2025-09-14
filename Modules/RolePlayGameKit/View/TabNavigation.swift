@@ -45,7 +45,7 @@ public struct TabNavigation: View {
         }
 #endif
 #if os(macOS)
-        .tabViewStyle(.automatic)
+        .tabViewStyle(.sidebarAdaptable)
 #else
         .tabViewStyle(.sidebarAdaptable)
 #endif

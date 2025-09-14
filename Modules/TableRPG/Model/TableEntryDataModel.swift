@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import SwiftData
 
@@ -13,12 +14,12 @@ public final class TableEntryDataModel {
         self.content = content
     }
     
-    var itemId: UUID = UUID()
-    var entryId: UUID = UUID()
-    var index: Int = 0
+    public var itemId: UUID = UUID()
+    public var entryId: UUID = UUID()
+    public var index: Int = 0
     
-    var name: String = ""
-    var content: String = ""
+    public var name: String = ""
+    public var content: String = ""
     
     //@CodableIgnored
     var parent: TableDataModel? = nil
@@ -60,5 +61,11 @@ public final class TableEntryDataModel {
         index = model.index
         name = model.name
         content = model.content
+    }
+}
+
+extension TableEntryDataModel: EntryPersistentModel {
+    public func duplicate(name: String, index: Int) -> TableEntryDataModel {
+        TableEntryDataModel(itemId: itemId, entryId: UUID(), index: index, name: name, content: content, parent: parent)
     }
 }

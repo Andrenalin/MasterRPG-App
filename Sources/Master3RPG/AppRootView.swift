@@ -16,6 +16,7 @@ struct AppRootView: View {
         TabNavigation()
             .environment(\.navigator, appModel.navigator)
             .environment(appModel.deviceRotationModel)
+            .environment(appModel.settingsModel)
             .environment(appModel.adventureRoot)
             .environment(appModel.audioRoot)
             .environment(appModel.characterRoot)

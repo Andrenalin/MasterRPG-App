@@ -54,9 +54,11 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
+            .resetAppColorScheme()
             .environment(model)
             .environment(model.linkRootController)
             .environment(model.deviceRotationModel)
+            .environment(model.settingsModel)
             .environment(model.adventureRoot)
             .environment(model.audioRoot)
             .environment(model.characterRoot)
