@@ -74,4 +74,13 @@ public extension EntryEditControllable {
         try? modelContext().save()
         return duplicat.entryId
     }
+    
+    @MainActor func remove(entry: EditDataModel.DataModel, in model: EditDataModel) {
+        var entries = model.entries
+        guard let index = entries.firstIndex(where: { $0.entryId == entry.entryId }) else { return }
+        entries.remove(at: index)
+        model.entries = entries
+        modelContext().delete(entry)
+        try? modelContext().save()
+    }
 }

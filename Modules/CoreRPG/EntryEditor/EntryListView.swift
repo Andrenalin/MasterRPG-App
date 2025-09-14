@@ -22,7 +22,8 @@ public struct EntryListView<Controller: EntryEditControllable>: View {
                 .modifier(ZoomDestinationViewModifier(sourceID: entry.entryId.uuidString, namespace: zoomNamespace))
                 .contextMenu {
                     duplicateButton(entry: entry)
-                        .resetAppColorScheme()
+                    Divider()
+                    removeButton(entry: entry)
                 }
                 .swipeActions(edge: .leading) {
                     editButton(id: entry.entryId)
@@ -67,5 +68,17 @@ private extension EntryListView {
         }
     }
 
-
+    func removeButton(entry: Controller.EditDataModel.DataModel) -> some View {
+        Button(role: .destructive) {
+            withAnimation {
+                entryEditController.remove(entry: entry, in: model)
+            }
+        } label: {
+            Label {
+                Text("Delete \(entry.name)", bundle: .module)
+            } icon: {
+                Image(systemName: "trash")
+            }
+        }
+    }
 }
