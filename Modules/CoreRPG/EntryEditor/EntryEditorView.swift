@@ -20,16 +20,15 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
     @FocusState private var currentFocus: FocusField?
     
     @Namespace private var zoomNamespaceFallback
-
+    
     public var body: some View {
         Group {
             if isActive {
                 content(entry: entry)
             }
         }
-            //.opacity(isActive ? 1 : 0)
-            .transition(.scale)
-            .animation(.bouncy, value: isActive)
+        .transition(.scale)
+        .animation(.bouncy, value: isActive)
     }
     
     func content(entry: Controller.EditDataModel.DataModel) -> some View {
@@ -83,7 +82,7 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
             .focused($currentFocus, equals: .name)
             .labelsHidden()
             .textFieldStyle(.plain)
-
+            
             Button {
                 withAnimation { entry.name = "" }
             } label: {
@@ -106,7 +105,7 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
         Text("Description", bundle: .module)
             .font(.caption)
             .foregroundStyle(.secondary)
-
+        
 #if os(tvOS)
         TextField(text: $entry.content, prompt: Text("Add content", bundle: .module), axis: .vertical) {
             Text("Description", bundle: .module)
@@ -121,7 +120,7 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
             .border(Color.accentColor.secondary)
             .padding(.bottom, 6)
             .focused($currentFocus, equals: .information)
-
+        
 #endif
     }
     

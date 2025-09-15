@@ -25,7 +25,14 @@ public extension LinkRegisterController {
     func markDown(for link: LinkDataModel) -> String {
         "[\(link.name)](\(URL.appScheme)://\(link.id))"
     }
-    
+
+    func linkDataModel(in text: String) -> [LinkDataModel] {
+        let links = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
+        return links.compactMap { rawLink -> LinkDataModel? in
+            linkDataModel(linkId: rawLink.linkId)
+        }
+    }
+
     /// Scans the given text for links of the form `[name](SCHEME://UUID/COMMAND)` and `[name](SCHEME://UUID)`, then fetches matching LinkDataModel rows by ID.
     /// - Parameters:
     ///   - text: The text to scan.
