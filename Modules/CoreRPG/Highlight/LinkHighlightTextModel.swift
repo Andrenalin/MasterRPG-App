@@ -70,7 +70,7 @@ public final class LinkHighlightTextModel {
 extension LinkHighlightTextModel {
     var displayText: [HighlightedTextComponent] {
         var boldRange: Range<String.Index>? = nil
-        let links = linkController.links(in: text)
+        let links = linkController.linkRegisterController.links(in: text)
         return components(for: text, range: text.startIndex..<text.endIndex, links: links, boldRange: &boldRange)
     }
     

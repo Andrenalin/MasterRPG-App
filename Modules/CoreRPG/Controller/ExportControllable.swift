@@ -45,7 +45,7 @@ public extension ExportControllable {
 
         while !checkIds.isEmpty {
             let id = checkIds.removeLast()
-            guard let item = itemControllable.modelSync(for: id) else {
+            guard let item = itemControllable.item(for: id) else {
                 Task {
                     await logExport(title: "exporting not found \(id.uuidString))", count: 1)
                 }
@@ -55,7 +55,7 @@ public extension ExportControllable {
 
             let ids = item.entries.compactMap { entry -> UUID? in
                 let subId = entry.childId
-                if !(results.contains(subId) || checkIds.contains(subId)) && itemControllable.modelSync(for: subId) != nil {
+                if !(results.contains(subId) || checkIds.contains(subId)) && itemControllable.item(for: subId) != nil {
                     return subId
                 }
                 return nil

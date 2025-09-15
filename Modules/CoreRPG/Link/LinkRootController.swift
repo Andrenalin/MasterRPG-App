@@ -47,7 +47,7 @@ public final class LinkRootController {
     @ObservationIgnored let tableRoot: ItemRootControllable
     @ObservationIgnored let weatherRoot: ItemRootControllable
     
-    private let linkRegisterController: LinkRegisterController
+    public let linkRegisterController: LinkRegisterController
 }
 
 public extension LinkRootController {
@@ -102,23 +102,5 @@ private extension LinkRootController {
     func validateLink(model: LinkDataModel) -> Bool {
         let controller = linkController(for: model.sourceModule)
         return controller.validate(itemId: model.sourceId, entryId: model.sourceEntryId)
-    }
-}
-
-extension LinkRootController {
-    /// Scans the given text for links of the form `[name](SCHEME://UUID/COMMAND)` and `[name](SCHEME://UUID)`, then fetches matching LinkDataModel rows by ID.
-    /// - Parameters:
-    ///   - text: The text to scan.
-    /// - Returns: All LinkDataModel instances whose `id` is referenced in the text.
-    func links(in text: String) -> [LinkReplaceModel] {
-        let registerController = LinkRegisterController(container: container)
-        let links = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
-        return links.compactMap { rawLink -> LinkReplaceModel? in
-            guard let link = registerController.linkDataModel(linkId: rawLink.linkId) else { return nil }
-            let markDown = rawLink.markDown(for: URL.appScheme)
-            let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
-            let command = rawLink.command
-            return LinkReplaceModel(name: rawLink.name, module: link.sourceModule, linkNumber: 0, itemId: link.sourceId, entryId: link.sourceEntryId, markDown: markDown, command: command, range: range)
-        }
     }
 }

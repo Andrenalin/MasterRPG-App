@@ -14,7 +14,7 @@ struct LinkController: Sendable {
 
 extension LinkController: LinkControllable {
     @MainActor public func remove(linkModel: LinkDataModel) {
-        guard let item = itemController.modelSync(for: linkModel.destinationId), let model = itemController.model(for: linkModel.destinationId) else { return }
+        guard let item = itemController.item(for: linkModel.destinationId), let model = itemController.model(for: linkModel.destinationId) else { return }
         if let entryId = linkModel.destinationEntryId {
             let entry = model[entryId]
             let name = entry.name.replacingOccurrences(of: linkModel.url, with: linkModel.name)
@@ -52,7 +52,7 @@ extension LinkController: LinkControllable {
             if let toggler, entryId == nil {
                 toggler(itemId, module)
             }
-            guard let item = itemController.modelSync(for: itemId), let moduleModel = itemController.model(for: itemId) else { return text }
+            guard let item = itemController.item(for: itemId), let moduleModel = itemController.model(for: itemId) else { return text }
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? specialLink(linkType: .share, model: model) : ""
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, model: model))" : ""
             let editLine = editAction != nil

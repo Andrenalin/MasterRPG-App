@@ -23,7 +23,7 @@ public extension LinkControllable {
     }
 
     @MainActor func validate(itemId: UUID, entryId: UUID?) -> Bool {
-        guard let item = itemControllable.modelSync(for: itemId) else { return false }
+        guard let item = itemControllable.item(for: itemId) else { return false }
         return item.hasEntry(id: entryId)
     }
     
@@ -38,7 +38,7 @@ public extension LinkControllable {
     func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] { [] }
     
     @MainActor func name(for id: UUID, entryId: UUID? = nil) -> String {
-        guard let item = itemControllable.modelSync(for: id) else { return "" }
+        guard let item = itemControllable.item(for: id) else { return "" }
         if let entryId {
             return item[entryId].name
         }

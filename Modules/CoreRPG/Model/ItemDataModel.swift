@@ -101,6 +101,20 @@ extension ItemDataModel {
             entries[index] = newValue
         }
     }
+    public func duplicate(newItemId: UUID, url: URL?) -> ItemDataModel {
+        ItemDataModel(
+            id: newItemId,
+            module: module,
+            name: "\(name) copy",
+            information: information,
+            category: category,
+            tags: tags,
+            url: url,
+            displayState: 0,
+            parentId: parentId,
+            entries: []
+        )
+    }
     public func reset(name: String) {
         _nameLWW.wrappedValue = name
         self.name = name
@@ -170,7 +184,7 @@ extension ItemDataModel {
 
 extension ItemDataModel {
     public static var newItem: ItemDataModel {
-        ItemDataModel(name: "", information: "", category: .all, tags: [])
+        ItemDataModel(name: "", information: "", category: .item, tags: [])
     }
 }
 

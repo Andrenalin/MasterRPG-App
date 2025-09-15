@@ -62,7 +62,7 @@ struct ViewerRootView: View {
 
 private extension ViewerRootView {
     var itemModel: ItemDataModel? {
-        root.itemController.modelSync(for: model.id)
+        root.itemController.item(for: model.id)
     }
     
     var closeButton: some View {

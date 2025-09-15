@@ -142,7 +142,7 @@ private extension EffectedLinkAction {
     }
     
     func itemName(item: RemoveLinkTreeModel) -> String {
-        guard let model = itemControllable.modelSync(for: item.item.itemId) else { return "" }
+        guard let model = itemControllable.item(for: item.item.itemId) else { return "" }
         var name = model.name
         if let entryId = item.item.entryId, let index = model.entries.firstIndex(where: { $0.id == entryId }) {
             name = "\(name) --- \(model.entries[index].name)"

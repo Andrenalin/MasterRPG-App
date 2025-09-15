@@ -50,6 +50,14 @@ public final class TableDataModel {
         diceId = model.diceId
         entries = model.entries.map { TableEntryDataModel($0) }
     }
+    
+    func duplicate(newItemId: UUID) -> TableDataModel {
+        TableDataModel(
+            itemId: newItemId,
+            diceId: diceId,
+            entries: entries.map { $0.duplicate(newItemId: newItemId, newEntryId: UUID()) }
+        )
+    }
 }
 
 extension TableDataModel {

@@ -8,7 +8,7 @@ struct SheetController {
     
     @MainActor
     func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
-        guard let model = itemController.modelSync(for: itemId) else { return SheetModel(id: itemId) }
+        guard let model = itemController.item(for: itemId) else { return SheetModel(id: itemId) }
         let sheetModel = SheetModel(id: itemId, name: model.name, description: model.information, groups: sheetGroups(for: itemId, level: level))
         return sheetModel
     }

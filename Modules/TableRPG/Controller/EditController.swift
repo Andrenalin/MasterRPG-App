@@ -4,26 +4,44 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-struct EditController: EditControllable {
+struct EditController {
     @MainActor
-    init(itemControllable: any ItemControllable, fileUrlDataController: FileUrlDataController? = nil) {
-        self.itemControllable = itemControllable
+    init(itemController: ItemController, fileUrlDataController: FileUrlDataController? = nil) {
+        self.itemController = itemController
         self.fileUrlDataController = fileUrlDataController
         self.selectionDice = ItemSelectionModel()
         self.selectionPdf = ItemSelectionModel()
     }
     
-    let itemControllable: any ItemControllable
+    let itemController: ItemController
     let fileUrlDataController: FileUrlDataController?
     
     let selectionDice: ItemSelectionModel
     let selectionPdf: ItemSelectionModel
 }
 
-extension EditController {
+extension EditController: EditControllable {
+    var itemControllable: any ItemControllable {
+        itemController
+    }
+    
     func add(diceId: UUID?, model: TableDataModel) {
         model.diceId = diceId
         try? model.modelContext?.save()
+    }
+    
+    @MainActor func duplicate(item: ItemDataModel) {
+        guard let model = itemController.model(for: item.id) else { return }
+        let newItemId = UUID()
+        let duplicat = model.duplicate(newItemId: newItemId)
+        let modelContext = itemController.container.mainContext
+        modelContext.insert(duplicat)
+        try? modelContext.save()
+        duplicat.entries.forEach { entry in
+            let updatedContent = linkRegisterController.replaceLinks(in: entry.content, newItemId: newItemId, newEntryId: entry.entryId)
+            entry.content <=> updatedContent
+        }
+        duplicateDataModel(item: item, newItemId: newItemId)
     }
 }
 

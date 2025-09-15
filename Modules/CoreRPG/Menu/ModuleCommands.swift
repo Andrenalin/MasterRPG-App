@@ -79,19 +79,19 @@ struct DuplicateItemButton: View {
 
     var body: some View {
         Button {
-            if let model {
-                root.editControllable.duplicate(model: model)
+            if let item {
+                root.editControllable.duplicate(item: item)
             }
         } label: {
-            Text("Duplicate \(model?.name ?? "")", bundle: .module)
+            Text("Duplicate \(item?.name ?? "")", bundle: .module)
         }
         .keyboardShortcut("D", modifiers: [.command, .shift])
         .disabled(root.currentSelectedItemId == nil)
     }
 
-    var model: ItemDataModel? {
+    var item: ItemDataModel? {
         guard let selectedItemId = root.currentSelectedItemId else { return nil }
-        return root.itemControllable.modelSync(for: selectedItemId)
+        return root.itemControllable.item(for: selectedItemId)
     }
 }
 

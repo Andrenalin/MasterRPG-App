@@ -23,7 +23,7 @@ public extension ItemControllable {
         return models.map { $0.id }
     }
     
-    func modelSync(for id: UUID) -> ItemDataModel? {
+    func item(for id: UUID) -> ItemDataModel? {
         ItemDataModel.model(modelContext: ModelContext(container), id: id)
     }
     
@@ -67,7 +67,7 @@ public extension ItemControllable {
 
     @MainActor func replace(model: ItemDataCodableModel?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let model else { return }
-        if let existingModel = modelSync(for: model.id) {
+        if let existingModel = item(for: model.id) {
             existingModel.replace(codableModel: model)
         } else {
             let entries = model.entries.map { EntryDataModel(id: $0.id, index: $0.index, parentId: $0.parentId, childId: $0.childId, item: nil)}

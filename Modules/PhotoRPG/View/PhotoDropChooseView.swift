@@ -18,7 +18,7 @@ struct PhotoDropChooseView: View {
     var body: some View {
         DropItemArea {
             Group {
-                if let itemId = model.itemId, let item = root.itemController.modelSync(for: itemId) {
+                if let itemId = model.itemId, let item = root.itemController.item(for: itemId) {
                     GroupedPhotoView(cacheController: root.cacheController, model: item)
                 } else {
                     emptyDrop

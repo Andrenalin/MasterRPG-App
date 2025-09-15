@@ -62,6 +62,17 @@ public final class TableEntryDataModel {
         name = model.name
         content = model.content
     }
+    
+    func duplicate(newItemId: UUID, newEntryId: UUID) -> TableEntryDataModel {
+        TableEntryDataModel(
+            itemId: newItemId,
+            entryId: newEntryId,
+            index: index,
+            name: name,
+            content: content,
+            parent: nil
+        )
+    }
 }
 
 extension TableEntryDataModel: EntryPersistentModel {

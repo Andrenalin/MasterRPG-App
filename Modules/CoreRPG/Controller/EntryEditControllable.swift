@@ -41,7 +41,7 @@ public protocol EntryEditControllable: Sendable {
 
 public extension EntryEditControllable {
     @MainActor func module(for itemId: UUID) -> NetworkModules {
-        editControllable.itemControllable.modelSync(for: itemId)?.module ?? .none
+        editControllable.itemControllable.item(for: itemId)?.module ?? .none
     }
     
     @MainActor func modelContext() -> ModelContext {

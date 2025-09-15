@@ -11,13 +11,13 @@ struct ItemController: Sendable {
 
 extension ItemController: ItemControllable {
     func hasAudio(itemId: UUID) -> Bool {
-        guard let model = modelSync(for: itemId) else { return false }
+        guard let model = item(for: itemId) else { return false }
         guard model.specialCategory else { return model.url != nil }
         return model.entries.contains { hasAudio(itemId: $0.childId) }
     }
     
     @MainActor func audioList(itemId: UUID) -> [ItemDataCodableModel] {
-        guard let model = modelSync(for: itemId) else { return [] }
+        guard let model = item(for: itemId) else { return [] }
         guard model.specialCategory else {
             guard model.url != nil, let item = itemModel(model: model) else { return [] }
             return [item]

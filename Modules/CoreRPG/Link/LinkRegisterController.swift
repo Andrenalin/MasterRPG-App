@@ -21,14 +21,52 @@ public extension LinkRegisterController {
         let models = try? container.mainContext.fetch(fetchDescription)
         return models?.first
     }
+    
+    func markDown(for link: LinkDataModel) -> String {
+        "[\(link.name)](\(URL.appScheme)://\(link.id))"
+    }
+    
+    /// Scans the given text for links of the form `[name](SCHEME://UUID/COMMAND)` and `[name](SCHEME://UUID)`, then fetches matching LinkDataModel rows by ID.
+    /// - Parameters:
+    ///   - text: The text to scan.
+    /// - Returns: All LinkDataModel instances whose `id` is referenced in the text.
+    func links(in text: String) -> [LinkReplaceModel] {
+        let links = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
+        return links.compactMap { rawLink -> LinkReplaceModel? in
+            guard let link = linkDataModel(linkId: rawLink.linkId) else { return nil }
+            let markDown = rawLink.markDown(for: URL.appScheme)
+            let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
+            let command = rawLink.command
+            return LinkReplaceModel(name: rawLink.name, module: link.sourceModule, linkNumber: 0, itemId: link.sourceId, entryId: link.sourceEntryId, markDown: markDown, command: command, range: range)
+        }
+    }
+    
+    func replaceLinks(in text: String, newItemId: UUID, newEntryId: UUID?) -> String {
+        let rawLinks = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
+        guard !rawLinks.isEmpty else { return text }
+        var resultText = text
+        for rawLink in rawLinks {
+            let markDown = rawLink.markDown(for: URL.appScheme)
+            guard let link = linkDataModel(linkId: rawLink.linkId) else {
+                resultText = resultText.replacingOccurrences(of: markDown, with: rawLink.name)
+                continue
+            }
+            let newLink = register(name: rawLink.name, sourceId: link.sourceId, sourceEntryId: link.sourceEntryId, sourceModule: link.sourceModule, destinationId: newItemId, destinationEntryId: newEntryId, destinationModule: link.destinationModule)
+            let newMarkDown = self.markDown(for: newLink)
+            resultText = resultText.replacingOccurrences(of: markDown, with: newMarkDown)
+        }
+        return resultText
+    }
+}
 
+public extension LinkRegisterController {
     func register(link: LinkReplaceModel, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> LinkDataModel {
         let model = LinkDataModel(name: link.name, sourceId: link.itemId, sourceEntryId: link.entryId, sourceModule: link.module, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModel: destinationModule)
         container.mainContext.insert(model)
         try? container.mainContext.save()
         return model
     }
-
+    
     func register(name: String = "", sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> LinkDataModel {
         let model = LinkDataModel(
             name: name,
@@ -49,7 +87,9 @@ public extension LinkRegisterController {
         container.mainContext.delete(model)
         try? container.mainContext.save()
     }
+}
     
+public extension LinkRegisterController {
     func effectedItems(targetId: UUID, targetEntryId: UUID? = nil, targetModule: NetworkModules) -> [EffectedItemModel] {
         let predicate: Predicate<LinkDataModel>
         if let targetEntryId {
@@ -70,8 +110,3 @@ public extension LinkRegisterController {
     }
 }
 
-public extension LinkRegisterController {    
-    func markDown(for link: LinkDataModel) -> String {
-        "[\(link.name)](\(URL.appScheme)://\(link.id))"
-    }
-}

@@ -21,14 +21,14 @@ public extension ViewController {
     
     @MainActor
     func windowViewer(root: SpaceRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.modelSync(for: selection.itemId) ?? .newItem
+        let model = root.itemController.item(for: selection.itemId) ?? .newItem
         return ViewerRootView(model: model)
             .environment(root)
     }
 
     @MainActor
     func inlineViewer(root: SpaceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.modelSync(for: id) ?? .newItem
+        let model = root.itemController.item(for: id) ?? .newItem
         return ViewerRootView(model: model, dismissAction: dismissAction)
             .environment(root)
     }

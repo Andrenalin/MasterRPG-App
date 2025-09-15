@@ -5,10 +5,10 @@ import Foundation
 
 struct ExportController: Sendable {
     @MainActor
-    init(module: NetworkModules, itemController: any ItemControllable, fileUrlDataController: FileUrlDataController?, gameExporter: Bool) {
+    init(module: NetworkModules, itemController: any ItemControllable, gameExporter: Bool) {
         self.module = module
         self.itemControllable = itemController
-        self.fileUrlDataController = fileUrlDataController
+        self.fileUrlDataController = nil
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
     

@@ -4,10 +4,20 @@ import Foundation
 import SwiftData
 import SwiftUI
 
+@MainActor
 public protocol EditControllable: Sendable {
     var itemControllable: ItemControllable { get }
     var fileUrlDataController: FileUrlDataController? { get }
+    var linkRegisterController: LinkRegisterController { get }
 
+    func duplicate(item: ItemDataModel)
+}
+
+// MARK: - Edit Item
+public extension EditControllable {
+    var linkRegisterController: LinkRegisterController {
+        LinkRegisterController(container: itemControllable.container)
+    }
 }
 
 // MARK: - Edit Item
@@ -16,14 +26,21 @@ public extension EditControllable {
         EntryDataModel(id: UUID(), index: model.entries.count, parentId: model.id, childId: childId, item: model)
     }
 
-    func duplicate(model: ItemDataModel) {
-        let newId = UUID()
-        guard let actor = model.modelActor() else { return }
-        let id = model.id
+    func duplicate(item: ItemDataModel) {
+        duplicateDataModel(item: item, newItemId: UUID())
+    }
+
+    func duplicateDataModel(item: ItemDataModel, newItemId: UUID) {
+        let modelContext = itemControllable.container.mainContext
+        let duplicate = item.duplicate(newItemId: newItemId, url: nil)
+        modelContext.insert(duplicate)
+        try? modelContext.save()
+        guard let fileUrlDataController, let actor = item.modelActor() else { return }
+        let id = item.id
         Task.detached {
             await actor.setup(id: id)
-            let fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: actor.fileUrl, for: newId)
-            await actor.duplicate(newId: newId, url: fileUrl?.rawUrl)
+            guard let fileUrl = try? await fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newItemId) else { return }
+            await actor.update(url: fileUrl.rawUrl)
             await actor.save()
         }
     }

@@ -10,15 +10,15 @@ struct EditControllerTests {
 
     @MainActor
     func makeRoot() throws -> PhotoRootModel {
-        let modelContainer = try ModelContainer(for: PhotoDataModel.self, TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let modelContainer = try ModelContainer(for: ItemDataModel.self, LinkDataModel.self, TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         return PhotoRootModel(modelContext: modelContainer.mainContext)
     }
     
     @MainActor
-    func models(in root: PhotoRootModel) -> [PhotoDataModel] {
+    func models(in root: PhotoRootModel) -> [ItemDataModel] {
         let ids = root.itemController.allItemIds()
         return ids.compactMap {
-            PhotoDataModel.model(modelContext: root.modelContext, id: $0)
+            ItemDataModel.model(modelContext: root.modelContext, id: $0)
         }
     }
     
@@ -27,7 +27,7 @@ struct EditControllerTests {
         let root = try makeRoot()
         #expect(models(in: root).isEmpty)
         let model = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .item)        
-        #expect(model.category == .adventure)
+        #expect(model.category == .item)
         #expect(models(in: root).count == 1)
     }
 
@@ -128,8 +128,8 @@ struct EditControllerTests {
         // Create two photos
         let photo1 = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .item)
         let photo2 = root.editController.addNew(modelContext: root.modelContext, module: .photo, type: .item)
-        #expect(photo1.category == .adventure) // Assuming .adventure is the photo category
-        #expect(photo2.category == .adventure)
+        #expect(photo1.category == .item) // Assuming .adventure is the photo category
+        #expect(photo2.category == .item)
 
         // Add both photos to album1
         root.editController.addItem(itemId: photo1.id, in: root.modelContext, parentId: album1.id, folderId: nil)

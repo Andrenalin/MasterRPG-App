@@ -94,7 +94,7 @@ extension PhotoRootModel: ItemRootControllable {
 
 extension PhotoRootModel {
     func loadableUrl(for itemId: UUID) async -> URL? {
-        guard let fileUrl = itemController.modelSync(for: itemId)?.fileUrl else { return nil }
+        guard let fileUrl = itemController.item(for: itemId)?.fileUrl else { return nil }
         return await fileController.fileUrlDataController.url(for: fileUrl, action: { $0 })
     }
     
