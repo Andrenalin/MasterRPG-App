@@ -29,8 +29,8 @@ public struct SettingsView: View {
 //                        let exportedIds = exportController.exportingAll()
 //                        return exportController.createExport(itemIds: exportedIds, into: url)
 //                    }
-//                    ImportDataModels(importController: importController) {
-//                    }
+                    ImportDataModels(importController: ImportController(appModel: model)) {
+                    }
 //
 //#if os(macOS)
 //                    Divider()
