@@ -4,8 +4,8 @@ import Foundation
 import SwiftData
 import SwiftUI
 
-@Observable final class TextEditModel {
-    @MainActor init(linkRegisterController: LinkRegisterController, text: String = "") {
+@Observable public final class TextEditModel {
+    @MainActor public init(linkRegisterController: LinkRegisterController, text: String = "") {
         self.linkRegisterController = linkRegisterController
         self.text = text
         self.attributedText = AttributedString("")
@@ -14,7 +14,7 @@ import SwiftUI
     }
     
     let linkRegisterController: LinkRegisterController
-    var text: String
+    public var text: String
     var attributedText: AttributedString
     
     var links: [LinkDataModel] = []
@@ -48,7 +48,6 @@ import SwiftUI
             print(substring)
             
             if let linkId = run.linkContent {
-                print("found")
                 if let link = linkRegisterController.linkDataModel(linkId: linkId) {
                     let markdown = linkRegisterController.markDown(for: link)
                     result.append(markdown)
@@ -56,7 +55,6 @@ import SwiftUI
                     result.append(substring)
                 }
             } else {
-                print("this")
                 result.append(substring)
             }
         }
@@ -74,13 +72,12 @@ import SwiftUI
     }()
 }
 
-struct TextEditorLinkView: View {
-    let model: TextEditModel
-    
+public struct TextEditorLinkView: View {
+    public let model: TextEditModel
+
     @State private var selection: AttributedTextSelection = .init()
-    
-    
-    var body: some View {
+
+    public var body: some View {
         @Bindable var model = model
         TextEditor(text: $model.attributedText, selection: $selection)
             .attributedTextFormattingDefinition(ContentFormattingDefinition(links: Set(model.links.map(\.id))))

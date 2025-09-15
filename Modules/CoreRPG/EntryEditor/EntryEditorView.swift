@@ -8,6 +8,7 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
     public init(entryEditController: Controller, model: Controller.EditDataModel) {
         self.entryEditController = entryEditController
         self.model = model
+        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: entryEditController.editControllable.linkRegisterController, text: ""))
     }
     
     let entryEditController: Controller
@@ -18,13 +19,17 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
         case information
     }
     @FocusState private var currentFocus: FocusField?
-    
-    @Namespace private var zoomNamespaceFallback
-    
+
+    @State private var editModel: TextEditModel
+
     public var body: some View {
         Group {
             if isActive {
                 content(entry: entry)
+                    .onAppear {
+                        editModel.text = entry.content
+                        editModel.resetAttributedText()
+                    }
             }
         }
         .transition(.scale)
@@ -115,10 +120,11 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
         .padding(.bottom, 6)
         .focused($currentFocus, equals: .information)
 #else
-        TextEditor(text: $entry.content)
-            .frame(minHeight: 120, maxHeight: 200)
-            .border(Color.accentColor.secondary)
-            .padding(.bottom, 6)
+        TextEditorLinkView(model: editModel)
+//        TextEditor(text: $entry.content)
+//            .frame(minHeight: 120, maxHeight: 200)
+//            .border(Color.accentColor.secondary)
+//            .padding(.bottom, 6)
             .focused($currentFocus, equals: .information)
         
 #endif
