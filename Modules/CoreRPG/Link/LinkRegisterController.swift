@@ -47,7 +47,16 @@ public extension LinkRegisterController {
             return LinkReplaceModel(name: rawLink.name, module: link.sourceModule, linkNumber: 0, itemId: link.sourceId, entryId: link.sourceEntryId, markDown: markDown, command: command, range: range)
         }
     }
-    
+
+    func verifyLinks(in text: String, destinationItemId: UUID, destinationEntryId: UUID?, destinationModule: NetworkModules) -> String {
+        let rawLinks = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
+        guard !rawLinks.isEmpty else { return text }
+        var resultText = text
+        for rawLink in rawLinks {
+        }
+        return resultText
+    }
+
     func replaceLinks(in text: String, newItemId: UUID, newEntryId: UUID?) -> String {
         let rawLinks = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
         guard !rawLinks.isEmpty else { return text }

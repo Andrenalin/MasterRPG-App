@@ -7,6 +7,7 @@ import SwiftData
 public struct ConverterController: ConverterControllable {
     static func convert(old: PhotoModel) -> ItemDataCodableModel {
         let (category, tags) = convert(category: old.category.wrappedValue, tags: old.tags.wrappedValue, module: .photo, collection: .album)
+
         return ItemDataCodableModel(
             id: old.id,
             module: .photo,

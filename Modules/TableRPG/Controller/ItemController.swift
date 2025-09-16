@@ -48,6 +48,14 @@ extension ItemController: ItemControllable {
             container.mainContext.insert(newModel)
         }
     }
+
+    @MainActor func replaceLinks(model: TableDataModel) {
+        let controller = LinkRegisterController(container: container)
+        model.entries.forEach { entry in
+            let updatedContent = controller.verifyLinks(in: entry.content, destinationItemId: entry.itemId, destinationEntryId: entry.entryId, destinationModule: .table)
+            entry.content = updatedContent
+        }
+    }
 }
 
 extension ItemController {

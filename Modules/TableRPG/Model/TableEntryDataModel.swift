@@ -62,7 +62,14 @@ public final class TableEntryDataModel {
         name = model.name
         content = model.content
     }
-    
+
+    @MainActor
+    var links: [LinkDataModel.LinkDataModelCodable] {
+        guard let modelContext else { return [] }
+        let linkRegisterController = LinkRegisterController(container: modelContext.container)
+        return linkRegisterController.linkDataModel(in: content).map { $0.codableModel }
+    }
+
     func duplicate(newItemId: UUID, newEntryId: UUID) -> TableEntryDataModel {
         TableEntryDataModel(
             itemId: newItemId,

@@ -6,9 +6,9 @@ import SwiftData
 
 struct EditController {
     @MainActor
-    init(itemController: ItemController, fileUrlDataController: FileUrlDataController? = nil) {
+    init(itemController: ItemController) {
         self.itemController = itemController
-        self.fileUrlDataController = fileUrlDataController
+        self.fileUrlDataController = nil
         self.selectionDice = ItemSelectionModel()
         self.selectionPdf = ItemSelectionModel()
     }

@@ -37,7 +37,7 @@ public final class PdfRootModel {
         CacheController(fileUrlDataController: fileController.fileUrlDataController)
     }()
     @ObservationIgnored lazy var editController: EditController = {
-        EditController(itemControllable: itemController, fileUrlDataController: fileController.fileUrlDataController)
+        EditController(itemController: itemController, fileUrlDataController: fileController.fileUrlDataController)
     }()
     @ObservationIgnored lazy var exportController: ExportController = {
         ExportController(module: module, itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, gameExporter: false)

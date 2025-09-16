@@ -20,27 +20,33 @@ public final class TableDataModel {
     // MARK: Codable
     
     struct TableDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(itemId: UUID = UUID(), diceId: UUID?, entries: [TableEntryDataModel.TableEntryDataModelCodable] = []) {
+        init(itemId: UUID = UUID(), diceId: UUID?, entries: [TableEntryDataModel.TableEntryDataModelCodable] = [], links: [LinkDataModel.LinkDataModelCodable] = []) {
             self.itemId = itemId
             self.diceId = diceId
             self.entries = entries
+            self.links = links
         }
         var itemId: UUID = UUID()
         var diceId: UUID?
         var entries: [TableEntryDataModel.TableEntryDataModelCodable] = []
+        var links: [LinkDataModel.LinkDataModelCodable] = []
     }
     
     convenience init(_ model: TableDataModelCodable) {
         self.init(itemId: model.itemId, diceId: model.diceId, entries: [])
         self.entries = model.entries.map { TableEntryDataModel($0) }
     }
-    
+
+    @MainActor
     var codableModel: TableDataModelCodable {
         TableDataModelCodable(
             itemId: itemId,
             diceId: diceId,
             entries: entries.map {
                 $0.codableModel
+            },
+            links: entries.flatMap {
+                $0.links
             }
         )
     }
