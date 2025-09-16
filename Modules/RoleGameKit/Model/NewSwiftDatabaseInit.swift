@@ -27,7 +27,7 @@ struct NewSwiftDatabaseInit {
             CharacterDataModel.self,
             DiceDataModel.self,
             MapDataModel.self,
-            PdfDataModel.self,
+            PdfEntryDataModel.self,
             TableDataModel.self,
             WeatherDataModel.self,
         ])

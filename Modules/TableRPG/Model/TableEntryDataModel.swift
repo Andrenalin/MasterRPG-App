@@ -6,7 +6,14 @@ import SwiftData
 
 @Model 
 public final class TableEntryDataModel {
-    public init(itemId: UUID = UUID(), entryId: UUID = UUID(), index: Int = 0, name: String = "", content: String = "", parent: TableDataModel? = nil) {
+    public init(
+        itemId: UUID = UUID(),
+        entryId: UUID = UUID(),
+        index: Int = 0,
+        name: String = "",
+        content: String = "",
+        parent: TableDataModel? = nil
+    ) {
         self.itemId = itemId
         self.entryId = entryId
         self.index = index
@@ -15,6 +22,7 @@ public final class TableEntryDataModel {
     }
     
     public var itemId: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion)
     public var entryId: UUID = UUID()
     public var index: Int = 0
     
@@ -42,7 +50,13 @@ public final class TableEntryDataModel {
     }
     
     convenience init(_ model: TableEntryDataModelCodable) {
-        self.init(itemId: model.itemId, entryId: model.entryId, index: model.index, name: model.name, content: model.content)
+        self.init(
+            itemId: model.itemId,
+            entryId: model.entryId,
+            index: model.index,
+            name: model.name,
+            content: model.content
+        )
     }
     
     var codableModel: TableEntryDataModelCodable {
@@ -84,6 +98,13 @@ public final class TableEntryDataModel {
 
 extension TableEntryDataModel: EntryPersistentModel {
     public func duplicate(name: String, index: Int) -> TableEntryDataModel {
-        TableEntryDataModel(itemId: itemId, entryId: UUID(), index: index, name: name, content: content, parent: parent)
+        TableEntryDataModel(
+            itemId: itemId,
+            entryId: UUID(),
+            index: index,
+            name: name,
+            content: content,
+            parent: parent
+        )
     }
 }

@@ -85,7 +85,7 @@ private extension SearchBar {
             
             VStack {
                 Button {
-                    let entry = PdfDataModel(id: UUID(), itemId: UUID(), content: "This is the selection", pageLabel: "2")
+                    let entry = PdfEntryDataModel(itemId: UUID(), entryId: UUID(), content: "This is the selection", pageLabel: "2")
                     searchModel.selectedEntry = entry
                     searchModel.matches = [PDFSelection()]
                 } label: {

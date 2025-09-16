@@ -23,17 +23,17 @@ extension PDFSelection: @unchecked @retroactive Sendable {}
 struct PdfWrapperView: CustomViewRepresentable {
     let pdfDocument: PDFDocument?
     let horizontal: Bool
-    let entry: PdfDataModel?
+    let entry: PdfEntryDataModel?
     let searchModel: PdfSearchModel
     
-    init(url: URL, entry: PdfDataModel?, horizontal: Bool, searchModel: PdfSearchModel) {
+    init(url: URL, entry: PdfEntryDataModel?, horizontal: Bool, searchModel: PdfSearchModel) {
         pdfDocument = PDFDocument(url: url)
         self.entry = entry
         self.horizontal = horizontal
         self.searchModel = searchModel
     }
     
-    init(showing pdfDoc: PDFDocument, entry: PdfDataModel?, horizontal: Bool, searchModel: PdfSearchModel) {
+    init(showing pdfDoc: PDFDocument, entry: PdfEntryDataModel?, horizontal: Bool, searchModel: PdfSearchModel) {
         pdfDocument = pdfDoc
         self.entry = entry
         self.horizontal = horizontal

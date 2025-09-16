@@ -38,13 +38,13 @@ extension EditController: EditControllable {
 // MARK: - Bookmarks
 
 extension EditController {
-    func addBookmark(model: ItemDataModel, bookmark: PdfDataModel) {
+    func addBookmark(model: ItemDataModel, bookmark: PdfEntryDataModel) {
         bookmark.itemId = model.id
         try? model.modelContext?.save()
     }
     
-    func createBookmark(itemId: UUID, content: String, page: String, bounds: CGRect) -> PdfDataModel {
+    func createBookmark(itemId: UUID, content: String, page: String, bounds: CGRect) -> PdfEntryDataModel {
         let name = String(content.split(separator: " ").first ?? "Unnamed")
-        return PdfDataModel(id: UUID(), itemId: itemId, name: name, content: content, bounds: bounds, pageLabel: page)
+        return PdfEntryDataModel(itemId: itemId, entryId: UUID(), name: name, content: content, bounds: bounds, pageLabel: page)
     }
 }

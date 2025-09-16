@@ -11,7 +11,8 @@ public final class TableDataModel {
         self.diceId = diceId
         self.entries = entries
     }
-    
+
+    @Attribute(.preserveValueOnDeletion)
     public var itemId: UUID = UUID()
     var diceId: UUID?
     
@@ -33,8 +34,8 @@ public final class TableDataModel {
     }
     
     convenience init(_ model: TableDataModelCodable) {
-        self.init(itemId: model.itemId, diceId: model.diceId, entries: [])
-        self.entries = model.entries.map { TableEntryDataModel($0) }
+        let entries = model.entries.map { TableEntryDataModel($0) }
+        self.init(itemId: model.itemId, diceId: model.diceId, entries: entries)
     }
 
     @MainActor

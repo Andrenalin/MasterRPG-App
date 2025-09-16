@@ -3,79 +3,69 @@
 import CoreRPG
 import Foundation
 import SwiftData
-import CoreGraphics
 
 @Model 
 public final class PdfDataModel {
-    init(id: UUID = UUID(), itemId: UUID, index: Int = 0, name: String = "", content: String = "", bounds: CGRect = .zero, pageLabel: String = "") {
-        self.id = id
+    init(itemId: UUID = UUID(), entries: [PdfEntryDataModel] = []) {
         self.itemId = itemId
-        self.index = index
-        self.name = name
-        self.content = content
-        self.bounds = bounds
-        self.pageLabel = pageLabel
+        self.entries = entries
     }
     
     @Attribute(.preserveValueOnDeletion)
-    public var id: UUID = UUID()
     public var itemId: UUID = UUID()
-    var index: Int = 0
-    public var name: String = ""
-    var content: String = ""
 
-    var bounds: CGRect {
-        get { JSONString.decode(text: bounds_) ?? .zero }
-        set { bounds_ = JSONString.encode(value: newValue) ?? "" }
-    }
-    private var bounds_: String = ""
+    @Relationship(deleteRule: .cascade) private var entries_: [PdfEntryDataModel]? = []
 
-    var pageLabel: String = ""
-    
     // MARK: - Codable
     
     struct PdfDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(id: UUID = UUID(), itemId: UUID = UUID(), index: Int = 0, name: String = "", content: String = "", bounds: CGRect, pageLabel: String = "") {
-            self.id = id
+        init(itemId: UUID = UUID(), entries: [PdfEntryDataModel.PdfEntryDataModelCodable] = []) {
             self.itemId = itemId
-            self.index = index
-            self.name = name
-            self.content = content
-            self.bounds = bounds
-            self.pageLabel = pageLabel
+            self.entries = entries
         }
-        var id: UUID = UUID()
         var itemId: UUID = UUID()
-        var index: Int = 0
-        var name: String = ""
-        var content: String = ""
-        var bounds: CGRect
-        var pageLabel: String = ""
+        var entries: [PdfEntryDataModel.PdfEntryDataModelCodable]
     }
     
     convenience init(_ model: PdfDataModelCodable) {
-        self.init(id: model.id, itemId: model.itemId, index: model.index, name: model.name, content: model.content, bounds: model.bounds, pageLabel: model.pageLabel)
+        let entries = model.entries.map { PdfEntryDataModel($0) }
+        self.init(itemId: model.itemId, entries: entries)
     }
     
     var codableModel: PdfDataModelCodable {
         PdfDataModelCodable(
-            id: id,
             itemId: itemId,
-            index: index,
-            name: name,
-            content: content,
-            bounds: bounds,
-            pageLabel: pageLabel
+            entries: entries.map {
+                $0.codableModel
+            }
         )
     }
     
     func replace(_ model: PdfDataModelCodable) {
-        id = model.id
         itemId = model.itemId
-        index = model.index
-        name = model.name
-        content = model.content
-        bounds = model.bounds
-        pageLabel = model.pageLabel
+        entries = model.entries.map { PdfEntryDataModel($0) }
+
     }
 }
+
+extension PdfDataModel {
+    public var entries: [PdfEntryDataModel] {
+        get {
+            guard let all = entries_ else { return [] }
+            return all.sorted { $0.index < $1.index }
+        }
+        set {
+            entries_ = newValue
+        }
+    }
+
+    public subscript(id: UUID) -> PdfEntryDataModel {
+        get { entries.first(where: { $0.entryId == id }) ?? PdfEntryDataModel(itemId: itemId) }
+        set(newValue) {
+            guard let index = entries.firstIndex(where: { $0.entryId == id }) else { return }
+            entries[index] = newValue
+        }
+    }
+}
+
+extension PdfDataModel: EntryEditModel {}

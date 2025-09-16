@@ -113,7 +113,7 @@ public final class AppModel: Sendable {
                 CharacterDataModel.self,
                 DiceDataModel.self,
                 MapDataModel.self,
-                PdfDataModel.self,
+                PdfEntryDataModel.self,
                 TableDataModel.self,
                 WeatherDataModel.self,
             ]
