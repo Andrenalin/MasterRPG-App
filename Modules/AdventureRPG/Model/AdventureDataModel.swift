@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import SwiftData
 
@@ -18,14 +19,16 @@ public final class AdventureDataModel {
     // MARK: Codable
     
     struct AdventureDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(itemId: UUID = UUID(), photoId: UUID? = nil, entries: [AdventureEntryDataModel.AdventureEntryDataModelCodable] = []) {
+        init(itemId: UUID = UUID(), photoId: UUID? = nil, entries: [AdventureEntryDataModel.AdventureEntryDataModelCodable] = [], links: [LinkDataModel.LinkDataModelCodable] = []) {
             self.itemId = itemId
             self.photoId = photoId
             self.entries = entries
+            self.links = links
         }
         var itemId: UUID = UUID()
         var photoId: UUID? = nil
         var entries: [AdventureEntryDataModel.AdventureEntryDataModelCodable] = []
+        var links: [LinkDataModel.LinkDataModelCodable] = []
     }
     
     convenience init(_ model: AdventureDataModelCodable) {
@@ -33,12 +36,16 @@ public final class AdventureDataModel {
         self.entries = model.entries.map { AdventureEntryDataModel($0) }
     }
     
+    @MainActor
     var codableModel: AdventureDataModelCodable {
         AdventureDataModelCodable(
             itemId: itemId,
             photoId: photoId,
             entries: entries.map {
                 $0.codableModel
+            },
+            links: entries.flatMap {
+                $0.links
             }
         )
     }

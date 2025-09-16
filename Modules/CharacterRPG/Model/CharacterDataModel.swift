@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import SwiftData
 
@@ -24,13 +25,14 @@ public final class CharacterDataModel {
     // MARK: Codable
     
     struct CharacterDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(itemId: UUID = UUID(), diceId: UUID? = nil, photoId: UUID? = nil, photos: [UUID] = [], parentId: UUID? = nil, entries: [CharacterEntryDataModel.CharacterEntryDataModelCodable] = []) {
+        init(itemId: UUID = UUID(), diceId: UUID? = nil, photoId: UUID? = nil, photos: [UUID] = [], parentId: UUID? = nil, entries: [CharacterEntryDataModel.CharacterEntryDataModelCodable] = [], links: [LinkDataModel.LinkDataModelCodable] = []) {
             self.itemId = itemId
             self.diceId = diceId
             self.photoId = photoId
             self.photos = photos
             self.parentId = parentId
             self.entries = entries
+            self.links = links
         }
         var itemId: UUID = UUID()
         var diceId: UUID? = nil
@@ -38,6 +40,7 @@ public final class CharacterDataModel {
         var photos: [UUID] = []
         var parentId: UUID? = nil
         var entries: [CharacterEntryDataModel.CharacterEntryDataModelCodable] = []
+        var links: [LinkDataModel.LinkDataModelCodable] = []
     }
     
     convenience init(_ model: CharacterDataModelCodable) {
@@ -45,6 +48,7 @@ public final class CharacterDataModel {
         self.entries = model.entries.map { CharacterEntryDataModel($0) }
     }
     
+    @MainActor
     var codableModel: CharacterDataModelCodable {
         CharacterDataModelCodable(
             itemId: itemId,
@@ -54,6 +58,9 @@ public final class CharacterDataModel {
             parentId: parentId,
             entries: entries.map {
                 $0.codableModel
+            },
+            links: entries.flatMap {
+                $0.links
             }
         )
     }

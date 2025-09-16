@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 //import CodableModel
 import Foundation
 import SwiftData
@@ -33,7 +34,7 @@ public final class MapDataModel {
     // MARK: Codable
     
     struct MapDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(itemId: UUID = UUID(), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, entries: [MapEntryDataModel.MapEntryDataModelCodable] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0) {
+        init(itemId: UUID = UUID(), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, entries: [MapEntryDataModel.MapEntryDataModelCodable] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, links: [LinkDataModel.LinkDataModelCodable] = []) {
             self.itemId = itemId
             self.photoId = photoId
             self.width = width
@@ -42,6 +43,7 @@ public final class MapDataModel {
             self.pinScale = pinScale
             self.hexMapScale = hexMapScale
             self.scale = scale
+            self.links = links
         }
         var itemId: UUID = UUID()
         var photoId: UUID? = nil
@@ -51,6 +53,7 @@ public final class MapDataModel {
         var pinScale: CGFloat = 1.0
         var hexMapScale: Double = 0
         var scale: CGFloat = 1.0
+        var links: [LinkDataModel.LinkDataModelCodable] = []
     }
     
     convenience init(_ model: MapDataModelCodable) {
@@ -58,6 +61,7 @@ public final class MapDataModel {
         self.entries = model.entries.map { MapEntryDataModel($0) }
     }
     
+    @MainActor
     var codableModel: MapDataModelCodable {
         MapDataModelCodable(
             itemId: itemId,
@@ -69,7 +73,10 @@ public final class MapDataModel {
             },
             pinScale: pinScale,
             hexMapScale: hexMapScale,
-            scale: scale
+            scale: scale,
+            links: entries.flatMap {
+                $0.links
+            }
         )
     }
     

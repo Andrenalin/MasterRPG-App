@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import SwiftData
 
@@ -87,5 +88,12 @@ public final class MapEntryDataModel {
         isHexGrid = model.isHexGrid
         isShown = model.isShown
         focused = model.focused
+    }
+
+    @MainActor
+    var links: [LinkDataModel.LinkDataModelCodable] {
+        guard let modelContext else { return [] }
+        let linkRegisterController = LinkRegisterController(container: modelContext.container)
+        return linkRegisterController.linkDataModel(in: content).map { $0.codableModel }
     }
 }

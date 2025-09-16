@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import SwiftData
 
@@ -112,5 +113,14 @@ public final class CharacterEntryDataModel {
         valueType = model.valueType
         diceId = model.diceId
         valueId = model.valueId
+    }
+
+    @MainActor
+    var links: [LinkDataModel.LinkDataModelCodable] {
+        guard let modelContext else { return [] }
+        let linkRegisterController = LinkRegisterController(container: modelContext.container)
+        let nameLinks = linkRegisterController.linkDataModel(in: name).map { $0.codableModel }
+        let contentLinks = linkRegisterController.linkDataModel(in: content).map { $0.codableModel }
+        return nameLinks + contentLinks
     }
 }

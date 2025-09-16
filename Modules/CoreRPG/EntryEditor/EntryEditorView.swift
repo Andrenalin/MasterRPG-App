@@ -55,7 +55,7 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
             .padding(32)
         }
         .background {
-            Rectangle().fill(backGroundColor.gradient.opacity(0.35))
+            Rectangle().fill(backGroundColor.opacity(0.5))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onTapGesture {
@@ -121,10 +121,6 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
         .focused($currentFocus, equals: .information)
 #else
         TextEditorLinkView(model: editModel)
-//        TextEditor(text: $entry.content)
-//            .frame(minHeight: 120, maxHeight: 200)
-//            .border(Color.accentColor.secondary)
-//            .padding(.bottom, 6)
             .focused($currentFocus, equals: .information)
         
 #endif

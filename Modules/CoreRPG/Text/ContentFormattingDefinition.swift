@@ -47,7 +47,7 @@ struct LinksAreWhite: AttributedTextValueConstraint {
 
     func constrain(_ container: inout Attributes) {
         if let link = container.linkContent, links.contains(link) {
-            container.foregroundColor = .white
+            container.foregroundColor = Color.primary
         } else {
             container.foregroundColor = nil
         }
@@ -62,7 +62,7 @@ struct LinksHaveBlueBacks: AttributedTextValueConstraint {
 
     func constrain(_ container: inout Attributes) {
         if let link = container.linkContent, links.contains(link) {
-            container.backgroundColor = .blue
+            container.backgroundColor = Color.accentColor
         } else {
             container.backgroundColor = nil
         }

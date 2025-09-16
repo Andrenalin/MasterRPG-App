@@ -82,7 +82,10 @@ public struct TextEditorLinkView: View {
         TextEditor(text: $model.attributedText, selection: $selection)
             .attributedTextFormattingDefinition(ContentFormattingDefinition(links: Set(model.links.map(\.id))))
             .frame(minHeight: 120, maxHeight: 200)
-            .border(Color.accentColor.secondary)
+//            .scrollContentBackground(.hidden)
+            .background {
+                RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
+            }
             .padding(.bottom, 6)
     }
 }
