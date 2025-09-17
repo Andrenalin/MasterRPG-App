@@ -33,7 +33,8 @@ public final class DiceRootModel {
         listController.listModel.selectedItemId
     }
 
-    @ObservationIgnored lazy var editController: EditController = { EditController(itemControllable: itemController, fileUrlDataController: nil)
+    @ObservationIgnored lazy var editController: EditController = {
+        EditController(itemControllable: itemController)
     }()
     @ObservationIgnored lazy var exportController: ExportController = {
         ExportController(module: module, itemController: itemController, gameExporter: false)

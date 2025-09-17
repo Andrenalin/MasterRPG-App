@@ -50,6 +50,8 @@ public final class ItemRootController: ItemRootControllable {
         self.listControllable = listControllable
         self.listLinkControllable = listLinkControllable
         self.viewControllable = viewControllable
+        
+        removeItemList = RemoveEntryListModel()
     }
     
     public let module: NetworkModules
@@ -69,4 +71,6 @@ public final class ItemRootController: ItemRootControllable {
     public let listControllable: any ListControllable
     public let listLinkControllable: any ListControllable
     public let viewControllable: any ViewControllable
+    
+    public let removeItemList: RemoveEntryListModel
 }

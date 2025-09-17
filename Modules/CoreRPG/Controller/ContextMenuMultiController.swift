@@ -47,7 +47,7 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
         let selection = selection(currentSelected: currentSelected)
         for itemId in selection {
             guard let model = itemController.item(for: itemId) else { continue }
-            editController.delete(model: model)
+            editController.delete(item: model)
         }
     }
     

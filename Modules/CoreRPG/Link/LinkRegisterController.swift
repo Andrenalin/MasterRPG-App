@@ -110,18 +110,19 @@ public extension LinkRegisterController {
         let predicate: Predicate<LinkDataModel>
         if let targetEntryId {
             predicate = #Predicate<LinkDataModel> {
-                $0.destinationId == targetId && $0.destinationEntryId == targetEntryId && $0.destinationModule == targetModule
+                $0.sourceId == targetId && $0.sourceEntryId == targetEntryId && $0.sourceModule == targetModule
             }
         } else {
             predicate = #Predicate<LinkDataModel> {
-                $0.destinationId == targetId && $0.destinationModule == targetModule
+                $0.sourceId == targetId && $0.sourceModule == targetModule
             }
         }
         let fetchDescription = FetchDescriptor<LinkDataModel>(predicate: predicate)
         guard let models = try? container.mainContext.fetch(fetchDescription) else { return [] }
         
         return models.map {
-            EffectedItemModel(id: $0.id, name: $0.name, entryName: nil, module: $0.sourceModule)
+            let item = ItemDataModel.model(modelContext: ModelContext(container), id: $0.destinationId)
+            return EffectedItemModel(id: $0.id, name: item?.name ?? $0.name, entryName: targetEntryId != nil ? $0.name : nil, module: $0.destinationModule)
         }
     }
 }

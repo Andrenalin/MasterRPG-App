@@ -15,18 +15,17 @@ public final class RemoveEntryListModel {
 }
 
 public struct EffectedLinkAction: View {
-    public init(itemControllable: any ItemControllable, removeEntryList: RemoveEntryListModel, overwrite: Bool = false, action: @escaping ([ItemRowModel]) async -> Void) {
+    public init(itemControllable: any ItemControllable, overwrite: Bool = false, action: @escaping ([ItemRowModel]) async -> Void) {
         self.itemControllable = itemControllable
-        self.removeEntryList = removeEntryList
         self.overwrite = overwrite
         self.action = action
     }
     
     let itemControllable: any ItemControllable
-    let removeEntryList: RemoveEntryListModel
     let overwrite: Bool
     let action: ([ItemRowModel]) async -> Void
     
+    @Environment(RemoveEntryListModel.self) private var removeEntryList: RemoveEntryListModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
         

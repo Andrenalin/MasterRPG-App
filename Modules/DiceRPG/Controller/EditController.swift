@@ -4,9 +4,12 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-struct EditController: EditControllable {
+struct EditController {
     let itemControllable: any ItemControllable
-    let fileUrlDataController: FileUrlDataController?
+    let fileUrlDataController: FileUrlDataController? = nil
+}
+
+extension EditController: EditControllable {
 }
 
 // MARK: - Edit dice

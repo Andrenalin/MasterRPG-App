@@ -6,6 +6,7 @@ import SwiftUI
 
 enum InternalRoute: Equatable, Codable {
     case export(ids: [UUID])
+    case removeAlert
 }
 
 extension InternalRoute: NavigationDestination {
@@ -27,6 +28,13 @@ struct InternalRouteDestinationView: View {
                 return root.exportControllable.export(ids: exportIds)
             }
             .presentationDetents([.height(160)])
+        case .removeAlert:
+            EffectedLinkAction(itemControllable: root.itemControllable) { _ in
+//                Task {
+//                    await listController.deleteItems(selection: Set(listController.model.actionSelection))
+//                }
+            }
+            .environment(root.removeItemList)
         }
     }
 }

@@ -58,7 +58,7 @@ struct QuickEntryEditor: View {
                     .animation(.default, value: showHelp)
                 }
                 .sizedSheet(isPresented: $showEffectedLinksAlert, idealSize: CGSize(width: 400, height: 600)) {
-                    EffectedLinkAction(itemControllable: root.itemController, removeEntryList: editorModel, overwrite: true) { rowModels in
+                    EffectedLinkAction(itemControllable: root.itemController, overwrite: true) { rowModels in
                         editorModel.removeItems.removeAll(where: { rowModels.contains($0) })
                         _ = editController.merge(entries: entries, into: currentModel, recoverEntries: editorModel.removeItems)
                         dismiss()

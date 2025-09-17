@@ -36,6 +36,17 @@ struct ListRootView: View {
 #if !os(visionOS)
             .scrollDismissesKeyboard(.immediately)
 #endif
+#if os(macOS)
+            .onDeleteCommand {
+                guard let itemId = listModel.selectedItemId else { return }
+                removeEntryList.removeItems = [ItemRowModel(itemId: itemId, typeId: root.module)]
+                withAnimation { removeEntryList.showDeleteAlert.toggle() }
+            }
+            .onMoveCommand { direction in
+                //selectItem(direction)
+            }
+#endif
+
             .overlay {
                 if displayItems.isEmpty && !listController.searchModel.searchText.isEmpty {
                     ContentUnavailableView.search
@@ -172,9 +183,13 @@ private extension ListRootView {
                     listModel.update(selection: Set())
                 }
                 let model = displayItems[index].model
-                Task { @MainActor in
-                    root.editControllable.delete(model: model)
-                }
+                
+                let effected = root.editControllable.delete(item: model)
+                
+                navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
+                //Task { @MainActor in
+                    
+                //}
             }
         }
         listModel.deleteItems(offsets: offsets)
