@@ -42,7 +42,8 @@ public final class MapRootModel {
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }
-
+    public let removeEntryListModel = RemoveEntryListModel()
+    
     @ObservationIgnored let characterRoot: CharacterRootModel
     @ObservationIgnored let diceRoot: DiceRootModel
     @ObservationIgnored let pdfRoot: PdfRootModel
@@ -79,6 +80,7 @@ public final class MapRootModel {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,

@@ -33,7 +33,8 @@ public final class WeatherRootModel {
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }
-
+    public let removeEntryListModel = RemoveEntryListModel()
+    
     @ObservationIgnored let photoRoot: PhotoRootModel
 
     @ObservationIgnored lazy var editController: EditController = {
@@ -66,6 +67,7 @@ public final class WeatherRootModel {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,

@@ -50,7 +50,8 @@ public final class AdventureRootModel {
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }
-
+    public let removeEntryListModel = RemoveEntryListModel()
+    
     @ObservationIgnored let audioRoot: AudioRootModel
     @ObservationIgnored let characterRoot: CharacterRootModel
     @ObservationIgnored let diceRoot: DiceRootModel
@@ -91,6 +92,7 @@ public final class AdventureRootModel {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,

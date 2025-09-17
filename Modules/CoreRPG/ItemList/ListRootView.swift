@@ -182,14 +182,11 @@ private extension ListRootView {
                     listModel.resetListSelection()
                     listModel.update(selection: Set())
                 }
-                let model = displayItems[index].model
-                
+                let model = displayItems[index].model                
                 let effected = root.editControllable.delete(item: model)
-                
+                root.removeEntryListModel.effectedLink = effected
+                root.removeEntryListModel.removeItems = [ItemRowModel(itemId: model.id, typeId: model.module)]
                 navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
-                //Task { @MainActor in
-                    
-                //}
             }
         }
         listModel.deleteItems(offsets: offsets)

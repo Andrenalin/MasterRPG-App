@@ -36,7 +36,8 @@ public final class TableRootModel {
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }
-
+    public let removeEntryListModel = RemoveEntryListModel()
+    
     @ObservationIgnored let diceRoot: DiceRootModel
     @ObservationIgnored let pdfRoot: PdfRootModel
 
@@ -73,6 +74,7 @@ public final class TableRootModel {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,

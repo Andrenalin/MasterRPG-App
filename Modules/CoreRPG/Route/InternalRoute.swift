@@ -34,7 +34,7 @@ struct InternalRouteDestinationView: View {
 //                    await listController.deleteItems(selection: Set(listController.model.actionSelection))
 //                }
             }
-            .environment(root.removeItemList)
+            .environment(root.removeEntryListModel)
         }
     }
 }

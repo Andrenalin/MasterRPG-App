@@ -200,6 +200,7 @@ struct MockRootViewModifier: ViewModifier {
             listDisplayModel: root.listDisplayModel,
             searchModel: root.searchModel,
             itemSelectionModel: root.itemSelectionModel,
+            removeEntryListModel: root.removeEntryListModel,
             cacheControllable: root.cacheControllable,
             editControllable: root.editControllable,
             exportControllable: root.exportControllable,

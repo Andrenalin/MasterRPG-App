@@ -17,6 +17,9 @@ public final class FakeItemRootController: ItemRootControllable {
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
 
+        let removeEntryListModel = RemoveEntryListModel()
+        self.removeEntryListModel = removeEntryListModel
+        
         self.cacheControllable = nil
         self.itemControllable = itemController
 
@@ -37,6 +40,7 @@ public final class FakeItemRootController: ItemRootControllable {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportController,
@@ -62,6 +66,8 @@ public final class FakeItemRootController: ItemRootControllable {
 
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
+        let removeEntryListModel = RemoveEntryListModel()
+        self.removeEntryListModel = removeEntryListModel
 
         self.cacheControllable = nil
         let itemController = FakeItemController(container: modelContext.container)
@@ -83,6 +89,7 @@ public final class FakeItemRootController: ItemRootControllable {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportController,
@@ -103,7 +110,8 @@ public final class FakeItemRootController: ItemRootControllable {
     
     public var itemSelectionModel: ItemSelectionModel
     public var currentSelectedItemId: UUID? = nil
-
+    public var removeEntryListModel: RemoveEntryListModel
+    
     public let cacheControllable: (any ImageCacheControllable)?
     public let editControllable: any EditControllable
     public let exportControllable: any ExportControllable

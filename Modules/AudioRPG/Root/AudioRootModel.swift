@@ -36,6 +36,7 @@ public final class AudioRootModel {
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }
+    public let removeEntryListModel = RemoveEntryListModel()
     
     @ObservationIgnored lazy var audioController: AudioController = {
         AudioController(fileController: fileController, model: audioPlayerModel)
@@ -73,6 +74,7 @@ public final class AudioRootModel {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,

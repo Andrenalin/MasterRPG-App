@@ -40,6 +40,7 @@ public final class CharacterRootModel {
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }
+    public let removeEntryListModel = RemoveEntryListModel()
 
     @ObservationIgnored let diceRoot: DiceRootModel
     @ObservationIgnored let pdfRoot: PdfRootModel
@@ -76,6 +77,7 @@ public final class CharacterRootModel {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,

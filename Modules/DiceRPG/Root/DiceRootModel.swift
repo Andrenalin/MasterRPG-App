@@ -32,6 +32,7 @@ public final class DiceRootModel {
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }
+    public let removeEntryListModel = RemoveEntryListModel()
 
     @ObservationIgnored lazy var editController: EditController = {
         EditController(itemControllable: itemController)
@@ -63,6 +64,7 @@ public final class DiceRootModel {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,

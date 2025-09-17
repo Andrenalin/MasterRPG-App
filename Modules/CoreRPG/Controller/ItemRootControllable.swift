@@ -11,6 +11,7 @@ public protocol ItemRootControllable {
     
     var currentSelectedItemId: UUID? { get }
     var itemSelectionModel: ItemSelectionModel { get }
+    var removeEntryListModel: RemoveEntryListModel { get }
 
     var cacheControllable: (any ImageCacheControllable)? { get }
     var editControllable: any EditControllable { get }
@@ -29,6 +30,7 @@ public final class ItemRootController: ItemRootControllable {
         listDisplayModel: ListDisplayModel,
         searchModel: SearchModel,
         itemSelectionModel: ItemSelectionModel,
+        removeEntryListModel: RemoveEntryListModel,
         cacheControllable: (any ImageCacheControllable)?,
         editControllable: any EditControllable,
         exportControllable: any ExportControllable,
@@ -42,6 +44,7 @@ public final class ItemRootController: ItemRootControllable {
         self.listDisplayModel = listDisplayModel
         self.searchModel = searchModel
         self.itemSelectionModel = itemSelectionModel
+        self.removeEntryListModel = removeEntryListModel
         self.cacheControllable = cacheControllable
         self.editControllable = editControllable
         self.exportControllable = exportControllable
@@ -49,9 +52,7 @@ public final class ItemRootController: ItemRootControllable {
         self.linkControllable = linkControllable
         self.listControllable = listControllable
         self.listLinkControllable = listLinkControllable
-        self.viewControllable = viewControllable
-        
-        removeItemList = RemoveEntryListModel()
+        self.viewControllable = viewControllable                
     }
     
     public let module: NetworkModules
@@ -72,5 +73,5 @@ public final class ItemRootController: ItemRootControllable {
     public let listLinkControllable: any ListControllable
     public let viewControllable: any ViewControllable
     
-    public let removeItemList: RemoveEntryListModel
+    public let removeEntryListModel: RemoveEntryListModel
 }

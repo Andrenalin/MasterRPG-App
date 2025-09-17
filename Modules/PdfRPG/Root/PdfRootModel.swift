@@ -32,7 +32,8 @@ public final class PdfRootModel {
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }
-
+    public let removeEntryListModel = RemoveEntryListModel()
+    
     @ObservationIgnored lazy var cacheController: CacheController = {
         CacheController(fileUrlDataController: fileController.fileUrlDataController)
     }()
@@ -69,6 +70,7 @@ public final class PdfRootModel {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: cacheController,
             editControllable: editController,
             exportControllable: exportControllable,

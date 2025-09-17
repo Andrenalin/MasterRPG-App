@@ -31,7 +31,8 @@ public final class PhotoRootModel {
     public var currentSelectedItemId: UUID? {
         listController.listModel.selectedItemId
     }
-
+    public let removeEntryListModel = RemoveEntryListModel()
+    
     @ObservationIgnored lazy var cacheController: CacheController = {
         CacheController(fileUrlDataController: fileController.fileUrlDataController)
     }()
@@ -68,6 +69,7 @@ public final class PhotoRootModel {
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: cacheController,
             editControllable: editController,
             exportControllable: exportControllable,
