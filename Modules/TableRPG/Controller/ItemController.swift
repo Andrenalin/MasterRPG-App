@@ -59,6 +59,17 @@ extension ItemController: ItemControllable {
 }
 
 extension ItemController {
+    func clean() {
+        let modelContext = ModelContext(container)
+        let predicate = #Predicate<TableDataModel> { $0.displayState == 2 }
+        let fetchDesc = FetchDescriptor<TableDataModel>(predicate: predicate)
+        guard let models = try? modelContext.fetch(fetchDesc) else { return }
+        for model in models {
+            modelContext.delete(model)
+        }
+        cleanDeleted()
+    }
+
     @MainActor func model(for itemId: UUID?) -> TableDataModel? {
         guard let itemId else { return nil }
         let predicate = #Predicate<TableDataModel> { $0.itemId == itemId }

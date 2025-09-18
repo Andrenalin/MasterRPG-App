@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import SwiftData
 
 @Observable
 public final class RemoveEntryListModel {
@@ -16,17 +17,16 @@ public final class RemoveEntryListModel {
 }
 
 public struct EffectedLinkAction: View {
-    public init(itemControllable: any ItemControllable, overwrite: Bool = false, action: @escaping ([ItemRowModel]) async -> Void) {
-        self.itemControllable = itemControllable
+    public init(root: any ItemRootControllable, overwrite: Bool = false, action: (([ItemRowModel]) -> Void)? = nil) {
+        self.root = root
         self.overwrite = overwrite
         self.action = action
     }
     
-    let itemControllable: any ItemControllable
+    let root: ItemRootControllable
     let overwrite: Bool
-    let action: ([ItemRowModel]) async -> Void
+    let action: (([ItemRowModel]) -> Void)?
     
-    @Environment(RemoveEntryListModel.self) private var removeEntryList: RemoveEntryListModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
         
@@ -50,10 +50,12 @@ public struct EffectedLinkAction: View {
                 ToolbarItem(placement: .destructiveAction) {
                     Button {
                         let linkItems = removeEntryList.linkTree.compactMap { $0.canRemoved ? $0.item : nil }
-                        Task {
-                            await action(linkItems)
-                            dismiss()
+                        if let action {
+                            action(linkItems)
+                        } else {
+                            removeItems(models: linkItems)
                         }
+                        dismiss()
                     } label: {
                         Label {
                             Text("Remove", bundle: .module)
@@ -78,13 +80,25 @@ public struct EffectedLinkAction: View {
         }
         .onChange(of: removeEntryList.removeItems, initial: true) {
             Task {
-                removeEntryList.linkTree = await EffectedLinkAction.linkTree(itemControllable: itemControllable, removeItems: removeEntryList.removeItems)
+                removeEntryList.linkTree = await EffectedLinkAction.linkTree(itemControllable: root.itemControllable, removeItems: removeEntryList.removeItems)
             }
         }
     }
 }
 
 private extension EffectedLinkAction {
+    @MainActor func removeItems(models: [ItemRowModel]) {
+        models.forEach {
+            if let item = root.itemControllable.item(for: $0.itemId) {
+                root.editControllable.delete(item: item)
+            }
+        }
+    }
+    
+    var removeEntryList: RemoveEntryListModel {
+        root.removeEntryListModel
+    }
+    
     var disabledRemove: Bool {
         if overwrite {
             return false
@@ -142,7 +156,7 @@ private extension EffectedLinkAction {
     }
     
     func itemName(item: RemoveLinkTreeModel) -> String {
-        guard let model = itemControllable.item(for: item.item.itemId) else { return "" }
+        guard let model = root.itemControllable.item(for: item.item.itemId) else { return "" }
         var name = model.name
         if let entryId = item.item.entryId, let index = model.entries.firstIndex(where: { $0.id == entryId }) {
             name = "\(name) --- \(model.entries[index].name)"
@@ -151,8 +165,9 @@ private extension EffectedLinkAction {
     }
     
     static func effectedItems(itemControllable: any ItemControllable, for item: ItemRowModel) async -> [EffectedItemModel] {
-        //itemControllable.usedLinks(for: item)
-        []
+        let controller = LinkRegisterController(container: itemControllable.container)
+        return controller.effectedItems(targetId: item.itemId, targetEntryId: item.entryId, targetModule: item.typeId)
+        
     }
     
     static func linkTree(itemControllable: any ItemControllable, removeItems: [ItemRowModel]) async -> [RemoveLinkTreeModel] {

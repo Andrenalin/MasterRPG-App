@@ -170,7 +170,7 @@ struct EditControllerTests {
         #expect(album2ChildrenAfterRemoval.contains(photo2.id))
 
         // Delete album2
-        root.editController.delete(model: album2Model)
+        root.editController.delete(item: album2Model)
         let allModelsAfterAlbumDeletion = models(in: root)
         let photo1StillExists = allModelsAfterAlbumDeletion.contains { $0.id == photo1.id }
         let photo2StillExists = allModelsAfterAlbumDeletion.contains { $0.id == photo2.id }

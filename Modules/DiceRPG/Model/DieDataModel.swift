@@ -71,6 +71,17 @@ public final class DieDataModel {
         rotation = model.rotation
         result = model.result
     }
+    
+    func duplicate(newEntryId: UUID) -> DieDataModel {
+        DieDataModel(
+            id: newEntryId,
+            index: index,
+            die: die,
+            color: color,
+            rotation: 0,
+            result: []
+        )
+    }
 }
 
 extension DieDataModel {

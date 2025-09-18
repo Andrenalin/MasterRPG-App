@@ -6,30 +6,33 @@ import SwiftData
 
 struct EditController {
     let itemController: ItemController
-    let fileUrlDataController: FileUrlDataController? = nil
-    
-    var itemControllable: any ItemControllable {
-        itemController
-    }
+    let fileUrlDataController: FileUrlDataController? = nil    
 }
 
 extension EditController: EditControllable {
+    var itemControllable: any ItemControllable {
+        itemController
+    }
+
     func delete(item: ItemDataModel) {
-        // First delete the associated DiceDataModel
         deleteDiceDataModel(for: item.id)
-        
-        // Then delete the ItemDataModel using the default implementation
         deleteDataModel(item: item)
     }
     
-    @MainActor 
-    private func deleteDiceDataModel(for itemId: UUID) {
-        // Use ItemController to get the DiceDataModel
-        guard let diceModel = itemController.model(for: itemId) else { return }
-        
-        // Delete the DiceDataModel using its modelContext
-        guard let modelContext = diceModel.modelContext else { return }
-        modelContext.delete(diceModel)
+    func duplicate(item: ItemDataModel) {
+        guard let model = itemController.model(for: item.id) else { return }
+        let newItemId = UUID()
+        let duplicat = model.duplicate(newItemId: newItemId)
+        let modelContext = itemController.container.mainContext
+        modelContext.insert(duplicat)
+        try? modelContext.save()
+        duplicateDataModel(item: item, newItemId: newItemId)
+    }
+    
+    @MainActor private func deleteDiceDataModel(for itemId: UUID) {
+        guard let model = itemController.model(for: itemId) else { return }
+        guard let modelContext = model.modelContext else { return }
+        modelContext.delete(model)
         try? modelContext.save()
     }
 }

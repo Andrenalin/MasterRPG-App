@@ -9,11 +9,13 @@ public final class TableDataModel {
     public init(itemId: UUID = UUID(), diceId: UUID? = nil, entries: [TableEntryDataModel] = []) {
         self.itemId = itemId
         self.diceId = diceId
+        self.displayState = 0
         self.entries = entries
     }
 
     @Attribute(.preserveValueOnDeletion)
     public var itemId: UUID = UUID()
+    public var displayState: Int = 0
     var diceId: UUID?
     
     @Relationship(deleteRule: .cascade) private var entries_: [TableEntryDataModel]? = []

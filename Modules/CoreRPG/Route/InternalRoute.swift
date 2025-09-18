@@ -29,14 +29,7 @@ struct InternalRouteDestinationView: View {
             }
             .presentationDetents([.height(160)])
         case .removeAlert:
-            EffectedLinkAction(itemControllable: root.itemControllable) { models in
-                models.forEach {
-                    if let item = ItemDataModel.model(modelContext: root.itemControllable.container.mainContext, id: $0.itemId) {
-                        root.editControllable.delete(item: item)
-                    }
-                }
-            }
-            .environment(root.removeEntryListModel)
+            EffectedLinkAction(root: root)
         }
     }
 }

@@ -24,7 +24,7 @@ public final class TableRootModel {
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
 
-        itemController.cleanDeleted()
+        itemController.clean()
     }
     
     let modelContext: ModelContext

@@ -7,7 +7,7 @@ import SwiftData
 @testable import PdfRPG
 @testable import TableRPG
 
-struct TableRPGTests {
+struct EditControllerTests {
 
     @MainActor
     func makeRoot() throws -> TableRootModel {

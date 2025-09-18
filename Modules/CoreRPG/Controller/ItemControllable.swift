@@ -38,7 +38,7 @@ public extension ItemControllable {
     func cleanDeleted() {
         let modelContext = ModelContext(container)
         let predicate = #Predicate<ItemDataModel> { $0.displayState == 2 }
-        let fetchDesc = FetchDescriptor<ItemDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.name)])
+        let fetchDesc = FetchDescriptor<ItemDataModel>(predicate: predicate)
         guard let models = try? modelContext.fetch(fetchDesc) else { return }
         for model in models {
             modelContext.delete(model)
