@@ -176,20 +176,15 @@ private extension ListRootView {
     func deleteItems(offsets: IndexSet) {
         if let parentModel {
             root.editControllable.removeItem(offsets: offsets, model: parentModel)
+            listModel.deleteItems(offsets: offsets)
         } else {
-            for index in offsets {
-                if displayItems[index].id == listModel.selected {
-                    listModel.resetListSelection()
-                    listModel.update(selection: Set())
-                }
-                let model = displayItems[index].model                
-                let effected = root.editControllable.delete(item: model)
-                root.removeEntryListModel.effectedLink = effected
-                root.removeEntryListModel.removeItems = [ItemRowModel(itemId: model.id, typeId: model.module)]
-                navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
+            let removingItems = offsets.map {
+                let model = displayItems[$0].model
+                return ItemRowModel(itemId: model.id, typeId: model.module)
             }
+            root.removeEntryListModel.removeItems = removingItems
+            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
         }
-        listModel.deleteItems(offsets: offsets)
     }
     
     func moveItems(source: IndexSet, destination: Int) {

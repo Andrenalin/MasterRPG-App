@@ -35,7 +35,7 @@ public final class DiceRootModel {
     public let removeEntryListModel = RemoveEntryListModel()
 
     @ObservationIgnored lazy var editController: EditController = {
-        EditController(itemControllable: itemController)
+        EditController(itemController: itemController)
     }()
     @ObservationIgnored lazy var exportController: ExportController = {
         ExportController(module: module, itemController: itemController, gameExporter: false)

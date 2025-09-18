@@ -10,7 +10,7 @@ public protocol EditControllable: Sendable {
     var fileUrlDataController: FileUrlDataController? { get }
     var linkRegisterController: LinkRegisterController { get }
 
-    func delete(item: ItemDataModel) -> [EffectedItemModel]
+    func delete(item: ItemDataModel)
     func duplicate(item: ItemDataModel)
 }
 
@@ -59,11 +59,11 @@ public extension EditControllable {
         return newItem
     }
 
-    func delete(item: ItemDataModel) -> [EffectedItemModel] {
+    func delete(item: ItemDataModel) {
         deleteDataModel(item: item)
     }
     
-    func deleteDataModel(item: ItemDataModel) -> [EffectedItemModel] {
+    func deleteDataModel(item: ItemDataModel) {
         let fileUrl = item.fileUrl
         let modelContext = item.modelContext
         Task.detached {
@@ -80,8 +80,6 @@ public extension EditControllable {
         item.reset(displayState: 2)
         updateTags(modelContext: modelContext)
         try? modelContext?.save()
-        
-        return linkRegisterController.effectedItems(targetId: item.id, targetModule: item.module)
     }
 }
 

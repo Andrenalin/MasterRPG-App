@@ -5,11 +5,33 @@ import Foundation
 import SwiftData
 
 struct EditController {
-    let itemControllable: any ItemControllable
+    let itemController: ItemController
     let fileUrlDataController: FileUrlDataController? = nil
+    
+    var itemControllable: any ItemControllable {
+        itemController
+    }
 }
 
 extension EditController: EditControllable {
+    func delete(item: ItemDataModel) {
+        // First delete the associated DiceDataModel
+        deleteDiceDataModel(for: item.id)
+        
+        // Then delete the ItemDataModel using the default implementation
+        deleteDataModel(item: item)
+    }
+    
+    @MainActor 
+    private func deleteDiceDataModel(for itemId: UUID) {
+        // Use ItemController to get the DiceDataModel
+        guard let diceModel = itemController.model(for: itemId) else { return }
+        
+        // Delete the DiceDataModel using its modelContext
+        guard let modelContext = diceModel.modelContext else { return }
+        modelContext.delete(diceModel)
+        try? modelContext.save()
+    }
 }
 
 // MARK: - Edit dice
