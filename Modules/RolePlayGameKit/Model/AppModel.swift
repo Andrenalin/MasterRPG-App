@@ -185,6 +185,34 @@ public extension AppModel {
     }
 }
 
+// MARK: - Routing
+extension AppModel {
+    func resetNavigation(selectedTab: NetworkModules) {
+        let itemId: UUID? = switch selectedTab {
+        case .adventure: adventureRoot.currentSelectedItemId
+        case .audio: audioRoot.currentSelectedItemId
+        case .value: characterRoot.currentSelectedItemId
+        case .dice: diceRoot.currentSelectedItemId
+        case .map: mapRoot.currentSelectedItemId
+        case .pdf: pdfRoot.currentSelectedItemId
+        case .photo: photoRoot.currentSelectedItemId
+        case .space: spaceRoot.currentSelectedItemId
+        case .table: tableRoot.currentSelectedItemId
+        case .weather: weatherRoot.currentSelectedItemId
+        case .editor: nil
+        case .game: nil
+        case .none: nil
+        case .search: nil
+        case .setting: nil
+        }
+        
+        Task {
+            try await Task.sleep(for: .milliseconds(150))
+            navigator.perform(route: KnownRoutes.route(module: selectedTab, itemId: itemId, entryId: nil))
+        }
+    }
+}
+
 extension AppModel {
     func installExampleData(isGerman: Bool = false) {
         let importController = ImportController(appModel: self)

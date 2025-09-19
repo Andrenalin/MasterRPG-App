@@ -29,10 +29,15 @@ public struct TabNavigation: View {
 #elseif os(visionOS)
             allCustomTabs
 #else
-            if horizontalSizeClass == .compact {
-                fiveTabs
-            } else {
-                allTabs
+            Group {
+                if horizontalSizeClass == .compact {
+                    fiveTabs
+                } else {
+                    allTabs
+                }
+            }
+            .onChange(of: horizontalSizeClass) {
+                resetNavigation()
             }
 #endif
         }
@@ -63,6 +68,10 @@ public struct TabNavigation: View {
 }
 
 private extension TabNavigation {
+    func resetNavigation() {
+        appModel.resetNavigation(selectedTab: tabSelectedModule)
+    }
+    
     func pageTab(for tab: RootRoute) -> Tab<RootRoute, some View, DefaultTabLabel> {
         Tab(tabTitleModel.titles[tab.module, default: tab.title], systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
             tab
