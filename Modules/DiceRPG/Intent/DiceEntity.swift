@@ -89,7 +89,7 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: DiceRootModel
 
     func suggestedEntities() async throws -> [DiceEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .dice)
         var results: [DiceEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
@@ -110,7 +110,7 @@ struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [DiceEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .dice)
         var results: [DiceEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }

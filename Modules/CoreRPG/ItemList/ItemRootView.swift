@@ -156,6 +156,7 @@ struct ItemSplitDetailRootView<Detail: View>: View {
     
     var body: some View {
         let _ = Self._printChanges()
+        let _ = print("*** ->", root.module)
         
         if listModel.selectedItemId != nil {
             ManagedPresentationView {

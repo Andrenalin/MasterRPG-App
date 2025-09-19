@@ -89,7 +89,7 @@ struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: PhotoRootModel
 
     func suggestedEntities() async throws -> [PhotoEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .photo)
         var results: [PhotoEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
@@ -110,7 +110,7 @@ struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [PhotoEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .photo)
         var results: [PhotoEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }

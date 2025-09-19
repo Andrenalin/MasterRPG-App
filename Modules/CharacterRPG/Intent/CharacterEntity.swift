@@ -83,7 +83,7 @@ struct CharacterEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     @Dependency var root: CharacterRootModel
 
     func suggestedEntities() async throws -> [CharacterEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .value)
         var results: [CharacterEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
@@ -104,7 +104,7 @@ struct CharacterEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     }
 
     func entities(matching: String) async throws -> [CharacterEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .value)
         var results: [CharacterEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }

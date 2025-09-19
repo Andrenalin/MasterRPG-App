@@ -16,8 +16,9 @@ public protocol ItemControllable: Sendable {
 }
 
 public extension ItemControllable {
-    func allItemIds() -> [UUID] {
+    func allItemIds(module: NetworkModules) -> [UUID] {
         let modelContext = ModelContext(container)
+        let predicate = #Predicate<ItemDataModel> { $0.displayState == 0 && $0.module == module }
         let fetchDesc = FetchDescriptor<ItemDataModel>()
         guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
         return models.map { $0.id }

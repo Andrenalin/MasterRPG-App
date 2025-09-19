@@ -31,7 +31,9 @@ struct ItemRootRouteViewModifier: ViewModifier {
                             }
                     }
                 } else {
-                    listControllable.listModel.update(selection: Set())
+                    if listControllable.listModel.selected != nil {
+                        listControllable.listModel.update(selection: Set())
+                    }
                 }
             }
             .onNavigationReceive { (route: ItemRootRoute, navigator) in

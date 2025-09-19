@@ -19,7 +19,7 @@ struct EditControllerTests {
     
     @MainActor
     func models(in root: TableRootModel) -> [TableDataModel] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .table)
         return ids.compactMap {
             root.itemController.model(for: $0)
         }

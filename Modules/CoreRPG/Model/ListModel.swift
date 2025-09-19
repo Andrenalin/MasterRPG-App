@@ -106,7 +106,9 @@ public extension ListModel {
         if isSelectionMode {
             self.selection <=> Array(selection)
         } else {
-            selected <=> selection.first
+            if selected != selection.first {
+                selected = selection.first
+            }
         }
     }
 

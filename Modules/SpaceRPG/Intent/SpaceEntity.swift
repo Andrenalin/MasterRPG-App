@@ -89,7 +89,7 @@ struct SpaceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: SpaceRootModel
 
     func suggestedEntities() async throws -> [SpaceEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .space)
         var results: [SpaceEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
@@ -110,7 +110,7 @@ struct SpaceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [SpaceEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .space)
         var results: [SpaceEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }

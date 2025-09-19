@@ -15,7 +15,7 @@ struct EditControllerTests {
     
     @MainActor
     func models(in root: FakeItemRootController) -> [ItemDataModel] {
-        let ids = root.itemControllable.allItemIds()
+        let ids = root.itemControllable.allItemIds(module: .photo)
         return ids.compactMap {
             ItemDataModel.model(modelContext: root.modelContext, id: $0)
         }

@@ -83,7 +83,7 @@ struct AudioEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: AudioRootModel
 
     func suggestedEntities() async throws -> [AudioEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .audio)
         var results: [AudioEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
@@ -104,7 +104,7 @@ struct AudioEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [AudioEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.allItemIds(module: .audio)
         var results: [AudioEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
