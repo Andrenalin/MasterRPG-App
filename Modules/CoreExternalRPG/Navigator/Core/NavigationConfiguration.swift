@@ -11,21 +11,22 @@ import SwiftUI
 ///
 /// Allows the developer to modify some of Navigator's basic behavior by configuring and installing a
 /// root Navigator in the application's navigation tree.
+///
+/// The root navigator is managed and can present sheets and covers from the root view if needed.
 /// ```swift
 /// @main
 /// struct NavigatorDemoApp: App {
+///     let navigator = Navigator(configuration: .init(restorationKey: "1.0.0", autoDestinationMode: true)
 ///     var body: some Scene {
 ///         WindowGroup {
 ///             RootTabView()
-///                 .environment(\.navigator, Navigator(configuration: configuration))
+///                 .navigationAutoReceive(AppRootDestinations.self)
+///                 .navigationRoot(navigator)
 ///         }
-///     }
-///     var configuration: NavigationConfiguration {
-///         .init(restorationKey: "1.0.0", verbosity: .info)
 ///     }
 /// }
 /// ```
-public struct NavigationConfiguration {
+nonisolated public struct NavigationConfiguration {
 
     /// Determines whether or not users should see animation steps when deep linking.
     ///
@@ -48,6 +49,9 @@ public struct NavigationConfiguration {
     /// Logging verbosity
     public let verbosity: NavigationEvent.Verbosity
 
+    /// AutoDestinationMode
+    public let autoDestinationMode: Bool
+
     public init(
         restorationKey: String? = nil,
         logger: ((NavigationEvent) -> Void)? = { event in
@@ -56,7 +60,8 @@ public struct NavigationConfiguration {
             #endif
         },
         executionDelay: TimeInterval = 0.3,
-        verbosity: NavigationEvent.Verbosity = .warning
+        verbosity: NavigationEvent.Verbosity = .warning,
+        autoDestinationMode: Bool = true
     ) {
         if #available(iOS 18, *) {
             self.executionDelay = min(max(0.3, executionDelay), 5.0)
@@ -66,6 +71,42 @@ public struct NavigationConfiguration {
         self.restorationKey = restorationKey
         self.logger = logger
         self.verbosity = verbosity
+        self.autoDestinationMode = autoDestinationMode
+    }
+
+}
+
+extension View {
+    /// Allows the developer to modify some of Navigator's basic behavior by configuring and installing a
+    /// root Navigator in the application's navigation tree.
+    ///
+    /// This modifier is managed and can present sheets and covers from the root view if needed.
+    /// ```swift
+    /// @main
+    /// struct NavigatorDemoApp: App {
+    ///     let navigator = Navigator(configuration: .init(restorationKey: "1.0.0", verbosity: .info)
+    ///     var body: some Scene {
+    ///         WindowGroup {
+    ///             RootTabView()
+    ///                 .navigationAutoReceive(AppRootDestinations.self)
+    ///                 .navigationRoot(navigator)
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    public func navigationRoot(_ navigator: Navigator) -> some View {
+        self.modifier(NavigationRootModifier(state: navigator.state))
+    }
+}
+
+private struct NavigationRootModifier: ViewModifier {
+
+    @StateObject var state: NavigationState
+
+    public func body(content: Content) -> some View {
+        content
+            .modifier(NavigationPresentationModifiers(state: state))
+            .environment(\.navigator, Navigator(state: state, parent: nil, dismissible: nil))
     }
 
 }

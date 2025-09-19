@@ -32,7 +32,7 @@ extension Navigator {
     public func navigate<D: NavigationDestination>(to destination: D, method: NavigationMethod) {
         switch method {
         case .push:
-            push(destination)
+            state.push(destination)
 
         case .send:
             send(destination)
@@ -50,7 +50,6 @@ extension Navigator {
             #else
             state.sheet = AnyNavigationDestination(wrapped: destination, method: method)
             #endif
-
         }
     }
 
@@ -67,12 +66,7 @@ extension Navigator {
     /// Also supports plain Hashable values for better integration with existing code bases.
     @MainActor
     public func push<D: Hashable>(_ destination: D) {
-        log(.navigation(.pushing(destination)))
-        if let destination = destination as? any Hashable & Codable {
-            state.path.append(destination) // ensures NavigationPath knows type is Codable
-        } else {
-            state.path.append(destination)
-        }
+        state.push(destination)
     }
 
     /// Pops to a specific position on stack's navigation path.
@@ -154,7 +148,7 @@ extension Navigator {
 extension View {
 
     public func navigate(to destination: Binding<(some NavigationDestination)?>) -> some View {
-        self.modifier(NavigateToModifier(destination: destination, method: destination.wrappedValue?.method ?? .push))
+        self.modifier(NavigateToModifier(destination: destination, method: nil))
     }
 
     public func navigate(to destination: Binding<(some NavigationDestination)?>, method: NavigationMethod) -> some View {
@@ -162,7 +156,7 @@ extension View {
     }
 
     public func navigate(trigger: Binding<Bool>, destination: some NavigationDestination) -> some View {
-        self.modifier(NavigateTriggerModifier(trigger: trigger, destination: destination, method: destination.method))
+        self.modifier(NavigateTriggerModifier(trigger: trigger, destination: destination, method: nil))
     }
 
     public func navigate(trigger: Binding<Bool>, destination: some NavigationDestination, method: NavigationMethod) -> some View {
@@ -172,6 +166,41 @@ extension View {
 }
 
 extension NavigationState {
+
+    @MainActor
+    func push<D: Hashable>(_ destination: D) {
+        log(.navigation(.pushing(destination)))
+        if autoDestinationMode {
+            if let destination = destination as? AnyNavigationDestination {
+                if known(destination: destination.wrapped) {
+                    path.append(destination.wrapped)
+                } else {
+                    path.append(destination)
+                }
+            } else if let destination = destination as? any NavigationDestination {
+                if known(destination: destination) {
+                    push(raw: destination)
+                } else {
+                    path.append(AnyNavigationDestination(destination))
+                }
+            } else {
+                push(raw: destination)
+            }
+        } else {
+            #if DEBUG
+            checkKnown(destination: destination)
+            #endif
+            push(raw: destination)
+        }
+    }
+
+    internal func push<D: Hashable>(raw destination: D) {
+        if let destination = destination as? any Hashable & Codable {
+            path.append(destination) // ensures NavigationPath knows type is Codable
+        } else {
+            path.append(destination)
+        }
+    }
 
     /// Pops to a specific position on stack's navigation path.
     internal func pop(to position: Int)  -> Bool {
@@ -206,17 +235,38 @@ extension NavigationState {
         return popped
     }
 
+    // Check to see if destination type known to this navigation node.
+    internal func checkKnown(destination: Any) {
+        #if DEBUG
+        guard let destination = destination as? any NavigationDestination, known(destination: destination) == false else {
+            return
+        }
+        if let parent = recursiveFindParent({ $0.known(destination: destination) }) {
+            // type registered to a parent navigation node, check to see if you're talking to the correct navigator
+            log(.warning("\(type(of: destination)) registered in parent navigator \(parent.id)"))
+        } else if let child = recursiveFindChild({ $0.known(destination: destination) }) {
+            // type registered to a child navigation node, check to see if you're talking to the correct navigator
+            log(.warning("\(type(of: destination)) registered in child navigator \(child.id)"))
+        } else if let node = root.recursiveFindChild({ $0.known(destination: destination) }) {
+            // type registered to an adjacent navigation node (tab?), check to see if you're talking to the correct navigator
+            log(.warning("\(type(of: destination)) registered in adjacent navigator \(node.id)"))
+        } else {
+            // if warning then type not registered using navigationDestination(T.self) and/or not known to any node
+            log(.warning("\(type(of: destination)) registration missing"))
+        }
+        #endif
+    }
 }
 
 private struct NavigateToModifier<T: NavigationDestination>: ViewModifier {
     @Binding internal var destination: T?
-    internal let method: NavigationMethod
+    internal let method: NavigationMethod?
     @Environment(\.navigator) internal var navigator: Navigator
     func body(content: Content) -> some View {
         content
             .onChange(of: destination) {
                 if let destination {
-                    navigator.navigate(to: destination, method: method)
+                    navigator.navigate(to: destination, method: method ?? destination.method)
                     self.destination = nil
                 }
             }
@@ -226,13 +276,13 @@ private struct NavigateToModifier<T: NavigationDestination>: ViewModifier {
 private struct NavigateTriggerModifier<T: NavigationDestination>: ViewModifier {
     @Binding internal var trigger: Bool
     let destination: T
-    internal let method: NavigationMethod
+    internal let method: NavigationMethod?
     @Environment(\.navigator) internal var navigator: Navigator
     func body(content: Content) -> some View {
         content
             .onChange(of: trigger) {
                 if trigger {
-                    navigator.navigate(to: destination, method: method)
+                    navigator.navigate(to: destination, method: method ?? destination.method)
                     self.trigger = false
                 }
             }

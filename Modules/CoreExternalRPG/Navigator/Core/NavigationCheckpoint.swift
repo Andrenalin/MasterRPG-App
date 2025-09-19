@@ -45,7 +45,7 @@ import Combine
 /// Checkpoints are lightweight structs. Return a new instance when needed.
 ///
 /// Defining with `{ checkpoint() }` ensures a unique name for each variable instance.
-public struct NavigationCheckpoint<T>: Equatable, Hashable, Sendable {
+nonisolated public struct NavigationCheckpoint<T>: Equatable, Hashable, Sendable {
 
     public let name: String
 
@@ -113,6 +113,7 @@ extension Navigator {
         state.canReturnToCheckpoint(checkpoint)
     }
 
+    @MainActor 
     internal func addCheckpoint<T>(_ checkpoint: NavigationCheckpoint<T>) {
         state.addCheckpoint(checkpoint)
     }
@@ -133,7 +134,7 @@ extension NavigationState {
         return parent?.find(checkpoint)
     }
 
-    internal func returnToCheckpoint<T>(_ checkpoint: NavigationCheckpoint<T>) {
+    @MainActor internal func returnToCheckpoint<T>(_ checkpoint: NavigationCheckpoint<T>) {
         guard let (navigator, found) = find(checkpoint) else {
             log(.warning("checkpoint not found in current navigation tree: \(checkpoint.name)"))
             return
@@ -148,7 +149,7 @@ extension NavigationState {
         }
     }
 
-    internal func returnToCheckpoint<T: Hashable>(_ checkpoint: NavigationCheckpoint<T>, value: T) {
+    @MainActor internal func returnToCheckpoint<T: Hashable>(_ checkpoint: NavigationCheckpoint<T>, value: T) {
         guard let (navigator, found) = find(checkpoint) else {
             log(.warning("checkpoint value handler not found: \(checkpoint.name)"))
             return
@@ -168,7 +169,7 @@ extension NavigationState {
         find(checkpoint) != nil
     }
 
-    internal func addCheckpoint<T>(_ checkpoint: NavigationCheckpoint<T>) {
+    @MainActor internal func addCheckpoint<T>(_ checkpoint: NavigationCheckpoint<T>) {
         let entry = checkpoint.setting(index: path.count)
         if let found = checkpoints[entry.key] {
             if checkpoint.identifier != found.identifier {

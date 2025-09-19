@@ -5,8 +5,8 @@
 //  Created by Michael Long on 11/30/24.
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 
 extension Navigator {
 
@@ -20,7 +20,7 @@ extension Navigator {
 extension View {
 
     /// Apply to a presented view on which you want to prevent global dismissal.
-    public func navigationLocked() -> some View {
+    @MainActor public func navigationLocked() -> some View {
         self.modifier(NavigationLockedModifier())
     }
 
