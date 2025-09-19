@@ -19,6 +19,7 @@ struct AudioRootView: View {
         .overlay {
             SaveView(root: root)
         }
+        .navigationAutoReceive(AudioRoute.self)
     }
 }
 

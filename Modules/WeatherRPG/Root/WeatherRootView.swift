@@ -19,6 +19,7 @@ struct WeatherRootView: View {
         .overlay {
             SaveView(root: root)
         }
+        .navigationAutoReceive(WeatherRoute.self)
     }
 }
 

@@ -86,8 +86,7 @@ public extension ItemControllable {
     @MainActor func fileUrl(id: UUID, url: URL?) -> FileUrl? { nil }
     
     @MainActor func itemDataCodableModel(for id: UUID, externalData: Data? = nil) -> ItemDataCodableModel? {
-        guard let model = ItemDataModel.model(modelContext: ModelContext(container), id: id) else { return nil }
-        
+        guard let model = item(for: id) else { return nil }
         let entries = model.entries.map { EntryDataCodableModel(id: $0.id, index: $0.index, parentId: $0.parentId, childId: $0.childId) }
         return ItemDataCodableModel(id: model.id, module: model.module, name: model._nameLWW, information: model._informationLWW, category: model.category, tags: model.tags, fileUrl: fileUrl(id: model.id, url: model.url), displayState: model.displayState, parentId: model.parentId, entries: entries, externalData: externalData)
     }

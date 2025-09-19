@@ -19,6 +19,7 @@ struct AdventureRootView: View {
         .overlay {
             SaveView(root: root)
         }
+        .navigationAutoReceive(AdventureRoute.self)
     }
 }
 

@@ -19,6 +19,7 @@ struct CharacterRootView: View {
         .overlay {
             SaveView(root: root)
         }
+        .navigationAutoReceive(CharacterRoute.self)
     }
 }
 

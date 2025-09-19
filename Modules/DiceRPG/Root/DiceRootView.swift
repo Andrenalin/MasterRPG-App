@@ -17,7 +17,8 @@ struct DiceRootView: View {
         .overlay {
             SaveView(root: root)
         }
-    }    
+        .navigationAutoReceive(DiceRoute.self)
+    }
 }
 
 struct SaveView: View {

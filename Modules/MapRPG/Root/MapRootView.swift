@@ -19,6 +19,7 @@ struct MapRootView: View {
         .overlay {
             SaveView(root: root)
         }
+        .navigationAutoReceive(MapRoute.self)
     }
 }
 

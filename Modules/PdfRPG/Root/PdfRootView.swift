@@ -19,6 +19,7 @@ struct PdfRootView: View {
         .overlay {
             SaveView(root: root)
         }
+        .navigationAutoReceive(PdfRoute.self)
     }
 }
 

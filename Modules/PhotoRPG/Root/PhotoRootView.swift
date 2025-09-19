@@ -19,6 +19,7 @@ struct PhotoRootView: View {
         .overlay {
             SaveView(root: root)
         }
+        .navigationAutoReceive(PhotoRoute.self)
     }
 }
 

@@ -19,6 +19,7 @@ struct SpaceRootView: View {
         .overlay {
             SaveView(root: root)
         }
+        .navigationAutoReceive(SpaceRoute.self)
     }
 }
 

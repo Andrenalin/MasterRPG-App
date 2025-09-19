@@ -19,6 +19,7 @@ struct TableRootView: View {
         .overlay {
             SaveView(root: root)
         }
+        .navigationAutoReceive(TableRoute.self)
     }
 }
 
