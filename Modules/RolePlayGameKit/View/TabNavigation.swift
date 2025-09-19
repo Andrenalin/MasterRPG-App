@@ -56,6 +56,9 @@ public struct TabNavigation: View {
             guard selectedTab != .editors else { return }
             tabSelectedModule <=> selectedTab.module
         }
+        .overlay {
+            UpdateDataModeVliew(model: appModel)
+        }
     }
 }
 

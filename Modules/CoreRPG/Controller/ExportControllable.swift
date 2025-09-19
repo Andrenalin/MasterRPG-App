@@ -30,7 +30,7 @@ public extension ExportControllable {
 
     @MainActor
     func exportingAll() -> ItemModuleIds {
-        ItemModuleIds(dictionary: [module: itemControllable.allItemIds(module: module)])
+        ItemModuleIds(dictionary: [module: itemControllable.allItemIds()])
     }
 
     @MainActor

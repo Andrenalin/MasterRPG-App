@@ -15,5 +15,5 @@ struct FakeLinkController: LinkControllable {
         "Not set"
     }
     
-    static let fake: FakeLinkController = FakeLinkController(itemController: FakeItemController(container: try! ModelContainer(for: ItemDataModel.self, TagDataModel.self, configurations: .init(isStoredInMemoryOnly: true))))
+    @MainActor static let fake: FakeLinkController = FakeLinkController(itemController: FakeItemController(container: try! ModelContainer(for: ItemDataModel.self, TagDataModel.self, configurations: .init(isStoredInMemoryOnly: true)), module: .audio))
 }

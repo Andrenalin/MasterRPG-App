@@ -17,7 +17,7 @@ struct EditControllerTests {
     
     @MainActor
     func models(in root: DiceRootModel) -> [ItemDataModel] {
-        let ids = root.itemController.allItemIds(module: .dice)
+        let ids = root.itemController.allItemIds()
         return ids.compactMap {
             ItemDataModel.model(modelContext: root.modelContext, id: $0)
         }

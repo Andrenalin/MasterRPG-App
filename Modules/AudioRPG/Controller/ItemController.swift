@@ -5,12 +5,19 @@ import Foundation
 import SwiftData
 
 struct ItemController: Sendable {
+    @MainActor init(container: ModelContainer, module: NetworkModules) {
+        self.cacheModel = ItemCacheModel()
+        self.container = container
+        self.module = module
+    }
+    let cacheModel: ItemCacheModel
     let container: ModelContainer
     let collectionCategory: ItemListCategory = .playlist
+    let module: NetworkModules
 }
 
 extension ItemController: ItemControllable {
-    func hasAudio(itemId: UUID) -> Bool {
+    @MainActor func hasAudio(itemId: UUID) -> Bool {
         guard let model = item(for: itemId) else { return false }
         guard model.specialCategory else { return model.url != nil }
         return model.entries.contains { hasAudio(itemId: $0.childId) }

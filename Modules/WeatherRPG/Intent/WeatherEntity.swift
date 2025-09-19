@@ -85,7 +85,7 @@ struct WeatherEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery
     @Dependency var root: WeatherRootModel
 
     func suggestedEntities() async throws -> [WeatherEntity] {
-        let ids = root.itemController.allItemIds(module: .weather)
+        let ids = root.itemController.allItemIds()
         var results: [WeatherEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
@@ -106,7 +106,7 @@ struct WeatherEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery
     }
 
     func entities(matching: String) async throws -> [WeatherEntity] {
-        let ids = root.itemController.allItemIds(module: .weather)
+        let ids = root.itemController.allItemIds()
         var results: [WeatherEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }

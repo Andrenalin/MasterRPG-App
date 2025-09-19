@@ -27,7 +27,7 @@ public final class FakeItemRootController: ItemRootControllable {
         self.editControllable = editController
         let exportController = FakeExportController(itemControllable: itemController)
         self.exportControllable = exportController
-        let linkController = FakeLinkController(itemController: FakeItemController(container: itemController.container))
+        let linkController = FakeLinkController(itemController: FakeItemController(container: itemController.container, module: module))
         self.linkControllable = linkController
         let listController = FakeListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
         self.listControllable = listController
@@ -70,7 +70,7 @@ public final class FakeItemRootController: ItemRootControllable {
         self.removeEntryListModel = removeEntryListModel
 
         self.cacheControllable = nil
-        let itemController = FakeItemController(container: modelContext.container)
+        let itemController = FakeItemController(container: modelContext.container, module: module)
         self.itemControllable = itemController
         let editController = FakeEditController(itemControllable: itemController, fileUrlDataController: nil)
         self.editControllable = editController

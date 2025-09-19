@@ -5,8 +5,15 @@ import Foundation
 import SwiftData
 
 struct ItemController: Sendable {
+    @MainActor init(container: ModelContainer, module: NetworkModules) {
+        self.cacheModel = ItemCacheModel()
+        self.container = container
+        self.module = module
+    }
+    let cacheModel: ItemCacheModel
     let container: ModelContainer
     let collectionCategory: ItemListCategory = .collection
+    let module: NetworkModules
 }
 
 extension ItemController: ItemControllable {

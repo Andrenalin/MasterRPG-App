@@ -143,7 +143,7 @@ struct RouteRouteDestionationView: View {
             ExtendedTabBar()
 #endif
         case .game:
-            AudioRootFactory.rootView(withoutNavigation: false)
+            Text("Coming Soon")
         case .maps:
             MapRootFactory.rootView(withoutNavigation: false)
         case .pdfs:
@@ -161,7 +161,7 @@ struct RouteRouteDestionationView: View {
         case .weathers:
             WeatherRootFactory.rootView(withoutNavigation: false)
         case .search:
-            RootListView(rootRoute: route)
+            Text("Coming Soon")
         }
     }
 }

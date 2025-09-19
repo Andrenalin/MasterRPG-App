@@ -3,7 +3,24 @@
 import Foundation
 import SwiftData
 
+
+@MainActor @Observable
+public final class ItemCacheModel {
+    public init(itemIds: [UUID] = [], cachedItems: [UUID : ItemDataModel] = [:]) {
+        self.itemIds = itemIds
+        self.cachedItems = cachedItems
+    }
+    
+    var itemIds: [UUID] = []
+    
+    @ObservationIgnored
+    var cachedItems: [UUID: ItemDataModel] = [:]
+}
+
 public protocol ItemControllable: Sendable {
+    var cacheModel: ItemCacheModel { get }
+    var module: NetworkModules { get }
+    
     var container: ModelContainer { get }
     var collectionCategory: ItemListCategory { get }
     
@@ -16,16 +33,29 @@ public protocol ItemControllable: Sendable {
 }
 
 public extension ItemControllable {
-    func allItemIds(module: NetworkModules) -> [UUID] {
-        let modelContext = ModelContext(container)
-        let predicate = #Predicate<ItemDataModel> { $0.displayState == 0 && $0.module == module }
-        let fetchDesc = FetchDescriptor<ItemDataModel>()
-        guard let models = try? modelContext.fetch(fetchDesc) else { return [] }
-        return models.map { $0.id }
+    @MainActor func update(items: [ItemDataModel]) async {
+        let moduleItems = items.filter { $0.module == module }
+        let ids = moduleItems.map {
+            if cacheModel.cachedItems[$0.id] == nil {
+                cacheModel.cachedItems[$0.id] = $0
+            }
+            return $0.id
+        }
+        if cacheModel.itemIds != ids {
+            cacheModel.itemIds = ids
+        }
     }
     
-    func item(for id: UUID) -> ItemDataModel? {
-        ItemDataModel.model(modelContext: ModelContext(container), id: id)
+    @MainActor func allItemIds() -> [UUID] {
+        cacheModel.itemIds
+    }
+
+    @MainActor func allItems() -> [ItemDataModel] {
+        cacheModel.itemIds.compactMap { cacheModel.cachedItems[$0] }
+    }
+
+    @MainActor func item(for id: UUID) -> ItemDataModel? {
+        cacheModel.cachedItems[id] //?? ItemDataModel.model(modelContext: ModelContext(container), id: id)
     }
     
     func collections(isFolder: Bool, in parentId: UUID?) -> [ItemDataModel] {

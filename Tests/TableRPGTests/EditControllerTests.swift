@@ -19,7 +19,7 @@ struct EditControllerTests {
     
     @MainActor
     func models(in root: TableRootModel) -> [TableDataModel] {
-        let ids = root.itemController.allItemIds(module: .table)
+        let ids = root.itemController.allItemIds()
         return ids.compactMap {
             root.itemController.model(for: $0)
         }
@@ -57,5 +57,4 @@ struct EditControllerTests {
         #expect(originalEntry.name == copiedEntry.name)
         #expect(originalEntry.content == copiedEntry.content)
     }
-
 }

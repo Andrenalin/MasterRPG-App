@@ -89,7 +89,7 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: PdfRootModel
 
     func suggestedEntities() async throws -> [PdfEntity] {
-        let ids = root.itemController.allItemIds(module: .pdf)
+        let ids = root.itemController.allItemIds()
         var results: [PdfEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
@@ -110,7 +110,7 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [PdfEntity] {
-        let ids = root.itemController.allItemIds(module: .pdf)
+        let ids = root.itemController.allItemIds()
         var results: [PdfEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }

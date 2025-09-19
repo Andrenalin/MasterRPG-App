@@ -72,7 +72,7 @@ public final class AdventureRootModel {
         ImportController(itemController: itemController, module: module)
     }()
     @ObservationIgnored lazy var itemController: ItemController = {
-        ItemController(container: modelContext.container)
+        ItemController(container: modelContext.container, module: module)
     }()
     @ObservationIgnored lazy var linkController: LinkController = {
         LinkController(module: module, itemController: itemController)

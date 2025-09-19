@@ -197,3 +197,20 @@ extension AppModel {
         }
     }
 }
+
+extension AppModel {
+    func update(items: [ItemDataModel]) {
+        Task {
+            await diceRoot.itemControllable.update(items: items.filter { $0.module == .dice })
+            await spaceRoot.itemControllable.update(items: items.filter { $0.module == .space })
+            await audioRoot.itemControllable.update(items: items.filter { $0.module == .audio })
+            await photoRoot.itemControllable.update(items: items.filter { $0.module == .photo })
+            await pdfRoot.itemControllable.update(items: items.filter { $0.module == .pdf })
+            await weatherRoot.itemControllable.update(items: items.filter { $0.module == .weather })
+            await tableRoot.itemControllable.update(items: items.filter { $0.module == .table })
+            await characterRoot.itemControllable.update(items: items.filter { $0.module == .value })
+            await mapRoot.itemControllable.update(items: items.filter { $0.module == .map })
+            await adventureRoot.itemControllable.update(items: items.filter { $0.module == .adventure })
+        }
+    }
+}

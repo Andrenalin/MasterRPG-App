@@ -13,8 +13,6 @@ struct SubItemListRootView: View {
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(\.navigator) private var navigator
 
-    @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name, animation: .smooth) private var items: [ItemDataModel]
-
     var body: some View {
         let _ = Self._printChanges()
         let _ = print(parentModel.name)
@@ -39,8 +37,8 @@ struct SubItemListRootView: View {
                     ContentUnavailableView.search
                 }
             }
-            .onChange(of: items, initial: true) {
-                withAnimation { root.listControllable.update(items: items.filter { $0.module == root.module }, parentModel: parentModel) }
+            .onChange(of: root.itemControllable.cacheModel.itemIds, initial: true) {
+                withAnimation { root.listControllable.update(items: root.itemControllable.allItems(), parentModel: parentModel) }
             }
             .listModelUpdatesModifier(listControllable: root.listControllable, parentModel: parentModel)
             .toolbarItemListModifier(root: root, listControllable: root.listControllable, parentModel: parentModel)

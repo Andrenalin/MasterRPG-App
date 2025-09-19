@@ -83,7 +83,7 @@ struct MapEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: MapRootModel
 
     func suggestedEntities() async throws -> [MapEntity] {
-        let ids = root.itemController.allItemIds(module: .map)
+        let ids = root.itemController.allItemIds()
         var results: [MapEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
@@ -104,7 +104,7 @@ struct MapEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [MapEntity] {
-        let ids = root.itemController.allItemIds(module: .map)
+        let ids = root.itemController.allItemIds()
         var results: [MapEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }

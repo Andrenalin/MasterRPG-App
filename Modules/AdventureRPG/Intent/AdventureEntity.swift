@@ -83,7 +83,7 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     @Dependency var root: AdventureRootModel
 
     func suggestedEntities() async throws -> [AdventureEntity] {
-        let ids = root.itemController.allItemIds(module: .adventure)
+        let ids = root.itemController.allItemIds()
         var results: [AdventureEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
@@ -104,7 +104,7 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     }
 
     func entities(matching: String) async throws -> [AdventureEntity] {
-        let ids = root.itemController.allItemIds(module: .adventure)
+        let ids = root.itemController.allItemIds()
         var results: [AdventureEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }

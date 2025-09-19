@@ -13,23 +13,18 @@ public struct LinkRootView: View {
     public init(root: any ItemRootControllable, type: LinkRootType) {
         self.root = root
         self.type = type
-        let predicate = #Predicate<ItemDataModel> { $0.displayState == 0 }
-        let query = Query(filter: predicate, sort: \ItemDataModel.name, animation: .smooth)
-        self._items = query
     }
     
     let root: any ItemRootControllable
     let type: LinkRootType
-    
-    @Query private var items: [ItemDataModel]
     
     public var body: some View {
         LinkItemListView(root: root, type: type, parentModel: nil)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)        
             .environment(CacheItemListModel())
-            .onChange(of: items, initial: true) {
-                withAnimation { root.listLinkControllable.update(items: items.filter { $0.module == root.module }, parentModel: nil) }
+            .onChange(of: root.itemControllable.cacheModel.itemIds, initial: true) {
+                withAnimation { root.listLinkControllable.update(items: root.itemControllable.allItems(), parentModel: nil) }
             }
     }
 }

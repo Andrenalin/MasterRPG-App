@@ -83,7 +83,7 @@ struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: TableRootModel
 
     func suggestedEntities() async throws -> [TableEntity] {
-        let ids = root.itemController.allItemIds(module: .table)
+        let ids = root.itemController.allItemIds()
         var results: [TableEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
@@ -104,7 +104,7 @@ struct TableEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [TableEntity] {
-        let ids = root.itemController.allItemIds(module: .table)
+        let ids = root.itemController.allItemIds()
         var results: [TableEntity] = []
         for id in ids {
             guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
