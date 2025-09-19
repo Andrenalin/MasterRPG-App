@@ -29,7 +29,16 @@ extension ItemRootRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            ItemDetailRootView(selectedId: itemId)
+            DetailRouteDestination(itemId: itemId)
         }
+    }
+}
+
+struct DetailRouteDestination: View {
+    let itemId: UUID
+    
+    var body: some View {
+        let _ = Self._printChanges()
+        ItemDetailRootView(selectedId: itemId)
     }
 }

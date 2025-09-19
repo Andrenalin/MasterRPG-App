@@ -30,7 +30,20 @@ extension PhotoRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DetailRootView(selectedId: itemId)
+            DetailRouteDestination(itemId: itemId)
         }
+    }
+}
+
+struct DetailRouteDestination: View {
+    let itemId: UUID
+    
+    @Environment(PhotoRootModel.self) private var root
+    
+    var body: some View {
+        DetailRootView(selectedId: itemId)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .environment(root.rootController)
     }
 }

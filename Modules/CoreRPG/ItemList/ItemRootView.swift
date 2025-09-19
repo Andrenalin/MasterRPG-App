@@ -27,7 +27,7 @@ public struct ItemRootView<Detail: View>: View {
         .environment(cacheItemListModel)
         .environment(root.listDisplayModel)
         .environment(root.searchModel)
-        .environment(root)
+        //.environment(root)
         .tabBarPlacementModifier(listControllable: root.listControllable)
         .tint(root.module.tint)
     }
