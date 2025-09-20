@@ -84,6 +84,16 @@ extension ListControllable {
         listModel.addedModelId = model.id
     }
     
+    @MainActor func delete(offsets: IndexSet, parentModel: ItemDataModel?) -> [ItemRowModel] {
+        let displayItems = displayItems(for: parentModel)
+        let removed = offsets.map {
+            let model = displayItems[$0].model
+            return ItemRowModel(itemId: model.id, typeId: model.module)
+        }
+        listModel(for: parentModel).deleteItems(offsets: offsets)
+        return removed
+    }
+    
     func resetFilter(parentModel: ItemDataModel?) {
         resetFilter(on: listModel(for: parentModel), parentModel: parentModel)
     }

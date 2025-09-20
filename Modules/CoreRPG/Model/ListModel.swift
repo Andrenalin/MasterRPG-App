@@ -76,7 +76,23 @@ public final class ListModel {
 
 // MARK: - Items
 extension ListModel {
+    func deleteItems(ids: [String]) -> [ItemRowModel] {
+        let removed = ids.compactMap { id -> ItemRowModel? in
+            guard let index = displayedItems.firstIndex(where: { $0.id == id }) else { return nil }
+            let model = displayedItems[index].model
+            deleteItems(offsets: IndexSet(integer: index))
+            return ItemRowModel(itemId: model.id, typeId: model.module)
+        }
+        return removed
+    }
+    
     func deleteItems(offsets: IndexSet) {
+        for index in offsets {
+            if displayedItems[index].id == selected {
+                resetListSelection()
+                update(selection: Set())
+            }
+        }
         displayedItems.remove(atOffsets: offsets)
     }
     
@@ -129,6 +145,13 @@ public extension ListModel {
             displayedItems.first(where: { $0.id == selected })?.model.id
         }
     }
+        
+    func ids(selectedItemIds: [UUID]) -> [String] {
+        selectedItemIds.compactMap { itemId -> String? in
+            displayedItems.first(where: { $0.model.id == itemId })?.id
+        }
+    }
+
 }
 
 // MARK: - Navigation

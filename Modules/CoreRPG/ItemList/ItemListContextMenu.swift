@@ -12,6 +12,7 @@ public struct ItemListContextMenu: View {
     let controller: ItemListContextMenuControllable
     let currentSelected: UUID?
 
+    @Environment(ItemRootController.self) private var root
     @Environment(\.navigator) private var navigator
     @Environment(ListDisplayModel.self) private var listDisplayModel
     
@@ -48,7 +49,15 @@ private extension ItemListContextMenu {
 
     var deleteItemView: some View {
         Button(role: .destructive) {
-            withAnimation { controller.deleteItem(currentSelected: currentSelected) }
+            withAnimation {
+                let removingItems = controller.deleteItem(currentSelected: currentSelected)
+                guard !removingItems.isEmpty else { return }
+                root.removeEntryListModel.removeItems = removingItems
+                removingItems.forEach {
+                    root.editControllable.markForDeletion(itemId: $0.itemId)
+                }
+            }
+            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
         } label: {
             Label {
                 Text("Delete \(title)", bundle: .module)

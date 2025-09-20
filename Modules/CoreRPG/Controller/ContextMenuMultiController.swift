@@ -25,6 +25,11 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
         return [currentSelected]
     }
 
+    func selectionId(currentSelected: UUID?) -> [String] {
+        guard let currentSelected else { return listModel.selection }
+        return listModel.ids(selectedItemIds: [currentSelected])
+    }
+
     func itemName(currentSelected: UUID?) -> String {
         let selection = selection(currentSelected: currentSelected)
         guard let itemId = selection.first, let model = itemController.item(for: itemId) else { return "" }
@@ -43,12 +48,8 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
         }
     }
     
-    func deleteItem(currentSelected: UUID?) {
-        let selection = selection(currentSelected: currentSelected)
-        for itemId in selection {
-            guard let model = itemController.item(for: itemId) else { continue }
-            editController.delete(item: model)
-        }
+    func deleteItem(currentSelected: UUID?) -> [ItemRowModel] {
+        listModel.deleteItems(ids: selectionId(currentSelected: currentSelected))
     }
     
     func exportItem(currentSelected: UUID?) -> any NavigationDestination {

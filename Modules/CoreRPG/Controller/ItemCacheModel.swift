@@ -5,7 +5,7 @@ import SwiftData
 
 public protocol ModelCachable: Identifiable, PersistentModel {
     var itemId: UUID { get }
-    var displayState: Int { get }
+    var displayState: Int { get set }
     
     static func newModel(for itemId: UUID) -> Self
 }

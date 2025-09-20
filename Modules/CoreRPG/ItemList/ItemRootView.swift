@@ -131,6 +131,9 @@ struct ItemRootSplitView<Detail: View>: View {
             ManagedPresentationView {
                 ItemRootListView(root: root)
             }
+            .environment(root)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
         } detail: {
             ItemSplitDetailRootView(root: root) {
                 detail

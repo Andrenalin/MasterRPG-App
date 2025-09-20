@@ -9,7 +9,7 @@ public protocol ItemListContextMenuControllable {
     var collectionIcon: String { get }
     
     func duplicateItem(currentSelected: UUID?)
-    func deleteItem(currentSelected: UUID?)
+    func deleteItem(currentSelected: UUID?) -> [ItemRowModel]
     func exportItem(currentSelected: UUID?) -> any NavigationDestination
     func generateLink(currentSelected: UUID?)
     

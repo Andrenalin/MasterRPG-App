@@ -36,11 +36,20 @@ public extension ItemControllable {
         let moduleItems = items.filter { $0.module == module }
         let ids = moduleItems.map {
             if itemCacheModel.cachedItems[$0.id] == nil {
+                print("\(module) not cached \($0.id)")
                 itemCacheModel.cachedItems[$0.id] = $0
             }
             return $0.id
         }
         if itemCacheModel.itemIds != ids {
+            print("\(module) item ids different")
+            if itemCacheModel.itemIds.count == ids.count {
+                for (index, itemId) in itemCacheModel.itemIds.enumerated() {
+                    if ids[index] != itemId {
+                        print("\(module) item ids not equal at index \(index) \(itemCacheModel.cachedItems[itemId]?.name ?? "not found")")
+                    }
+                }
+            }
             itemCacheModel.itemIds = ids
         }
     }

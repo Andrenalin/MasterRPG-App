@@ -49,11 +49,13 @@ public struct EffectedLinkAction: View {
             .toolbar {
                 ToolbarItem(placement: .destructiveAction) {
                     Button {
-                        let linkItems = removeEntryList.linkTree.compactMap { $0.canRemoved ? $0.item : nil }
+                        let removedItems = removeEntryList.linkTree.compactMap { $0.canRemoved ? $0.item : nil }
+                        let restoredItems = removeEntryList.linkTree.compactMap { $0.canRemoved ? nil : $0.item }
                         if let action {
-                            action(linkItems)
+                            action(removedItems)
                         } else {
-                            removeItems(models: linkItems)
+                            removeItems(models: removedItems)
+                            restoreItems(models: restoredItems)
                         }
                         dismiss()
                     } label: {
@@ -67,7 +69,8 @@ public struct EffectedLinkAction: View {
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
-                        withAnimation { dismiss() }
+                        restoreItems(models: removeEntryList.linkTree.map { $0.item })
+                        dismiss()
                     } label: {
                         Label {
                             Text("Cancel", bundle: .module)
@@ -89,12 +92,16 @@ public struct EffectedLinkAction: View {
 private extension EffectedLinkAction {
     @MainActor func removeItems(models: [ItemRowModel]) {
         models.forEach {
-            if let item = root.itemControllable.item(for: $0.itemId) {
-                root.editControllable.delete(item: item)
-            }
+            root.editControllable.delete(itemId: $0.itemId)
         }
     }
     
+    @MainActor func restoreItems(models: [ItemRowModel]) {
+        models.forEach {
+            root.editControllable.restore(itemId: $0.itemId)
+        }
+    }
+
     var removeEntryList: RemoveEntryListModel {
         root.removeEntryListModel
     }

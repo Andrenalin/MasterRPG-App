@@ -27,13 +27,7 @@ extension EditController: EditControllable {
         itemController
     }
     
-    func delete(item: ItemDataModel) {
-        deleteDataModel(item: item)
-        guard let model = itemController.model(for: item.id) else { return }
-        model.displayState = 2
-    }
-
-    @MainActor func duplicate(item: ItemDataModel) {
+    func duplicate(item: ItemDataModel) {
         guard let model = itemController.model(for: item.id) else { return }
         let newItemId = UUID()
         let duplicat = model.duplicate(newItemId: newItemId)

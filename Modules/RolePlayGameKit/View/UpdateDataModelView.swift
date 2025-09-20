@@ -5,9 +5,16 @@ import SwiftData
 import SwiftUI
 
 struct UpdateDataModeVliew: View {
+    internal init(model: AppModel) {
+        self.model = model
+        let predicate = #Predicate<ItemDataModel> { $0.displayState == 0 }
+        let sort = SortDescriptor(\ItemDataModel.name, comparator: .localizedStandard)
+        self._items = Query(filter: predicate, sort: [sort])
+    }
+    
     let model: AppModel
 
-    @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name) private var items: [ItemDataModel]
+    @Query private var items: [ItemDataModel]
     
     var body: some View {
         let _ = Self._printChanges()

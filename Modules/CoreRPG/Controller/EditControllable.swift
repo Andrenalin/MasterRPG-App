@@ -10,7 +10,6 @@ public protocol EditControllable: Sendable {
     var fileUrlDataController: FileUrlDataController? { get }
     var linkRegisterController: LinkRegisterController { get }
 
-    func delete(item: ItemDataModel)
     func duplicate(item: ItemDataModel)
 }
 
@@ -23,29 +22,6 @@ public extension EditControllable {
 
 // MARK: - Edit Item
 public extension EditControllable {
-    func createNewEntry(in model: ItemDataModel, childId: UUID) -> EntryDataModel {
-        EntryDataModel(id: UUID(), index: model.entries.count, parentId: model.id, childId: childId, item: model)
-    }
-
-    func duplicate(item: ItemDataModel) {
-        duplicateDataModel(item: item, newItemId: UUID())
-    }
-
-    func duplicateDataModel(item: ItemDataModel, newItemId: UUID) {
-        let modelContext = itemControllable.container.mainContext
-        let duplicate = item.duplicate(newItemId: newItemId, url: nil)
-        modelContext.insert(duplicate)
-        try? modelContext.save()
-        guard let fileUrlDataController, let actor = item.modelActor() else { return }
-        let id = item.id
-        Task.detached {
-            await actor.setup(id: id)
-            guard let fileUrl = try? await fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newItemId) else { return }
-            await actor.update(url: fileUrl.rawUrl)
-            await actor.save()
-        }
-    }
-
     func addNew(modelContext: ModelContext, module: NetworkModules, type: EditControllerAddType) -> ItemDataModel {
         let newItem = ItemDataModel.newItem
         newItem.module = module
@@ -59,8 +35,18 @@ public extension EditControllable {
         return newItem
     }
 
-    func delete(item: ItemDataModel) {
+
+    func createNewEntry(in model: ItemDataModel, childId: UUID) -> EntryDataModel {
+        EntryDataModel(id: UUID(), index: model.entries.count, parentId: model.id, childId: childId, item: model)
+    }
+
+    func delete(itemId: UUID) {
+        guard let item = itemControllable.item(for: itemId) else { return }
         deleteDataModel(item: item)
+        if let cacheItemController = itemControllable as? (any ModelCacheControllable) {
+            guard let model = cacheItemController.model(for: item.id) else { return }
+            model.displayState = 2
+        }
     }
     
     func deleteDataModel(item: ItemDataModel) {
@@ -80,6 +66,43 @@ public extension EditControllable {
         item.reset(displayState: 2)
         updateTags(modelContext: modelContext)
         try? modelContext?.save()
+    }
+    
+    func duplicate(item: ItemDataModel) {
+        duplicateDataModel(item: item, newItemId: UUID())
+    }
+
+    func duplicateDataModel(item: ItemDataModel, newItemId: UUID) {
+        let modelContext = itemControllable.container.mainContext
+        let duplicate = item.duplicate(newItemId: newItemId, url: nil)
+        modelContext.insert(duplicate)
+        try? modelContext.save()
+        guard let fileUrlDataController, let actor = item.modelActor() else { return }
+        let id = item.id
+        Task.detached {
+            await actor.setup(id: id)
+            guard let fileUrl = try? await fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newItemId) else { return }
+            await actor.update(url: fileUrl.rawUrl)
+            await actor.save()
+        }
+    }
+
+    func markForDeletion(itemId: UUID) {
+        guard let item = itemControllable.item(for: itemId) else { return }
+        item.reset(displayState: 2)
+        if let cacheItemController = itemControllable as? (any ModelCacheControllable) {
+            guard let model = cacheItemController.model(for: item.id) else { return }
+            model.displayState = 2
+        }
+    }
+
+    func restore(itemId: UUID) {
+        guard let item = itemControllable.item(for: itemId) else { return }
+        item.reset(displayState: 0)
+        if let cacheItemController = itemControllable as? (any ModelCacheControllable) {
+            guard let model = cacheItemController.model(for: item.id) else { return }
+            model.displayState = 0
+        }
     }
 }
 
