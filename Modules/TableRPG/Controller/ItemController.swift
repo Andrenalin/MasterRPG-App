@@ -6,15 +6,20 @@ import SwiftData
 
 struct ItemController: Sendable {
     @MainActor init(container: ModelContainer, module: NetworkModules) {
-        self.cacheModel = ItemCacheModel()
+        self.itemCacheModel = ItemCacheModel()
         self.container = container
         self.module = module
+        self.modelCacheModel = ModelCacheModel()
     }
-    let cacheModel: ItemCacheModel
+    
+    let itemCacheModel: ItemCacheModel
     let container: ModelContainer
     let collectionCategory: ItemListCategory = .collection
     let module: NetworkModules
+    let modelCacheModel: ModelCacheModel<TableDataModel>
 }
+
+extension ItemController: ModelCacheControllable {}
 
 // MARK: - Import Controller
 
@@ -62,32 +67,5 @@ extension ItemController: ItemControllable {
             let updatedContent = controller.verifyLinks(in: entry.content, destinationItemId: entry.itemId, destinationEntryId: entry.entryId, destinationModule: .table)
             entry.content = updatedContent
         }
-    }
-}
-
-extension ItemController {
-    func clean() {
-        let modelContext = ModelContext(container)
-        let predicate = #Predicate<TableDataModel> { $0.displayState == 2 }
-        let fetchDesc = FetchDescriptor<TableDataModel>(predicate: predicate)
-        guard let models = try? modelContext.fetch(fetchDesc) else { return }
-        for model in models {
-            modelContext.delete(model)
-        }
-        cleanDeleted()
-    }
-
-    @MainActor func model(for itemId: UUID?) -> TableDataModel? {
-        guard let itemId else { return nil }
-        let predicate = #Predicate<TableDataModel> { $0.itemId == itemId }
-        let fetchDesc = FetchDescriptor<TableDataModel>(predicate: predicate)
-        let models: [TableDataModel] = (try? container.mainContext.fetch(fetchDesc)) ?? []
-        guard let model = models.first else {
-            let item = TableDataModel(itemId: itemId)
-            container.mainContext.insert(item)
-            try? container.mainContext.save()
-            return item
-        }
-        return model
     }
 }

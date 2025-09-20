@@ -6,7 +6,7 @@ import SwiftData
 
 @MainActor
 struct FakeItemController: ItemControllable, Sendable {
-    let cacheModel: ItemCacheModel = ItemCacheModel()
+    let itemCacheModel: ItemCacheModel = ItemCacheModel()
     let container: ModelContainer
     let collectionCategory: ItemListCategory = .album
     let module: NetworkModules

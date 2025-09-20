@@ -8,14 +8,16 @@ import SwiftData
 public final class TableDataModel {
     public init(itemId: UUID = UUID(), diceId: UUID? = nil, entries: [TableEntryDataModel] = []) {
         self.itemId = itemId
-        self.diceId = diceId
         self.displayState = 0
+
+        self.diceId = diceId
         self.entries = entries
     }
 
     @Attribute(.preserveValueOnDeletion)
     public var itemId: UUID = UUID()
     public var displayState: Int = 0
+    
     var diceId: UUID?
     
     @Relationship(deleteRule: .cascade) private var entries_: [TableEntryDataModel]? = []
@@ -86,6 +88,12 @@ extension TableDataModel {
             guard let index = entries.firstIndex(where: { $0.entryId == id }) else { return }
             entries[index] = newValue
         }
+    }
+}
+
+extension TableDataModel: ModelCachable {
+    public static func newModel(for itemId: UUID) -> TableDataModel {
+        TableDataModel(itemId: itemId)
     }
 }
 

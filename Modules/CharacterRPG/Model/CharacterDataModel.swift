@@ -8,13 +8,18 @@ import SwiftData
 public final class CharacterDataModel {
     public init(itemId: UUID = UUID(), diceId: UUID? = nil, photoId: UUID? = nil, photos: [UUID] = [], parentId: UUID? = nil, entries: [CharacterEntryDataModel] = []) {
         self.itemId = itemId
+        self.displayState = 0
+        
         self.diceId = diceId
         self.photoId = photoId
         self.photos = photos
         self.parentId = parentId
     }
     
-    var itemId: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion)
+    public var itemId: UUID = UUID()
+    public var displayState: Int = 0
+
     var diceId: UUID? = nil
     var photoId: UUID? = nil
     var photos: [UUID] = []
@@ -76,7 +81,7 @@ public final class CharacterDataModel {
 }
 
 extension CharacterDataModel {
-    var entries: [CharacterEntryDataModel] {
+    public var entries: [CharacterEntryDataModel] {
         get {
             guard let all = entries_ else { return [] }
             return all.sorted { $0.index < $1.index }
@@ -85,4 +90,21 @@ extension CharacterDataModel {
             entries_ = newValue
         }
     }
+    
+    public subscript(id: UUID) -> CharacterEntryDataModel {
+        get { entries.first(where: { $0.entryId == id }) ?? CharacterEntryDataModel(itemId: itemId) }
+        set(newValue) {
+            guard let index = entries.firstIndex(where: { $0.entryId == id }) else { return }
+            entries[index] = newValue
+        }
+    }
+
 }
+
+extension CharacterDataModel: ModelCachable {
+    public static func newModel(for itemId: UUID) -> CharacterDataModel {
+        CharacterDataModel(itemId: itemId)
+    }
+}
+
+extension CharacterDataModel: EntryEditModel {}

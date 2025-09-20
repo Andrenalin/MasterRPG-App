@@ -8,10 +8,15 @@ import SwiftData
 public final class AdventureDataModel {
     public init(itemId: UUID = UUID(), photoId: UUID? = nil, entries: [AdventureEntryDataModel] = []) {
         self.itemId = itemId
+        self.displayState = 0
+        
         self.photoId = photoId
     }
     
-    var itemId: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion)
+    public var itemId: UUID = UUID()
+    public var displayState: Int = 0
+
     var photoId: UUID? = nil
     
     @Relationship(deleteRule: .cascade) private var entries_: [AdventureEntryDataModel]? = []
@@ -58,7 +63,7 @@ public final class AdventureDataModel {
 }
 
 extension AdventureDataModel {
-    var entries: [AdventureEntryDataModel] {
+    public var entries: [AdventureEntryDataModel] {
         get {
             guard let all = entries_ else { return [] }
             return all.sorted { $0.index < $1.index }
@@ -68,7 +73,7 @@ extension AdventureDataModel {
         }
     }
     
-    subscript(id: UUID) -> AdventureEntryDataModel {
+    public subscript(id: UUID) -> AdventureEntryDataModel {
         get { entries.first(where: { $0.entryId == id }) ?? AdventureEntryDataModel(itemId: itemId) }
         set(newValue) {
             guard let index = entries.firstIndex(where: { $0.entryId == id }) else { return }
@@ -76,3 +81,11 @@ extension AdventureDataModel {
         }
     }
 }
+
+extension AdventureDataModel: ModelCachable {
+    public static func newModel(for itemId: UUID) -> AdventureDataModel {
+        AdventureDataModel(itemId: itemId)
+    }
+}
+
+extension AdventureDataModel: EntryEditModel {}

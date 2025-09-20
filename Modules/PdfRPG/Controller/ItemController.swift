@@ -6,15 +6,20 @@ import SwiftData
 
 struct ItemController: Sendable {
     @MainActor init(container: ModelContainer, module: NetworkModules) {
-        self.cacheModel = ItemCacheModel()
+        self.itemCacheModel = ItemCacheModel()
         self.container = container
         self.module = module
+        self.modelCacheModel = ModelCacheModel()
     }
-    let cacheModel: ItemCacheModel
+    
+    let itemCacheModel: ItemCacheModel
     let container: ModelContainer
     let collectionCategory: ItemListCategory = .bookshelf
     let module: NetworkModules
+    let modelCacheModel: ModelCacheModel<PdfDataModel>
 }
+
+extension ItemController: ModelCacheControllable {}
 
 extension ItemController: ItemControllable {
     @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
@@ -57,21 +62,5 @@ extension ItemController: ItemControllable {
     @MainActor func fileUrl(id: UUID, url: URL?) -> FileUrl? {
         guard let url else { return nil }
         return FileUrl(fileId: id, url: url, location: .cloud, module: NetworkModules.pdf.token)
-    }
-}
-
-extension ItemController {
-    @MainActor func model(for itemId: UUID?) -> PdfDataModel? {
-        guard let itemId else { return nil }
-        let predicate = #Predicate<PdfDataModel> { $0.itemId == itemId }
-        let fetchDesc = FetchDescriptor<PdfDataModel>(predicate: predicate)
-        let models: [PdfDataModel] = (try? container.mainContext.fetch(fetchDesc)) ?? []
-        guard let model = models.first else {
-            let item = PdfDataModel(itemId: itemId)
-            container.mainContext.insert(item)
-            try? container.mainContext.save()
-            return item
-        }
-        return model
     }
 }

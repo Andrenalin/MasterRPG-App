@@ -9,6 +9,8 @@ import SwiftData
 public final class MapDataModel {
     public init(itemId: UUID = UUID(), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, entries: [MapEntryDataModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0) {
         self.itemId = itemId
+        self.displayState = 0
+        
         self.photoId = photoId
         self.width = width
         self.height = height
@@ -17,7 +19,10 @@ public final class MapDataModel {
         self.scale = scale
     }
     
-    var itemId: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion)
+    public var itemId: UUID = UUID()
+    public var displayState: Int = 0
+
     var photoId: UUID? = nil
     var width: CGFloat = 1200
     var height: CGFloat = 800
@@ -93,7 +98,7 @@ public final class MapDataModel {
 }
 
 extension MapDataModel {
-    var entries: [MapEntryDataModel] {
+    public var entries: [MapEntryDataModel] {
         get {
             guard let all = entries_ else { return [] }
             return all.sorted { $0.index < $1.index }
@@ -102,4 +107,20 @@ extension MapDataModel {
             entries_ = newValue
         }
     }
+    
+    public subscript(id: UUID) -> MapEntryDataModel {
+        get { entries.first(where: { $0.entryId == id }) ?? MapEntryDataModel(itemId: itemId) }
+        set(newValue) {
+            guard let index = entries.firstIndex(where: { $0.entryId == id }) else { return }
+            entries[index] = newValue
+        }
+    }
 }
+
+extension MapDataModel: ModelCachable {
+    public static func newModel(for itemId: UUID) -> MapDataModel {
+        MapDataModel(itemId: itemId)
+    }
+}
+
+extension MapDataModel: EntryEditModel {}

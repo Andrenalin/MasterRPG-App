@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import SwiftData
 
@@ -7,6 +8,8 @@ import SwiftData
 public final class WeatherDataModel {
     public init(itemId: UUID = UUID(), photoId: UUID? = nil, time: Double = 0, cloudThickness: Cloud.Thickness = Cloud.Thickness.none, stormType: Storm.Contents = Storm.Contents.none, rainAngle: Double = 0, rainIntensity: Double = 0, lightningFrequency: Double = 0, lightningMaxBolts: Double = 0, lightningForkProbability: Double = 0) {
         self.itemId = itemId
+        self.displayState = 0
+        
         self.photoId = photoId
         self.time = time
         self.cloudThickness = cloudThickness
@@ -18,7 +21,10 @@ public final class WeatherDataModel {
         self.lightningForkProbability = lightningForkProbability
     }
     
-    var itemId: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion)
+    public var itemId: UUID = UUID()
+    public var displayState: Int = 0
+
     var photoId: UUID? = nil
 
     var time: Double = 0
@@ -95,5 +101,11 @@ public final class WeatherDataModel {
         lightningFrequency = model.lightningFrequency
         lightningMaxBolts = model.lightningMaxBolts
         lightningForkProbability = model.lightningForkProbability
+    }
+}
+
+extension WeatherDataModel: ModelCachable {
+    public static func newModel(for itemId: UUID) -> WeatherDataModel {
+        WeatherDataModel(itemId: itemId)
     }
 }

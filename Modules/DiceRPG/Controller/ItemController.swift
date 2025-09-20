@@ -6,14 +6,17 @@ import SwiftData
 
 struct ItemController: Sendable {
     @MainActor init(container: ModelContainer, module: NetworkModules) {
-        self.cacheModel = ItemCacheModel()
+        self.itemCacheModel = ItemCacheModel()
         self.container = container
         self.module = module
+        self.modelCacheModel = ModelCacheModel()
     }
-    let cacheModel: ItemCacheModel
+    
+    let itemCacheModel: ItemCacheModel
     let container: ModelContainer
     let collectionCategory: ItemListCategory = .diceBag
     let module: NetworkModules
+    let modelCacheModel: ModelCacheModel<DiceDataModel>
 }
 
 extension ItemController: ItemControllable {
@@ -50,18 +53,4 @@ extension ItemController: ItemControllable {
     }
 }
 
-extension ItemController {
-    @MainActor func model(for itemId: UUID?) -> DiceDataModel? {
-        guard let itemId else { return nil }
-        let predicate = #Predicate<DiceDataModel> { $0.itemId == itemId }
-        let fetchDesc = FetchDescriptor<DiceDataModel>(predicate: predicate)
-        let models: [DiceDataModel] = (try? container.mainContext.fetch(fetchDesc)) ?? []
-        guard let model = models.first else {
-            let config = DiceDataModel(itemId: itemId)
-            container.mainContext.insert(config)
-            try? container.mainContext.save()
-            return config
-        }
-        return model
-    }
-}
+extension ItemController: ModelCacheControllable {}

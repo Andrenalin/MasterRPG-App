@@ -3,7 +3,6 @@
 import Foundation
 import SwiftData
 
-
 @MainActor @Observable
 public final class ItemCacheModel {
     public init(itemIds: [UUID] = [], cachedItems: [UUID : ItemDataModel] = [:]) {
@@ -18,7 +17,7 @@ public final class ItemCacheModel {
 }
 
 public protocol ItemControllable: Sendable {
-    var cacheModel: ItemCacheModel { get }
+    var itemCacheModel: ItemCacheModel { get }
     var module: NetworkModules { get }
     
     var container: ModelContainer { get }
@@ -36,26 +35,26 @@ public extension ItemControllable {
     @MainActor func update(items: [ItemDataModel]) async {
         let moduleItems = items.filter { $0.module == module }
         let ids = moduleItems.map {
-            if cacheModel.cachedItems[$0.id] == nil {
-                cacheModel.cachedItems[$0.id] = $0
+            if itemCacheModel.cachedItems[$0.id] == nil {
+                itemCacheModel.cachedItems[$0.id] = $0
             }
             return $0.id
         }
-        if cacheModel.itemIds != ids {
-            cacheModel.itemIds = ids
+        if itemCacheModel.itemIds != ids {
+            itemCacheModel.itemIds = ids
         }
     }
     
     @MainActor func allItemIds() -> [UUID] {
-        cacheModel.itemIds
+        itemCacheModel.itemIds
     }
 
     @MainActor func allItems() -> [ItemDataModel] {
-        cacheModel.itemIds.compactMap { cacheModel.cachedItems[$0] }
+        itemCacheModel.itemIds.compactMap { itemCacheModel.cachedItems[$0] }
     }
 
     @MainActor func item(for id: UUID) -> ItemDataModel? {
-        cacheModel.cachedItems[id] //?? ItemDataModel.model(modelContext: ModelContext(container), id: id)
+        itemCacheModel.cachedItems[id] //?? ItemDataModel.model(modelContext: ModelContext(container), id: id)
     }
     
     func collections(isFolder: Bool, in parentId: UUID?) -> [ItemDataModel] {

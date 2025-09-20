@@ -6,25 +6,37 @@ import SwiftData
 
 @Model 
 public final class CharacterEntryDataModel {
-    public init(itemId: UUID = UUID(), entryId: UUID = UUID(), index: Int = 0, name: String = "", content: String = "", valueType: CharacterEntryDataModel.ValueType = CharacterEntryDataModel.ValueType.text, diceId: UUID? = nil, valueId: UUID? = nil, parent: CharacterDataModel? = nil) {
+    public init(
+        itemId: UUID = UUID(),
+        entryId: UUID = UUID(),
+        index: Int = 0,
+        name: String = "",
+        content: String = "",
+        valueType: CharacterEntryDataModel.ValueType = CharacterEntryDataModel.ValueType.text,
+        diceId: UUID? = nil,
+        valueId: UUID? = nil,
+        parent: CharacterDataModel? = nil
+    ) {
         self.itemId = itemId
         self.entryId = entryId
         self.index = index
         self.name = name
         self.content = content
+        
         self.valueType = valueType
         self.diceId = diceId
         self.valueId = valueId
     }
     
-    var itemId: UUID = UUID()
-    var entryId: UUID = UUID()
-    var index: Int = 0
-    
-    var name: String = ""
-    var content: String = ""
+    public var itemId: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion)
+    public var entryId: UUID = UUID()
+    public var index: Int = 0
+
+    public var name: String = ""
+    public var content: String = ""
+
     var valueType: ValueType = ValueType.text
-    
     var diceId: UUID? = nil
     var valueId: UUID? = nil
     
@@ -122,5 +134,35 @@ public final class CharacterEntryDataModel {
         let nameLinks = linkRegisterController.linkDataModel(in: name).map { $0.codableModel }
         let contentLinks = linkRegisterController.linkDataModel(in: content).map { $0.codableModel }
         return nameLinks + contentLinks
+    }
+    
+    func duplicate(newItemId: UUID, newEntryId: UUID) -> CharacterEntryDataModel {
+        CharacterEntryDataModel(
+            itemId: newItemId,
+            entryId: newEntryId,
+            index: index,
+            name: name,
+            content: content,
+            valueType: valueType,
+            diceId: diceId,
+            valueId: valueId,
+            parent: nil
+        )
+    }
+}
+
+extension CharacterEntryDataModel: EntryPersistentModel {
+    public func duplicate(name: String, index: Int) -> CharacterEntryDataModel {
+        CharacterEntryDataModel(
+            itemId: itemId,
+            entryId: UUID(),
+            index: index,
+            name: name,
+            content: content,
+            valueType: valueType,
+            diceId: diceId,
+            valueId: valueId,
+            parent: parent
+        )
     }
 }

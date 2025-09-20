@@ -6,14 +6,17 @@ import SwiftData
 
 struct ItemController: Sendable {
     @MainActor init(container: ModelContainer, module: NetworkModules) {
-        self.cacheModel = ItemCacheModel()
+        self.itemCacheModel = ItemCacheModel()
         self.container = container
         self.module = module
+        self.modelCacheModel = ModelCacheModel()
     }
-    let cacheModel: ItemCacheModel
+    
+    let itemCacheModel: ItemCacheModel
     let container: ModelContainer
     let collectionCategory: ItemListCategory = .collection
     let module: NetworkModules
+    let modelCacheModel: ModelCacheModel<AdventureDataModel>
 }
 
 // MARK: - Import Controller
@@ -57,18 +60,4 @@ extension ItemController: ItemControllable {
     }
 }
 
-extension ItemController {
-    @MainActor func model(for itemId: UUID?) -> AdventureDataModel? {
-        guard let itemId else { return nil }
-        let predicate = #Predicate<AdventureDataModel> { $0.itemId == itemId }
-        let fetchDesc = FetchDescriptor<AdventureDataModel>(predicate: predicate)
-        let models: [AdventureDataModel] = (try? container.mainContext.fetch(fetchDesc)) ?? []
-        guard let model = models.first else {
-            let character = AdventureDataModel(itemId: itemId)
-            container.mainContext.insert(character)
-            try? container.mainContext.save()
-            return character
-        }
-        return model
-    }
-}
+extension ItemController: ModelCacheControllable {}

@@ -9,6 +9,8 @@ struct EditController {
     let fileUrlDataController: FileUrlDataController? = nil    
 }
 
+// MARK: EditControllable
+
 extension EditController: EditControllable {
     var itemControllable: any ItemControllable {
         itemController
@@ -16,7 +18,8 @@ extension EditController: EditControllable {
 
     func delete(item: ItemDataModel) {
         deleteDiceDataModel(for: item.id)
-        deleteDataModel(item: item)
+        guard let model = itemController.model(for: item.id) else { return }
+        model.displayState = 2
     }
     
     func duplicate(item: ItemDataModel) {

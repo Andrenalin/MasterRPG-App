@@ -37,7 +37,7 @@ struct SubItemListRootView: View {
                     ContentUnavailableView.search
                 }
             }
-            .onChange(of: root.itemControllable.cacheModel.itemIds, initial: true) {
+            .onChange(of: root.itemControllable.itemCacheModel.itemIds, initial: true) {
                 withAnimation { root.listControllable.update(items: root.itemControllable.allItems(), parentModel: parentModel) }
             }
             .listModelUpdatesModifier(listControllable: root.listControllable, parentModel: parentModel)

@@ -25,6 +25,8 @@ public final class DiceDataModel {
         resultCategory: ResultCategory? = nil
     ) {
         self.itemId = itemId
+        self.displayState = 0
+
         self.sumUp = sumUp
         self.modifier = modifier
         self.percentDice = percentDice
@@ -40,7 +42,9 @@ public final class DiceDataModel {
         self.dice_ = dice
     }
     
-    var itemId: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion)
+    public var itemId: UUID = UUID()
+    public var displayState: Int = 0
     
     var sumUp: Bool = true
     var modifier: Double = 0.0
@@ -227,6 +231,12 @@ extension DiceDataModel {
     static var twenty: DiceDataModel {
         DiceDataModel(dice: [DieDataModel.die20])
     }    
+}
+
+extension DiceDataModel: ModelCachable {
+    public static func newModel(for itemId: UUID) -> DiceDataModel {
+        DiceDataModel(itemId: itemId)
+    }
 }
 
 extension DiceDataModel {

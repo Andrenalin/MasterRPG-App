@@ -20,14 +20,11 @@ struct EditController {
     let selectionPdf: ItemSelectionModel
 }
 
+// MARK: EditControllable
+
 extension EditController: EditControllable {
     var itemControllable: any ItemControllable {
         itemController
-    }
-    
-    func add(diceId: UUID?, model: TableDataModel) {
-        model.diceId = diceId
-        try? model.modelContext?.save()
     }
     
     func delete(item: ItemDataModel) {
@@ -48,6 +45,15 @@ extension EditController: EditControllable {
             entry.content <=> updatedContent
         }
         duplicateDataModel(item: item, newItemId: newItemId)
+    }
+}
+
+// MARK: Table Editor
+
+extension EditController {
+    func add(diceId: UUID?, model: TableDataModel) {
+        model.diceId = diceId
+        try? model.modelContext?.save()
     }
 }
 

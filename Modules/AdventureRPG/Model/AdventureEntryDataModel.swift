@@ -6,7 +6,14 @@ import SwiftData
 
 @Model 
 public final class AdventureEntryDataModel {
-    public init(itemId: UUID = UUID(), entryId: UUID = UUID(), index: Int = 0, name: String = "", content: String = "", parent: AdventureDataModel? = nil) {
+    public init(
+        itemId: UUID = UUID(),
+        entryId: UUID = UUID(),
+        index: Int = 0,
+        name: String = "",
+        content: String = "",
+        parent: AdventureDataModel? = nil
+    ) {
         self.itemId = itemId
         self.entryId = entryId
         self.index = index
@@ -15,13 +22,14 @@ public final class AdventureEntryDataModel {
         self.parent = parent
     }
     
-    var itemId: UUID = UUID()
-    var entryId: UUID = UUID()
-    var index: Int = 0
-    
-    var name: String = ""
-    var content: String = ""
-    
+    public var itemId: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion)
+    public var entryId: UUID = UUID()
+    public var index: Int = 0
+
+    public var name: String = ""
+    public var content: String = ""
+
     //@CodableIgnored
     var parent: AdventureDataModel? = nil
     
@@ -69,5 +77,18 @@ public final class AdventureEntryDataModel {
         guard let modelContext else { return [] }
         let linkRegisterController = LinkRegisterController(container: modelContext.container)
         return linkRegisterController.linkDataModel(in: content).map { $0.codableModel }
+    }
+}
+
+extension AdventureEntryDataModel: EntryPersistentModel {
+    public func duplicate(name: String, index: Int) -> AdventureEntryDataModel {
+        AdventureEntryDataModel(
+            itemId: itemId,
+            entryId: UUID(),
+            index: index,
+            name: name,
+            content: content,
+            parent: parent
+        )
     }
 }

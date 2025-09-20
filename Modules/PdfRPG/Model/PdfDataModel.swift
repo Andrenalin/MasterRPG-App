@@ -13,6 +13,7 @@ public final class PdfDataModel {
     
     @Attribute(.preserveValueOnDeletion)
     public var itemId: UUID = UUID()
+    public var displayState: Int = 0
 
     @Relationship(deleteRule: .cascade) private var entries_: [PdfEntryDataModel]? = []
 
@@ -44,7 +45,6 @@ public final class PdfDataModel {
     func replace(_ model: PdfDataModelCodable) {
         itemId = model.itemId
         entries = model.entries.map { PdfEntryDataModel($0) }
-
     }
 }
 
@@ -65,6 +65,12 @@ extension PdfDataModel {
             guard let index = entries.firstIndex(where: { $0.entryId == id }) else { return }
             entries[index] = newValue
         }
+    }
+}
+
+extension PdfDataModel: ModelCachable {
+    public static func newModel(for itemId: UUID) -> PdfDataModel {
+        PdfDataModel(itemId: itemId)
     }
 }
 
