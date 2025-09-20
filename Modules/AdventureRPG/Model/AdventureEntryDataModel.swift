@@ -78,6 +78,17 @@ public final class AdventureEntryDataModel {
         let linkRegisterController = LinkRegisterController(container: modelContext.container)
         return linkRegisterController.linkDataModel(in: content).map { $0.codableModel }
     }
+    
+    func duplicate(newItemId: UUID, newEntryId: UUID) -> AdventureEntryDataModel {
+        AdventureEntryDataModel(
+            itemId: newItemId,
+            entryId: newEntryId,
+            index: index,
+            name: name,
+            content: content,
+            parent: nil
+        )
+    }
 }
 
 extension AdventureEntryDataModel: EntryPersistentModel {

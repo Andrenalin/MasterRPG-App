@@ -60,6 +60,14 @@ public final class AdventureDataModel {
         photoId = model.photoId
         entries = model.entries.map { AdventureEntryDataModel($0) }
     }
+    
+    func duplicate(newItemId: UUID) -> AdventureDataModel {
+        AdventureDataModel(
+            itemId: newItemId,
+            photoId: photoId,
+            entries: entries.map { $0.duplicate(newItemId: newItemId, newEntryId: UUID()) }
+        )
+    }
 }
 
 extension AdventureDataModel {

@@ -66,7 +66,7 @@ public extension EntryEditControllable {
     }
     
     @MainActor func duplicate(entry: EditDataModel.DataModel, in model: EditDataModel) -> UUID {
-        let duplicat = entry.duplicate(name: editControllable.duplicateName(from: entry.name), index: model.entries.count)
+        let duplicat = entry.duplicate(name: ItemDataModel.duplicateName(from: entry.name), index: model.entries.count)
         modelContext().insert(duplicat)
         var entries = model.entries
         entries.append(duplicat)

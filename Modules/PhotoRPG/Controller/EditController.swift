@@ -11,12 +11,27 @@ internal import AppKit
 internal import UIKit
 #endif
 
-struct EditController: EditControllable {
-    let itemControllable: any ItemControllable
+struct EditController {
+    @MainActor
+    init(itemController: ItemController, fileUrlDataController: FileUrlDataController) {
+        self.itemController = itemController
+        self.fileUrlDataController = fileUrlDataController
+    }
+    
+    let itemController: ItemController
     let fileUrlDataController: FileUrlDataController?
 }
 
+// MARK: - EditControllable
+
+extension EditController: EditControllable {
+    var itemControllable: any ItemControllable {
+        itemController
+    }
+}
+
 // MARK: - File Editor
+
 extension EditController {
     func resetFile(image: AKImage?, id: UUID, actor: DataModelActor) async {
         guard let image else { return }

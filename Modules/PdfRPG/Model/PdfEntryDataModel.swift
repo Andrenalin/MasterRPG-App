@@ -28,10 +28,10 @@ public final class PdfEntryDataModel {
     }
 
     public var itemId: UUID = UUID()
-
     @Attribute(.preserveValueOnDeletion)
     public var entryId: UUID = UUID()
     public var index: Int = 0
+    
     public var name: String = ""
     public var content: String = ""
 
@@ -99,6 +99,19 @@ public final class PdfEntryDataModel {
         content = model.content
         bounds = model.bounds
         pageLabel = model.pageLabel
+    }
+    
+    func duplicate(newItemId: UUID, newEntryId: UUID) -> PdfEntryDataModel {
+        PdfEntryDataModel(
+            itemId: newItemId,
+            entryId: newEntryId,
+            index: index,
+            name: name,
+            content: content,
+            bounds: bounds,
+            pageLabel: pageLabel,
+            parent: nil
+        )
     }
 }
 

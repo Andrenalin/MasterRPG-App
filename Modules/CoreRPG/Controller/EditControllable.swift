@@ -77,11 +77,11 @@ public extension EditControllable {
         let duplicate = item.duplicate(newItemId: newItemId, url: nil)
         modelContext.insert(duplicate)
         try? modelContext.save()
-        guard let fileUrlDataController, let actor = item.modelActor() else { return }
-        let id = item.id
+        guard let fileUrlDataController, let actor = duplicate.modelActor() else { return }
+        let originalFileUrl = item.fileUrl
         Task.detached {
-            await actor.setup(id: id)
-            guard let fileUrl = try? await fileUrlDataController.duplicate(fileUrl: actor.fileUrl, for: newItemId) else { return }
+            await actor.setup(id: newItemId)
+            guard let fileUrl = try? await fileUrlDataController.duplicate(fileUrl: originalFileUrl, for: newItemId) else { return }
             await actor.update(url: fileUrl.rawUrl)
             await actor.save()
         }
@@ -202,12 +202,6 @@ public extension EditControllable {
 
 // MARK: - Editor
 public extension EditControllable {
-    func duplicateName(from original: String) -> String {
-        let copyKey: LocalizedStringResource = "Copy"
-        let copyString = String(localized: copyKey).localizedString
-        return "\(original) \(copyString)"
-    }
-
     func update(model: ItemDataModel, name: String, information: String, category: ItemListCategory, tags: [String]) {
         model.withTransaction { modelContext in
             model.reset(name: name)

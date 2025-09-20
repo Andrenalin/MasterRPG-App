@@ -21,16 +21,12 @@ extension EditController: EditControllable {
     }
 
     @MainActor func duplicate(item: ItemDataModel) {
-//        guard let models = itemController.models(for: item.id) else { return }
+       guard let model = itemController.model(for: item.id) else { return }
         let newItemId = UUID()
-//        let duplicat = model.duplicate(newItemId: newItemId)
-//        let modelContext = itemController.container.mainContext
-//        modelContext.insert(duplicat)
-//        try? modelContext.save()
-//        duplicat.entries.forEach { entry in
-//            let updatedContent = linkRegisterController.replaceLinks(in: entry.content, newItemId: newItemId, newEntryId: entry.entryId)
-//            entry.content <=> updatedContent
-//        }
+        let duplicat = model.duplicate(newItemId: newItemId)
+        let modelContext = itemController.container.mainContext
+        modelContext.insert(duplicat)
+        try? modelContext.save()
         duplicateDataModel(item: item, newItemId: newItemId)
     }
 }

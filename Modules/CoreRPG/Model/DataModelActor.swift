@@ -47,23 +47,6 @@ public actor DataModelActor {
     public func update(url: URL?) {
         model.url = url
     }
-
-    public func duplicate(newId: UUID, url: URL?) {
-        let newModel = ItemDataModel(
-            id: newId,
-            module: model.module,
-            name: "\(model.name) copy",
-            information: model.information,
-            category: model.category,
-            tags: model.tags,
-            url: url,
-            displayState: 0,
-            parentId: model.parentId,
-            entries: []
-        )
-
-        modelContext.insert(newModel)
-    }
     
     public func save() {
         try? modelContext.save()

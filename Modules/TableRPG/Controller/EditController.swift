@@ -20,7 +20,7 @@ struct EditController {
     let selectionPdf: ItemSelectionModel
 }
 
-// MARK: EditControllable
+// MARK: - EditControllable
 
 extension EditController: EditControllable {
     var itemControllable: any ItemControllable {
@@ -42,7 +42,7 @@ extension EditController: EditControllable {
     }
 }
 
-// MARK: Table Editor
+// MARK: - Module Editor
 
 extension EditController {
     func add(diceId: UUID?, model: TableDataModel) {

@@ -46,6 +46,13 @@ public final class PdfDataModel {
         itemId = model.itemId
         entries = model.entries.map { PdfEntryDataModel($0) }
     }
+    
+    func duplicate(newItemId: UUID) -> PdfDataModel {
+        PdfDataModel(
+            itemId: newItemId,
+            entries: entries.map { $0.duplicate(newItemId: newItemId, newEntryId: UUID()) }
+        )
+    }
 }
 
 extension PdfDataModel {

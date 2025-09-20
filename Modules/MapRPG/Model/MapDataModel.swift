@@ -95,6 +95,19 @@ public final class MapDataModel {
         hexMapScale = model.hexMapScale
         scale = model.scale
     }
+    
+    func duplicate(newItemId: UUID) -> MapDataModel {
+        MapDataModel(
+            itemId: newItemId,
+            photoId: photoId,
+            width: width,
+            height: height,
+            entries: entries.map { $0.duplicate(newItemId: newItemId, newEntryId: UUID()) },
+            pinScale: pinScale,
+            hexMapScale: hexMapScale,
+            scale: scale
+        )
+    }
 }
 
 extension MapDataModel {

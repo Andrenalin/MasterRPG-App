@@ -102,6 +102,21 @@ public final class WeatherDataModel {
         lightningMaxBolts = model.lightningMaxBolts
         lightningForkProbability = model.lightningForkProbability
     }
+    
+    func duplicate(newItemId: UUID) -> WeatherDataModel {
+        WeatherDataModel(
+            itemId: newItemId,
+            photoId: photoId,
+            time: time,
+            cloudThickness: cloudThickness,
+            stormType: stormType,
+            rainAngle: rainAngle,
+            rainIntensity: rainIntensity,
+            lightningFrequency: lightningFrequency,
+            lightningMaxBolts: lightningMaxBolts,
+            lightningForkProbability: lightningForkProbability
+        )
+    }
 }
 
 extension WeatherDataModel: ModelCachable {

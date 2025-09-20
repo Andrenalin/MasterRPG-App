@@ -78,6 +78,17 @@ public final class CharacterDataModel {
         parentId = model.parentId
         entries = model.entries.map { CharacterEntryDataModel($0) }
     }
+    
+    func duplicate(newItemId: UUID) -> CharacterDataModel {
+        CharacterDataModel(
+            itemId: newItemId,
+            diceId: diceId,
+            photoId: photoId,
+            photos: photos,
+            parentId: parentId,
+            entries: entries.map { $0.duplicate(newItemId: newItemId, newEntryId: UUID()) }
+        )
+    }
 }
 
 extension CharacterDataModel {

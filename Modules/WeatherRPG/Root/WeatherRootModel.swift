@@ -38,7 +38,7 @@ public final class WeatherRootModel {
     @ObservationIgnored let photoRoot: PhotoRootModel
 
     @ObservationIgnored lazy var editController: EditController = {
-        EditController(itemControllable: itemController, fileUrlDataController: nil)
+        EditController(itemController: itemController)
     }()
     @ObservationIgnored lazy var exportController: ExportController = {
         ExportController(module: module, itemController: itemController, fileUrlDataController: nil, gameExporter: false)

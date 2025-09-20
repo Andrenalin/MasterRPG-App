@@ -105,7 +105,7 @@ extension ItemDataModel {
         ItemDataModel(
             id: newItemId,
             module: module,
-            name: "\(name) copy",
+            name: ItemDataModel.duplicateName(from: name),
             information: information,
             category: category,
             tags: tags,
@@ -137,6 +137,12 @@ extension ItemDataModel {
     }
     public func reset(url: URL?) {
         self.url = url
+    }
+    
+    public static func duplicateName(from original: String) -> String {
+        let copyKey: LocalizedStringResource = "Copy"
+        let copyString = String(localized: copyKey).localizedString
+        return "\(original) \(copyString)"
     }
 }
 

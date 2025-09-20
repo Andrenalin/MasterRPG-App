@@ -63,7 +63,7 @@ public final class AdventureRootModel {
     @ObservationIgnored let weatherRoot: WeatherRootModel
     
     @ObservationIgnored lazy var editController: EditController = {
-        EditController(itemControllable: itemController)
+        EditController(itemController: itemController)
     }()
     @ObservationIgnored lazy var exportController: ExportController = {
         ExportController(module: module, itemController: itemController, gameExporter: false)

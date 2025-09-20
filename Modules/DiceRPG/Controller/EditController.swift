@@ -25,13 +25,6 @@ extension EditController: EditControllable {
         try? modelContext.save()
         duplicateDataModel(item: item, newItemId: newItemId)
     }
-    
-    @MainActor private func deleteDiceDataModel(for itemId: UUID) {
-        guard let model = itemController.model(for: itemId) else { return }
-        guard let modelContext = model.modelContext else { return }
-        modelContext.delete(model)
-        try? modelContext.save()
-    }
 }
 
 // MARK: - Edit dice

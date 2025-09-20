@@ -3,15 +3,22 @@
 import CoreRPG
 import Foundation
 import SwiftData
-import UniformTypeIdentifiers
 
-#if os(macOS)
-internal import AppKit
-#else
-internal import UIKit
-#endif
-
-struct EditController: EditControllable {
-    let itemControllable: any ItemControllable
+struct EditController {
+    @MainActor
+    init(itemController: ItemController, fileUrlDataController: FileUrlDataController) {
+        self.itemController = itemController
+        self.fileUrlDataController = fileUrlDataController
+    }
+    
+    let itemController: ItemController
     let fileUrlDataController: FileUrlDataController?
+}
+
+// MARK: - EditControllable
+
+extension EditController: EditControllable {
+    var itemControllable: any ItemControllable {
+        itemController
+    }
 }
