@@ -9,6 +9,7 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
         self.entryEditController = entryEditController
         self.model = model
         self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: entryEditController.editControllable.linkRegisterController, text: ""))
+        self._name = State(wrappedValue: "")
     }
     
     let entryEditController: Controller
@@ -19,8 +20,9 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
         case information
     }
     @FocusState private var currentFocus: FocusField?
-
+    
     @State private var editModel: TextEditModel
+    @State private var name: String
 
     public var body: some View {
         Group {
@@ -29,6 +31,7 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
                     .onAppear {
                         editModel.text = entry.content
                         editModel.resetAttributedText()
+                        name = entry.name
                     }
             }
         }
@@ -40,6 +43,29 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
         VStack {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Button {
+                            withAnimation { entryEditController.editorModel.currentEntryId = nil }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.headline)
+                        }
+                        .padding()
+                        .glassEffect(.regular.interactive())
+                        
+                        Spacer()
+                        
+                        Button {
+                            save()
+                        } label: {
+                            Image(systemName: "checkmark")
+                                .font(.headline)
+                        }
+                        .padding()
+                        .glassEffect(.regular.interactive())
+                    }
+                    .buttonStyle(.borderless)
+
                     nameSection(entry: entry)
                     
                     contentEditor(entry: entry)
@@ -54,13 +80,7 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
             .frame(maxHeight: .infinity, alignment: .center)
             .padding(32)
         }
-        .background {
-            Rectangle().fill(backGroundColor.opacity(0.5))
-        }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onTapGesture {
-            entryEditController.editorModel.currentEntryId = nil
-        }
     }
     
     var backGroundColor: Color {
@@ -129,5 +149,12 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
     var entry: Controller.EditDataModel.DataModel {
         model[entryEditController.editorModel.currentEntryId ?? UUID()]
     }
+    
+    func save() {
+        editModel.resetText()
+        withAnimation {
+            entryEditController.update(entry: entry, name: name, content: editModel.text)
+            entryEditController.editorModel.currentEntryId = nil
+        }
+    }
 }
-

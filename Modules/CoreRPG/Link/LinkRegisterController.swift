@@ -32,7 +32,7 @@ public extension LinkRegisterController {
             linkDataModel(linkId: rawLink.linkId)
         }
     }
-
+    
     /// Scans the given text for links of the form `[name](SCHEME://UUID/COMMAND)` and `[name](SCHEME://UUID)`, then fetches matching LinkDataModel rows by ID.
     /// - Parameters:
     ///   - text: The text to scan.

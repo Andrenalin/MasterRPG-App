@@ -59,9 +59,6 @@ public final class LinkHighlightTextModel {
         let searchUrl = link.markDown.split(separator: "]").last!.trimmingCharacters(in: CharacterSet(charactersIn: "()"))
         guard let url = URL(string: searchUrl) else { return }
 
-//        var repariedText = text
-//        _ = LinkReplaceController.linksRepair(for: &repariedText)
-//        
         let updatedText = linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         reset(text: updatedText)
     }

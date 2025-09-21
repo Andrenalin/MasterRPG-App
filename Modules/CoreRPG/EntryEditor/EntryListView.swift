@@ -13,12 +13,11 @@ public struct EntryListView<Controller: EntryEditControllable>: View {
     let entryEditController: Controller
     let model: Controller.EditDataModel
         
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Namespace private var zoomNamespace
     
     public var body: some View {
         ForEach(model.entries) { entry in
-            EntryRow(entryId: entry.entryId, name: entry.name, content: entry.content, cacheItemListModel: cacheItemListModel)
+            EntryEditRow(entryEditController: entryEditController, entry: entry, cacheItemListModel: entryEditController.cacheItemListModel)
                 .modifier(ZoomDestinationViewModifier(sourceID: entry.entryId.uuidString, namespace: zoomNamespace))
                 .contextMenu {
                     duplicateButton(entry: entry)

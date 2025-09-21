@@ -5,8 +5,8 @@ import Foundation
 
 @Model
 public final class LinkDataModel: Identifiable {
-    public init(name: String, sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModel: NetworkModules) {
-        self.id = UUID()
+    public init(id: UUID = UUID(), name: String, sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModel: NetworkModules) {
+        self.id = id
         self.name = name
         self.sourceId = sourceId
         self.sourceEntryId = sourceEntryId
@@ -15,9 +15,9 @@ public final class LinkDataModel: Identifiable {
         self.destinationEntryId = destinationEntryId
         self.destinationModule = destinationModel
     }
-
+    
     public internal(set) var id: UUID = UUID()
-
+    
     public internal(set) var name: String = ""
     // source
     public internal(set) var sourceId: UUID = UUID()
@@ -27,10 +27,10 @@ public final class LinkDataModel: Identifiable {
     public internal(set) var destinationId: UUID = UUID()
     public internal(set) var destinationEntryId: UUID? = nil
     public internal(set) var destinationModule: NetworkModules = NetworkModules.none
-
+    
     public struct LinkDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(name: String, sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModel: NetworkModules) {
-            self.id = UUID()
+        init(id: UUID, name: String, sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModel: NetworkModules) {
+            self.id = id
             self.name = name
             self.sourceId = sourceId
             self.sourceEntryId = sourceEntryId
@@ -39,7 +39,7 @@ public final class LinkDataModel: Identifiable {
             self.destinationEntryId = destinationEntryId
             self.destinationModule = destinationModel
         }
-
+        
         var id: UUID = UUID()
         var name: String = ""
         var sourceId: UUID = UUID()
@@ -49,9 +49,10 @@ public final class LinkDataModel: Identifiable {
         var destinationEntryId: UUID?
         var destinationModule: NetworkModules = .none
     }
-
+    
     public convenience init(_ model: LinkDataModelCodable) {
         self.init(
+            id: model.id,
             name: model.name,
             sourceId: model.sourceId,
             sourceEntryId: model.sourceEntryId,
@@ -61,9 +62,10 @@ public final class LinkDataModel: Identifiable {
             destinationModel: model.destinationModule
         )
     }
-
+    
     public var codableModel: LinkDataModelCodable {
         LinkDataModelCodable(
+            id: id,
             name: name,
             sourceId: sourceId,
             sourceEntryId: sourceEntryId,
@@ -73,7 +75,7 @@ public final class LinkDataModel: Identifiable {
             destinationModel: destinationModule
         )
     }
-
+    
     public func replace(_ model: LinkDataModelCodable) {
         name = model.name
         sourceId = model.sourceId
@@ -82,6 +84,19 @@ public final class LinkDataModel: Identifiable {
         destinationId = model.destinationId
         destinationEntryId = model.destinationEntryId
         destinationModule = model.destinationModule
+    }
+    
+    public func duplicate() -> LinkDataModel {
+        LinkDataModel(
+            id: UUID(),
+            name: name,
+            sourceId: sourceId,
+            sourceEntryId: sourceEntryId,
+            sourceModule: sourceModule,
+            destinationId: destinationId,
+            destinationEntryId: destinationEntryId,
+            destinationModel: destinationModule
+        )
     }
 }
 

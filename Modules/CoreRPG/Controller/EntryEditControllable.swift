@@ -37,6 +37,8 @@ public protocol EntryEditControllable: Sendable {
     
     var editControllable: EditControllable { get }
     var editorModel: EntryEditorModel { get }
+    
+    var cacheItemListModel: CacheItemListModel { get }
 }
 
 public extension EntryEditControllable {
@@ -64,7 +66,7 @@ public extension EntryEditControllable {
         }
         try? modelContext().save()
     }
-    
+            
     @MainActor func duplicate(entry: EditDataModel.DataModel, in model: EditDataModel) -> UUID {
         let duplicat = entry.duplicate(name: ItemDataModel.duplicateName(from: entry.name), index: model.entries.count)
         modelContext().insert(duplicat)
@@ -82,5 +84,47 @@ public extension EntryEditControllable {
         model.entries = entries
         modelContext().delete(entry)
         try? modelContext().save()
+    }
+    
+    func rowText(entry: EditDataModel.DataModel) -> String {
+        entry.name.isEmpty ? entry.content : "\(entry.name.markDownText()): \(entry.content)"
+    }
+    
+    @MainActor func linkTextModel(for entry: EditDataModel.DataModel, linkController: LinkRootController, searchModel: SearchModel) -> LinkHighlightTextModel {
+        let nameText = rowText(entry: entry)
+        guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entry.entryId) else {
+            let model = LinkHighlightTextModel(linkController: linkController, text: nameText, highlightedText: searchModel.searchText)
+            cacheItemListModel.setItemLink(cacheType: .row, itemId: entry.entryId, linkModel: model)
+            return model
+        }
+        if nameText != linkModel.text {
+            linkModel.reset(text: nameText)
+        }
+        return linkModel
+    }
+    
+    @MainActor func update(entry: EditDataModel.DataModel, name: String, content: String) {
+        var changed = entry.name != name.withoutLink()
+        entry.name <=> name.withoutLink()
+        let links = editControllable.linkRegisterController.linkDataModel(in: content)
+        var seenIds: Set<UUID> = []
+        var newContent = content
+        for link in links {
+            guard seenIds.contains(link.id) else {
+                seenIds.insert(link.id)
+                continue
+            }
+            let newLink = link.duplicate()
+            let oldLinkText = editControllable.linkRegisterController.markDown(for: link)
+            guard let range = content.firstRange(of: oldLinkText) else { continue }
+            newContent = newContent.replacingOccurrences(of: oldLinkText, with: editControllable.linkRegisterController.markDown(for: newLink), range: range)
+            link.modelContext?.insert(newLink)
+            try? link.modelContext?.save()
+        }
+        changed = changed || entry.content != newContent
+        entry.content <=> newContent
+        if changed {
+            cacheItemListModel.reset(cacheType: .row, itemId: entry.entryId, text: rowText(entry: entry))
+        }
     }
 }
