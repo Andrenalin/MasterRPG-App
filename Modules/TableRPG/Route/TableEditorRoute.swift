@@ -22,7 +22,7 @@ struct DestinationTableEditorRoute: View {
     
     var body: some View {
         if let tableModel {
-            QuickEntryEditor(editController: root.editController, currentModel: tableModel)
+            QuickEntryEditor(entryEditController: root.entryEditController, currentModel: tableModel)
         }
     }
     

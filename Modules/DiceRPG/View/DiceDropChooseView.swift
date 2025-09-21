@@ -16,7 +16,7 @@ struct DiceDropChooseView: View {
 #endif
     
     var body: some View {
-        DropItemArea {
+        DropItemModuleArea {
             Group {
                 if let item = diceModel {
                     DiceViewer(model: item, isEditor: false)
@@ -84,10 +84,9 @@ struct DiceDropChooseView: View {
 #endif
     }
     
-    private func addLinks(links: [LinkData]) -> Bool {
+    private func addLinks(links: [LinkDiceData]) -> Bool {
         model.selection = links.compactMap { link -> WindowItemSelection? in
-            guard link.module == root.module else { return nil }
-            return WindowItemSelection(itemId: link.itemId, entryId: link.entryId)
+            return WindowItemSelection(itemId: link.itemId, entryId: nil)
         }
         return true
     }

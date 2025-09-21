@@ -133,7 +133,7 @@ private extension LinkItemListView {
                     }
                 }
 #if !os(tvOS)
-                .draggable(LinkData(itemId: item.model.id, module: root.module, name: item.model.name))
+                .draggable(for: root.module, itemId: item.model.id, entryId: nil, name: item.model.name)
 #endif
 
                 specialCategoryFolderIndicator(item: item)

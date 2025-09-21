@@ -7,13 +7,14 @@ import SwiftUI
 import DiceRPG
 
 struct QuickEntryEditor: View {
-    init(editController: EditController, currentModel: TableDataModel) {
-        self.editController = editController
+    init(entryEditController: EntryEditController, currentModel: TableDataModel) {
+        self.entryEditController = entryEditController
         self.currentModel = currentModel
         self._model = State(wrappedValue: currentModel.codableModel)
+        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: entryEditController.editControllable.linkRegisterController, text: ""))
     }
     
-    let editController: EditController
+    let entryEditController: EntryEditController
     let currentModel: TableDataModel
     
     @Environment(TableRootModel.self) private var root
@@ -29,6 +30,8 @@ struct QuickEntryEditor: View {
     }
     @FocusState private var focusedField: Field?
     
+    @State private var editModel: TextEditModel
+
     @State private var referenceText = DebouncerModel(initialValue: "", delay: 2)
     @State private var model: TableDataModel.TableDataModelCodable
     @State private var entries: [TableEntryDataModel.TableEntryDataModelCodable] = []
@@ -60,11 +63,11 @@ struct QuickEntryEditor: View {
                 .sizedSheet(isPresented: $showEffectedLinksAlert, idealSize: CGSize(width: 400, height: 600)) {
                     EffectedLinkAction(root: root, overwrite: true) { rowModels in
                         editorModel.removeItems.removeAll(where: { rowModels.contains($0) })
-                        _ = editController.merge(entries: entries, into: currentModel, recoverEntries: editorModel.removeItems)
+                        _ = entryEditController.editController.merge(entries: entries, into: currentModel, recoverEntries: editorModel.removeItems)
                         dismiss()
                     }
                 }
-                //.navigationTitle(currentModel.name)
+                .navigationTitle(name)
 #if os(iOS) || os(visionOS)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarBackgroundVisibility(.visible, for: .navigationBar)
@@ -78,25 +81,26 @@ struct QuickEntryEditor: View {
                         }
                     }
                     
-                    ToolbarItem(placement: secondaryMenuPlacement) {
+                    ToolbarItem(placement: .primaryAction) {
                         secondaryActionMenu
                     }
                     
                     ToolbarItem(placement: .confirmationAction) {
-                        Button {
-//                            Task {
-                            editorModel.removeItems = editController.merge(entries: entries, into: currentModel, recoverEntries: nil)
+                        ControlGroup {
+                            Button {
+                                editorModel.removeItems = entryEditController.editController.merge(entries: entries, into: currentModel, recoverEntries: nil)
                                 if editorModel.removeItems.isEmpty {
                                     dismiss()
                                 } else {
                                     showEffectedLinksAlert.toggle()
                                 }
-//                            }
-                        } label: {
-                            Image(systemName: "square.and.arrow.down")
+                            } label: {
+                                Image(systemName: "square.and.arrow.down")
+                            }
                         }
                     }
                 }
+                .toolbarRole(.editor)
         }
 #if os(macOS)
         .frame(minWidth: 800, minHeight: 600)
@@ -110,7 +114,11 @@ struct QuickEntryEditor: View {
 }
 
 private extension QuickEntryEditor {
-    private var contentView: some View {
+    var name: String {
+        entryEditController.editController.itemController.item(for: currentModel.itemId)?.name ?? ""
+    }
+    
+    var contentView: some View {
         HStack(spacing: 8) {
             if showResult {
                 entryListView
@@ -121,6 +129,8 @@ private extension QuickEntryEditor {
         .animation(.bouncy, value: showResult)
         .onAppear {
             referenceText.input = initialText
+            editModel.text = initialText
+            editModel.resetAttributedText()
             focusedField = .editor
         }
         .onChange(of: referenceText.output) {
@@ -132,41 +142,37 @@ private extension QuickEntryEditor {
     @ViewBuilder
     var secondaryActionMenu: some View {
         ControlGroup {
-            showInspectorButton
+            showHelpButton
         }
+        
         ControlGroup {
-            showResultButton
             removeLineBreak
+            showResultButton
         }
         
         ControlGroup {
             pdfButton
-        }
-        
-        ControlGroup {
-            showHelpButton
+            showInspectorButton
         }
     }
     
     private var entryListView: some View {
         List {
             ForEach(model.entries, id: \.entryId) { entry in
-                EntryRow(entryId: entry.entryId, name: entry.name, content: entry.content, cacheItemListModel: CacheItemListModel())
-                    .foregroundStyle(.primary)
+                EntryEditRow(entryEditController: entryEditController, entry: TableEntryDataModel(entry), cacheItemListModel: entryEditController.cacheItemListModel)
             }
         }
 #if !os(tvOS)
         .scrollContentBackground(.hidden)
 #endif
-//        .listTintStyle()
         .environment(CacheItemListModel())
         .overlay {
 #if os(iOS) || os(tvOS)
-            if let selectedPdf = editController.selectionPdf.itemId {
+            if let selectedPdf = entryEditController.editController.selectionPdf.itemId {
                 VStack {
                     Text("SelectedPdf")
                     root.pdfRoot.viewController.inlineViewer(root: root.pdfRoot, with: selectedPdf, withoutBookmark: true) {
-                        withAnimation { editController.selectionPdf.resetSelection(itemId: nil) }
+                        withAnimation { entryEditController.editController.selectionPdf.resetSelection(itemId: nil) }
                     }
                     .background(.black)
                     //.pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
@@ -190,14 +196,10 @@ private extension QuickEntryEditor {
     private var editorView: some View {
         VStack(alignment: .leading, spacing: 8) {
 #if !os(tvOS)
-            TextEditor(text: textBinding)
-                .foregroundStyle(.primary)
+            TextEditorLinkView(model: editModel, maxHeight: .infinity)
                 .focused($focusedField, equals: .editor)
 #endif
         }
-#if !os(visionOS)
-        //.rowColorBackground(isSelected: false)
-#endif
     }
     
     private var initialText: String {
@@ -369,7 +371,7 @@ private extension QuickEntryEditor {
 #Preview(traits: .mockData) {
     @Previewable @Environment(TableRootModel.self) var root
     
-    QuickEntryEditor(editController: root.editController, currentModel: root.itemController.model(for: MockData.previewId)!)
+    QuickEntryEditor(entryEditController: root.entryEditController, currentModel: root.itemController.model(for: MockData.previewId)!)
         .colorScheme(.dark)
         .tint(NetworkModules.table.tint)
 }

@@ -16,10 +16,10 @@ import SwiftUI
     let linkRegisterController: LinkRegisterController
     public var text: String
     var attributedText: AttributedString
-    
+
     var links: [LinkDataModel] = []
     
-    @MainActor func resetAttributedText() {
+    @MainActor public func resetAttributedText() {
         var att = AttributedString(text)
         links = linkRegisterController.linkDataModel(in: text)
         links.forEach {
@@ -34,7 +34,7 @@ import SwiftUI
         self.attributedText = att
     }
     
-    @MainActor func resetText() {
+    @MainActor public func resetText() {
         // Build plain text from attributedText by converting link attributed runs back to Markdown
         // We expect the custom attribute key path `\.linkContent` to contain the UUID of the link (LinkDataModel.id)
         var result = ""
@@ -73,7 +73,13 @@ import SwiftUI
 }
 
 public struct TextEditorLinkView: View {
+    public init(model: TextEditModel, maxHeight: CGFloat = 200.0) {
+        self.model = model
+        self.maxHeight = maxHeight
+    }
+    
     public let model: TextEditModel
+    let maxHeight: CGFloat
 
     @State private var selection: AttributedTextSelection = .init()
 
@@ -81,7 +87,7 @@ public struct TextEditorLinkView: View {
         @Bindable var model = model
         TextEditor(text: $model.attributedText, selection: $selection)
             .attributedTextFormattingDefinition(ContentFormattingDefinition(links: Set(model.links.map(\.id))))
-            .frame(minHeight: 120, maxHeight: 200)
+            .frame(minHeight: 120, maxHeight: maxHeight)
 //            .scrollContentBackground(.hidden)
             .background {
                 RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
