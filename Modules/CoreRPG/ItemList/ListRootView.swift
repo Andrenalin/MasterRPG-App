@@ -137,9 +137,7 @@ private extension ListRootView {
                         ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
                     }
                 }
-#if !os(tvOS)
-                .draggable(LinkData(itemId: item.model.id, module: root.module, name: item.model.name))
-#endif
+                .draggable(for: root.module, itemId: item.model.id, entryId: nil, name: item.model.name)
                 .applyIf(!listController.listDisplayModel.isSelectionMode) { content in
                     content.contextMenu {
                         ItemListContextMenu(controller: menuController, currentSelected: item.model.id)
@@ -149,11 +147,7 @@ private extension ListRootView {
                 specialCategoryFolderIndicator(item: item)
             }
             .padding(.leading, CGFloat(item.level * 16))
-#if !os(tvOS)
-            .dropDestination(for: LinkData.self) { items, _ in
-                addLinks(links: items)
-            }
-#endif
+            .dropDestination(for: root.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
             .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
             .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
@@ -163,12 +157,9 @@ private extension ListRootView {
         .deleteDisabled(root.listControllable.listDisplayModel.isSelectionMode)
     }
 
-    func addLinks(links: [LinkData]) {
+    func addLink(name: String, itemId: UUID, entryId: UUID?) {
         guard let parentModel else { return }
-        links.forEach { link in
-            guard link.module == root.module else { return }
-            withAnimation { root.editControllable.addItem(itemId: link.itemId, in: parentModel, folderId: listModel.lastFolderId) }
-        }
+        withAnimation { root.editControllable.addItem(itemId: itemId, in: parentModel, folderId: listModel.lastFolderId) }
     }
     
     func deleteItems(offsets: IndexSet) {

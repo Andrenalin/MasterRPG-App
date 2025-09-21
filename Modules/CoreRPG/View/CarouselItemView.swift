@@ -46,7 +46,7 @@ public struct CarouselItemView<Content: View>: View {
     
     @ViewBuilder
     var dropItemView: some View {
-        DropItemArea {
+        DropItemModuleArea(module: root.module, contentView: {
             VStack {
                 Text("Drop \(root.module.title)", bundle: .module)
 
@@ -55,9 +55,7 @@ public struct CarouselItemView<Content: View>: View {
             }
             .padding(.horizontal, 12)
             .frame(height: 128)
-        } dropAction: { links in
-            addLinks(links: links)
-        }
+        }, dropAction: linkHandler(name:itemId:entryId:))
         .background {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color.accentColor.tertiary)
@@ -69,14 +67,9 @@ public struct CarouselItemView<Content: View>: View {
         .padding(1)
     }
     
-    private func addLinks(links: [LinkData]) -> Bool {
-        links.forEach { link in
-            guard link.module == root.module else { return }
-            withAnimation { root.editControllable.addGroup(childId: link.itemId, model: model) }
-        }
-        return true
+    func linkHandler(name: String, itemId: UUID, entryId: UUID?) {
+        withAnimation { root.editControllable.addGroup(childId: itemId, model: model) }
     }
-    
     func itemView(item: ItemDataModel, selectedItem: ItemDataModel?) -> some View {
         content
             .environment(GroupItemSelectionModel(selectedItem: item.id))
@@ -91,10 +84,6 @@ public struct CarouselItemView<Content: View>: View {
                         .stroke(selection.selectedItem == selectedItem?.id ? Color.accentColor : Color.clear, lineWidth: 4)
                 }
             }
-#if !os(tvOS)
-            .dropDestination(for: LinkData.self) { items, _ in
-                _ = addLinks(links: items)
-            }
-#endif
+            .dropDestination(for: root.module, handler: linkHandler(name:itemId:entryId:))
     }
 }

@@ -2,14 +2,16 @@
 
 import SwiftUI
 
-public struct DropItemArea<Content: View>: View {
-    public init(@ViewBuilder contentView: () -> Content, dropAction: @escaping ([LinkData]) -> Bool) {
+public struct DropItemModuleArea<Content: View>: View {
+    public init(module: NetworkModules, @ViewBuilder contentView: () -> Content, dropAction: @escaping (_ name: String, _ itenId: UUID, _ entryId: UUID?) -> Void) {
+        self.module = module
         self.contentView = contentView()
         self.dropAction = dropAction
     }
 
+    let module: NetworkModules
     let contentView: Content
-    let dropAction: ([LinkData]) -> Bool
+    let dropAction: (_ name: String, _ itenId: UUID, _ entryId: UUID?) -> Void
 
     @State private var dropBackgroundColor: Color = .clear
     @State private var dropForegroundColor: Color = .primary
@@ -21,46 +23,9 @@ public struct DropItemArea<Content: View>: View {
             .background {
                 RoundedRectangle(cornerRadius: 24, style: .continuous).fill(dropBackgroundColor)
             }
-#if !os(tvOS)
-            .dropDestination(for: LinkData.self) { items, _ in
-                guard !items.isEmpty else { return false }
-                return dropAction(items)
-            } isTargeted: { inDropArea in
+            .dropDestination(for: module, handler: dropAction) { inDropArea in
                 dropBackgroundColor = inDropArea ? .accentColor : .clear
                 dropForegroundColor = inDropArea ? .white : .primary
             }
-#endif
-    }
-}
-
-
-public struct DropItemModuleArea<Content: View, Model: Transferable>: View {
-    public init(@ViewBuilder contentView: () -> Content, dropAction: @escaping ([Model]) -> Bool) {
-        self.contentView = contentView()
-        self.dropAction = dropAction
-    }
-
-    let contentView: Content
-    let dropAction: ([Model]) -> Bool
-
-    @State private var dropBackgroundColor: Color = .clear
-    @State private var dropForegroundColor: Color = .primary
-
-    public var body: some View {
-        contentView
-            .padding(4)
-            .foregroundStyle(dropForegroundColor)
-            .background {
-                RoundedRectangle(cornerRadius: 24, style: .continuous).fill(dropBackgroundColor)
-            }
-#if !os(tvOS)
-            .dropDestination(for: Model.self) { items, _ in
-                guard !items.isEmpty else { return false }
-                return dropAction(items)
-            } isTargeted: { inDropArea in
-                dropBackgroundColor = inDropArea ? .accentColor : .clear
-                dropForegroundColor = inDropArea ? .white : .primary
-            }
-#endif
     }
 }

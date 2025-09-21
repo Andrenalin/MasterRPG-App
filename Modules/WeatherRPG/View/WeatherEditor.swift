@@ -75,32 +75,6 @@ struct WeatherEditor: View {
 
 private extension WeatherEditor {
     @ViewBuilder
-    var dropItemView: some View {
-        DropItemArea {
-            VStack {
-                Text("Drop \(root.module.title)", bundle: .module)
-
-                Image(systemName: "square.and.arrow.down")
-                    .imageScale(.large)
-            }
-            .padding(.horizontal, 12)
-            .frame(height: 128)
-        } dropAction: { links in
-            //addLinks(links: links)
-            return true
-        }
-        .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.accentColor.tertiary)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.accentColor.secondary, lineWidth: 2)
-        }
-        .padding(1)
-    }
-
-    @ViewBuilder
     var timeEditorView: some View {
         @Bindable var model = model
 

@@ -16,7 +16,7 @@ struct PhotoDropChooseView: View {
 #endif
     
     var body: some View {
-        DropItemArea {
+        DropItemModuleArea(module: root.module, contentView: {
             Group {
                 if let itemId = model.itemId, let item = root.itemController.item(for: itemId) {
                     GroupedPhotoView(cacheController: root.cacheController, model: item)
@@ -25,9 +25,7 @@ struct PhotoDropChooseView: View {
                 }
             }
             .frame(height: 128)
-        } dropAction: { links in
-            addLinks(links: links)
-        }
+        }, dropAction: addLink(name:itemId:entryId:))
         .background {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color.accentColor.tertiary)
@@ -80,12 +78,8 @@ struct PhotoDropChooseView: View {
 #endif
     }
     
-    private func addLinks(links: [LinkData]) -> Bool {
-        model.selection = links.compactMap { link -> WindowItemSelection? in
-            guard link.module == root.module else { return nil }
-            return WindowItemSelection(itemId: link.itemId, entryId: link.entryId)
-        }
-        return true
+    private func addLink(name: String, itemId: UUID, entryId: UUID?) {
+        model.selection = [WindowItemSelection(itemId: itemId, entryId: entryId)]
     }
 }
 
