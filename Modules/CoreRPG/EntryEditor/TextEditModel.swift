@@ -15,7 +15,7 @@ import SwiftUI
     
     let linkRegisterController: LinkRegisterController
     public var text: String
-    var attributedText: AttributedString
+    public var attributedText: AttributedString
 
     var links: [LinkDataModel] = []
     
@@ -61,6 +61,18 @@ import SwiftUI
 
         // Update model state
         text = result
+    }
+    
+    @MainActor public func updateLinks() {
+        resetText()
+        let newLinks = linkRegisterController.links(in: text)
+        for newLink in newLinks {
+            let updatedLink = LinkDataModel(name: newLink.name, sourceId: newLink.itemId, sourceModule: newLink.module, destinationId: UUID(), destinationModel: .adventure)
+            let newMark = linkRegisterController.markDown(for: updatedLink)
+            text.replacingOccurrences(of: newLink.markDown, with: newMark)
+        }
+        guard !newLinks.isEmpty else { return }
+        resetAttributedText()
     }
     
     @MainActor static var preview: TextEditModel = {

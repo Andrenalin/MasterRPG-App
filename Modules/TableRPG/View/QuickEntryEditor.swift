@@ -198,6 +198,9 @@ private extension QuickEntryEditor {
 #if !os(tvOS)
             TextEditorLinkView(model: editModel, maxHeight: .infinity)
                 .focused($focusedField, equals: .editor)
+                .onChange(of: editModel.attributedText) {
+                    editModel.updateLinks()
+                }
 #endif
         }
     }

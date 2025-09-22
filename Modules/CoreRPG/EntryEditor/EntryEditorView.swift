@@ -51,8 +51,9 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
                                 .font(.headline)
                         }
                         .padding()
+#if !os(visionOS)
                         .glassEffect(.regular.interactive())
-                        
+#endif
                         Spacer()
                         
                         Button {
@@ -62,7 +63,9 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
                                 .font(.headline)
                         }
                         .padding()
+#if !os(visionOS)
                         .glassEffect(.regular.interactive())
+#endif
                     }
                     .buttonStyle(.borderless)
 
