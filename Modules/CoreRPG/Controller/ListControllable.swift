@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import Foundation
 import SwiftData
 import SwiftUI
@@ -9,6 +10,8 @@ public protocol ListControllable: Sendable {
     var listModel: ListModel { get }
     var listDisplayModel: ListDisplayModel { get }
     var searchModel: SearchModel { get }
+    
+    func detailDestination(for itemId: UUID) -> any NavigationDestination
 }
 
 extension ListControllable {
@@ -41,6 +44,10 @@ extension ListControllable {
 }
 
 public extension ListControllable {
+    func detailDestination(for itemId: UUID) -> any NavigationDestination {
+        ItemRootRoute.detail(itemId)
+    }
+
     func update(items: [ItemDataModel], parentModel: ItemDataModel?) {
         print("*** update: \(parentModel?.name ?? "nil") \(items.count)")
         if let parentModel {

@@ -13,13 +13,11 @@ struct PdfRootView: View {
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
-            DetailRootView(selectedId: nil)
-        }
-        .overlay {
-            SaveView(root: root)
-        }
-        .navigationAutoReceive(PdfRoute.self)
+        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+            .navigationAutoReceive(PdfRoute.self)
+            .overlay {
+                SaveView(root: root)
+            }
     }
 }
 

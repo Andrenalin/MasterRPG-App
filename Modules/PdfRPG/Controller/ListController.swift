@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
@@ -9,6 +10,10 @@ struct ListController: ListControllable {
     let listModel: ListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
+
+    func detailDestination(for itemId: UUID) -> any NavigationDestination {
+        PdfRoute.detail(itemId)
+    }
 
     enum ListType {
         case main

@@ -30,7 +30,19 @@ extension CharacterRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DetailRootView(selectedId: itemId)
+            DetailRouteDestinationView(itemId: itemId)
         }
+    }
+}
+
+struct DetailRouteDestinationView: View {
+    let itemId: UUID
+    @Environment(CharacterRootModel.self) private var root
+    
+    var body: some View {
+        DetailRootView(selectedId: itemId)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .environment(root.rootController)
     }
 }

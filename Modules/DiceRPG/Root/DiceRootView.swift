@@ -11,13 +11,11 @@ struct DiceRootView: View {
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
-            DetailRootView(selectedId: nil)
-        }
+        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+            .navigationAutoReceive(DiceRoute.self)
         .overlay {
             SaveView(root: root)
         }
-        .navigationAutoReceive(DiceRoute.self)
     }
 }
 

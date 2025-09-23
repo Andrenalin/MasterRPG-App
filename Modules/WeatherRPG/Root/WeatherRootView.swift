@@ -13,13 +13,11 @@ struct WeatherRootView: View {
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
-            DetailRootView(selectedId: nil)
-        }
-        .overlay {
-            SaveView(root: root)
-        }
-        .navigationAutoReceive(WeatherRoute.self)
+        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+            .navigationAutoReceive(WeatherRoute.self)
+            .overlay {
+                SaveView(root: root)
+            }
     }
 }
 

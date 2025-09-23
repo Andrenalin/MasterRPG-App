@@ -39,6 +39,6 @@ struct DetailRouteDestination: View {
     
     var body: some View {
         let _ = Self._printChanges()
-        ItemDetailRootView(selectedId: itemId)
+        Text("Dummy \(itemId)")
     }
 }

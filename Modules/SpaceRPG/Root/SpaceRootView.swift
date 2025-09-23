@@ -13,13 +13,11 @@ struct SpaceRootView: View {
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
-            DetailRootView(selectedId: nil)
-        }
-        .overlay {
-            SaveView(root: root)
-        }
-        .navigationAutoReceive(SpaceRoute.self)
+        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+            .navigationAutoReceive(SpaceRoute.self)
+            .overlay {
+                SaveView(root: root)
+            }
     }
 }
 

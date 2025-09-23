@@ -13,13 +13,11 @@ struct TableRootView: View {
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
-            DetailRootView(selectedId: nil)
-        }
-        .overlay {
-            SaveView(root: root)
-        }
-        .navigationAutoReceive(TableRoute.self)
+        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+            .navigationAutoReceive(TableRoute.self)
+            .overlay {
+                SaveView(root: root)
+            }
     }
 }
 

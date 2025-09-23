@@ -13,13 +13,11 @@ struct CharacterRootView: View {
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation) {
-            DetailRootView(selectedId: nil)
-        }
-        .overlay {
-            SaveView(root: root)
-        }
-        .navigationAutoReceive(CharacterRoute.self)
+        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+            .navigationAutoReceive(CharacterRoute.self)
+            .overlay {
+                SaveView(root: root)
+            }
     }
 }
 
