@@ -48,6 +48,17 @@ public extension LinkRegisterController {
         }
     }
 
+    func linksLong(in text: String) -> [LinkReplaceModel] {
+        let links = ReferenceScanner.allUuidUrls(for: URL.appScheme, in: text)
+        var result = links.tables.compactMap { rawLink -> LinkReplaceModel? in
+            let markDown = rawLink.markDown(for: URL.appScheme)
+            let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
+            return LinkReplaceModel(name: rawLink.name, module: NetworkModules.dice, linkNumber: 0, itemId: rawLink.table, entryId: nil, markDown: rawLink.markDown(for: URL.appScheme), command: rawLink.command, range: range)
+        }
+        return result
+    }
+
+    
     func verifyLinks(in text: String, destinationItemId: UUID, destinationEntryId: UUID?, destinationModule: NetworkModules) -> String {
         let rawLinks = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
         guard !rawLinks.isEmpty else { return text }

@@ -65,11 +65,12 @@ import SwiftUI
     
     @MainActor public func updateLinks() {
         resetText()
-        let newLinks = linkRegisterController.links(in: text)
+        let newLinks = linkRegisterController.linksLong(in: text)
         for newLink in newLinks {
-            let updatedLink = LinkDataModel(name: newLink.name, sourceId: newLink.itemId, sourceModule: newLink.module, destinationId: UUID(), destinationModel: .adventure)
+            let updatedLink = linkRegisterController.register(name: newLink.name, sourceId: newLink.itemId, sourceModule: newLink.module, destinationId: UUID(), destinationModule: .adventure)
+            links.append(updatedLink)
             let newMark = linkRegisterController.markDown(for: updatedLink)
-            text.replacingOccurrences(of: newLink.markDown, with: newMark)
+            text = text.replacingOccurrences(of: newLink.markDown, with: newMark)
         }
         guard !newLinks.isEmpty else { return }
         resetAttributedText()
