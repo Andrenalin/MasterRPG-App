@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		598C3EBF2E81685B00B0C3EC /* CoreExternalRPG in Frameworks */ = {isa = PBXBuildFile; productRef = 598C3EBE2E81685B00B0C3EC /* CoreExternalRPG */; };
-		598C3EC12E81685B00B0C3EC /* CoreRPG in Frameworks */ = {isa = PBXBuildFile; productRef = 598C3EC02E81685B00B0C3EC /* CoreRPG */; };
+		8E259D522E82D4F900BFE491 /* CoreExternalRPG in Frameworks */ = {isa = PBXBuildFile; productRef = 8E259D512E82D4F900BFE491 /* CoreExternalRPG */; };
+		8E259D542E82D4F900BFE491 /* CoreRPG in Frameworks */ = {isa = PBXBuildFile; productRef = 8E259D532E82D4F900BFE491 /* CoreRPG */; };
+		8E259D562E82D4F900BFE491 /* DiceRPG in Frameworks */ = {isa = PBXBuildFile; productRef = 8E259D552E82D4F900BFE491 /* DiceRPG */; };
+		8E259D582E82D4F900BFE491 /* PdfRPG in Frameworks */ = {isa = PBXBuildFile; productRef = 8E259D572E82D4F900BFE491 /* PdfRPG */; };
+		8E259D5A2E82D4F900BFE491 /* RPGResources in Frameworks */ = {isa = PBXBuildFile; productRef = 8E259D592E82D4F900BFE491 /* RPGResources */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,8 +31,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				598C3EBF2E81685B00B0C3EC /* CoreExternalRPG in Frameworks */,
-				598C3EC12E81685B00B0C3EC /* CoreRPG in Frameworks */,
+				8E259D562E82D4F900BFE491 /* DiceRPG in Frameworks */,
+				8E259D582E82D4F900BFE491 /* PdfRPG in Frameworks */,
+				8E259D522E82D4F900BFE491 /* CoreExternalRPG in Frameworks */,
+				8E259D542E82D4F900BFE491 /* CoreRPG in Frameworks */,
+				8E259D5A2E82D4F900BFE491 /* RPGResources in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,16 +80,17 @@
 			buildRules = (
 			);
 			dependencies = (
-				598C3EC32E81686F00B0C3EC /* PBXTargetDependency */,
-				598C3EC52E81686F00B0C3EC /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				598C3EAB2E81673A00B0C3EC /* WithoutSigning */,
 			);
 			name = WithoutSigning;
 			packageProductDependencies = (
-				598C3EBE2E81685B00B0C3EC /* CoreExternalRPG */,
-				598C3EC02E81685B00B0C3EC /* CoreRPG */,
+				8E259D512E82D4F900BFE491 /* CoreExternalRPG */,
+				8E259D532E82D4F900BFE491 /* CoreRPG */,
+				8E259D552E82D4F900BFE491 /* DiceRPG */,
+				8E259D572E82D4F900BFE491 /* PdfRPG */,
+				8E259D592E82D4F900BFE491 /* RPGResources */,
 			);
 			productName = WithoutSigning;
 			productReference = 598C3EA92E81673A00B0C3EC /* WithoutSigning.app */;
@@ -114,7 +121,7 @@
 			mainGroup = 598C3EA02E81673A00B0C3EC;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				596541022E81678000B30069 /* XCLocalSwiftPackageReference "../gamemaster" */,
+				8E259D502E82D4F900BFE491 /* XCLocalSwiftPackageReference "../../gamemaster" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 598C3EAA2E81673A00B0C3EC /* Products */;
@@ -145,17 +152,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		598C3EC32E81686F00B0C3EC /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 598C3EC22E81686F00B0C3EC /* CoreExternalRPG */;
-		};
-		598C3EC52E81686F00B0C3EC /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 598C3EC42E81686F00B0C3EC /* CoreRPG */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		598C3EB22E81673B00B0C3EC /* Debug */ = {
@@ -382,32 +378,32 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		596541022E81678000B30069 /* XCLocalSwiftPackageReference "../gamemaster" */ = {
+		8E259D502E82D4F900BFE491 /* XCLocalSwiftPackageReference "../../gamemaster" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../gamemaster;
+			relativePath = ../../gamemaster;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		598C3EBE2E81685B00B0C3EC /* CoreExternalRPG */ = {
+		8E259D512E82D4F900BFE491 /* CoreExternalRPG */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 596541022E81678000B30069 /* XCLocalSwiftPackageReference "../gamemaster" */;
 			productName = CoreExternalRPG;
 		};
-		598C3EC02E81685B00B0C3EC /* CoreRPG */ = {
+		8E259D532E82D4F900BFE491 /* CoreRPG */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 596541022E81678000B30069 /* XCLocalSwiftPackageReference "../gamemaster" */;
 			productName = CoreRPG;
 		};
-		598C3EC22E81686F00B0C3EC /* CoreExternalRPG */ = {
+		8E259D552E82D4F900BFE491 /* DiceRPG */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 596541022E81678000B30069 /* XCLocalSwiftPackageReference "../gamemaster" */;
-			productName = CoreExternalRPG;
+			productName = DiceRPG;
 		};
-		598C3EC42E81686F00B0C3EC /* CoreRPG */ = {
+		8E259D572E82D4F900BFE491 /* PdfRPG */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 596541022E81678000B30069 /* XCLocalSwiftPackageReference "../gamemaster" */;
-			productName = CoreRPG;
+			productName = PdfRPG;
+		};
+		8E259D592E82D4F900BFE491 /* RPGResources */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RPGResources;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

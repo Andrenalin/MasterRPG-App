@@ -6,14 +6,20 @@
 //
 
 @testable import CoreRPG
+@testable import DiceRPG
+import SwiftData
 import SwiftUI
 
 struct ContentView: View {
     @State var model: TextEditModel = .preview
     
+    @Environment(\.modelContext) var modelContext
+    
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading) {
+                DiceRootFactory.rootView(withoutNavigation: true)
+                    .environment(DiceRootFactory.rootModel(modelContext: modelContext))
                 Text("Description")
                 
                 TextEditorLinkView(model: model)
@@ -46,4 +52,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .modelContainer(try! ModelContainer(for: LinkDataModel.self, TagDataModel.self, DiceDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true)))
 }

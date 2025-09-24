@@ -2,9 +2,11 @@
 
 import Foundation
 
+#if FRAMEWORK
 extension Bundle {
     static let module: Bundle = Bundle(for: BundleModule.self)
 }
+#endif
 
 private final class BundleModule {}
 

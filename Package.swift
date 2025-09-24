@@ -16,6 +16,19 @@ let package = Package(
             name: "CoreExternalRPG",
             targets: ["CoreExternalRPG"]
         ),
+        .library(
+            name: "DiceRPG",
+            targets: ["DiceRPG"]
+        ),
+        .library(
+            name: "PdfRPG",
+            targets: ["PdfRPG"]
+        ),
+        .library(
+            name: "RPGResources",
+            targets: ["RPGResources"]
+        ),
+
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -29,5 +42,21 @@ let package = Package(
             name: "CoreExternalRPG",
             path: "Modules/CoreExternalRPG"
         ),
+        .target(
+            name: "DiceRPG",
+            dependencies: ["CoreRPG", "CoreExternalRPG", "RPGResources"],
+            path: "Modules/DiceRPG"
+        ),
+        .target(
+            name: "PdfRPG",
+            dependencies: ["CoreRPG", "CoreExternalRPG", "RPGResources"],
+            path: "Modules/PdfRPG"
+        ),
+        .target(
+            name: "RPGResources",
+            dependencies: [],
+            path: "Resources/RPGResources"
+        ),
+
     ]
 )

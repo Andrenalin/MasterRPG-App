@@ -24,7 +24,7 @@ struct AdventureRootView: View {
 struct SaveView: View {
     let root: AdventureRootModel
     
-    @SceneStorage("AdventureRoute") private var route: AdventureRoute?
+    @SceneStorage("AdventureRoute") private var route: ItemRootRoute?
     @SceneStorage("AdventureDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
     @SceneStorage("AdventureListModel") private var listMode: ListDisplayModel.ListMode = .list
 
