@@ -56,9 +56,7 @@ struct ItemRootSplitListView: View {
             }
         }
 #else
-        ItemRootSplitView(root: root) {
-            detail
-        }
+        ItemRootSplitView(root: root)
 #endif
     }
 }

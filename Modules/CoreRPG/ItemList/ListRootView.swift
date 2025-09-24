@@ -36,9 +36,8 @@ struct ListRootView: View {
 #endif
 #if os(macOS)
             .onDeleteCommand {
-                guard let itemId = listModel.selectedItemId else { return }
-                removeEntryList.removeItems = [ItemRowModel(itemId: itemId, typeId: root.module)]
-                withAnimation { removeEntryList.showDeleteAlert.toggle() }
+                guard let itemId = listModel.selectedItemId, let index = displayItems.firstIndex(where: { $0.model.id == itemId }) else { return }
+                deleteItems(offsets: IndexSet(integer: index))
             }
             .onMoveCommand { direction in
                 //selectItem(direction)
