@@ -21,13 +21,16 @@ struct WindowViewerList: Scene {
     
     var body: some Scene {
         Group {
-            windowGroup(model: appModel, module: .pdf) { selection in           appModel.pdfRoot.viewController.windowViewer(root: appModel.pdfRoot, selection: selection)
+            windowGroup(model: appModel, module: .pdf) { selection in
+                appModel.pdfRoot.viewController.windowViewer(root: appModel.pdfRoot, selection: selection)
             }
 
-            windowGroup(model: appModel, module: .table) { selection in           appModel.tableRoot.viewController.windowViewer(root: appModel.tableRoot, selection: selection)
+            windowGroup(model: appModel, module: .table) { selection in
+                appModel.tableRoot.viewController.windowViewer(root: appModel.tableRoot, selection: selection)
             }
 
-            windowGroup(model: appModel, module: .weather) { selection in           appModel.weatherRoot.viewController.windowViewer(root: appModel.weatherRoot, selection: selection)
+            windowGroup(model: appModel, module: .weather) { selection in
+                appModel.weatherRoot.viewController.windowViewer(root: appModel.weatherRoot, selection: selection)
             }
         }
         .defaultSize(CGSize(width: 600, height: 800))
@@ -55,23 +58,10 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .resetAppColorScheme()
-            .environment(model)
-            .environment(model.linkRootController)
-            .environment(model.deviceRotationModel)
-            .environment(model.settingsModel)
-            .environment(model.adventureRoot)
-            .environment(model.audioRoot)
-            .environment(model.characterRoot)
-            .environment(model.diceRoot)
-            .environment(model.mapRoot)
-            .environment(model.pdfRoot)
-            .environment(model.photoRoot)
-            .environment(model.spaceRoot)
-            .environment(model.tableRoot)
-            .environment(model.weatherRoot)
             .frame(minWidth: 600, minHeight: 400)
             .handlesExternalEvents(preferring: [], allowing: [])
             .tint(module.tint)
+            .environmentSetUp(model)
 #if os(iOS)
             .environment(\.colorScheme, model.settingsModel.appColorScheme.colorScheme(for: colorScheme))
 #endif

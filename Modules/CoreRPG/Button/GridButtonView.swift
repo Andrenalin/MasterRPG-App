@@ -10,28 +10,31 @@ public protocol GridButtonValue {
 
 extension NetworkModules: GridButtonValue {}
 
-public struct GridButtonView<Value: GridButtonValue>: View {
-    public init(value: Value, color: Color, action: @escaping () -> Void) {
+public struct GridLabelView<Value: GridButtonValue>: View {
+    public init(value: Value, color: Color) {
         self.value = value
         self.color = color
-        self.action = action
     }
 
     let value: Value
     let color: Color
-    let action: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+    
     public var body: some View {
-        Button(action: action) {
+        Group {
             VStack {
                 Image(systemName: value.icon)
                     .resizable()
                     .frame(width: 50, height: 50)
 #if os(visionOS)
                     .foregroundStyle(color)
+#else
+                    .foregroundStyle(colorScheme == .dark ? .white : .black)
 #endif
 
                 Text(value.title).minimumScaleFactor(0.5).lineLimit(1)
+                    .foregroundStyle(colorScheme == .dark ? .white : .black)
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .center)

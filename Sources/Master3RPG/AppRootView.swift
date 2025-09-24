@@ -16,35 +16,20 @@ struct AppRootView: View {
         let _ = Self._printChanges()
         
         layout
-            .environment(appModel.deviceRotationModel)
-            .environment(appModel.settingsModel)
-            .environment(appModel.adventureRoot)
-            .environment(appModel.audioRoot)
-            .environment(appModel.characterRoot)
-            .environment(appModel.diceRoot)
-            .environment(appModel.mapRoot)
-            .environment(appModel.pdfRoot)
-            .environment(appModel.photoRoot)
-            .environment(appModel.spaceRoot)
-            .environment(appModel.tableRoot)
-            .environment(appModel.weatherRoot)
-            .environment(appModel.linkRootController)
-            .environment(appModel)
-            .observeRotate(with: appModel.deviceRotationModel)
+            .environmentSetUp(appModel)
             .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
                 handle(userActivity: userActivity)
             }
             .navigationRoot(appModel.navigator)
+            .onChange(of: appSizeMode) { oldValue, newValue in
+                appModel.resetNavigation()
+            }
     }
     
     private func handle(userActivity: NSUserActivity) {
-        // SIRI & Search
         let module = UserActivity.module(from: userActivity)
         guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
         let childId = UserActivity.childId(from: userActivity)
-        //let command: String? = UserActivity.command(from: userActivity)
-        let child = childId != nil ? "/\(childId?.uuidString ?? "")" : ""
-        let url = URL(string: "\(URL.appScheme)://\(module.token)/0/\(itemId)\(child)")!
         appModel.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: childId))
     }
     

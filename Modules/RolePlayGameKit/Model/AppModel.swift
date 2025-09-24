@@ -219,7 +219,8 @@ extension AppModel {
         rootModel(for: module)?.rootController
     }
         
-    func resetNavigation(selectedTab: NetworkModules) {
+    public func resetNavigation() {
+        guard let selectedTab: NetworkModules = selectedModule?.module else { return }
         let itemId: UUID? = rootModel(for: selectedTab)?.currentSelectedItemId
         Task {
             try await Task.sleep(for: .milliseconds(150))

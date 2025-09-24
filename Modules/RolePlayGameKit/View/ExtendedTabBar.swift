@@ -38,9 +38,9 @@ struct ExtendedTabBar: View {
 #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
 #endif
-        .navigationDestination(for: ExtendedTabRoute.self) { route in
-            route
-                .modifier(ZoomTransitionViewModifier(sourceID: route.module.token, namespace: zoomNamespace))
+        .navigationModifier { destination in
+            destination()
+                .modifier(ZoomTransitionViewModifier(sourceID: (destination as? ExtendedTabRoute)?.module.token ?? "Dead", namespace: zoomNamespace))
         }
         .navigationAutoReceive(ExtendedTabRoute.self)
         .onNavigationRoute(RootFiveRouteRouter(appModel: appModel))
@@ -64,9 +64,10 @@ private extension ExtendedTabBar {
     }
 
     func gridButtonView(for route: ExtendedTabRoute, in navigator: Navigator) -> some View {
-        GridButtonView(value: route.module, color: route.module.tint) {
-            navigator.push(route)
+        NavigationLink(to: route) {
+            GridLabelView(value: route.module, color: route.module.tint)
         }
+        .buttonStyle(.borderless)
         .modifier(ZoomDestinationViewModifier(sourceID: route.module.token, namespace: zoomNamespace))
     }
 
