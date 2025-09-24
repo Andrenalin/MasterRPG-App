@@ -11,7 +11,6 @@ struct ExtendedTabBar: View {
 
     @Environment(AppModel.self) private var appModel
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.navigator) private var navigator
 
     @Namespace private var zoomNamespace
 
@@ -43,13 +42,14 @@ struct ExtendedTabBar: View {
                 route
                     .modifier(ZoomTransitionViewModifier(sourceID: route.module.token, namespace: zoomNamespace))
             }
-            .onNavigationReceive { (route: ExtendedTabRoute, navigator) in
-                if currentModule == route {
-                    return .immediately
-                }
-                navigator.push(route)
-                return .auto
-            }
+            .navigationAutoReceive(ExtendedTabRoute.self)
+//            .onNavigationReceive { (route: ExtendedTabRoute, navigator) in
+//                if currentModule == route {
+//                    return .immediately
+//                }
+//                navigator.push(route)
+//                return .auto
+//            }
             .onNavigationRoute(RootFiveRouteRouter(appModel: appModel))
             .onChange(of: currentModule, initial: true) {
                 guard let currentModule else { return }

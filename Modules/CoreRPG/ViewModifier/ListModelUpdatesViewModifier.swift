@@ -56,7 +56,7 @@ private extension ListModelUpdatesViewModifier {
     }
 
     func updateSelected() {
-        if let id = listModel.selected, let item = displayItems.first(where: { $0.id == id }) {
+        if let id = listModel.selected {
             listModel.listSelection <=> Set(arrayLiteral: id)
         } else {
             listModel.resetListSelection()

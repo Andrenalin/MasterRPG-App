@@ -23,6 +23,7 @@ public struct ItemRootView: View {
         .environment(cacheItemListModel)
         .environment(root.listDisplayModel)
         .environment(root.searchModel)
+        .environment(root)
         .tabBarPlacementModifier(listControllable: root.listControllable)
         .tint(root.module.tint)
     }
@@ -75,9 +76,6 @@ struct ItemRootSingleListView: View {
             .onChange(of: listModel.selectedItemId) {
                 guard let itemId = listModel.selectedItemId else { return }
                 navigator.navigate(to: root.listControllable.detailDestination(for: itemId))
-            }
-            .onAppear {
-                listModel.resetListModel()
             }
     }
     
