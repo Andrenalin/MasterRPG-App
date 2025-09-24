@@ -129,6 +129,18 @@
         }
       }
     },
+    "NSHandsTrackingUsageDescription" : {
+      "comment" : "Privacy - Hands Tracking Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses handtracking for rolling the dice during the game."
+          }
+        }
+      }
+    },
     "NSHumanReadableCopyright" : {
       "comment" : "Copyright (human-readable)",
       "extractionState" : "extracted_with_value",
@@ -179,6 +191,18 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps"
+          }
+        }
+      }
+    },
+    "NSWorldSensingUsageDescription" : {
+      "comment" : "Privacy - World Sensing Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses the world sensing data to detect tables for the dice rolling during the game."
           }
         }
       }
