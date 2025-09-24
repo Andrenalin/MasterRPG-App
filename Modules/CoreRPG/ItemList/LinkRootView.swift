@@ -22,7 +22,7 @@ public struct LinkRootView: View {
         LinkItemListView(root: root, type: type, parentModel: nil)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)        
-            .environment(CacheItemListModel())
+            .environment(root.listLinkControllable.cacheListItemModel)
             .onChange(of: root.itemControllable.itemCacheModel.itemIds, initial: true) {
                 withAnimation { root.listLinkControllable.update(items: root.itemControllable.allItems(), parentModel: nil) }
             }

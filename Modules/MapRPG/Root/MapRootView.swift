@@ -6,14 +6,12 @@ import SwiftData
 import SwiftUI
 
 struct MapRootView: View {
-    let withoutNavigation: Bool
-
     @Environment(MapRootModel.self) private var root
 
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+        ItemRootView(root: root.rootController)
             .navigationAutoReceive(MapRoute.self)
             .overlay {
                 SaveView(root: root)
@@ -37,13 +35,8 @@ struct SaveView: View {
     }
 }
 
-#Preview("Embed", traits: .mockData) {
+#Preview(traits: .mockData) {
     ManagedNavigationStack {
-        MapRootView(withoutNavigation: true)
+        MapRootView()
     }
 }
-
-#Preview("Split", traits: .mockData) {
-    MapRootView(withoutNavigation: false)
-}
-

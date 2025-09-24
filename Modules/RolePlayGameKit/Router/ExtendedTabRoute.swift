@@ -89,21 +89,21 @@ struct ExtendedTabRouteDestionationView: View {
     var body: some View {
         switch route {
             case .audios:
-                AudioRootFactory.rootView(withoutNavigation: true)
+                AudioRootFactory.rootView()
             case .dice:
-                DiceRootFactory.rootView(withoutNavigation: true)
+                DiceRootFactory.rootView()
             case .maps:
-                MapRootFactory.rootView(withoutNavigation: true)
+                MapRootFactory.rootView()
             case .pdfs:
-                PdfRootFactory.rootView(withoutNavigation: true)
+                PdfRootFactory.rootView()
             case .photos:
-                PhotoRootFactory.rootView(withoutNavigation: true)
+                PhotoRootFactory.rootView()
             case .space:
-                SpaceRootFactory.rootView(withoutNavigation: true)
+                SpaceRootFactory.rootView()
             case .tables:
-                TableRootFactory.rootView(withoutNavigation: true)
+                TableRootFactory.rootView()
             case .weathers:
-                WeatherRootFactory.rootView(withoutNavigation: true)
+                WeatherRootFactory.rootView()
             case .settings:
                 SettingsView(model: appModel)
         }

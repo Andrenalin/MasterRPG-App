@@ -63,7 +63,7 @@ public final class PhotoRootModel {
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
     }()
-    @ObservationIgnored lazy var rootController: ItemRootController = {
+    @ObservationIgnored lazy public var rootController: ItemRootController = {
         ItemRootController(
             module: module,
             listDisplayModel: listDisplayModel,

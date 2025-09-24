@@ -6,14 +6,12 @@ import SwiftData
 import SwiftUI
 
 struct AudioRootView: View {
-    let withoutNavigation: Bool
-    
     @Environment(AudioRootModel.self) private var root
 
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+        ItemRootView(root: root.rootController)
             .navigationAutoReceive(AudioRoute.self)
             .overlay {
                 SaveView(root: root)
@@ -37,13 +35,8 @@ struct SaveView: View {
     }
 }
 
-#Preview("Small", traits: .mockData) {
+#Preview(traits: .mockData) {
     ManagedNavigationStack {
-        AudioRootView(withoutNavigation: true)
+        AudioRootView()
     }
-}
-
-
-#Preview("Split", traits: .mockData) {
-    AudioRootView(withoutNavigation: false)
 }

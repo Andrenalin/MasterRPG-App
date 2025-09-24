@@ -10,6 +10,7 @@ import SpaceRPG
 import TableRPG
 import WeatherRPG
 
+import CoreRPG
 import SwiftData
 import SwiftUI
 
@@ -19,7 +20,12 @@ public struct AdventureRootFactory {
         AdventureRootModel(modelContext: modelContext, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
     }
 
-    public static func rootView(withoutNavigation: Bool) -> some View {
-        AdventureRootView(withoutNavigation: withoutNavigation)
+    public static func rootView() -> some View {
+        AdventureRootView()
+    }
+    
+    @ViewBuilder
+    public static func detailView(root: AdventureRootModel) -> some View {
+        ItemSplitDetailRootView(root: root.rootController)
     }
 }

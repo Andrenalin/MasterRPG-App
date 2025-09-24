@@ -5,102 +5,45 @@ import SwiftData
 import SwiftUI
 
 public struct ItemRootView: View {
-    public init(root: ItemRootController, withoutNavigation: Bool) {
+    public init(root: ItemRootController) {
         self.root = root
-        self.withoutNavigation = withoutNavigation
     }
     
     let root: ItemRootController
-    let withoutNavigation: Bool
     
     @Environment(\.colorScheme) private var colorScheme
-    @State private var cacheItemListModel = CacheItemListModel()
     
     public var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootSplitListView(root: root, withoutNavigation: withoutNavigation)
-        .environment(cacheItemListModel)
-        .environment(root.listDisplayModel)
-        .environment(root.searchModel)
-        .environment(root)
-        .tabBarPlacementModifier(listControllable: root.listControllable)
-        .tint(root.module.tint)
-    }
-}
-
-struct ItemRootSplitListView: View {
-    let root: ItemRootController
-    let withoutNavigation: Bool
-    
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-#endif
-    
-    var body: some View {
-        let _ = Self._printChanges()
-        
-#if os(iOS)
-        Group {
-            if withoutNavigation {
-                ItemRootSingleListView(root: root, cacheItemListModel: cacheItemListModel)
-            } else {
-                if horizontalSizeClass == .compact {
-                    ManagedNavigationStack(name: root.module.token) {
-                        ItemRootSingleListView(root: root, cacheItemListModel: cacheItemListModel)
-                    }
-                } else {
-                    ItemRootSplitView(root: root)
-                }
-            }
-        }
-#else
-        ItemRootSplitView(root: root)
-#endif
+        ItemRootSingleListView(root: root)
+            .environment(root.listControllable.cacheListItemModel)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .environment(root)
+            .tabBarPlacementModifier(listControllable: root.listControllable)
+            .tint(root.module.tint)
     }
 }
 
 struct ItemRootSingleListView: View {
     let root: ItemRootController
-    let cacheItemListModel: CacheItemListModel
     
     @Environment(\.navigator) private var navigator
-        
+    @Environment(\.appSizeMode) private var appSizeMode
+    
     var body: some View {
         let _ = Self._printChanges()
         
         ItemRootListView(root: root)
             .onChange(of: listModel.selectedItemId) {
-                guard let itemId = listModel.selectedItemId else { return }
+                guard appSizeMode == .compact, let itemId = listModel.selectedItemId else { return }
                 navigator.navigate(to: root.listControllable.detailDestination(for: itemId))
             }
     }
     
     var listModel: ListModel {
         root.listControllable.listModel(for: nil)
-    }
-}
-
-struct ItemRootSplitView: View {
-    let root: ItemRootController
-    
-    @State private var column: NavigationSplitViewVisibility = .all
-    @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
-    
-    var body: some View {
-        let _ = Self._printChanges()
-        
-        NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-            ManagedPresentationView {
-                ItemRootListView(root: root)
-            }
-            .environment(root)
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-        } detail: {
-            ItemSplitDetailRootView(root: root)
-        }
     }
 }
 
@@ -112,18 +55,24 @@ struct ItemRootListView: View {
         
         ListRootView(root: root, parentModel: nil)
             .searchItemList(listControllable: root.listControllable, parentModel: nil)
+            .navigationDestinationAutoReceive(InternalRoute.self)
     }
 }
 
-struct ItemSplitDetailRootView: View {
+public struct ItemSplitDetailRootView: View {
+    public init(root: ItemRootController) {
+        self.root = root
+    }
+    
     let root: ItemRootController
     
-    var body: some View {
+    public var body: some View {
         let _ = Self._printChanges()
         let _ = print("*** ->", root.module)
         
         if let itemId = listModel.selectedItemId {
-            ManagedPresentationView {
+            ManagedNavigationStack {
+            //ManagedPresentationView {
                 root.listControllable.detailDestination(for: itemId).asAnyView()
                     .environment(root)
             }
@@ -141,12 +90,12 @@ struct ItemSplitDetailRootView: View {
 //    @Previewable @Environment(FakeItemRootController.self) var root
 //
 //    ManagedNavigationStack {
-//        ItemRootView(root: root.rootController, withoutNavigation: true)
+//        ItemRootView(root: root.rootController)
 //    }
 //}
 //
 //#Preview("Split", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root
 //
-//    ItemRootView(root: root.rootController, withoutNavigation: false)
+//    ItemRootView(root: root.rootController)
 //}

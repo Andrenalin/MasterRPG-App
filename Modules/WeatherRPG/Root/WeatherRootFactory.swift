@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import PhotoRPG
 import SwiftData
 import SwiftUI
@@ -10,7 +11,12 @@ public struct WeatherRootFactory {
         WeatherRootModel(modelContext: modelContext, photoRoot: photoRoot)
     }
 
-    public static func rootView(withoutNavigation: Bool) -> some View {
-        WeatherRootView(withoutNavigation: withoutNavigation)
+    public static func rootView() -> some View {
+        WeatherRootView()
+    }
+    
+    @ViewBuilder
+    public static func detailView(root: WeatherRootModel) -> some View {
+        ItemSplitDetailRootView(root: root.rootController)
     }
 }

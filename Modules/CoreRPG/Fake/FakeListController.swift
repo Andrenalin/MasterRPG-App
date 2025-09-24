@@ -7,5 +7,7 @@ import SwiftUI
 struct FakeListController: ListControllable {
     let listModel: ListModel
     let listDisplayModel: ListDisplayModel
-    let searchModel: SearchModel    
+    let searchModel: SearchModel
+    
+    var cacheListItemModel = CacheItemListModel()
 }

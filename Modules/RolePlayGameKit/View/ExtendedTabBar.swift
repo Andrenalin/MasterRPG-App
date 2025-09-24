@@ -11,52 +11,44 @@ struct ExtendedTabBar: View {
 
     @Environment(AppModel.self) private var appModel
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.navigator) private var navigator
 
     @Namespace private var zoomNamespace
 
     @State private var tabSelectedModule: NetworkModules = .game
 
     var body: some View {
-        ManagedNavigationStack(scene: "ExtendedTabBar") { navigator in
-            ScrollView {
-                VStack {
-                    Grid(horizontalSpacing: 16, verticalSpacing: 16) {
-                        ForEach(doubleColumnTabs, id: \.self.0.id) { column in
-                            GridRow {
-                                gridButtonView(for: column.0, in: navigator)
+        ScrollView {
+            VStack {
+                Grid(horizontalSpacing: 16, verticalSpacing: 16) {
+                    ForEach(doubleColumnTabs, id: \.self.0.id) { column in
+                        GridRow {
+                            gridButtonView(for: column.0, in: navigator)
 
-                                if let tab = column.1 {
-                                    gridButtonView(for: tab, in: navigator)
-                                }
+                            if let tab = column.1 {
+                                gridButtonView(for: tab, in: navigator)
                             }
-                            .gridCellColumns(column.1 == nil ? 2 : 1)
                         }
+                        .gridCellColumns(column.1 == nil ? 2 : 1)
                     }
                 }
             }
-            .navigationTitle(Text(NetworkModules.editor.title))
-#if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-#endif
-            .navigationDestination(for: ExtendedTabRoute.self) { route in
-                route
-                    .modifier(ZoomTransitionViewModifier(sourceID: route.module.token, namespace: zoomNamespace))
-            }
-            .navigationAutoReceive(ExtendedTabRoute.self)
-//            .onNavigationReceive { (route: ExtendedTabRoute, navigator) in
-//                if currentModule == route {
-//                    return .immediately
-//                }
-//                navigator.push(route)
-//                return .auto
-//            }
-            .onNavigationRoute(RootFiveRouteRouter(appModel: appModel))
-            .onChange(of: currentModule, initial: true) {
-                guard let currentModule else { return }
-                tabSelectedModule = currentModule.module
-            }
-            .focusedSceneValue(\.selectedModule, $tabSelectedModule)
         }
+        .navigationTitle(Text(NetworkModules.editor.title))
+#if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+#endif
+        .navigationDestination(for: ExtendedTabRoute.self) { route in
+            route
+                .modifier(ZoomTransitionViewModifier(sourceID: route.module.token, namespace: zoomNamespace))
+        }
+        .navigationAutoReceive(ExtendedTabRoute.self)
+        .onNavigationRoute(RootFiveRouteRouter(appModel: appModel))
+        .onChange(of: currentModule, initial: true) {
+            guard let currentModule else { return }
+            tabSelectedModule = currentModule.module
+        }
+        .focusedSceneValue(\.selectedModule, $tabSelectedModule)
     }
 }
 

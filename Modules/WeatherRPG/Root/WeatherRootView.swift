@@ -6,14 +6,12 @@ import SwiftData
 import SwiftUI
 
 struct WeatherRootView: View {
-    let withoutNavigation: Bool
-
     @Environment(WeatherRootModel.self) private var root
 
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+        ItemRootView(root: root.rootController)
             .navigationAutoReceive(WeatherRoute.self)
             .overlay {
                 SaveView(root: root)
@@ -37,13 +35,8 @@ struct SaveView: View {
     }
 }
 
-#Preview("Embed", traits: .mockData) {
+#Preview(traits: .mockData) {
     ManagedNavigationStack {
-        WeatherRootView(withoutNavigation: true)
+        WeatherRootView()
     }
 }
-
-#Preview("Split", traits: .mockData) {
-    WeatherRootView(withoutNavigation: false)
-}
-

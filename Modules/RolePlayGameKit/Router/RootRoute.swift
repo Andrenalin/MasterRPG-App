@@ -67,6 +67,13 @@ public enum RootRoute: Hashable, Codable {
         case .search: .search
         }
     }
+    
+    public var hasDetailView: Bool {
+        switch self {
+        case .game, .settings, .search: false
+        default: true
+        }
+    }
 }
 
 extension RootRoute: RawRepresentable {
@@ -111,11 +118,11 @@ extension RootRoute: NavigationDestination {
     }
     
     public static var allTabs: [RootRoute] {
-#if os(iOS) || os(visionOS)
+//#if os(iOS) || os(visionOS)
         [.game, .adventures, .values, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
-#else
-        [.adventures, .values, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .search]
-#endif
+//#else
+//        [.adventures, .values, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .search]
+//#endif
     }
     
     static var fiveTabs: [RootRoute] {
@@ -131,11 +138,11 @@ struct RouteRouteDestionationView: View {
     var body: some View {
         switch route {
         case .adventures:
-            AdventureRootFactory.rootView(withoutNavigation: false)
+            AdventureRootFactory.rootView()
         case .audios:
-            AudioRootFactory.rootView(withoutNavigation: false)
+            AudioRootFactory.rootView()
         case .dice:
-            DiceRootFactory.rootView(withoutNavigation: false)
+            DiceRootFactory.rootView()
         case .editors:
 #if os(visionOS)
             EmptyView()
@@ -145,21 +152,21 @@ struct RouteRouteDestionationView: View {
         case .game:
             Text("Coming Soon")
         case .maps:
-            MapRootFactory.rootView(withoutNavigation: false)
+            MapRootFactory.rootView()
         case .pdfs:
-            PdfRootFactory.rootView(withoutNavigation: false)
+            PdfRootFactory.rootView()
         case .photos:
-            PhotoRootFactory.rootView(withoutNavigation: false)
+            PhotoRootFactory.rootView()
         case .space:
-            SpaceRootFactory.rootView(withoutNavigation: false)
+            SpaceRootFactory.rootView()
         case .settings:
             SettingsView(model: appModel)
         case .tables:
-            TableRootFactory.rootView(withoutNavigation: false)
+            TableRootFactory.rootView()
         case .values:
-            CharacterRootFactory.rootView(withoutNavigation: false)
+            CharacterRootFactory.rootView()
         case .weathers:
-            WeatherRootFactory.rootView(withoutNavigation: false)
+            WeatherRootFactory.rootView()
         case .search:
             Text("Coming Soon")
         }

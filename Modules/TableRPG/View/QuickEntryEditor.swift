@@ -166,6 +166,7 @@ private extension QuickEntryEditor {
         .scrollContentBackground(.hidden)
 #endif
         .environment(CacheItemListModel())
+        .environment(SearchModel.preview())
         .overlay {
 #if os(iOS) || os(tvOS)
             if let selectedPdf = entryEditController.editController.selectionPdf.itemId {

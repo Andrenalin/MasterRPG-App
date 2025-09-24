@@ -26,6 +26,7 @@ struct DetailRootView: View {
             playerView
         }
         .environment(openFileWindowModel)
+        .environment(root.listController.cacheListItemModel)
     }
 }
 

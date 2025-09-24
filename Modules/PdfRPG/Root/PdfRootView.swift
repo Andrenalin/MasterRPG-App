@@ -6,14 +6,12 @@ import SwiftData
 import SwiftUI
 
 struct PdfRootView: View {
-    let withoutNavigation: Bool
-
     @Environment(PdfRootModel.self) private var root
     
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+        ItemRootView(root: root.rootController)
             .navigationAutoReceive(PdfRoute.self)
             .overlay {
                 SaveView(root: root)
@@ -37,13 +35,8 @@ struct SaveView: View {
     }
 }
 
-#Preview("Small", traits: .mockData) {
+#Preview(traits: .mockData) {
     ManagedNavigationStack {
-        PdfRootView(withoutNavigation: true)
+        PdfRootView()
     }
-}
-
-
-#Preview("Split", traits: .mockData) {
-    PdfRootView(withoutNavigation: false)
 }

@@ -6,12 +6,10 @@ import SwiftData
 import SwiftUI
 
 struct DiceRootView: View {
-    let withoutNavigation: Bool
-
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+        ItemRootView(root: root.rootController)
             .navigationAutoReceive(DiceRoute.self)
         .overlay {
             SaveView(root: root)
@@ -35,13 +33,8 @@ struct SaveView: View {
     }
 }
 
-#Preview("Small", traits: .mockData) {
+#Preview(traits: .mockData) {
     ManagedNavigationStack {
-        DiceRootView(withoutNavigation: true)
+        DiceRootView()
     }
-}
-
-
-#Preview("Split", traits: .mockData) {
-    DiceRootView(withoutNavigation: false)
 }

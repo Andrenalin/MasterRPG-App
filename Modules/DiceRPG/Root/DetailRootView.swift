@@ -24,6 +24,7 @@ struct DetailRootView: View {
             diceOverlay
         }
         .environment(openFileWindowModel)
+        .environment(root.listController.cacheListItemModel)
     }
     
     var model: DiceDataModel? {

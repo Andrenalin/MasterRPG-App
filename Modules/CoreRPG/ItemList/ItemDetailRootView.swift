@@ -45,14 +45,13 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
 
     @Environment(ItemRootController.self) private var root
     
-    @State private var cacheItemListModel = CacheItemListModel()
     @State private var isEditing = false
     @State private var itemIdHasUrl = UUID()
     @State private var selection = GroupItemSelectionModel()
     @State private var showInspector = false
 
     public var body: some View {
-        let _ = Self._printChanges()
+        //let _ = Self._printChanges()
         if let selectedModel {
             contentScrollView(model: selectedModel)
         }

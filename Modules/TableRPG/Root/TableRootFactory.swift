@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import DiceRPG
 import PdfRPG
 import SwiftData
@@ -11,7 +12,12 @@ public struct TableRootFactory {
         TableRootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: pdfRoot)
     }
 
-    public static func rootView(withoutNavigation: Bool) -> some View {
-        TableRootView(withoutNavigation: withoutNavigation)
+    public static func rootView() -> some View {
+        TableRootView()
+    }
+    
+    @ViewBuilder
+    public static func detailView(root: TableRootModel) -> some View {
+        ItemSplitDetailRootView(root: root.rootController)
     }
 }

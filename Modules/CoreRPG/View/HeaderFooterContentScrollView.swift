@@ -14,7 +14,7 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
     @State private var scrollUp: Bool = false
     
     var body: some View {
-        let _ = Self._printChanges()
+        //let _ = Self._printChanges()
         
         content
             .frame(maxWidth: .infinity)

@@ -10,7 +10,8 @@ struct ListController: ListControllable {
     let listModel: ListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
-
+    let cacheListItemModel = CacheItemListModel()
+    
     func detailDestination(for itemId: UUID) -> any NavigationDestination {
         PdfRoute.detail(itemId)
     }

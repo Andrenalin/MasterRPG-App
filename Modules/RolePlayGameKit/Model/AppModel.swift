@@ -49,6 +49,7 @@ public final class AppModel: Sendable {
 
     // Routing models
     public let navigator: Navigator
+    var selectedModule: RootRoute? = .game
 
     // Root Controllers
     public let linkRootController: LinkRootController
@@ -84,7 +85,14 @@ public final class AppModel: Sendable {
         self.tableRoot = tableRoot
         self.weatherRoot = weatherRoot
         
-        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.6", executionDelay: 0.4, verbosity: .info))
+        self.navigator = Navigator(
+            configuration: NavigationConfiguration(
+                restorationKey: "1.0.7",
+                executionDelay: 0.4,
+                verbosity: .info,
+                autoDestinationMode: true
+            )
+        )
         
         self.linkRootController = LinkRootController(
             container: modelContainer,
@@ -187,25 +195,32 @@ public extension AppModel {
 
 // MARK: - Routing
 extension AppModel {
-    func resetNavigation(selectedTab: NetworkModules) {
-        let itemId: UUID? = switch selectedTab {
-        case .adventure: adventureRoot.currentSelectedItemId
-        case .audio: audioRoot.currentSelectedItemId
-        case .value: characterRoot.currentSelectedItemId
-        case .dice: diceRoot.currentSelectedItemId
-        case .map: mapRoot.currentSelectedItemId
-        case .pdf: pdfRoot.currentSelectedItemId
-        case .photo: photoRoot.currentSelectedItemId
-        case .space: spaceRoot.currentSelectedItemId
-        case .table: tableRoot.currentSelectedItemId
-        case .weather: weatherRoot.currentSelectedItemId
+    func rootModel(for module: NetworkModules) -> (any ItemRootControllable)? {
+        switch module {
+        case .adventure: adventureRoot
+        case .audio: audioRoot
+        case .value: characterRoot
+        case .dice: diceRoot
+        case .map: mapRoot
+        case .pdf: pdfRoot
+        case .photo: photoRoot
+        case .space: spaceRoot
+        case .table: tableRoot
+        case .weather: weatherRoot
         case .editor: nil
         case .game: nil
         case .none: nil
         case .search: nil
         case .setting: nil
         }
+    }
+    
+    func itemRootController(for module: NetworkModules) -> ItemRootController? {
+        rootModel(for: module)?.rootController
+    }
         
+    func resetNavigation(selectedTab: NetworkModules) {
+        let itemId: UUID? = rootModel(for: selectedTab)?.currentSelectedItemId
         Task {
             try await Task.sleep(for: .milliseconds(150))
             navigator.perform(route: KnownRoutes.route(module: selectedTab, itemId: itemId, entryId: nil))

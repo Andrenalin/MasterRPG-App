@@ -9,7 +9,6 @@ struct ListRootView: View {
     let root: ItemRootControllable
     let parentModel: ItemDataModel?
 
-    @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(\.navigator) private var navigator
 
     var body: some View {
@@ -129,7 +128,7 @@ private extension ListRootView {
     func itemRows() -> some View {
         ForEach(displayItems) { item in
             HStack {
-                ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false) {
+                ItemRowView(root: root, model: item.model, cacheItemListModel: listController.cacheListItemModel, isSelected: false) {
                     if root.viewControllable.thumbnailRowViewType == .custom {
                         root.viewControllable.thumbnailRowView(for: item.model.id)
                     } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {

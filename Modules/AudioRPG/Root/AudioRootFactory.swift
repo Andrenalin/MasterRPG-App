@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftData
 import SwiftUI
 
@@ -9,7 +10,12 @@ public struct AudioRootFactory {
         AudioRootModel(modelContext: modelContext)
     }
 
-    public static func rootView(withoutNavigation: Bool) -> some View {
-        AudioRootView(withoutNavigation: withoutNavigation)
+    public static func rootView() -> some View {
+        AudioRootView()
+    }
+    
+    @ViewBuilder
+    public static func detailView(root: AudioRootModel) -> some View {
+        ItemSplitDetailRootView(root: root.rootController)
     }
 }

@@ -5,6 +5,7 @@ import PdfRPG
 import PhotoRPG
 import TableRPG
 
+import CoreRPG
 import SwiftData
 import SwiftUI
 
@@ -14,7 +15,12 @@ public struct CharacterRootFactory {
         CharacterRootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
     }
 
-    public static func rootView(withoutNavigation: Bool) -> some View {
-        CharacterRootView(withoutNavigation: withoutNavigation)
+    public static func rootView() -> some View {
+        CharacterRootView()
+    }
+    
+    @ViewBuilder
+    public static func detailView(root: CharacterRootModel) -> some View {
+        ItemSplitDetailRootView(root: root.rootController)
     }
 }

@@ -14,7 +14,6 @@ public struct DiceCommands: Commands {
     
     let root: DiceRootModel
     let navigator: Navigator
-    @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
     public var body: some Commands {
         ModuleCommands(root: root, navigator: navigator, key: "7")

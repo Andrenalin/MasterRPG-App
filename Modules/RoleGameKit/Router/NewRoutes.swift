@@ -39,7 +39,7 @@ struct NewAdventureRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            AdventureRootFactory.rootView(withoutNavigation: isExtended)
+            AdventureRootFactory.rootView()
                 .environment(deviceRotationModel)
                 .environment(tabTitleModel)
                 .task {
@@ -71,7 +71,7 @@ struct NewAudioRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            AudioRootFactory.rootView(withoutNavigation: isExtended)
+            AudioRootFactory.rootView()
                 .environment(deviceRotationModel)
                 .environment(tabTitleModel)
                 .task {
@@ -103,7 +103,7 @@ struct NewDiceRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            DiceRootFactory.rootView(withoutNavigation: isExtended)
+            DiceRootFactory.rootView()
                 .environment(deviceRotationModel)
                 .environment(tabTitleModel)
                 .task {
@@ -134,7 +134,7 @@ struct NewMapRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            MapRootFactory.rootView(withoutNavigation: isExtended)
+            MapRootFactory.rootView()
                 .environment(deviceRotationModel)
                 .environment(tabTitleModel)
                 .task {
@@ -165,7 +165,7 @@ struct NewPdfRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            PdfRootFactory.rootView(withoutNavigation: isExtended)
+            PdfRootFactory.rootView()
                 .environment(deviceRotationModel)
                 .environment(tabTitleModel)
                 .task {
@@ -196,7 +196,7 @@ struct NewPhotoRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            PhotoRootFactory.rootView(withoutNavigation: isExtended)
+            PhotoRootFactory.rootView()
                 .environment(deviceRotationModel)
                 .environment(tabTitleModel)
                 .task {
@@ -228,7 +228,7 @@ struct NewSpaceRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            SpaceRootFactory.rootView(withoutNavigation: isExtended)
+            SpaceRootFactory.rootView()
                 .environment(deviceRotationModel)
                 .environment(tabTitleModel)
                 .task {
@@ -260,7 +260,7 @@ struct NewTableRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            TableRootFactory.rootView(withoutNavigation: isExtended)
+            TableRootFactory.rootView()
                 .environment(deviceRotationModel)
                 .environment(tabTitleModel)
                 .task {
@@ -292,7 +292,7 @@ struct NewValueRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            CharacterRootFactory.rootView(withoutNavigation: isExtended)
+            CharacterRootFactory.rootView()
                 .environment(deviceRotationModel)
                 .environment(tabTitleModel)
                 .task {
@@ -324,7 +324,7 @@ struct NewWeatherRoute: View {
 
     var body: some View {
         if appStore.isNewUICode {
-            WeatherRootFactory.rootView(withoutNavigation: isExtended)
+            WeatherRootFactory.rootView()
                 .environment(deviceRotationModel)
                 .environment(tabTitleModel)
                 .task {

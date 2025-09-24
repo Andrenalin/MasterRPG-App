@@ -6,6 +6,7 @@ import PdfRPG
 import PhotoRPG
 import TableRPG
 
+import CoreRPG
 import SwiftData
 import SwiftUI
 
@@ -15,7 +16,12 @@ public struct MapRootFactory {
         MapRootModel(modelContext: modelContext, characterRoot: characterRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
     }
 
-    public static func rootView(withoutNavigation: Bool) -> some View {
-        MapRootView(withoutNavigation: withoutNavigation)
+    public static func rootView() -> some View {
+        MapRootView()
+    }
+    
+    @ViewBuilder
+    public static func detailView(root: MapRootModel) -> some View {
+        ItemSplitDetailRootView(root: root.rootController)
     }
 }

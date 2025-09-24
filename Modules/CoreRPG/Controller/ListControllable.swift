@@ -10,6 +10,7 @@ public protocol ListControllable: Sendable {
     var listModel: ListModel { get }
     var listDisplayModel: ListDisplayModel { get }
     var searchModel: SearchModel { get }
+    var cacheListItemModel: CacheItemListModel { get }
     
     func detailDestination(for itemId: UUID) -> any NavigationDestination
 }

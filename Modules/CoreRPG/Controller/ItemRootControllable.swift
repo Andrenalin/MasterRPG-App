@@ -21,6 +21,8 @@ public protocol ItemRootControllable {
     var listControllable: any ListControllable { get }
     var listLinkControllable: any ListControllable { get }
     var viewControllable: any ViewControllable { get }
+    
+    var rootController: ItemRootController { get }
 }
 
 @MainActor @Observable
@@ -74,4 +76,6 @@ public final class ItemRootController: ItemRootControllable {
     public let viewControllable: any ViewControllable
     
     public let removeEntryListModel: RemoveEntryListModel
+    
+    public var rootController: ItemRootController { self }
 }

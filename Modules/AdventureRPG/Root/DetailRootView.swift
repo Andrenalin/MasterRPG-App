@@ -28,6 +28,7 @@ struct DetailRootView: View {
                 .environment(root.editController.selectionDice)
         }
         .environment(openFileWindowModel)
+        .environment(root.listController.cacheListItemModel)
     }
     
     var selectedModel: ItemDataModel? {

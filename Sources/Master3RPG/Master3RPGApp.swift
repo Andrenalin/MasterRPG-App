@@ -9,8 +9,6 @@ import SwiftData
 
 @main
 struct Master3RPGApp: App {
-    @Environment(\.openURL) private var openURL
-
     @State private var appModel = AppModel()
     
     init() {
@@ -43,17 +41,13 @@ struct Master3RPGApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppRootView()
+            AppRootView(appModel: appModel)
 #if os(macOS)
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
                 .toolbar(removing: .title)
 #endif
-                .environment(appModel.linkRootController)
-                .environment(appModel)
                 .modifier(UserSettingsViewModifier(appModel: appModel))
-                .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
-                    handle(userActivity: userActivity)
-                }
+                .setAppSizeMode()
         }
         .commands {
 #if os(macOS)
@@ -86,16 +80,4 @@ struct Master3RPGApp: App {
 #endif
 
     }
-    
-    func handle(userActivity: NSUserActivity) {
-        // SIRI & Search
-        let module = UserActivity.module(from: userActivity)
-        guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
-        let childId = UserActivity.childId(from: userActivity)
-        //let command: String? = UserActivity.command(from: userActivity)
-        let child = childId != nil ? "/\(childId?.uuidString ?? "")" : ""
-        let url = URL(string: "\(URL.appScheme)://\(module.token)/0/\(itemId)\(child)")!
-        openURL(url)
-    }
-
 }

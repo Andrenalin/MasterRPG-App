@@ -6,14 +6,12 @@ import SwiftData
 import SwiftUI
 
 struct TableRootView: View {
-    let withoutNavigation: Bool
-
     @Environment(TableRootModel.self) private var root
 
     var body: some View {
         let _ = Self._printChanges()
         
-        ItemRootView(root: root.rootController, withoutNavigation: withoutNavigation)
+        ItemRootView(root: root.rootController)
             .navigationAutoReceive(TableRoute.self)
             .overlay {
                 SaveView(root: root)
@@ -37,13 +35,8 @@ struct SaveView: View {
     }
 }
 
-#Preview("Embed", traits: .mockData) {
+#Preview(traits: .mockData) {
     ManagedNavigationStack {
-        TableRootView(withoutNavigation: true)
+        TableRootView()
     }
 }
-
-#Preview("Split", traits: .mockData) {
-    TableRootView(withoutNavigation: false)
-}
-
