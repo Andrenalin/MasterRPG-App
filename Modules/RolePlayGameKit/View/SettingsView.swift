@@ -15,6 +15,15 @@ public struct SettingsView: View {
     public var body: some View {
         NavigationStack {
             List {
+                SectionGroupEditorView {
+                    @Bindable var model = model
+                    Toggle(isOn: $model.isNewUICode) {
+                        Text("Text new UI")
+                    }
+                } header: {
+                    Text("Experimental")
+                }
+
                 ColorSchemeSettingsView()
 
                 //            SectionGroupEditorView {

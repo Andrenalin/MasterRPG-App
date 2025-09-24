@@ -1,43 +1,47 @@
+//
+//  MenuCommandList.swift
+//  MasterRPG
+//
+//  Created by Andre Trettin on 24.09.25.
+//
+
+
 // @copyright André Trettin
 
 #if !os(tvOS)
 
-import RPGAdventures
-import RPGDie
-import RoleGameKit
-import RPGAudios
-import RPGGame
-import RPGMaps
-import RPGPdfs
-import RPGPhotos
-import RPGSpaces
-import RPGTables
-import RPGValues
+import RolePlayGameKit
+import AdventureRPG
+import AudioRPG
+import CharacterRPG
+import DiceRPG
+import MapRPG
+import PdfRPG
+import PhotoRPG
+import SpaceRPG
+import TableRPG
+import WeatherRPG
 import SwiftUI
-import RPGWeathers
 
 struct MenuCommandList: Commands {
-    let appStore: AppStore
-    
+    let appModel: AppModel
+
     var body: some Commands {
-        if appStore.hasDatabase {
+        Group {
             Group {
-                AdventureCommands(root: appStore.adventureRoot)
-                ValueCommands(root: appStore.valueRoot)
-                PdfCommands(root: appStore.pdfRoot)
-                TableCommands(root: appStore.tableRoot)
+                AdventureCommands(root: appModel.adventureRoot, navigator: appModel.navigator)
+                CharacterCommands(root: appModel.characterRoot, navigator: appModel.navigator)
+                PdfCommands(root: appModel.pdfRoot, navigator: appModel.navigator)
+                TableCommands(root: appModel.tableRoot, navigator: appModel.navigator)
+                MapCommands(root: appModel.mapRoot, navigator: appModel.navigator)
             }
-
-            MapCommands(root: appStore.mapRoot)
-
             Group {
-                AudioCommands(root: appStore.audioRoot)
-                DiceCommands(root: appStore.diceRoot)
-                PhotoCommands(root: appStore.photoRoot)
-                SpaceCommands(root: appStore.spaceRoot)
+                AudioCommands(root: appModel.audioRoot, navigator: appModel.navigator)
+                DiceCommands(root: appModel.diceRoot, navigator: appModel.navigator)
+                PhotoCommands(root: appModel.photoRoot, navigator: appModel.navigator)
+                SpaceCommands(root: appModel.spaceRoot, navigator: appModel.navigator)
+                WeatherCommands(root: appModel.weatherRoot, navigator: appModel.navigator)
             }
-
-            WeatherCommands(root: appStore.weatherRoot)
         }
     }
 }

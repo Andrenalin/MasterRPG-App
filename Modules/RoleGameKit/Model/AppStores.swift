@@ -56,7 +56,7 @@ public final class AppStore: Sendable {
     public var tableRootModel: TableRootModel
     public var weatherRootModel: WeatherRootModel
 
-    var isNewUICode: Bool = true
+    public var isNewUICode: Bool = false
 
     // Other Models
     public let windowStateModel: WindowStateModel

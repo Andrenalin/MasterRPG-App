@@ -1,322 +1,91 @@
+//
+//  WindowLinkList.swift
+//  MasterRPG
+//
+//  Created by Andre Trettin on 24.09.25.
+//
+
+
 // @copyright André Trettin
 
-import AndrenalinKit
-import RPGAdventures
-import RoleGameKit
-import SwiftUI
-import RPGGame
-import RPGValues
-import RPGPdfs
-import RPGTables
-import RPGAudios
-import RPGPhotos
-import RPGDie
-import RPGMaps
-import RPGSpaces
-import RPGWeathers
-
-#if os(macOS)
-typealias BaseWindow = Window
-#else
-typealias BaseWindow = WindowGroup
-#endif
-
 #if !os(tvOS)
+import CoreRPG
+import RolePlayGameKit
+import SwiftUI
+
+import AdventureRPG
+import AudioRPG
+import CharacterRPG
+import DiceRPG
+import MapRPG
+import PdfRPG
+import PhotoRPG
+import SpaceRPG
+import TableRPG
+import WeatherRPG
 
 struct WindowLinkList: Scene {
-    let appStore: AppStore
-
-    @Environment(\.scenePhase) private var scenePhase
-
-    var body: some Scene {
-        BaseWindow("Logs", id: WindowIdentifier.logs.rawValue) {
-            DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                appStore.gameRoot.viewController.logWindow()
-            }
-            .handlesExternalEvents(preferring: [], allowing: [])
-        }
-        .defaultSizeAll(CGSize(width: 1200, height: 600))
-        .defaultWindowPlacementAll(.above(WindowIdentifier.game.rawValue))
-
-        Group {
-            BaseWindow("\(NetworkModules.adventure.title) Link", id: NetworkModules.adventure.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.adventureRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.adventure] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .adventure))
-#if os(macOS)
-            .keyboardShortcut("1", modifiers: [.command, .option])
-#endif
-
-            BaseWindow("\(NetworkModules.value.title) Link", id: NetworkModules.value.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.valueRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.value] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .value))
-#if os(macOS)
-            .keyboardShortcut("2", modifiers: [.command, .option])
-#endif
-
-            BaseWindow("\(NetworkModules.pdf.title) Link", id: NetworkModules.pdf.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.pdfRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.pdf] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .pdf))
-#if os(macOS)
-            .keyboardShortcut("3", modifiers: [.command, .option])
-#endif
-
-            BaseWindow("\(NetworkModules.table.title) Link", id: NetworkModules.table.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.tableRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                        .environment(\.valueActions, appStore.valueRoot.valueActions)
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.table] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .table))
-#if os(macOS)
-            .keyboardShortcut("4", modifiers: [.command, .option])
-#endif
-
-            BaseWindow("\(NetworkModules.map.title) Link", id: NetworkModules.map.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.mapRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.map] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .map))
-#if os(macOS)
-            .keyboardShortcut("5", modifiers: [.command, .option])
-#endif
-
-            BaseWindow("\(NetworkModules.audio.title) Link", id: NetworkModules.audio.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.audioRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.audio] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .audio))
-#if os(macOS)
-            .keyboardShortcut("6", modifiers: [.command, .option])
-#endif
-
-            BaseWindow("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.diceRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.dice] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .dice))
-#if os(macOS)
-            .keyboardShortcut("7", modifiers: [.command, .option])
-#endif
-
-            BaseWindow("\(NetworkModules.photo.title) Link", id: NetworkModules.photo.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.photoRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                        .environment(\.mapActions, appStore.mapRoot.mapActions)
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.photo] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .photo))
-#if os(macOS)
-            .keyboardShortcut("8", modifiers: [.command, .option])
-#endif
-
-            BaseWindow("\(NetworkModules.space.title) Link", id: NetworkModules.space.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.spaceRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.space] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .space))
-#if os(macOS)
-            .keyboardShortcut("9", modifiers: [.command, .option])
-#endif
-
-            BaseWindow("\(NetworkModules.weather.title) Link", id: NetworkModules.weather.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.weatherRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.weather] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .weather))
-#if os(macOS)
-            .keyboardShortcut("0", modifiers: [.command, .option])
-#endif
-
-        }
-        .defaultSizeAll(CGSize(width: 400, height: 800))
-#if os(macOS)
-        .defaultPosition(.topTrailing)
-        .windowStyle(.automatic)
-#endif
-    }
-}
-
-struct WindowLinkAltList: Scene {
-    let appStore: AppStore
+    let appModel: AppModel
     
     var body: some Scene {
         Group {
-            WindowGroup("\(NetworkModules.adventure.title) Link", id: NetworkModules.adventure.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.adventureRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
+            windowGroup(model: appModel, module: .adventure, key: "1", content: appModel.adventureRoot.viewController.linkWindow(root: appModel.adventureRoot))
 
-            WindowGroup("\(NetworkModules.value.title) Link", id: NetworkModules.value.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.valueRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            
-            WindowGroup("\(NetworkModules.pdf.title) Link", id: NetworkModules.pdf.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.pdfRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
+            windowGroup(model: appModel, module: .value, key: "2", content: appModel.characterRoot.viewController.linkWindow(root: appModel.characterRoot))
 
-            WindowGroup("\(NetworkModules.table.title) Link", id: NetworkModules.table.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.tableRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                        .environment(\.valueActions, appStore.valueRoot.valueActions)
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
+            windowGroup(model: appModel, module: .pdf, key: "3", content: appModel.pdfRoot.viewController.linkWindow(root: appModel.pdfRoot))
 
-            WindowGroup("\(NetworkModules.map.title) Link", id: NetworkModules.map.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.mapRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
+            windowGroup(model: appModel, module: .table, key: "4", content: appModel.tableRoot.viewController.linkWindow(root: appModel.tableRoot))
 
-            WindowGroup("\(NetworkModules.audio.title) Link", id: NetworkModules.audio.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.audioRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            
-            WindowGroup("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.diceRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            
-            WindowGroup("\(NetworkModules.photo.title) Link", id: NetworkModules.photo.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.photoRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                        .environment(\.mapActions, appStore.mapRoot.mapActions)
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
+            windowGroup(model: appModel, module: .map, key: "5", content: appModel.mapRoot.viewController.linkWindow(root: appModel.mapRoot))
 
-            WindowGroup("\(NetworkModules.space.title) Link", id: NetworkModules.space.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.spaceRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            
-            WindowGroup("\(NetworkModules.weather.title) Link", id: NetworkModules.weather.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.weatherRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
+            windowGroup(model: appModel, module: .audio, key: "6", content: appModel.audioRoot.viewController.linkWindow(root: appModel.audioRoot))
+
+            windowGroup(model: appModel, module: .dice, key: "7", content: appModel.diceRoot.viewController.linkWindow(root: appModel.diceRoot))
+
+            windowGroup(model: appModel, module: .photo, key: "8", content: appModel.photoRoot.viewController.linkWindow(root: appModel.photoRoot))
+
+            windowGroup(model: appModel, module: .space, key: "9", content: appModel.spaceRoot.viewController.linkWindow(root: appModel.spaceRoot))
+
+            windowGroup(model: appModel, module: .weather, key: "0", content: appModel.weatherRoot.viewController.linkWindow(root: appModel.weatherRoot))
         }
-        .defaultSizeAll(CGSize(width: 400, height: 800))
+        .defaultSize(CGSize(width: 400, height: 800))
+    }
+    
+    private func windowGroup<Content: View>(model: AppModel, module: NetworkModules, key: KeyEquivalent, content: Content) -> some Scene {
+        WindowGroup("\(module.title) Link", id: module.linkWindowId) {
+            content
+                .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
+        }
+        .windowResizability(.contentSize)
+        .defaultWindowPlacementAll(model.windowPlacement(for: module))
 #if os(macOS)
-        .defaultPosition(.topLeading)
-        .windowStyle(.hiddenTitleBar)
+        .keyboardShortcut(key, modifiers: [.command, .option])
 #endif
     }
 }
 
-struct WindowListSetUpViewModifier: ViewModifier {
-    let appStore: AppStore
+struct WindowLinkSetUpViewModifier: ViewModifier {
+    let model: AppModel
+    let module: NetworkModules
     
     @Environment(\.colorScheme) private var colorScheme
     
     func body(content: Content) -> some View {
         content
-            .accentColor(.teal)
-#if os(macOS)
-            .frame(minWidth: 250, minHeight: 250)
-#endif
+            .frame(minWidth: 350, minHeight: 400)
+            .handlesExternalEvents(preferring: [], allowing: [])
+            .onDisappear {
+                model.windowStateModel.openWindowState[module] = false
+            }
+            .tint(module.tint)
 #if os(iOS)
-            .environment(\.colorScheme, appStore.settingsModel.appColorScheme.colorScheme(for: colorScheme))
+            .environment(\.colorScheme, model.settingsModel.appColorScheme.colorScheme(for: colorScheme))
 #endif
-            .environment(\.gameModus, appStore.settingsModel.gameModus)
-            .environment(\.networkActions, appStore.gameRoot.networkActions())
-            .environment(\.sharingControlActions, appStore.gameRoot.sharingControlActions)
-            .environment(\.sharingFeatureActions, appStore.gameRoot.sharingFeatureActions)
-            .environment(\.showGame, appStore.settingsModel.showGame)
-            .environment(appStore.optionKeyDownModel)
-            .environment(appStore.deviceRotationModel)
-            .tint(.teal)
+            .environmentSetUp(model)
+#if os(macOS)
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+#endif
     }
 }
 

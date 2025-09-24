@@ -9,7 +9,7 @@ import RPGSpaces
 import SwiftUI
 
 
-struct WindowVisionList: Scene {
+struct OldWindowVisionList: Scene {
     let appStore: AppStore
     
     @State private var immersionState: any ImmersionStyle = .mixed

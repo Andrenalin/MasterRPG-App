@@ -14,7 +14,7 @@ import RPGPhotos
 import RPGWeathers
 import RPGTables
 
-struct WindowMacVisionList: Scene {
+struct OldWindowMacVisionList: Scene {
     let appStore: AppStore
     
     var body: some Scene {

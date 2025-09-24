@@ -3,7 +3,7 @@
 import RPGAudios
 import SwiftUI
 
-struct MenuBarView: View {
+struct OldMenuBarView: View {
     let audioRoot: AudioRoot
 
     var body: some View {
@@ -19,5 +19,5 @@ struct MenuBarView: View {
 }
 
 #Preview {
-    MenuBarView(audioRoot: .preview)
+    OldMenuBarView(audioRoot: .preview)
 }

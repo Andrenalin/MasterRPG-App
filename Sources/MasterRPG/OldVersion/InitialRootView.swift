@@ -5,15 +5,17 @@ import RoleGameKit
 import SwiftUI
 
 struct InitialRootView: View {
-    let databaseModel: DataBaseModel
     let appStore: AppStore
     let editorOnly: Bool
     
+    @State private var databaseModel = DataBaseModel(useCloudKit: AppStore.shared.settingsModel.useCloudKit, currentActor: .mainApp)
+
     @State private var showDeleteAlert = false
     
     @State private var showAccountAlert = false
     @State private var iCloudAccount: CloudKitAccountStatus = .notChecked
-    
+    @Environment(\.openURL) private var openURL
+
     var body: some View {
         let _ = Self._printChanges()
         Group {
@@ -81,6 +83,21 @@ struct InitialRootView: View {
                 }
             }
         }
+        .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
+            handle(userActivity: userActivity)
+        }
+    }
+    
+    
+    func handle(userActivity: NSUserActivity) {
+        // SIRI & Search
+        let module = UserActivity.module(from: userActivity)
+        guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
+        let childId = UserActivity.childId(from: userActivity)
+        //let command: String? = UserActivity.command(from: userActivity)
+        let child = childId != nil ? "/\(childId?.uuidString ?? "")" : ""
+        let url = URL(string: "\(URL.appScheme)://\(module.token)/0/\(itemId)\(child)")!
+        openURL(url)
     }
 }
 
@@ -100,6 +117,6 @@ struct DataBaseAppStoreAvailable<Content: View>: View {
 }
 
 #Preview {
-    InitialRootView(databaseModel: .previewWithOutSetup(), appStore: .previewWithoutDatabase, editorOnly: true)
+    InitialRootView(appStore: .previewWithoutDatabase, editorOnly: true)
         .frame(width: 400, height: 400)
 }

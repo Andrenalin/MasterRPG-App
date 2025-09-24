@@ -21,6 +21,9 @@
         }
       }
     },
+    "%@ Viewer" : {
+
+    },
     "Adventure Viewer" : {
       "localizations" : {
         "de" : {

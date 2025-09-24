@@ -9,7 +9,7 @@ import RPGTables
 import RPGGame
 
 
-struct WindowMacList: Scene {
+struct OldWindowMacList: Scene {
     let appStore: AppStore
 
     @State private var selectionSheetLinkModel = SelectionSheetLinkModel()

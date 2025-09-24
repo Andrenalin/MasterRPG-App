@@ -26,7 +26,8 @@ extension Logger {
 
 @MainActor @Observable
 public final class AppModel: Sendable {
-
+    public var isNewUICode: Bool = false
+    
     // DB
     public let modelContainer: ModelContainer
 
