@@ -21,7 +21,7 @@ public final class WeatherRootModel {
 
         self.photoRoot = photoRoot
 
-                itemController.cleanDeleted()
+        itemController.clean()
     }
     
     let modelContext: ModelContext

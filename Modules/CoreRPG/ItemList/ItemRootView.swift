@@ -145,12 +145,12 @@ struct ItemSplitDetailRootView: View {
 //    @Previewable @Environment(FakeItemRootController.self) var root
 //
 //    ManagedNavigationStack {
-//        ItemRootView(root: root, withoutNavigation: true, displayMode: .constant(.regular), listMode: .constant(.list), route: .constant(.detail(UUID())))
+//        ItemRootView(root: root.rootController, withoutNavigation: true)
 //    }
 //}
 //
 //#Preview("Split", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root
 //
-//    ItemRootView(root: root, withoutNavigation: false, displayMode: .constant(.regular), listMode: .constant(.list), route: .constant(.detail(UUID())))
+//    ItemRootView(root: root.rootController, withoutNavigation: false)
 //}

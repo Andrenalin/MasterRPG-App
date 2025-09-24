@@ -20,7 +20,7 @@ public final class PdfRootModel {
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
 
-        itemController.cleanDeleted()
+        itemController.clean()
     }
     
     let modelContext: ModelContext

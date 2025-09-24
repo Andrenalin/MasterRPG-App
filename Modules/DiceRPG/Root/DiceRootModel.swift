@@ -20,7 +20,7 @@ public final class DiceRootModel {
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
 
-        itemController.cleanDeleted()
+        itemController.clean()
     }
 
     let modelContext: ModelContext

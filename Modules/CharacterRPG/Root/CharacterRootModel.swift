@@ -28,7 +28,7 @@ public final class CharacterRootModel {
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
         
-        itemController.cleanDeleted()
+        itemController.clean()
     }
     
     let modelContext: ModelContext

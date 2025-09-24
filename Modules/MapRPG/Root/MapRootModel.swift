@@ -30,7 +30,7 @@ public final class MapRootModel {
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
         
-        itemController.cleanDeleted()
+        itemController.clean()
     }
     
     let modelContext: ModelContext
