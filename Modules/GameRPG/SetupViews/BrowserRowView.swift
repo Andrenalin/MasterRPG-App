@@ -63,9 +63,9 @@ private extension BrowserRowView {
     }
 }
 
-struct BrowserRowView_Previews: PreviewProvider {
-    static var previews: some View {
-        BrowserRowView(root: .preview, playerNetworkControllable: PlayerNetworkController(name: "TestPLayer"), model: BrowserDeviceModel(id: UUID(), deviceName: "iPad 10"))
-            .previewLayout(.sizeThatFits)
-    }
-}
+//struct BrowserRowView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        BrowserRowView(root: .preview, playerNetworkControllable: PlayerNetworkController(name: "TestPLayer"), model: BrowserDeviceModel(id: UUID(), deviceName: "iPad 10"))
+//            .previewLayout(.sizeThatFits)
+//    }
+//}

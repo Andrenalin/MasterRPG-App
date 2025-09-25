@@ -6,6 +6,7 @@ import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import GameRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -150,7 +151,7 @@ struct RouteRouteDestionationView: View {
             ExtendedTabBar()
 #endif
         case .game:
-            Text("Coming Soon")
+            GameRootFactory.rootView(root: appModel.gameRoot)
         case .maps:
             MapRootFactory.rootView()
         case .pdfs:

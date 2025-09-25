@@ -18,8 +18,7 @@ extension ViewController: ViewControllable {
 // MARK: External Views
 
 extension ViewController {
-    @MainActor
-    func diceSelection(root: AdventureRootModel, selectionModel: ItemSelectionModel) -> some View {
+    @MainActor func diceSelection(root: AdventureRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.diceRoot.viewController.selectionView(root: root.diceRoot, model: selectionModel)
     }
 }
@@ -27,8 +26,7 @@ extension ViewController {
 // MARK: Viewer
 
 public extension ViewController {
-    @MainActor
-    func linkWindow(root: AdventureRootModel, isInspector: Bool = false) -> some View {
+    @MainActor func linkWindow(root: AdventureRootModel, isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
             .environment(root.audioRoot)
@@ -40,5 +38,10 @@ public extension ViewController {
             .environment(root.spaceRoot)
             .environment(root.tableRoot)
             .environment(root.weatherRoot)
+    }
+        
+    @MainActor func selectionView(root: AdventureRootModel, model: ItemSelectionModel) -> some View {
+        DropChooseView(selectionModel: model)
+            .environment(root)
     }
 }

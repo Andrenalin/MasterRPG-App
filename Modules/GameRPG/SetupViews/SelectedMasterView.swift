@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CharacterRPG
 import CoreRPG
 import SwiftUI
 
@@ -9,19 +10,21 @@ struct SelectedMasterView: View {
     @AppStorage("lastGameMasterUUID", store: .standard)
     private var gameMasterUUID: String = ""
 
+    @State private var selection: ItemSelectionModel = ItemSelectionModel()
+    
     var body: some View {
         GroupBoxTV(isCard: true) {
             VStack {
                 ViewThatFits {
                     HStack {
                         selectedView
-                        ChooseMasterView(root: root)
+                        root.characterRoot.viewController.selectionView(root: root.characterRoot, model: selection)
                     }
 
                     VStack {
                         selectedView
                         Divider()
-                        ChooseMasterView(root: root)
+                        root.characterRoot.viewController.selectionView(root: root.characterRoot, model: selection)
                     }
                 }
             }
@@ -48,13 +51,16 @@ struct SelectedMasterView: View {
                 gameMasterUUID <=> playerId.uuidString
             }
         }
+        .onChange(of: selection.itemId, initial: false) {
+            root.gameModel.selectedGameMaster <=> selection.itemId
+        }
     }
 
     private var selectedView: some View {
         VStack {
             if let id = root.gameModel.selectedGameMaster {
-                root.viewController.selectedCharacterGameMasterView(with: id, isGameMaster: true)
-                    .id(id)
+//                root.viewController.selectedCharacterGameMasterView(with: id, isGameMaster: true)
+//                    .id(id)
             } else {
                 Text("Select a game master to start the game. The game master should have a name and for convience one value with a dice as default dice for the game view.", bundle: .module)
                     .lineLimit(10)

@@ -42,6 +42,6 @@ extension EnvironmentValues {
     }
 }
 
-#Preview {
-    BrowserView(root: .preview, playerNetworkControllable: PlayerNetworkController(name: "Test"))
-}
+//#Preview {
+//    BrowserView(root: .preview, playerNetworkControllable: PlayerNetworkController(name: "Test"))
+//}

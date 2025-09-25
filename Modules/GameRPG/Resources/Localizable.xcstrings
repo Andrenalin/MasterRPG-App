@@ -41,7 +41,6 @@
       }
     },
     "Adventure missing" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -85,7 +84,6 @@
       }
     },
     "Cancel Game" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -96,7 +94,6 @@
       }
     },
     "Choose" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -107,7 +104,6 @@
       }
     },
     "Connect to: %@" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -140,7 +136,6 @@
       }
     },
     "Disconnect from: %@" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -248,7 +243,6 @@
       }
     },
     "Game Master missing" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -259,7 +253,6 @@
       }
     },
     "Join Game" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -270,7 +263,6 @@
       }
     },
     "Looking for Games:" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -281,7 +273,6 @@
       }
     },
     "Master" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -335,7 +326,6 @@
       }
     },
     "Observe: %@" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -346,7 +336,6 @@
       }
     },
     "Observer" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -371,7 +360,6 @@
       }
     },
     "Player" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -382,7 +370,6 @@
       }
     },
     "Player missing" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -404,7 +391,6 @@
       }
     },
     "Proxy" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -470,7 +456,6 @@
       }
     },
     "Select a character to join the game. The character should have a name and for convience one value with a dice as default dice for the game view. Any other values for the character are optional. You can still play with a character sheet if you or the game master prefer." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -481,7 +466,6 @@
       }
     },
     "Select a game master to start the game. The game master should have a name and for convience one value with a dice as default dice for the game view." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -492,7 +476,6 @@
       }
     },
     "Select an adventure for the current game to enjoy the focused adventure view during the game. The adventure itself can be empty and changed during the game." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -514,7 +497,6 @@
       }
     },
     "Selected Adventure" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -525,7 +507,6 @@
       }
     },
     "Selected Game Master" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -536,7 +517,6 @@
       }
     },
     "Selected Player" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -591,7 +571,6 @@
       }
     },
     "Start a game as" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

@@ -16,11 +16,11 @@ struct PlayerStartView: View {
     @State private var startSharePlayAnimation: Bool = false
     
     var body: some View {
-        if root.valueRoot.linkController.validate(id: root.gameModel.selectedCharacter, isCharacter: true) != nil {
+//        if root.characterRoot.linkController.validate(id: root.gameModel.selectedCharacter, isCharacter: true) != nil {
             Group {
                 if sharePlayStore.canActivateSharePlay {
                     Button {
-                        settingsModel.gameModus = .player
+                        //settingsModel.gameModus = .player
                         Task {
                             await root.startGame(to: nil, mode: .player)
                         }
@@ -49,16 +49,16 @@ struct PlayerStartView: View {
                     if let playerNetworkController = root.networkStore.model.playerStore {
                         BrowserView(root: root, playerNetworkControllable: playerNetworkController)
                             .onChange(of: playerNetworkController.networkModel.isConnected) {
-                                if playerNetworkController.networkModel.isConnected {
-                                    settingsModel.gameModus = .player
-                                } else {
-                                    settingsModel.gameModus = .edit
-                                }
+//                                if playerNetworkController.networkModel.isConnected {
+//                                    settingsModel.gameModus = .player
+//                                } else {
+//                                    settingsModel.gameModus = .edit
+//                                }
                             }
                     }
                 }
             }
-        }
+//        }
     }
 }
 

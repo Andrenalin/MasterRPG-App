@@ -31,7 +31,7 @@ struct MockData: PreviewModifier {
         
         let model1 = ItemDataModel(
             id: previewId,
-            module: .weather,
+            module: .adventure,
             name: "Mega Nice",
             information: "A lot of information about this item",
             category: .adventure,
@@ -52,7 +52,7 @@ struct MockData: PreviewModifier {
 
         let model2 = ItemDataModel(
             id: previewId2,
-            module: .weather,
+            module: .adventure,
             name: "Albert",
             information: "The is an example photo and the information is also set here",
             category: .character,
@@ -64,7 +64,7 @@ struct MockData: PreviewModifier {
 
         let model3 = ItemDataModel(
             id: previewId3,
-            module: .weather,
+            module: .adventure,
             name: "Zauberer",
             information: "A photo of a wizard.",
             category: .adventure,

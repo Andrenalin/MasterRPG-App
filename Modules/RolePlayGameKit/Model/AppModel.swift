@@ -11,6 +11,7 @@ import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import GameRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -41,6 +42,7 @@ public final class AppModel: Sendable {
     public let audioRoot: AudioRootModel
     public let characterRoot: CharacterRootModel
     public let diceRoot: DiceRootModel
+    public let gameRoot: GameRootController
     public let mapRoot: MapRootModel
     public let pdfRoot: PdfRootModel
     public let photoRoot: PhotoRootModel
@@ -75,10 +77,13 @@ public final class AppModel: Sendable {
         let mapRoot = MapRootFactory.rootModel(modelContext: modelContainer.mainContext, characterRoot: characterRoot,  diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         let adventureRoot = AdventureRootFactory.rootModel(modelContext: modelContainer.mainContext, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
         
+        let gameRoot = GameRootFactory.rootController(adventureRoot: adventureRoot, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
+        
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
         self.characterRoot = characterRoot
         self.diceRoot = diceRoot
+        self.gameRoot = gameRoot
         self.mapRoot = mapRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
@@ -88,7 +93,7 @@ public final class AppModel: Sendable {
         
         self.navigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "1.0.7",
+                restorationKey: "1.0.8",
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true

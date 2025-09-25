@@ -36,4 +36,9 @@ public extension ViewController {
             .environment(root.photoRoot)
             .environment(root.tableRoot)
     }
+    
+    @MainActor func selectionView(root: CharacterRootModel, model: ItemSelectionModel) -> some View {
+        DropChooseView(selectionModel: model)
+            .environment(root)
+    }
 }
