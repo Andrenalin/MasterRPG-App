@@ -35,8 +35,10 @@ public struct GameRootController {
         
         self.networkStore = NetworkController(name: "Init")
         self.networkProxyStore = NetworkProxyController(name: "Proxy")
+        
+        //_viewController = ViewController(root: self)
+        //_logGameController = LogGameController(root: self, gameModel: gameModel)
     }
-    
     let adventureRoot: AdventureRootModel
     let audioRoot: AudioRootModel
     let characterRoot: CharacterRootModel
@@ -52,8 +54,16 @@ public struct GameRootController {
     
     let networkStore: NetworkController
     let networkProxyStore: NetworkProxyController
+    
+//    private(set) var _viewController: ViewController?
+//    public var viewController: ViewController {
+//        _viewController.unsafelyUnwrapped
+//    }
 
-    //static let preview = GameRootController(adventureRoot: AdventureRootModel(, gameModel: <#T##GameRootModel#>)
+//    private(set) var _logGameController: LogGameController?
+//    var logGameController: LogGameController {
+//        _logGameController.unsafelyUnwrapped
+//    }
 }
 
 
@@ -109,6 +119,45 @@ extension GameRootController {
     }
 }
 
+// MARK: - Master Control Game
+
+extension GameRootController {
+    @MainActor
+    func startMaster() async {
+        guard gameModel.gameConfig.state == .stopped else {
+            await stopGame()
+            return
+        }
+        guard let id = gameModel.selectedAdventure else {
+            return
+        }
+        
+//        let masterGameModel = MasterGameModel(id: UUID(), type: .master, name: gameMasterName, adventureId: id, adventureTitle: adventureRoot.networkTitle(for: id))
+//        gameModel.gameConfig.id = masterGameModel.id
+//        gameModel.gameConfig.master = masterGameModel
+//        gameModel.startGameTime = Date.now
+//        
+//        networkStore.resetName(name: gameMasterName)
+//        networkProxyStore.resetName(name: gameMasterName)
+//        networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
+//
+//        adventureRoot.gameControllable.startGame(with: id)
+//        gameModel.playerController = PlayerController(root: self, asGameMaster: true)
+//        gameModel.masterController = MasterController(root: self, asProxy: false)
+//
+//        gameModel.gameConfig.state = .started
+//
+//        await gameModel.masterController?.start()
+//        valueRoot.gameControllable.startGame(for: gameModel.selectedGameMaster!)
+//        diceRoot.gameControllable.setFocusDice(on: valueRoot.gameControllable.focusDice(for: gameModel.selectedGameMaster!))
+        
+#if !os(macOS)
+        UIApplication.shared.isIdleTimerDisabled = true
+#endif
+    }
+}
+
+// MARK: - Player Control Game
 
 extension GameRootController {
     @MainActor
@@ -193,4 +242,112 @@ extension GameRootController {
             return characterName
         }
     }
+}
+
+// MARK: - Demo
+
+extension GameRootController {
+    @MainActor
+    func startDemo() async {
+        await startGame(to: nil, mode: .demo)
+
+//        if let playerController = gameModel.playerController {
+//            Task {
+//                while gameModel.gameConfig.state != .stopped {
+//                    let photos = photoRoot.itemControllable.itemDataModel.items
+//                    for photo in photos {
+//                        try await Task.sleep(for: .seconds(3))
+//                        let data = await photoRoot.gameControllable.share(id: photo)
+//                        let gameNetworkModel = GameNetworkModel(counter: 1, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, data: data)
+//                        await playerController.receivedProcess(gameNetworkModel)
+//                    }
+//                    
+//                    let weathers = weatherRoot.itemControllable.itemDataModel.items
+//                    for weather in weathers {
+//                        try await Task.sleep(for: .seconds(5))
+//                        let data = await weatherRoot.gameControllable.share(id: weather)
+//                        let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, data: data)
+//                        await playerController.receivedProcess(gameNetworkModel)
+//                    }
+//                    
+//                    let maps = mapRoot.itemControllable.itemDataModel.items
+//                    for map in maps {
+//                        try await Task.sleep(for: .seconds(5))
+//                        let data = await mapRoot.gameControllable.share(id: map)
+//                        let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: gameModel.gameConfig, data: data)
+//                        await playerController.receivedProcess(gameNetworkModel)
+//                        
+//                        var showMap = true
+//                        
+//                        while showMap {
+//                            var data = mapRoot.gameControllable.demoNextMap(itemId: map, restart: false)
+//                            if data == nil {
+//                                data = mapRoot.gameControllable.demoNextMap(itemId: map, restart: true)
+//                                showMap = false
+//                            }
+//                            guard let data else { break }
+//                            try await Task.sleep(for: .seconds(3))
+//                            
+//                            let gameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .update, subType: .mapState, gameConfig: gameModel.gameConfig, data: data)
+//                            await playerController.receivedProcess(gameNetworkModel)
+//                        }
+//                    }
+//                }
+//            }
+//        }
+    }
+}
+
+public extension GameRootController {
+//    func networkActions() -> NetworkActions {
+//        NetworkActions { @MainActor [weak self] idType in
+//            guard let store = self?.gameModel.masterController else { return }
+//            Task {
+//                await store.show(for: idType)
+//            }
+//        } send: { @MainActor [weak self] update in
+//            let masterStore = self?.gameModel.masterController
+//            let playerStore = self?.gameModel.playerController
+//            
+//            Task {
+//                if let masterStore {
+//                    await masterStore.send(updated: update)
+//                } else {
+//                    await playerStore?.send(updated: update)
+//                }
+//            }
+//        } game: { @MainActor [weak self] message, actionType in
+//            let masterStore = self?.gameModel.masterController
+//            let playerStore = self?.gameModel.playerController
+//            
+//            Task {
+//                if let masterStore {
+//                    await masterStore.game(message: message, actionType: actionType)
+//                } else {
+//                    await playerStore?.game(message: message, actionType: actionType)
+//                }
+//            }
+//        }
+//    }
+//    
+//    @MainActor
+//    var sharingControlActions: SharingControlActions {
+//        SharingControlActions { [weak self] in
+//            self?.gameModel.gameConfig.controls ?? []
+//        } update: { [weak self] newControls in
+//            if self?.gameModel.gameConfig.controls != newControls {
+//                self?.gameModel.gameConfig.controls = newControls
+//            }
+//            Task {
+//                await self?.gameModel.masterController?.resetPlayers()
+//            }
+//        }
+//    }
+//    
+//    @MainActor
+//    var sharingFeatureActions: SharingFeatureActions {
+//        SharingFeatureActions { [weak self] in
+//            self?.gameModel.gameConfig.features ?? GameFeatureModel()
+//        }
+//    }
 }
