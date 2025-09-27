@@ -45,6 +45,9 @@ public final class PhotoRootModel {
     @ObservationIgnored lazy var fileController: FileController = {
         FileController()
     }()
+    @ObservationIgnored lazy var gameController: GameController = {
+        GameController(itemController: itemController, fileUrlDataController: fileController.fileUrlDataController)
+    }()
     @ObservationIgnored lazy var importController: ImportController = {
         ImportController(itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, module: module)
     }()
@@ -86,6 +89,7 @@ extension PhotoRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { cacheController }
     public var editControllable: any EditControllable { editController }
     public var exportControllable: any ExportControllable { exportController }
+    public var gameControllable: any PhotoGameControllable { gameController }
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var linkControllable: any LinkControllable { linkController }

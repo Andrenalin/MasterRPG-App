@@ -5,6 +5,12 @@ import CoreRPG
 import Foundation
 import os.log
 import PdfRPG
+import PhotoRPG
+import TableRPG
+import CharacterRPG
+import SpaceRPG
+import WeatherRPG
+import MapRPG
 
 final class MasterController: Sendable {
     let root: GameRootController
@@ -328,16 +334,16 @@ extension MasterController {
 
     func handleValue(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
-            await root.valueRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
+            await root.characterRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
             return nil
         }
 
         switch model.type {
         case .reveal, .store:
-            return try await root.valueRoot.gameControllable.createGameData(for: model.data.id)
+            return try await root.characterRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
             guard model.gameConfig.type != .observer else { return nil }
-            try await root.valueRoot.gameControllable.updatePlayer(data: model.data)
+            try await root.characterRoot.gameControllable.updatePlayer(data: model.data)
             if let characterId = model.gameConfig.player.characterId {
                 await root.mapRoot.gameControllable.setPlayerPin(for: model.gameConfig.id, name: model.gameConfig.name, characterId: characterId)
             }
@@ -375,7 +381,7 @@ extension MasterController: MasterNetworkProxyControllerDelegate {
     func readyProxy(for connectionId: ConnectionController.ID) async {
         Logger.networking.debug("MasterController: Proxy Ready for \(connectionId, privacy: .public)")
         guard let characterId = await root.gameModel.gameConfig.player.characterId else { return }
-        if let data = try? await root.valueRoot.gameControllable.createGameData(for: characterId) {
+        if let data = try? await root.characterRoot.gameControllable.createGameData(for: characterId) {
             await send(type: .update, subtype: .store, updated: data, connectionId: connectionId)
         }
     }

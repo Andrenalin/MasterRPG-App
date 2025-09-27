@@ -1,5 +1,14 @@
 // @copyright André Trettin
 
+import AudioRPG
+import DiceRPG
+import MapRPG
+import PdfRPG
+import PhotoRPG
+import TableRPG
+import CharacterRPG
+import WeatherRPG
+import SpaceRPG
 import CoreRPG
 import Foundation
 import os.log
@@ -59,7 +68,7 @@ extension PlayerController {
         Logger.networking.debug("PlayerController: Stop")
         await root.networkProxyStore.stopGame()
         await root.networkStore.stopGame()
-        root.adventureRoot.gameControllable.resetGame()
+        //root.adventureRoot.gameControllable.resetGame()
         gameModel.hasSendPlayer = false
     }
     
@@ -418,7 +427,7 @@ extension PlayerController {
         guard model.gameConfig.type == .master else { return nil }
         switch model.type {
         case .reveal:
-            if try await root.valueRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
+            if try await root.characterRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
                 Task { @MainActor in
                     gameModel.gameUpdateType = .value
                 }
@@ -427,25 +436,25 @@ extension PlayerController {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
-            try await root.valueRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
+            try await root.characterRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
             case .generic:
                 if let characterId = await root.gameModel.gameConfig.player.characterId {
                     Task { @MainActor in
-                        await root.valueRoot.gameControllable.addItem(id: model.data.id, data: model.data, for: characterId)
+                        await root.characterRoot.gameControllable.addItem(id: model.data.id, data: model.data, for: characterId)
                     }
                 }
             case .valueResult:
                 if let characterId = await root.gameModel.gameConfig.player.characterId {
                     Task { @MainActor in
-                        await root.valueRoot.gameControllable.add(result: model.data, for: characterId)
+                        await root.characterRoot.gameControllable.add(result: model.data, for: characterId)
                     }
                 }
             default:
                 Task { @MainActor in
-                    if await root.valueRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                    if await root.characterRoot.gameControllable.setCurrent(itemId: model.data.id) {
                         gameModel.gameUpdateType = .value
                     }
                 }
@@ -507,11 +516,11 @@ extension PlayerController {
         case .reveal, .store:
             return nil
         case .update:
-            try await root.valueRoot.gameControllable.updateGame(data: model.data, hide: false, deep: true)
+            try await root.characterRoot.gameControllable.updateGame(data: model.data, hide: false, deep: true)
             let characterId = model.data.id
             Task { @MainActor in
-                _ = await root.valueRoot.gameControllable.setCurrent(itemId: characterId)
-                await root.valueRoot.gameControllable.focus(on: characterId)
+                _ = await root.characterRoot.gameControllable.setCurrent(itemId: characterId)
+                await root.characterRoot.gameControllable.focus(on: characterId)
                 try await Task.sleep(for: .seconds(1))
                 root.gameModel.selectedCharacter = characterId
             }
@@ -531,7 +540,7 @@ extension PlayerController {
         guard await !gameModel.hasSendPlayer && gameType != .observer, let characterId = await root.gameModel.gameConfig.player.characterId else { return }
         await gameModel.reset(sendPlayer: true)
 
-        if let result = try? await root.valueRoot.gameControllable.createGameData(for: characterId) {
+        if let result = try? await root.characterRoot.gameControllable.createGameData(for: characterId) {
             await send(counter: 0, type: .update, subType: .store, updated: result, useJournal: true)
         }
         try? await Task.sleep(for: .seconds(5))

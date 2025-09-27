@@ -40,6 +40,9 @@ public final class DiceRootModel {
     @ObservationIgnored lazy var exportController: ExportController = {
         ExportController(module: module, itemController: itemController, gameExporter: false)
     }()
+    @ObservationIgnored lazy var gameController: GameController = {
+        GameController(itemController: itemController)
+    }()
     @ObservationIgnored lazy var importController: ImportController = {
         ImportController(itemController: itemController, module: module)
     }()
@@ -81,6 +84,7 @@ extension DiceRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var exportControllable: any ExportControllable { exportController }
+    public var gameControllable: any DiceGameStorable { gameController }
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var linkControllable: any LinkControllable { linkController }

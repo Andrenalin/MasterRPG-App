@@ -41,7 +41,10 @@ public final class WeatherRootModel {
         EditController(itemController: itemController)
     }()
     @ObservationIgnored lazy var exportController: ExportController = {
-        ExportController(module: module, itemController: itemController, fileUrlDataController: nil, gameExporter: false)
+        ExportController(module: module, itemController: itemController, gameExporter: false)
+    }()
+    @ObservationIgnored lazy var gameController: GameController = {
+        GameController(itemController: itemController)
     }()
     @ObservationIgnored lazy var importController: ImportController = {
         ImportController(itemController: itemController, module: module)
@@ -84,6 +87,7 @@ extension WeatherRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var exportControllable: any ExportControllable { exportController }
+    public var gameControllable: any WeatherGameStorable { gameController }
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var linkControllable: any LinkControllable { linkController }
