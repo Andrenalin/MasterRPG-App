@@ -54,6 +54,9 @@ public final class ItemDataModel {
     
     @Transient
     private var fileUrl_: FileUrl? = nil
+    
+    @Transient
+    public var players: [UUID] = []
 }
 
 public extension ItemDataModel {
@@ -92,6 +95,8 @@ public extension ItemDataModel {
         category == .folder || category.isCollection
     }
 }
+
+extension ItemDataModel: ItemGameReportable {}
 
 extension ItemDataModel {
     public subscript(id: UUID) -> EntryDataModel {

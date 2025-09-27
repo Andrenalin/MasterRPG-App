@@ -18,6 +18,7 @@ import SwiftUI
 @MainActor
 public struct GameRootFactory {
     public static func rootController(
+        root: RootManager,
         adventureRoot: AdventureRootModel,
         audioRoot: AudioRootModel,
         characterRoot: CharacterRootModel,
@@ -29,7 +30,7 @@ public struct GameRootFactory {
         tableRoot: TableRootModel,
         weatherRoot: WeatherRootModel
     ) -> GameRootController {
-        GameRootController(
+        GameRootController(root: root,
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,
             characterRoot: characterRoot,

@@ -30,28 +30,30 @@ public final class AppModel: Sendable {
     public var isNewUICode: Bool = false
     
     // DB
-    public let modelContainer: ModelContainer
+    @ObservationIgnored public let modelContainer: ModelContainer
 
     // other models
-    public let deviceRotationModel: DeviceRotationModel
-    public let settingsModel: AppSettingsModel
-    public let windowStateModel: WindowStateModel
+    @ObservationIgnored public let deviceRotationModel: DeviceRotationModel
+    @ObservationIgnored public let settingsModel: AppSettingsModel
+    @ObservationIgnored public let windowStateModel: WindowStateModel
     
     // Module roots
-    public let adventureRoot: AdventureRootModel
-    public let audioRoot: AudioRootModel
-    public let characterRoot: CharacterRootModel
-    public let diceRoot: DiceRootModel
-    public let gameRoot: GameRootController
-    public let mapRoot: MapRootModel
-    public let pdfRoot: PdfRootModel
-    public let photoRoot: PhotoRootModel
-    public let spaceRoot: SpaceRootModel
-    public let tableRoot: TableRootModel
-    public let weatherRoot: WeatherRootModel
+    @ObservationIgnored public let adventureRoot: AdventureRootModel
+    @ObservationIgnored public let audioRoot: AudioRootModel
+    @ObservationIgnored public let characterRoot: CharacterRootModel
+    @ObservationIgnored public let diceRoot: DiceRootModel
+    @ObservationIgnored public let gameRoot: GameRootController
+    @ObservationIgnored public let mapRoot: MapRootModel
+    @ObservationIgnored public let pdfRoot: PdfRootModel
+    @ObservationIgnored public let photoRoot: PhotoRootModel
+    @ObservationIgnored public let spaceRoot: SpaceRootModel
+    @ObservationIgnored public let tableRoot: TableRootModel
+    @ObservationIgnored public let weatherRoot: WeatherRootModel
+    
+    private let root: RootManager
 
     // Routing models
-    public let navigator: Navigator
+    @ObservationIgnored public let navigator: Navigator
     var selectedModule: RootRoute? = .game
 
     // Root Controllers
@@ -77,7 +79,34 @@ public final class AppModel: Sendable {
         let mapRoot = MapRootFactory.rootModel(modelContext: modelContainer.mainContext, characterRoot: characterRoot,  diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         let adventureRoot = AdventureRootFactory.rootModel(modelContext: modelContainer.mainContext, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
         
-        let gameRoot = GameRootFactory.rootController(adventureRoot: adventureRoot, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
+        let root = RootManager(
+            adventureRoot: adventureRoot,
+            audioRoot: audioRoot,
+            characterRoot: characterRoot,
+            diceRoot: diceRoot,
+            mapRoot: mapRoot,
+            pdfRoot: pdfRoot,
+            photoRoot: photoRoot,
+            spaceRoot: spaceRoot,
+            tableRoot: tableRoot,
+            weatherRoot: weatherRoot
+        )
+
+        let gameRoot = GameRootFactory.rootController(
+            root: root,
+            adventureRoot: adventureRoot,
+            audioRoot: audioRoot,
+            characterRoot: characterRoot,
+            diceRoot: diceRoot,
+            mapRoot: mapRoot,
+            pdfRoot: pdfRoot,
+            photoRoot: photoRoot,
+            spaceRoot: spaceRoot,
+            tableRoot: tableRoot,
+            weatherRoot: weatherRoot
+        )
+        
+        self.root = root
         
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
@@ -100,19 +129,7 @@ public final class AppModel: Sendable {
             )
         )
         
-        self.linkRootController = LinkRootController(
-            container: modelContainer,
-            adventureRoot: adventureRoot,
-            audioRoot: audioRoot,
-            characterRoot: characterRoot,
-            diceRoot: diceRoot,
-            mapRoot: mapRoot,
-            pdfRoot: pdfRoot,
-            photoRoot: photoRoot,
-            spaceRoot: spaceRoot,
-            tableRoot: tableRoot,
-            weatherRoot: weatherRoot
-        )
+        self.linkRootController = LinkRootController(container: modelContainer, root: root)
     }
     
     @MainActor
@@ -138,6 +155,10 @@ public final class AppModel: Sendable {
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
+    }
+    
+    public subscript(_ module: NetworkModules) -> (any ItemRootControllable)? {
+        root[module]
     }
 }
 
@@ -201,33 +222,13 @@ public extension AppModel {
 
 // MARK: - Routing
 extension AppModel {
-    func rootModel(for module: NetworkModules) -> (any ItemRootControllable)? {
-        switch module {
-        case .adventure: adventureRoot
-        case .audio: audioRoot
-        case .value: characterRoot
-        case .dice: diceRoot
-        case .map: mapRoot
-        case .pdf: pdfRoot
-        case .photo: photoRoot
-        case .space: spaceRoot
-        case .table: tableRoot
-        case .weather: weatherRoot
-        case .editor: nil
-        case .game: nil
-        case .none: nil
-        case .search: nil
-        case .setting: nil
-        }
-    }
-    
     func itemRootController(for module: NetworkModules) -> ItemRootController? {
-        rootModel(for: module)?.rootController
+        root.itemRootController(for: module)
     }
         
     public func resetNavigation() {
         guard let selectedTab: NetworkModules = selectedModule?.module else { return }
-        let itemId: UUID? = rootModel(for: selectedTab)?.currentSelectedItemId
+        let itemId: UUID? = root[selectedTab]?.currentSelectedItemId
         Task {
             try await Task.sleep(for: .milliseconds(150))
             navigator.perform(route: KnownRoutes.route(module: selectedTab, itemId: itemId, entryId: nil))
@@ -251,16 +252,9 @@ extension AppModel {
 extension AppModel {
     func update(items: [ItemDataModel]) {
         Task {
-            await diceRoot.itemControllable.update(items: items.filter { $0.module == .dice })
-            await spaceRoot.itemControllable.update(items: items.filter { $0.module == .space })
-            await audioRoot.itemControllable.update(items: items.filter { $0.module == .audio })
-            await photoRoot.itemControllable.update(items: items.filter { $0.module == .photo })
-            await pdfRoot.itemControllable.update(items: items.filter { $0.module == .pdf })
-            await weatherRoot.itemControllable.update(items: items.filter { $0.module == .weather })
-            await tableRoot.itemControllable.update(items: items.filter { $0.module == .table })
-            await characterRoot.itemControllable.update(items: items.filter { $0.module == .value })
-            await mapRoot.itemControllable.update(items: items.filter { $0.module == .map })
-            await adventureRoot.itemControllable.update(items: items.filter { $0.module == .adventure })
+            for module in [NetworkModules.dice, .space, .audio, .photo, .pdf, .weather, .table, .value, .map, .adventure] {
+                await self.root[module]?.itemControllable.update(items: items.filter { $0.module == module })
+            }
         }
     }
 }

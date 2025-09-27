@@ -39,13 +39,18 @@ extension ItemController: ItemControllable {
         }
     }
 
-    @MainActor func encodedItemData(for id: UUID) throws -> Data? {
+    @MainActor func itemDataCodableModel(id: UUID) -> ItemDataCodableModel? {
         let encoder = JSONEncoder()
         var externalData: Data? = nil
-        if let tableModel = model(for: id)?.codableModel {
-            externalData = try encoder.encode(tableModel)
+        if let ownModel = model(for: id)?.codableModel {
+            externalData = try? encoder.encode(ownModel)
         }
-        let model = itemDataCodableModel(for: id, externalData: externalData)
+        return itemDataCodableModel(for: id, externalData: externalData)
+    }
+    
+    @MainActor func encodedItemData(for id: UUID) throws -> Data? {
+        guard let model = itemDataCodableModel(id: id) else { return nil }
+        let encoder = JSONEncoder()
         return try encoder.encode(model)
     }
     

@@ -104,7 +104,7 @@ struct MockRootViewModifier: ViewModifier {
     }
     
     var linkRootController: LinkRootController {
-        LinkRootController(container: root.itemController.container, adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root, spaceRoot: root, tableRoot: root, weatherRoot: root)
+        LinkRootController(container: root.itemController.container, root: RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root, spaceRoot: root, tableRoot: root, weatherRoot: root))
     }
 }
 

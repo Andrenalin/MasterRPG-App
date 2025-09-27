@@ -133,6 +133,7 @@ extension LinkRootController {
         )
         return LinkRootController(
             container: modelContainer,
+            root: RootManager(
             adventureRoot: fakeRoot,
             audioRoot: fakeRoot,
             characterRoot: fakeRoot,
@@ -143,6 +144,7 @@ extension LinkRootController {
             spaceRoot: fakeRoot,
             tableRoot: fakeRoot,
             weatherRoot: fakeRoot
+            )
         )
     }()
 }

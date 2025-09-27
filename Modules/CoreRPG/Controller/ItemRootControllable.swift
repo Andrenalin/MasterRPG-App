@@ -4,7 +4,7 @@ import Foundation
 import SwiftData
 
 @MainActor
-public protocol ItemRootControllable {
+public protocol ItemRootControllable: Sendable {
     var module: NetworkModules { get }
     var listDisplayModel: ListDisplayModel { get }
     var searchModel: SearchModel { get }

@@ -23,8 +23,11 @@ public protocol ItemControllable: Sendable {
     var container: ModelContainer { get }
     var collectionCategory: ItemListCategory { get }
     
+    @MainActor func itemVersion(for itemId: UUID) -> Int?
     @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel
     @MainActor func encodedItemData(for id: UUID) throws -> Data?
+    @MainActor func itemDataCodableModel(id: UUID) -> ItemDataCodableModel?
+    @MainActor func itemDataCodableModel(for id: UUID, externalData: Data?) -> ItemDataCodableModel?
     func merge(with model: ItemDataCodableModel) async -> ItemDataCodableModel
     @MainActor func replace(model: ItemDataCodableModel?, isInsert: Bool, shouldRepairLinks: Bool)
     @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool)
@@ -57,15 +60,23 @@ public extension ItemControllable {
     @MainActor func allItemIds() -> [UUID] {
         itemCacheModel.itemIds
     }
-
+    
     @MainActor func allItems() -> [ItemDataModel] {
         itemCacheModel.itemIds.compactMap { itemCacheModel.cachedItems[$0] }
     }
-
+    
     @MainActor func item(for id: UUID) -> ItemDataModel? {
         itemCacheModel.cachedItems[id] //?? ItemDataModel.model(modelContext: ModelContext(container), id: id)
     }
     
+    @MainActor func item(for itemId: UUID, version: Int) -> Bool {
+        version == itemVersion(for: itemId)
+    }
+
+    @MainActor func itemVersion(for itemId: UUID) -> Int? {
+        itemCacheModel.cachedItems[itemId] != nil ? 0 : nil
+    }
+
     func collections(isFolder: Bool, in parentId: UUID?) -> [ItemDataModel] {
         let modelContext = ModelContext(container)
         let predicate = #Predicate<ItemDataModel> { $0.parentId == parentId && $0.displayState == 0 }
@@ -83,7 +94,7 @@ public extension ItemControllable {
             modelContext.delete(model)
         }
     }
-
+    
     func fileUrl(for id: UUID) async -> FileUrl? {
         let actor = DataModelActor(modelContainer: container)
         await actor.setup(id: id)
@@ -92,6 +103,10 @@ public extension ItemControllable {
     }
     
     @MainActor func fileUrl(id: UUID, url: URL?) -> FileUrl? { nil }
+    
+    @MainActor func itemDataCodableModel(id: UUID) -> ItemDataCodableModel? {
+        itemDataCodableModel(for: id, externalData: nil)
+    }
     
     @MainActor func itemDataCodableModel(for id: UUID, externalData: Data? = nil) -> ItemDataCodableModel? {
         guard let model = item(for: id) else { return nil }

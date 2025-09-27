@@ -5,48 +5,15 @@ import SwiftData
 
 @MainActor @Observable
 public final class LinkRootController {
-    public init(
-        container: ModelContainer,
-        adventureRoot: any ItemRootControllable,
-        audioRoot: any ItemRootControllable,
-        characterRoot: any ItemRootControllable,
-        diceRoot: any ItemRootControllable,
-        mapRoot: any ItemRootControllable,
-        pdfRoot: any ItemRootControllable,
-        photoRoot: any ItemRootControllable,
-        spaceRoot: any ItemRootControllable,
-        tableRoot: any ItemRootControllable,
-        weatherRoot: any ItemRootControllable
-    ) {
+    public init(container: ModelContainer, root: RootManager) {
         self.container = container
-        self.adventureRoot = adventureRoot
-        self.audioRoot = audioRoot
-        self.characterRoot = characterRoot
-        self.diceRoot = diceRoot
-        self.mapRoot = mapRoot
-        self.pdfRoot = pdfRoot
-        self.photoRoot = photoRoot
-        self.spaceRoot = spaceRoot
-        self.tableRoot = tableRoot
-        self.weatherRoot = weatherRoot
-        
+        self.root = root
         self.linkRegisterController = LinkRegisterController(container: container)
     }
 
-    let container: ModelContainer
+    @ObservationIgnored let container: ModelContainer
     public let module: NetworkModules = .none
-    
-    @ObservationIgnored let adventureRoot: ItemRootControllable
-    @ObservationIgnored let audioRoot: ItemRootControllable
-    @ObservationIgnored let characterRoot: ItemRootControllable
-    @ObservationIgnored let diceRoot: ItemRootControllable
-    @ObservationIgnored let mapRoot: ItemRootControllable
-    @ObservationIgnored let pdfRoot: ItemRootControllable
-    @ObservationIgnored let photoRoot: ItemRootControllable
-    @ObservationIgnored let spaceRoot: ItemRootControllable
-    @ObservationIgnored let tableRoot: ItemRootControllable
-    @ObservationIgnored let weatherRoot: ItemRootControllable
-    
+    @ObservationIgnored let root: RootManager
     public let linkRegisterController: LinkRegisterController
 }
 
@@ -64,7 +31,7 @@ public extension LinkRootController {
 
 extension LinkRootController: LinkControllable {
     public var itemControllable: ItemControllable {
-        adventureRoot.itemControllable
+        root[.adventure]!.itemControllable
     }
     
     @MainActor public func remove(linkModel: LinkDataModel) {
@@ -79,19 +46,7 @@ extension LinkRootController: LinkControllable {
 
 private extension LinkRootController {
     func linkController(for module: NetworkModules) -> LinkControllable {
-        switch module {
-        case .audio: audioRoot.linkControllable
-        case .value: characterRoot.linkControllable
-        case .dice: diceRoot.linkControllable
-        case .map: mapRoot.linkControllable
-        case .pdf: pdfRoot.linkControllable
-        case .photo: photoRoot.linkControllable
-        case .space: spaceRoot.linkControllable
-        case .table: tableRoot.linkControllable
-        case .weather: weatherRoot.linkControllable
-        case .adventure: adventureRoot.linkControllable
-        default: adventureRoot.linkControllable
-        }
+        root[module]!.linkControllable
     }
     
     func brokenTextLinkToggle(url: URL, model: LinkDataModel, in text: String) -> String? {

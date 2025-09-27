@@ -4,6 +4,7 @@ import CoreRPG
 import Foundation
 
 struct LogGameController: Sendable {
+    let root: RootManager
     let gameModel: GameRootModel
     
     @MainActor
@@ -58,38 +59,7 @@ struct LogGameController: Sendable {
     
     @MainActor
     func name(for module: NetworkModules, itemId: UUID) -> String {
-        switch module {
-        case .none:
-            return itemId.uuidString
-//        case .photo:
-//            return root?.photoRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
-//        case .map:
-//            return root?.mapRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
-//        case .table:
-//            return root?.tableRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
-//        case .adventure:
-//            return root?.adventureRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
-//        case .dice:
-//            return root?.diceRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
-//        case .weather:
-//            return root?.weatherRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
-        case .game:
-            return itemId.uuidString
-//        case .value:
-//            return root?.photoRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
-//        case .audio:
-//            return root?.audioRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
-//        case .pdf:
-//            return root?.pdfRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
-//        case .space:
-//            return root?.spaceRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
-        case .setting:
-            return itemId.uuidString
-        case .editor:
-            return itemId.uuidString
-        @unknown default:
-            fatalError()
-        }
+        root[module]?.itemControllable.item(for: itemId)?.name ?? itemId.uuidString
     }
 }
 

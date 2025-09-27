@@ -18,8 +18,10 @@ import SwiftData
 internal import UIKit
 #endif
 
-public struct GameRootController {
-    @MainActor init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, characterRoot: CharacterRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, weatherRoot: WeatherRootModel) {
+public struct GameRootController: Sendable {
+    @MainActor init(root: RootManager, adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, characterRoot: CharacterRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, weatherRoot: WeatherRootModel) {
+        self.gameModel = GameRootModel()
+        self.root = root
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
         self.characterRoot = characterRoot
@@ -30,15 +32,13 @@ public struct GameRootController {
         self.spaceRoot = spaceRoot
         self.tableRoot = tableRoot
         self.weatherRoot = weatherRoot
-        
-        self.gameModel = GameRootModel()
-        
         self.networkStore = NetworkController(name: "Init")
         self.networkProxyStore = NetworkProxyController(name: "Proxy")
         
         //_viewController = ViewController(root: self)
-        //_logGameController = LogGameController(root: self, gameModel: gameModel)
+        self.logGameController = LogGameController(root: root, gameModel: gameModel)
     }
+    let root: RootManager
     let adventureRoot: AdventureRootModel
     let audioRoot: AudioRootModel
     let characterRoot: CharacterRootModel
@@ -50,20 +50,17 @@ public struct GameRootController {
     let tableRoot: TableRootModel
     let weatherRoot: WeatherRootModel
     
-    let gameModel: GameRootModel
-    
+    let logGameController: LogGameController
     let networkStore: NetworkController
     let networkProxyStore: NetworkProxyController
+
+    let gameModel: GameRootModel
     
 //    private(set) var _viewController: ViewController?
 //    public var viewController: ViewController {
 //        _viewController.unsafelyUnwrapped
 //    }
 
-//    private(set) var _logGameController: LogGameController?
-//    var logGameController: LogGameController {
-//        _logGameController.unsafelyUnwrapped
-//    }
 }
 
 
@@ -103,7 +100,7 @@ extension GameRootController {
     @MainActor
     var characterName: String {
         if let selectedCharacter = gameModel.selectedCharacter {
-            return characterRoot.linkControllable.name(for: selectedCharacter)
+            return root[.value]!.linkControllable.name(for: selectedCharacter)
         } else {
             return "Unknown"
         }
@@ -112,7 +109,7 @@ extension GameRootController {
     @MainActor
     var gameMasterName: String {
         if let selectedGameMaster = gameModel.selectedGameMaster {
-            return characterRoot.linkControllable.name(for: selectedGameMaster)
+            return root[.value]!.linkControllable.name(for: selectedGameMaster)
         } else {
             return "Unknown"
         }
