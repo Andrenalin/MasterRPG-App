@@ -1,15 +1,15 @@
 // @copyright André Trettin
 
-import AndrenalinKit
-import RPGDie
+import CoreRPG
+import DiceRPG
 import SwiftUI
-import RPGMaps
+import MapRPG
 
 struct PlayerGameScreen: View {
-    let root: GameRoot
+    let root: GameRootController
     let playerController: PlayerController
     
-    @Environment(\.showGameActions) private var showGameActions
+    //@Environment(\.showGameActions) private var showGameActions
     
     @State private var gameScreenModel = GameScreenModel()
     @State private var infoState: NetworkModules = .none
@@ -23,13 +23,13 @@ struct PlayerGameScreen: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running") { _ in
-                root.mapRoot.viewController.gameMapView(playerId: root.gameModel.gameConfig.id)
-            }
+//            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running") { _ in
+//                root.mapRoot.viewController.gameMapView(playerId: root.gameModel.gameConfig.id)
+//            }
             
             overlayMenu
         }
-        .focusSectionAll()
+//        .focusSectionAll()
         .environment(\.gameModus, .player)
         .alert(Text("Quit Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
             Button {
@@ -129,7 +129,7 @@ private extension PlayerGameScreen {
     }
 
     func endGame() {
-        showGameActions.show(false)
+        //showGameActions.show(false)
         Task { @MainActor in
             await root.stopGame()
         }
@@ -170,7 +170,7 @@ private extension PlayerGameScreen {
 #endif
 }
 
-#Preview {
-    PlayerGameScreen(root: .preview, playerController: PlayerController.preview)
-        .environment(GameScreenModel())
-}
+//#Preview {
+//    PlayerGameScreen(root: .preview, playerController: PlayerController.preview)
+//        .environment(GameScreenModel())
+//}

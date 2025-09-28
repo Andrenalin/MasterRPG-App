@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 struct DiceGameActionBar: View {
@@ -11,7 +11,7 @@ struct DiceGameActionBar: View {
 
     @State private var diceRollResult: Bool = false
     
-    @Environment(DiceRoot.self) private var root
+    @Environment(DiceRootModel.self) private var root
     @Environment(DiceDisplayModel.self) var diceDisplayModel
     
     @Environment(\.gameModus) private var gameModus
@@ -30,11 +30,12 @@ struct DiceGameActionBar: View {
 #if !os(tvOS)
                     .buttonStyle(.borderedProminent)
 #endif
-                    .disabled(!root.gameController.canEditDice(itemId: itemId, isGameMode: gameModus != .edit))
-                    .opacity(root.gameController.canEditDice(itemId: itemId, isGameMode: gameModus != .edit) ? 1 : 0.5)
-                    .onChange(of: root.gameController.gameItem(for: itemId).entries) {
-                        diceRollResult = root.gameController.result(itemId: itemId).checked
-                    }
+//                    .disabled(!root.gameController.canEditDice(itemId: itemId, isGameMode: gameModus != .edit))
+//                    .opacity(root.gameController.canEditDice(itemId: itemId, isGameMode: gameModus != .edit) ? 1 : 0.5)
+//                    .onChange(of: root.gameController.gameItem(for: itemId).entries) {
+//                        diceRollResult = true
+//                        //diceRollResult = root.gameController.result(itemId: itemId).checked
+//                    }
 #if !os(visionOS)
                     .sensoryFeedback(diceRollResult ? .success : .error, trigger: diceRollResult)
 #endif
@@ -43,7 +44,7 @@ struct DiceGameActionBar: View {
                         if diceDisplayModel.isEditing {
                             withAnimation { diceDisplayModel.isEditing = false }
                         }
-                        withAnimation { root.gameController.rollDice(itemId: itemId, networkActions: networkActions) }
+                       withAnimation { root.gameController.rollDice(itemId: itemId, networkActions: networkActions) }
                     } label: {
                         Image(systemName: diceIcon)
                             .contentTransition(.symbolEffect(.replace.wholeSymbol))
@@ -95,12 +96,11 @@ struct DiceGameActionBar: View {
     }
     
     var diceIcon: String {
-        root.gameController.hasResults(itemId: itemId) ? root.itemController.itemDataModel.networkModule.icon + ".fill" : root.itemController.itemDataModel.networkModule.icon
+        root.gameController.hasResults(itemId: itemId) ? root.itemController.module.icon + ".fill" : root.itemController.module.icon
     }
 }
 
-#Preview {
-    DiceGameActionBar(itemId: DiceModel.previewId, showFocusButton: true, canShowPlayer: false, hideOwnDice: true)
-        .environment(DiceRoot.preview)
+#Preview(traits: .mockData) {
+    DiceGameActionBar(itemId: MockData.previewId, showFocusButton: true, canShowPlayer: false, hideOwnDice: false)
         .environment(DiceDisplayModel())
 }

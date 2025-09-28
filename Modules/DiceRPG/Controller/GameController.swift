@@ -10,6 +10,8 @@ import os.log
 final class DiceGameModel: Sendable {
     init() {}
     
+    var itemData: [UUID: DiceModel] = [:]
+    
     let audioPlayer: AVPlayer = AVPlayer()
     var hiddenPlayers: [String] = []
     var playerDice: [DiceModel] = []
@@ -31,9 +33,14 @@ public protocol DiceGameStorable: GameControllable {
     @MainActor func number(for diceId: UUID, result: String) -> Int
     @MainActor func validateForValue(diceId: UUID, compareValue: Int?)
     @MainActor func resetPlayerDice(to playerIds: [String])
+    
+    @MainActor func isPlayerDice(itemId: UUID) -> Bool
+    @MainActor func canEditDice(itemId: UUID, isGameMode: Bool) -> Bool
+    @MainActor func hasResults(itemId: UUID) -> Bool
+    @MainActor func resetCompareValue(of itemId: UUID, value: Int) async
 }
 
-struct GameController: Sendable {
+public struct GameController: Sendable {
     @MainActor
     init(itemController: ItemController) {
         self.itemController = itemController
@@ -48,30 +55,41 @@ struct GameController: Sendable {
     let importController: ImportController
     let exportController: ExportController
     
-    let gameModel: ItemGameModel
+    public let gameModel: ItemGameModel
     let diceGameModel: DiceGameModel
 }
 
 extension GameController: GameControllable {
-    var itemControllable: any ItemControllable {
+    public var itemControllable: any ItemControllable {
         itemController as (any ItemControllable)
     }
-    var exportControllable: any ExportControllable {
+    public var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    var importControllable: any ImportControllable {
+    public var importControllable: any ImportControllable {
         importController as ImportControllable
     }
     
     @MainActor
-    func resetGameState() {
+    public func resetGameState() {
         diceGameModel.reset()
+    }
+}
+
+extension GameController {
+    @MainActor func model(itemId: UUID) -> DiceModel {
+        if let model = diceGameModel.itemData[itemId] {
+            return model
+        }
+        guard let item = gameItem(for: itemId), let model = try? itemController.decodedModel(codableModel: item) else { return DiceModel.empty(itemId) }
+        diceGameModel.itemData[itemId] = model
+        return model
     }
 }
 
 extension GameController: DiceGameStorable {
     @discardableResult @MainActor
-    func addGameDiceResult(data: NetworkCodableDataType, name: String, isGameMaster: Bool) -> (String?, ResultCategory?) {
+    public func addGameDiceResult(data: NetworkCodableDataType, name: String, isGameMaster: Bool) -> (String?, ResultCategory?) {
         guard let diceResult = DiceResultModel.decodeData(of: data.data) else { return (nil, nil) }
         var dice = diceResult.diceModel
 //        dice.id = UUID()
@@ -107,7 +125,7 @@ extension GameController: DiceGameStorable {
         return NetworkCodableDataType(id: itemId, type: .dice, version: 0, data: nil)
     }
     
-    func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType {
+    public func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType {
         let saveTask = Task { @MainActor in
             let nilResult: ResultCategory? = nil
             guard let model = await itemControllable.item(for: itemId) as? DiceModel else { return nilResult }
@@ -126,7 +144,7 @@ extension GameController: DiceGameStorable {
     }
     
     @MainActor
-    func createGameDice(for diceId: UUID, gameDiceId: UUID?) -> UUID {
+    public func createGameDice(for diceId: UUID, gameDiceId: UUID?) -> UUID {
         if let gameDiceId, gameModel.itemData[gameDiceId] != nil {
             return gameDiceId
         }
@@ -138,7 +156,7 @@ extension GameController: DiceGameStorable {
     }
     
     @MainActor
-    func setFocusDice(on diceId: UUID?) {
+    public func setFocusDice(on diceId: UUID?) {
         Task {
             if let diceId {
                 await focus(on: diceId)
@@ -151,7 +169,7 @@ extension GameController: DiceGameStorable {
         }
     }
     
-    func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws {
+    public func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws {
         try await updateGame(data: data, hide: hide, deep: false)
         if focus {
             let saveTask = Task { @MainActor in
@@ -166,7 +184,7 @@ extension GameController: DiceGameStorable {
     }
     
     @MainActor
-    func number(for diceId: UUID, result: String) -> Int {
+    public func number(for diceId: UUID, result: String) -> Int {
 //        let dice = gameItem(for: diceId)
 //        dice.applyResult(text: result)
 //        setGame(item: dice, itemId: dice.id)
@@ -175,7 +193,7 @@ extension GameController: DiceGameStorable {
     }
     
     @MainActor
-    func validateForValue(diceId: UUID, compareValue: Int?) {
+    public func validateForValue(diceId: UUID, compareValue: Int?) {
         guard let compareValue, compareValue > 0 else { return }
         let validatedCompareValue = Double(compareValue)
         let model = gameItem(for: diceId)
@@ -184,7 +202,7 @@ extension GameController: DiceGameStorable {
     }
     
     @MainActor
-    func resetPlayerDice(to playerNames: [String]) {
+    public func resetPlayerDice(to playerNames: [String]) {
 //        diceGameModel.playerDice = playerNames.compactMap { name in
 //            diceGameModel.playerDice.first { $0.name == name }
 //        }
@@ -195,12 +213,11 @@ extension GameController: DiceGameStorable {
 
 extension GameController {
     @MainActor
-    func canEditDice(itemId: UUID, isGameMode: Bool) -> Bool {
+    public func canEditDice(itemId: UUID, isGameMode: Bool) -> Bool {
         !isGameMode || gameItem(for: itemId)?.category != .table
     }
     
-    @MainActor
-    func hasResults(itemId: UUID) -> Bool {
+    @MainActor public func hasResults(itemId: UUID) -> Bool {
         guard let item = gameItem(for: itemId) else { return false }
         return false
         //!item.entries.flatMap { $0.result }.isEmpty
@@ -212,7 +229,7 @@ extension GameController {
     }
     
     @MainActor
-    func isPlayerDice(itemId: UUID) -> Bool {
+    public func isPlayerDice(itemId: UUID) -> Bool {
         gameModel.focusItemIds.isEmpty && gameModel.items.contains(where: { $0 == itemId })
     }
     
@@ -234,8 +251,7 @@ extension GameController {
 }
 
 extension GameController {
-    @MainActor
-    func resetCompareValue(of itemId: UUID, value: Int) async {
+    @MainActor public func resetCompareValue(of itemId: UUID, value: Int) async {
         guard let item = gameItem(for: itemId) else { return } //.copy()
 //        guard item.compareValue != Double(value) else { return }
 //        item.compareValue = Double(value)

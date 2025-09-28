@@ -29,6 +29,13 @@ extension ItemController: ItemControllable {
             return ConverterController.convert(old: oldModel)
         }
     }
+    
+    @MainActor func decodedModel(codableModel: ItemDataCodableModel) throws -> DiceModel? {
+        guard let externalData = codableModel.externalData else { return nil }
+        let decoder = JSONDecoder()
+        let diceDataModel = try? decoder.decode(DiceDataModel.DiceDataModelCodable.self, from: externalData)
+        return DiceModel(id: codableModel.id, name: codableModel.name, description: codableModel.information, tags: CRDT<[String]>(wrappedValue: codableModel.tags), category: CRDT<ItemListCategory>(wrappedValue: codableModel.category), dice: CRDTDataUpdate<[DieModel]>(wrappedValue: []))
+    }
 
     @MainActor func itemDataCodableModel(id: UUID) -> ItemDataCodableModel? {
         let encoder = JSONEncoder()

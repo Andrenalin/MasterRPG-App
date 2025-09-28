@@ -1,16 +1,16 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 struct DiceOverlay: View {
-    let item: ItemRowTreeModel
+    let item: ItemRowModel
     var showFocusButton = true
     var canShowPlayer = true
     var hideOwnDice = false
     var alignIsVertical = true
 
-    @Environment(DiceRoot.self) private var root
+    @Environment(DiceRootModel.self) private var root
 
     @Environment(\.gameModus) private var gameModus
     @Environment(\.networkActions) private var networkActions
@@ -19,7 +19,7 @@ struct DiceOverlay: View {
     @State private var overlayHeight: CGFloat = 100
 
     var itemId: UUID {
-        item.model.entryId ?? item.model.itemId
+        item.entryId ?? item.itemId
     }
 
     var body: some View {
@@ -70,7 +70,7 @@ struct DiceOverlay: View {
                 DiceInlineEditor(itemId: itemId)
             } else {
                 if !diceDisplayModel.showDiceValueEditor {
-                    DiceRoll(itemId: itemId)
+                    //DiceRoll(itemId: itemId)
                 }
             }
         }
@@ -79,15 +79,14 @@ struct DiceOverlay: View {
     @ViewBuilder
     private var playerDiceView: some View {
         if canShowPlayer && diceDisplayModel.showPlayerDice {
-            DicePlayer(filterout: itemId, alignment: .leading)
+            //DicePlayer(filterout: itemId, alignment: .leading)
         }
     }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     ZStack(alignment: .topLeading) {
-        DiceOverlay(item: .preview)
-            .environment(DiceRoot.preview)
+        DiceOverlay(item: ItemRowModel(itemId: MockData.previewId, typeId: .dice))
             .environment(\.gameModus, .master)
             .environment(DiceDisplayModel())
     }

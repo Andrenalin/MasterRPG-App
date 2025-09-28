@@ -1,18 +1,18 @@
 // @copyright André Trettin
 
-import AndrenalinKit
-import RPGDie
+import AdventureRPG
+import CharacterRPG
+import CoreRPG
+import DiceRPG
+import MapRPG
 import SwiftUI
-import RPGMaps
-import RPGValues
-import RPGAdventures
 
 struct MasterGameScreen: View {
-    let root: GameRoot
+    let root: GameRootController
     let playerController: PlayerController
     let adventureId: UUID
     
-    @Environment(\.showGameActions) private var showGameActions
+    //@Environment(\.showGameActions) private var showGameActions
 
     @State private var gameScreenModel = GameScreenModel()
     @State private var infoState: NetworkModules = .none
@@ -26,20 +26,20 @@ struct MasterGameScreen: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object") { mapId in
-                root.mapRoot.viewController.gameMasterMapView(id: mapId)
-            }
+//            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object") { mapId in
+//                //root.mapRoot.viewController.gameMasterMapView(id: mapId)
+//            }
             
             overlayMenu
         }
         .environment(\.gameModus, .master)
-        .environment(\.mapActions, root.mapRoot.mapActions)
-        .environment(\.valueActions, root.valueRoot.valueActions)
+        //.environment(\.mapActions, root.mapRoot.mapActions)
+//        .environment(\.valueActions, root.valueRoot.valueActions)
         .overlay(alignment: .center) {
             if gameScreenModel.showExport {
-                ExportProgressFile(exportController: root.adventureRoot.gameControllable.rootExportControllable, showExport: $gameScreenModel.showExport) {
-                    root.saveGame()
-                }
+//                ExportProgressFile(exportController: root.adventureRoot.gameControllable.rootExportControllable, showExport: $gameScreenModel.showExport) {
+//                    root.saveGame()
+//                }
             }
         }
         .alert(Text("Save Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
@@ -153,7 +153,7 @@ private extension MasterGameScreen {
     }
     
     func endGame() {
-        showGameActions.show(false)
+        //showGameActions.show(false)
         Task {
             await root.stopGame()
         }
@@ -197,11 +197,11 @@ private extension MasterGameScreen {
 #endif
 }
 
-#Preview("iPad") {
-    MasterGameScreen(root: .preview, playerController: .preview, adventureId: UUID())
-        .environment(\.wideMode, .small)
-    //.frame(width: 800)
-}
+//#Preview("iPad") {
+//    MasterGameScreen(root: .preview, playerController: .preview, adventureId: UUID())
+//        .environment(\.wideMode, .small)
+//    //.frame(width: 800)
+//}
 
 //#Preview("iPhone") {
 //    MasterGameScreen(root: .preview, playerController: .preview, adventureId: UUID())

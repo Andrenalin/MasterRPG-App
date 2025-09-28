@@ -1,5 +1,6 @@
+// @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 @Observable

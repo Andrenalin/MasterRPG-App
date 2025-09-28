@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 struct DiceGameResult: View {
@@ -8,7 +8,7 @@ struct DiceGameResult: View {
     let canShowPlayer: Bool
     let isTrailing: Bool
 
-    @Environment(DiceRoot.self) private var root
+    @Environment(DiceRootModel.self) private var root
 
     @Environment(\.gameModus) private var gameModus
     @Environment(\.networkActions) private var networkActions
@@ -34,27 +34,26 @@ struct DiceGameResult: View {
 
     @ViewBuilder
     private var resultView: some View {
-        if root.gameController.gameItem(for: itemId).sumUp || root.gameController.gameItem(for: itemId).compareOption != .off {
-            Button {
-                if gameModus != .edit && root.gameController.canEditDice(itemId: itemId, isGameMode: true){
-                    diceDisplayModel.showDiceValueEditor.toggle()
-                    diceDisplayModel.showPlayerDice = !diceDisplayModel.showDiceValueEditor
-                    diceDisplayModel.isEditing <=> false
-                }
-            } label: {
-                Label("\(root.gameController.resultText(itemId: itemId).markDown())", systemImage: root.gameController.result(itemId: itemId).checked ? "checkmark" : "xmark")
-            }
-#if !os(tvOS)
-            .buttonStyle(.borderedProminent)
-#endif
-        }
+//        if root.gameController.gameItem(for: itemId).sumUp || root.gameController.gameItem(for: itemId).compareOption != .off {
+//            Button {
+//                if gameModus != .edit && root.gameController.canEditDice(itemId: itemId, isGameMode: true){
+//                    diceDisplayModel.showDiceValueEditor.toggle()
+//                    diceDisplayModel.showPlayerDice = !diceDisplayModel.showDiceValueEditor
+//                    diceDisplayModel.isEditing <=> false
+//                }
+//            } label: {
+//                Label("\(root.gameController.resultText(itemId: itemId).markDown())", systemImage: root.gameController.result(itemId: itemId).checked ? "checkmark" : "xmark")
+//            }
+//#if !os(tvOS)
+//            .buttonStyle(.borderedProminent)
+//#endif
+//        }
     }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     ZStack(alignment: .topLeading) {
-        DiceGameResult(itemId: DiceModel.previewId, canShowPlayer: true, isTrailing: false)
-            .environment(DiceRoot.preview)
+        DiceGameResult(itemId: MockData.previewId, canShowPlayer: true, isTrailing: false)
             .environment(\.gameModus, .master)
             .environment(DiceDisplayModel())
     }

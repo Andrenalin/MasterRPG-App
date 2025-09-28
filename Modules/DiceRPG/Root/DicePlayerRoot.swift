@@ -1,10 +1,10 @@
 // @copyright André Trettin
 
 import SwiftUI
-import AndrenalinKit
+import CoreRPG
 
 struct DicePlayerRoot: View {
-    @Environment(DiceRoot.self) private var root
+    @Environment(DiceRootModel.self) private var root
 
     @State private var showPlayerDice = true
 
@@ -14,7 +14,7 @@ struct DicePlayerRoot: View {
                 withAnimation { showPlayerDice.toggle()
                 }
             } label: {
-                Image(systemName: root.itemController.itemDataModel.networkModule.icon)
+                Image(systemName: root.itemController.module.icon)
             }
             .buttonStyle(.borderedProminent)
 
@@ -25,7 +25,6 @@ struct DicePlayerRoot: View {
     }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     DicePlayerRoot()
-        .environment(DiceRoot.preview)
 }

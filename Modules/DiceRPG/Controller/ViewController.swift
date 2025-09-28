@@ -28,3 +28,26 @@ public extension ViewController {
             .environment(root)
     }
 }
+
+
+public extension ViewController {
+    func diceRollView() -> some View {
+        DiceFocusRoll()
+    }
+
+    func diceActionBarView() -> some View {
+        DiceFocusActionBar()
+    }
+
+    func diceResultView() -> some View {
+        DiceFocusResult()
+    }
+
+    func dicePlayerView() -> some View {
+        DicePlayerRoot()
+    }
+
+    func overlayGameView(hideDice: Bool) -> some View {
+        RootDiceOverlay(hideDice: hideDice)
+    }
+}

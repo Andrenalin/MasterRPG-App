@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 @Observable
@@ -17,12 +17,12 @@ public final class DiceDisplayModel {
 }
 
 struct DiceFocusRoll: View {
-    @Environment(DiceRoot.self) private var root
+    @Environment(DiceRootModel.self) private var root
 
     @State private var itemId = UUID()
     
     var body: some View {
-        DiceOverlay(item: ItemRowTreeModel(itemId: itemId, typeId: root.itemController.itemDataModel.networkModule), showFocusButton: false, canShowPlayer: false, hideOwnDice: false, alignIsVertical: false)
+        DiceOverlay(item: ItemRowModel(itemId: itemId, typeId: root.itemController.module), showFocusButton: false, canShowPlayer: false, hideOwnDice: false, alignIsVertical: false)
             .onChange(of: root.gameController.gameModel.focusItemIds, initial: true) {
                 withAnimation { itemId <=> root.gameController.gameModel.focusItemIds.first ?? UUID() }
             }
@@ -30,7 +30,7 @@ struct DiceFocusRoll: View {
 }
 
 struct DiceFocusActionBar: View {
-    @Environment(DiceRoot.self) private var root
+    @Environment(DiceRootModel.self) private var root
 
     @State private var itemId = UUID()
 
@@ -43,7 +43,7 @@ struct DiceFocusActionBar: View {
 }
 
 struct DiceFocusResult: View {
-    @Environment(DiceRoot.self) private var root
+    @Environment(DiceRootModel.self) private var root
 
     @State private var itemId = UUID()
 
@@ -56,8 +56,8 @@ struct DiceFocusResult: View {
 }
 
 
-#Preview {
-    DiceFocusRoll()
-        .environment(DiceRoot.previewWithData)
-}
-
+//#Preview {
+//    DiceFocusRoll()
+//        .environment(DiceRoot.previewWithData)
+//}
+//

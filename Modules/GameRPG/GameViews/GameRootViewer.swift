@@ -1,16 +1,17 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
+import MapRPG
+import PdfRPG
+import PhotoRPG
+import SpaceRPG
 import SwiftUI
-import RPGMaps
-import RPGWeathers
-import RPGTables
-import RPGSpaces
-import RPGPhotos
-import RPGPdfs
+import TableRPG
+import WeatherRPG
+
 
 struct GameRootViewer<MapContent: View>: View {
-    let root: GameRoot
+    let root: GameRootController
     let playerController: PlayerController
     let emptyTitle: LocalizedStringKey
     let mapContentView: (UUID) -> MapContent
@@ -58,29 +59,29 @@ struct GameRootViewer<MapContent: View>: View {
     @MainActor @ViewBuilder
     private func otherViews<Content: View>(@ViewBuilder defaultContentView: () -> Content) -> some View {
         switch playerController.gameModel.gameUpdateType {
-            case .pdf:
-                root.pdfRoot.viewController.gamePdfView()
-                    .id(root.pdfRoot.gameControllable.gameModel.currentItemId ?? UUID())
-            case .photo:
-                root.photoRoot.viewController.gamePhotoView()
-                    .id(root.photoRoot.gameControllable.gameModel.currentItemId ?? UUID())
-            case .space:
-                root.spaceRoot.viewController.gameSpaceView()
-                    .id(root.spaceRoot.gameControllable.gameModel.currentItemId ?? UUID())
-            case .table:
-                root.tableRoot.viewController.gameTableView()
-                    .id(root.tableRoot.gameControllable.gameModel.currentItemId ?? UUID())
-            case .weather:
-                root.weatherRoot.viewController.gameWeatherView()
-                    .id(root.weatherRoot.gameControllable.gameModel.currentItemId ?? UUID())
+//            case .pdf:
+//                root.pdfRoot.viewController.gamePdfView()
+//                    .id(root.pdfRoot.gameControllable.gameModel.currentItemId ?? UUID())
+//            case .photo:
+//                root.photoRoot.viewController.gamePhotoView()
+//                    .id(root.photoRoot.gameControllable.gameModel.currentItemId ?? UUID())
+//            case .space:
+//                root.spaceRoot.viewController.gameSpaceView()
+//                    .id(root.spaceRoot.gameControllable.gameModel.currentItemId ?? UUID())
+//            case .table:
+//                root.tableRoot.viewController.gameTableView()
+//                    .id(root.tableRoot.gameControllable.gameModel.currentItemId ?? UUID())
+//            case .weather:
+//                root.weatherRoot.viewController.gameWeatherView()
+//                    .id(root.weatherRoot.gameControllable.gameModel.currentItemId ?? UUID())
             default:
                 defaultContentView()
             }
     }
 }
 
-#Preview {
-    GameRootViewer(root: .preview, playerController: .preview, emptyTitle: "Hello RPG world") { id in
-        Text(id.uuidString)
-    }
-}
+//#Preview {
+//    GameRootViewer(root: .preview, playerController: .preview, emptyTitle: "Hello RPG world") { id in
+//        Text(id.uuidString)
+//    }
+//}

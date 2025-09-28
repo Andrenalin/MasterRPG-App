@@ -158,14 +158,14 @@ extension RPGSharePlayController {
             for await session in RPGActivity.sessions() {
                 Logger.sharePlay.debug("Session \(session.description, privacy: .public) state: \(self.printState(), privacy: .public)")
 
-                #if os(visionOS)
-                guard let systemCoordinator = await session.systemCoordinator else { continue }
-
-                var configuration = SystemCoordinator.Configuration()
-                configuration.supportsGroupImmersiveSpace = true
-//                configuration.spatialTemplatePreference = .sideBySide.contentExtent(200)
-                systemCoordinator.configuration = configuration
-                #endif
+//                #if os(visionOS)
+//                guard let systemCoordinator = await session.systemCoordinator else { continue }
+//
+//                var configuration = SystemCoordinator.Configuration()
+//                configuration.supportsGroupImmersiveSpace = true
+////                configuration.spatialTemplatePreference = .sideBySide.contentExtent(200)
+//                systemCoordinator.configuration = configuration
+//                #endif
 
                 self.configureGroupSession(session)
             }

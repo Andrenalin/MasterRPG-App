@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 struct DiceQuickEditor: View {
@@ -12,7 +12,7 @@ struct DiceQuickEditor: View {
     let itemId: UUID
     let action: (Int) async -> Void
 
-    @Environment(DiceRoot.self) private var root
+    @Environment(DiceRootModel.self) private var root
 
     @State private var value: String = ""
     @FocusState private var isFocused: Bool
@@ -62,9 +62,9 @@ struct DiceQuickEditor: View {
         }
         .rowEditColor(backgroundColor: .blue)
         .frame(width: valueFor(iOS: 265, macOS: 265, tvOS: 265, visionOS: 325))
-        .onChange(of: root.gameController.gameItem(for: itemId).compareValue, initial: true) {
-            value = String("\(Int(root.gameController.gameItem(for: itemId).compareValue))")
-        }
+//        .onChange(of: root.gameController.gameItem(for: itemId)?.compareValue, initial: true) {
+//            value = String("\(Int(root.gameController.gameItem(for: itemId)?.compareValue))")
+//        }
         .onAppear {
 #if !os(visionOS)
             isFocused = true
@@ -86,5 +86,11 @@ struct DiceQuickEditor: View {
                 QuickEditorButtonView(number: valueIntBinding, value: value, title: "\(value)", isAddition: true)
             }
         }
+    }
+}
+
+#Preview(traits: .mockData) {
+    DiceQuickEditor(itemId: MockData.previewId) { value in
+        print(value)
     }
 }

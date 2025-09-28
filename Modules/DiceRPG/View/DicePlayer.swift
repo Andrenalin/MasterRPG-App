@@ -1,13 +1,13 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
-import AndrenalinKit
 
 struct DicePlayer: View {
     let filterout: UUID
     let alignment: HorizontalAlignment
 
-    @Environment(DiceRoot.self) private var root
+    @Environment(DiceRootModel.self) private var root
     @Environment(DiceDisplayModel.self) var diceDisplayModel
 
     public var body: some View {
@@ -55,11 +55,11 @@ struct DicePlayer: View {
                 .truncationMode(.head)
                 .font(.footnote)
 
-            if root.gameController.gameItem(for: playerId).sumUp || root.gameController.gameItem(for: playerId).compareOption != .off {
-                Label("\(root.gameController.resultText(itemId: playerId).markDown())", systemImage: root.gameController.result(itemId: playerId).checked ? "checkmark" : "xmark")
-                    .font(.footnote)
-                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
-            }
+//            if root.gameController.gameItem(for: playerId).sumUp || root.gameController.gameItem(for: playerId).compareOption != .off {
+//                Label("\(root.gameController.resultText(itemId: playerId).markDown())", systemImage: root.gameController.result(itemId: playerId).checked ? "checkmark" : "xmark")
+//                    .font(.footnote)
+//                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
+//            }
 
             if diceDisplayModel.isEditing {
                 Image(systemName: root.gameController.isPlayerHidden(playerId: playerId) ? "plus.circle" : "x.circle.fill")
@@ -70,7 +70,7 @@ struct DicePlayer: View {
     }
 
     private func playerName(playerId: UUID) -> String {
-        let name = root.gameController.gameItem(for: playerId).name
+        let name = root.gameController.gameItem(for: playerId)?.name.wrappedValue ?? ""
         if let firstName = name.split(separator: " ").first {
             return String(firstName)
         }
@@ -79,27 +79,27 @@ struct DicePlayer: View {
 
     private func playerDice(playerId: UUID) -> some View {
         HStack(alignment: .top, spacing: 0) {
-            ForEach(root.gameController.gameItem(for: playerId).entries) { die in
-                VStack {
-                    DieViewerView(gameController: root.gameController, diceId: playerId, die: die, withoutResult: false, resultColor: resultColor(for: die.id, playerId: playerId))
-                        .padding(4)
-                    Spacer()
-                }
-                .frame(height: root.viewController.height(for: root.gameController.gameItem(for: playerId)))
-            }
+//            ForEach(root.gameController.gameItem(for: playerId).entries) { die in
+//                VStack {
+//                    DieViewerView(gameController: root.gameController, diceId: playerId, die: die, withoutResult: false, resultColor: resultColor(for: die.id, playerId: playerId))
+//                        .padding(4)
+//                    Spacer()
+//                }
+//                .frame(height: root.viewController.height(for: root.gameController.gameItem(for: playerId)))
+//            }
         }
     }
 
     private func resultColor(for dieId: UUID, playerId: UUID) -> [Bool] {
-        let result = root.gameController.diceSuccess(for: playerId)
-        guard let colors = result.first(where: { $0.0 == dieId }) else { return [] }
-        return colors.1
+        []
+//        let result = root.gameController.diceSuccess(for: playerId)
+//        guard let colors = result.first(where: { $0.0 == dieId }) else { return [] }
+//        return colors.1
     }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     @Previewable @State var isEditing: Bool = false
-    DicePlayer(filterout: DiceModel.previewId, alignment: .leading)
-        .environment(DiceRoot.preview)
+    DicePlayer(filterout: MockData.previewId, alignment: .leading)
         .environment(DiceDisplayModel())
 }

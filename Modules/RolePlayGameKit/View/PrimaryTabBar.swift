@@ -5,14 +5,12 @@ import CoreRPG
 import SwiftUI
 
 struct PrimaryTabBar: View {
-    @Binding var selectedTab: RootRoute
-
     @Namespace private var hoverEffectNameSpace
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(RootRoute.allTabs) { tab in
-                SecondaryTabBarButton(selectedTab: $selectedTab, tab: tab, hoverGroup: HoverEffectGroup(hoverEffectNameSpace))
+                SecondaryTabBarButton(tab: tab, hoverGroup: HoverEffectGroup(hoverEffectNameSpace))
             }
         }
         .padding(12)
@@ -29,14 +27,15 @@ struct PrimaryTabBar: View {
 }
 
 struct SecondaryTabBarButton: View {
-    @Binding var selectedTab: RootRoute
     let tab: RootRoute
     let hoverGroup: HoverEffectGroup?
+    @Environment(AppModel.self) var appModel
+
     
     var body: some View {
         Button {
             withAnimation {
-                selectedTab = tab
+                appModel.selectedModule = tab
             }
         } label: {
             HStack(spacing: 12) {
@@ -46,8 +45,8 @@ struct SecondaryTabBarButton: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(BarButtonWithHoverEffectStyle(isSelected: selectedTab == tab, hoverGroup: hoverGroup))
-        .hoverEffect(.lift, isEnabled: selectedTab == tab)
+        .buttonStyle(BarButtonWithHoverEffectStyle(isSelected: appModel.selectedModule == tab, hoverGroup: hoverGroup))
+        .hoverEffect(.lift, isEnabled: appModel.selectedModule == tab)
 
     }
     
@@ -128,7 +127,7 @@ struct FadeEffect: CustomHoverEffect {
     TabView {
         Tab("Adventure", systemImage: "photo") {
             VStack(alignment: .leading) {
-                PrimaryTabBar(selectedTab: $otherSplitTab)
+                PrimaryTabBar()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

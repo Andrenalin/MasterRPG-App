@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 //#if !os(tvOS)
@@ -17,24 +17,23 @@ import SwiftUI
 struct RootDiceOverlay: View {
     let hideDice: Bool
 
-    @Environment(DiceRoot.self) private var root
+    @Environment(DiceRootModel.self) private var root
 
     @State private var itemId: UUID = UUID()
 
     var body: some View {
-        DiceOverlay(item: ItemRowTreeModel(itemId: itemId, typeId: root.itemController.itemDataModel.networkModule), showFocusButton: false, hideOwnDice: valueFor(iOS: false, macOS: false, tvOS: false, visionOS: true))
+        DiceOverlay(item: ItemRowModel(itemId: itemId, typeId: root.itemController.module), showFocusButton: false, hideOwnDice: valueFor(iOS: false, macOS: false, tvOS: false, visionOS: true))
         .onChange(of: root.gameController.gameModel.focusItemIds, initial: true) {
             withAnimation { itemId <=> root.gameController.gameModel.focusItemIds.first ?? UUID() }
         }
     }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     Color.red.opacity(0.3).ignoresSafeArea()
         .overlay {
             RootDiceOverlay(hideDice: false)
         }
-        .environment(DiceRoot.previewWithData)
         .environment(\.gameModus, .player)
         .environment(DiceDisplayModel())
 }

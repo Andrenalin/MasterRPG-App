@@ -1,13 +1,12 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 struct GameRootView<Content: View>: View {
-    let root: GameRoot
+    let root: GameRootController
     let rootView: () -> Content
 
-    @Environment(\.wideMode) private var wideMode
     @Environment(AppSettingsModel.self) private var settingsModel
     @Environment(\.colorScheme) private var colorScheme
 
@@ -25,7 +24,7 @@ struct GameRootView<Content: View>: View {
             }
         }
         .onChange(of: root.gameModel.gameConfig.state, initial: true) {
-            settingsModel.showGame <=> root.gameModel.gameConfig.state == .started
+//            settingsModel.showGame <=> root.gameModel.gameConfig.state == .started
             if root.gameModel.gameConfig.state == .started {
                 settingsModel.gameModus = root.gameModel.gameConfig.isMaster ? .master : .player
             } else {
@@ -42,7 +41,7 @@ struct GameRootView<Content: View>: View {
                 PlayerGameScreen(root: root, playerController: root.gameModel.playerController!)
             }
         }
-        .environment(\.networkActions, root.networkActions())
+        //.environment(\.networkActions, root.networkActions())
 #if os(iOS)
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
@@ -53,11 +52,9 @@ struct GameRootView<Content: View>: View {
     }
 }
 
-#Preview {
-    GameRootView(root: .preview) {
-        Text("Root View")
-    }
-    .environment(\.wideMode, .small)
-    .environment(AppSettingsModel())
-    .environment(SelectionSheetLinkModel())
-}
+//#Preview {
+//    GameRootView(root: .preview) {
+//        Text("Root View")
+//    }
+//    .environment(AppSettingsModel())
+//}

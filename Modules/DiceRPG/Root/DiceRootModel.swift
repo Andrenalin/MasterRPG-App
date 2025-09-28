@@ -40,7 +40,7 @@ public final class DiceRootModel {
     @ObservationIgnored lazy var exportController: ExportController = {
         ExportController(module: module, itemController: itemController, gameExporter: false)
     }()
-    @ObservationIgnored public lazy var gameController: DiceGameStorable = {
+    @ObservationIgnored public lazy var gameController: GameController = {
         GameController(itemController: itemController)
     }()
     @ObservationIgnored lazy var importController: ImportController = {

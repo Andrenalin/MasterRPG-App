@@ -128,3 +128,9 @@ struct DiceModel: Identifiable, Sendable, Codable, Equatable, Hashable {
         self.resultCategory = try container.decodeIfPresent(ResultCategory.self, forKey: DiceModel.CodingKeys._resultCategory)
     }
 }
+
+extension DiceModel {
+    static func empty(_ id: UUID) -> DiceModel {
+        DiceModel(id: id, name: CRDT<String>(wrappedValue: ""), description: CRDT<String>(wrappedValue: ""), tags: CRDT<[String]>(wrappedValue: []), category: CRDT<ItemListCategory>(wrappedValue: .rules), dice: CRDTDataUpdate<[DieModel]>(wrappedValue: []))
+    }
+}

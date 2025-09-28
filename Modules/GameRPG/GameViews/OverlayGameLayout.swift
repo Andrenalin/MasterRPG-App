@@ -1,11 +1,11 @@
 // @copyright André Trettin
 
-import AndrenalinKit
-import RPGDie
+import CoreRPG
+import DiceRPG
 import SwiftUI
 
 struct OverlayGameLayout<MenuTab: View, Side: View, ToolBar: View>: View {
-    let root: GameRoot
+    let root: GameRootController
     let hideDice: Bool
     let menuOverlay: () -> MenuTab
     let sideOverlay: () -> Side
@@ -70,39 +70,40 @@ private extension OverlayGameLayout {
     }
     
     var diceOverlay: some View {
-        root.diceRoot.viewController.overlayGameView(hideDice: hideDice)
+        //root.diceRoot.viewController.overlayGameView(hideDice: hideDice)
+        Text("")
     }
 }
 
-#Preview(traits: .defaultLayout) {
-    ZStack {
-        Color.brown
-            .ignoresSafeArea()
-        
-        OverlayGameLayout(root: .preview, hideDice: false) {
-            HStack {
-                Spacer()
-                Button { } label: {
-                    Image(systemName: "xmark")
-                }
-#if !os(tvOS)
-                .buttonStyle(.borderedProminent)
-#endif
-            }
-        } sideOverlay: {
-            Color.red
-                .frame(width: 200)
-        } toolBarOverlay: {
-            Button { } label: {
-                Image(systemName: "eraser")
-            }
-#if !os(tvOS)
-            .buttonStyle(.borderedProminent)
-#endif
-        }
-        .environment(GameScreenModel())
-        .environment(DiceDisplayModel())
-    }
-}
-
-
+//#Preview(traits: .defaultLayout) {
+//    ZStack {
+//        Color.brown
+//            .ignoresSafeArea()
+//        
+//        OverlayGameLayout(root: .preview, hideDice: false) {
+//            HStack {
+//                Spacer()
+//                Button { } label: {
+//                    Image(systemName: "xmark")
+//                }
+//#if !os(tvOS)
+//                .buttonStyle(.borderedProminent)
+//#endif
+//            }
+//        } sideOverlay: {
+//            Color.red
+//                .frame(width: 200)
+//        } toolBarOverlay: {
+//            Button { } label: {
+//                Image(systemName: "eraser")
+//            }
+//#if !os(tvOS)
+//            .buttonStyle(.borderedProminent)
+//#endif
+//        }
+//        .environment(GameScreenModel())
+//        .environment(DiceDisplayModel())
+//    }
+//}
+//
+//

@@ -134,7 +134,7 @@ private extension SplitNavigation {
         }
 #if os(visionOS)
         .ornament(attachmentAnchor: .scene(.leading), contentAlignment: .center) {
-            PrimaryTabBar(selectedTab: $selectedTab)
+            PrimaryTabBar()
         }
 #endif
     }
