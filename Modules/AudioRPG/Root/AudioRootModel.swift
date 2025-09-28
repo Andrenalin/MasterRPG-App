@@ -50,7 +50,7 @@ public final class AudioRootModel {
     @ObservationIgnored lazy var fileController: FileController = {
         FileController()
     }()
-    @ObservationIgnored lazy var gameController: GameController = {
+    @ObservationIgnored public lazy var gameController: AudioGameStoreable = {
         GameController(itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, audioController: audioController)
     }()
     @ObservationIgnored lazy var importController: ImportController = {
@@ -81,6 +81,7 @@ public final class AudioRootModel {
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,
+            gameControllable: gameController,
             itemControllable: itemController,
             linkControllable: linkController,
             listControllable: listController,
@@ -97,7 +98,7 @@ extension AudioRootModel: ItemRootControllable {
     public var editControllable: any EditControllable { editController }
     public var importControllable: any ImportControllable { importController }
     public var exportControllable: any ExportControllable { exportController }
-    public var gameControllable: any AudioGameStoreable { gameController }
+    public var gameControllable: any GameControllable { gameController }
     public var itemControllable: any ItemControllable { itemController }
     public var linkControllable: any LinkControllable { linkController }
     public var listControllable: any ListControllable { listController }

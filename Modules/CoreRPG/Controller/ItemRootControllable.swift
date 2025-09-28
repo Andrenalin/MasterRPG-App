@@ -16,6 +16,7 @@ public protocol ItemRootControllable: Sendable {
     var cacheControllable: (any ImageCacheControllable)? { get }
     var editControllable: any EditControllable { get }
     var exportControllable: any ExportControllable { get }
+    var gameControllable: any GameControllable { get }
     var itemControllable: any ItemControllable { get }
     var linkControllable: any LinkControllable { get }
     var listControllable: any ListControllable { get }
@@ -36,6 +37,7 @@ public final class ItemRootController: ItemRootControllable {
         cacheControllable: (any ImageCacheControllable)?,
         editControllable: any EditControllable,
         exportControllable: any ExportControllable,
+        gameControllable: any GameControllable,
         itemControllable: any ItemControllable,
         linkControllable: any LinkControllable,
         listControllable: any ListControllable,
@@ -50,6 +52,7 @@ public final class ItemRootController: ItemRootControllable {
         self.cacheControllable = cacheControllable
         self.editControllable = editControllable
         self.exportControllable = exportControllable
+        self.gameControllable = gameControllable
         self.itemControllable = itemControllable
         self.linkControllable = linkControllable
         self.listControllable = listControllable
@@ -69,6 +72,7 @@ public final class ItemRootController: ItemRootControllable {
     public let cacheControllable: (any ImageCacheControllable)?
     public let editControllable: any EditControllable
     public let exportControllable: any ExportControllable
+    public let gameControllable: any GameControllable
     public let itemControllable: any ItemControllable
     public let linkControllable: any LinkControllable
     public let listControllable: any ListControllable

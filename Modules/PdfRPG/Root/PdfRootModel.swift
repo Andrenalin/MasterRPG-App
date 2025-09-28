@@ -77,6 +77,7 @@ public final class PdfRootModel {
             cacheControllable: cacheController,
             editControllable: editController,
             exportControllable: exportControllable,
+            gameControllable: gameController,
             itemControllable: itemController,
             linkControllable: linkController,
             listControllable: listController,

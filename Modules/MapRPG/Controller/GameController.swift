@@ -23,11 +23,8 @@ public protocol MapGameStorable: GameControllable {
     @MainActor func updateMap(for itemId: UUID, with data: NetworkCodableDataType)
     @MainActor func mapUpdateResult(for itemId: UUID) -> String
     @MainActor func networkMapUpdate(for itemId: UUID) -> NetworkCodableDataType
-    @MainActor func saveAll() -> ItemModuleIds
     
     @MainActor func demoNextMap(itemId: UUID, restart: Bool) -> NetworkCodableDataType?
-    
-    @MainActor func startGameAsMaster()
 }
 
 struct GameController: Sendable {
@@ -59,13 +56,23 @@ extension GameController: GameControllable {
     var importControllable: any ImportControllable {
         importController as ImportControllable
     }
-}
-
-extension GameController: MapGameStorable {
-    @MainActor func startGameAsMaster() {
+    
+    @MainActor func startGame(with id: UUID) {
         //root.rootModel.toolBarModel.displayMode = .master
     }
     
+    @MainActor
+    func saveAll() -> ItemModuleIds? {
+//        let gameExportController = ExportController(root: root, itemController: importController.itemController, gameExporter: true)
+//        for itemId in gameModel.items {
+//            gameItem(for: itemId).mapPins = gameItem(for: itemId).mapPins.filter { !$0.isPlayer }
+//        }
+//        return gameExportController.exportingAll()
+        ItemModuleIds()
+    }
+}
+
+extension GameController: MapGameStorable {
     @MainActor
     func setPlayerPin(for playerId: UUID, name: String, characterId: UUID) {
 //        let photoId = root.valueRoot.gameControllable.playerPinPhoto(for: characterId)
@@ -165,16 +172,6 @@ extension GameController: MapGameStorable {
     func networkPin(itemId: UUID, position: MapPinModel) -> NetworkCodableDataType {
 //        NetworkCodableDataType(id: itemId, type: .map, version: 0, data: position.encodeData())
         NetworkCodableDataType(id: itemId, type: .map, version: 0, data: nil)
-    }
-    
-    @MainActor
-    func saveAll() -> ItemModuleIds {
-//        let gameExportController = ExportController(root: root, itemController: importController.itemController, gameExporter: true)
-//        for itemId in gameModel.items {
-//            gameItem(for: itemId).mapPins = gameItem(for: itemId).mapPins.filter { !$0.isPlayer }
-//        }
-//        return gameExportController.exportingAll()
-        ItemModuleIds()
     }
     
     @MainActor

@@ -204,6 +204,7 @@ struct MockRootViewModifier: ViewModifier {
             cacheControllable: root.cacheControllable,
             editControllable: root.editControllable,
             exportControllable: root.exportControllable,
+            gameControllable: root.gameControllable,
             itemControllable: root.itemControllable,
             linkControllable: root.linkControllable,
             listControllable: root.listControllable,

@@ -90,9 +90,10 @@ public protocol GameControllable: Sendable {
     // item manipluator
     var currentId: UUID { get async }
 
-    @MainActor
-    func resetGameState()
-    
+    @MainActor func startGame(with id: UUID)
+    @MainActor func resetGameState()
+    @MainActor func saveAll() -> ItemModuleIds?
+        
     // focus
     func focus(on id: UUID?) async
     func focus(on focusIds: [UUID]) async
@@ -182,7 +183,9 @@ public extension GameControllable {
         await resetGameState()
     }
     
-    func resetGameState() {}
+    @MainActor func startGame(with id: UUID) {}
+    @MainActor func resetGameState() {}
+    @MainActor func saveAll() -> ItemModuleIds? { nil }
 
     @MainActor
     func report(itemId: UUID, for player: UUID) {

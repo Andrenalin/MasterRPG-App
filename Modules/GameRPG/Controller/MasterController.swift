@@ -11,6 +11,8 @@ import CharacterRPG
 import SpaceRPG
 import WeatherRPG
 import MapRPG
+import DiceRPG
+import AdventureRPG
 
 final class MasterController: Sendable {
     let root: GameRootController
@@ -43,7 +45,7 @@ extension MasterController {
     @MainActor
     func start() async {
         Logger.networking.debug("MasterController: Start")
-//        await root.networkStore.startMasterGame(game: root.gameModel.gameConfig, titleImage: root.adventureRoot.titleImage(for: root.gameModel.gameConfig.master.adventureId!))
+        await root.networkStore.startMasterGame(game: root.gameModel.gameConfig, titleImage: root.adventureRoot.titleImage(for: root.gameModel.gameConfig.master.adventureId!))
         await root.networkProxyStore.startProxyServer()
     }
     
@@ -69,9 +71,9 @@ extension MasterController {
             await playerNames.append(root.gameModel.gameConfig.master.name)
             playerNames = playerNames.sorted()
         }
-//        await root.diceRoot.gameControllable.resetPlayerDice(to: playerNames)
+        await root.diceRoot.gameController.resetPlayerDice(to: playerNames)
 //        if await !gameModel.asProxy {
-//            await root.mapRoot.gameControllable.resetPlayerPins(for: root.gameModel.gameConfig.players.filter { $0.type != .observer })
+//            await root.mapRoot.gameController.resetPlayerPins(for: root.gameModel.gameConfig.players.filter { $0.type != .observer })
 //        }
     }
 }
@@ -157,7 +159,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         
         if await gameModel.asProxy {
             if model.data.type == .dice && model.type == .update {
-//                _ = await root.diceRoot.gameControllable.addGameDiceResult(data: model.data, name: root.gameModel.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
+                _ = await root.diceRoot.gameController.addGameDiceResult(data: model.data, name: root.gameModel.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
                 let sendData = await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: root.gameModel.gameConfig, data: model.data)
                 await root.networkStore.sendMaster(data: sendData, fileJournal: false)
             } else {
@@ -209,7 +211,7 @@ extension MasterController {
     func handleAudio(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
             await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
-            await send(type: .update, subtype: .audioList, updated: root.audioRoot.gameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id))
+            await send(type: .update, subtype: .audioList, updated: root.audioRoot.gameController.audioList(allPlayers: true, with: root.gameModel.gameConfig.id))
             return nil
         }
         switch model.type {
@@ -223,8 +225,8 @@ extension MasterController {
             case .playAudio:
                 return model.data
             case .audioList:
-                await root.audioRoot.gameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
-                await send(type: .update, subtype: .audioList, updated: root.audioRoot.gameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id))
+                await root.audioRoot.gameController.applyAudioList(data: model.data, for: model.gameConfig.id)
+                await send(type: .update, subtype: .audioList, updated: root.audioRoot.gameController.audioList(allPlayers: true, with: root.gameModel.gameConfig.id))
             default:
                 break
             }
@@ -343,9 +345,9 @@ extension MasterController {
             return try await root.characterRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
             guard model.gameConfig.type != .observer else { return nil }
-            try await root.characterRoot.gameControllable.updatePlayer(data: model.data)
+            try await root.characterRoot.gameController.updatePlayer(data: model.data)
             if let characterId = model.gameConfig.player.characterId {
-                await root.mapRoot.gameControllable.setPlayerPin(for: model.gameConfig.id, name: model.gameConfig.name, characterId: characterId)
+                await root.mapRoot.gameController.setPlayerPin(for: model.gameConfig.id, name: model.gameConfig.name, characterId: characterId)
             }
         }
         return nil

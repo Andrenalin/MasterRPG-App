@@ -71,6 +71,9 @@ public final class AdventureRootModel {
     @ObservationIgnored lazy var importController: ImportController = {
         ImportController(itemController: itemController, module: module)
     }()
+    @ObservationIgnored public lazy var gameController: AdventureStoreGameable = {
+        GameController(root: rootManager, itemController: itemController)
+    }()
     @ObservationIgnored lazy var itemController: ItemController = {
         ItemController(container: modelContext.container, module: module)
     }()
@@ -96,6 +99,7 @@ public final class AdventureRootModel {
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,
+            gameControllable: gameController,
             itemControllable: itemController,
             linkControllable: linkController,
             listControllable: listController,
@@ -105,14 +109,41 @@ public final class AdventureRootModel {
     }()
 }
 
+public extension AdventureRootModel {
+    var rootManager: RootManager {
+        RootManager(
+            adventureRoot: self,
+            audioRoot: audioRoot,
+            characterRoot: characterRoot,
+            diceRoot: diceRoot,
+            mapRoot: mapRoot,
+            pdfRoot: pdfRoot,
+            photoRoot: photoRoot,
+            spaceRoot: spaceRoot,
+            tableRoot: tableRoot,
+            weatherRoot: weatherRoot
+        )
+    }
+}
+
 extension AdventureRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var exportControllable: any ExportControllable { exportController }
+    public var gameControllable: any GameControllable { gameController }
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var linkControllable: any LinkControllable { linkController }
     public var listControllable: any ListControllable { listController }
     public var listLinkControllable: any ListControllable { listLinkController }
     public var viewControllable: any ViewControllable { viewController }
+}
+
+public extension AdventureRootModel {
+    @MainActor func titleImage(for id: UUID?) async -> AKImage? {
+        guard let id else { return nil }
+//        let (image, _) = await photoRoot.fetchPhotoImage(for: itemController.itemOrEmpty(for: id).photoId, useGame: false) ?? (nil, 0.0)
+//        return image
+        return nil
+    }
 }

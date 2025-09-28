@@ -16,6 +16,7 @@ import os.log
 internal import AppKit
 #else
 internal import UIKit
+import AdventureRPG
 #endif
 
 final class PlayerController: Sendable {
@@ -68,7 +69,7 @@ extension PlayerController {
         Logger.networking.debug("PlayerController: Stop")
         await root.networkProxyStore.stopGame()
         await root.networkStore.stopGame()
-        //root.adventureRoot.gameControllable.resetGame()
+        root.adventureRoot.gameController.resetGame()
         gameModel.hasSendPlayer = false
     }
     
@@ -77,7 +78,7 @@ extension PlayerController {
         let players = root.gameModel.gameConfig.controls.compactMap { $0.show ? $0.id : nil }
         root.audioRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
         let playerNames = root.gameModel.gameConfig.controls.map { $0.name }.sorted()
-        root.diceRoot.gameControllable.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
+        root.diceRoot.gameController.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
     }
 }
 
@@ -252,7 +253,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                await root.audioRoot.gameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.gameConfig.id])
+                await root.audioRoot.gameController.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.gameConfig.id])
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
                 return await response(for: model, isSuccess: true, requestData: true)
@@ -263,10 +264,10 @@ extension PlayerController {
         case .update:
             switch model.subType {
             case .audioList:
-                await root.audioRoot.gameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
+                await root.audioRoot.gameController.applyAudioList(data: model.data, for: model.gameConfig.id)
             case .playAudio:
-                await root.audioRoot.gameControllable.applyAudio(id: model.data.id, for: model.gameConfig.controls.map { $0.id } + [model.gameConfig.master.id])
-                let _ = await root.audioRoot.gameControllable.play(with: model.data).result
+                await root.audioRoot.gameController.applyAudio(id: model.data.id, for: model.gameConfig.controls.map { $0.id } + [model.gameConfig.master.id])
+                let _ = await root.audioRoot.gameController.play(with: model.data).result
             default:
                 break
             }
@@ -291,9 +292,9 @@ extension PlayerController {
         case .update:
             switch model.subType {
             case .show, .store:
-                try await root.diceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, focus: model.subType == .show)
+                try await root.diceRoot.gameController.updateGame(data: model.data, hide: model.subType == .store, focus: model.subType == .show)
             case .generic:
-                _ = await root.diceRoot.gameControllable.addGameDiceResult(data: model.data, name: model.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
+                _ = await root.diceRoot.gameController.addGameDiceResult(data: model.data, name: model.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
                 break
             default:
                 break
@@ -326,8 +327,8 @@ extension PlayerController {
             switch model.subType {
             case .mapState:
                 if await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: model.data.version) {
-                    await root.mapRoot.gameControllable.updateMap(for: model.data.id, with: model.data)
-                    let missingImages = await root.mapRoot.gameControllable.missingPlayerImages(itemId: model.data.id)
+                    await root.mapRoot.gameController.updateMap(for: model.data.id, with: model.data)
+                    let missingImages = await root.mapRoot.gameController.missingPlayerImages(itemId: model.data.id)
                     for idType in missingImages {
                         await send(counter: 0, type: .store, subType: .store, updated: idType)
                     }
@@ -373,7 +374,7 @@ extension PlayerController {
             if try await root.photoRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
                 Task { @MainActor in
                     gameModel.gameUpdateType = .photo
-                    root.photoRoot.gameControllable.resetPhotoSpace()
+                    root.photoRoot.gameController.resetPhotoSpace()
                 }
                 
                 return await response(for: model, isSuccess: true, requestData: false)
@@ -443,13 +444,13 @@ extension PlayerController {
             case .generic:
                 if let characterId = await root.gameModel.gameConfig.player.characterId {
                     Task { @MainActor in
-                        await root.characterRoot.gameControllable.addItem(id: model.data.id, data: model.data, for: characterId)
+                        await root.characterRoot.gameController.addItem(id: model.data.id, data: model.data, for: characterId)
                     }
                 }
             case .valueResult:
                 if let characterId = await root.gameModel.gameConfig.player.characterId {
                     Task { @MainActor in
-                        await root.characterRoot.gameControllable.add(result: model.data, for: characterId)
+                        await root.characterRoot.gameController.add(result: model.data, for: characterId)
                     }
                 }
             default:
@@ -548,6 +549,6 @@ extension PlayerController {
     }
 
     func sendAudioList() async {
-        await send(counter: 0, type: .update, subType: .audioList, updated: root.audioRoot.gameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id), useJournal: false)
+        await send(counter: 0, type: .update, subType: .audioList, updated: root.audioRoot.gameController.audioList(allPlayers: false, with: root.gameModel.gameConfig.id), useJournal: false)
     }
 }

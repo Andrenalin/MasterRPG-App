@@ -27,6 +27,9 @@ public final class FakeItemRootController: ItemRootControllable {
         self.editControllable = editController
         let exportController = FakeExportController(itemControllable: itemController)
         self.exportControllable = exportController
+        let importController = FakeImportController(itemControllable: itemController)
+        let gameController = FakeGameController(itemControllable: itemController, exportControllable: exportController, importControllable: importController)
+        self.gameControllable = gameController
         let linkController = FakeLinkController(itemController: FakeItemController(container: itemController.container, module: module))
         self.linkControllable = linkController
         let listController = FakeListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
@@ -44,6 +47,7 @@ public final class FakeItemRootController: ItemRootControllable {
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportController,
+            gameControllable: gameController,
             itemControllable: itemController,
             linkControllable: linkController,
             listControllable: listController,
@@ -76,6 +80,9 @@ public final class FakeItemRootController: ItemRootControllable {
         self.editControllable = editController
         let exportController = FakeExportController(itemControllable: itemController)
         self.exportControllable = exportController
+        let importController = FakeImportController(itemControllable: itemController)
+        let gameController = FakeGameController(itemControllable: itemController, exportControllable: exportController, importControllable: importController)
+        self.gameControllable = gameController
         let linkController = FakeLinkController(itemController: itemController)
         self.linkControllable = linkController
         let listController = FakeListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
@@ -93,6 +100,7 @@ public final class FakeItemRootController: ItemRootControllable {
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportController,
+            gameControllable: gameController,
             itemControllable: itemController,
             linkControllable: linkController,
             listControllable: listController,
@@ -115,6 +123,7 @@ public final class FakeItemRootController: ItemRootControllable {
     public let cacheControllable: (any ImageCacheControllable)?
     public let editControllable: any EditControllable
     public let exportControllable: any ExportControllable
+    public let gameControllable: any GameControllable
     public let itemControllable: any ItemControllable
     public let linkControllable: any LinkControllable
     public let listControllable: any ListControllable
