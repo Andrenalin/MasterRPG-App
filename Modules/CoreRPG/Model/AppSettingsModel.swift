@@ -4,8 +4,7 @@ import SwiftUI
 
 @MainActor @Observable
 public final class AppSettingsModel: Sendable {
-    public init(showGame: Bool = false) {
-        self.showGame = showGame
+    public init() {
         initSettings()
     }
 
@@ -32,7 +31,7 @@ public final class AppSettingsModel: Sendable {
 
     // MARK: - Runtime Value only on this device
     
-    public var showGame: Bool = false
+    public var gameModus: GameModus = .edit
 
     // MARK: - Settings Value only on this device
 

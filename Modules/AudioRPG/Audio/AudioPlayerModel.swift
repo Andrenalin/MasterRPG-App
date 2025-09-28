@@ -47,7 +47,7 @@ public final class AudioPlayerModel {
     
     // MARK: Internal
     var audioSession: AudioPlayerSession?
-//    var coordinator: AudioListenerCoordinator?
+    var coordinator: AudioListenerCoordinator?
     var isInitialized = false
     var player = AVPlayer()
 

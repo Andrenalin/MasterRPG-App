@@ -20,10 +20,10 @@ struct PlayerStartView: View {
             Group {
                 if sharePlayStore.canActivateSharePlay {
                     Button {
-                        //settingsModel.gameModus = .player
                         Task {
                             await root.startGame(to: nil, mode: .player)
                         }
+                    settingsModel.gameModus = .player
                     } label: {
                         Label {
                             Text(root.gameModel.gameConfig.state == .stopped ? "Join Game" : "Cancel Game", bundle: .module)
@@ -49,11 +49,11 @@ struct PlayerStartView: View {
                     if let playerNetworkController = root.networkStore.model.playerStore {
                         BrowserView(root: root, playerNetworkControllable: playerNetworkController)
                             .onChange(of: playerNetworkController.networkModel.isConnected) {
-//                                if playerNetworkController.networkModel.isConnected {
-//                                    settingsModel.gameModus = .player
-//                                } else {
-//                                    settingsModel.gameModus = .edit
-//                                }
+                                if playerNetworkController.networkModel.isConnected {
+                                    settingsModel.gameModus = .player
+                                } else {
+                                    settingsModel.gameModus = .edit
+                                }
                             }
                     }
                 }

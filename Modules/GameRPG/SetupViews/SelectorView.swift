@@ -98,7 +98,7 @@ struct SelectorView: View {
                 
                 SelectedAdventureView(root: root)
                 
-//                MasterStartView(root: root)
+                MasterStartView(root: root)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -106,14 +106,14 @@ struct SelectorView: View {
     
     private var observerView: some View {
         ScrollView {
-//            SelectObserverGameView(root: root)
+            SelectObserverGameView(root: root)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     private var proxyView: some View {
         ScrollView {
-//            SearchProxyView(root: root)
+            SearchProxyView(root: root)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

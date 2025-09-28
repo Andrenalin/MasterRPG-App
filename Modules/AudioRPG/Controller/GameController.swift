@@ -9,6 +9,8 @@ import os.log
 public protocol AudioGameStoreable: GameControllable {
     func play(id: UUID?, shouldPlay: Bool) -> Task<Void, Error>
 
+    @MainActor var audioCoordinatorPlayback: AudioListenerCoordinator? { get }
+        
     @MainActor func audioList(allPlayers: Bool, with masterId: UUID) -> NetworkCodableDataType
     @MainActor func applyAudio(id: UUID, for players: [UUID])
     @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID)
@@ -45,12 +47,6 @@ extension GameController: GameControllable {
     var importControllable: any ImportControllable {
         importController as ImportControllable
     }
-//    var rootExportControllable: any ExportControllable {
-//        root.rootControllable.gameExportControllable
-//    }
-//    var rootImportControllable: any ImportControllable {
-//        root.rootControllable.gameImportControllable
-//    }
     
     @MainActor
     func allPlayersReported(for id: UUID, deep: Int) -> Bool {
@@ -80,6 +76,10 @@ extension GameController: GameControllable {
 }
 
 extension GameController {
+    @MainActor public var audioCoordinatorPlayback: AudioListenerCoordinator? {
+        audioController.model.coordinator
+    }
+
     func audioAsset(for itemId: UUID) async -> PlaylistItem? {
         guard let item = await gameItem(for: itemId), let fileUrl = item.fileUrl else { return nil }
 

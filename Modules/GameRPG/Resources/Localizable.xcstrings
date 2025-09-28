@@ -51,7 +51,6 @@
       }
     },
     "As an observer you can join any hosted game in the local network. All observers does not have a player pin nor dice to roll. They are invisible and show only the game view without any interaction in the game." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -114,7 +113,6 @@
       }
     },
     "Conntect as proxy to extent your game view. The proxy will be acting as the same player as it is connected to. It can be use as second screen and as a sceond audio source. That has the advantage to have a const volume for the music during the game. On a shareplay device the music get ducked by the facetime environment." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -315,7 +313,6 @@
       }
     },
     "Observe a game" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -445,7 +442,6 @@
       }
     },
     "Search a game as Proxy" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -527,7 +523,6 @@
       }
     },
     "Share" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -560,7 +555,6 @@
       }
     },
     "Start" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

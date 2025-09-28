@@ -25,8 +25,8 @@ final class GameRootModel: Sendable {
     var attachments: [NetworkModules: GroupSessionJournal.Attachment] = [:]
     var metaDataAttachments: [NetworkModules: UUID] = [:]
     
-//    var masterController: MasterController?
-//    var playerController: PlayerController?
+    var masterController: MasterController?
+    var playerController: PlayerController?
     
     func add(playerId: UUID, playerModel: PlayerGameModel, sharingModel: SharingControlModel) -> Bool {
         if let index = gameConfig.players.firstIndex(where: { $0.id == playerId }) {

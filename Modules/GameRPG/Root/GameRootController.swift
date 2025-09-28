@@ -129,24 +129,24 @@ extension GameRootController {
             return
         }
         
-//        let masterGameModel = MasterGameModel(id: UUID(), type: .master, name: gameMasterName, adventureId: id, adventureTitle: adventureRoot.networkTitle(for: id))
-//        gameModel.gameConfig.id = masterGameModel.id
-//        gameModel.gameConfig.master = masterGameModel
-//        gameModel.startGameTime = Date.now
-//        
-//        networkStore.resetName(name: gameMasterName)
-//        networkProxyStore.resetName(name: gameMasterName)
-//        networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
-//
-//        adventureRoot.gameControllable.startGame(with: id)
-//        gameModel.playerController = PlayerController(root: self, asGameMaster: true)
-//        gameModel.masterController = MasterController(root: self, asProxy: false)
-//
-//        gameModel.gameConfig.state = .started
-//
-//        await gameModel.masterController?.start()
-//        valueRoot.gameControllable.startGame(for: gameModel.selectedGameMaster!)
-//        diceRoot.gameControllable.setFocusDice(on: valueRoot.gameControllable.focusDice(for: gameModel.selectedGameMaster!))
+        let masterGameModel = MasterGameModel(id: UUID(), type: .master, name: gameMasterName, adventureId: id, adventureTitle: adventureRoot.itemControllable.item(for: id)?.name)
+        gameModel.gameConfig.id = masterGameModel.id
+        gameModel.gameConfig.master = masterGameModel
+        gameModel.startGameTime = Date.now
+        
+        networkStore.resetName(name: gameMasterName)
+        networkProxyStore.resetName(name: gameMasterName)
+        networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.gameController.audioCoordinatorPlayback)
+
+        adventureRoot.gameControllable.startGame(with: id)
+        gameModel.playerController = PlayerController(root: self, asGameMaster: true)
+        gameModel.masterController = MasterController(root: self, asProxy: false)
+
+        gameModel.gameConfig.state = .started
+
+        await gameModel.masterController?.start()
+        characterRoot.gameController.startGame(for: gameModel.selectedGameMaster!)
+        diceRoot.gameController.setFocusDice(on: characterRoot.gameController.focusDice(for: gameModel.selectedGameMaster!))
         
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = true
@@ -169,12 +169,12 @@ extension GameRootController {
         networkStore.resetName(name: name(for: mode))
         if mode == .player {
             networkProxyStore.resetName(name: characterName)
-//            networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
+            networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.gameController.audioCoordinatorPlayback)
         }
 
-//        adventureRoot.gameControllable.resetGame()
-//        let player = PlayerController(root: self, asGameMaster: mode == .demo)
-//        gameModel.playerController = player
+        adventureRoot.gameController.resetGame()
+        let player = PlayerController(root: self, asGameMaster: mode == .demo)
+        gameModel.playerController = player
 
         if mode == .demo {
             joinGame(for: mode)
@@ -182,12 +182,12 @@ extension GameRootController {
 #if !os(macOS)
             UIApplication.shared.isIdleTimerDisabled = true
 #endif
-//        } else if await player.start(to: model) {
-//            joinGame(for: mode)
-//
-//#if !os(macOS)
-//            UIApplication.shared.isIdleTimerDisabled = true
-//#endif
+        } else if await player.start(to: model) {
+            joinGame(for: mode)
+
+#if !os(macOS)
+            UIApplication.shared.isIdleTimerDisabled = true
+#endif
         } else {
             await stopGame()
         }
@@ -201,8 +201,8 @@ extension GameRootController {
         gameModel.gameConfig.players[0].name = name(for: type)
         gameModel.gameConfig.state = .started
         if type != .observer {
-//            characterRoot.gameControllable.startGame(for: gameModel.selectedCharacter)
-//            diceRoot.gameControllable.setFocusDice(on: characterRoot.gameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
+            characterRoot.gameController.startGame(for: gameModel.selectedCharacter)
+            diceRoot.gameController.setFocusDice(on: characterRoot.gameController.focusDice(for: gameModel.selectedCharacter ?? UUID()))
         }
     }
 
@@ -212,21 +212,21 @@ extension GameRootController {
         gameModel.playerGameStarted = false
         gameModel.gameConfig.state = .stopped
         gameModel.gameConfig = .empty
-//        await gameModel.masterController?.stop()
-//        gameModel.masterController = nil
-//        await gameModel.playerController?.stop()
-//        gameModel.playerController = nil
-//        adventureRoot.gameControllable.resetGame()
+        await gameModel.masterController?.stop()
+        gameModel.masterController = nil
+        await gameModel.playerController?.stop()
+        gameModel.playerController = nil
+        adventureRoot.gameController.resetGame()
 
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = false
 #endif
     }
 
-//    @MainActor
-//    func saveGame() -> (Task<Void, any Error>, URL) {
-//        adventureRoot.gameControllable.saveGame()
-//    }
+    @MainActor
+    func saveGame() -> (Task<Void, any Error>, URL) {
+        adventureRoot.gameController.saveGame()
+    }
 
     @MainActor
     private func name(for type: GameType) -> String {
@@ -248,9 +248,9 @@ extension GameRootController {
     func startDemo() async {
         await startGame(to: nil, mode: .demo)
 
-//        if let playerController = gameModel.playerController {
-//            Task {
-//                while gameModel.gameConfig.state != .stopped {
+        if let playerController = gameModel.playerController {
+            Task {
+                while gameModel.gameConfig.state != .stopped {
 //                    let photos = photoRoot.itemControllable.itemDataModel.items
 //                    for photo in photos {
 //                        try await Task.sleep(for: .seconds(3))
@@ -289,9 +289,9 @@ extension GameRootController {
 //                            await playerController.receivedProcess(gameNetworkModel)
 //                        }
 //                    }
-//                }
-//            }
-//        }
+                }
+            }
+        }
     }
 }
 
