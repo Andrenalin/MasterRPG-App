@@ -49,7 +49,20 @@ struct RootPhotoViewer: View {
     }
 }
 
-//#Preview {
-//    RootPhotoViewer(model: PhotoModel.preview, toolBarModel: GameToolBarModel(), isGame: true)
-//        .environment(PhotoRoot.previewWithData)
-//}
+#Preview(traits: .mockData) {
+    @Previewable @Environment(PhotoRootModel.self) var root
+    
+    Group {
+        if let model = root.itemController.itemDataCodableModel(id: root.itemController.allItemIds().first ?? MockData.previewId2) {
+            RootPhotoViewer(model: model, toolBarModel: GameToolBarModel(), isGame: true)
+        } else {
+            Text("Empty")
+        }
+    }
+    .onAppear {
+        print("load image")
+        if let image = AKImage(named: "LaunchLogo") {
+            print("image")
+        }
+    }
+}

@@ -134,10 +134,10 @@ extension GameController: ValueGameStorable {
 
     @MainActor
     public func startGame(for id: UUID?) {
-//        guard let characterId = root.linkController.validate(id: id) else { return }
-//        Task {
-//            await focus(on: [characterId])
-//        }
+        guard let id, let character = itemController.item(for: id) else { return }
+        Task {
+            await focus(on: [character.id])
+        }
     }
 
     public func updatePlayer(data: NetworkCodableDataType) async throws {

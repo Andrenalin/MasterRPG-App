@@ -19,7 +19,7 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: ItemDataModel.self, TagDataModel.self,
+            for: ItemDataModel.self, LinkDataModel.self, TagDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
@@ -161,6 +161,7 @@ struct MockData: PreviewModifier {
         container.mainContext.insert(photoX)
         container.mainContext.insert(photoY)
         container.mainContext.insert(emptyfolder)
+        try? container.mainContext.save()
 
         return container
     }
@@ -171,10 +172,13 @@ struct MockRootViewModifier: ViewModifier {
         self._root = State(wrappedValue: PhotoRootModel(modelContext: modelContext))
     }
     
+    //@Query(filter: #Predicate<ItemDataModel>{ $0.module == .photo }) private var models: [ItemDataModel]
+    @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name, animation: .smooth) private var items: [ItemDataModel]
     @State private var root: PhotoRootModel
 
     func body(content: Content) -> some View {
-        content.environment(root)
+        content
+            .environment(root)
             .environment(root.searchModel)
             .environment(root.listController.listModel)
             .environment(root.listDisplayModel)
@@ -185,6 +189,11 @@ struct MockRootViewModifier: ViewModifier {
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif
+            .onChange(of: items) {
+                Task {
+                    await root.itemController.update(items: items)
+                }
+            }
     }
 }
 
