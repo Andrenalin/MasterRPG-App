@@ -27,4 +27,5 @@ struct DicePlayerRoot: View {
 
 #Preview(traits: .mockData) {
     DicePlayerRoot()
+        .environment(DiceDisplayModel())
 }

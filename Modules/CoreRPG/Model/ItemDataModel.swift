@@ -244,4 +244,17 @@ extension ItemDataModel {
             EntryDataModel(id: $0.id, index: $0.index, parentId: $0.parentId, childId: $0.childId)
         }
     }
+    
+    public convenience init(codableModel: ItemDataCodableModel) {
+        self.init(id: codableModel.id,
+                  module: codableModel.module,
+                  name: codableModel.name.wrappedValue,
+                  information: codableModel.information.wrappedValue,
+                  category: codableModel.category,
+                  tags: codableModel.tags,
+                  url: codableModel.fileUrl?.rawUrl,
+                  displayState: codableModel.displayState,
+                  parentId: codableModel.parentId,
+                  entries: [])
+    }
 }

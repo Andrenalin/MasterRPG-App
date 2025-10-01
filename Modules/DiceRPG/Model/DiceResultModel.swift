@@ -5,7 +5,7 @@ import Foundation
 import os.log
 
 struct DiceResultModel: Equatable, Hashable, Codable {
-    let diceModel: DiceModel
+    let diceModel: DiceDataModel.DiceDataModelCodable
     var result: DiceResult
     var values: String
     var sum: Int
@@ -27,7 +27,7 @@ struct DiceResultModel: Equatable, Hashable, Codable {
         }
     }
     
-    init(diceModel: DiceModel) {
+    init(diceModel: DiceDataModel.DiceDataModelCodable) {
         self.diceModel = diceModel
         self.result = .notRolled
         self.values = ""
@@ -35,7 +35,7 @@ struct DiceResultModel: Equatable, Hashable, Codable {
         self.checked = false
     }
     
-    init(diceModel: DiceModel, result: DiceResult, values: String, sum: Int, checked: Bool) {
+    init(diceModel: DiceDataModel.DiceDataModelCodable, result: DiceResult, values: String, sum: Int, checked: Bool) {
         self.diceModel = diceModel
         self.result = result
         self.values = values

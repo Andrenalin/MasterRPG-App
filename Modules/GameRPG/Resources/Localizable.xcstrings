@@ -224,7 +224,6 @@
       }
     },
     "Game is running" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -469,7 +468,6 @@
       }
     },
     "Select Map, Photo, Table, Weather or 3D Object" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

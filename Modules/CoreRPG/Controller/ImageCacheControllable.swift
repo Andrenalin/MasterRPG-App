@@ -33,7 +33,7 @@ extension ImageCacheControllable {
     }
     
     @discardableResult
-    func photoId(for itemId: UUID, with fileUrl: FileUrl?, shouldDownload: Bool = false) async -> UUID? {
+    public func photoId(for itemId: UUID, with fileUrl: FileUrl?, shouldDownload: Bool = false) async -> UUID? {
         guard let fileUrl else { return nil }
         guard await !imageCacheController.hasObject(for: itemId) else { return itemId }
         let imageTask = Task.detached(priority: .userInitiated) {

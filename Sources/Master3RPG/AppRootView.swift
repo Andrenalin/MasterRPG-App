@@ -3,6 +3,7 @@
 import CoreRPG
 import CoreExternalRPG
 import RolePlayGameKit
+import GameRPG
 
 import SwiftUI
 import SwiftData
@@ -14,16 +15,18 @@ struct AppRootView: View {
     
     var body: some View {
         let _ = Self._printChanges()
-        
-        layout
-            .environmentSetUp(appModel)
-            .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
-                handle(userActivity: userActivity)
-            }
-            .navigationRoot(appModel.navigator)
-            .onChange(of: appSizeMode) { oldValue, newValue in
-                appModel.resetNavigation()
-            }
+
+        appModel.gameRoot.viewController.gameWindow(root: appModel.gameRoot) {
+            layout
+        }
+        .environmentSetUp(appModel)
+        .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
+            handle(userActivity: userActivity)
+        }
+        .navigationRoot(appModel.navigator)
+        .onChange(of: appSizeMode) { oldValue, newValue in
+            appModel.resetNavigation()
+        }
     }
     
     private func handle(userActivity: NSUserActivity) {

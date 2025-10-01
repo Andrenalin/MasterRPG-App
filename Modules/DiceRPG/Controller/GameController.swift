@@ -10,11 +10,11 @@ import os.log
 final class DiceGameModel: Sendable {
     init() {}
     
-    var itemData: [UUID: DiceModel] = [:]
+    var itemData: [UUID: DiceDataModel] = [:]
     
     let audioPlayer: AVPlayer = AVPlayer()
     var hiddenPlayers: [String] = []
-    var playerDice: [DiceModel] = []
+    var playerDice: [DiceDataModel] = []
     var masterDiceName: String?
     
     func reset() {
@@ -77,13 +77,29 @@ extension GameController: GameControllable {
 }
 
 extension GameController {
-    @MainActor func model(itemId: UUID) -> DiceModel {
+    @MainActor func diceModel(itemId: UUID) -> DiceModel? {
+        guard let model = model(itemId: itemId) else { return nil }
+        // here converter?
+        return DiceModel.empty(itemId)
+    }
+    
+    @MainActor func model(itemId: UUID) -> DiceDataModel? {
         if let model = diceGameModel.itemData[itemId] {
             return model
         }
-        guard let item = gameItem(for: itemId), let model = try? itemController.decodedModel(codableModel: item) else { return DiceModel.empty(itemId) }
+        guard let item = gameItem(for: itemId), let model = try? itemController.decodedModel(codableModel: item) else { return nil }
         diceGameModel.itemData[itemId] = model
         return model
+    }
+
+    @MainActor func models(itemId: UUID) -> (ItemDataCodableModel, DiceDataModel)? {
+        guard let item = gameItem(for: itemId), let model = model(itemId: itemId) else { return nil }
+        return (item, model)
+    }
+
+    @MainActor func setGame(item: ItemDataCodableModel, model: DiceDataModel, itemId: UUID) {
+        setGame(item: item, itemId: itemId)
+        diceGameModel.itemData[itemId] = model
     }
 }
 
@@ -148,11 +164,12 @@ extension GameController: DiceGameStorable {
         if let gameDiceId, gameModel.itemData[gameDiceId] != nil {
             return gameDiceId
         }
-        let dice = itemController.model(for: diceId)
-//        dice.category = .value
-//        dice.id = gameDiceId ?? UUID()
-//        setGame(item: dice, itemId: dice.id)
-        return dice?.itemId ?? diceId
+        guard var item = itemController.itemDataCodableModel(id: diceId), let model = itemController.model(for: diceId) else { return diceId }
+        item.id = gameDiceId ?? UUID()
+        item.category = .value
+        model.itemId = item.id
+        setGame(item: item, model: model, itemId: item.id)
+        return item.id
     }
     
     @MainActor
@@ -161,10 +178,10 @@ extension GameController: DiceGameStorable {
             if let diceId {
                 await focus(on: diceId)
             } else {
-//                let gameDice = DiceModel(id: UUID())
-//                gameDice.entries.append(DieModel.die20)
-//                setGame(item: gameDice, itemId: gameDice.id)
-//                await focus(on: gameDice.id)
+                let model = DiceDataModel.twenty
+                let item = model.itemDataCodableModel
+                setGame(item: item, model: model, itemId: model.itemId)
+                await focus(on: model.itemId)
             }
         }
     }
@@ -176,7 +193,7 @@ extension GameController: DiceGameStorable {
                 if let index = gameModel.focusItemIds.firstIndex(where: { $0 == data.id }) {
                     gameModel.focusItemIds.remove(at: index)
                 }
-                //reset(for: data.id)
+                reset(for: data.id)
                 gameModel.focusItemIds.insert(data.id, at: 0)
             }
             let _ = await saveTask.result
@@ -185,20 +202,18 @@ extension GameController: DiceGameStorable {
     
     @MainActor
     public func number(for diceId: UUID, result: String) -> Int {
-//        let dice = gameItem(for: diceId)
-//        dice.applyResult(text: result)
-//        setGame(item: dice, itemId: dice.id)
-//        return sumResult(itemId: diceId)
-        return 0
+        guard let (item, dice) = models(itemId: diceId) else { return 0 }
+        dice.applyResult(text: result)
+        setGame(item: item, model: dice, itemId: dice.itemId)
+        return sumResult(itemId: diceId)
     }
     
     @MainActor
     public func validateForValue(diceId: UUID, compareValue: Int?) {
-        guard let compareValue, compareValue > 0 else { return }
+        guard let compareValue, compareValue > 0, let (item, model) = models(itemId: diceId) else { return }
         let validatedCompareValue = Double(compareValue)
-        let model = gameItem(for: diceId)
-//        guard model.category == .value, model.compareValue != validatedCompareValue else { return }
-//        model.compareValue = validatedCompareValue
+        guard item.category == .value, model.compareValue != validatedCompareValue else { return }
+        model.compareValue = validatedCompareValue
     }
     
     @MainActor
@@ -218,9 +233,8 @@ extension GameController {
     }
     
     @MainActor public func hasResults(itemId: UUID) -> Bool {
-        guard let item = gameItem(for: itemId) else { return false }
-        return false
-        //!item.entries.flatMap { $0.result }.isEmpty
+        guard let model = model(itemId: itemId) else { return false }
+        return !model.dice.flatMap { $0.result }.isEmpty
     }
     
     @MainActor
@@ -252,27 +266,27 @@ extension GameController {
 
 extension GameController {
     @MainActor public func resetCompareValue(of itemId: UUID, value: Int) async {
-        guard let item = gameItem(for: itemId) else { return } //.copy()
-//        guard item.compareValue != Double(value) else { return }
-//        item.compareValue = Double(value)
-//        item.id = UUID()
-        setGame(item: item, itemId: item.id)
+        guard var (item, model) = models(itemId: itemId) else { return }
+        guard model.compareValue != Double(value) else { return }
+        model.compareValue = Double(value)
+        model.itemId = UUID()
+        item.id = model.itemId
+        setGame(item: item, model: model, itemId: item.id)
         await focus(on: [item.id])
     }
     
     @MainActor
     func remove(die: DieModel, from itemId: UUID) {
-        let item = gameItem(for: itemId)
-//        guard let index = item.entries.firstIndex(where: { $0.id == die.id }) else { return }
-//        item.entries.remove(at: index)
+        guard let model = model(itemId: itemId), let index = model.dice.firstIndex(where: { $0.id == die.id }) else { return }
+        model.dice.remove(at: index)
     }
     
     @MainActor
     func rollDice(itemId: UUID, networkActions: NetworkActions? = nil, resultCategopry: ResultCategory? = nil, rollSynced: Bool = false) {
-        //reset(for: itemId)
+        reset(for: itemId)
         
         let rollFunction = {
-            //role(die: nil, for: itemId)
+            role(die: nil, for: itemId)
             
             if let networkActions {
                 Task {
@@ -339,213 +353,211 @@ extension GameController {
 // MARK: - Dice Result
 
 extension GameController {
-//    @MainActor
-//    func calculate(itemId: UUID) -> DiceResultModel {
-//        let item = gameItem(for: itemId)
-//        var result = DiceResultModel(diceModel: item)
-//        guard item.entries.reduce(0, { $0 + $1.result.count }) > 0 else { return result }
-//        
-//        result.result = .rolled
-//        let text = item.entries.compactMap {
-//            guard !$0.result.isEmpty else { return nil }
-//            return $0.result.map { "\($0)" }.joined(separator: ",")
-//        }.joined(separator: "|")
-//        result.values = text
-//        
-//        let succeed = !fumble(for: itemId)
-//        guard succeed else {
-//            result.result = .fumble
-//            return result
-//        }
-//        let sumResult = sumResult(itemId: itemId)
-//        result.sum = sumResult
-//
-//        result.checked = sumResult > 0
-//
-//        if coup(for: itemId) {
-//            result.result = .coup
-//        }
-//        
-//        return result
-//    }
+    @MainActor
+    func calculate(itemId: UUID) -> DiceResultModel? {
+        guard let model = model(itemId: itemId) else { return nil }
+        var result = DiceResultModel(diceModel: model.codableModel)
+        guard model.dice.reduce(0, { $0 + $1.result.count }) > 0 else { return result }
+        
+        result.result = .rolled
+        let text = model.dice.compactMap {
+            guard !$0.result.isEmpty else { return nil }
+            return $0.result.map { "\($0)" }.joined(separator: ",")
+        }.joined(separator: "|")
+        result.values = text
+        
+        let succeed = !fumble(for: itemId)
+        guard succeed else {
+            result.result = .fumble
+            return result
+        }
+        let sumResult = sumResult(itemId: itemId)
+        result.sum = sumResult
+
+        result.checked = sumResult > 0
+
+        if coup(for: itemId) {
+            result.result = .coup
+        }
+        
+        return result
+    }
     
-//    @MainActor
-//    func sumResult(itemId: UUID) -> Int {
-//        guard let item = gameModel.itemData[itemId] as? DiceModel else { return 0 }
-//        let orderedDice = reorder(for: itemId)
-//        var result = 0
-//        if item.sumUp {
-//            if item.canPercentDice, item.percentDice {
-//                var ten = orderedDice[0].result.last ?? 0
-//                var one = orderedDice[1].result.last ?? 0
-//                ten = ten == 10 ? 0 : ten
-//                one = one == 10 ? 0 : one
-//                result = ten * 10 + one
-//                if result == 0 {
-//                    result = 100
-//                }
-//            } else {
-//                orderedDice.enumerated().forEach { index, die in
-//                    let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
-//                    die.result.forEach { diceValue in
-//                        var value: Int
-//                        if let rerole = item.rerollOptions.first(where: { $0.number == diceValue }) {
-//                            value = rerole.maxDiceValue ? maxValue : rerole.value
-//                        } else {
-//                            if diceValue <= maxValue {
-//                                value = diceValue
-//                            } else {
-//                                value = 0
-//                            }
-//                        }
-//                        result += value
-//                    }
-//                }
-//                result += Int(item.modifier)
-//            }
-//        }
-//        return result
-//    }
-//    
-//    @MainActor
-//    func coup(for itemId: UUID) -> Bool {
-//        let item = gameItem(for: itemId)
-//        let allResults = item.coupOnlyOnFirstDie ? [item.entries.first?.result.first ?? 0] : item.entries.compactMap { $0.result.first }
-//        let coup = allResults.contains(where: { value in item.coupValues.contains(where: { $0.isDiceValue(value) }) })
-//        if coup { return true }
-//        let result = allResults.reduce(0) { $0 + $1 }
-//        return item.coupValues.contains(where: { $0.isResultValue(result) })
-//    }
-//    
-//    @MainActor
-//    func diceSuccess(for itemId: UUID) -> [(UUID, [Bool])] {
-//        let item = gameItem(for: itemId)
-//        guard item.entries.reduce(0, { $0 + $1.result.count }) > 0,
-//              !fumble(for: itemId),
-//              item.sumUp else { return [] }
-//        let orderedDice = reorder(for: itemId)
-//        if item.canPercentDice, item.percentDice {
-//            return orderedDice.map { ($0.id, [true]) }
-//        }
-//        return orderedDice.enumerated().map { index, die in
-//            let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
-//            let dieResult = die.result.map { diceValue in
-//                var value: Int
-//                if let rerole = item.rerollOptions.first(where: { $0.number == diceValue }) {
-//                    value = rerole.maxDiceValue ? maxValue : rerole.value
-//                } else {
-//                    if diceValue <= maxValue {
-//                        value = diceValue
-//                    } else {
-//                        value = 0
-//                    }
-//                }
-//                return value > 0
-//            }
-//            return (die.id, dieResult)
-//        }
-//    }
-//    
-//    @MainActor
-//    func fumble(for itemId: UUID) -> Bool {
-//        let item = gameItem(for: itemId)
-//        let allResults = item.fumbleOnlyOnFirstDie ? [item.entries.first?.result.first ?? 0] : item.entries.compactMap { $0.result.first }
-//        let fumble = allResults.contains(where: { value in item.fumbleValues.contains(where: { $0.isDiceValue(value) }) })
-//        if fumble { return true }
-//        let result = allResults.reduce(0) { $0 + $1 }
-//        return item.fumbleValues.contains(where: { $0.isResultValue(result) })
-//    }
-//    
-//    @MainActor
-//    func maxValuePerDice(for index: Int, itemId: UUID) -> Int {
-//        let item = gameItem(for: itemId)
-//        let maxDieValue = item.entries.first?.die.max ?? 1
-//        guard item.addDiceEvery > 0 else { return maxDieValue }
-//        let maxValue = Int(item.compareValue)
-//        return max(0, min((maxValue + maxDieValue) - item.addDiceEvery * index, maxDieValue))
-//    }
-//    
-//    @MainActor
-//    func result(itemId: UUID) -> DiceResultModel {
-//        calculate(itemId: itemId)
-//    }
-//    
-//    @MainActor
-//    func resultText(itemId: UUID) -> String {
-//        let diceResult = result(itemId: itemId)
-//        guard diceResult.result != .notRolled else { return String(localized: diceResult.result.localizedTitle).localizedString }
-//        let item = gameItem(for: itemId)
-//        var compareText = ""
-//        if item.compareOption != .off {
-//            compareText = "\(item.compareOption.rawText)\(Int(item.compareValue))"
-//        }
-//        var text = "\(diceResult.values)\(compareText)"
-//        var specialText = ""
-//        if diceResult.result == .coup || diceResult.result == .fumble {
-//            specialText = " \(String(localized: diceResult.result.localizedTitle).localizedString)"
-//        }
-//        if diceResult.result == .fumble {
-//            text += specialText
-//        } else {
-//            text += " ∑\(diceResult.sum)\(specialText)"
-//        }
-//        if item.compareOption != .off {
-//            text.append("\(diceResult.checked ? "✅" : "❌")")
-//        }
-//        return text
-//    }
-//    
-//    @MainActor
-//    func reorder(for itemId: UUID) -> [DieModel] {
-//        let item = gameItem(for: itemId)
-//        guard item.reorderDice else { return item.entries }
-//        let dice = item.entries.sorted {
-//            var first = $0.result.first ?? 0
-//            var second = $1.result.first ?? 0
-//            if let firstRerole = item.rerollOptions.first(where: { $0.number == first }) {
-//                if firstRerole.maxDiceValue {
-//                    first = $0.die.max + 1
-//                } else {
-//                    first = firstRerole.value
-//                }
-//            }
-//            if let secondRerole = item.rerollOptions.first(where: { $0.number == second }) {
-//                if secondRerole.maxDiceValue {
-//                    second = $0.die.max + 1
-//                } else {
-//                    second = secondRerole.value
-//                }
-//            }
-//            return first > second
-//        }
-//        return dice
-//    }
-//    
-//    @MainActor
-//    func reset(for itemId: UUID) {
-//        gameItem(for: itemId).entries = gameItem(for: itemId).entries.map { die in
-//            die.resetResults()
-//        }
-//    }
-//    
-//    @MainActor
-//    func role(die: DieModel?, for itemId: UUID) {
-//        if let dicePath = Resources.bundle.path(forResource: diceName(for: itemId, isOne: die != nil), ofType: "m4a", inDirectory: "Dice") {
-//            let diceUrl = URL(fileURLWithPath: dicePath)
-//            let item = AVPlayerItem(url: diceUrl)
-//            diceGameModel.audioPlayer.replaceCurrentItem(with: item)
-//            diceGameModel.audioPlayer.play()
-//            diceGameModel.audioPlayer.volume = 0.33
-//        }
-//        
-//        let item = gameItem(for: itemId)
-//        if let die, let index = item.entries.firstIndex(where: { $0.id == die.id }) {
-//            gameItem(for: itemId).entries[index] = die.role(reroleOptions: item.rerollOptions)
-//        } else {
-//            gameItem(for: itemId).entries = gameItem(for: itemId).entries.map { die in
-//                die.role(reroleOptions: item.rerollOptions)
-//            }
-//        }
-//    }
+    @MainActor
+    func sumResult(itemId: UUID) -> Int {
+        guard let model = model(itemId: itemId) else { return 0 }
+        let orderedDice = reorder(for: itemId)
+        var result = 0
+        if model.sumUp {
+            if model.canPercentDice, model.percentDice {
+                var ten = orderedDice[0].result.last ?? 0
+                var one = orderedDice[1].result.last ?? 0
+                ten = ten == 10 ? 0 : ten
+                one = one == 10 ? 0 : one
+                result = ten * 10 + one
+                if result == 0 {
+                    result = 100
+                }
+            } else {
+                orderedDice.enumerated().forEach { index, die in
+                    let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
+                    die.result.forEach { diceValue in
+                        var value: Int
+                        if let rerole = model.rerollOptions.first(where: { $0.number == diceValue }) {
+                            value = rerole.maxDiceValue ? maxValue : rerole.value
+                        } else {
+                            if diceValue <= maxValue {
+                                value = diceValue
+                            } else {
+                                value = 0
+                            }
+                        }
+                        result += value
+                    }
+                }
+                result += Int(model.modifier)
+            }
+        }
+        return result
+    }
+    
+    @MainActor
+    func coup(for itemId: UUID) -> Bool {
+        guard let model = model(itemId: itemId) else { return false }
+        let allResults = model.coupOnlyOnFirstDie ? [model.dice.first?.result.first ?? 0] : model.dice.compactMap { $0.result.first }
+        let coup = allResults.contains(where: { value in model.coupValues.contains(where: { $0.isDiceValue(value) }) })
+        if coup { return true }
+        let result = allResults.reduce(0) { $0 + $1 }
+        return model.coupValues.contains(where: { $0.isResultValue(result) })
+    }
+    
+    @MainActor
+    func diceSuccess(for itemId: UUID) -> [(UUID, [Bool])] {
+        guard let model = model(itemId: itemId), model.dice.reduce(0, { $0 + $1.result.count }) > 0,
+              !fumble(for: itemId),
+              model.sumUp else { return [] }
+        let orderedDice = reorder(for: itemId)
+        if model.canPercentDice, model.percentDice {
+            return orderedDice.map { ($0.id, [true]) }
+        }
+        return orderedDice.enumerated().map { index, die in
+            let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
+            let dieResult = die.result.map { diceValue in
+                var value: Int
+                if let rerole = model.rerollOptions.first(where: { $0.number == diceValue }) {
+                    value = rerole.maxDiceValue ? maxValue : rerole.value
+                } else {
+                    if diceValue <= maxValue {
+                        value = diceValue
+                    } else {
+                        value = 0
+                    }
+                }
+                return value > 0
+            }
+            return (die.id, dieResult)
+        }
+    }
+    
+    @MainActor
+    func fumble(for itemId: UUID) -> Bool {
+        guard let model = model(itemId: itemId) else { return false }
+        let allResults = model.fumbleOnlyOnFirstDie ? [model.dice.first?.result.first ?? 0] : model.dice.compactMap { $0.result.first }
+        let fumble = allResults.contains(where: { value in model.fumbleValues.contains(where: { $0.isDiceValue(value) }) })
+        if fumble { return true }
+        let result = allResults.reduce(0) { $0 + $1 }
+        return model.fumbleValues.contains(where: { $0.isResultValue(result) })
+    }
+    
+    @MainActor
+    func maxValuePerDice(for index: Int, itemId: UUID) -> Int {
+        guard let model = model(itemId: itemId) else { return 0 }
+        let maxDieValue = model.dice.first?.die.max ?? 1
+        guard model.addDiceEvery > 0 else { return maxDieValue }
+        let maxValue = Int(model.compareValue)
+        return max(0, min((maxValue + maxDieValue) - model.addDiceEvery * index, maxDieValue))
+    }
+    
+    @MainActor
+    func result(itemId: UUID) -> DiceResultModel? {
+        calculate(itemId: itemId)
+    }
+    
+    @MainActor
+    func resultText(itemId: UUID) -> String {
+        guard let model = model(itemId: itemId), let diceResult = result(itemId: itemId), diceResult.result != .notRolled else { return String(localized: DiceResultModel.DiceResult.notRolled.localizedTitle).localizedString }
+        var compareText = ""
+        if model.compareOption != .off {
+            compareText = "\(model.compareOption.rawText)\(Int(model.compareValue))"
+        }
+        var text = "\(diceResult.values)\(compareText)"
+        var specialText = ""
+        if diceResult.result == .coup || diceResult.result == .fumble {
+            specialText = " \(String(localized: diceResult.result.localizedTitle).localizedString)"
+        }
+        if diceResult.result == .fumble {
+            text += specialText
+        } else {
+            text += " ∑\(diceResult.sum)\(specialText)"
+        }
+        if model.compareOption != .off {
+            text.append("\(diceResult.checked ? "✅" : "❌")")
+        }
+        return text
+    }
+    
+    @MainActor
+    func reorder(for itemId: UUID) -> [DieDataModel] {
+        guard let model = model(itemId: itemId) else { return [] }
+        guard model.reorderDice else { return model.dice }
+        let dice = model.dice.sorted {
+            var first = $0.result.first ?? 0
+            var second = $1.result.first ?? 0
+            if let firstRerole = model.rerollOptions.first(where: { $0.number == first }) {
+                if firstRerole.maxDiceValue {
+                    first = $0.die.max + 1
+                } else {
+                    first = firstRerole.value
+                }
+            }
+            if let secondRerole = model.rerollOptions.first(where: { $0.number == second }) {
+                if secondRerole.maxDiceValue {
+                    second = $0.die.max + 1
+                } else {
+                    second = secondRerole.value
+                }
+            }
+            return first > second
+        }
+        return dice
+    }
+    
+    @MainActor
+    func reset(for itemId: UUID) {
+        guard let model = model(itemId: itemId) else { return }
+        model.dice.forEach { die in
+            die.resetResults()
+        }
+    }
+    
+    @MainActor
+    func role(die: DieDataModel?, for itemId: UUID) {
+        guard let item = model(itemId: itemId) else { return }
+        if let dicePath = Resources.bundle.path(forResource: diceName(for: itemId, isOne: die != nil), ofType: "m4a", inDirectory: "Dice") {
+            let diceUrl = URL(fileURLWithPath: dicePath)
+            let item = AVPlayerItem(url: diceUrl)
+            diceGameModel.audioPlayer.replaceCurrentItem(with: item)
+            diceGameModel.audioPlayer.play()
+            diceGameModel.audioPlayer.volume = 0.33
+        }
+        
+        if let die {
+            die.role(reroleOptions: item.rerollOptions)
+        } else {
+            item.dice.forEach { die in
+                die.role(reroleOptions: item.rerollOptions)
+            }
+        }
+    }
 }
 

@@ -70,7 +70,7 @@ struct DiceOverlay: View {
                 DiceInlineEditor(itemId: itemId)
             } else {
                 if !diceDisplayModel.showDiceValueEditor {
-                    //DiceRoll(itemId: itemId)
+                    DiceRoll(itemId: itemId)
                 }
             }
         }
@@ -79,7 +79,7 @@ struct DiceOverlay: View {
     @ViewBuilder
     private var playerDiceView: some View {
         if canShowPlayer && diceDisplayModel.showPlayerDice {
-            //DicePlayer(filterout: itemId, alignment: .leading)
+            DicePlayer(filterout: itemId, alignment: .leading)
         }
     }
 }

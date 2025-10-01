@@ -39,3 +39,10 @@ public extension ViewController {
         }
     }
 }
+
+public extension ViewController {
+    @MainActor func gamePhotoView(root: PhotoRootModel) -> some View {
+        RootPhotoViewer(model: root.gameController.currentItem(), toolBarModel: GameToolBarModel(), isGame: true)
+            .environment(root)
+    }
+}

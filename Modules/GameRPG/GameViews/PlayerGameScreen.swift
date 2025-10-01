@@ -23,9 +23,10 @@ struct PlayerGameScreen: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-//            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running") { _ in
-//                root.mapRoot.viewController.gameMapView(playerId: root.gameModel.gameConfig.id)
-//            }
+            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running") { _ in
+                Text("Start")
+                //root.mapRoot.viewController.gameMapView(playerId: root.gameModel.gameConfig.id)
+            }
             
             overlayMenu
         }

@@ -26,9 +26,10 @@ struct MasterGameScreen: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-//            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object") { mapId in
-//                //root.mapRoot.viewController.gameMasterMapView(id: mapId)
-//            }
+            GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object") { mapId in
+                Text("Start")
+                //root.mapRoot.viewController.gameMasterMapView(id: mapId)
+            }
             
             overlayMenu
         }

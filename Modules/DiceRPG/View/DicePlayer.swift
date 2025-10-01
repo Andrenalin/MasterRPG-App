@@ -15,21 +15,21 @@ struct DicePlayer: View {
             ForEach(playerDice) { player in
                 HStack(alignment: .top, spacing: 8) {
                     VStack(alignment: alignment) {
-                        playerButton(playerId: player.id)
+                        playerButton(playerId: player.itemId)
 
-                        if !root.gameController.isPlayerHidden(playerId: player.id) {
-                            playerDice(playerId: player.id)
+                        if !root.gameController.isPlayerHidden(playerId: player.itemId) {
+                            playerDice(playerId: player.itemId)
                         }
                     }
-                    .animation(.bouncy, value: root.gameController.isPlayerHidden(playerId: player.id))
+                    .animation(.bouncy, value: root.gameController.isPlayerHidden(playerId: player.itemId))
                 }
             }
         }
     }
 
-    private var playerDice: [DiceModel] {
+    private var playerDice: [DiceDataModel] {
         root.gameController.diceGameModel.playerDice.filter {
-            diceDisplayModel.isEditing || !root.gameController.isPlayerHidden(playerId: $0.id)
+            diceDisplayModel.isEditing || !root.gameController.isPlayerHidden(playerId: $0.itemId)
         }
     }
 

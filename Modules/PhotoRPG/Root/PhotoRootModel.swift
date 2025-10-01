@@ -45,7 +45,7 @@ public final class PhotoRootModel {
     @ObservationIgnored lazy var fileController: FileController = {
         FileController()
     }()
-    @ObservationIgnored public lazy var gameController: PhotoGameControllable = {
+    @ObservationIgnored public lazy var gameController: GameController = {
         GameController(itemController: itemController, fileUrlDataController: fileController.fileUrlDataController)
     }()
     @ObservationIgnored lazy var importController: ImportController = {

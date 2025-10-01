@@ -30,7 +30,14 @@ extension ItemController: ItemControllable {
         }
     }
     
-    @MainActor func decodedModel(codableModel: ItemDataCodableModel) throws -> DiceModel? {
+    @MainActor func decodedModel(codableModel: ItemDataCodableModel) throws -> DiceDataModel? {
+        guard let externalData = codableModel.externalData else { return nil }
+        let decoder = JSONDecoder()
+        guard let diceDataModel = try? decoder.decode(DiceDataModel.DiceDataModelCodable.self, from: externalData) else { return nil }
+        return DiceDataModel(diceDataModel)
+    }
+
+    @MainActor func decodedOldModel(codableModel: ItemDataCodableModel) throws -> DiceModel? {
         guard let externalData = codableModel.externalData else { return nil }
         let decoder = JSONDecoder()
         let diceDataModel = try? decoder.decode(DiceDataModel.DiceDataModelCodable.self, from: externalData)

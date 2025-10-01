@@ -34,20 +34,24 @@ struct DiceGameResult: View {
 
     @ViewBuilder
     private var resultView: some View {
-//        if root.gameController.gameItem(for: itemId).sumUp || root.gameController.gameItem(for: itemId).compareOption != .off {
-//            Button {
-//                if gameModus != .edit && root.gameController.canEditDice(itemId: itemId, isGameMode: true){
-//                    diceDisplayModel.showDiceValueEditor.toggle()
-//                    diceDisplayModel.showPlayerDice = !diceDisplayModel.showDiceValueEditor
-//                    diceDisplayModel.isEditing <=> false
-//                }
-//            } label: {
-//                Label("\(root.gameController.resultText(itemId: itemId).markDown())", systemImage: root.gameController.result(itemId: itemId).checked ? "checkmark" : "xmark")
-//            }
-//#if !os(tvOS)
-//            .buttonStyle(.borderedProminent)
-//#endif
-//        }
+        if let model, model.sumUp || model.compareOption != .off {
+            Button {
+                if gameModus != .edit && root.gameController.canEditDice(itemId: itemId, isGameMode: true){
+                    diceDisplayModel.showDiceValueEditor.toggle()
+                    diceDisplayModel.showPlayerDice = !diceDisplayModel.showDiceValueEditor
+                    diceDisplayModel.isEditing <=> false
+                }
+            } label: {
+                Label("\(root.gameController.resultText(itemId: itemId).markDown())", systemImage: root.gameController.result(itemId: itemId)?.checked ?? false ? "checkmark" : "xmark")
+            }
+#if !os(tvOS)
+            .buttonStyle(.borderedProminent)
+#endif
+        }
+    }
+    
+    var model: DiceDataModel? {
+        root.gameController.model(itemId: itemId)
     }
 }
 

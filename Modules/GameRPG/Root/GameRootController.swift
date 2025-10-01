@@ -56,11 +56,7 @@ public struct GameRootController: Sendable {
 
     let gameModel: GameRootModel
     
-//    private(set) var _viewController: ViewController?
-//    public var viewController: ViewController {
-//        _viewController.unsafelyUnwrapped
-//    }
-
+    public let viewController: ViewController = ViewController()
 }
 
 

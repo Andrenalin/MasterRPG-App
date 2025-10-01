@@ -25,7 +25,7 @@ public protocol PhotoGameControllable: GameControllable {
     @MainActor func resetPhotoSpace()
 }
 
-struct GameController: Sendable {
+public struct GameController: Sendable {
     @MainActor
     init(itemController: ItemController, fileUrlDataController: FileUrlDataController) {
         self.itemController = itemController
@@ -40,28 +40,28 @@ struct GameController: Sendable {
     let importController: ImportController
     let exportController: ExportController
     
-    let gameModel: ItemGameModel
+    public let gameModel: ItemGameModel
     let photoGameModel: PhotoGameModel
 }
 
 extension GameController: GameControllable {
-    var itemControllable: any ItemControllable {
+    public var itemControllable: any ItemControllable {
         itemController as (any ItemControllable)
     }
-    var exportControllable: any ExportControllable {
+    public var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    var importControllable: any ImportControllable {
+    public var importControllable: any ImportControllable {
         importController as ImportControllable
     }
     
-    func resetGameState() {
+    public func resetGameState() {
         photoGameModel.reset()
     }
 }
 
 extension GameController {
-    func updateGame(data: NetworkCodableDataType, subtype: RPGMessageActionType) async throws {
+    public func updateGame(data: NetworkCodableDataType, subtype: RPGMessageActionType) async throws {
         guard subtype == .photoSpace else { return }
 #if os(visionOS)
         Task { @MainActor in
@@ -74,7 +74,7 @@ extension GameController {
 
 extension GameController: PhotoGameControllable {
     @MainActor
-    func resetPhotoSpace() {
+    public func resetPhotoSpace() {
         photoGameModel.openPhotoSpace <=> false
     }
 }

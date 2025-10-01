@@ -26,7 +26,7 @@ public final class DiceDataModel {
     ) {
         self.itemId = itemId
         self.displayState = 0
-
+        
         self.sumUp = sumUp
         self.modifier = modifier
         self.percentDice = percentDice
@@ -78,12 +78,30 @@ public final class DiceDataModel {
     }
     
     @Relationship(deleteRule: .cascade) private var dice_: [DieDataModel]? = []
-
+    
     @Transient
     var resultCategory: ResultCategory? = nil
-    
-    // MARK: Codable
-    
+}
+
+extension DiceDataModel {
+    var dice: [DieDataModel] {
+        get {
+            guard let all = dice_ else { return [] }
+            return all.sorted { $0.index < $1.index }
+        }
+        set {
+            dice_ = newValue
+        }
+    }
+
+    static var twenty: DiceDataModel {
+        DiceDataModel(dice: [DieDataModel.die20])
+    }
+}
+
+// MARK: - Codable
+
+extension DiceDataModel {
     struct DiceDataModelCodable: Equatable, Hashable, Codable, Sendable {
         init(
             itemId: UUID = UUID(),
@@ -215,22 +233,22 @@ public final class DiceDataModel {
             resultCategory: nil
         )
     }
-}
-
-extension DiceDataModel {
-    var dice: [DieDataModel] {
-        get {
-            guard let all = dice_ else { return [] }
-            return all.sorted { $0.index < $1.index }
-        }
-        set {
-            dice_ = newValue
-        }
+    
+    var itemDataCodableModel: ItemDataCodableModel {
+        ItemDataCodableModel(
+            id: itemId,
+            module: .dice,
+            name: CRDT<String>(wrappedValue: inlineText),
+            information: CRDT<String>(wrappedValue: ""),
+            category: .value,
+            tags: [],
+            fileUrl: nil,
+            displayState: 0,
+            parentId: nil,
+            entries: [],
+            externalData: nil
+        )
     }
-
-    static var twenty: DiceDataModel {
-        DiceDataModel(dice: [DieDataModel.die20])
-    }    
 }
 
 extension DiceDataModel: ModelCachable {
