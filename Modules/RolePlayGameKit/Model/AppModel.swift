@@ -12,6 +12,7 @@ import AudioRPG
 import CharacterRPG
 import DiceRPG
 import GameRPG
+import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -43,6 +44,7 @@ public final class AppModel: Sendable {
     @ObservationIgnored public let characterRoot: CharacterRootModel
     @ObservationIgnored public let diceRoot: DiceRootModel
     @ObservationIgnored public let gameRoot: GameRootController
+    @ObservationIgnored public let generatorRoot: GeneratorRootModel
     @ObservationIgnored public let mapRoot: MapRootModel
     @ObservationIgnored public let pdfRoot: PdfRootModel
     @ObservationIgnored public let photoRoot: PhotoRootModel
@@ -79,11 +81,14 @@ public final class AppModel: Sendable {
         let mapRoot = MapRootFactory.rootModel(modelContext: modelContainer.mainContext, characterRoot: characterRoot,  diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         let adventureRoot = AdventureRootFactory.rootModel(modelContext: modelContainer.mainContext, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
         
+        let generatorRoot = GeneratorRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        
         let root = RootManager(
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,
             characterRoot: characterRoot,
             diceRoot: diceRoot,
+            generatorRoot: generatorRoot,
             mapRoot: mapRoot,
             pdfRoot: pdfRoot,
             photoRoot: photoRoot,
@@ -113,6 +118,7 @@ public final class AppModel: Sendable {
         self.characterRoot = characterRoot
         self.diceRoot = diceRoot
         self.gameRoot = gameRoot
+        self.generatorRoot = generatorRoot
         self.mapRoot = mapRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
@@ -122,7 +128,7 @@ public final class AppModel: Sendable {
         
         self.navigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "1.0.8",
+                restorationKey: "1.0.9",
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true
@@ -168,7 +174,7 @@ public final class AppModel: Sendable {
 public extension AppModel {
     func windowPlacement(for module: NetworkModules) -> WindowPlacementPosition {
         switch module {
-        case .none, .setting, .editor, .game, .search:
+        case .none, .setting, .editor, .game, .search, .generator:
             return .leading(WindowIdentifier.game.rawValue)
         case .photo:
 //            if settingsModel.gameModus == .player {
@@ -252,7 +258,7 @@ extension AppModel {
 extension AppModel {
     func update(items: [ItemDataModel]) {
         Task {
-            for module in [NetworkModules.dice, .space, .audio, .photo, .pdf, .weather, .table, .value, .map, .adventure] {
+            for module in [NetworkModules.dice, .space, .audio, .photo, .pdf, .weather, .table, .value, .map, .adventure, .generator] {
                 await self.root[module]?.itemControllable.update(items: items.filter { $0.module == module })
             }
         }

@@ -20,6 +20,7 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.audioRoot)
             .environment(appModel.characterRoot)
             .environment(appModel.diceRoot)
+            .environment(appModel.generatorRoot)
             .environment(appModel.mapRoot)
             .environment(appModel.pdfRoot)
             .environment(appModel.photoRoot)

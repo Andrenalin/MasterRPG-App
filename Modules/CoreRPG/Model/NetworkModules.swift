@@ -19,6 +19,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     case setting = 13
     case editor = 14
     case search = 15
+    case generator = 16
 
     public var token: String {
         switch self {
@@ -36,6 +37,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .setting: "SETTINGS"
         case .editor: "EDITOR"
         case .search: "SEARCH"
+        case .generator: "GENERATOR"
         case .none: "ERROR"
         }
     }
@@ -56,6 +58,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .setting: "Settings"
         case .editor: "Editors"
         case .search: "Search"
+        case .generator: "Generator"
         case .none: "ERROR"
         }
     }
@@ -80,6 +83,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .setting: "gear"
         case .editor: "pencil"
         case .search: "magnifyingglass"
+        case .generator: "apple.intelligence"
         case .none: "warning"
         }
     }
@@ -101,6 +105,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .setting: "NoWindow"
         case .editor: "NoWindow"
         case .search: "NoWindow"
+        case .generator: "NoWindow"
         }
     }
 
@@ -129,6 +134,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .value: Color("CharacterBackground", bundle: .module)
         case .weather: Color("WeatherBackground", bundle: .module)
         case .search: .blue
+        case .generator: .blue
         }
     }
     
@@ -149,6 +155,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .value: Color("CharacterTint", bundle: .module)
         case .weather: Color("WeatherTint", bundle: .module)
         case .search: .blue
+        case .generator: .blue
         }
     }
 }

@@ -5,6 +5,7 @@ import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -22,6 +23,7 @@ struct SplitDetailView: View {
         case .audio: AudioRootFactory.detailView(root: appModel.audioRoot)
         case .dice: DiceRootFactory.detailView(root: appModel.diceRoot)
         case .game: EmptyView()
+        case .generator: GeneratorRootFactory.detailView(root: appModel.generatorRoot)
         case .map: MapRootFactory.detailView(root: appModel.mapRoot)
         case .pdf: PdfRootFactory.detailView(root: appModel.pdfRoot)
         case .photo: PhotoRootFactory.detailView(root: appModel.photoRoot)

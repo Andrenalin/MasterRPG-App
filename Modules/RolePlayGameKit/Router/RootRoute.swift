@@ -7,6 +7,7 @@ import AudioRPG
 import CharacterRPG
 import DiceRPG
 import GameRPG
+import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -21,6 +22,7 @@ public enum RootRoute: Hashable, Codable {
     case dice
     case editors
     case game
+    case generator
     case maps
     case pdfs
     case photos
@@ -33,39 +35,41 @@ public enum RootRoute: Hashable, Codable {
     
     public init(networkModule: NetworkModules) {
         switch networkModule {
-        case .photo: self = .photos
-        case .map: self = .maps
-        case .table: self = .tables
         case .adventure: self = .adventures
+        case .audio: self = .audios
         case .dice: self = .dice
+        case .editor: self = .editors
+        case .generator: self = .generator
+        case .map: self = .maps
+        case .pdf: self = .pdfs
+        case .photo: self = .photos
+        case .setting: self = .settings
+        case .space: self = .space
+        case .search: self = .search
+        case .table: self = .tables
         case .value: self = .values
         case .weather: self = .weathers
-        case .audio: self = .audios
-        case .pdf: self = .pdfs
-        case .space: self = .space
-        case .setting: self = .settings
-        case .editor: self = .editors
-        case .search: self = .search
         default: self = .game
         }
     }
     
     public var module: NetworkModules {
         switch self {
-        case .game: .game
-        case .values: .value
         case .adventures: .adventure
-        case .maps: .map
-        case .tables: .table
-        case .photos: .photo
-        case .weathers: .weather
-        case .dice: .dice
         case .audios: .audio
-        case .pdfs: .pdf
-        case .settings: .setting
+        case .dice: .dice
         case .editors: .editor
-        case .space: .space
+        case .game: .game
+        case .generator: .generator
+        case .maps: .map
+        case .pdfs: .pdf
+        case .photos: .photo
+        case .tables: .table
         case .search: .search
+        case .settings: .setting
+        case .space: .space
+        case .values: .value
+        case .weathers: .weather
         }
     }
     
@@ -89,15 +93,16 @@ extension RootRoute: RawRepresentable {
         case NetworkModules.dice.token: self = .dice
         case NetworkModules.editor.token: self = .editors
         case NetworkModules.game.token: self = .game
+        case NetworkModules.generator.token: self = .generator
         case NetworkModules.map.token: self = .maps
         case NetworkModules.pdf.token: self = .pdfs
         case NetworkModules.photo.token: self = .photos
+        case NetworkModules.search.token: self = .search
         case NetworkModules.setting.token: self = .settings
         case NetworkModules.space.token: self = .space
         case NetworkModules.table.token: self = .tables
         case NetworkModules.value.token: self = .values
         case NetworkModules.weather.token: self = .weathers
-        case NetworkModules.search.token: self = .search
         default: self = .game
         }
     }
@@ -120,7 +125,7 @@ extension RootRoute: NavigationDestination {
     
     public static var allTabs: [RootRoute] {
 //#if os(iOS) || os(visionOS)
-        [.game, .adventures, .values, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
+        [.game, .adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
 //#else
 //        [.adventures, .values, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .search]
 //#endif
@@ -152,6 +157,8 @@ struct RouteRouteDestionationView: View {
 #endif
         case .game:
             GameRootFactory.rootView(root: appModel.gameRoot)
+        case .generator:
+            GeneratorRootFactory.rootView()
         case .maps:
             MapRootFactory.rootView()
         case .pdfs:

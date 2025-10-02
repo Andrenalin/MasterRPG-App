@@ -18,6 +18,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     case space = 12
     case setting = 13
     case editor = 14
+    case generator = 15
     
     public var token: String {
         switch self {
@@ -34,6 +35,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .space: "SPACES"
         case .setting: "SETTINGS"
         case .editor: "EDITOR"
+        case .generator: "GENERATOR"
         case .none: "ERROR"
         }
     }
@@ -53,6 +55,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .space: "Space"
         case .setting: "Settings"
         case .editor: "Editors"
+        case .generator: "Generator"
         case .none: "ERROR"
         }
     }
@@ -76,6 +79,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .space: "view.3d"
         case .setting: "gear"
         case .editor: "pencil"
+        case .generator: "apple.intelligence"
         case .none: "warning"
         }
     }
@@ -96,6 +100,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .game: "NoWindow"
         case .setting: "NoWindow"
         case .editor: "NoWindow"
+        case .generator: "NoWindow"
         }
     }
     
@@ -119,6 +124,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .table: .green
         case .value: .teal
         case .weather: .orange
+        case .generator: .blue
         }
     }
     
@@ -138,6 +144,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .table: .red
         case .value: .red
         case .weather: .green
+        case .generator: .green
         }
     }
 }

@@ -25,6 +25,8 @@ struct Master3RPGApp: App {
         AppDependencyManager.shared.add(dependency: characterRootModel)
         let diceRootModel = appModel.diceRoot
         AppDependencyManager.shared.add(dependency: diceRootModel)
+        let generatorRootModel = appModel.generatorRoot
+        AppDependencyManager.shared.add(dependency: generatorRootModel)
         let mapRootModel = appModel.mapRoot
         AppDependencyManager.shared.add(dependency: mapRootModel)
         let pdfRootModel = appModel.pdfRoot

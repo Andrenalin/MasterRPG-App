@@ -8,6 +8,7 @@ public struct RootManager: Sendable {
         audioRoot: any ItemRootControllable,
         characterRoot: any ItemRootControllable,
         diceRoot: any ItemRootControllable,
+        generatorRoot: any ItemRootControllable,
         mapRoot: any ItemRootControllable,
         pdfRoot: any ItemRootControllable,
         photoRoot: any ItemRootControllable,
@@ -19,6 +20,7 @@ public struct RootManager: Sendable {
         self.audioRoot = audioRoot
         self.characterRoot = characterRoot
         self.diceRoot = diceRoot
+        self.generatorRoot = generatorRoot
         self.mapRoot = mapRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
@@ -31,6 +33,7 @@ public struct RootManager: Sendable {
     public let audioRoot: ItemRootControllable
     public let characterRoot: ItemRootControllable
     public let diceRoot: ItemRootControllable
+    public let generatorRoot: ItemRootControllable
     public let mapRoot: ItemRootControllable
     public let pdfRoot: ItemRootControllable
     public let photoRoot: ItemRootControllable
@@ -44,6 +47,7 @@ public struct RootManager: Sendable {
         case .audio: audioRoot
         case .value: characterRoot
         case .dice: diceRoot
+        case .generator: generatorRoot
         case .map: mapRoot
         case .pdf: pdfRoot
         case .photo: photoRoot

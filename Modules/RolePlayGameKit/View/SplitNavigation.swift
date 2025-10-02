@@ -67,8 +67,17 @@ private extension SplitNavigation {
                 .customizationBehavior(.disabled, for: .sidebar, .tabBar)
             #endif
 
-            pageTab(for: .search)
-                .customizationID("Tab.\(NetworkModules.search.token)")
+            TabSection {
+                pageTab(for: .search)
+                    .customizationID("Tab.\(NetworkModules.search.token)")
+
+                pageTab(for: .generator)
+                    .customizationID("Tab.\(NetworkModules.generator.token)")
+            } header: {
+                Text("Special", bundle: .module)
+            }
+            .customizationID("Tab.Special")
+            .defaultVisibility(.hidden, for: .tabBar)
 
             TabSection {
                 pageTab(for: .adventures)
@@ -112,8 +121,14 @@ private extension SplitNavigation {
             .customizationID("Tab.Material")
             .defaultVisibility(.hidden, for: .tabBar)
 
-            pageTab(for: .settings)
-                .customizationID("Tab.\(NetworkModules.setting.token)")
+            TabSection {
+                pageTab(for: .settings)
+                    .customizationID("Tab.\(NetworkModules.setting.token)")
+            } header: {
+                Text("Setting", bundle: .module)
+            }
+            .customizationID("Tab.Util")
+
         }
         .tabViewCustomization($customization)
         .tabViewStyle(.sidebarAdaptable)

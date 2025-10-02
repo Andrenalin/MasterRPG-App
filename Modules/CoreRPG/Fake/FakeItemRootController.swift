@@ -147,6 +147,7 @@ extension LinkRootController {
             audioRoot: fakeRoot,
             characterRoot: fakeRoot,
             diceRoot: fakeRoot,
+            generatorRoot: fakeRoot,
             mapRoot: fakeRoot,
             pdfRoot: fakeRoot,
             photoRoot: fakeRoot,

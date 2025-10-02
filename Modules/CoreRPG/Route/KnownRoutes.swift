@@ -8,6 +8,7 @@ public enum KnownRoutes: NavigationRoutes {
     case audios(UUID?, UUID?)
     case dice(UUID?, UUID?)
     case game
+    case generators(UUID?, UUID?)
     case maps(UUID?, UUID?)
     case pdfs(UUID?, UUID?)
     case photos(UUID?, UUID?)
@@ -26,6 +27,7 @@ extension KnownRoutes {
         case .audio: .audios(itemId, entryId)
         case .dice: .dice(itemId, entryId)
         case .game: .game
+        case .generator: .generators(itemId, entryId)
         case .map: .maps(itemId, entryId)
         case .pdf: .pdfs(itemId, entryId)
         case .photo: .photos(itemId, entryId)

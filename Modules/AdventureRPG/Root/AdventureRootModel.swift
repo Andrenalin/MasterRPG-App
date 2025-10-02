@@ -116,6 +116,7 @@ public extension AdventureRootModel {
             audioRoot: audioRoot,
             characterRoot: characterRoot,
             diceRoot: diceRoot,
+            generatorRoot: self,
             mapRoot: mapRoot,
             pdfRoot: pdfRoot,
             photoRoot: photoRoot,

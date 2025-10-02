@@ -6,6 +6,7 @@ import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -40,6 +41,11 @@ struct TabbedSplitRouter: NavigationRouteHandling {
             return [.send(RootRoute.dice)]
         case .game:
             return [.send(RootRoute.game)]
+        case .generators(let itemId, _):
+            if let itemId {
+                return [.send(RootRoute.generator), .reset, .send(GeneratorRoute.detail(itemId))]
+            }
+            return [.send(RootRoute.generator)]
         case .maps(let itemId, _):
             if let itemId {
                 return [.send(RootRoute.maps), .reset, .send(MapRoute.detail(itemId))]
