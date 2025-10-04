@@ -49,6 +49,16 @@ struct DetailRootView: View {
     
     @ViewBuilder
     func detailEditorView(model: GeneratorDataModel) -> some View {
+        @Bindable var model = model
+        Picker(selection: $model.genType) {
+            ForEach(GeneratorDataModel.GenType.allCases) { genType in
+                Text(genType.title)
+                    .tag(genType)
+            }
+        } label: {
+            Text("Generation Type")
+        }
+
         root.characterRoot.viewController.selectionView(root: root.characterRoot, model: root.editController.selectionReference)
             .onChange(of: root.editController.selectionReference.selection) {
                 withAnimation { root.editController.add(referenceId: root.editController.selectionReference.itemId, model: model) }

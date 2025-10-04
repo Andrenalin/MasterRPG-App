@@ -3,6 +3,7 @@
 import CoreRPG
 import Foundation
 import SwiftData
+import SwiftUI
 
 @Model 
 public final class GeneratorDataModel {
@@ -16,6 +17,23 @@ public final class GeneratorDataModel {
     @Attribute(.preserveValueOnDeletion)
     public var itemId: UUID = UUID()
     public var displayState: Int = 0
+    
+    enum GenType: Int, Equatable, Hashable, Sendable, Codable, CaseIterable, Identifiable {
+        var id: Int {
+            rawValue
+        }
+        
+        case adventure = 0
+        case character = 1
+        
+        var title: LocalizedStringKey {
+            switch self {
+            case .adventure: "Adventure"
+            case .character: "Character"
+            }
+        }
+    }
+    var genType: GeneratorDataModel.GenType = GeneratorDataModel.GenType.adventure
     
     var referenceId: UUID?
     

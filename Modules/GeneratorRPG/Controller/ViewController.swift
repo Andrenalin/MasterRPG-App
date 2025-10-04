@@ -24,8 +24,13 @@ public extension ViewController {
     @MainActor @ViewBuilder
     func inlineViewer(root: GeneratorRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         if let model = root.itemController.model(for: id) {
-            ChatRootView(model: model, dismissAction: dismissAction)
-                .environment(root)
+            if model.genType == .adventure {
+                AdventureGenRootView(model: model, dismissAction: dismissAction)
+                    //.environment(root)
+            } else {
+                ChatRootView(model: model, dismissAction: dismissAction)
+                    //.environment(root)
+            }
         }
     }
 }

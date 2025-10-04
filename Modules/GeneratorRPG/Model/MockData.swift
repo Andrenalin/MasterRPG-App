@@ -104,6 +104,7 @@ struct MockRootViewModifier: ViewModifier {
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
             .environment(TabTitleModel())
+            .environment(LinkRootController(container: root.itemController.container, root: RootManager(adventureRoot: root.adventureRoot, audioRoot: root.audioRoot, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root.mapRoot, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root.spaceRoot, tableRoot: root.tableRoot, weatherRoot: root.weatherRoot)))
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif
