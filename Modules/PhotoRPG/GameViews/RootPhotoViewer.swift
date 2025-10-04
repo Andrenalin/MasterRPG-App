@@ -33,8 +33,8 @@ struct RootPhotoViewer: View {
         .onChange(of: root.gameController.photoGameModel.openPhotoSpace, initial: false) {
 #if os(visionOS)
             Task {
-                if root.gameController.photoGameModel.openPhotoSpace {
-                    await openSpace(id: "PhotoWorld", value: PhotoWorldSelection(id: model.id, rotationDegrees: 67))
+                if root.gameController.photoGameModel.openPhotoSpace, let id = model?.id {
+                    await openSpace(id: "PhotoWorld", value: PhotoWorldSelection(id: id, rotationDegrees: 67))
                 } else {
                     await dismissSpace()
                 }
