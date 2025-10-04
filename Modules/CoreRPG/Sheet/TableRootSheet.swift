@@ -16,7 +16,6 @@ public struct TableRootSheet<ImageContent: View>: View {
     let dismissAction: (() -> Void)?
     let imageContent: (CGSize) -> ImageContent
     
-    @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) private var colorScheme
     
     @State private var tableSheetModel: TableSheetModel

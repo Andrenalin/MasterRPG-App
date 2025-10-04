@@ -28,8 +28,8 @@ public final class LinkDataModel: Identifiable {
     public internal(set) var destinationEntryId: UUID? = nil
     public internal(set) var destinationModule: NetworkModules = NetworkModules.none
     
-    public struct LinkDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(id: UUID, name: String, sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModel: NetworkModules) {
+    public struct Value: Equatable, Hashable, Codable, Sendable {
+        public init(id: UUID, name: String, sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModel: NetworkModules) {
             self.id = id
             self.name = name
             self.sourceId = sourceId
@@ -40,17 +40,17 @@ public final class LinkDataModel: Identifiable {
             self.destinationModule = destinationModel
         }
         
-        var id: UUID = UUID()
-        var name: String = ""
-        var sourceId: UUID = UUID()
-        var sourceEntryId: UUID?
-        var sourceModule: NetworkModules = .none
-        var destinationId: UUID = UUID()
-        var destinationEntryId: UUID?
-        var destinationModule: NetworkModules = .none
+        public var id: UUID = UUID()
+        public var name: String = ""
+        public var sourceId: UUID = UUID()
+        public var sourceEntryId: UUID?
+        public var sourceModule: NetworkModules = .none
+        public var destinationId: UUID = UUID()
+        public var destinationEntryId: UUID?
+        public var destinationModule: NetworkModules = .none
     }
     
-    public convenience init(_ model: LinkDataModelCodable) {
+    public convenience init(_ model: Value) {
         self.init(
             id: model.id,
             name: model.name,
@@ -63,8 +63,8 @@ public final class LinkDataModel: Identifiable {
         )
     }
     
-    public var codableModel: LinkDataModelCodable {
-        LinkDataModelCodable(
+    public var codableModel: Value {
+        Value(
             id: id,
             name: name,
             sourceId: sourceId,
@@ -76,7 +76,7 @@ public final class LinkDataModel: Identifiable {
         )
     }
     
-    public func replace(_ model: LinkDataModelCodable) {
+    public func replace(_ model: Value) {
         name = model.name
         sourceId = model.sourceId
         sourceEntryId = model.sourceEntryId

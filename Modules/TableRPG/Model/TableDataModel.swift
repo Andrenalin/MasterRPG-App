@@ -25,7 +25,7 @@ public final class TableDataModel {
     // MARK: Codable
     
     struct TableDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(itemId: UUID = UUID(), diceId: UUID?, entries: [TableEntryDataModel.TableEntryDataModelCodable] = [], links: [LinkDataModel.LinkDataModelCodable] = []) {
+        init(itemId: UUID = UUID(), diceId: UUID?, entries: [TableEntryDataModel.TableEntryDataModelCodable] = [], links: [LinkDataModel.Value] = []) {
             self.itemId = itemId
             self.diceId = diceId
             self.entries = entries
@@ -34,7 +34,7 @@ public final class TableDataModel {
         var itemId: UUID = UUID()
         var diceId: UUID?
         var entries: [TableEntryDataModel.TableEntryDataModelCodable] = []
-        var links: [LinkDataModel.LinkDataModelCodable] = []
+        var links: [LinkDataModel.Value] = []
     }
     
     convenience init(_ model: TableDataModelCodable) {

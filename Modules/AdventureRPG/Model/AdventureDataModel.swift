@@ -24,7 +24,7 @@ public final class AdventureDataModel {
     // MARK: Codable
     
     struct AdventureDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(itemId: UUID = UUID(), photoId: UUID? = nil, entries: [AdventureEntryDataModel.AdventureEntryDataModelCodable] = [], links: [LinkDataModel.LinkDataModelCodable] = []) {
+        init(itemId: UUID = UUID(), photoId: UUID? = nil, entries: [AdventureEntryDataModel.AdventureEntryDataModelCodable] = [], links: [LinkDataModel.Value] = []) {
             self.itemId = itemId
             self.photoId = photoId
             self.entries = entries
@@ -33,7 +33,7 @@ public final class AdventureDataModel {
         var itemId: UUID = UUID()
         var photoId: UUID? = nil
         var entries: [AdventureEntryDataModel.AdventureEntryDataModelCodable] = []
-        var links: [LinkDataModel.LinkDataModelCodable] = []
+        var links: [LinkDataModel.Value] = []
     }
     
     convenience init(_ model: AdventureDataModelCodable) {

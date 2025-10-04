@@ -1,12 +1,23 @@
 // @copyright André Trettin
 
+import AdventureRPG
+import AudioRPG
+import CharacterRPG
+import DiceRPG
+import MapRPG
+import PdfRPG
+import PhotoRPG
+import SpaceRPG
+import TableRPG
+import WeatherRPG
+
 import CoreRPG
-import SwiftData
 import Foundation
+import SwiftData
 
 @MainActor @Observable
 public final class GeneratorRootModel {
-    init(modelContext: ModelContext) {
+    init(modelContext: ModelContext, adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, characterRoot: CharacterRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, weatherRoot: WeatherRootModel) {
         self.modelContext = modelContext
         
         let module: NetworkModules = .generator
@@ -20,6 +31,17 @@ public final class GeneratorRootModel {
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
         
+        self.adventureRoot = adventureRoot
+        self.audioRoot = audioRoot
+        self.characterRoot = characterRoot
+        self.diceRoot = diceRoot
+        self.mapRoot = mapRoot
+        self.pdfRoot = pdfRoot
+        self.photoRoot = photoRoot
+        self.spaceRoot = spaceRoot
+        self.tableRoot = tableRoot
+        self.weatherRoot = weatherRoot
+
         itemController.cleanDeleted()
     }
     
@@ -34,6 +56,17 @@ public final class GeneratorRootModel {
     }
     public let removeEntryListModel = RemoveEntryListModel()
     
+    let adventureRoot: AdventureRootModel
+    let audioRoot: AudioRootModel
+    let characterRoot: CharacterRootModel
+    let diceRoot: DiceRootModel
+    let mapRoot: MapRootModel
+    let pdfRoot: PdfRootModel
+    let photoRoot: PhotoRootModel
+    let spaceRoot: SpaceRootModel
+    let tableRoot: TableRootModel
+    let weatherRoot: WeatherRootModel
+
     @ObservationIgnored lazy var editController: EditController = {
         EditController(itemController: itemController)
     }()
@@ -78,6 +111,10 @@ public final class GeneratorRootModel {
             listLinkControllable: listLinkController,
             viewControllable: viewController
         )
+    }()
+    
+    @ObservationIgnored lazy var generatorController: GeneratorController = {
+        GeneratorController(characterRoot: characterRoot)
     }()
 }
 

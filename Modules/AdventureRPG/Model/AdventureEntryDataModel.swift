@@ -73,7 +73,7 @@ public final class AdventureEntryDataModel {
     }
 
     @MainActor
-    var links: [LinkDataModel.LinkDataModelCodable] {
+    var links: [LinkDataModel.Value] {
         guard let modelContext else { return [] }
         let linkRegisterController = LinkRegisterController(container: modelContext.container)
         return linkRegisterController.linkDataModel(in: content).map { $0.codableModel }

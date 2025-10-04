@@ -39,7 +39,7 @@ public final class MapDataModel {
     // MARK: Codable
     
     struct MapDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(itemId: UUID = UUID(), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, entries: [MapEntryDataModel.MapEntryDataModelCodable] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, links: [LinkDataModel.LinkDataModelCodable] = []) {
+        init(itemId: UUID = UUID(), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, entries: [MapEntryDataModel.MapEntryDataModelCodable] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, links: [LinkDataModel.Value] = []) {
             self.itemId = itemId
             self.photoId = photoId
             self.width = width
@@ -58,7 +58,7 @@ public final class MapDataModel {
         var pinScale: CGFloat = 1.0
         var hexMapScale: Double = 0
         var scale: CGFloat = 1.0
-        var links: [LinkDataModel.LinkDataModelCodable] = []
+        var links: [LinkDataModel.Value] = []
     }
     
     convenience init(_ model: MapDataModelCodable) {

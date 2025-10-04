@@ -2,6 +2,7 @@
 
 import CoreRPG
 import Foundation
+import FoundationModels
 import SwiftData
 
 @Model 
@@ -29,8 +30,8 @@ public final class CharacterDataModel {
     
     // MARK: Codable
     
-    struct CharacterDataModelCodable: Equatable, Hashable, Codable, Sendable {
-        init(itemId: UUID = UUID(), diceId: UUID? = nil, photoId: UUID? = nil, photos: [UUID] = [], parentId: UUID? = nil, entries: [CharacterEntryDataModel.CharacterEntryDataModelCodable] = [], links: [LinkDataModel.LinkDataModelCodable] = []) {
+    public struct Value: Equatable, Hashable, Codable, Sendable {
+        public init(itemId: UUID = UUID(), diceId: UUID? = nil, photoId: UUID? = nil, photos: [UUID] = [], parentId: UUID? = nil, entries: [CharacterEntryDataModel.Value] = [], links: [LinkDataModel.Value] = []) {
             self.itemId = itemId
             self.diceId = diceId
             self.photoId = photoId
@@ -39,23 +40,23 @@ public final class CharacterDataModel {
             self.entries = entries
             self.links = links
         }
-        var itemId: UUID = UUID()
-        var diceId: UUID? = nil
-        var photoId: UUID? = nil
-        var photos: [UUID] = []
-        var parentId: UUID? = nil
-        var entries: [CharacterEntryDataModel.CharacterEntryDataModelCodable] = []
-        var links: [LinkDataModel.LinkDataModelCodable] = []
+        public var itemId: UUID = UUID()
+        public var diceId: UUID? = nil
+        public var photoId: UUID? = nil
+        public var photos: [UUID] = []
+        public var parentId: UUID? = nil
+        public var entries: [CharacterEntryDataModel.Value] = []
+        public var links: [LinkDataModel.Value] = []
     }
     
-    convenience init(_ model: CharacterDataModelCodable) {
+    convenience init(_ model: Value) {
         self.init(itemId: model.itemId, diceId: model.diceId, photoId: model.photoId, photos: model.photos, parentId: model.parentId, entries: [])
         self.entries = model.entries.map { CharacterEntryDataModel($0) }
     }
     
     @MainActor
-    var codableModel: CharacterDataModelCodable {
-        CharacterDataModelCodable(
+    var codableModel: Value {
+        Value(
             itemId: itemId,
             diceId: diceId,
             photoId: photoId,
@@ -70,7 +71,7 @@ public final class CharacterDataModel {
         )
     }
     
-    func replace(_ model: CharacterDataModelCodable) {
+    func replace(_ model: Value) {
         itemId = model.itemId
         diceId = model.diceId
         photoId = model.photoId
@@ -119,3 +120,27 @@ extension CharacterDataModel: ModelCachable {
 }
 
 extension CharacterDataModel: EntryEditModel {}
+
+
+// MARK: - Generable
+
+extension CharacterDataModel {
+    @Generable(description: "The character description")
+    public struct GenValue: Equatable, Hashable, Codable, Sendable {
+        public init(name: String, information: String, tags: [String], entries: [CharacterEntryDataModel.GenValue] = []) {
+            self.name = name
+            self.information = information
+            self.tags = tags
+            self.entries = entries
+        }
+
+        @Guide(description: "The name of the character or the group of values")
+        public var name: String
+        @Guide(description: "A description about the character ot the group")
+        public var information: String
+        @Guide(description: "A tag description", .maximumCount(5))
+        public var tags: [String]
+        @Guide(description: "A character has many named values like key value pairs")
+        public var entries: [CharacterEntryDataModel.GenValue] = []
+    }
+}

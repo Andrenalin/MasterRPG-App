@@ -1,5 +1,8 @@
 // @copyright André Trettin
 
+import CharacterRPG
+import TableRPG
+
 import CoreRPG
 import SwiftData
 import SwiftUI
@@ -10,7 +13,7 @@ struct DetailRootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(GeneratorRootModel.self) private var root
     
-    @State private var openFileWindowModel = OpenFileWindowModel()
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.generator.viewerkWindowId, canShow: true, route: { DetailRoute.viewer($0) })
 
     @State private var selection: ItemSelectionModel = ItemSelectionModel()
     
@@ -19,16 +22,40 @@ struct DetailRootView: View {
         } editor: {
             Text("Add a reference character")
             
-            if let _ = selectedModel {
-//                root.characterRoot.viewController.selectionView(root: root.characterRoot, model: selection)
+            if let model = selectedModel {
+                detailEditorView(model: model)
             }
+        } inspector: {
+            LinkRootView(type: .inspector)
+        }
+        .overlay {
+            if openFileWindowModel.showItem {
+                root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId) {
+                    openFileWindowModel.showItem = false
+                }
+            }
+        }
+        .navigationDestination(for: SelectionCharacterRoute.self) { route in
+            route
+                .environment(root.editController.selectionReference)
         }
         .environment(openFileWindowModel)
         .environment(root.listController.cacheListItemModel)
     }
+
+    var selectedModel: GeneratorDataModel? {
+        root.itemController.model(for: selectedId ?? root.listControllable.listModel.selectedItemId)
+    }
     
-    var selectedModel: ItemDataModel? {
-        root.listControllable.selectedModel(for: selectedId, modelContext: modelContext)
+    @ViewBuilder
+    func detailEditorView(model: GeneratorDataModel) -> some View {
+        root.characterRoot.viewController.selectionView(root: root.characterRoot, model: root.editController.selectionReference)
+            .onChange(of: root.editController.selectionReference.selection) {
+                withAnimation { root.editController.add(referenceId: root.editController.selectionReference.itemId, model: model) }
+            }
+            .onChange(of: model.referenceId, initial: true) {
+                withAnimation { root.editController.selectionReference.resetSelection(itemId: model.referenceId) }
+            }
     }
 }
 

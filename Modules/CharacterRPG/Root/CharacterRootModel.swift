@@ -106,3 +106,10 @@ extension CharacterRootModel: ItemRootControllable {
     public var listLinkControllable: any ListControllable { listLinkController }
     public var viewControllable: any ViewControllable { viewController }
 }
+
+extension CharacterRootModel {
+    @MainActor public func generable(id: UUID?) -> CharacterDataModel.GenValue? {
+        guard let id else { return nil }        
+        return itemController.generable(id: id)
+    }
+}

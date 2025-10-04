@@ -9,10 +9,13 @@ struct EditController {
     init(itemController: ItemController) {
         self.itemController = itemController
         self.fileUrlDataController = nil
+        self.selectionReference = ItemSelectionModel()
     }
     
     let itemController: ItemController
     let fileUrlDataController: FileUrlDataController?
+    
+    let selectionReference: ItemSelectionModel
 }
 
 // MARK: - EditControllable
@@ -22,3 +25,13 @@ extension EditController: EditControllable {
         itemController
     }
 }
+
+// MARK: - Module Editor
+
+extension EditController {
+    func add(referenceId: UUID?, model: GeneratorDataModel) {
+        model.referenceId = referenceId
+        try? model.modelContext?.save()
+    }
+}
+

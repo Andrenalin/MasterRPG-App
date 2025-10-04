@@ -24,7 +24,7 @@ public struct ConverterController: ConverterControllable {
                 _ = linkRegisterController.register(sourceId: old.id, sourceEntryId: entry.id, sourceModule: .value, destinationId: valueId, destinationModule: .value)
             }
             
-            return CharacterEntryDataModel.CharacterEntryDataModelCodable(
+            return CharacterEntryDataModel.Value(
                 itemId: old.id,
                 entryId: entry.id,
                 index: index,
@@ -35,7 +35,7 @@ public struct ConverterController: ConverterControllable {
                 valueId: entry.valueId
             )
         }
-        let model = CharacterDataModel.CharacterDataModelCodable(
+        let model = CharacterDataModel.Value(
             itemId: old.id,
             diceId: entries.first { $0.diceId != nil }?.diceId,
             photoId: old.photoId.wrappedValue,

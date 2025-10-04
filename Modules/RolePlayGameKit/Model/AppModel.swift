@@ -81,7 +81,7 @@ public final class AppModel: Sendable {
         let mapRoot = MapRootFactory.rootModel(modelContext: modelContainer.mainContext, characterRoot: characterRoot,  diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         let adventureRoot = AdventureRootFactory.rootModel(modelContext: modelContainer.mainContext, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
         
-        let generatorRoot = GeneratorRootFactory.rootModel(modelContext: modelContainer.mainContext)
+        let generatorRoot = GeneratorRootFactory.rootModel(modelContext: modelContainer.mainContext, adventureRoot: adventureRoot, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
         
         let root = RootManager(
             adventureRoot: adventureRoot,
@@ -149,6 +149,7 @@ public final class AppModel: Sendable {
                 AdventureDataModel.self,
                 CharacterDataModel.self,
                 DiceDataModel.self,
+                GeneratorDataModel.self,
                 MapDataModel.self,
                 PdfEntryDataModel.self,
                 TableDataModel.self,

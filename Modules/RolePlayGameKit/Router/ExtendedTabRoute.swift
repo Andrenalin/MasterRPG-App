@@ -4,6 +4,7 @@ import CoreExternalRPG
 import CoreRPG
 import AudioRPG
 import DiceRPG
+import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -15,6 +16,7 @@ import SwiftUI
 public enum ExtendedTabRoute: String, Hashable, Codable {
     case audios
     case dice
+    case generator
     case maps
     case pdfs
     case photos
@@ -25,24 +27,16 @@ public enum ExtendedTabRoute: String, Hashable, Codable {
     
     public init(networkModule: NetworkModules) {
         switch networkModule {
-            case .audio:
-                self = .audios
-            case .dice:
-                self = .dice
-            case .map:
-                self = .maps
-            case .pdf:
-                self = .pdfs
-            case .photo:
-                self = .photos
-            case .space:
-                self = .space
-            case .table:
-                self = .tables
-            case .weather:
-                self = .weathers
-            default:
-                self = .settings
+            case .audio: self = .audios
+            case .dice: self = .dice
+            case .generator: self = .generator
+            case .map: self = .maps
+            case .pdf: self = .pdfs
+            case .photo: self = .photos
+            case .space: self = .space
+            case .table: self = .tables
+            case .weather: self = .weathers
+            default: self = .settings
         }
     }
     
@@ -51,6 +45,7 @@ public enum ExtendedTabRoute: String, Hashable, Codable {
             case .audios: .audio
             case .dice: .dice
             case .maps: .map
+            case .generator: .generator
             case .pdfs: .pdf
             case .photos: .photo
             case .space: .space
@@ -77,7 +72,7 @@ extension ExtendedTabRoute: NavigationDestination {
     }
     
     static var allTabs: [ExtendedTabRoute] {
-        [.pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings]
+        [.pdfs, .tables, .maps, .generator, .photos, .audios, .space, .weathers, .dice, .settings]
     }
 }
 
@@ -92,6 +87,8 @@ struct ExtendedTabRouteDestionationView: View {
                 AudioRootFactory.rootView()
             case .dice:
                 DiceRootFactory.rootView()
+            case .generator:
+                GeneratorRootFactory.rootView()
             case .maps:
                 MapRootFactory.rootView()
             case .pdfs:

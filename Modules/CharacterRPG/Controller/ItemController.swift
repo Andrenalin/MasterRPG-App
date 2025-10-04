@@ -57,12 +57,30 @@ extension ItemController: ItemControllable {
     @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let data else { return }
         let decoder = JSONDecoder()
-        guard let newCharacter = try? decoder.decode(CharacterDataModel.CharacterDataModelCodable.self, from: data) else { return }
+        guard let newCharacter = try? decoder.decode(CharacterDataModel.Value.self, from: data) else { return }
         if let oldCharacter = model(for: id) {
             oldCharacter.replace(newCharacter)
         } else {
             let newModel = CharacterDataModel(newCharacter)
             container.mainContext.insert(newModel)
         }
+    }
+}
+
+// MARK: - Generable
+
+extension ItemController {
+    @MainActor func generable(id: UUID, level: Int = 0) -> CharacterDataModel.GenValue? {
+        guard level < 10, let item = item(for: id), let cmodel = model(for: id) else { return nil }
+        let entries = cmodel.entries.map {
+            let groupdedValue: CharacterDataModel.GenValue?
+            if let groupId = $0.valueId {
+                groupdedValue = generable(id: groupId, level: level + 1)
+            } else {
+                groupdedValue = nil
+            }
+            return CharacterEntryDataModel.GenValue(name: $0.name, content: $0.content, valueType: $0.valueType, groupedValues: groupdedValue)
+        }
+        return CharacterDataModel.GenValue(name: item.name, information: item.information, tags: item.tags, entries: entries)
     }
 }
