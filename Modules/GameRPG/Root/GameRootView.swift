@@ -16,11 +16,11 @@ struct GameRootView<Content: View>: View {
                 gameView
                     .environment(\.colorScheme, colorScheme)
             } else {
-#if os(macOS)
-                GameRootTabItemView(root: root)
-#else
+//#if os(macOS)
+ //               GameRootTabItemView(root: root)
+//#else
                 rootView()
-#endif
+//#endif
             }
         }
         .onChange(of: root.gameModel.gameConfig.state, initial: true) {

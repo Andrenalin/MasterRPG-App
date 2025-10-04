@@ -9,6 +9,7 @@ import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+import GeneratorRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -16,11 +17,16 @@ import SpaceRPG
 import TableRPG
 import WeatherRPG
 
+
 struct WindowViewerList: Scene {
     let appModel: AppModel
     
     var body: some Scene {
         Group {
+            windowGroup(model: appModel, module: .generator) { selection in
+                appModel.generatorRoot.viewController.windowViewer(root: appModel.generatorRoot, selection: selection)
+            }
+
             windowGroup(model: appModel, module: .pdf) { selection in
                 appModel.pdfRoot.viewController.windowViewer(root: appModel.pdfRoot, selection: selection)
             }

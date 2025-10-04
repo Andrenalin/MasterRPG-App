@@ -27,7 +27,7 @@ struct ChatRootView: View {
         .glassBackgroundEffect()
 #endif
         .toolbar {
-            ToolbarItem(placement: .title) {
+            ToolbarItem(placement: .principal) {
                 Text("Welcome to the AI Assisent.")
             }
 

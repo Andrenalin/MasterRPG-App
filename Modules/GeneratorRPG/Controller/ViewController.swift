@@ -16,8 +16,12 @@ public extension ViewController {
     @MainActor @ViewBuilder
     func windowViewer(root: GeneratorRootModel, selection: WindowItemSelection) -> some View {
         if let model = root.itemController.model(for: selection.itemId) {
-            ChatRootView(model: model)
-                .environment(root)
+            if model.genType == .adventure {
+                AdventureGenRootView(model: model)
+            } else {
+                ChatRootView(model: model)
+            }
+            //.environment(root)
         }
     }
 

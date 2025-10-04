@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import AdventureRPG
 import AudioRPG
 import DiceRPG
 import MapRPG
@@ -16,7 +17,6 @@ import os.log
 internal import AppKit
 #else
 internal import UIKit
-import AdventureRPG
 #endif
 
 final class PlayerController: Sendable {
