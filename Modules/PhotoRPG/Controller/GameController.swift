@@ -2,6 +2,7 @@
 
 import CoreRPG
 import Foundation
+import SwiftData
 import os.log
 
 @MainActor @Observable
@@ -28,7 +29,7 @@ public protocol PhotoGameControllable: GameControllable {
 public struct GameController: Sendable {
     @MainActor
     init(itemController: ItemController, fileUrlDataController: FileUrlDataController) {
-        self.itemController = itemController
+        self.itemController = GameItemController(container: itemController.container, module: itemController.module, collectionCategory: itemController.collectionCategory)
         self.exportController = ExportController(module: itemController.module, itemController: itemController, fileUrlDataController: fileUrlDataController, gameExporter: false)
         let internItemController = ItemController(container: itemController.container, module: itemController.module)
         self.importController = ImportController(itemController: internItemController, fileUrlDataController: fileUrlDataController, module: itemController.module)
@@ -36,7 +37,7 @@ public struct GameController: Sendable {
         self.photoGameModel = PhotoGameModel()
     }
 
-    let itemController: ItemController
+    let itemController: GameItemController
     let importController: ImportController
     let exportController: ExportController
     
@@ -77,4 +78,19 @@ extension GameController: PhotoGameControllable {
     public func resetPhotoSpace() {
         photoGameModel.openPhotoSpace <=> false
     }
+}
+
+
+struct GameItemController: ItemControllable {
+    @MainActor init(container: ModelContainer, module: NetworkModules, collectionCategory: ItemListCategory) {
+        self.container = container
+        self.module = module
+        self.collectionCategory = collectionCategory
+        self.itemCacheModel = ItemCacheModel()
+    }
+    
+    let container: ModelContainer
+    let module: NetworkModules
+    let collectionCategory: ItemListCategory
+    let itemCacheModel: ItemCacheModel
 }

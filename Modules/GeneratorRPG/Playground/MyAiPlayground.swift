@@ -4,39 +4,13 @@ import FoundationModels
 import Playgrounds
 
 #Playground {
-    let model = SystemLanguageModel.default
-
-        // The availability property provides detailed information on the model's state.
-        switch model.availability {
-            case .available:
-                print("Foundation Models is available and ready to go!")
-
-            case .unavailable(.deviceNotEligible):
-                print("The model is not available on this device.")
-
-            case .unavailable(.appleIntelligenceNotEnabled):
-                print("Apple Intelligence is not enabled in Settings.")
-
-            case .unavailable(.modelNotReady):
-                print("The model is not ready yet. Please try again later.")
-
-            case .unavailable(let other):
-                print("The model is unavailable for an unknown reason.")
-        }
-    
     let instructions = """
-            Your job is to create new role play adventure.
+            Your job is to create new role play adventure. The game master will ask you question about character, quest and backgrounds. 
             """
     let session = LanguageModelSession(instructions: instructions)
 
-    let useCharacter = true
-    // The Prompt builder allows for conditional logic.
     let prompt = Prompt {
-        "Generate a fantasy adventure in the world of DungeonSlayers."
-        if useCharacter {
-            "Include non player character per scenario"
-        }
+        "I need 7 dwarven brother. The first one is named Baergurn. All brother names should start with Baer-. Baergurn is the oldest and a fighter with a great Dwarven battleaxe. The yougest one called Baergunni and he is a healer and famous cook. Can you create the other brothers with their special abilities and background?"
     }
-    let response = try await session.respond(to: prompt,
-                                             generating: CampaignGenModel.self)
+    let response = try await session.respond(to: prompt)
 }
