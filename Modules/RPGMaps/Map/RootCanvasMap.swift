@@ -36,17 +36,21 @@ struct RootCanvasMap: View {
     @State private var degrees: Double = 0
 
     var body: some View {
-        @Bindable var mapModel = mapModel
         GeometryReader { geo in
             if let image {
-                MapViewer(image: image, photoDegrees: degrees, map: mapModel, toolBarModel: toolBarModel, playerPinId: playerPinId, mapMode: mode == .player ? .player : .gameMaster, containerSize: geo.size, sendMapUpdates: sendMapUpdates, focused: focused)
-                        .id(itemId)
-                        .environment(dropPinModel)
+                RootGameMapViewer(root: root, itemId: itemId, mode: mode, toolBarModel: toolBarModel, playerPinId: playerPinId, image: image, degrees: degrees, containerSize: geo.size)
+                    .environment(dropPinModel)
             } else {
                 Color.clear
             }
         }
         .onChange(of: mapModel.id, initial: true) {
+            Task {
+                await reloadImage()
+            }
+        }
+        .onChange(of: mapModel.entries, initial: false) {
+            guard image == nil else { return }
             Task {
                 await reloadImage()
             }
@@ -77,6 +81,48 @@ private extension RootCanvasMap {
             self.degrees <=> updateDegrees
         }
     }
+}
+
+#Preview {
+    RootCanvasMap(root: .previewWithData, itemId: MapModel.previewId, mode: .master, toolBarModel: GameToolBarModel(), playerPinId: nil)
+        .environment(MapRoot.previewWithData)
+}
+
+
+struct RootGameMapViewer: View {
+    init(root: MapRoot, itemId: UUID, mode: MapDisplayMode, toolBarModel: GameToolBarModel, playerPinId: UUID?, image: AKImage, degrees: Double, containerSize: CGSize) {
+        self.root = root
+        self.itemId = itemId
+        self.mode = mode
+        self.toolBarModel = toolBarModel
+        self.playerPinId = playerPinId
+        self.image = image
+        self.degrees = degrees
+        self.containerSize = containerSize
+    }
+
+    let root: MapRoot
+    let itemId: UUID
+    let mode: MapDisplayMode
+    let toolBarModel: GameToolBarModel
+    let playerPinId: UUID?
+    let image: AKImage
+    let degrees: Double
+    let containerSize: CGSize
+    
+    @Environment(\.networkActions) private var networkActions
+
+
+    var body: some View {
+        MapViewer(image: image, photoDegrees: degrees, map: mapModel, toolBarModel: toolBarModel, playerPinId: playerPinId, mapMode: mode == .player ? .player : .gameMaster, containerSize: containerSize, sendMapUpdates: sendMapUpdates, focused: focused)
+            .id(itemId)
+    }
+}
+
+private extension RootGameMapViewer {
+    var mapModel: MapModel {
+        root.gameController.gameItem(for: itemId)
+    }
 
     func sendMapUpdates() {
         if mode == .master {
@@ -97,7 +143,3 @@ private extension RootCanvasMap {
     }
 }
 
-#Preview {
-    RootCanvasMap(root: .previewWithData, itemId: MapModel.previewId, mode: .master, toolBarModel: GameToolBarModel(), playerPinId: nil)
-        .environment(MapRoot.previewWithData)
-}

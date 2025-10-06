@@ -24,9 +24,11 @@ public final class DataBaseModel {
     
     @MainActor
     public init(inMemory: Bool = false, useCloudKit: Bool, currentActor: AppPersistentActor) {
+#if !os(tvOS)
         if !inMemory {
             hasCloudKit = useCloudKit
         }
+#endif
         self.inMemory = inMemory
         self.currentActor = currentActor
         if hasCloudKit {
@@ -54,11 +56,13 @@ public final class DataBaseModel {
     }
     
     public func resetDatabase(useCloudKit: Bool) -> Bool {
+#if !os(tvOS)
         if hasCloudKit != useCloudKit {
             hasCloudKit = useCloudKit
             hasContextSet = false
             return true
         }
+#endif
         return false
     }
     
