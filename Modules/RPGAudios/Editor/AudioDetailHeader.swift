@@ -20,11 +20,11 @@ struct AudioDetailHeader: View {
                 .opacity(0.3)
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .overlay(alignment: .center) {
-            @Bindable var model = model
-            BlurText(text: model.name, color: .teal)
-                .font(.largeTitle)
-        }
+//        .overlay(alignment: .center) {
+//            @Bindable var model = model
+//            BlurText(text: model.name, color: .teal)
+//                .font(.largeTitle)
+//        }
 #if os(iOS)
         .toolbar {
             ToolbarItem {
