@@ -55,18 +55,6 @@ struct OldWindowMacList: Scene {
             }
         }
         .defaultSize(CGSize(width: 600, height: 800))
-
-
-        MenuBarExtra() {
-            DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                MenuBarView(audioRoot: appStore.audioRoot)
-                    .environment(\.showGame, appStore.settingsModel.showGame)
-                    .environment(\.networkActions, appStore.gameRoot.networkActions())
-            }
-        } label: {
-            Label("MasterRPG", systemImage: "die.face.6")
-        }
-        .menuBarExtraStyle(.window)
         
         Settings {
             DataBaseAppStoreAvailable(appStore: appStore) { appStore in

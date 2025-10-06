@@ -42,7 +42,7 @@ struct Master3RPGApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("Game", id: WindowIdentifier.game.rawValue) {
             AppRootView(appModel: appModel)
 #if os(macOS)
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
@@ -52,15 +52,7 @@ struct Master3RPGApp: App {
                 .setAppSizeMode()
         }
         .commands {
-#if os(macOS)
-            AboutPanelCommand(title: "Master RPG", credits: "Many thanks to my long running test party: Karsten, Roman and Timo.")
-            ImportFromDevicesCommands()
-#endif
-            SidebarCommands()
-            TextEditingCommands()
-            TextFormattingCommands()
-
-            MenuCommandList(appModel: appModel)
+            MenuMainCommand(appModel: appModel)
         }
         .modelContainer(appModel.modelContainer)
         

@@ -1,11 +1,3 @@
-//
-//  MenuBarView.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 24.09.25.
-//
-
-
 // @copyright André Trettin
 
 import AudioRPG

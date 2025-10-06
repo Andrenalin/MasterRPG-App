@@ -11,19 +11,35 @@ import SwiftData
 struct AppRootView: View {
     let appModel: AppModel
     
+    var body: some View {
+        let _ = Self._printChanges()
+        
+        AppRootSizedView(appModel: appModel)
+#if os(macOS)
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+            .toolbar(removing: .title)
+#endif
+            .modifier(UserSettingsViewModifier(appModel: appModel))
+            .setAppSizeMode()        
+    }
+}
+
+struct AppRootSizedView: View {
+    let appModel: AppModel
+    
     @Environment(\.appSizeMode) private var appSizeMode
     
     var body: some View {
         let _ = Self._printChanges()
-
+        
         appModel.gameRoot.viewController.gameWindow(root: appModel.gameRoot) {
             layout
         }
         .environmentSetUp(appModel)
+        .navigationRoot(appModel.navigator)
         .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
             handle(userActivity: userActivity)
         }
-        .navigationRoot(appModel.navigator)
         .onChange(of: appSizeMode) { oldValue, newValue in
             appModel.resetNavigation()
         }

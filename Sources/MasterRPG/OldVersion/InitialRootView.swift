@@ -3,6 +3,7 @@
 import AndrenalinKit
 import RoleGameKit
 import SwiftUI
+import SwiftData
 
 struct InitialRootView: View {
     let appStore: AppStore
@@ -86,6 +87,11 @@ struct InitialRootView: View {
         .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
             handle(userActivity: userActivity)
         }
+#if os(macOS)
+        .frame(minWidth: 800, minHeight: 600)
+#endif
+        .environment(appStore.windowStateModel)
+        .modelContainer(appStore.modelContainer)
     }
     
     
