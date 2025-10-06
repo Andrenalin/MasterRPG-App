@@ -3,6 +3,7 @@
 import CoreRPG
 import DiceRPG
 import PdfRPG
+import RPGResources
 import SwiftUI
 import SwiftData
 
@@ -15,6 +16,8 @@ struct MockData: PreviewModifier {
     static let previewEntryId2 = UUID()
     static let previewEntryId3 = UUID()
 
+    static var previewRoot: TableRootModel?
+    
     func body(content: Content, context: ModelContainer) -> some View {
         content
             .modifier(MockRootViewModifier(modelContext: context.mainContext))
@@ -22,9 +25,24 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: TableDataModel.self, TableEntryDataModel.self, ItemDataModel.self, LinkDataModel.self, TagDataModel.self,
+            for: TableDataModel.self, TableEntryDataModel.self, DiceDataModel.self, PdfDataModel.self, ItemDataModel.self, LinkDataModel.self, TagDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
+        
+        let bundle = Resources.bundle
+        guard let url = bundle.url(forResource: Resources.exampleFirstData, withExtension: "gmz") else {
+            print("url nil ")
+            return container
+        }
+
+        let root = TableRootModel.preview(container: container)        
+        let task = root.importController.importUrl(from: url)
+        let _ = try await task.value
+        let task2 = root.diceRoot.importControllable.importUrl(from: url)
+        let _ = try await task2.value
+        let task3 = root.pdfRoot.importControllable.importUrl(from: url)
+        let _ = try await task3.value
+
         
         let entries = [
             TableEntryDataModel(itemId: previewId, entryId: previewEntryId, index: 0, name: "1", content: "Really only Cooper"),
@@ -81,13 +99,16 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        self._root = State(wrappedValue: TableRootModel(modelContext: modelContext, diceRoot: DiceRootFactory.rootModel(modelContext: modelContext), pdfRoot: PdfRootFactory.rootModel(modelContext: modelContext)))
+        self._root = State(wrappedValue: TableRootModel.preview(container: modelContext.container))
     }
+
+    @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name, animation: .smooth) private var items: [ItemDataModel]
 
     @State private var root: TableRootModel
 
     func body(content: Content) -> some View {
-        content.environment(root)
+        content
+            .environment(root)
             .environment(root.searchModel)
             .environment(root.listController.listModel)
             .environment(root.listDisplayModel)
@@ -101,6 +122,13 @@ struct MockRootViewModifier: ViewModifier {
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif
+            .onChange(of: items, initial: true) {
+                Task {
+                    await root.itemController.update(items: items.filter { $0.module == .table })
+                    await root.diceRoot.itemControllable.update(items: items.filter { $0.module == .dice })
+                    await root.pdfRoot.itemControllable.update(items: items.filter { $0.module == .pdf })
+                }
+            }
     }
     
     var linkRootController: LinkRootController {
@@ -113,4 +141,15 @@ struct MockRootViewModifier: ViewModifier {
 
 extension PreviewTrait where T == Preview.ViewTraits {
     static var mockData: Self = .modifier(MockData())
+}
+
+extension TableRootModel {
+    @MainActor public static func preview(container: ModelContainer) -> TableRootModel {
+        if let root = MockData.previewRoot {
+            return root
+        }
+        let newRoot = TableRootModel(modelContext: container.mainContext, diceRoot: DiceRootModel.preview(container: container), pdfRoot: PdfRootModel.preview(container: container))
+        MockData.previewRoot = newRoot
+        return newRoot
+    }
 }

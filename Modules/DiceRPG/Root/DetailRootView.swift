@@ -58,5 +58,7 @@ struct DetailRootView: View {
 }
 
 #Preview(traits: .mockData) {
-    DetailRootView(selectedId: MockData.previewId)
+    @Previewable @Environment(DiceRootModel.self) var root
+    
+    DetailRootView(selectedId: root.itemController.allItemIds().first ?? UUID())
 }

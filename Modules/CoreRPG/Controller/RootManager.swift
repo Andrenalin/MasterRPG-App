@@ -69,4 +69,9 @@ public struct RootManager: Sendable {
     public subscript(_ module: NetworkModules) -> (any ItemRootControllable)? {
         rootModel(for: module)
     }
+    
+    
+    static public func preview(fake: ItemRootControllable) -> RootManager {
+        RootManager(adventureRoot: fake, audioRoot: fake, characterRoot: fake, diceRoot: fake, generatorRoot: fake, mapRoot: fake, pdfRoot: fake, photoRoot: fake, spaceRoot: fake, tableRoot: fake, weatherRoot: fake)
+    }
 }

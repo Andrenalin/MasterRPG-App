@@ -7,6 +7,7 @@ import DiceRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RPGResources
 import SpaceRPG
 import TableRPG
 import WeatherRPG
@@ -18,6 +19,8 @@ struct MockData: PreviewModifier {
     static let previewId2 = UUID()
     static let previewId3 = UUID()
 
+    static var previewRoot: AdventureRootModel?
+    
     func body(content: Content, context: ModelContainer) -> some View {
         content
             .modifier(MockRootViewModifier(modelContext: context.mainContext))
@@ -29,6 +32,32 @@ struct MockData: PreviewModifier {
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
+        let bundle = Resources.bundle
+        guard let url = bundle.url(forResource: Resources.exampleFirstData, withExtension: "gmz") else {
+            print("url nil ")
+            return container
+        }
+
+        let root = AdventureRootModel.preview(container: container)
+        let task = root.importController.importUrl(from: url)
+        let _ = try await task.value
+        let task2 = root.diceRoot.importControllable.importUrl(from: url)
+        let _ = try await task2.value
+        let task3 = root.pdfRoot.importControllable.importUrl(from: url)
+        let _ = try await task3.value
+        let task4 = root.photoRoot.importControllable.importUrl(from: url)
+        let _ = try await task4.value
+        let task5 = root.tableRoot.importControllable.importUrl(from: url)
+        let _ = try await task5.value
+        let task6 = root.characterRoot.importControllable.importUrl(from: url)
+        let _ = try await task6.value
+        let task7 = root.weatherRoot.importControllable.importUrl(from: url)
+        let _ = try await task7.value
+        let task8 = root.audioRoot.importControllable.importUrl(from: url)
+        let _ = try await task8.value
+        let task9 = root.spaceRoot.importControllable.importUrl(from: url)
+        let _ = try await task9.value
+
         let model1 = ItemDataModel(
             id: previewId,
             module: .adventure,
@@ -79,31 +108,10 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        let audioRoot = AudioRootFactory.rootModel(modelContext: modelContext)
-        let diceRoot = DiceRootFactory.rootModel(modelContext: modelContext)
-        let pdfRoot = PdfRootFactory.rootModel(modelContext: modelContext)
-        let photoRoot = PhotoRootFactory.rootModel(modelContext: modelContext)
-        let spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContext)
-        let weatherRoot = WeatherRootFactory.rootModel(modelContext: modelContext, photoRoot: photoRoot)
-        let tableRoot = TableRootFactory.rootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: pdfRoot)
-        let characterRoot = CharacterRootFactory.rootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-        let mapRoot = MapRootFactory.rootModel(modelContext: modelContext, characterRoot: characterRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-        
-        self._root = State(
-            wrappedValue: AdventureRootModel(
-                modelContext: modelContext,
-                audioRoot: audioRoot,
-                characterRoot: characterRoot,
-                diceRoot: diceRoot,
-                mapRoot: mapRoot,
-                pdfRoot: pdfRoot,
-                photoRoot: photoRoot,
-                spaceRoot: spaceRoot,
-                tableRoot: tableRoot,
-                weatherRoot: weatherRoot
-            )
-        )
+        self._root = State(wrappedValue: AdventureRootModel.preview(container: modelContext.container))
     }
+
+    @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name, animation: .smooth) private var items: [ItemDataModel]
 
     @State private var root: AdventureRootModel
 
@@ -116,17 +124,55 @@ struct MockRootViewModifier: ViewModifier {
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
             .environment(TabTitleModel())
+            .environment(root.audioRoot)
             .environment(root.characterRoot)
             .environment(root.diceRoot)
+            .environment(root.mapRoot)
             .environment(root.pdfRoot)
             .environment(root.photoRoot)
+            .environment(root.spaceRoot)
             .environment(root.tableRoot)
+            .environment(root.weatherRoot)
+            .environment(linkRootController)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif
+            .onChange(of: items, initial: true) {
+                Task {
+                    await root.itemController.update(items: items.filter { $0.module == .adventure })
+                    await root.audioRoot.itemControllable.update(items: items.filter { $0.module == .audio })
+                    await root.characterRoot.itemControllable.update(items: items.filter {
+                        $0.module == .value })
+                    await root.diceRoot.itemControllable.update(items: items.filter { $0.module == .dice })
+                    await root.mapRoot.itemControllable.update(items: items.filter { $0.module == .map })
+                    await root.pdfRoot.itemControllable.update(items: items.filter { $0.module == .pdf })
+                    await root.photoRoot.itemControllable.update(items: items.filter { $0.module == .photo })
+                    await root.spaceRoot.itemControllable.update(items: items.filter { $0.module == .space })
+                    await root.tableRoot.itemControllable.update(items: items.filter { $0.module == .table })
+                    await root.weatherRoot.itemControllable.update(items: items.filter { $0.module == .weather })
+                }
+            }
+    }
+    
+    var linkRootController: LinkRootController {
+        LinkRootController(
+            container: root.itemController.container,
+            root: RootManager(adventureRoot: root, audioRoot: root.audioRoot, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root.mapRoot, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root.spaceRoot, tableRoot: root.tableRoot, weatherRoot: root.weatherRoot)
+        )
     }
 }
 
 extension PreviewTrait where T == Preview.ViewTraits {
     static var mockData: Self = .modifier(MockData())
+}
+
+extension AdventureRootModel {
+    @MainActor public static func preview(container: ModelContainer) -> AdventureRootModel {
+        if let root = MockData.previewRoot {
+            return root
+        }
+        let newRoot = AdventureRootModel(modelContext: container.mainContext, audioRoot: .preview(container: container), characterRoot: .preview(container: container), diceRoot: .preview(container: container), mapRoot: .preview(container: container), pdfRoot: .preview(container: container), photoRoot: .preview(container: container), spaceRoot: .preview(container: container), tableRoot: .preview(container: container), weatherRoot: .preview(container: container))
+        MockData.previewRoot = newRoot
+        return newRoot
+    }
 }

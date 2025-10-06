@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import RPGResources
 import SwiftUI
 import SwiftData
 
@@ -8,6 +9,8 @@ struct MockData: PreviewModifier {
     static let previewId = UUID()
     static let previewId2 = UUID()
     static let previewId3 = UUID()
+    
+    static var previewRoot: PdfRootModel?
     
     func body(content: Content, context: ModelContainer) -> some View {
         content
@@ -21,9 +24,19 @@ struct MockData: PreviewModifier {
         )
         
         guard try! container.mainContext.fetch(FetchDescriptor<ItemDataModel>()).isEmpty else {
-            print("*** Empty ***")
             return container
         }
+        
+        let bundle = Resources.bundle
+        guard let url = bundle.url(forResource: Resources.exampleFirstData, withExtension: "gmz") else {
+            print("url nil ")
+            return container
+        }
+
+        let root = PdfRootModel(modelContext: container.mainContext)
+        let task = root.importController.importUrl(from: url)
+        let _ = try await task.value
+
         let model1 = ItemDataModel(
             id: previewId,
             module: .pdf,
@@ -63,10 +76,13 @@ struct MockRootViewModifier: ViewModifier {
         self._root = State(wrappedValue: PdfRootModel(modelContext: modelContext))
     }
     
+    @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name, animation: .smooth) private var items: [ItemDataModel]
+    
     @State private var root: PdfRootModel
     
     func body(content: Content) -> some View {
-        content.environment(root)
+        content
+            .environment(root)
             .environment(root.searchModel)
             .environment(root.listController.listModel)
             .environment(root.listDisplayModel)
@@ -74,13 +90,29 @@ struct MockRootViewModifier: ViewModifier {
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
             .environment(TabTitleModel())
+            .environment(LinkRootController(container: root.itemController.container, root: RootManager.preview(fake: root)))
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif
-        
+            .onChange(of: items, initial: true) {
+                Task {
+                    await root.itemController.update(items: items.filter { $0.module == .pdf })
+                }
+            }
     }
 }
 
 extension PreviewTrait where T == Preview.ViewTraits {
     static var mockData: Self = .modifier(MockData())
+}
+
+extension PdfRootModel {
+    @MainActor public static func preview(container: ModelContainer) -> PdfRootModel {
+        if let root = MockData.previewRoot {
+            return root
+        }
+        let newRoot = PdfRootModel(modelContext: container.mainContext)
+        MockData.previewRoot = newRoot
+        return newRoot
+    }
 }

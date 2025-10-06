@@ -5,6 +5,7 @@ import CharacterRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
+import RPGResources
 import TableRPG
 import SwiftUI
 import SwiftData
@@ -13,6 +14,8 @@ struct MockData: PreviewModifier {
     static let previewId = UUID()
     static let previewId2 = UUID()
     static let previewId3 = UUID()
+    
+    static var previewRoot: MapRootModel?
 
     func body(content: Content, context: ModelContainer) -> some View {
         content
@@ -24,6 +27,26 @@ struct MockData: PreviewModifier {
             for: MapDataModel.self, MapEntryDataModel.self, ItemDataModel.self, TagDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
+        
+        let bundle = Resources.bundle
+        guard let url = bundle.url(forResource: Resources.exampleFirstData, withExtension: "gmz") else {
+            print("url nil ")
+            return container
+        }
+
+        let root = MapRootModel.preview(container: container)
+        let task = root.importController.importUrl(from: url)
+        let _ = try await task.value
+        let task2 = root.diceRoot.importControllable.importUrl(from: url)
+        let _ = try await task2.value
+        let task3 = root.pdfRoot.importControllable.importUrl(from: url)
+        let _ = try await task3.value
+        let task4 = root.photoRoot.importControllable.importUrl(from: url)
+        let _ = try await task4.value
+        let task5 = root.tableRoot.importControllable.importUrl(from: url)
+        let _ = try await task5.value
+        let task6 = root.characterRoot.importControllable.importUrl(from: url)
+        let _ = try await task6.value
         
         let model1 = ItemDataModel(
             id: previewId,
@@ -75,23 +98,10 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        let diceRoot = DiceRootFactory.rootModel(modelContext: modelContext)
-        let pdfRoot = PdfRootFactory.rootModel(modelContext: modelContext)
-        let photoRoot = PhotoRootFactory.rootModel(modelContext: modelContext)
-        let tableRoot = TableRootFactory.rootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: pdfRoot)
-        let characterRoot = CharacterRootFactory.rootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-        
-        self._root = State(
-            wrappedValue: MapRootModel(
-                modelContext: modelContext,
-                characterRoot: characterRoot,
-                diceRoot: diceRoot,
-                pdfRoot: pdfRoot,
-                photoRoot: photoRoot,
-                tableRoot: tableRoot
-            )
-        )
+        self._root = State(wrappedValue: MapRootModel.preview(container: modelContext.container))
     }
+
+    @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name, animation: .smooth) private var items: [ItemDataModel]
 
     @State private var root: MapRootModel
 
@@ -109,12 +119,41 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.pdfRoot)
             .environment(root.photoRoot)
             .environment(root.tableRoot)
+            .environment(linkRootController)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif
+            .onChange(of: items, initial: true) {
+                Task {
+                    await root.itemController.update(items: items.filter { $0.module == .map })
+                    await root.diceRoot.itemControllable.update(items: items.filter { $0.module == .dice })
+                    await root.pdfRoot.itemControllable.update(items: items.filter { $0.module == .pdf })
+                    await root.photoRoot.itemControllable.update(items: items.filter { $0.module == .photo })
+                    await root.tableRoot.itemControllable.update(items: items.filter { $0.module == .table })
+                    await root.characterRoot.itemControllable.update(items: items.filter { $0.module == .value })
+                }
+            }
+    }
+    
+    var linkRootController: LinkRootController {
+        LinkRootController(
+            container: root.itemController.container,
+            root: RootManager(adventureRoot: root, audioRoot: root, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root.tableRoot, weatherRoot: root)
+        )
     }
 }
 
 extension PreviewTrait where T == Preview.ViewTraits {
     static var mockData: Self = .modifier(MockData())
+}
+
+extension MapRootModel {
+    @MainActor public static func preview(container: ModelContainer) -> MapRootModel {
+        if let root = MockData.previewRoot {
+            return root
+        }
+        let newRoot = MapRootModel(modelContext: container.mainContext, characterRoot: .preview(container: container), diceRoot: .preview(container: container), pdfRoot: .preview(container: container), photoRoot: .preview(container: container), tableRoot: .preview(container: container))
+        MockData.previewRoot = newRoot
+        return newRoot
+    }
 }

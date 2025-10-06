@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import RPGResources
 import SwiftUI
 import SwiftData
 
@@ -12,6 +13,8 @@ struct MockData: PreviewModifier {
     static let emptyFolderId = UUID()
     static let albumId = UUID()
         
+    static var previewRoot: PhotoRootModel?
+    
     func body(content: Content, context: ModelContainer) -> some View {
         content
             .modifier(MockRootViewModifier(modelContext: context.mainContext))
@@ -26,6 +29,17 @@ struct MockData: PreviewModifier {
         guard try! container.mainContext.fetch(FetchDescriptor<ItemDataModel>()).isEmpty else {
             return container
         }
+        
+        let bundle = Resources.bundle
+        guard let url = bundle.url(forResource: Resources.exampleFirstData, withExtension: "gmz") else {
+            print("url nil ")
+            return container
+        }
+
+        let root = PhotoRootModel(modelContext: container.mainContext)
+        let task = root.importController.importUrl(from: url)
+        let _ = try await task.value
+
         let model1 = ItemDataModel(
             id: previewId,
             module: .photo,
@@ -172,8 +186,8 @@ struct MockRootViewModifier: ViewModifier {
         self._root = State(wrappedValue: PhotoRootModel(modelContext: modelContext))
     }
     
-    //@Query(filter: #Predicate<ItemDataModel>{ $0.module == .photo }) private var models: [ItemDataModel]
     @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name, animation: .smooth) private var items: [ItemDataModel]
+    
     @State private var root: PhotoRootModel
 
     func body(content: Content) -> some View {
@@ -186,10 +200,11 @@ struct MockRootViewModifier: ViewModifier {
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
             .environment(TabTitleModel())
+            .environment(LinkRootController(container: root.itemController.container, root: RootManager.preview(fake: root)))
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif
-            .onChange(of: items) {
+            .onChange(of: items, initial: true) {
                 Task {
                     await root.itemController.update(items: items)
                 }
@@ -199,4 +214,15 @@ struct MockRootViewModifier: ViewModifier {
 
 extension PreviewTrait where T == Preview.ViewTraits {
     static var mockData: Self = .modifier(MockData())
+}
+
+extension PhotoRootModel {
+    @MainActor public static func preview(container: ModelContainer) -> PhotoRootModel {
+        if let root = MockData.previewRoot {
+            return root
+        }
+        let newRoot = PhotoRootModel(modelContext: container.mainContext)
+        MockData.previewRoot = newRoot
+        return newRoot
+    }
 }
