@@ -17,7 +17,7 @@ struct ImportController: Sendable {
 }
 
 extension ImportController: ImportControllable {
-    var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
+    var itemControllable: any ImportDataControllable {
+        itemController
     }
 }

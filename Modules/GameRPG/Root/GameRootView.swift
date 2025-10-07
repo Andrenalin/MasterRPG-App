@@ -1,7 +1,9 @@
 // @copyright André Trettin
 
 import CoreRPG
+import CoreExternalRPG
 import SwiftUI
+import SwiftData
 
 struct GameRootView<Content: View>: View {
     let root: GameRootController
@@ -52,9 +54,11 @@ struct GameRootView<Content: View>: View {
     }
 }
 
-//#Preview {
-//    GameRootView(root: .preview) {
-//        Text("Root View")
-//    }
-//    .environment(AppSettingsModel())
-//}
+#Preview(traits: .mockData) {
+    @Previewable @Environment(GameRootController.self) var root
+    
+    ManagedNavigationStack {
+        GameRootFactory.rootView(root: root)
+    }
+    .environment(AppSettingsModel())
+}

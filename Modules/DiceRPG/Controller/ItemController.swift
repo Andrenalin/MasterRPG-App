@@ -20,16 +20,6 @@ struct ItemController: Sendable {
 }
 
 extension ItemController: ItemControllable {
-    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
-        let decoder = JSONDecoder()
-        if version == ItemDataExportModel.Version.version_2025.rawValue {
-            return try decoder.decode(ItemDataCodableModel.self, from: data)
-        } else {
-            let oldModel = try decoder.decode(DiceModel.self, from: data)
-            return ConverterController.convert(old: oldModel)
-        }
-    }
-    
     @MainActor func decodedModel(codableModel: ItemDataCodableModel) throws -> DiceDataModel? {
         guard let externalData = codableModel.externalData else { return nil }
         let decoder = JSONDecoder()
@@ -58,6 +48,20 @@ extension ItemController: ItemControllable {
         let encoder = JSONEncoder()
         return try encoder.encode(model)
     }
+}
+
+extension ItemController: ModelCacheControllable {}
+
+extension ItemController: ImportDataControllable {
+    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
+        let decoder = JSONDecoder()
+        if version == ItemDataExportModel.Version.version_2025.rawValue {
+            return try decoder.decode(ItemDataCodableModel.self, from: data)
+        } else {
+            let oldModel = try decoder.decode(DiceModel.self, from: data)
+            return ConverterController.convert(old: oldModel)
+        }
+    }
     
     @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let data else { return }
@@ -71,5 +75,3 @@ extension ItemController: ItemControllable {
         }
     }
 }
-
-extension ItemController: ModelCacheControllable {}

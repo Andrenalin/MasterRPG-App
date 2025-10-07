@@ -5,7 +5,7 @@ import Foundation
 import SwiftData
 
 @MainActor
-struct FakeItemController: ItemControllable, Sendable {
+struct FakeItemController: ItemControllable, ImportDataControllable, Sendable {
     let itemCacheModel: ItemCacheModel = ItemCacheModel()
     let container: ModelContainer
     let collectionCategory: ItemListCategory = .album

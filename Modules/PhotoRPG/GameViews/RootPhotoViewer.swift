@@ -59,10 +59,4 @@ struct RootPhotoViewer: View {
             Text("Empty")
         }
     }
-    .onAppear {
-        print("load image")
-        if let image = AKImage(named: "LaunchLogo") {
-            print("image")
-        }
-    }
 }

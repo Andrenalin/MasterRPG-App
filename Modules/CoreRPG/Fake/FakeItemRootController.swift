@@ -5,7 +5,7 @@ import SwiftData
 
 @Observable
 public final class FakeItemRootController: ItemRootControllable {
-    public init(itemController: any ItemControllable, module: NetworkModules) {
+    public init(itemController: any (ItemControllable & ImportDataControllable), module: NetworkModules) {
         modelContext = itemController.container.mainContext
         self.module = module
 

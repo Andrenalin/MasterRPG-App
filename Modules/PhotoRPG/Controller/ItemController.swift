@@ -19,6 +19,13 @@ struct ItemController: Sendable {
 // MARK: - Import Controller
 
 extension ItemController: ItemControllable {
+    @MainActor func fileUrl(id: UUID, url: URL?) -> FileUrl? {
+        guard let url else { return nil }
+        return FileUrl(fileId: id, url: url, location: .cloud, module: NetworkModules.photo.token)
+    }
+}
+
+extension ItemController: ImportDataControllable {
     @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
         let decoder = JSONDecoder()
         if version == ItemDataExportModel.Version.version_2025.rawValue {
@@ -32,10 +39,5 @@ extension ItemController: ItemControllable {
                 fatalError()
             }
         }
-    }
-
-    @MainActor func fileUrl(id: UUID, url: URL?) -> FileUrl? {
-        guard let url else { return nil }
-        return FileUrl(fileId: id, url: url, location: .cloud, module: NetworkModules.photo.token)
     }
 }

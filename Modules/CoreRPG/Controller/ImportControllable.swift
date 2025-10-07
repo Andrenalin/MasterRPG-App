@@ -2,10 +2,9 @@
 
 import Foundation
 import os.log
-import Observation
 
 public protocol ImportControllable: Sendable {
-    var itemControllable: any ItemControllable { get }
+    var itemControllable: any ImportDataControllable { get }
     var fileUrlDataController: FileUrlDataController? { get }
     var module: NetworkModules { get }
     var importModel: ItemDataImportModel { get }

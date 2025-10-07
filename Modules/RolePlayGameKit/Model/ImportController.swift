@@ -18,13 +18,13 @@ struct ImportController: Sendable {
     init(appModel: AppModel) {
         self.root = appModel
         self.module = .none
-        self.itemControllable = appModel.adventureRoot.itemControllable
+        self.itemControllable = appModel.adventureRoot.importControllable.itemControllable
         self.importModel = ItemDataImportModel(gameImporter: false)
     }
     
     weak var root: AppModel!
     let module: NetworkModules
-    let itemControllable: ItemControllable
+    let itemControllable: ImportDataControllable
     public let importModel: ItemDataImportModel
 }
 

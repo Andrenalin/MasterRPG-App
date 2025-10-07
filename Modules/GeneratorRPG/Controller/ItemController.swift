@@ -21,11 +21,6 @@ struct ItemController: Sendable {
 extension ItemController: ModelCacheControllable {}
 
 extension ItemController: ItemControllable {
-    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
-        let decoder = JSONDecoder()
-        return try decoder.decode(ItemDataCodableModel.self, from: data)
-    }
-    
     @MainActor func itemDataCodableModel(id: UUID) -> ItemDataCodableModel? {
         let encoder = JSONEncoder()
         var externalData: Data? = nil
@@ -40,7 +35,16 @@ extension ItemController: ItemControllable {
         let encoder = JSONEncoder()
         return try encoder.encode(model)
     }
-    
+}
+
+// MARK: - Import Controller
+
+extension ItemController: ImportDataControllable {
+    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
+        let decoder = JSONDecoder()
+        return try decoder.decode(ItemDataCodableModel.self, from: data)
+    }
+
     @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let data else { return }
         let decoder = JSONDecoder()

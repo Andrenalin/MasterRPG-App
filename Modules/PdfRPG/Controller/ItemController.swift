@@ -22,21 +22,6 @@ struct ItemController: Sendable {
 extension ItemController: ModelCacheControllable {}
 
 extension ItemController: ItemControllable {
-    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
-        let decoder = JSONDecoder()
-        if version == ItemDataExportModel.Version.version_2025.rawValue {
-            return try decoder.decode(ItemDataCodableModel.self, from: data)
-        } else {
-            do {
-                let oldModel = try decoder.decode(PdfModel.self, from: data)
-                return ConverterController.convert(old: oldModel)
-            } catch {
-                print(error)
-                fatalError()
-            }
-        }
-    }
-
     @MainActor func itemDataCodableModel(id: UUID) -> ItemDataCodableModel? {
         let encoder = JSONEncoder()
         var externalData: Data? = nil
@@ -52,6 +37,28 @@ extension ItemController: ItemControllable {
         return try encoder.encode(model)
     }
     
+    @MainActor func fileUrl(id: UUID, url: URL?) -> FileUrl? {
+        guard let url else { return nil }
+        return FileUrl(fileId: id, url: url, location: .cloud, module: NetworkModules.pdf.token)
+    }
+}
+
+extension ItemController: ImportDataControllable {
+    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
+        let decoder = JSONDecoder()
+        if version == ItemDataExportModel.Version.version_2025.rawValue {
+            return try decoder.decode(ItemDataCodableModel.self, from: data)
+        } else {
+            do {
+                let oldModel = try decoder.decode(PdfModel.self, from: data)
+                return ConverterController.convert(old: oldModel)
+            } catch {
+                print(error)
+                fatalError()
+            }
+        }
+    }
+    
     @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let data else { return }
         let decoder = JSONDecoder()
@@ -62,10 +69,5 @@ extension ItemController: ItemControllable {
             let newModel = PdfDataModel(newPdf)
             container.mainContext.insert(newModel)
         }
-    }
-    
-    @MainActor func fileUrl(id: UUID, url: URL?) -> FileUrl? {
-        guard let url else { return nil }
-        return FileUrl(fileId: id, url: url, location: .cloud, module: NetworkModules.pdf.token)
     }
 }

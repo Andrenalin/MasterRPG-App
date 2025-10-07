@@ -18,7 +18,8 @@ import SwiftData
 internal import UIKit
 #endif
 
-public struct GameRootController: Sendable {
+@Observable
+public final class GameRootController: Sendable {
     @MainActor init(root: RootManager, adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, characterRoot: CharacterRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, weatherRoot: WeatherRootModel) {
         self.gameModel = GameRootModel()
         self.root = root
@@ -35,7 +36,6 @@ public struct GameRootController: Sendable {
         self.networkStore = NetworkController(name: "Init")
         self.networkProxyStore = NetworkProxyController(name: "Proxy")
         
-        //_viewController = ViewController(root: self)
         self.logGameController = LogGameController(root: root, gameModel: gameModel)
     }
     let root: RootManager
