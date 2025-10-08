@@ -75,7 +75,7 @@ public protocol GameControllable: Sendable {
     // other controllers
     var itemControllable: any ItemControllable { get }
     var exportControllable: any ExportControllable { get }
-    var importControllable: any ImportControllable { get }
+    @MainActor var importControllable: any ImportControllable { get }
 //    var rootExportControllable: any ExportControllable { get }
 //    var rootImportControllable: any ImportControllable { get }
     

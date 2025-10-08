@@ -53,7 +53,7 @@ extension GameController: GameControllable {
     var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    var importControllable: any ImportControllable {
+    @MainActor var importControllable: any ImportControllable {
         importController as ImportControllable
     }
     

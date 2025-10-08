@@ -5,14 +5,14 @@ import Foundation
 
 struct ImportController: Sendable {
     @MainActor
-    init(itemController: ItemController, fileUrlDataController: FileUrlDataController, module: NetworkModules) {
+    init(itemController: ImportDataControllable, fileUrlDataController: FileUrlDataController, module: NetworkModules) {
         self.itemController = itemController
         self.fileUrlDataController = fileUrlDataController
         self.module = module
         self.importModel = ItemDataImportModel()
     }
     
-    let itemController: ItemController
+    let itemController: ImportDataControllable
     let fileUrlDataController: FileUrlDataController?
     let module: NetworkModules
     let importModel: ItemDataImportModel

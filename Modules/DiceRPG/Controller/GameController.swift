@@ -66,7 +66,7 @@ extension GameController: GameControllable {
     public var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    public var importControllable: any ImportControllable {
+    @MainActor public var importControllable: any ImportControllable {
         importController as ImportControllable
     }
     

@@ -13,6 +13,6 @@ struct FakeGameController: GameControllable {
     
     let itemControllable: any ItemControllable
     var exportControllable: any ExportControllable
-    var importControllable: any ImportControllable
+    @MainActor var importControllable: any ImportControllable
     var gameModel: ItemGameModel
 }

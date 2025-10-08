@@ -29,16 +29,15 @@ public protocol PhotoGameControllable: GameControllable {
 public struct GameController: Sendable {
     @MainActor
     init(itemController: ItemController, fileUrlDataController: FileUrlDataController) {
-        self.itemController = GameItemController(container: itemController.container, module: itemController.module, collectionCategory: itemController.collectionCategory)
+        self.itemController = itemController
+        self.fileUrlDataController = fileUrlDataController
         self.exportController = ExportController(module: itemController.module, itemController: itemController, fileUrlDataController: fileUrlDataController, gameExporter: false)
-        let internItemController = ItemController(container: itemController.container, module: itemController.module)
-        self.importController = ImportController(itemController: internItemController, fileUrlDataController: fileUrlDataController, module: itemController.module)
         self.gameModel = ItemGameModel()
         self.photoGameModel = PhotoGameModel()
     }
 
-    let itemController: GameItemController
-    let importController: ImportController
+    let itemController: ItemController
+    let fileUrlDataController: FileUrlDataController
     let exportController: ExportController
     
     public let gameModel: ItemGameModel
@@ -52,8 +51,8 @@ extension GameController: GameControllable {
     public var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    public var importControllable: any ImportControllable {
-        importController as ImportControllable
+    @MainActor public var importControllable: any ImportControllable {
+        ImportController(itemController: self, fileUrlDataController: fileUrlDataController, module: itemController.module)
     }
     
     public func resetGameState() {
@@ -61,7 +60,23 @@ extension GameController: GameControllable {
     }
 }
 
-extension GameController {
+extension GameController: ImportDataControllable {
+    public var container: ModelContainer {
+        itemController.container
+    }
+    
+    public func item(for id: UUID) -> ItemDataModel? {
+        guard let codableModel = gameItem(for: id) else { return nil }
+        return ItemDataModel(codableModel: codableModel)
+    }
+}
+
+extension GameController: PhotoGameControllable {
+    @MainActor
+    public func resetPhotoSpace() {
+        photoGameModel.openPhotoSpace <=> false
+    }
+
     public func updateGame(data: NetworkCodableDataType, subtype: RPGMessageActionType) async throws {
         guard subtype == .photoSpace else { return }
 #if os(visionOS)
@@ -71,26 +86,4 @@ extension GameController {
         }
 #endif
     }
-}
-
-extension GameController: PhotoGameControllable {
-    @MainActor
-    public func resetPhotoSpace() {
-        photoGameModel.openPhotoSpace <=> false
-    }
-}
-
-
-struct GameItemController: ItemControllable {
-    @MainActor init(container: ModelContainer, module: NetworkModules, collectionCategory: ItemListCategory) {
-        self.container = container
-        self.module = module
-        self.collectionCategory = collectionCategory
-        self.itemCacheModel = ItemCacheModel()
-    }
-    
-    let container: ModelContainer
-    let module: NetworkModules
-    let collectionCategory: ItemListCategory
-    let itemCacheModel: ItemCacheModel
 }
