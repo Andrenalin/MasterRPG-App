@@ -42,7 +42,8 @@ public final class CharacterEntryDataModel {
     
     //@CodableIgnored
     var parent: CharacterDataModel? = nil
-    
+
+    #if os(tvOS)
     //@Generable(description: "The typ of the content.")
     public enum ValueType: Int, Equatable, Hashable, Codable, CaseIterable, Identifiable, Sendable {
         case text = 0
@@ -76,6 +77,42 @@ public final class CharacterEntryDataModel {
             }
         }
     }
+    #else
+    @Generable(description: "The typ of the content.")
+    public enum ValueType: Int, Equatable, Hashable, Codable, CaseIterable, Identifiable, Sendable {
+        case text = 0
+        case number = 1
+        case decimal = 2
+        case selection = 4
+
+        public var id: Int {
+            rawValue
+        }
+
+        var localizedTitle: LocalizedStringResource {
+            switch self {
+            case .text: "Text"
+            case .number: "Number"
+            case .decimal: "Decimal"
+            case .selection: "Selection"
+            }
+        }
+
+        var title: String {
+            String(localized: localizedTitle).localizedString
+        }
+
+        var icon: String {
+            switch self {
+                case .text: "doc.text"
+                case .number: "textformat.12"
+                case .decimal: "number"
+                case .selection: "checkmark.square"
+            }
+        }
+    }
+    #endif
+    
 }
 
 // MARK: - Codable
