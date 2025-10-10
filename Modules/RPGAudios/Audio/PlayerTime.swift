@@ -11,12 +11,14 @@ enum TimeConstant {
 struct PlayerTime: Equatable, Hashable, Sendable {
     let elapsedText: String
     let remainingText: String
-
+    let totalDuration: Double
+    
     static let zero: PlayerTime = .init(elapsedTime: 0, remainingTime: 0)
 
     init(elapsedTime: Double, remainingTime: Double) {
         elapsedText = PlayerTime.formatted(time: elapsedTime)
         remainingText = PlayerTime.formatted(time: remainingTime)
+        totalDuration = elapsedTime + remainingTime
     }
 
     private static func formatted(time: Double) -> String {

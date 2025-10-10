@@ -98,6 +98,8 @@ struct LogGameController: Sendable {
             return itemId.uuidString
         case .editor:
             return itemId.uuidString
+        case .generator:
+            return itemId.uuidString
         @unknown default:
             fatalError()
         }

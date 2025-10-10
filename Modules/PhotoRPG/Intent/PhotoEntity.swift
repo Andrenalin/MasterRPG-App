@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
@@ -131,3 +133,5 @@ extension PhotoEntity {
         SharePreview(name, icon: Image(systemName: "photo.on.rectangle.angled"))
     }
 }
+
+#endif

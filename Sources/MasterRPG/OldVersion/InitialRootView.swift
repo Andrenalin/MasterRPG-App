@@ -8,9 +8,13 @@ import SwiftData
 struct InitialRootView: View {
     let appStore: AppStore
     let editorOnly: Bool
-    
-    @State private var databaseModel = DataBaseModel(useCloudKit: AppStore.shared.settingsModel.useCloudKit, currentActor: .mainApp)
 
+    #if os(tvOS)
+    @State private var databaseModel = DataBaseModel(useCloudKit: false, currentActor: .mainApp)
+    #else
+    @State private var databaseModel = DataBaseModel(useCloudKit: AppStore.shared.settingsModel.useCloudKit, currentActor: .mainApp)
+    #endif
+    
     @State private var showDeleteAlert = false
     
     @State private var showAccountAlert = false

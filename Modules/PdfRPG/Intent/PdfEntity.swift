@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
@@ -131,3 +133,5 @@ extension PdfEntity {
         SharePreview(name, icon: Image(systemName: "apple.books.pages"))
     }
 }
+
+#endif

@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import FoundationModels
 import Playgrounds
 
@@ -14,3 +16,5 @@ import Playgrounds
     }
     let response = try await session.respond(to: prompt)
 }
+
+#endif

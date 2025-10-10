@@ -69,7 +69,8 @@ struct LinkDropDestinationViewModifier: ViewModifier {
         }
 #endif
     }
-    
+
+#if !os(tvOS)
     @MainActor func linkAdventure(links: [LinkAdventureData], session: DropSession) {
         links.forEach { link in
             withAnimation { handler(link.name, link.itemId, link.entryId) }
@@ -129,6 +130,7 @@ struct LinkDropDestinationViewModifier: ViewModifier {
             withAnimation { handler(link.name, link.itemId, link.entryId) }
         }
     }
+#endif
 }
 
 

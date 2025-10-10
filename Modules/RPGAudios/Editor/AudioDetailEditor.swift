@@ -42,6 +42,9 @@ struct AudioDetailEditor: View {
                 .ignoresSafeArea(.container, edges: .top)
 #endif
         }
+        .safeAreaBar(edge: .bottom) {
+            AudioPlayerBarView()
+        }
         .focusedSceneValue(\.selectedAudio, $model.id)
         .environment(detailHeaderModel)
         .environment(externalHeaderModel)

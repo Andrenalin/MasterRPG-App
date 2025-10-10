@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import AppIntents
 import CoreRPG
 import CoreSpotlight
@@ -125,3 +127,5 @@ extension AudioEntity {
         SharePreview(name, icon: Image(systemName: "music.note.list"))
     }
 }
+
+#endif

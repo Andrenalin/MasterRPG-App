@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
 import CoreExternalRPG
 import CoreRPG
 import PdfRPG
@@ -179,3 +180,5 @@ private extension SplitNavigation {
         }
     }
 }
+
+#endif

@@ -8,9 +8,14 @@ import SwiftUI
 
 @MainActor @Observable
 final class PdfSearchModel: Sendable {
+#if os(tvOS)
+    init(selectedEntry: PdfEntryDataModel? = nil) {
+    }
+#else
     init(pdfDoc: PDFDocument? = nil, selectedEntry: PdfEntryDataModel? = nil) {
         self.pdfDoc = pdfDoc
     }
+#endif
     
     private(set) var searchText: String = ""
     var isSearching: Bool = false

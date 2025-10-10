@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
 import AppIntents
 import Foundation
 import SwiftUI
@@ -22,4 +23,6 @@ struct OpenSpaceIntent: OpenIntent {
 
 #if os(iOS)
 extension OpenSpaceIntent: TargetContentProvidingIntent {}
+#endif
+
 #endif

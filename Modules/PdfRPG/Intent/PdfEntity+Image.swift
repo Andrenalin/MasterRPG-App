@@ -1,3 +1,5 @@
+#if !os(tvOS)
+
 import CoreRPG
 
 #if canImport(UIKit)
@@ -42,3 +44,5 @@ extension PdfEntity {
         #endif
     }
 }
+
+#endif

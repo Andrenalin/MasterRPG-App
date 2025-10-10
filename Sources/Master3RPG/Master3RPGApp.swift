@@ -25,8 +25,10 @@ struct Master3RPGApp: App {
         AppDependencyManager.shared.add(dependency: characterRootModel)
         let diceRootModel = appModel.diceRoot
         AppDependencyManager.shared.add(dependency: diceRootModel)
+#if !os(tvOS)
         let generatorRootModel = appModel.generatorRoot
         AppDependencyManager.shared.add(dependency: generatorRootModel)
+#endif
         let mapRootModel = appModel.mapRoot
         AppDependencyManager.shared.add(dependency: mapRootModel)
         let pdfRootModel = appModel.pdfRoot
@@ -51,9 +53,11 @@ struct Master3RPGApp: App {
                 .modifier(UserSettingsViewModifier(appModel: appModel))
                 .setAppSizeMode()
         }
+#if !os(tvOS)
         .commands {
             MenuMainCommand(appModel: appModel)
         }
+#endif
         .modelContainer(appModel.modelContainer)
         
 

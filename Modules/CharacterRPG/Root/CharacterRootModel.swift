@@ -107,9 +107,11 @@ extension CharacterRootModel: ItemRootControllable {
     public var viewControllable: any ViewControllable { viewController }
 }
 
+#if !os(tvOS)
 extension CharacterRootModel {
     @MainActor public func generable(id: UUID?) -> CharacterDataModel.GenValue? {
         guard let id else { return nil }        
         return itemController.generable(id: id)
     }
 }
+#endif

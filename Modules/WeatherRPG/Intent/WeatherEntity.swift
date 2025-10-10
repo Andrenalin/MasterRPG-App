@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
@@ -127,3 +129,5 @@ extension WeatherEntity {
         SharePreview(name, icon: Image(systemName: "cloud.bolt.rain"))
     }
 }
+
+#endif

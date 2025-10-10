@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import AppIntents
 import Foundation
 import SwiftUI
@@ -22,4 +24,6 @@ struct OpenMapIntent: OpenIntent {
 
 #if os(iOS)
 extension OpenMapIntent: TargetContentProvidingIntent {}
+#endif
+
 #endif

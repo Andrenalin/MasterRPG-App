@@ -87,7 +87,9 @@ private extension SearchBar {
                 Button {
                     let entry = PdfEntryDataModel(itemId: UUID(), entryId: UUID(), content: "This is the selection", pageLabel: "2")
                     searchModel.selectedEntry = entry
+                    #if !os(tvOS)
                     searchModel.matches = [PDFSelection()]
+                    #endif
                 } label: {
                     Text("Create")
                 }

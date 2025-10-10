@@ -19,7 +19,7 @@ struct DiceEditor: View {
             .labelsHidden()
 
             LabeledContent {
-                GroupBox {
+                GroupBoxTV {
                     DiceBag(model: model)
                 } label: {
                     Image(systemName: "bag")

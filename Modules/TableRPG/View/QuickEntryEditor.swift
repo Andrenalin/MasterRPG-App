@@ -100,16 +100,16 @@ struct QuickEntryEditor: View {
                         }
                     }
                 }
+#if !os(tvOS)
                 .toolbarRole(.editor)
+#endif
         }
 #if os(macOS)
         .frame(minWidth: 800, minHeight: 600)
 #endif
-#if !os(visionOS)
-        .inspector(isPresented: $showInspector) {
+        .inspectorAll(isPresented: $showInspector) {
             LinkRootView(type: .inspector)
         }
-#endif
     }
 }
 

@@ -6,7 +6,9 @@ import AdventureRPG
 import AudioRPG
 import CharacterRPG
 import DiceRPG
+#if !os(tvOS)
 import GeneratorRPG
+#endif
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -45,10 +47,13 @@ struct RootFiveRouteRouter: NavigationRouteHandling {
         case .game:
             return [.send(RootRoute.game)]
         case .generators(let itemId, _):
+
             var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.generator)]
+#if !os(tvOS)
             if let itemId {
                 routes.append(.send(GeneratorRoute.detail(itemId)))
             }
+#endif
             return routes
         case .maps(let itemId, _):
             var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.maps)]

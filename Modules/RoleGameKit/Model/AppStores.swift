@@ -112,7 +112,14 @@ public final class AppStore: Sendable {
         self.selectionSheetLinkModel = SelectionSheetLinkModel()
         self.deviceRotationModel = DeviceRotationModel()
         self.inAppController = InAppController(model: inAppModel)
-        self.navigator = Navigator(configuration: NavigationConfiguration(restorationKey: "1.0.1", executionDelay: 0.4, verbosity: .info))
+        self.navigator = Navigator(
+            configuration: NavigationConfiguration(
+                restorationKey: "1.0.9",
+                executionDelay: 0.4,
+                verbosity: .info,
+                autoDestinationMode: true
+            )
+        )
         let modelContainer = NewSwiftDatabaseInit.initModelContainer()
         self.modelContainer = modelContainer
         

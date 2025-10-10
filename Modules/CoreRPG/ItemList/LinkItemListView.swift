@@ -145,7 +145,7 @@ private extension LinkItemListView {
             }
             .padding(.leading, CGFloat(item.level * 16))
             .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
-            .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
+            .listRowSeparatorAll(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
     }
     

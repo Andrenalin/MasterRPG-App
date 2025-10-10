@@ -1,3 +1,6 @@
+// @copyright André Trettin
+
+#if !os(tvOS)
 import CoreRPG
 
 #if canImport(UIKit)
@@ -42,3 +45,5 @@ extension PhotoEntity {
         #endif
     }
 }
+
+#endif

@@ -7,7 +7,9 @@ import AudioRPG
 import CharacterRPG
 import DiceRPG
 import GameRPG
+#if !os(tvOS)
 import GeneratorRPG
+#endif
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -158,7 +160,11 @@ struct RouteRouteDestionationView: View {
         case .game:
             GameRootFactory.rootView(root: appModel.gameRoot)
         case .generator:
+            #if os(tvOS)
+            EmptyView()
+            #else
             GeneratorRootFactory.rootView()
+            #endif
         case .maps:
             MapRootFactory.rootView()
         case .pdfs:

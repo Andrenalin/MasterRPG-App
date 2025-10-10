@@ -50,12 +50,6 @@ struct OldAboutPanelCommand: Commands {
     }
 }
 
-public extension Bundle {
-    var displayName: String {
-        infoDictionary?["CFBundleDisplayName"] as? String ?? "-"
-    }
-}
-
 #Preview {
     AboutMenuCommand(title: "About May Mapp", options: [:])
 }

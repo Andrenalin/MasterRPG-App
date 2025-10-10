@@ -98,6 +98,17 @@ public struct TextEditorLinkView: View {
 
     public var body: some View {
         @Bindable var model = model
+        #if os(tvOS)
+        TextField(text: $model.text, prompt: Text("Add content", bundle: .module), label: {
+            Text("Edit content")
+        })
+        .labelsHidden()
+        .frame(minHeight: 120, maxHeight: maxHeight)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
+        }
+        .padding(.bottom, 6)
+        #else
         TextEditor(text: $model.attributedText, selection: $selection)
             .attributedTextFormattingDefinition(ContentFormattingDefinition(links: Set(model.links.map(\.id))))
             .frame(minHeight: 120, maxHeight: maxHeight)
@@ -106,6 +117,7 @@ public struct TextEditorLinkView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
             }
             .padding(.bottom, 6)
+        #endif
     }
 }
 

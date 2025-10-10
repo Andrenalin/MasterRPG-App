@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
 import CoreRPG
 import AppIntents
 import Foundation
@@ -20,3 +21,4 @@ struct PhotoShortcuts: AppShortcutsProvider {
 
 public struct PhotoFrameworkPackage: AppIntentsPackage { }
 
+#endif

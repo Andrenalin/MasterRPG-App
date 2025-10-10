@@ -19,7 +19,9 @@ struct PhotoImporterView: View {
     
     @ViewBuilder
     var contentView: some View {
+#if !os(tvOS)
         ImagePlaygroundImportView(model: model, prominent: prominent)
+#endif
 
         CameraImporterView(model: model, prominent: prominent)
         FileImporterView(model: model, prominent: prominent)
@@ -29,6 +31,7 @@ struct PhotoImporterView: View {
     }
 }
 
+#if !os(tvOS)
 struct ImagePlaygroundImportView: View {
     let model: ItemDataModel
     let prominent: Bool
@@ -51,6 +54,7 @@ struct ImagePlaygroundImportView: View {
         }
     }
 }
+#endif
 
 struct CameraImporterView: View {
     init(model: ItemDataModel, prominent: Bool) {

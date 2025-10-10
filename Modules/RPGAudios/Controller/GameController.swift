@@ -168,7 +168,7 @@ extension GameController: AudioGameStoreable {
     func play(id: UUID?, shouldPlay: Bool) -> Task<Void, Error> {
         Task {
             guard let id else { return }
-            await root.audioController.addAudio(models: fetchPlaylist(id: id), replace: true, playId: id, playMode: .local, shouldPlay: shouldPlay)
+            await root.audioController.add(audio: fetchPlaylist(id: id), replace: true)
         }
     }
     

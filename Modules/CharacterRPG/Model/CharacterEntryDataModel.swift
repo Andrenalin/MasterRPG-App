@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import FoundationModels
 import SwiftData
 
 @Model 
@@ -44,7 +43,7 @@ public final class CharacterEntryDataModel {
     //@CodableIgnored
     var parent: CharacterDataModel? = nil
     
-    @Generable(description: "The typ of the content.")
+    //@Generable(description: "The typ of the content.")
     public enum ValueType: Int, Equatable, Hashable, Codable, CaseIterable, Identifiable, Sendable {
         case text = 0
         case number = 1
@@ -170,7 +169,10 @@ extension CharacterEntryDataModel: EntryPersistentModel {
     }
 }
 
+#if !os(tvOS)
 // MARK: - Generable
+
+import FoundationModels
 
 extension CharacterEntryDataModel {
     @Generable
@@ -197,3 +199,5 @@ extension CharacterEntryDataModel {
         public var groupedValues: [CharacterDataModel.GenValue]
     }
 }
+
+#endif

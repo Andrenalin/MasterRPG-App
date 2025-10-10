@@ -24,9 +24,11 @@ public struct EntryListView<Controller: EntryEditControllable>: View {
                     Divider()
                     removeButton(entry: entry)
                 }
+#if !os(tvOS)
                 .swipeActions(edge: .leading) {
                     editButton(id: entry.entryId)
                 }
+#endif
         }
         .onDelete { indexSet in
             entryEditController.remove(indexSet, from: model)

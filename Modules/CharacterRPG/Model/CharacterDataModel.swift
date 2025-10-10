@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import FoundationModels
 import SwiftData
 
 @Model 
@@ -123,6 +122,9 @@ extension CharacterDataModel: EntryEditModel {}
 
 
 // MARK: - Generable
+#if !os(tvOS)
+import FoundationModels
+
 
 extension CharacterDataModel {
     @Generable(description: "The character description")
@@ -144,3 +146,5 @@ extension CharacterDataModel {
         public var entries: [CharacterEntryDataModel.GenValue] = []
     }
 }
+
+#endif

@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
@@ -125,3 +127,5 @@ extension TableEntity {
         SharePreview(name, icon: Image(systemName: "tablecells.fill"))
     }
 }
+
+#endif

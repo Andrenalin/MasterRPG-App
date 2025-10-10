@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
 import AppIntents
 import RolePlayGameKit
 import AdventureRPG
@@ -30,3 +31,5 @@ struct MyAppPackage: AppIntentsPackage {
        ]
    }
 }
+
+#endif

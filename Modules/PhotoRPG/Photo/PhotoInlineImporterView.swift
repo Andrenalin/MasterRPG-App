@@ -85,7 +85,9 @@ struct PhotoInlineImporterView: View {
     let modelActor: DataModelActor?
 
     @Environment(PhotoRootModel.self) private var root
+#if !os(tvOS)
     @Environment(\.supportsImagePlayground) private var supportsImagePlayground
+#endif
     @Namespace var glassNamespace
 
     @State private var isExpanded = false
@@ -119,6 +121,7 @@ struct PhotoInlineImporterView: View {
 #endif
                 }
             }.padding(32)
+#if !os(tvOS)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: FileController.fileTypes) { result in
             guard let url = try? result.get() else { return }
             root.editController.resetFile(url: url, in: model)
@@ -126,6 +129,7 @@ struct PhotoInlineImporterView: View {
         .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
             root.editController.resetFile(url: url, in: model)
         }
+#endif
 #if os(iOS)
         .sheet(isPresented: $showCamera) {
             CaptureImagePicker(shown: $showCamera) { [id = model.id] image in

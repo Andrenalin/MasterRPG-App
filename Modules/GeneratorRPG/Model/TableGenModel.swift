@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import Foundation
 import FoundationModels
 
@@ -36,3 +38,5 @@ struct TableLinkGenModel {
     @Guide(description: "The name of the linked table.")
     var name: String
 }
+
+#endif

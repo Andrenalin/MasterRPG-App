@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import CoreRPG
 import AppIntents
 import Foundation
@@ -20,3 +22,4 @@ struct SpaceShortcuts: AppShortcutsProvider {
 
 public struct SpaceFrameworkPackage: AppIntentsPackage { }
 
+#endif

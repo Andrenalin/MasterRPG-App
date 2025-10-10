@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
@@ -131,3 +133,5 @@ extension SpaceEntity {
         SharePreview(name, icon: Image(systemName: "view.3d"))
     }
 }
+
+#endif

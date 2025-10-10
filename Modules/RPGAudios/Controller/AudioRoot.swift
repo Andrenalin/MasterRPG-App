@@ -24,6 +24,9 @@ public final class AudioRoot: @unchecked Sendable {
     init(context: NSManagedObjectContext?) {
         rootModel = RootModel()
         
+        let audioPlayerModel = AudioPlayerModel()
+        self.audioPlayerModel = audioPlayerModel
+
         if let context {
             dataController = DataController(root: self, context: context, token: NetworkModules.audio.token)
         }
@@ -35,10 +38,12 @@ public final class AudioRoot: @unchecked Sendable {
         _gameController = GameController(root: self, itemController: self.itemController)
         _linkController = LinkController(root: self, itemController: self.itemController)
         _viewController = ViewController(root: self)
-        _audioController = AudioController(root: self)
+        _audioController = AudioController(fileController: fileController, gameController: gameController, model: audioPlayerModel)
     }
 
     public let rootModel: RootModel
+    
+    public let audioPlayerModel: AudioPlayerModel
     
     @ObservationIgnored
     private(set) var dataController: DataController?

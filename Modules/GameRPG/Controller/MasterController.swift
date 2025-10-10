@@ -180,7 +180,7 @@ extension MasterController: MasterNetworkStoreDelegate {
 extension MasterController {
     func handle(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         switch model.data.type {
-        case .adventure, .none, .setting, .editor, .search:
+        case .adventure, .none, .setting, .editor, .search, .generator:
             Logger.networking.error("MasterController: Request \(model.type.debugDescription, privacy: .public) but model request data is not supported. \(model.debugDescription, privacy: .public)")
             return nil
         case .audio:

@@ -12,7 +12,9 @@ import AudioRPG
 import CharacterRPG
 import DiceRPG
 import GameRPG
+#if !os(tvOS)
 import GeneratorRPG
+#endif
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -44,7 +46,9 @@ public final class AppModel: Sendable {
     @ObservationIgnored public let characterRoot: CharacterRootModel
     @ObservationIgnored public let diceRoot: DiceRootModel
     @ObservationIgnored public let gameRoot: GameRootController
+#if !os(tvOS)
     @ObservationIgnored public let generatorRoot: GeneratorRootModel
+#endif
     @ObservationIgnored public let mapRoot: MapRootModel
     @ObservationIgnored public let pdfRoot: PdfRootModel
     @ObservationIgnored public let photoRoot: PhotoRootModel
@@ -81,6 +85,22 @@ public final class AppModel: Sendable {
         let mapRoot = MapRootFactory.rootModel(modelContext: modelContainer.mainContext, characterRoot: characterRoot,  diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         let adventureRoot = AdventureRootFactory.rootModel(modelContext: modelContainer.mainContext, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
         
+#if os(tvOS)
+        let root = RootManager(
+            adventureRoot: adventureRoot,
+            audioRoot: audioRoot,
+            characterRoot: characterRoot,
+            diceRoot: diceRoot,
+            generatorRoot: adventureRoot,
+            mapRoot: mapRoot,
+            pdfRoot: pdfRoot,
+            photoRoot: photoRoot,
+            spaceRoot: spaceRoot,
+            tableRoot: tableRoot,
+            weatherRoot: weatherRoot
+        )
+        #else
+        
         let generatorRoot = GeneratorRootFactory.rootModel(modelContext: modelContainer.mainContext, adventureRoot: adventureRoot, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
         
         let root = RootManager(
@@ -96,6 +116,7 @@ public final class AppModel: Sendable {
             tableRoot: tableRoot,
             weatherRoot: weatherRoot
         )
+#endif
 
         let gameRoot = GameRootFactory.rootController(
             root: root,
@@ -118,7 +139,9 @@ public final class AppModel: Sendable {
         self.characterRoot = characterRoot
         self.diceRoot = diceRoot
         self.gameRoot = gameRoot
+        #if !os(tvOS)
         self.generatorRoot = generatorRoot
+        #endif
         self.mapRoot = mapRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
@@ -140,6 +163,23 @@ public final class AppModel: Sendable {
     
     @MainActor
     private static func initModelContainer() -> ModelContainer {
+#if os(tvOS)
+        let schema = Schema(
+            [
+                ItemDataModel.self,
+                EntryDataModel.self,
+                LinkDataModel.self,
+                TagDataModel.self,
+                AdventureDataModel.self,
+                CharacterDataModel.self,
+                DiceDataModel.self,
+                MapDataModel.self,
+                PdfEntryDataModel.self,
+                TableDataModel.self,
+                WeatherDataModel.self,
+            ]
+        )
+        #else
         let schema = Schema(
             [
                 ItemDataModel.self,
@@ -156,6 +196,7 @@ public final class AppModel: Sendable {
                 WeatherDataModel.self,
             ]
         )
+#endif
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])

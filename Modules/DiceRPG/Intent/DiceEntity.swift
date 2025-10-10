@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
@@ -131,3 +133,5 @@ extension DiceEntity {
         SharePreview(name, icon: Image(systemName: "dice"))
     }
 }
+
+#endif

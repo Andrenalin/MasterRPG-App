@@ -1,12 +1,6 @@
-//
-//  MenuMainCommand.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 6/10/2568 BE.
-//
-
-
 // @copyright André Trettin
+
+#if !os(tvOS)
 
 import RolePlayGameKit
 import SwiftUI
@@ -26,3 +20,5 @@ struct MenuMainCommand: Commands {
         MenuCommandList(appModel: appModel)
     }
 }
+
+#endif

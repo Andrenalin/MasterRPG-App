@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
@@ -125,3 +127,5 @@ extension AdventureEntity {
         SharePreview(name, icon: Image(systemName: "wand.and.stars"))
     }
 }
+
+#endif

@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import RoleGameKit
 import SwiftUI
 
@@ -17,3 +19,5 @@ struct OldMenuMainCommand: Commands {
         OldMenuCommandList(appStore: appStore)
     }
 }
+
+#endif

@@ -38,6 +38,7 @@ extension ItemController: ItemControllable {
     }
 }
 
+#if !os(tvOS)
 // MARK: - Generable
 
 extension ItemController {
@@ -55,6 +56,8 @@ extension ItemController {
         return CharacterDataModel.GenValue(name: item.name, information: item.information, tags: item.tags, entries: entries)
     }
 }
+
+#endif
 
 // MARK: - Import Controller
 

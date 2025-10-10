@@ -76,7 +76,7 @@ struct PdfViewerView: View {
         .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
         .navigationTitle(Text(model.name))
-#if !os(macOS)
+#if !os(macOS) && !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
 #endif
         .onChange(of: model, initial: true) {

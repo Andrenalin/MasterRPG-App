@@ -124,8 +124,7 @@ private extension ItemDetailRootView {
             $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: { updateFile(url: $0, model: model)} ))
         }
 #endif
-#if !os(visionOS)
-        .inspector(isPresented: $showInspector) {
+        .inspectorAll(isPresented: $showInspector) {
 #if os(iOS)
             if horizontalSizeClass == .regular {
                 inspectorView(model: model)
@@ -134,7 +133,6 @@ private extension ItemDetailRootView {
             inspectorView(model: model)
 #endif
         }
-#endif
         .sheet(isPresented: $isEditing) {
             ItemHeaderEditorView(editControllable: root.editControllable, model: model)
                 .presentationContentInteraction(.resizes)

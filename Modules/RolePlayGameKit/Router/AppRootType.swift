@@ -15,7 +15,11 @@ extension AppRootType: NavigationDestination {
         case .tabbed:
             TabbedNavigation()
         case .split:
+            #if os(tvOS)
+            TabbedNavigation()
+            #else
             SplitNavigation()
+#endif
         case .tabbedSplit:
             TabbedSplitNavigation()
         }

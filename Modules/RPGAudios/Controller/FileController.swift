@@ -5,6 +5,9 @@ import Foundation
 internal import UniformTypeIdentifiers
 
 struct FileController: Sendable {
+    static var fileTypes: [UTType] { [.audio] }
+    static var filenameExtension: String { "m4a" }
+
     weak var root: AudioRoot!
     private var _fileUrlDataController: FileUrlDataController?
     

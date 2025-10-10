@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import Foundation
 import FoundationModels
 
@@ -55,3 +57,5 @@ enum AdventureType: Equatable {
     case adventure
     case scenario
 }
+
+#endif

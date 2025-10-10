@@ -4,7 +4,9 @@ import CoreExternalRPG
 import CoreRPG
 import AudioRPG
 import DiceRPG
+#if !os(tvOS)
 import GeneratorRPG
+#endif
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -88,7 +90,11 @@ struct ExtendedTabRouteDestionationView: View {
             case .dice:
                 DiceRootFactory.rootView()
             case .generator:
+#if os(tvOS)
+                EmptyView()
+#else
                 GeneratorRootFactory.rootView()
+#endif
             case .maps:
                 MapRootFactory.rootView()
             case .pdfs:

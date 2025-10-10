@@ -24,10 +24,12 @@ struct ViewerRootView: View {
         NavigationStack {
             VStack {
                 GeometryReader { proxy in
+#if !os(tvOS)
                     if let itemModel {
                         SpaceViewer(root: root, model: itemModel)
                             .id(model.id)
                     }
+#endif
                 }
             }
             .ignoresSafeArea(.container, edges: [.top, .bottom])
@@ -52,7 +54,7 @@ struct ViewerRootView: View {
             .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
             .navigationTitle(Text(model.name))
-#if !os(macOS)
+#if !os(macOS) && !os(tvOS)
             .navigationBarTitleDisplayMode(.inline)
 #endif
         }

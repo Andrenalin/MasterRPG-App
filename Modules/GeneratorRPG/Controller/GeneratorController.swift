@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import CharacterRPG
 import FoundationModels
 import Foundation
@@ -105,3 +107,5 @@ struct GeneratorController: Sendable {
         }
     }
 }
+
+#endif

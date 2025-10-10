@@ -15,11 +15,13 @@ struct DetailRootView: View {
     var body: some View {
         ItemDetailRootView(selectedId: selectedId) {
         } editor: {
+#if !os(tvOS)
             if let model = selectedModel {
                 SpaceViewer(root: root, model: model)
                     .id(model.id)
                     .frame(minHeight: 800)
             }
+#endif
         }
         .environment(openFileWindowModel)
         .environment(root.listController.cacheListItemModel)

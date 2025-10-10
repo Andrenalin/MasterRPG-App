@@ -102,7 +102,7 @@ extension AudioPlayerView {
             } label: {
                 Image(systemName: "backward.fill")
                     .font(.headline)
-                    .foregroundStyle((root.audioController.model.currentIndex) > 0 ? Color.teal : Color.secondary)
+                    .foregroundStyle((root.audioController.model.currentIndex ?? 0) > 0 ? Color.teal : Color.secondary)
             }
             
             Button {
@@ -124,7 +124,7 @@ extension AudioPlayerView {
             } label: {
                 Image(systemName: "forward.fill")
                     .font(.headline)
-                    .foregroundStyle((root.audioController.model.currentIndex < root.audioController.model.playList.count - 1) ? Color.teal : Color.secondary)
+                    .foregroundStyle((root.audioController.model.currentIndex ?? 0 < root.audioController.model.playList.count - 1) ? Color.teal : Color.secondary)
             }
             
             Button {

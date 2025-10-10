@@ -147,7 +147,7 @@ private extension ListRootView {
             .padding(.leading, CGFloat(item.level * 16))
             .dropDestination(for: root.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
             .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
-            .listRowSeparator(item.isOpen ? .visible : .hidden, edges: .bottom)
+            .listRowSeparatorAll(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
         .onDelete(perform: deleteItems)
         .onMove(perform: moveItems)
