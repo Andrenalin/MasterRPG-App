@@ -42,8 +42,9 @@ struct AudioDetailEditor: View {
                 .ignoresSafeArea(.container, edges: .top)
 #endif
         }
-        .safeAreaBar(edge: .bottom) {
+        .safeAreaInset(edge: .bottom) {
             AudioPlayerBarView()
+                .padding()
         }
         .focusedSceneValue(\.selectedAudio, $model.id)
         .environment(detailHeaderModel)

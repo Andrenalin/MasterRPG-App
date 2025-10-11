@@ -166,9 +166,11 @@ extension GameController {
 extension GameController: AudioGameStoreable {
     @discardableResult
     func play(id: UUID?, shouldPlay: Bool) -> Task<Void, Error> {
-        Task {
+        Task { @MainActor in
             guard let id else { return }
+            let list = fetchPlaylist(id: id)
             await root.audioController.add(audio: fetchPlaylist(id: id), replace: true)
+            root.audioController.togglePlay(id: list.first?.id)
         }
     }
     

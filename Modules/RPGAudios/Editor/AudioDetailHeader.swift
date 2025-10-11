@@ -49,6 +49,7 @@ struct AudioDetailHeader: View {
                 isPlayerShown.toggle()
             }
             if isPlayerShown {
+                
                 root.gameController.play(id: editController.model.id, shouldPlay: true)
             }
         }
