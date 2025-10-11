@@ -114,10 +114,10 @@ public final class AppStore: Sendable {
         self.inAppController = InAppController(model: inAppModel)
         self.navigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "1.0.9",
+                restorationKey: "1.0.10",
                 executionDelay: 0.4,
                 verbosity: .info,
-                autoDestinationMode: true
+                autoDestinationMode: false
             )
         )
         let modelContainer = NewSwiftDatabaseInit.initModelContainer()
@@ -177,7 +177,7 @@ public final class AppStore: Sendable {
 
     public func windowPlacement(for module: NetworkModules) -> WindowPlacementPosition {
         switch module {
-            case .none, .setting, .editor, .game:
+        case .none, .setting, .editor, .game, .generator:
                 return .leading(WindowIdentifier.game.rawValue)
             case .photo:
                 if settingsModel.gameModus == .player {

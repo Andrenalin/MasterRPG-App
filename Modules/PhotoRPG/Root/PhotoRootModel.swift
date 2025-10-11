@@ -36,7 +36,7 @@ public final class PhotoRootModel {
     @ObservationIgnored lazy var cacheController: CacheController = {
         CacheController(fileUrlDataController: fileController.fileUrlDataController)
     }()
-    @ObservationIgnored lazy var editController: EditController = {
+    @ObservationIgnored public lazy var editController: EditController = {
         EditController(itemController: itemController, fileUrlDataController: fileController.fileUrlDataController)
     }()
     @ObservationIgnored lazy var exportController: ExportController = {

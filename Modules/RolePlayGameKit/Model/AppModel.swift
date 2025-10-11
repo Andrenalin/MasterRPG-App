@@ -151,7 +151,7 @@ public final class AppModel: Sendable {
         
         self.navigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "1.0.9",
+                restorationKey: "1.0.10",
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true

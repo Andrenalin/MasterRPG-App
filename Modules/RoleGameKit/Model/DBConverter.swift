@@ -7,13 +7,13 @@ import Foundation
 import AdventureRPG
 import AudioRPG
 import CharacterRPG
-@testable import DiceRPG
+import DiceRPG
 import MapRPG
-@testable import PdfRPG
-@testable import PhotoRPG
+import PdfRPG
+import PhotoRPG
 import SpaceRPG
-@testable import TableRPG
-@testable import WeatherRPG
+import TableRPG
+import WeatherRPG
 
 import RPGAdventures
 import RPGAudios

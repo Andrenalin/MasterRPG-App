@@ -7,7 +7,7 @@ import SwiftUI
 
 @Model 
 public final class DiceDataModel {
-    init(
+    public init(
         itemId: UUID = UUID(),
         sumUp: Bool = true,
         modifier: Double = 0.0,
@@ -324,7 +324,7 @@ extension DiceDataModel {
 }
 
 extension DiceDataModel {
-    enum CompareValue: Int, Identifiable, Equatable, Hashable, Codable, CaseIterable {
+    public enum CompareValue: Int, Identifiable, Equatable, Hashable, Codable, CaseIterable, Sendable {
         case off
         case lower
         case lowerEqual
@@ -378,7 +378,7 @@ extension DiceDataModel {
 }
 
 extension DiceDataModel {
-    enum CoupFumbleOption: Identifiable, Equatable, Hashable, Codable, RawRepresentable {
+    public enum CoupFumbleOption: Identifiable, Equatable, Hashable, Codable, RawRepresentable, Sendable {
         case result(Int)
         case diceValue(Int)
         
@@ -445,7 +445,13 @@ extension DiceDataModel {
 }
 
 extension DiceDataModel {
-    struct RerollOption: Identifiable, Equatable, Hashable, Codable {
+    public struct RerollOption: Identifiable, Equatable, Hashable, Codable, Sendable {
+        public init(number: Int, value: Int, maxDiceValue: Bool) {
+            self.number = number
+            self.value = value
+            self.maxDiceValue = maxDiceValue
+        }
+        
         let number: Int
         let value: Int
         let maxDiceValue: Bool

@@ -7,7 +7,7 @@ import CoreGraphics
 
 @Model 
 public final class PdfEntryDataModel {
-    init(
+    public init(
         itemId: UUID,
         entryId: UUID = UUID(),
         index: Int = 0,
