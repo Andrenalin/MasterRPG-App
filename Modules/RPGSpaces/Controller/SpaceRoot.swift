@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import CoreData
+import SwiftData
 import SwiftUI
 
 @MainActor @Observable
@@ -23,14 +24,26 @@ public final class SpaceRoot: @unchecked Sendable {
     @MainActor
     init(context: NSManagedObjectContext?) {
         rootModel = RootModel()
+        modelContext = ModelContext(try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true)))
         
-        _cacheController = CacheController(root: self)
+        let module: NetworkModules = .space
+        self.module = module
+        
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.building, .item, .supplement])
+        self.searchModel = searchModel
+        
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
+
         if let context {
             dataController = DataController(root: self, context: context, token: NetworkModules.space.token)
         }
-        _fileController = FileController(root: self)
+        let fileController = FileController(root: self)
+        _fileController = fileController
         _itemController = ItemController(root: self, dataController: dataController)
-        _editControllers = [EditTypes.main: EditController(root: self, currentListItem: nil, currentModel: nil)]
+        _editControllers = [EditTypes.main: EditController(root: self, fileUrlDataController: fileController.fileUrlDataController, currentListItem: nil, currentModel: nil)]
         _exportController = ExportController(root: self, gameExporter: false)
         _importController = ImportController(root: self, itemController: self.itemController)
         _gameController = GameController(root: self, itemController: self.itemController)
@@ -39,15 +52,24 @@ public final class SpaceRoot: @unchecked Sendable {
     }
     
     public let rootModel: RootModel
+    let modelContext: ModelContext
+    public let module: NetworkModules
     
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
+    public var itemSelectionModel: ItemSelectionModel
+    @MainActor
+    public var currentSelectedItemId: UUID? {
+        rootModel.selectedItem?.itemId
+    }
+
+    
+    @ObservationIgnored lazy var cacheController: CacheController = {
+        CacheController(fileUrlDataController: fileController.fileUrlDataController)
+    }()
+
     @ObservationIgnored
     private(set) var dataController: DataController?
-    
-    @ObservationIgnored
-    private(set) var _cacheController: CacheController?
-    var cacheController: CacheController {
-        _cacheController.unsafelyUnwrapped
-    }
     
     @ObservationIgnored
     private(set) var _fileController: FileController?
@@ -106,6 +128,11 @@ public final class SpaceRoot: @unchecked Sendable {
     
     @ObservationIgnored
     private(set) var mainListController: ListController?
+    
+    @MainActor
+    @ObservationIgnored public lazy var rootController: ItemRootController = {
+        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: ItemSelectionModel(), removeEntryListModel: RemoveEntryListModel(), cacheControllable: cacheController, editControllable: editController(type: .main), exportControllable: exportControllable, gameControllable: gameControllable, itemControllable: itemControllable, linkControllable: linkControllable, listControllable: listController, listLinkControllable: listController, viewControllable: viewController)
+    }()
 }
 
 extension SpaceRoot {
@@ -132,7 +159,7 @@ extension SpaceRoot {
     func editController(for item: ItemRowTreeModel? = nil, type: EditTypes) -> EditController {
         guard let oldEditController = _editControllers[type] else {
             let model = item.map { itemController.itemOrEmpty(for: $0.model.itemId) }
-            let newEditController = EditController(root: self, currentListItem: item, currentModel: model)
+            let newEditController = EditController(root: self, fileUrlDataController: fileController.fileUrlDataController, currentListItem: item, currentModel: model)
             _editControllers[type] = newEditController
             return newEditController
         }

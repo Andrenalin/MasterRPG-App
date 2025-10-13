@@ -4,6 +4,16 @@
     "%@" : {
 
     },
+    "%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
     "%d/%d (Format, # of Images)" : {
       "comment" : "Images taken over maximum number of images.",
       "extractionState" : "extracted_with_value",

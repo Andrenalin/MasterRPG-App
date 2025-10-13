@@ -33,7 +33,7 @@ struct PlayerVolumeView: View {
             Image(systemName: "volume.3", variableValue: Double(root.audioController.model.volume))
                 .symbolRenderingMode(.hierarchical)
                 .symbolEffect(.bounce, value: root.audioController.model.volume)
-                .tint(.teal)
+                .tint(Color.accentColor)
         }
     }
 
@@ -45,7 +45,7 @@ struct PlayerVolumeView: View {
 #if !os(tvOS)
             Slider(value: $model.volume, in: 0.0 ... 1.0)
                 .frame(width: 160)
-                .tint(.teal)
+                .tint(Color.accentColor)
 #endif
         }
         .padding(8)

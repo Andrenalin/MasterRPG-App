@@ -34,6 +34,7 @@ struct EditController: Sendable {
     }
 
     weak var root: ValueRoot!
+    var fileUrlDataController: FileUrlDataController? = nil
     let editorModel: ItemEditorModel
     let valueEditModel: ValueEditModel
 }

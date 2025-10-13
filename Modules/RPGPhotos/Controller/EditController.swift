@@ -11,12 +11,14 @@ internal import UIKit
 
 struct EditController: Sendable {
     @MainActor
-    init(root: PhotoRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    init(root: PhotoRoot, fileUrlDataController: FileUrlDataController, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
+        self.fileUrlDataController = fileUrlDataController
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
     }
 
     weak var root: PhotoRoot!
+    let fileUrlDataController: FileUrlDataController?
     let editorModel: ItemEditorModel
 }
 

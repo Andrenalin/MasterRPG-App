@@ -39,13 +39,13 @@ private extension TagsItemEditor {
         HStack {
             if editController.model.tags.isEmpty {
                 Text(editController.model.category.title)
-                    .rowColoredTag()
+                    .rowColoredTag(backgroundColor: Color.accentColor)
                     .padding(.top, 4)
             }
             
             ForEach(editController.model.tags, id: \.self) { tag in
                 Text(tag)
-                    .rowColoredTag()
+                    .rowColoredTag(backgroundColor: Color.accentColor)
                     .removeItemImage {
                         remove(tag: tag)
                     }

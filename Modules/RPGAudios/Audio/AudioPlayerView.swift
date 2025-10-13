@@ -91,7 +91,7 @@ extension AudioPlayerView {
             Image(systemName: "speaker.wave.3")
         }
         .labelsHidden()
-        .tint(.teal)
+        .tint(Color.accentColor)
 #endif
     }
     
@@ -164,7 +164,7 @@ extension AudioPlayerView {
                 }
             }
             .labelsHidden()
-            .tint(.teal)
+            .tint(Color.accentColor)
 #endif
         }
     }

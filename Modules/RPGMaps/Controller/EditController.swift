@@ -33,6 +33,7 @@ struct EditController: Sendable {
     }
 
     weak var root: MapRoot!
+    var fileUrlDataController: FileUrlDataController? = nil
     let editorModel: ItemEditorModel
     let mapEditModel: MapEditModel
 }

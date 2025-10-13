@@ -94,7 +94,7 @@ struct RootQuickLinkEditor: View {
 #Preview {
     Form {
         SpecialEditor(editController: .preview)
-            .tint(.teal)
+            .tint(Color.accentColor)
             .accentColor(.teal)
             .environment(TableRoot.preview)
     }

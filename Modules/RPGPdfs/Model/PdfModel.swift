@@ -143,6 +143,7 @@ extension PdfModel: ItemDuplicatable {
 }
 
 extension PdfModel: ItemDataAccessable {
+    public var url: URL? { fileUrl?.rawUrl }
     public static var empty: PdfModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> PdfModel {
         PdfModel(id: id, name: "")

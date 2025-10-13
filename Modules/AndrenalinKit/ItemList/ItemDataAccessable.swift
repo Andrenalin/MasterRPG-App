@@ -19,6 +19,7 @@ public protocol ItemDataAccessable {
     var isGroupHidden: Bool { get }
     var isGroupHiddenToggle: Bool { get set }
     var entries: [Entry] { get set }
+    var url: URL? { get }
 
     subscript(id: UUID) -> Entry { get set }
 

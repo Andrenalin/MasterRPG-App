@@ -23,7 +23,8 @@ public struct FileImporterView: View {
         GlassButton(isProminent: isProminent) {
             showImporter.toggle()
         } label: {
-            Image(systemName: "folder\(showImporter ? ".fill" : "")")
+            Image(systemName: "folder")
+                .symbolVariant(showImporter ? .fill : .none)
                 .imageScale(isProminent ? .large : .medium)
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
         }

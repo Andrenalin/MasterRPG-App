@@ -39,7 +39,7 @@ struct PDFUIView: View {
                         ProgressView()
                             .progressViewStyle(.circular)
                             .controlSize(.large)
-                            .tint(.teal)
+                            .tint(Color.accentColor)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 }

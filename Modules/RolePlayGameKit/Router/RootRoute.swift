@@ -144,45 +144,48 @@ struct RouteRouteDestionationView: View {
     @Environment(AppModel.self) private var appModel
     
     var body: some View {
-        switch route {
-        case .adventures:
-            AdventureRootFactory.rootView()
-        case .audios:
-            AudioRootFactory.rootView()
-        case .dice:
-            DiceRootFactory.rootView()
-        case .editors:
+        Group {
+            switch route {
+            case .adventures:
+                AdventureRootFactory.rootView()
+            case .audios:
+                AudioRootFactory.rootView()
+            case .dice:
+                DiceRootFactory.rootView()
+            case .editors:
 #if os(visionOS)
-            EmptyView()
+                EmptyView()
 #else
-            ExtendedTabBar()
+                ExtendedTabBar()
 #endif
-        case .game:
-            GameRootFactory.rootView(root: appModel.gameRoot)
-        case .generator:
-            #if os(tvOS)
-            EmptyView()
-            #else
-            GeneratorRootFactory.rootView()
-            #endif
-        case .maps:
-            MapRootFactory.rootView()
-        case .pdfs:
-            PdfRootFactory.rootView()
-        case .photos:
-            PhotoRootFactory.rootView()
-        case .space:
-            SpaceRootFactory.rootView()
-        case .settings:
-            SettingsView(model: appModel)
-        case .tables:
-            TableRootFactory.rootView()
-        case .values:
-            CharacterRootFactory.rootView()
-        case .weathers:
-            WeatherRootFactory.rootView()
-        case .search:
-            Text("Coming Soon")
+            case .game:
+                GameRootFactory.rootView(root: appModel.gameRoot)
+            case .generator:
+#if os(tvOS)
+                EmptyView()
+#else
+                GeneratorRootFactory.rootView()
+#endif
+            case .maps:
+                MapRootFactory.rootView()
+            case .pdfs:
+                PdfRootFactory.rootView()
+            case .photos:
+                PhotoRootFactory.rootView()
+            case .space:
+                SpaceRootFactory.rootView()
+            case .settings:
+                SettingsView(model: appModel)
+            case .tables:
+                TableRootFactory.rootView()
+            case .values:
+                CharacterRootFactory.rootView()
+            case .weathers:
+                WeatherRootFactory.rootView()
+            case .search:
+                Text("Coming Soon")
+            }
         }
+        .tint(route.module.tint)
     }
 }

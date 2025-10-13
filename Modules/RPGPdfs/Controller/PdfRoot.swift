@@ -34,9 +34,10 @@ public final class PdfRoot: @unchecked Sendable {
         if let context {
             dataController = DataController(root: self, context: context, token: NetworkModules.pdf.token)
         }
-        _fileController = FileController(root: self)
+        let fileController: FileController = FileController(root: self)
+        _fileController = fileController
         _itemController = ItemController(root: self, dataController: dataController)
-        _editControllers = [EditTypes.main: EditController(root: self, itemController: self.itemController, currentListItem: nil, currentModel: nil)]
+        _editControllers = [EditTypes.main: EditController(root: self, itemController: self.itemController, fileUrlDataController: fileController.fileUrlDataController, currentListItem: nil, currentModel: nil)]
         _exportController = ExportController(root: self, gameExporter: false)
         _importController = ImportController(root: self, itemController: self.itemController)
         _gameController = GameController(root: self, itemController: self.itemController)
@@ -140,7 +141,7 @@ extension PdfRoot {
     func editController(for item: ItemRowTreeModel? = nil, type: EditTypes) -> EditController {
         guard let oldEditController = _editControllers[type] else {
             let model = item.map { itemController.itemOrEmpty(for: $0.model.itemId) }
-            let newEditController = EditController(root: self, itemController: itemController, currentListItem: item, currentModel: model)
+            let newEditController = EditController(root: self, itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, currentListItem: item, currentModel: model)
             _editControllers[type] = newEditController
             return newEditController
         }

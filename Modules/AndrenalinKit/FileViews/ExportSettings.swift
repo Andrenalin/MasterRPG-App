@@ -66,7 +66,7 @@ public struct ExportDataModels: View {
             }
             if exportController.exportModel.totalExportingItems > 0 {
                 ProgressView(value: Double(exportController.exportModel.exportedItems), total: Double(exportController.exportModel.totalExportingItems))
-                    .tint(.teal)
+                    .tint(Color.accentColor)
             }
             if let exportError {
                 Text(exportError)

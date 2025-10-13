@@ -8,10 +8,12 @@ struct EditController: Sendable {
     @MainActor
     init(root: DiceRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
+        self.fileUrlDataController = nil
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
     }
 
     weak var root: DiceRoot!
+    let fileUrlDataController: FileUrlDataController?
     let editorModel: ItemEditorModel
 }
 

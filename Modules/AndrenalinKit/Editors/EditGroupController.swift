@@ -42,6 +42,10 @@ public final class EditGroupModel: @unchecked Sendable {
 }
 
 extension EditGroupModel: ItemDataAccessable & ItemDiffComparable {
+    public var url: URL? {
+        nil
+    }
+    
     public static let empty: EditGroupModel = empty(UUID())
     public static func empty(_ id: UUID) -> EditGroupModel {
         EditGroupModel(id: id)
@@ -97,6 +101,7 @@ public struct EditGroupController<ItemDataController: ItemControllable, ItemEdit
     }
 
     public var itemControllable: any ItemControllable
+    public var fileUrlDataController: FileUrlDataController?
     public let editControllable: ItemEditController
     public let rootControllable: any RootControllable
     public let editorModel: ItemEditorModel

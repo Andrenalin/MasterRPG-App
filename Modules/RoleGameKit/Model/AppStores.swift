@@ -177,7 +177,7 @@ public final class AppStore: Sendable {
 
     public func windowPlacement(for module: NetworkModules) -> WindowPlacementPosition {
         switch module {
-        case .none, .setting, .editor, .game, .generator:
+        case .none, .setting, .editor, .game, .generator, .search:
                 return .leading(WindowIdentifier.game.rawValue)
             case .photo:
                 if settingsModel.gameModus == .player {

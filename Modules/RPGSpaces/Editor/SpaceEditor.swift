@@ -67,7 +67,7 @@ struct SpaceEditor: View {
 
     private func loadImage() {
         Task {
-            await root.cacheController.thumbnailId(for: editController.model.id, with: editController.model.fileUrl, shouldDownload: true)
+            await root.cacheController.thumbnailId(for: editController.model.id, with: editController.model.fileUrl)
             let newImage = await root.cacheController.thumbnail(for: editController.model.id)
             withAnimation { thumbnail = newImage }
         }

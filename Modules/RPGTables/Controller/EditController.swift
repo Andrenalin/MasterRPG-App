@@ -26,11 +26,13 @@ struct EditController: Sendable {
     }
 
     weak var root: TableRoot!
+    var fileUrlDataController: FileUrlDataController? = nil
     let editorModel: ItemEditorModel
     let tableEditModel: TableEditModel
 }
 
 extension EditController: EntryDataEditable {
+    
     typealias Model = TableModel
 
     var itemControllable: any ItemControllable {

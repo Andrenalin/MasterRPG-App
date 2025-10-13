@@ -36,6 +36,7 @@ final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplica
     var tags: [String]
     var displayState: Int
     var isGroupHiddenToggle: Bool
+    var url: URL? = nil
 
     static let empty: FakeItemModel =  empty(UUID())
     static func empty(_ id: UUID) -> FakeItemModel {

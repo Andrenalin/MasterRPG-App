@@ -196,7 +196,7 @@ private extension QuickEntryEditor {
             }
 
         }
-        .tint(.teal)
+        .tint(Color.accentColor)
     }
     
     private var editorView: some View {

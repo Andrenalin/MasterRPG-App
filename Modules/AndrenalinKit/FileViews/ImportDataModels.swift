@@ -78,7 +78,7 @@ public struct ImportDataModels: View {
             }
             if importController.importModel.totalImportingItems > 0 {
                 ProgressView(value: Double(importController.importModel.importedItems), total: Double(importController.importModel.totalImportingItems))
-                    .tint(.teal)
+                    .tint(Color.accentColor)
             }
             if let importError {
                 Text(importError)

@@ -77,6 +77,7 @@ private extension TabNavigation {
     func pageTab(for tab: RootRoute) -> Tab<RootRoute, some View, DefaultTabLabel> {
         Tab(title(for: tab), systemImage: tab.icon, value: tab) {
             tab
+                .tint(tab.module.tint)
         }
     }
     

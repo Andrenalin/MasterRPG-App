@@ -4,9 +4,14 @@ import AndrenalinKit
 import Observation
 import SwiftUI
 
-public struct ViewController {
+public struct ViewController: Sendable {
     weak var root: SpaceRoot!
+
+    public let goupViewType: GroupViewType = .photo
+    public let thumbnailRowViewType: ThumbnailRowViewType = .photo
 }
+
+extension ViewController: ViewControllable {}
 
 // MARK: - Edit
 

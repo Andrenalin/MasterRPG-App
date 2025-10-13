@@ -35,7 +35,7 @@ struct ImageOverlayButtonStyle_Previews: PreviewProvider {
         }
         .buttonStyle(.imageOverlay)
         .borderLessTVBottonStyle()
-        .tint(.teal)
+        .tint(Color.accentColor)
         .accentColor(Color.teal)
     }
 }

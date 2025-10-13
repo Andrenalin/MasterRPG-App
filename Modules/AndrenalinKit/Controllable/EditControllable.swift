@@ -13,6 +13,7 @@ public protocol EditControllable: Sendable {
     associatedtype Model: ItemDataAccessable & ItemDiffComparable & ModelType
 
     var itemControllable: any ItemControllable { get }
+    var fileUrlDataController: FileUrlDataController? { get }
     var rootControllable: any RootControllable { get }
 
     var editorModel: ItemEditorModel { get }

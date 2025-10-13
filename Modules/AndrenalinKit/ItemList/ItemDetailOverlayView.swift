@@ -1,0 +1,40 @@
+// @copyright André Trettin
+
+import SwiftData
+import SwiftUI
+
+public struct ItemDetailOverlayView<Model: ItemDataAccessable>: View {
+    public init(model: Model, fullHeader: Bool = false, onlyDescription: Bool = false) {
+        self.model = model
+        self.fullHeader = fullHeader
+        self.onlyDesctiption = onlyDescription
+        self.cacheItemListModel = CacheItemListModel()
+    }
+    
+    let model: Model
+    let fullHeader: Bool
+    let onlyDesctiption: Bool
+    let cacheItemListModel: CacheItemListModel
+
+    public var body: some View {
+        VStack(alignment: .leading) {
+            if fullHeader || onlyDesctiption == false {
+                NameItemRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                HStack {
+                    TagItemRow(tags: [model.category.title])
+                    
+                    TagItemRow(tags: model.tags)
+                }
+            }
+            if fullHeader || onlyDesctiption {
+                DescriptionItemRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
+                    .foregroundColor(.primary)
+                    .opacity(0.8)
+                    .lineLimit(20)
+            }
+        }
+    }
+}

@@ -14,11 +14,13 @@ struct EditController: Sendable {
     @MainActor
     init(root: WeatherRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
+        self.fileUrlDataController = nil
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
         self.weatherEditModel = WeatherEditModel()
     }
 
     weak var root: WeatherRoot!
+    let fileUrlDataController: FileUrlDataController?
     let editorModel: ItemEditorModel
     let weatherEditModel: WeatherEditModel
 }

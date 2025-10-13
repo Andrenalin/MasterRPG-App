@@ -260,7 +260,7 @@ extension PlayerController: PlayerNetworkProxyControllerDelegate {
 extension PlayerController {
     func handle(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
         switch model.data.type {
-        case .none, .game, .setting, .editor, .generator:
+        case .none, .game, .setting, .editor, .generator, .search:
             return nil
         case .adventure:
             return handleAdventure(model)

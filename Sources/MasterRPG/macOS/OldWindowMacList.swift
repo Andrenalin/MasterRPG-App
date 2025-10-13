@@ -29,8 +29,8 @@ struct OldWindowMacList: Scene {
             Window("Character Generator", id: WindowIdentifier.generatorValueEditor.rawValue) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
                     appStore.valueRoot.viewController.generatorEditorWindow()
-                        .accentColor(.teal)
-                        .tint(.teal)
+                        .accentColor(NetworkModules.value.tint)
+                        .tint(NetworkModules.value.tint)
                         .frame(minWidth: 600, minHeight: 400)
                         .environment(\.networkActions, appStore.gameRoot.networkActions())
                         .environment(\.valueActions, appStore.valueRoot.valueActions)
@@ -43,8 +43,8 @@ struct OldWindowMacList: Scene {
             Window("Table Generator", id: WindowIdentifier.generatorTableEditor.rawValue) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
                     appStore.tableRoot.viewController.generatorEditorWindow()
-                        .accentColor(.teal)
-                        .tint(.teal)
+                        .accentColor(NetworkModules.table.tint)
+                        .tint(NetworkModules.table.tint)
                         .frame(minWidth: 600, minHeight: 400)
                         .environment(\.networkActions, appStore.gameRoot.networkActions())
                         .environment(\.valueActions, appStore.valueRoot.valueActions)

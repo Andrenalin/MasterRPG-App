@@ -176,6 +176,7 @@ extension ValueModel: ItemDuplicatable {
 extension ValueModel: ItemReferencable {}
 
 extension ValueModel: ItemDataAccessable {
+    public var url: URL? { nil }
     public static var empty: ValueModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> ValueModel {
         ValueModel(id: id, name: "", description: "", tags: [], category: .item, displayState: 0, entries: [])

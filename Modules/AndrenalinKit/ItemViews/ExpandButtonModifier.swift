@@ -32,7 +32,7 @@ struct ExpandChildrenViewModifier: ViewModifier {
             } label: {
                 Image(systemName: "chevron.right.circle")
                     .rotationEffect(isExpanded ? Angle(degrees: 90) : Angle(degrees: 0))
-                    .foregroundStyle(Color.teal)
+                    .foregroundStyle(.tint)
             }
             .borderLessTVBottonStyle()
             .contentShape(Rectangle())

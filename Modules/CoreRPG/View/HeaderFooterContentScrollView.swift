@@ -1,3 +1,5 @@
+// @copyright André Trettin
+
 import SwiftUI
 
 struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, Background: View>: View {

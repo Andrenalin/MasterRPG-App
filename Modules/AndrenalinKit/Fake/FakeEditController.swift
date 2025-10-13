@@ -3,12 +3,14 @@
 import SwiftUI
 
 struct FakeEditController: EditControllable {
+    
     typealias Model = FakeItemModel
     
     var itemControllable: any ItemControllable
-    
+    var fileUrlDataController: FileUrlDataController?
+
     var rootControllable: any RootControllable
-    
+
     var editorModel: ItemEditorModel
     
     var cacheItemListModel: CacheItemListModel

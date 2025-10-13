@@ -351,7 +351,8 @@ extension MapModel {
     }
 }
 
-extension MapModel: ItemDataAccessable {  
+extension MapModel: ItemDataAccessable {
+    public var url: URL? { nil }
     public static var empty: MapModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> MapModel {
         MapModel(id: id, name: "")

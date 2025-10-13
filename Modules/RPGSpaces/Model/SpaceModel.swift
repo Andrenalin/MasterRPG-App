@@ -147,6 +147,7 @@ extension SpaceModel: ItemDuplicatable {
 }
 
 extension SpaceModel: ItemDataAccessable {
+    public var url: URL? { fileUrl?.rawUrl }
     public static var empty: SpaceModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> SpaceModel {
         SpaceModel(id: id, name: "")

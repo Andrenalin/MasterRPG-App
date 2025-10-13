@@ -98,7 +98,7 @@ struct RootQuickLinkEditor: View {
 
 #Preview {
     SpecialEditor(editController: .preview)
-        .tint(.teal)
+        .tint(Color.accentColor)
         .accentColor(.teal)
         .environment(ValueRoot.preview)
         .environment(\.locale, .init(identifier: "de"))

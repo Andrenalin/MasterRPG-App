@@ -421,6 +421,7 @@ extension DiceModel: ItemDuplicatable {
 }
 
 extension DiceModel: ItemDataAccessable {
+    public var url: URL? { nil }
     public static var empty: DiceModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> DiceModel {
         DiceModel(id: id, name: "", dice: [])

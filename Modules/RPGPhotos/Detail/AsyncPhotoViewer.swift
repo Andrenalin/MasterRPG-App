@@ -32,7 +32,7 @@ struct AsyncPhotoViewer: View {
                     Text("Wait for image ...", bundle: .module)
                         .font(.largeTitle)
 
-                    ProgressView().progressViewStyle(.circular).tint(.teal)
+                    ProgressView().progressViewStyle(.circular).tint(Color.accentColor)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, alignment: .center)

@@ -45,8 +45,8 @@ struct RootView: View {
         }
         .navigationTitle("MasterRPG")
         .setWideMode()
-        .accentColor(.teal)
-        .tint(.teal)
+        .accentColor(.blue)
+        .tint(.blue)
         .environment(\.gameModus, appStore.settingsModel.gameModus)
         .environment(\.mapActions, appStore.mapRoot.mapActions)
         .environment(\.networkActions, appStore.gameRoot.networkActions())

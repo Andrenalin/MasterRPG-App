@@ -6,12 +6,14 @@ import Observation
 
 struct EditController: Sendable {
     @MainActor
-    init(root: AudioRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    init(root: AudioRoot, fileUrlDataController: FileUrlDataController, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
+        self.fileUrlDataController = fileUrlDataController
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
     }
 
     weak var root: AudioRoot!
+    let fileUrlDataController: FileUrlDataController?
     let editorModel: ItemEditorModel
 }
 

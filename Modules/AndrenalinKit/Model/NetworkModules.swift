@@ -18,45 +18,48 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     case space = 12
     case setting = 13
     case editor = 14
-    case generator = 15
-    
+    case search = 15
+    case generator = 16
+
     public var token: String {
         switch self {
+        case .adventure: "ADVENTURES"
+        case .audio: "AUDIOS"
+        case .dice: "DICE"
+        case .editor: "EDITOR"
+        case .game: "GAME"
+        case .generator: "GENERATOR"
+        case .pdf: "PDFS"
         case .photo: "PHOTOS"
         case .map: "MAPS"
-        case .table: "TABLES"
-        case .adventure: "ADVENTURES"
-        case .dice: "DICE"
-        case .weather: "WEATHERS"
-        case .game: "GAME"
-        case .value: "VALUES"
-        case .audio: "AUDIOS"
-        case .pdf: "PDFS"
-        case .space: "SPACES"
-        case .setting: "SETTINGS"
-        case .editor: "EDITOR"
-        case .generator: "GENERATOR"
         case .none: "ERROR"
+        case .search: "SEARCH"
+        case .setting: "SETTINGS"
+        case .space: "SPACES"
+        case .table: "TABLES"
+        case .value: "VALUES"
+        case .weather: "WEATHERS"
         }
     }
 
     public var localizedTitle: LocalizedStringResource {
         switch self {
-        case .photo: "Photo"
-        case .map: "Map"
-        case .table: "Table"
         case .adventure: "Adventure"
-        case .dice: "Dice"
-        case .weather: "Weather"
-        case .game: "Game"
-        case .value: "Character"
         case .audio: "Audio"
-        case .pdf: "Pdf"
-        case .space: "Space"
-        case .setting: "Settings"
+        case .dice: "Dice"
         case .editor: "Editors"
+        case .game: "Game"
         case .generator: "Generator"
+        case .map: "Map"
         case .none: "ERROR"
+        case .pdf: "Pdf"
+        case .photo: "Photo"
+        case .search: "Search"
+        case .setting: "Settings"
+        case .space: "Space"
+        case .table: "Table"
+        case .value: "Character"
+        case .weather: "Weather"
         }
     }
 
@@ -66,41 +69,43 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     
     public var icon: String {
         switch self {
-        case .game: "person.2"
-        case .photo: "photo.on.rectangle.angled"
-        case .value: "list.bullet.rectangle"
         case .adventure: "wand.and.stars"
-        case .map: "map"
-        case .table: "tablecells.fill"
-        case .weather: "cloud.bolt.rain"
-        case .dice: "dice"
         case .audio: "music.note.list"
-        case .pdf: "apple.books.pages"
-        case .space: "view.3d"
-        case .setting: "gear"
+        case .dice: "dice"
         case .editor: "pencil"
+        case .game: "person.2"
         case .generator: "apple.intelligence"
+        case .map: "map"
         case .none: "warning"
+        case .pdf: "apple.books.pages"
+        case .photo: "photo.on.rectangle.angled"
+        case .search: "magnifyingglass"
+        case .setting: "gear"
+        case .space: "view.3d"
+        case .table: "tablecells.fill"
+        case .value: "list.bullet.rectangle"
+        case .weather: "cloud.bolt.rain"
         }
     }
 
     public var linkWindowId: String {
         switch self {
-        case .photo: "PhotoLink"
-        case .value: "ValueLink"
         case .adventure: "AdventureLink"
-        case .map: "MapLink"
-        case .table: "TableLink"
-        case .weather: "WeatherLink"
-        case .dice: "DiceLink"
         case .audio: "AudioLink"
-        case .pdf: "PdfLink"
-        case .space: "SpaceLink"
-        case .none: "NoWindow"
-        case .game: "NoWindow"
-        case .setting: "NoWindow"
+        case .dice: "DiceLink"
         case .editor: "NoWindow"
+        case .game: "NoWindow"
         case .generator: "NoWindow"
+        case .map: "MapLink"
+        case .none: "NoWindow"
+        case .pdf: "PdfLink"
+        case .photo: "PhotoLink"
+        case .search: "NoWindow"
+        case .setting: "NoWindow"
+        case .space: "SpaceLink"
+        case .table: "TableLink"
+        case .value: "ValueLink"
+        case .weather: "WeatherLink"
         }
     }
     
@@ -110,41 +115,43 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
     
     public var color: Color {
         switch self {
-        case .adventure: .blue
-        case .audio: .cyan
-        case .dice: .purple
-        case .editor: .gray
-        case .map: .indigo
-        case .none: .clear
-        case .game: .pink
-        case .pdf: .red
-        case .photo: .yellow
-        case .space: .brown
-        case .setting: .mint
-        case .table: .green
-        case .value: .teal
-        case .weather: .orange
+        case .adventure: Color("AdventureBackground", bundle: .module)
+        case .audio: Color("AudioBackground", bundle: .module)
+        case .dice: Color("DiceBackground", bundle: .module)
+        case .editor: .blue
+        case .game: .blue
         case .generator: .blue
+        case .map: Color("MapBackground", bundle: .module)
+        case .none: .blue
+        case .pdf: Color("PdfBackground", bundle: .module)
+        case .photo: Color("PhotoBackground", bundle: .module)
+        case .search: .blue
+        case .setting: .blue
+        case .space: Color("SpaceBackground", bundle: .module)
+        case .table: Color("TableBackground", bundle: .module)
+        case .value: Color("CharacterBackground", bundle: .module)
+        case .weather: Color("WeatherBackground", bundle: .module)
         }
     }
     
-    public var endColor: Color {
+    public var tint: Color {
         switch self {
-        case .adventure: .green
-        case .audio: .red
-        case .dice: .green
-        case .editor: .green
-        case .map: .green
-        case .none: .black
-        case .game: .yellow
-        case .pdf: .yellow
-        case .photo: .green
-        case .space: .green
-        case .setting: .green
-        case .table: .red
-        case .value: .red
-        case .weather: .green
-        case .generator: .green
+        case .adventure: Color("AdventureTint", bundle: .module)
+        case .audio: Color("AudioTint", bundle: .module)
+        case .dice: Color("DiceTint", bundle: .module)
+        case .editor: .blue
+        case .game: .blue
+        case .generator: .blue
+        case .map: Color("MapTint", bundle: .module)
+        case .none: .blue
+        case .pdf: Color("PdfTint", bundle: .module)
+        case .photo: Color("PhotoTint", bundle: .module)
+        case .space: Color("SpaceTint", bundle: .module)
+        case .search: .blue
+        case .setting: .blue
+        case .table: Color("TableTint", bundle: .module)
+        case .value: Color("CharacterTint", bundle: .module)
+        case .weather: Color("WeatherTint", bundle: .module)
         }
     }
 }

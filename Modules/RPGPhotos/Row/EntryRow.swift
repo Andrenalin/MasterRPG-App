@@ -48,9 +48,9 @@ struct EntryRow: View {
                 Color.black.opacity(0.3)
                     .overlay(alignment: .center) {
                         ProgressView()
-                            .tint(.teal)
+                            .tint(Color.accentColor)
 #if !os(tvOS)
-                                    .controlSize(.large)
+                            .controlSize(.large)
 #endif
                     }
             }
