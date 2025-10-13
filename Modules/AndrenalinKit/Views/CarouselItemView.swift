@@ -3,15 +3,15 @@
 import SwiftData
 import SwiftUI
 
-public struct CarouselItemView<Content: View, Model: ItemDataAccessable>: View {
-    public init(root: any ItemRootControllable, model: Model, selection: GroupItemSelectionModel, @ViewBuilder content: () -> Content) {
+public struct CarouselItemView<Content: View>: View {
+    public init(root: any ItemRootControllable, model: any ItemDataAccessable, selection: GroupItemSelectionModel, @ViewBuilder content: () -> Content) {
         self.model = model
         self.root = root
         self.selection = selection
         self.content = content()
     }
     
-    let model: Model
+    let model: any ItemDataAccessable
     let root: ItemRootControllable
     let selection: GroupItemSelectionModel
     let content: Content
@@ -23,7 +23,7 @@ public struct CarouselItemView<Content: View, Model: ItemDataAccessable>: View {
             LazyHStack {
                 itemView(itemId: model.id, selectedItemId: nil)
 
-                ForEach(model.entries) { entry in
+                ForEach(model.entries, id: \.self.id) { entry in
                     if let item = root.itemControllable.itemSync(for: entry.id) {
                         itemView(itemId: item.id, selectedItemId: item.id)
                             .overlay(alignment: .topTrailing) {

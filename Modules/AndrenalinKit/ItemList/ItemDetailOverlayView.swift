@@ -3,15 +3,15 @@
 import SwiftData
 import SwiftUI
 
-public struct ItemDetailOverlayView<Model: ItemDataAccessable>: View {
-    public init(model: Model, fullHeader: Bool = false, onlyDescription: Bool = false) {
+public struct ItemDetailOverlayView: View {
+    public init(model: any ItemDataAccessable, fullHeader: Bool = false, onlyDescription: Bool = false) {
         self.model = model
         self.fullHeader = fullHeader
         self.onlyDesctiption = onlyDescription
         self.cacheItemListModel = CacheItemListModel()
     }
     
-    let model: Model
+    let model: any ItemDataAccessable
     let fullHeader: Bool
     let onlyDesctiption: Bool
     let cacheItemListModel: CacheItemListModel

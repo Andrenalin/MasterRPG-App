@@ -38,6 +38,14 @@ public protocol ItemDataAccessable {
 }
 
 public extension ItemDataAccessable {
+    var isFolder: Bool {
+        category == .folder
+    }
+
+    var specialCategory: Bool {
+        category == .folder || category.isCollection
+    }
+    
     func urlAdr(linkNumber: Int) -> String {
         "\(URL.appScheme)://\(Self.typeId.token)/\(linkNumber)/\(id)"
     }

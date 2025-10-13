@@ -2,10 +2,6 @@
 
 import SwiftUI
 
-public protocol CategoryTextRepresentable: Equatable, Hashable, Identifiable {
-    var title: String { get }
-}
-
 @MainActor @Observable
 final class CategoryEditModel {
     init(selection: ItemListCategory = .all) {

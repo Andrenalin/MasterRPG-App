@@ -239,6 +239,9 @@
         }
       }
     },
+    "Album" : {
+
+    },
     "All" : {
       "localizations" : {
         "de" : {
@@ -288,6 +291,9 @@
           }
         }
       }
+    },
+    "Bookshelf" : {
+
     },
     "Building" : {
       "localizations" : {
@@ -468,6 +474,9 @@
           }
         }
       }
+    },
+    "Collection" : {
+
     },
     "Color Scheme" : {
       "localizations" : {
@@ -769,6 +778,9 @@
         }
       }
     },
+    "Dice Bag" : {
+
+    },
     "Done" : {
       "localizations" : {
         "de" : {
@@ -778,6 +790,9 @@
           }
         }
       }
+    },
+    "Drop" : {
+
     },
     "Drop " : {
       "localizations" : {
@@ -1067,6 +1082,9 @@
           }
         }
       }
+    },
+    "Folder" : {
+
     },
     "Game" : {
       "localizations" : {
@@ -1434,6 +1452,9 @@
         }
       }
     },
+    "Models" : {
+
+    },
     "Monster" : {
       "localizations" : {
         "de" : {
@@ -1603,6 +1624,9 @@
           }
         }
       }
+    },
+    "Open in Window" : {
+
     },
     "Path" : {
       "localizations" : {
@@ -2126,6 +2150,9 @@
           }
         }
       }
+    },
+    "View" : {
+
     },
     "Weather" : {
       "localizations" : {

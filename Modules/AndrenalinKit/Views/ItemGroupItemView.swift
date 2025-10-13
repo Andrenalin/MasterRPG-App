@@ -3,14 +3,14 @@
 import SwiftData
 import SwiftUI
 
-public struct ItemGroupItemView<Model: ItemDataAccessable>: View {
-    public init(root: any ItemRootControllable, model: Model) {
+public struct ItemGroupItemView: View {
+    public init(root: any ItemRootControllable, model: any ItemDataAccessable) {
         self.root = root
         self.model = model
     }
     
     let root: any ItemRootControllable
-    let model: Model
+    let model: any ItemDataAccessable
 
     @Environment(GroupItemSelectionModel.self) var selection
 
@@ -28,8 +28,8 @@ public struct ItemGroupItemView<Model: ItemDataAccessable>: View {
         .padding()
     }
 
-    var item: Model {
+    var item: any ItemDataAccessable {
         guard let id = selection.selectedItem else { return model }
-        return root.itemControllable.itemSync(for: id) as? Model ?? model
+        return root.itemControllable.itemSync(for: id) ?? model
     }
 }

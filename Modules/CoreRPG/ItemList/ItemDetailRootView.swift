@@ -4,7 +4,6 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-
 public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Overlay: View, EntryEditor: View>: View {
     public init(selectedId: UUID?, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
         self.selectedId = selectedId
