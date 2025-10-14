@@ -271,16 +271,19 @@ struct EditControllerTests {
         // Add child photo as group to parent photo
         root.editControllable.addGroup(childId: child.id, model: parent)
         var allModels = models(in: root)
-        let parentModel = allModels.first { $0.id == parent.id }!
+        let parentModel = allModels.first { $0.id == parent.id }
+        try #require(parentModel != nil)
+        
         var childModel = allModels.first { $0.id == child.id }!
         #expect(childModel.displayState == 1, "Child photo should be hidden after grouping.")
-        let parentChildren = parentModel.entries.map { $0.childId }
+        let parentChildren = parentModel!.entries.map { $0.childId }
         #expect(parentChildren.contains(child.id), "Parent should contain the child in its entries.")
 
         // Child cannot remove itself (should not crash or remove itself from itself)
         root.editControllable.removeGroup(childId: child.id, model: childModel)
         #expect(childModel.displayState == 1, "A child should not be able to remove itself as its own group.")
 
+        guard let parentModel else { return }
         // Remove the child from group
         root.editControllable.removeGroup(childId: child.id, model: parentModel)
         allModels = models(in: root)
