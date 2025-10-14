@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 73;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -2707,6 +2707,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8E0924192E9DEDA900B26678 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Shaders/cloudShader.txt,
+			);
+			target = 8E4B21852CD78EF3009AB4D1 /* AndrenalinKit */;
+		};
 		8E33768D2DB1140C00F9C14C /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -2729,6 +2736,16 @@
 			target = 8E7C79F42E14C73600C98D17 /* Master3RPG */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		8E09241A2E9DEDA900B26678 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 8E4B21822CD78EF3009AB4D1 /* Sources */;
+			membershipExceptions = (
+				Shaders/cloudShader.txt,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		593D0D2D2E31F2D000410232 /* AudioRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AudioRPG; sourceTree = "<group>"; };
@@ -2754,7 +2771,7 @@
 		8E8ED7582CD8D8B80010A25B /* RoleGameKit */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RoleGameKit; sourceTree = "<group>"; };
 		8E8EE7012CD8E3E10010A25B /* RPGResourcesDebug */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGResourcesDebug; sourceTree = "<group>"; };
 		8E8EEEBD2CD8EC6D0010A25B /* RPGAudios */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGAudios; sourceTree = "<group>"; };
-		8E8EEFE12CD8EC7C0010A25B /* AndrenalinKit */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AndrenalinKit; sourceTree = "<group>"; };
+		8E8EEFE12CD8EC7C0010A25B /* AndrenalinKit */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E0924192E9DEDA900B26678 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 8E09241A2E9DEDA900B26678 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = AndrenalinKit; sourceTree = "<group>"; };
 		8E8EF0EF2CD8EC870010A25B /* RPGPdfs */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGPdfs; sourceTree = "<group>"; };
 		8E8EF1572CD8ECD40010A25B /* RPGPhotos */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGPhotos; sourceTree = "<group>"; };
 		8E983DA72E27D057002B25C2 /* SpaceRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = SpaceRPG; sourceTree = "<group>"; };
@@ -6033,7 +6050,6 @@
 				};
 			};
 			buildConfigurationList = 8EC4E46428DDA29600D0279F /* Build configuration list for PBXProject "MasterRPG" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -6044,6 +6060,7 @@
 			mainGroup = 8EC4E46028DDA29600D0279F;
 			packageReferences = (
 			);
+			preferredProjectObjectVersion = 56;
 			productRefGroup = 8EC4E46A28DDA29600D0279F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
