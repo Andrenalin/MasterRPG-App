@@ -76,21 +76,25 @@ struct EditControllerTests {
 
         // Fetch updated models
         let allModels = models(in: root)
-        let folderModel = allModels.first { $0.id == folder.id }!
-        let subfolderModel = allModels.first { $0.id == subfolder.id }!
-        let albumModel = allModels.first { $0.id == album.id }!
+        let folderModel = allModels.first { $0.id == folder.id }
+        let subfolderModel = allModels.first { $0.id == subfolder.id }
+        let albumModel = allModels.first { $0.id == album.id }
+        
+        try #require(folderModel != nil)
+        try #require(subfolderModel != nil)
+        try #require(albumModel != nil)
 
         // Check folder contains subfolder and album
-        let folderChildren = folderModel.entries.map { $0.childId }
+        let folderChildren = folderModel!.entries.map { $0.childId }
         #expect(folderChildren.contains(subfolder.id))
         #expect(folderChildren.contains(album.id))
 
         // Check subfolder contains its photo
-        let subfolderChildren = subfolderModel.entries.map { $0.childId }
+        let subfolderChildren = subfolderModel!.entries.map { $0.childId }
         #expect(subfolderChildren.contains(photo1.id))
 
         // Check album contains its photo
-        let albumChildren = albumModel.entries.map { $0.childId }
+        let albumChildren = albumModel!.entries.map { $0.childId }
         #expect(albumChildren.contains(photo2.id))
     }
 
@@ -169,7 +173,7 @@ struct EditControllerTests {
         #expect(album2ChildrenAfterRemoval.contains(photo2.id))
 
         // Delete album2
-        root.editControllable.delete(model: album2Model)
+        root.editControllable.delete(itemId: album2Model.id)
         let allModelsAfterAlbumDeletion = models(in: root)
         let photo1StillExists = allModelsAfterAlbumDeletion.contains { $0.id == photo1.id }
         let photo2StillExists = allModelsAfterAlbumDeletion.contains { $0.id == photo2.id }
@@ -196,8 +200,9 @@ struct EditControllerTests {
         root.editControllable.addItem(itemId: album2.id, in: root.modelContext, parentId: album.id, folderId: nil)
 
         // Fetch updated album model and children
-        let albumModel = models(in: root).first { $0.id == album.id }!
-        let albumChildren = albumModel.entries.map { $0.childId }
+        let albumModel = models(in: root).first { $0.id == album.id }
+        try #require(albumModel != nil)
+        let albumChildren = albumModel!.entries.map { $0.childId }
         // Verify neither folder nor album2 were added as children
         #expect(!albumChildren.contains(folder.id), "Folder should not be added to album.")
         #expect(!albumChildren.contains(album2.id), "Album should not be added to album.")
@@ -236,13 +241,15 @@ struct EditControllerTests {
 
         // Fetch updated models
         let allModels = models(in: root)
-        let parentModel = allModels.first { $0.id == parent.id }!
-        let childModel = allModels.first { $0.id == child.id }!
+        let parentModel = allModels.first { $0.id == parent.id }
+        let childModel = allModels.first { $0.id == child.id }
+        try #require(parentModel != nil)
+        try #require(childModel != nil)
         
         // Check child is hidden (displayState == 1)
-        #expect(childModel.displayState == 1, "Child photo should be hidden after grouping.")
+        #expect(childModel!.displayState == 1, "Child photo should be hidden after grouping.")
         // Check parent's children contain the child
-        let parentChildren = parentModel.entries.map { $0.childId }
+        let parentChildren = parentModel!.entries.map { $0.childId }
         #expect(parentChildren.contains(child.id), "Parent should contain the child in its entries.")
     }
     

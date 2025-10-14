@@ -205,5 +205,7 @@
 	<true/>
 	<key>com.apple.security.files.user-selected.read-only</key>
 	<true/>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/> 
 </dict>
 </plist>
