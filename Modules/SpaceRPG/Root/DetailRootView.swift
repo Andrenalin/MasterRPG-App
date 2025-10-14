@@ -34,4 +34,5 @@ struct DetailRootView: View {
 
 #Preview(traits: .mockData) {
     DetailRootView(selectedId: MockData.previewId)
+        .preferredColorScheme(.dark)
 }

@@ -94,6 +94,8 @@ struct MockRootViewModifier: ViewModifier {
                     await root.itemController.update(items: items)
                 }
             }
+            .tint(root.module.tint)
+            .accentColor(root.module.tint)
     }
 }
 

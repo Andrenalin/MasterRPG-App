@@ -9,11 +9,12 @@ struct SpaceDetailEditor: View {
     let model: SpaceModel
     
     @Environment(SpaceRoot.self) private var root
-
+    @Environment(ListModel.self) private var listModel
+    
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.linkWindowId, route: { DetailRoute.viewer($0) })
 
     var body: some View {
-        ItemDetailRootView(selectedId: model.id) {
+        ItemDetailRootView(selectedId: selectedModel?.id) {
         } editor: {
             editor
 #if !os(tvOS)
@@ -30,12 +31,14 @@ struct SpaceDetailEditor: View {
         .environment(root.listDisplayModel)
         .environment(root.searchModel)
         .environment(root.rootController)
+        .environment(ExternalHeaderModel())
         .id(model.id)
     }
     
-//    var selectedModel: ItemDataModel? {
-//        root.listControllable.selectedModel(for: selectedId, modelContext: modelContext)
-//    }
+    var selectedModel: SpaceModel? {
+        guard let itemId = listModel.selectedItem?.model.itemId else { return nil }
+        return root.itemController.itemOrEmpty(for: itemId)
+    }
     
     @ViewBuilder
     var editor: some View {
@@ -73,8 +76,12 @@ struct SpaceExternalHeader: View {
     }
 }
 
-#Preview {
-    SpaceDetailEditor(editController: .preview, model: .preview)
-        .environment(SpaceRoot.preview)
-        .environment(ListModel.preview)
+#Preview(traits: .mockData) {
+    @Previewable @Environment(SpaceRoot.self) var root
+    
+    SpaceDetailEditor(editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRoot.previewSpaceId))
+        .preferredColorScheme(.dark)
+        .onAppear {
+            root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRoot.previewSpaceId)
+        }
 }

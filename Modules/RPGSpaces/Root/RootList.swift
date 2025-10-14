@@ -118,8 +118,9 @@ struct RootExtendedList: View {
     }
 }
 
-#Preview {
-    RootList(root: .previewWithData, tabId: UUID())
+#Preview(traits: .mockData) {
+    @Previewable @Environment(SpaceRoot.self) var root
+    //@Previewable @State var tabId: UUID = UUID()
+    RootList(root: root, tabId: UUID())
         .environment(\.locale, .init(identifier: "de"))
-    
 }

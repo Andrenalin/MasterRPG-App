@@ -112,8 +112,9 @@ struct EditControllerTests {
         root.editControllable.addItem(itemId: folder.id, in: root.modelContext, parentId: folder.id, folderId: nil)
 
         // Fetch updated model for the folder
-        let folderModel = models(in: root).first { $0.id == folder.id }!
-        let children = folderModel.entries.map { $0.childId }
+        let folderModel = models(in: root).first { $0.id == folder.id }
+        try #require(folderModel != nil)
+        let children = folderModel!.entries.map { $0.childId }
         #expect(!children.contains(folder.id), "A folder should not be able to contain itself as a child.")
     }
 
@@ -144,15 +145,18 @@ struct EditControllerTests {
 
         // Check both albums contain both photos
         let allModels = models(in: root)
-        let album1Model = allModels.first { $0.id == album1.id }!
-        let album2Model = allModels.first { $0.id == album2.id }!
-        let album1Children = album1Model.entries.map { $0.childId }
-        let album2Children = album2Model.entries.map { $0.childId }
+        let album1Model = allModels.first { $0.id == album1.id }
+        let album2Model = allModels.first { $0.id == album2.id }
+        try #require(album1Model != nil)
+        try #require(album2Model != nil)
+        let album1Children = album1Model!.entries.map { $0.childId }
+        let album2Children = album2Model!.entries.map { $0.childId }
         #expect(album1Children.contains(photo1.id))
         #expect(album1Children.contains(photo2.id))
         #expect(album2Children.contains(photo1.id))
         #expect(album2Children.contains(photo2.id))
 
+        guard let album1Model else { return }
         // Remove both photos from album1
         root.editControllable.removeItem(offsets: IndexSet(integer: 1), model:album1Model)
         root.editControllable.removeItem(offsets: IndexSet(integer: 0), model:album1Model)
@@ -173,7 +177,7 @@ struct EditControllerTests {
         #expect(album2ChildrenAfterRemoval.contains(photo2.id))
 
         // Delete album2
-        root.editControllable.delete(itemId: album2Model.id)
+        root.editControllable.delete(itemId: album2Model?.id ?? UUID())
         let allModelsAfterAlbumDeletion = models(in: root)
         let photo1StillExists = allModelsAfterAlbumDeletion.contains { $0.id == photo1.id }
         let photo2StillExists = allModelsAfterAlbumDeletion.contains { $0.id == photo2.id }

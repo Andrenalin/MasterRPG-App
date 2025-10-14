@@ -50,8 +50,9 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @State private var showInspector = false
 
     public var body: some View {
-        //let _ = Self._printChanges()
+        let _ = Self._printChanges()
         if let selectedModel {
+            let _ = print("*** -> ", selectedModel.name)
             contentScrollView(model: selectedModel)
         }
     }
