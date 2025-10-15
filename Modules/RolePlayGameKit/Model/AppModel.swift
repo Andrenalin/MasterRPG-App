@@ -194,10 +194,10 @@ public final class AppModel: Sendable {
                 PdfEntryDataModel.self,
                 TableDataModel.self,
                 WeatherDataModel.self,
-            ], version: .init(1, 0, 2)
+            ], version: .init(1, 0, 3)
         )
 #endif
-        let modelConfiguration = ModelConfiguration("MasterRPG3", schema: schema, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG3"))
+        let modelConfiguration = ModelConfiguration("MasterRPGNew", schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .automatic, cloudKitDatabase: .none)
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {            
