@@ -43,19 +43,6 @@ public final class AppStore: Sendable {
     @MainActor
     public static let shared = AppStore()
 
-    public let modelContainer: ModelContainer
-
-    public var adventureRootModel: AdventureRootModel
-    public var audioRootModel: AudioRootModel
-    public var characterRootModel: CharacterRootModel
-    public var diceRootModel: DiceRootModel
-    public var mapRootModel: MapRootModel
-    public var pdfRootModel: PdfRootModel
-    public var photoRootModel: PhotoRootModel
-    public var spaceRootModel: SpaceRootModel
-    public var tableRootModel: TableRootModel
-    public var weatherRootModel: WeatherRootModel
-
     public var isNewUICode: Bool = false
 
     // Other Models
@@ -120,30 +107,6 @@ public final class AppStore: Sendable {
                 autoDestinationMode: false
             )
         )
-        let modelContainer = NewSwiftDatabaseInit.initModelContainer()
-        self.modelContainer = modelContainer
-        
-        let audioRootModel = AudioRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        let diceRootModel = DiceRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        let pdfRootModel = PdfRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        let photoRootModel = PhotoRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        let spaceRootModel = SpaceRootFactory.rootModel(modelContext: modelContainer.mainContext)
-        let tableRootModel = TableRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRootModel, pdfRoot: pdfRootModel)
-        let weatherRootModel = WeatherRootFactory.rootModel(modelContext: modelContainer.mainContext, photoRoot: photoRootModel)
-        let characterRootModel = CharacterRootFactory.rootModel(modelContext: modelContainer.mainContext, diceRoot: diceRootModel, pdfRoot: pdfRootModel, photoRoot: photoRootModel, tableRoot: tableRootModel)
-        let mapRootModel = MapRootFactory.rootModel(modelContext: modelContainer.mainContext, characterRoot: characterRootModel, diceRoot: diceRootModel, pdfRoot: pdfRootModel, photoRoot: photoRootModel, tableRoot: tableRootModel)
-        let adventureRootModel = AdventureRootFactory.rootModel(modelContext: modelContainer.mainContext, audioRoot: audioRootModel, characterRoot: characterRootModel, diceRoot: diceRootModel, mapRoot: mapRootModel, pdfRoot: pdfRootModel, photoRoot: photoRootModel, spaceRoot: spaceRootModel, tableRoot: tableRootModel, weatherRoot: weatherRootModel)
-        
-        self.adventureRootModel = adventureRootModel
-        self.audioRootModel = audioRootModel
-        self.characterRootModel = characterRootModel
-        self.diceRootModel = diceRootModel
-        self.mapRootModel = mapRootModel
-        self.pdfRootModel = pdfRootModel
-        self.photoRootModel = photoRootModel
-        self.spaceRootModel = spaceRootModel
-        self.tableRootModel = tableRootModel
-        self.weatherRootModel = weatherRootModel
     }
 
     public func resetData() async {

@@ -38,15 +38,6 @@ struct NewAdventureRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if appStore.isNewUICode {
-            AdventureRootFactory.rootView()
-                .environment(deviceRotationModel)
-                .environment(tabTitleModel)
-                .task {
-                    try? await Task.sleep(for: .seconds(3))
-                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
-                }
-        } else {
             if isExtended {
                 AdventureFactory.rootExtendedView(for: appStore.adventureRoot, tabId: tabId)
                     .environment(appStore.adventureRoot)
@@ -54,7 +45,6 @@ struct NewAdventureRoute: View {
                 AdventureFactory.rootView(for: appStore.adventureRoot, tabId: tabId)
                     .environment(appStore.adventureRoot)
             }
-        }
     }
 }
 
@@ -70,15 +60,6 @@ struct NewAudioRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if appStore.isNewUICode {
-            AudioRootFactory.rootView()
-                .environment(deviceRotationModel)
-                .environment(tabTitleModel)
-                .task {
-                    try? await Task.sleep(for: .seconds(3))
-                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
-                }
-        } else {
             if isExtended {
                 AudioFactory.rootExtendedView(for: appStore.audioRoot, tabId: tabId)
                     .environment(appStore.audioRoot)
@@ -86,7 +67,6 @@ struct NewAudioRoute: View {
                 AudioFactory.rootView(for: appStore.audioRoot, tabId: tabId)
                     .environment(appStore.audioRoot)
             }
-        }
     }
 }
 
@@ -102,15 +82,6 @@ struct NewDiceRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if appStore.isNewUICode {
-            DiceRootFactory.rootView()
-                .environment(deviceRotationModel)
-                .environment(tabTitleModel)
-                .task {
-                    try? await Task.sleep(for: .seconds(3))
-                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
-                }
-        } else {
             if isExtended {
                 DiceFactory.rootExtendedView(for: appStore.diceRoot, tabId: tabId)
                     .environment(appStore.diceRoot)
@@ -118,7 +89,6 @@ struct NewDiceRoute: View {
                 DiceFactory.rootView(for: appStore.diceRoot, tabId: tabId)
                     .environment(appStore.diceRoot)
             }
-        }
     }
 }
 struct NewMapRoute: View {
@@ -133,15 +103,6 @@ struct NewMapRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if appStore.isNewUICode {
-            MapRootFactory.rootView()
-                .environment(deviceRotationModel)
-                .environment(tabTitleModel)
-                .task {
-                    try? await Task.sleep(for: .seconds(3))
-                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
-                }
-        } else {
             if isExtended {
                 MapFactory.rootExtendedView(for: appStore.mapRoot, tabId: tabId)
                     .environment(appStore.mapRoot)
@@ -149,7 +110,6 @@ struct NewMapRoute: View {
                 MapFactory.rootView(for: appStore.mapRoot, tabId: tabId)
                     .environment(appStore.mapRoot)
             }
-        }
     }
 }
 struct NewPdfRoute: View {
@@ -164,15 +124,6 @@ struct NewPdfRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if appStore.isNewUICode {
-            PdfRootFactory.rootView()
-                .environment(deviceRotationModel)
-                .environment(tabTitleModel)
-                .task {
-                    try? await Task.sleep(for: .seconds(3))
-                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
-                }
-        } else {
             if isExtended {
                 PdfFactory.rootExtendedView(for: appStore.pdfRoot, tabId: tabId)
                     .environment(appStore.pdfRoot)
@@ -180,7 +131,6 @@ struct NewPdfRoute: View {
                 PdfFactory.rootView(for: appStore.pdfRoot, tabId: tabId)
                     .environment(appStore.pdfRoot)
             }
-        }
     }
 }
 struct NewPhotoRoute: View {
@@ -195,15 +145,6 @@ struct NewPhotoRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if appStore.isNewUICode {
-            PhotoRootFactory.rootView()
-                .environment(deviceRotationModel)
-                .environment(tabTitleModel)
-                .task {
-                    try? await Task.sleep(for: .seconds(3))
-                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
-                }
-        } else {
             if isExtended {
                 PhotoFactory.rootExtendedView(for: appStore.photoRoot, tabId: tabId)
                     .environment(appStore.photoRoot)
@@ -211,7 +152,6 @@ struct NewPhotoRoute: View {
                 PhotoFactory.rootView(for: appStore.photoRoot, tabId: tabId)
                     .environment(appStore.photoRoot)
             }
-        }
     }
 }
 
@@ -227,15 +167,6 @@ struct NewSpaceRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if appStore.isNewUICode {
-            SpaceRootFactory.rootView()
-                .environment(deviceRotationModel)
-                .environment(tabTitleModel)
-                .task {
-                    try? await Task.sleep(for: .seconds(3))
-                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
-                }
-        } else {
             if isExtended {
                 SpaceFactory.rootExtendedView(for: appStore.spaceRoot, tabId: tabId)
                     .environment(appStore.spaceRoot)
@@ -243,7 +174,6 @@ struct NewSpaceRoute: View {
                 SpaceFactory.rootView(for: appStore.spaceRoot, tabId: tabId)
                     .environment(appStore.spaceRoot)
             }
-        }
     }
 }
 
@@ -259,15 +189,6 @@ struct NewTableRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if appStore.isNewUICode {
-            TableRootFactory.rootView()
-                .environment(deviceRotationModel)
-                .environment(tabTitleModel)
-                .task {
-                    try? await Task.sleep(for: .seconds(3))
-                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
-                }
-        } else {
             if isExtended {
                 TableFactory.rootExtendedView(for: appStore.tableRoot, tabId: tabId)
                     .environment(appStore.tableRoot)
@@ -275,7 +196,6 @@ struct NewTableRoute: View {
                 TableFactory.rootView(for: appStore.tableRoot, tabId: tabId)
                     .environment(appStore.tableRoot)
             }
-        }
     }
 }
 
@@ -291,15 +211,6 @@ struct NewValueRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if appStore.isNewUICode {
-            CharacterRootFactory.rootView()
-                .environment(deviceRotationModel)
-                .environment(tabTitleModel)
-                .task {
-                    try? await Task.sleep(for: .seconds(3))
-                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
-                }
-        } else {
             if isExtended {
                 ValueFactory.rootExtendedView(for: appStore.valueRoot, tabId: tabId)
                     .environment(appStore.valueRoot)
@@ -307,7 +218,6 @@ struct NewValueRoute: View {
                 ValueFactory.rootView(for: appStore.valueRoot, tabId: tabId)
                     .environment(appStore.valueRoot)
             }
-        }
     }
 }
 
@@ -323,15 +233,6 @@ struct NewWeatherRoute: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        if appStore.isNewUICode {
-            WeatherRootFactory.rootView()
-                .environment(deviceRotationModel)
-                .environment(tabTitleModel)
-                .task {
-                    try? await Task.sleep(for: .seconds(3))
-                    await DBConverter.convert(appStore: appStore, modelContext: modelContext)
-                }
-        } else {
             if isExtended {
                 WeatherFactory.rootExtendedView(for: appStore.weatherRoot, tabId: tabId)
                     .environment(appStore.weatherRoot)
@@ -339,6 +240,5 @@ struct NewWeatherRoute: View {
                 WeatherFactory.rootView(for: appStore.weatherRoot, tabId: tabId)
                     .environment(appStore.weatherRoot)
             }
-        }
     }
 }

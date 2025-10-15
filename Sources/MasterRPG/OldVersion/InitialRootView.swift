@@ -95,7 +95,6 @@ struct InitialRootView: View {
         .frame(minWidth: 800, minHeight: 600)
 #endif
         .environment(appStore.windowStateModel)
-        .modelContainer(appStore.modelContainer)
     }
     
     
