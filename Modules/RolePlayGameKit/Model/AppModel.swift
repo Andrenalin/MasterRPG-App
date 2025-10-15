@@ -162,7 +162,7 @@ public final class AppModel: Sendable {
     }
     
     @MainActor
-    private static func initModelContainer() -> ModelContainer {
+    public static func initModelContainer() -> ModelContainer {
 #if os(tvOS)
         let schema = Schema(
             [
@@ -177,7 +177,7 @@ public final class AppModel: Sendable {
                 PdfEntryDataModel.self,
                 TableDataModel.self,
                 WeatherDataModel.self,
-            ]
+            ], version: .init(1, 0, 1)
         )
         #else
         let schema = Schema(
@@ -194,10 +194,10 @@ public final class AppModel: Sendable {
                 PdfEntryDataModel.self,
                 TableDataModel.self,
                 WeatherDataModel.self,
-            ]
+            ], version: .init(1, 0, 2)
         )
 #endif
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG3"))
+        let modelConfiguration = ModelConfiguration("MasterRPG3", schema: schema, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG3"))
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {            
