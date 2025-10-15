@@ -16,7 +16,7 @@ struct SpaceDetailViewer: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .environment(SelectionSheetLinkModel())
 #else
-            SpaceViewer(root: root, id: item.model.itemId)
+            SpaceViewer(root: root, id: item.model.itemId, isModal: false)
 #endif
         }
         .environment(\.showGame, true)

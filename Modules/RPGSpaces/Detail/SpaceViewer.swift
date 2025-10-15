@@ -3,13 +3,33 @@
 import AndrenalinKit
 import SwiftUI
 
+struct SpaceExternalHeader: View {
+    let editController: EditController
+    let model: SpaceModel
+    let isModal: Bool
+    
+    @Environment(SpaceRoot.self) private var root
+    
+    var body: some View {
+#if os(tvOS)
+        SpaceEditor(editController: editController)
+            .environment(DetailHeaderModel(size: CGSize(width: 400, height: 400)))
+#else
+        SpaceViewer(root: root, id: model.id, isModal: isModal)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+#endif
+    }
+}
+
+
 #if !os(tvOS)
 import RealityKit
 
 struct SpaceViewer: View {
     let root: SpaceRoot
     let id: UUID
-
+    let isModal: Bool
+    
     var animatableData: AnimatablePair<Float, Float> {
         get {
             .init(yaw, pitch)
@@ -19,126 +39,158 @@ struct SpaceViewer: View {
             pitch = newValue.second
         }
     }
-
+    
 #if os(visionOS)
     @Environment(WindowStateModel.self) private var windowStateModel
     @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
 #endif
-
+    
+    @Environment(\.dismiss) private var dismiss
+    
     @State private var rootEntity = Entity()
     @State private var objectEntity = Entity()
     @State private var nameEntity = Entity()
-
+    
     @State private var canDrag: Bool = false
     @State private var yaw: Float = .pi / 2
     @State private var pitch: Float = 0
     @State private var hasLoaded: Bool = false
-
+    
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .bottomLeading) {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .progressViewStyle(.circular)
-                    .opacity(hasLoaded ? 0 : 1)
-
-
-                RealityView { content in
-                    do {
-                        guard let url = await root.itemController.loadableUrl(for: ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)) else { return }
-
-                        defer { url.stopAccessingSecurityScopedResource() }
-                        let _ = url.startAccessingSecurityScopedResource()
-
-                        let objectEntity = try await Entity(contentsOf: url, withName: "3DMaster")
-                        self.objectEntity = objectEntity
-
-#if os(visionOS)
-                        rootEntity = objectEntity
-#else
-                        rootEntity = ModelEntity(mesh: .generateBox(size: valueFor(iOS: 100, macOS: 100, tvOS: 100, visionOS: 10)))
-                        rootEntity.addChild(objectEntity)
-#endif
-
-                        if let firstMesh = objectEntity.firstModelEntity {
-                            let inputObject = valueFor(iOS: rootEntity, macOS: rootEntity, tvOS: rootEntity, visionOS: firstMesh)
-                            inputObject.components.set(InputTargetComponent())
-                            var gestureComponent = GestureComponent()
-                            gestureComponent.pivotOnDrag = false
-                            inputObject.components.set(gestureComponent)
-                            inputObject.components.set(HoverEffectComponent(.shader(.default)))
-                            inputObject.components.set(GroundingShadowComponent(castsShadow: true))
-                            inputObject.generateCollisionShapes(recursive: false, static: true)
-
-                            let rootSize = firstMesh.size()
-
-                            let maxSize = max(rootSize.z, max(rootSize.x, rootSize.y))
-                            let minScaleF = (1 / maxSize)
-                            objectEntity.scale *= minScaleF
+                progressView
+                
+                contentView
+                
+                spaceContentView
+            }
+        }
+        .applyIf(isModal) {
+            $0.toolbar {
+#if !os(visionOS)
+                ToolbarItem(placement: .bottomBar) {
+                    Toggle(isOn: $canDrag) {
+                        Label {
+                            Text("Move", bundle: .module)
+                        } icon: {
+                            Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
                         }
-#if os(visionOS)
-                        objectEntity.position = SIMD3(x: 0, y: 1, z: -2)
-#else
-                        objectEntity.position = SIMD3(x: 0, y: 0, z: 0)
-                        content.camera = .virtual
-#endif
-                        content.add(rootEntity)
-                    } catch {
-                        print(error)
-                    }
-                    hasLoaded = true
-                } update: { content in
-                    objectEntity.transform.rotation = .init(angle: pitch, axis: .left) *
-                        .init(angle: yaw, axis: .upward)
-                    nameEntity.setPosition([0, 2, 0], relativeTo: objectEntity)
-                }
-                .installGestures(canDrag)
-                #if !os(visionOS)
-                .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: canDrag)
-                #endif
-
-#if os(visionOS)
-                RealityView { content, attachments in
-                    guard let nameBarView = attachments.entity(for: "NameBarView") else {
-                        return
-                    }
-                    nameBarView.setPosition([0, 2, 2], relativeTo: rootEntity)
-                    nameEntity = nameBarView
-                    rootEntity.addChild(nameBarView)
-                    content.add(nameBarView)
-                } attachments: {
-                    Attachment(id: "NameBarView") {
-                        Button {
-                            windowStateModel.spaceImmersiveView = false
-                            Task {
-                                await dismissImmersiveSpace()
-                            }
-                        } label: {
-                            Label {
-                                Text(root.itemController.nameSync(itemId: id))
-                            } icon: {
-                                Image(systemName: "xmark")
-                            }
-                        }
-                        .frame(width: 250, height: 60, alignment: .center)
-                        .padding(20)
-                        .glassBackgroundEffect()
                     }
                 }
-#else
-
-                Toggle(isOn: $canDrag) {
-                    Label {
-                        Text("Move", bundle: .module)
-                    } icon: {
-                        Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
+                
+                ToolbarSpacer()
+                
+                ToolbarItem(placement: .bottomBar) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
                     }
                 }
-                .frame(maxWidth: 200)
-                .padding()
 #endif
             }
         }
+    }
+}
+
+private extension SpaceViewer {
+    var progressView: some View {
+        ProgressView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .progressViewStyle(.circular)
+            .opacity(hasLoaded ? 0 : 1)
+    }
+    
+    var contentView: some View {
+        RealityView { content in
+            do {
+                guard let url = await root.itemController.loadableUrl(for: ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)) else { return }
+                
+                defer { url.stopAccessingSecurityScopedResource() }
+                let _ = url.startAccessingSecurityScopedResource()
+                
+                let objectEntity = try await Entity(contentsOf: url, withName: "3DMaster")
+                self.objectEntity = objectEntity
+                
+#if os(visionOS)
+                rootEntity = objectEntity
+#else
+                rootEntity = ModelEntity(mesh: .generateBox(size: valueFor(iOS: 100, macOS: 100, tvOS: 100, visionOS: 10)))
+                rootEntity.addChild(objectEntity)
+#endif
+                
+                if let firstMesh = objectEntity.firstModelEntity {
+                    let inputObject = valueFor(iOS: rootEntity, macOS: rootEntity, tvOS: rootEntity, visionOS: firstMesh)
+                    inputObject.components.set(InputTargetComponent())
+                    var gestureComponent = GestureComponent()
+                    gestureComponent.pivotOnDrag = false
+                    inputObject.components.set(gestureComponent)
+                    inputObject.components.set(HoverEffectComponent(.shader(.default)))
+                    inputObject.components.set(GroundingShadowComponent(castsShadow: true))
+                    inputObject.generateCollisionShapes(recursive: false, static: true)
+                    
+                    let rootSize = firstMesh.size()
+                    
+                    let maxSize = max(rootSize.z, max(rootSize.x, rootSize.y))
+                    let minScaleF = (1 / maxSize)
+                    objectEntity.scale *= minScaleF
+                }
+#if os(visionOS)
+                objectEntity.position = SIMD3(x: 0, y: 1, z: -2)
+#else
+                objectEntity.position = SIMD3(x: 0, y: 0, z: 0)
+                content.camera = .virtual
+#endif
+                content.add(rootEntity)
+            } catch {
+                print(error)
+            }
+            hasLoaded = true
+        } update: { content in
+            objectEntity.transform.rotation = .init(angle: pitch, axis: .left) *
+                .init(angle: yaw, axis: .upward)
+            nameEntity.setPosition([0, 2, 0], relativeTo: objectEntity)
+        }
+        .installGestures(canDrag)
+#if !os(visionOS)
+        .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: canDrag)
+#endif
+    }
+    
+    @ViewBuilder
+    var spaceContentView: some View {
+#if os(visionOS)
+        RealityView { content, attachments in
+            guard let nameBarView = attachments.entity(for: "NameBarView") else {
+                return
+            }
+            nameBarView.setPosition([0, 2, 2], relativeTo: rootEntity)
+            nameEntity = nameBarView
+            rootEntity.addChild(nameBarView)
+            content.add(nameBarView)
+        } attachments: {
+            Attachment(id: "NameBarView") {
+                Button {
+                    windowStateModel.spaceImmersiveView = false
+                    Task {
+                        await dismissImmersiveSpace()
+                    }
+                } label: {
+                    Label {
+                        Text(root.itemController.nameSync(itemId: id))
+                    } icon: {
+                        Image(systemName: "xmark")
+                    }
+                }
+                .frame(width: 250, height: 60, alignment: .center)
+                .padding(20)
+                .glassBackgroundEffect()
+            }
+        }
+#else
+        EmptyView()
+#endif
     }
 }
 
@@ -178,19 +230,19 @@ extension View {
 private struct DragRotationModifier: ViewModifier {
     @Binding var yaw: Float
     @Binding var pitch: Float
-
+    
     var yawLimit: Angle?
     var pitchLimit: Angle?
-
+    
     var sensitivity: Float
     var axRotateClockwise: Bool
     var axRotateCounterClockwise: Bool
     var disableRotation: Bool
     var disableBackPosition: Bool
-
+    
     @State var baseYaw: Float
     @State var basePitch: Float
-
+    
     func body(content: Content) -> some View {
         content
             .simultaneousGesture(DragGesture(minimumDistance: 0.0)
@@ -200,9 +252,9 @@ private struct DragRotationModifier: ViewModifier {
                     // Find the current linear displacement.
                     let location3D = value.locationInScene()
                     let startLocation3D = value.startLocationInScene()
-
+                    
                     let delta = location3D - startLocation3D
-
+                    
                     // Use an interactive spring animation that becomes
                     // a spring animation when the gesture ends below.
                     withAnimation(.interactiveSpring) {
@@ -212,16 +264,16 @@ private struct DragRotationModifier: ViewModifier {
                 }
                 .onEnded { value in
                     guard disableRotation == false else { return }
-
+                    
                     if !disableBackPosition {
                         // Find the current and predicted final linear displacements.
-
+                        
                         let location3D = value.locationInScene()
                         let startLocation3D = value.startLocationInScene()
                         let predictedEndLocation3D = value.predictedEndLocationInScene()
                         let delta = location3D - startLocation3D
                         let predictedDelta = predictedEndLocation3D - location3D
-
+                        
                         // Set the final spin value using a spring animation.
                         withAnimation(.spring) {
                             yaw = finalSpin(
@@ -254,7 +306,7 @@ private struct DragRotationModifier: ViewModifier {
                 }
             }
     }
-
+    
     /// Finds the spin for the specified linear displacement, subject to an
     /// optional limit.
     private func spin(
@@ -268,7 +320,7 @@ private struct DragRotationModifier: ViewModifier {
             return base + displacement * sensitivity
         }
     }
-
+    
     /// Finds the final spin given the current and predicted final linear
     /// displacements, or zero when restricting the spin.
     private func finalSpin(
@@ -279,15 +331,15 @@ private struct DragRotationModifier: ViewModifier {
     ) -> Float {
         // If there is a spin limit, always return to zero spin at the end.
         guard limit == nil else { return 0 }
-
+        
         // Find the projected final linear displacement, capped at 1 more revolution.
         let cap = .pi * 2.0 / sensitivity
         let delta = displacement + max(-cap, min(cap, predictedDisplacement))
-
+        
         // Find the final spin.
         return base + delta * sensitivity
     }
-
+    
 }
 
 extension ModelEntity {
@@ -295,7 +347,7 @@ extension ModelEntity {
         guard let mesh = self.model?.mesh else {
             return .zero
         }
-
+        
         let width = mesh.bounds.max.x - mesh.bounds.min.x
         let height = mesh.bounds.max.y - mesh.bounds.min.y
         let depth = mesh.bounds.max.z - mesh.bounds.min.z
@@ -328,7 +380,7 @@ extension EntityTargetValue<DragGesture.Value> {
         return .zero
 #endif
     }
-
+    
     @MainActor
     func startLocationInScene() -> SIMD3<Float> {
 #if os(visionOS)
@@ -340,7 +392,7 @@ extension EntityTargetValue<DragGesture.Value> {
         return .zero
 #endif
     }
-
+    
     @MainActor
     func predictedEndLocationInScene() -> SIMD3<Float> {
 #if os(visionOS)

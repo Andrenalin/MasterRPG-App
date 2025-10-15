@@ -57,14 +57,8 @@ struct SpaceQuickLook: View {
         // nothing
 #else
         selectionSheetLinkModel.selectionFullView = AnyView(
-            SpaceViewer(root: root, id: item.itemId)
+            SpaceViewer(root: root, id: item.itemId, isModal: true)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay(alignment: .bottomTrailing) {
-                    ImageOverlayButton(icon: "xmark") {
-                        selectionSheetLinkModel.selectionFullScreen = false
-                    }
-                    .padding()
-                }
         )
         selectionSheetLinkModel.selectionFullScreen = true
 #endif

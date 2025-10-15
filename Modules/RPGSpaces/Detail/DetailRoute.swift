@@ -45,6 +45,6 @@ struct ViewerRouteDestinationView: View {
     @Environment(SpaceRoot.self) private var root
     
     var body: some View {
-        //root.viewController.inlineViewer(root: root, with: itemId)
+        root.viewController.inlineViewer(root: root, with: itemId)
     }
 }
