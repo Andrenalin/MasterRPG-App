@@ -13,6 +13,30 @@ public struct ViewController: Sendable {
 
 extension ViewController: ViewControllable {}
 
+// MARK: - New Views
+
+public extension ViewController {
+    @MainActor
+    func linkWindow(root: SpaceRoot, isInspector: Bool = false) -> some View {
+        //LinkRootView(type: isInspector ? .inspector : .window)
+        Text("Not implemented")
+            .environment(root)
+    }
+    
+    @MainActor
+    func windowViewer(root: SpaceRoot, selection: WindowItemSelection) -> some View {
+        SpaceQuickLook(root: root, item: ItemSelection(itemId: selection.itemId, entryId: selection.entryId), startLoading: true, gameMode: false, dismiss: nil)
+            .environment(root)
+    }
+
+    @MainActor
+    func inlineViewer(root: SpaceRoot, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: id)
+        return SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
+            .environment(root)
+    }
+}
+
 // MARK: - Edit
 
 public extension ViewController {
@@ -36,7 +60,7 @@ public extension ViewController {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             .environment(SelectionSheetLinkModel())
 #else
-        SpaceViewer(root: root, id: root.gameController.gameModel.currentItemId ?? UUID())
+        SpaceViewer(root: root, id: root.gameController.gameModel.currentItemId ?? UUID(), isModal: false)
             .padding()
 #endif
     }

@@ -121,6 +121,10 @@ struct RootExtendedList: View {
 #Preview(traits: .mockData) {
     @Previewable @Environment(SpaceRoot.self) var root
     //@Previewable @State var tabId: UUID = UUID()
-    RootList(root: root, tabId: UUID())
-        .environment(\.locale, .init(identifier: "de"))
+    ManagedPresentationView {
+        RootList(root: root, tabId: UUID())
+            .environment(\.locale, .init(identifier: "de"))
+    }
+    //.navigationRoot(Navigator(configuration: NavigationConfiguration(restorationKey: nil, executionDelay: 0.4, verbosity: .info, autoDestinationMode: true)))
+
 }

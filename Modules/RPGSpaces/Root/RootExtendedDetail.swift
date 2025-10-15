@@ -36,3 +36,9 @@ struct RootDetail: View {
         root.listController(model: listModel)
     }
 }
+
+#Preview(traits: .mockData) {
+    @Previewable @Environment(SpaceRoot.self) var root
+    RootExtendedDetail(itemRowTreeModel: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items.first!, typeId: .space), tabId: UUID())
+        .environment(\.locale, .init(identifier: "de"))
+}
