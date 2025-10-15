@@ -197,10 +197,10 @@ public final class AppModel: Sendable {
             ]
         )
 #endif
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG"))
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, allowsSave: true, groupContainer: .none, cloudKitDatabase: .private("icloud.de.andretrettin.MasterRPG3"))
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
+        } catch {            
             fatalError("Could not create ModelContainer: \(error)")
         }
     }

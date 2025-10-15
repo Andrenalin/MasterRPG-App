@@ -1,11 +1,3 @@
-//
-//  UserActivity.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 07.07.25.
-//
-
-
 // @copyright André Trettin
 
 import CoreServices

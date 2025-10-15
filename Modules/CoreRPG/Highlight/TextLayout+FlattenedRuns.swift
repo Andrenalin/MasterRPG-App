@@ -1,11 +1,3 @@
-//
-//  TextLayout+FlattenedRuns.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 06.07.25.
-//
-
-
 // @copyright André Trettin
 
 import SwiftUI

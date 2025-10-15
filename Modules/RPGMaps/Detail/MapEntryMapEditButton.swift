@@ -1,9 +1,4 @@
-//
-//  MapEntryMapEditButton.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 18/6/2568 BE.
-//
+// @copyright André Trettin
 
 import AndrenalinKit
 import SwiftUI

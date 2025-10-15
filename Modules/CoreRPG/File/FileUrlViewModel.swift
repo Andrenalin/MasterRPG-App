@@ -1,11 +1,3 @@
-//
-//  FileUrlViewModel.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 8/7/2568 BE.
-//
-
-
 // @copyright André Trettin
 
 import Foundation

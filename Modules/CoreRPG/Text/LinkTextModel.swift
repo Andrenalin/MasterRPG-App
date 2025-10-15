@@ -1,11 +1,3 @@
-//
-//  LinkHighlightTextModel.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 25.07.25.
-//
-
-
 // @copyright André Trettin
 
 import Foundation

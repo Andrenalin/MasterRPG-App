@@ -1,11 +1,3 @@
-//
-//  LinkDataTransferable.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 13.10.25.
-//
-
-
 // @copyright André Trettin
 
 import SwiftUI

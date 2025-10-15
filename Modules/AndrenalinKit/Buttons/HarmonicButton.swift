@@ -1,10 +1,4 @@
-//
-//  HarmonicButton.swift
-//  MasterRPG
-//
-//  Created by Andre Trettin on 6/5/2568 BE.
-//
-
+// @copyright André Trettin
 
 import SwiftUI
 
