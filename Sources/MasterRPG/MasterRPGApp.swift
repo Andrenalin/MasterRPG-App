@@ -88,7 +88,6 @@ struct MasterRPGApp: App {
                     .environment(appStore.optionKeyDownModel)
                     .environment(appStore.settingsModel)
                     .frame(minWidth: 600, minHeight: 400)
-                    .modelContainer(appStore.modelContainer)
             }
         }
         .keyboardShortcut("E", modifiers: [.command, .shift, .option])
