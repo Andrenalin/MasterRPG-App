@@ -136,6 +136,7 @@ private extension ItemDetailRootView {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .tint(root.module.tint)
+                .accentColor(root.module.tint)
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

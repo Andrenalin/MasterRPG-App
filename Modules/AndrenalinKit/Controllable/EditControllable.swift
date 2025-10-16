@@ -23,12 +23,12 @@ public protocol EditControllable: Sendable {
     var model: Model { get set }
 
     // reset / edit  extensions
-    @MainActor func reset(name: String)
-    @MainActor func reset(category: ItemListCategory)
-    @MainActor func reset(description: String)
+    @MainActor func reset(name: String, saveIt: Bool)
+    @MainActor func reset(category: ItemListCategory, saveIt: Bool)
+    @MainActor func reset(description: String, saveIt: Bool)
+    @MainActor func reset(hidden: Bool)
     @MainActor func add(tag: String)
     @MainActor func remove(tag: String)
-    @MainActor func reset(hidden: Bool)
 
     // overwrite extensions
     @MainActor func resetCurrentModel()
@@ -66,27 +66,50 @@ public extension EditControllable {
     @MainActor func toggle(for module: NetworkModules, itemRowModel: ItemRowModel) async {}
 }
 
+// MARK: - Editor
+
 public extension EditControllable {
-    @MainActor func reset(category: ItemListCategory) {
+    @MainActor func update(name: String, description: String, category: ItemListCategory, tags: [String]) {
+        reset(name: name, saveIt: false)
+        reset(description: description, saveIt: false)
+        reset(name: name, saveIt: false)
+        reset(category: category, saveIt: false)
+        reset(tags: tags, saveIt: false)
+
+        save(with: String(localized: "Changed Header").localizedString)
+    }
+
+    @MainActor func reset(category: ItemListCategory, saveIt: Bool = true) {
         guard model.category != category else { return }
         model.category = category
+        guard saveIt else { return }
         save(with: String(localized: "Change to \(category.title)").localizedString)
     }
 
-    @MainActor func reset(description: String) {
+    @MainActor func reset(description: String, saveIt: Bool = true) {
         guard model.description != description else { return }
         model.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .description, itemId: model.id, text: model.description.markDownText())
+        guard saveIt else { return }
         save(with: String(localized: "Typing").localizedString)
     }
 
-    @MainActor func reset(name: String) {
+    @MainActor func reset(name: String, saveIt: Bool = true) {
         guard model.name != name else { return }
         model.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: model.id, text: model.name.markDownText())
+        guard saveIt else { return }
         save(with: String(localized: "Typing").localizedString)
     }
 
+    @MainActor func reset(tags: [String], saveIt: Bool = true) {
+        let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
+        guard model.tags != sortedTags else { return }
+        model.tags = sortedTags
+        guard saveIt else { return }
+        save(with: String(localized: "Changed tags").localizedString)
+    }
+    
     @MainActor func reset(hidden: Bool) {
         guard model.isGroupHiddenToggle != hidden else { return }
         model.isGroupHiddenToggle = hidden
