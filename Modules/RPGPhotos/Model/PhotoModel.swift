@@ -151,7 +151,6 @@ extension PhotoModel: ItemDuplicatable {
 }
 
 extension PhotoModel: ItemDataAccessable {
-    public var url: URL? { fileUrl?.rawUrl }
     public static var empty: PhotoModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> PhotoModel {
         PhotoModel(id: id, name: "")

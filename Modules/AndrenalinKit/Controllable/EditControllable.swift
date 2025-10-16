@@ -135,6 +135,39 @@ public extension EditControllable {
 }
 
 public extension EditControllable {
+    func addNew(type: EditControllerAddType) async -> (any ItemDataAccessable)? {
+        let itemCategory: ItemListCategory
+        if type == .folder {
+            itemCategory = .folder
+        } else if type == .collection {
+            itemCategory = itemControllable.collectionCategory
+        } else {
+            itemCategory = .item
+        }
+        let itemRowModel = await itemControllable.addNew(type: itemCategory.rawValue)
+        return await itemControllable.item(for: itemRowModel.itemId)
+    }
+//    func duplicate(item: ItemDataModel) {
+//        duplicateDataModel(item: item, newItemId: UUID())
+//    }
+//
+//    func duplicateDataModel(item: ItemDataModel, newItemId: UUID) {
+//        let modelContext = itemControllable.container.mainContext
+//        let duplicate = item.duplicate(newItemId: newItemId, url: nil)
+//        modelContext.insert(duplicate)
+//        try? modelContext.save()
+//        guard let fileUrlDataController, let actor = duplicate.modelActor() else { return }
+//        let originalFileUrl = item.fileUrl
+//        Task.detached {
+//            await actor.setup(id: newItemId)
+//            guard let fileUrl = try? await fileUrlDataController.duplicate(fileUrl: originalFileUrl, for: newItemId) else { return }
+//            await actor.update(url: fileUrl.rawUrl)
+//            await actor.save()
+//        }
+//    }
+}
+
+public extension EditControllable {
     func didDelete(itemId: UUID) async {
         guard await editorModel.currentItemId == itemId else { return }
         await resetCurrentModel()

@@ -5,11 +5,11 @@ import Observation
 
 public protocol ItemControllable: Sendable  {
     associatedtype Model: ItemDataAccessable & ItemDiffComparable & ItemDuplicatable & ItemLinkRegistable & Identifiable & Equatable & Hashable & Codable & ModelType
-    
+        
+    var collectionCategory: ItemListCategory { get }
     var dataControllable: (any DataPersistenceControllable)? { get }
     
-    @MainActor
-    var linkRegisterControllable: LinkRegisterControllable { get }
+    @MainActor var linkRegisterControllable: LinkRegisterControllable { get }
     var itemDataModel: ItemDataModel { get }
     
     // overwrites
@@ -25,6 +25,11 @@ public protocol ItemControllable: Sendable  {
     
     @MainActor func childrenTree(for model: ItemRowModel) -> ItemRowModel?
     @MainActor func filterChildren(model: ItemRowModel, search: String, isHidden: Bool, filterTags: [TagFilterSelection], deep: Int) -> ListFilterOptions
+}
+
+// MARK: - Configuration
+public extension ItemControllable {
+    var collectionCategory: ItemListCategory { .collection }
 }
 
 // MARK: - Manipulate Model

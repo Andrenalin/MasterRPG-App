@@ -13,6 +13,7 @@ struct ItemController: Sendable {
     }
 
     weak var root: AudioRoot!
+    let collectionCategory: ItemListCategory = .playlist
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
 }

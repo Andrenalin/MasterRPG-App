@@ -188,7 +188,6 @@ extension WeatherModel: ItemDuplicatable {
 }
 
 extension WeatherModel: ItemDataAccessable {
-    public var url: URL? { nil }
     public typealias Entry = EmtpyEntryViewModel
     public static var empty: WeatherModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> WeatherModel {

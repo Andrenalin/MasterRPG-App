@@ -143,7 +143,6 @@ extension AdventureModel: ItemDuplicatable {
 extension AdventureModel: ItemReferencable {}
 
 extension AdventureModel: ItemDataAccessable {
-    public var url: URL? { nil }
     public static var empty: AdventureModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> AdventureModel {
         AdventureModel(id: id, name: "", description: "")

@@ -28,14 +28,6 @@ public struct LinkWindowCommandView: View {
         self.isAlt = isAlt
     }
 
-//    public init(title: String, icon: String, windowId: String, key: AKKeyEquivalent) {
-//        self.title = title
-//        self.icon = icon
-//        self.windowId = windowId
-//        self.key = key
-//        self.isAlt = false
-//    }
-
     let title: String
     let icon: String
     let windowId: String

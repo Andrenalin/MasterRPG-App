@@ -22,6 +22,7 @@ struct ItemController: Sendable {
     }
 
     weak var root: AdventureRoot!
+    let collectionCategory: ItemListCategory = .collection
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
 }

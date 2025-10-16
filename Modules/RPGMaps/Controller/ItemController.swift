@@ -19,6 +19,7 @@ struct ItemController: Sendable {
     }
 
     weak var root: MapRoot!
+    let collectionCategory: ItemListCategory = .collection
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
 }

@@ -15,6 +15,7 @@ struct ItemController: Sendable {
     }
 
     weak var root: ValueRoot!
+    let collectionCategory: ItemListCategory = .collection
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     let tableChildren: (@MainActor @Sendable (ItemRowModel) -> [ItemRowModel])?

@@ -19,7 +19,7 @@ public protocol ItemDataAccessable {
     var isGroupHidden: Bool { get }
     var isGroupHiddenToggle: Bool { get set }
     var entries: [Entry] { get set }
-    var url: URL? { get }
+    var fileUrl: FileUrl? { get }
 
     subscript(id: UUID) -> Entry { get set }
 
@@ -38,6 +38,14 @@ public protocol ItemDataAccessable {
 }
 
 public extension ItemDataAccessable {
+    var url: URL? {
+        fileUrl?.rawUrl
+    }
+    
+    var fileUrl: FileUrl? {
+        nil
+    }
+    
     var isFolder: Bool {
         category == .folder
     }
