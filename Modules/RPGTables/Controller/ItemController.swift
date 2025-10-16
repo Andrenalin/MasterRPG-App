@@ -14,6 +14,7 @@ struct ItemController: Sendable {
     }
 
     weak var root: TableRoot!
+    let collectionCategory: ItemListCategory = .bookshelf
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
 }

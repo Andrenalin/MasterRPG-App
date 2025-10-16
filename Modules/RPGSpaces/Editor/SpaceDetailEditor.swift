@@ -24,6 +24,9 @@ struct SpaceDetailEditor: View {
             }
 #endif
         }
+        .onChange(of: listModel.selectedItem, initial: true) {
+            update()
+        }
         .environment(openFileWindowModel)
         .environment(CacheItemListModel())
         .environment(root.listDisplayModel)
@@ -39,6 +42,18 @@ struct SpaceDetailEditor: View {
     @ViewBuilder
     var editor: some View {
         SpacesSectionEditor(editController: editController, model: model)
+    }
+    
+    func update() {
+        if let item = listModel.selectedItem {
+            if editController.editorModel.currentItemId != item.model.itemId || editController.editorModel.currentEntryId != item.model.entryId {
+                editController.setCurrentItem(to: item)
+            }
+        } else {
+            if editController.editorModel.currentItemId != nil {
+                editController.resetCurrentItem(with: "save".localizedString)
+            }
+        }
     }
 }
 

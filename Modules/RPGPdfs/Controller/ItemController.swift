@@ -23,6 +23,7 @@ struct ItemController: Sendable {
     }
     
     weak var root: PdfRoot!
+    let collectionCategory: ItemListCategory = .bookshelf
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
 }

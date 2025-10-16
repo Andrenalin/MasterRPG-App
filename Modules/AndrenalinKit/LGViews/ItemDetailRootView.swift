@@ -52,7 +52,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     public var body: some View {
         let _ = Self._printChanges()
         if let selectedModel {
-            let _ = print("*** -> ", selectedModel.name)
             contentScrollView(model: selectedModel)
         }
     }
@@ -136,6 +135,7 @@ private extension ItemDetailRootView {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .tint(root.module.tint)
+                .accentColor(root.module.tint)
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -197,9 +197,9 @@ private extension ItemDetailRootView {
                 if root.viewControllable.goupViewType == .item {
                     ItemGroupItemView(root: root, model: model)
                 } else {
-//                    if let cacheControllable = root.cacheControllable {
-//                        GroupedPhotoView(cacheController: cacheControllable, model: model)
-//                    }
+                    if let cacheControllable = root.cacheControllable {
+                        GroupedPhotoView(cacheController: cacheControllable, itemControllable: root.itemControllable, model: model)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

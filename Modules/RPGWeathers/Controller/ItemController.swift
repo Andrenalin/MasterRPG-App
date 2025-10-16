@@ -13,6 +13,7 @@ struct ItemController: Sendable {
     }
 
     weak var root: WeatherRoot!
+    let collectionCategory: ItemListCategory = .collection
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
 }

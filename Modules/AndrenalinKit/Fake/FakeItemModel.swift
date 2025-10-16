@@ -18,7 +18,7 @@ final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplica
     
     typealias Entry = FakeEntryModel
     
-    init(id: UUID, name: String, category: ItemListCategory, description: String, tags: [String], displayState: Int, isGroupHiddenToggle: Bool, entries: [FakeEntryModel] = []) {
+    init(id: UUID = UUID(), name: String, category: ItemListCategory = .photo, description: String = "Long Descripotion test", tags: [String] = ["Test"], displayState: Int = 0, isGroupHiddenToggle: Bool = false, fileUrl: FileUrl? = nil, entries: [FakeEntryModel] = []) {
         self.id = id
         self.name = name
         self.category = category
@@ -26,6 +26,7 @@ final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplica
         self.tags = tags
         self.displayState = displayState
         self.isGroupHiddenToggle = isGroupHiddenToggle
+        self.fileUrl = fileUrl
         self.entries = entries
     }
     
@@ -36,8 +37,8 @@ final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplica
     var tags: [String]
     var displayState: Int
     var isGroupHiddenToggle: Bool
-    var url: URL? = nil
-
+    var fileUrl: FileUrl?
+    
     static let empty: FakeItemModel =  empty(UUID())
     static func empty(_ id: UUID) -> FakeItemModel {
         FakeItemModel(id: id, name: "", category: ItemListCategory.all, description: "", tags: [], displayState: 0, isGroupHiddenToggle: false)

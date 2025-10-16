@@ -13,6 +13,7 @@ struct ItemController: Sendable {
     }
 
     weak var root: DiceRoot!
+    let collectionCategory: ItemListCategory = .diceBag
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     

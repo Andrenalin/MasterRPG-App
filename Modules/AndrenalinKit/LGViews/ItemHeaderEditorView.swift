@@ -50,7 +50,7 @@ public struct ItemHeaderEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        //editControllable.update(model: model, name: name, information: information, category: category, tags: tags)
+                        editControllable.update(name: name, description: information, category: category, tags: tags)
                         dismiss()
                     } label: {
                         Image(systemName: "checkmark")
@@ -129,4 +129,9 @@ private extension ItemHeaderEditorView {
         model.category == category &&
         model.tags == tags
     }
+}
+
+#Preview {
+    ItemHeaderEditorView(editControllable: FakeEditController.fake, model: FakeItemModel(id: UUID(), name: "My great name", category: .album, description: "Log description here", tags: ["One", "2"], displayState: 0, isGroupHiddenToggle: false))
+        .tint(NetworkModules.space.tint)
 }

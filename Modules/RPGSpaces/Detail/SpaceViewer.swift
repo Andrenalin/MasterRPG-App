@@ -69,7 +69,7 @@ struct SpaceViewer: View {
         .applyIf(isModal) {
             $0.toolbar {
 #if !os(visionOS)
-                ToolbarItem(placement: .bottomBar) {
+                ToolbarItem(placement: .automatic) {
                     Toggle(isOn: $canDrag) {
                         Label {
                             Text("Move", bundle: .module)
@@ -81,7 +81,7 @@ struct SpaceViewer: View {
                 
                 ToolbarSpacer()
                 
-                ToolbarItem(placement: .bottomBar) {
+                ToolbarItem(placement: .automatic) {
                     Button {
                         dismiss()
                     } label: {

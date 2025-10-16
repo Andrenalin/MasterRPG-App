@@ -122,7 +122,7 @@ public extension ViewController {
 #if os(visionOS)
     @MainActor @ViewBuilder
     func spaceImmersionWindow(id: UUID, defaultSize: Size3D) -> some View {
-        SpaceViewer(root: root, id: id)
+        SpaceViewer(root: root, id: id, isModal: false)
     }
 #endif
     

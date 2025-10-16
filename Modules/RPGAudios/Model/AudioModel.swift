@@ -141,7 +141,6 @@ extension AudioModel: ItemDuplicatable {
 }
 
 extension AudioModel: ItemDataAccessable {
-    public var url: URL? { fileUrl?.rawUrl }    
     public static var empty: AudioModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> AudioModel {
         AudioModel(id: id, name: "")

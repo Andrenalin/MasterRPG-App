@@ -13,6 +13,7 @@ struct ItemController: Sendable {
     }
 
     weak var root: SpaceRoot!
+    let collectionCategory: ItemListCategory = .album
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
 }
