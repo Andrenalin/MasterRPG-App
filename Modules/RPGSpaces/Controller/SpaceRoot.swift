@@ -62,7 +62,6 @@ public final class SpaceRoot: @unchecked Sendable {
     public var currentSelectedItemId: UUID? {
         rootModel.selectedItem?.itemId
     }
-
     
     @ObservationIgnored lazy var cacheController: CacheController = {
         CacheController(fileUrlDataController: fileController.fileUrlDataController)
@@ -114,6 +113,10 @@ public final class SpaceRoot: @unchecked Sendable {
         _linkController.unsafelyUnwrapped
     }
     
+    @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
+        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel)
+    }()
+
     @ObservationIgnored
     private(set) var _viewController: ViewController?
     public var viewController: ViewController {
@@ -129,9 +132,23 @@ public final class SpaceRoot: @unchecked Sendable {
     @ObservationIgnored
     private(set) var mainListController: ListController?
     
-    @MainActor
-    @ObservationIgnored public lazy var rootController: ItemRootController = {
-        ItemRootController(module: module, listDisplayModel: listDisplayModel, searchModel: searchModel, itemSelectionModel: ItemSelectionModel(), removeEntryListModel: RemoveEntryListModel(), cacheControllable: cacheController, editControllable: editController(type: .main), exportControllable: exportControllable, gameControllable: gameControllable, itemControllable: itemControllable, linkControllable: linkControllable, listControllable: listController, listLinkControllable: listController, viewControllable: viewController)
+    @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
+        ItemRootController(
+            module: module,
+            listDisplayModel: listDisplayModel,
+            searchModel: searchModel,
+            itemSelectionModel: ItemSelectionModel(),
+            removeEntryListModel: RemoveEntryListModel(),
+            cacheControllable: cacheController,
+            editControllable: editController(type: .main),
+            exportControllable: exportControllable,
+            gameControllable: gameControllable,
+            itemControllable: itemControllable,
+            linkControllable: linkControllable,
+            listControllable: listController,
+            folderListControllable: folderListController,
+            viewControllable: viewController
+        )
     }()
 }
 

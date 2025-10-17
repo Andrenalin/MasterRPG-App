@@ -252,11 +252,12 @@ private extension ItemDetailRootView {
     }
     
     @ViewBuilder func inspectorView(model: any ItemDataAccessable) -> some View {
-        if model.specialCategory {
-            //LinkRootView(root: root, type: .inspector)
-        } else {
-            inspector
-        }
+        LinkItemRootView(root: root, type: .inspector)
+//        if model.specialCategory {
+//            LinkItemRootView(root: root, type: .inspector)
+//        } else {
+//            inspector
+//        }
     }
     
     func updateFile(url: URL, model: any ItemDataAccessable) {

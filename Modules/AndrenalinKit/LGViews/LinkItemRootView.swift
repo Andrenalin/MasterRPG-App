@@ -19,14 +19,13 @@ public struct LinkItemRootView: View {
     let type: LinkRootType
     
     public var body: some View {
-        Text("Comming soon")
-//        LinkItemListView(root: root, type: type, parentModel: nil)
-//            .environment(root.listDisplayModel)
-//            .environment(root.searchModel)
-//            .environment(CacheItemListModel())
-//            .environment(root.listLinkControllable.cacheListItemModel)
-//            .onChange(of: root.itemControllable.itemCacheModel.itemIds, initial: true) {
-//                withAnimation { root.listLinkControllable.update(items: root.itemControllable.allItems(), parentModel: nil) }
-//            }
+        LinkItemListView(root: root, type: type, parentModel: nil)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .environment(CacheItemListModel())
+            .environment(root.folderListControllable.cacheListItemModel)
+            .onChange(of: root.itemControllable.itemDataModel.items, initial: true) {
+                withAnimation { root.folderListControllable.update(items: root.itemControllable.itemDataModel.items.map { root.itemControllable.itemOrEmpty(for: $0) }, parentModel: nil) }
+            }
     }
 }
