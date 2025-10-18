@@ -17,12 +17,11 @@ struct SpaceDetailEditor: View {
     var body: some View {
         ItemDetailRootView(selectedId: selectedModel?.id, editorAsBackground: true) {
         } editor: {
-            CachePhotoView(cacheController: root.cacheController, model: model, highResolution: false)
-//            if let model = selectedModel {
-//                SpaceExternalHeader(editController: editController, model: model, isModal: false)
-//                    .id(model.id)
-//                    .frame(minHeight: 600)
-//            }
+            //CachePhotoView(cacheController: root.cacheController, model: model, highResolution: false)
+            if let model = selectedModel {
+                SpaceExternalHeader(editController: editController, model: model, isModal: false)
+                    .id(model.id)
+            }
         }
         .onChange(of: listModel.selectedItem, initial: true) {
             update()

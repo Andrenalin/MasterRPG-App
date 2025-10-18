@@ -150,7 +150,6 @@ private extension ItemDetailRootView {
                     }
                 }
             }
-            
             ToolbarItem(placement: .primaryAction) {
                 inspectorButton()
             }
@@ -300,6 +299,14 @@ private extension ItemDetailRootView {
                 }
             }
         }
+    }
+    
+    var secondaryMenuPlacement: ToolbarItemPlacement {
+#if os(tvOS)
+        .automatic
+#else
+        .secondaryAction
+#endif
     }
 }
 

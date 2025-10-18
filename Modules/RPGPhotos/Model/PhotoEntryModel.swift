@@ -21,7 +21,12 @@ extension PhotoEntryModel: EntryDataAccessable {
         "Photo"
     }
     
+    public var childId: UUID { photoId }
+    
     public static var empty: PhotoEntryModel { empty(UUID()) }
+    public static func newChild(id: UUID) -> Self {
+        PhotoEntryModel(id: UUID(), photoId: id)
+    }
 
     static func empty(_ id: UUID) -> PhotoEntryModel {
         PhotoEntryModel(id: id, photoId: UUID())

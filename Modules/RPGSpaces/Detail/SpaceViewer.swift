@@ -66,7 +66,6 @@ struct SpaceViewer: View {
                 spaceContentView
             }
         }
-        .navigationTitle(root.itemController.nameSync(itemId: id))
         .applyIf(isModal) {
             $0.toolbar {
 #if !os(visionOS)

@@ -42,6 +42,11 @@ extension DieModel {
 }
 
 extension DieModel: EntryDataAccessable {
+    public var childId: UUID { id }
+    public static func newChild(id: UUID) -> Self {
+        empty(id)
+    }
+
     public static var empty: DieModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> DieModel {
         DieModel(id: id, die: RawDie.twenty)

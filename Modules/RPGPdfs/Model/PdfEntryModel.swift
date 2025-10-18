@@ -38,7 +38,12 @@ public struct PdfEntryModel: Identifiable, Equatable, Hashable, Codable {
     }
 }
 
-extension PdfEntryModel: EntryDataAccessable {    
+extension PdfEntryModel: EntryDataAccessable {
+    public var childId: UUID { id }
+    public static func newChild(id: UUID) -> Self {
+        empty(id)
+    }
+
     public static var empty: PdfEntryModel { empty(UUID()) }
 
     static func empty(_ id: UUID) -> PdfEntryModel {

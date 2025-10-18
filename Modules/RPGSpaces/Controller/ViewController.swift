@@ -25,9 +25,12 @@ public extension ViewController {
     @MainActor
     func windowViewer(root: SpaceRoot, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
-            .ignoresSafeArea()
-            .environment(root)
+        return NavigationStack {
+            SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
+        }
+        .ignoresSafeArea()
+        .navigationTitle(model.name)
+        .environment(root)
     }
 
     @MainActor

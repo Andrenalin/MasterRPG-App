@@ -20,11 +20,15 @@ extension SpaceEntryModel: EntryDataAccessable {
     public var name: String {
         "Space Model"
     }
+    public var childId: UUID { spaceId }
     
     public static var empty: SpaceEntryModel { empty(UUID()) }
 
     public static func empty(_ id: UUID) -> SpaceEntryModel {
         SpaceEntryModel(id: id, spaceId: UUID())
+    }
+    public static func newChild(id: UUID) -> Self {
+        SpaceEntryModel(id: UUID(), spaceId: id)
     }
 
     public func duplicate() -> SpaceEntryModel {

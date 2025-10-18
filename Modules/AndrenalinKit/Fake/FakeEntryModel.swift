@@ -3,26 +3,32 @@
 import SwiftUI
 
 public struct FakeEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
-    init(id: UUID, name: String, content: String, displayState: Int = 0) {
+    init(id: UUID, childId: UUID = UUID(), name: String, content: String, displayState: Int = 0) {
         self.id = id
+        self.childId = childId
         self.name = name
         self.content = content
         self.displayState = displayState
     }
     public var id: UUID
+    public var childId: UUID
     public var name: String
     var content: String
     public var displayState: Int
 }
 
 extension FakeEntryModel: EntryDataAccessable {
+    public static func newChild(id: UUID) -> Self {
+        FakeEntryModel(id: UUID(), childId: id, name: "", content: "")
+    }
+
     public static var empty: FakeEntryModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> FakeEntryModel {
         FakeEntryModel(id: id, name: "", content: "")
     }
 
     public func duplicate() -> FakeEntryModel {
-        FakeEntryModel(id: UUID(), name: name, content: content, displayState: displayState)
+        FakeEntryModel(id: UUID(), childId: childId, name: name, content: content, displayState: displayState)
     }
 }
 

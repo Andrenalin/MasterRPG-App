@@ -25,6 +25,11 @@ public struct AdventureEntryModel: Identifiable, Equatable, Hashable, Codable, @
 }
 
 extension AdventureEntryModel: EntryDataAccessable {
+    public var childId: UUID { id }
+    public static func newChild(id: UUID) -> Self {
+        empty(id)
+    }
+
     public static var empty: AdventureEntryModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> AdventureEntryModel {
         AdventureEntryModel(id: id, name: "", content: "")

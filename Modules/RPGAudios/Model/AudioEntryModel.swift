@@ -30,6 +30,11 @@ extension AudioEntryModel: ItemDiffComparable {
 }
 
 extension AudioEntryModel: EntryDataAccessable {
+    public var childId: UUID { id }
+    public static func newChild(id: UUID) -> Self {
+        AudioEntryModel(id: UUID(), audioId: id)
+    }
+
     public var name: String {
         "Track"
     }

@@ -28,7 +28,7 @@ public struct CarouselItemView<Content: View>: View {
                         itemView(itemId: item.id, selectedItemId: item.id)
                             .overlay(alignment: .topTrailing) {
                                 GlassButton {
-                                    //withAnimation { root.editControllable.removeGroup(childId: item.id, model: model) }
+                                    withAnimation { root.editControllable.removeGroup(childId: item.id) }
                                 } label: {
                                     Image(systemName: "minus")
                                         .foregroundStyle(.white, .red)
@@ -68,7 +68,7 @@ public struct CarouselItemView<Content: View>: View {
     }
     
     func linkHandler(name: String, itemId: UUID, entryId: UUID?) {
-        //withAnimation { root.editControllable.addGroup(childId: itemId, model: model) }
+        withAnimation { root.editControllable.addGroup(childId: itemId) }
     }
     
     func itemView(itemId: UUID, selectedItemId: UUID?) -> some View {

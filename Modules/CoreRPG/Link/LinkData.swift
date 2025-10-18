@@ -36,6 +36,19 @@ extension LinkDataTransferable {
     }
 }
 
+extension UTType {
+    public static var adventureLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Adventure") }
+    public static var audioLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Audio") }
+    public static var characterLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Character") }
+    public static var diceLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Dice") }
+    public static var mapLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Map") }
+    public static var pdfLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Pdf") }
+    public static var photoLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Photo") }
+    public static var spaceLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Space") }
+    public static var tableLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Table") }
+    public static var weatherLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Weather") }
+}
+
 public struct LinkAdventureData: LinkDataTransferable {
     public init(itemId: UUID, entryId: UUID? = nil, name: String) {
         self.itemId = itemId
@@ -44,7 +57,7 @@ public struct LinkAdventureData: LinkDataTransferable {
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+        CodableRepresentation(contentType: .adventureLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
@@ -62,7 +75,7 @@ public struct LinkAudioData: LinkDataTransferable {
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+        CodableRepresentation(contentType: .audioLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
@@ -80,7 +93,7 @@ public struct LinkCharacterData: LinkDataTransferable {
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+        CodableRepresentation(contentType: .characterLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
@@ -98,7 +111,7 @@ public struct LinkDiceData: LinkDataTransferable {
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+        CodableRepresentation(contentType: .diceLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
@@ -116,7 +129,7 @@ public struct LinkMapData: LinkDataTransferable {
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+        CodableRepresentation(contentType: .mapLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
@@ -134,7 +147,7 @@ public struct LinkPdfData: LinkDataTransferable {
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+        CodableRepresentation(contentType: .pdfLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
@@ -152,7 +165,7 @@ public struct LinkPhotoData: LinkDataTransferable {
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+        CodableRepresentation(contentType: .photoLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
@@ -170,7 +183,7 @@ public struct LinkSpaceData: LinkDataTransferable {
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+        CodableRepresentation(contentType: .spaceLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
@@ -188,7 +201,7 @@ public struct LinkTableData: LinkDataTransferable {
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+        CodableRepresentation(contentType: .tableLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
@@ -206,7 +219,7 @@ public struct LinkWeatherData: LinkDataTransferable {
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+        CodableRepresentation(contentType: .weatherLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
