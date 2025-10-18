@@ -20,7 +20,7 @@ public protocol ItemRootControllable: Sendable {
     var itemControllable: any ItemControllable { get }
     var linkControllable: any LinkControllable { get }
     var listControllable: any ListControllable { get }
-    var listLinkControllable: any ListControllable { get }
+    var folderListControllable: any FolderListControllable { get }
     var viewControllable: any ViewControllable { get }
     
     var rootController: ItemRootController { get }
@@ -41,7 +41,7 @@ public final class ItemRootController: ItemRootControllable {
         itemControllable: any ItemControllable,
         linkControllable: any LinkControllable,
         listControllable: any ListControllable,
-        listLinkControllable: any ListControllable,
+        folderListControllable: any FolderListControllable,
         viewControllable: any ViewControllable
     ) {
         self.module = module
@@ -56,8 +56,8 @@ public final class ItemRootController: ItemRootControllable {
         self.itemControllable = itemControllable
         self.linkControllable = linkControllable
         self.listControllable = listControllable
-        self.listLinkControllable = listLinkControllable
-        self.viewControllable = viewControllable                
+        self.folderListControllable = folderListControllable
+        self.viewControllable = viewControllable
     }
     
     public let module: NetworkModules
@@ -77,7 +77,7 @@ public final class ItemRootController: ItemRootControllable {
     public let itemControllable: any ItemControllable
     public let linkControllable: any LinkControllable
     public let listControllable: any ListControllable
-    public let listLinkControllable: any ListControllable
+    public let folderListControllable: any FolderListControllable
     public let viewControllable: any ViewControllable
     
     public let removeEntryListModel: RemoveEntryListModel

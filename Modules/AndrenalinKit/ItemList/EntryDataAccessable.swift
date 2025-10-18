@@ -5,8 +5,10 @@ import SwiftUI
 
 public protocol EntryDataAccessable {
     static var empty: Self { get }
+    static func newChild(id: UUID) -> Self
 
     var id: UUID { get }
+    var childId: UUID { get }
     var name: String { get }
     var displayState: Int { get }
 
@@ -35,8 +37,12 @@ public extension EntryDataAccessable {
 
 public struct EmtpyEntryViewModel: EntryDataAccessable, Identifiable, Equatable, Sendable {
     public static let empty: EmtpyEntryViewModel = EmtpyEntryViewModel()
+    public static func newChild(id: UUID) -> EmtpyEntryViewModel {
+        EmtpyEntryViewModel(childId: id)
+    }
 
     public var id: UUID = UUID()
+    public var childId: UUID = UUID()
     public var name: String = ""
     public var displayState: Int = 0
 

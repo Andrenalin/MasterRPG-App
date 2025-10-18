@@ -37,6 +37,18 @@
         }
       }
     },
+    "MasterRPG Adventure Link" : {
+
+    },
+    "MasterRPG Audio Link" : {
+
+    },
+    "MasterRPG Character Link" : {
+
+    },
+    "MasterRPG Dice Link" : {
+
+    },
     "MasterRPG Document" : {
       "localizations" : {
         "de" : {
@@ -47,6 +59,15 @@
         }
       }
     },
+    "MasterRPG Map Link" : {
+
+    },
+    "MasterRPG PDF Link" : {
+
+    },
+    "MasterRPG Photo Link" : {
+
+    },
     "MasterRPG Save Game" : {
       "localizations" : {
         "de" : {
@@ -56,6 +77,15 @@
           }
         }
       }
+    },
+    "MasterRPG Space Link" : {
+
+    },
+    "MasterRPG Table Link" : {
+
+    },
+    "MasterRPG Weather Link" : {
+
     },
     "NSCameraUsageDescription" : {
       "comment" : "Privacy - Camera Usage Description",

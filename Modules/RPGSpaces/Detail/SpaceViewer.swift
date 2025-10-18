@@ -78,7 +78,7 @@ struct SpaceViewer: View {
                         }
                     }
                 }
-                
+
                 ToolbarSpacer()
                 
                 ToolbarItem(placement: .automatic) {

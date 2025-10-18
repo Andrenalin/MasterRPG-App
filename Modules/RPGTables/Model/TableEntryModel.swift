@@ -33,6 +33,11 @@ public struct TableEntryModel: Identifiable, Equatable, Hashable, Codable, @unch
 // MARK: - EntryDataAccessable
 
 extension TableEntryModel: EntryDataAccessable {
+    public var childId: UUID { id }
+    public static func newChild(id: UUID) -> Self {
+        empty(id)
+    }
+
     public static var empty: TableEntryModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> TableEntryModel {
         TableEntryModel(id: id, name: "", content: "")

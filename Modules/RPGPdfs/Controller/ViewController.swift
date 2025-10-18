@@ -5,6 +5,34 @@ import SwiftUI
 
 public struct ViewController {
     weak var root: PdfRoot!
+    public let goupViewType: GroupViewType = .photo
+    public let thumbnailRowViewType: ThumbnailRowViewType = .photo
+}
+
+extension ViewController: ViewControllable {}
+
+// MARK: Viewer
+
+public extension ViewController {
+//    @MainActor
+//    func linkWindow(root: PdfRoot, isInspector: Bool = false) -> some View {
+//        LinkRootView(type: isInspector ? .inspector : .window)
+//            .environment(root)
+//    }
+
+//    @MainActor
+//    func windowViewer(root: PdfRoot, selection: WindowItemSelection) -> some View {
+//        let model = root.itemController.item(for: selection.itemId) ?? .newItem
+//        return PdfViewerView(model: model, entryId: selection.entryId, withoutBookmark: false)
+//            .environment(root)
+//    }
+//
+//    @MainActor
+//    func inlineViewer(root: PdfRoot, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
+//        let model = root.itemController.item(for: id) ?? .newItem
+//        return PdfViewerView(model: model, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
+//            .environment(root)
+//    }
 }
 
 public extension ViewController {

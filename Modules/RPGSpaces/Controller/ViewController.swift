@@ -18,15 +18,19 @@ extension ViewController: ViewControllable {}
 public extension ViewController {
     @MainActor
     func linkWindow(root: SpaceRoot, isInspector: Bool = false) -> some View {
-        //LinkRootView(type: isInspector ? .inspector : .window)
-        Text("Not implemented")
+        LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
     }
     
     @MainActor
     func windowViewer(root: SpaceRoot, selection: WindowItemSelection) -> some View {
-        SpaceQuickLook(root: root, item: ItemSelection(itemId: selection.itemId, entryId: selection.entryId), startLoading: true, gameMode: false, dismiss: nil)
-            .environment(root)
+        let model = root.itemController.itemOrEmpty(for: selection.itemId)
+        return NavigationStack {
+            SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
+        }
+        .ignoresSafeArea()
+        .navigationTitle(model.name)
+        .environment(root)
     }
 
     @MainActor

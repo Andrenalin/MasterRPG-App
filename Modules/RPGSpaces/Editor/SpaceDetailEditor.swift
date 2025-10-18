@@ -12,17 +12,16 @@ struct SpaceDetailEditor: View {
     @Environment(SpaceRoot.self) private var root
     @Environment(ListModel.self) private var listModel
     
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.linkWindowId, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
 
     var body: some View {
-        ItemDetailRootView(selectedId: selectedModel?.id) {
+        ItemDetailRootView(selectedId: selectedModel?.id, editorAsBackground: true) {
         } editor: {
-#if !os(tvOS)
+            //CachePhotoView(cacheController: root.cacheController, model: model, highResolution: false)
             if let model = selectedModel {
                 SpaceExternalHeader(editController: editController, model: model, isModal: false)
-                    .frame(minHeight: 600)
+                    .id(model.id)
             }
-#endif
         }
         .onChange(of: listModel.selectedItem, initial: true) {
             update()
@@ -32,6 +31,8 @@ struct SpaceDetailEditor: View {
         .environment(root.listDisplayModel)
         .environment(root.searchModel)
         .environment(root.rootController)
+        .tint(NetworkModules.space.tint)
+        .accentColor(NetworkModules.space.tint)
     }
     
     var selectedModel: SpaceModel? {

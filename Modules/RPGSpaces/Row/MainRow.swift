@@ -17,7 +17,10 @@ struct MainRow: View {
 
     var body: some View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheItemListModel, name: \.name, tags: \.tags, description: \.description, isSelected: isSelected, thumbnail: {
-            ThumbnailItem(model: model)
+                ThumbnailRowPhotoView(cacheController: root.cacheController, model: model)
+                .environment(cacheItemListModel)
+                .environment(root.listDisplayModel)
+            //ThumbnailItem(model: model)
         }, tagAdds: {
             CategoryItemRow(category: model.category)
         }, actionBar: {
@@ -46,8 +49,6 @@ struct MainRow: View {
     }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     MainRow(model: .preview, isSelected: true, cacheItemListModel: .preview)
-        .environment(SpaceRoot.preview)
-
 }

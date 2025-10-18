@@ -134,6 +134,35 @@ public extension EditControllable {
     }
 }
 
+// MARK: - Group Items
+
+public extension EditControllable {
+    @MainActor func addGroup(childId: UUID) {
+        guard model.id != childId else { return }
+        var childItem = itemControllable.itemOrEmpty(for: childId)
+        guard childItem.category != .folder && childItem.category != itemControllable.collectionCategory  else { return }
+        var entries = model.entries
+
+        let entry =  Model.Entry.newChild(id: childId)
+        entries.append(entry)
+        model.entries = entries
+
+        childItem.displayState = 1
+        save(with: String(localized: "Add groupped item").localizedString)
+    }
+
+    @MainActor func removeGroup(childId: UUID) {
+        guard model.id != childId else { return }
+        var entries = model.entries
+        entries.removeAll(where: { $0.childId == childId })
+        model.entries = entries
+        
+        var childItem = itemControllable.itemOrEmpty(for: childId)
+        childItem.displayState = 0
+        save(with: String(localized: "Remove groupped item").localizedString)
+    }
+}
+
 public extension EditControllable {
     func addNew(type: EditControllerAddType) async -> (any ItemDataAccessable)? {
         let itemCategory: ItemListCategory

@@ -105,7 +105,7 @@ struct MasterRPGApp: App {
         
         OldWindowLinkAltList(appStore: appStore)
         
-//        WindowViewerList(appModel: appModel)
+        WindowViewerList(appStore: appStore)
 //            .modelContainer(appModel.modelContainer)
 //        WindowLinkList(appModel: appModel)
 //            .modelContainer(appModel.modelContainer)

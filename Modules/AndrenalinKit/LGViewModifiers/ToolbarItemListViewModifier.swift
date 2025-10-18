@@ -4,20 +4,19 @@ import SwiftData
 import SwiftUI
 
 extension View {
-    func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any ListControllable, parentModel: ItemDataModel?, modal: Bool = false) -> some View {
+    func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any FolderListControllable, parentModel: (any ItemDataAccessable)?, modal: Bool = false) -> some View {
         modifier(ToolbarItemListViewModifier(root: root, listController: listControllable, parentModel: parentModel, modal: modal))
     }
 }
 
 struct ToolbarItemListViewModifier: ViewModifier {
     let root: any ItemRootControllable
-    let listController: any ListControllable
-    let parentModel: ItemDataModel?
+    let listController: any FolderListControllable
+    let parentModel: (any ItemDataAccessable)?
     let modal: Bool
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Environment(ListDisplayModel.self) private var listDisplayModel
     
     func body(content: Content) -> some View {
         content
@@ -53,14 +52,13 @@ struct ToolbarItemListViewModifier: ViewModifier {
 }
 
 private extension ToolbarItemListViewModifier {
-    var listModel: ListModel {
-        listController.model
-        //listController.listModel(for: parentModel)
+    var listModel: FolderListModel {
+        listController.listModel(for: parentModel)
     }
 
-//    var listDisplayModel: ListDisplayModel {
-//        listController.listDisplayModel
-//    }
+    var listDisplayModel: ListDisplayModel {
+        listController.listDisplayModel
+    }
 
     @ViewBuilder
     var actionMenu: some View {
