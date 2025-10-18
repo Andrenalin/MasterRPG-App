@@ -109,6 +109,10 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         }
     }
     
+    public var viewerWindowId: String {
+        linkWindowId + "Viewer"
+    }
+
     public var linkAltWindowId: String {
         linkWindowId + "Alt"
     }

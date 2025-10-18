@@ -66,6 +66,7 @@ struct SpaceViewer: View {
                 spaceContentView
             }
         }
+        .navigationTitle(root.itemController.nameSync(itemId: id))
         .applyIf(isModal) {
             $0.toolbar {
 #if !os(visionOS)
@@ -78,7 +79,7 @@ struct SpaceViewer: View {
                         }
                     }
                 }
-                
+
                 ToolbarSpacer()
                 
                 ToolbarItem(placement: .automatic) {

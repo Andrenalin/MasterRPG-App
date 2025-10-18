@@ -1,43 +1,45 @@
 // @copyright André Trettin
 
 #if !os(tvOS)
-import CoreRPG
-import RolePlayGameKit
+import AndrenalinKit
+import RoleGameKit
 import SwiftUI
 
-import AdventureRPG
-import AudioRPG
-import CharacterRPG
-import DiceRPG
-import MapRPG
-import PdfRPG
-import PhotoRPG
-import SpaceRPG
-import TableRPG
-import WeatherRPG
+import RPGPdfs
+import RPGSpaces
+
 
 struct WindowViewerList: Scene {
-    let appModel: AppModel
+    let appStore: AppStore
     
     var body: some Scene {
         Group {
-            windowGroup(model: appModel, module: .pdf) { selection in
-                appModel.pdfRoot.viewController.windowViewer(root: appModel.pdfRoot, selection: selection)
-            }
+//            windowGroup(model: appStore, module: .generator) { selection in
+//                appStore.generatorRoot.viewController.windowViewer(root: appStore.generatorRoot, selection: selection)
+//            }
 
-            windowGroup(model: appModel, module: .table) { selection in
-                appModel.tableRoot.viewController.windowViewer(root: appModel.tableRoot, selection: selection)
-            }
+//            windowGroup(model: appStore, module: .pdf) { selection in
+//                appStore.pdfRoot.viewController.windowViewer(root: appStore.pdfRoot, selection: selection)
+//            }
 
-            windowGroup(model: appModel, module: .weather) { selection in
-                appModel.weatherRoot.viewController.windowViewer(root: appModel.weatherRoot, selection: selection)
+            windowGroup(model: appStore, module: .space) { selection in
+                appStore.spaceRoot.viewController.windowViewer(root: appStore.spaceRoot, selection: selection)
             }
+            
+
+//            windowGroup(model: appStore, module: .table) { selection in
+//                appStore.tableRoot.viewController.windowViewer(root: appStore.tableRoot, selection: selection)
+//            }
+//
+//            windowGroup(model: appStore, module: .weather) { selection in
+//                appStore.weatherRoot.viewController.windowViewer(root: appStore.weatherRoot, selection: selection)
+//            }
         }
         .defaultSize(CGSize(width: 600, height: 800))
     }
     
-    private func windowGroup<Content: View>(model: AppModel, module: NetworkModules, content: @escaping (WindowItemSelection) -> Content) -> some Scene {
-        WindowGroup("\(module.title) Viewer", id: module.viewerkWindowId, for: WindowItemSelection.self) { $selection in
+    private func windowGroup<Content: View>(model: AppStore, module: NetworkModules, content: @escaping (WindowItemSelection) -> Content) -> some Scene {
+        WindowGroup("\(module.title) Viewer", id: module.viewerWindowId, for: WindowItemSelection.self) { $selection in
             content(selection ?? WindowItemSelection(itemId: UUID()))
                 .modifier(WindowViewerSetUpViewModifier(model: model, module: module))
         }
@@ -50,7 +52,7 @@ struct WindowViewerList: Scene {
 }
 
 struct WindowViewerSetUpViewModifier: ViewModifier {
-    let model: AppModel
+    let model: AppStore
     let module: NetworkModules
     
     @Environment(\.colorScheme) private var colorScheme

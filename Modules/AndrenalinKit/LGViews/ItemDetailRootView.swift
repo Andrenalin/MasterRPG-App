@@ -5,8 +5,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Overlay: View, EntryEditor: View>: View {
-    public init(selectedId: UUID?, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
+    public init(selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
         self.selectedId = selectedId
+        self.editorAsBackground = editorAsBackground
         self.header = header()
         self.editor = editor()
         self.inspector = inspector()
@@ -15,8 +16,9 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.entryEditor = entryEditor()
     }
 
-    public init(selectedId: UUID?, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
+    public init(selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
         self.selectedId = selectedId
+        self.editorAsBackground = editorAsBackground
         self.header = header()
         self.editor = editor()
         self.inspector = inspector()
@@ -26,6 +28,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     }
 
     let selectedId: UUID?
+    let editorAsBackground: Bool
     let header: Header
     let editor: Editor
     let inspector: Inspector
@@ -213,13 +216,17 @@ private extension ItemDetailRootView {
         ZStack {
             initialFileImporterView(model: model)
             
+            if model.specialCategory == false && editorAsBackground {
+                editorContentBackgroundView(model: model)
+            } else {
 #if os(macOS)
-            ScrollView {
-                editorContentView(model: model)
-            }
+                ScrollView {
+                    editorContentView(model: model)
+                }
 #else
-            editorContentView(model: model)
+                editorContentView(model: model)
 #endif
+            }
         }
     }
     
@@ -241,6 +248,25 @@ private extension ItemDetailRootView {
                 .scrollBounceBehavior(.basedOnSize)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .opacity(hasFile(model: model) || model.specialCategory ? 1 : 0)
+        .transition(.scale)
+        .applyIf(hasOverlay) {
+            $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+                overlay.opacity(0)
+            }
+        }
+    }
+
+    func editorContentBackgroundView(model: any ItemDataAccessable) -> some View {
+        editor
+            .overlay(alignment: .bottom) {
+                if model.description.isEmpty == false {
+                    ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
+                        .font(.title)
+                        .padding()
+                }
+            }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .opacity(hasFile(model: model) || model.specialCategory ? 1 : 0)
         .transition(.scale)
