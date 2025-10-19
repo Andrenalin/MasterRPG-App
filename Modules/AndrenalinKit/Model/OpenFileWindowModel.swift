@@ -27,20 +27,16 @@ public final class OpenFileWindowModel {
     }
 }
 
-struct OpenFileViewerViewModifier<ToolBar: View>: ViewModifier {
+struct OpenFileViewerViewModifier: ViewModifier {
     let model: any ItemDataAccessable
     let module: NetworkModules
     
-    @ViewBuilder let toolbarSecondaryButton: ToolBar
-
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
     @Environment(GroupItemSelectionModel.self) private var selection
     
     func body(content: Content) -> some View {
         content.toolbar {
             ToolbarItem(placement: secondaryMenuPlacement) {
-                toolbarSecondaryButton
-                
                 if !model.specialCategory && openFileWindowModel.showItem == false && openFileWindowModel.enabled {
                     OpenFileWindowView(model: openFileWindowModel, module: module)
                 }
@@ -92,13 +88,15 @@ struct OpenFileWindowView: View {
     func menuButton(windowId: String) -> some View {
         ControlGroup {
 #if os(iOS)
-            Button {
-                openWindow(id: windowId, value: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
-            } label: {
-                Label {
-                    Text("Open in Window", bundle: .module)
-                } icon: {
-                    Image(systemName: "macwindow.badge.plus")
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                Button {
+                    openWindow(id: windowId, value: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
+                } label: {
+                    Label {
+                        Text("Open in Window", bundle: .module)
+                    } icon: {
+                        Image(systemName: "macwindow.badge.plus")
+                    }
                 }
             }
 #endif

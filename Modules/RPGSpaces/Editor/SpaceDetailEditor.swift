@@ -19,9 +19,10 @@ struct SpaceDetailEditor: View {
         } editor: {
             //CachePhotoView(cacheController: root.cacheController, model: model, highResolution: false)
             if let model = selectedModel {
-                SpaceExternalHeader(editController: editController, model: model, isModal: false)
-                    .id(model.id)
+                SpaceDetailObjectViewer(editController: editController, model: model)
             }
+        } inspector: {
+            LinkRootView(type: .inspector)
         }
         .onChange(of: listModel.selectedItem, initial: true) {
             update()
@@ -55,6 +56,24 @@ struct SpaceDetailEditor: View {
                 editController.resetCurrentItem(with: "save".localizedString)
             }
         }
+    }
+}
+
+struct SpaceDetailObjectViewer: View {
+    let editController: EditController
+    let model: SpaceModel
+    
+    @Environment(SpaceRoot.self) private var root
+    @Environment(GroupItemSelectionModel.self) private var selection
+    
+    var body: some View {
+        SpaceExternalHeader(editController: editController, model: selectedModel, isModal: false)
+            .id(selectedModel.id)
+    }
+    
+    private var selectedModel: SpaceModel {
+        guard let itemId = selection.selectedItem else { return model }
+        return root.itemController.itemOrEmpty(for: itemId)
     }
 }
 

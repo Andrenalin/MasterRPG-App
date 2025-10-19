@@ -19,7 +19,7 @@ public protocol ItemDataAccessable {
     var isGroupHidden: Bool { get }
     var isGroupHiddenToggle: Bool { get set }
     var entries: [Entry] { get set }
-    var fileUrl: FileUrl? { get }
+    var fileUrl: FileUrl? { get set }
 
     subscript(id: UUID) -> Entry { get set }
 
@@ -52,6 +52,10 @@ public extension ItemDataAccessable {
 
     var specialCategory: Bool {
         category == .folder || category.isCollection
+    }
+    
+    func hasEntry(entryId: UUID) -> Bool {
+        entries.contains(where: { $0.childId == entryId })
     }
     
     func urlAdr(linkNumber: Int) -> String {

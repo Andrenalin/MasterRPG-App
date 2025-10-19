@@ -38,12 +38,14 @@ public final class EditGroupModel: @unchecked Sendable {
     public var isGroupHiddenToggle: Bool
     var hiddenIsDifferent: Bool = false
     
+    public var fileUrl: FileUrl? = nil
+    
     public var entries: [FakeEntryModel] = []
 }
 
 extension EditGroupModel: ItemDataAccessable & ItemDiffComparable {
     public var url: URL? {
-        nil
+        fileUrl?.rawUrl
     }
     
     public static let empty: EditGroupModel = empty(UUID())

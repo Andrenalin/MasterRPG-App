@@ -352,6 +352,11 @@ extension MapModel {
 }
 
 extension MapModel: ItemDataAccessable {
+    public var fileUrl: FileUrl? {
+        get { nil }
+        set(newValue) {}
+    }
+
     public static var empty: MapModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> MapModel {
         MapModel(id: id, name: "")

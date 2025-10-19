@@ -421,6 +421,11 @@ extension DiceModel: ItemDuplicatable {
 }
 
 extension DiceModel: ItemDataAccessable {
+    public var fileUrl: FileUrl? {
+        get { nil }
+        set(newValue) {}
+    }
+    
     public static var empty: DiceModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> DiceModel {
         DiceModel(id: id, name: "", dice: [])

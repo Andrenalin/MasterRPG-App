@@ -168,6 +168,11 @@ extension TableModel: ItemDuplicatable {
 extension TableModel: ItemReferencable {}
 
 extension TableModel: ItemDataAccessable {
+    public var fileUrl: FileUrl? {
+        get { nil }
+        set(newValue) {}
+    }
+
     public static var empty: TableModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> TableModel {
         TableModel(id: id, name: "", entries: [])

@@ -24,7 +24,7 @@ public struct CarouselItemView<Content: View>: View {
                 itemView(itemId: model.id, selectedItemId: nil)
 
                 ForEach(model.entries, id: \.self.id) { entry in
-                    if let item = root.itemControllable.itemSync(for: entry.id) {
+                    if let item = root.itemControllable.itemSync(for: entry.childId) {
                         itemView(itemId: item.id, selectedItemId: item.id)
                             .overlay(alignment: .topTrailing) {
                                 GlassButton {

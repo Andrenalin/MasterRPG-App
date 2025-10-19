@@ -50,7 +50,7 @@ public struct ItemHeaderEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        editControllable.update(name: name, description: information, category: category, tags: tags)
+                        editControllable.update(id: model.id, name: name, description: information, category: category, tags: tags)
                         dismiss()
                     } label: {
                         Image(systemName: "checkmark")

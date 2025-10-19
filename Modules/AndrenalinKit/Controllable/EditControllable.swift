@@ -69,14 +69,22 @@ public extension EditControllable {
 // MARK: - Editor
 
 public extension EditControllable {
-    @MainActor func update(name: String, description: String, category: ItemListCategory, tags: [String]) {
-        reset(name: name, saveIt: false)
-        reset(description: description, saveIt: false)
-        reset(name: name, saveIt: false)
-        reset(category: category, saveIt: false)
-        reset(tags: tags, saveIt: false)
-
-        save(with: String(localized: "Changed Header").localizedString)
+    @MainActor func update(id: UUID, name: String, description: String, category: ItemListCategory, tags: [String]) {
+        if id == model.id {
+            reset(name: name, saveIt: false)
+            reset(description: description, saveIt: false)
+            reset(name: name, saveIt: false)
+            reset(category: category, saveIt: false)
+            reset(tags: tags, saveIt: false)
+            
+            save(with: String(localized: "Changed Header").localizedString)
+        } else {
+            var updateModel = itemControllable.itemOrEmpty(for: id)
+            updateModel.name <=> name.trimmingCharacters(in: .whitespacesAndNewlines)
+            updateModel.description <=> description.trimmingCharacters(in: .whitespacesAndNewlines)
+            updateModel.category <=> category
+            updateModel.tags <=> tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
+        }
     }
 
     @MainActor func reset(category: ItemListCategory, saveIt: Bool = true) {
@@ -116,6 +124,13 @@ public extension EditControllable {
         save(with: String(localized: "Change to \(hidden ? "hide" : "show")").localizedString)
     }
 
+    @MainActor func reset(fileUrl: FileUrl?, saveIt: Bool) {
+        guard model.fileUrl != fileUrl else { return }
+        model.fileUrl = fileUrl
+        guard saveIt else { return }
+        save(with: String(localized: "Change file").localizedString)
+    }
+
     @MainActor func add(tag: String) {
         guard !tag.isEmpty else { return }
         guard !model.tags.contains(where: { $0 == tag }) else { return }
@@ -138,7 +153,7 @@ public extension EditControllable {
 
 public extension EditControllable {
     @MainActor func addGroup(childId: UUID) {
-        guard model.id != childId else { return }
+        guard model.id != childId && model.hasEntry(entryId: childId) == false else { return }
         var childItem = itemControllable.itemOrEmpty(for: childId)
         guard childItem.category != .folder && childItem.category != itemControllable.collectionCategory  else { return }
         var entries = model.entries
@@ -162,6 +177,8 @@ public extension EditControllable {
         save(with: String(localized: "Remove groupped item").localizedString)
     }
 }
+
+// MARK: - Menu
 
 public extension EditControllable {
     func addNew(type: EditControllerAddType) async -> (any ItemDataAccessable)? {
@@ -194,6 +211,36 @@ public extension EditControllable {
 //            await actor.save()
 //        }
 //    }
+}
+
+// MARK: - Files
+
+public extension EditControllable {
+    func resetFile(url: URL?, module: NetworkModules) {
+        guard fileUrlDataController != nil else { return }
+        Task.detached {
+            await resetFile(url: url, id: model.id, module: module)
+        }
+    }
+    
+    private func resetFile(url: URL?, id: UUID, module: NetworkModules) async {
+        guard let fileUrlDataController else { return }
+        await fileUrlDataController.delete(model.fileUrl)
+        guard let url else {
+            await reset(fileUrl: nil, saveIt: true)
+            return
+        }
+        _ = url.startAccessingSecurityScopedResource()
+        defer { url.stopAccessingSecurityScopedResource() }
+        
+        if await model.name.isEmpty {
+            let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"
+            let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
+            await reset(name: name, saveIt: false)
+        }
+        let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: id, url: url, module: module.token, category: model.category.title)
+        await reset(fileUrl: updatedFileUrl, saveIt: true)
+    }
 }
 
 public extension EditControllable {

@@ -4,14 +4,16 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct FileImporterView: View {
-    public init(editControllable: any EditControllable, fileTypes: [UTType], isProminent: Bool = true) {
+    public init(editControllable: any EditControllable, fileTypes: [UTType], module: NetworkModules, isProminent: Bool = true) {
         self.editControllable = editControllable
         self.fileTypes = fileTypes
+        self.module = module
         self.isProminent = isProminent
     }
     
     let editControllable: any EditControllable
     let fileTypes: [UTType]
+    let module: NetworkModules
     let isProminent: Bool
     
     @State private var showImporter = false
@@ -29,7 +31,7 @@ public struct FileImporterView: View {
         .background(.tint)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: fileTypes) { result in
             guard let url = try? result.get() else { return }
-            //editControllable.resetFile(url: url, in: model)
+            editControllable.resetFile(url: url, module: module)
         }
 #endif
     }

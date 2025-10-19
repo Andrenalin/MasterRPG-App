@@ -54,16 +54,21 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
 
     public var body: some View {
         let _ = Self._printChanges()
-        if let selectedModel {
-            contentScrollView(model: selectedModel)
+        if let detailModel {
+            contentScrollView(model: detailModel)
         }
     }
 }
 
 private extension ItemDetailRootView {
-    var selectedModel: (any ItemDataAccessable)? {
-        guard let itemId = selectedId ?? root.listControllable.model.selectedItem?.model.itemId else { return nil }
+    var detailModel: (any ItemDataAccessable)? {
+        guard let itemId =  selectedId ?? root.listControllable.model.selectedItem?.model.itemId else { return nil }
         return root.itemControllable.itemSync(for: itemId)
+    }
+    
+    func selectedModel(model: any ItemDataAccessable) -> any ItemDataAccessable {
+        guard let itemId = selection.selectedItem else { return model }
+        return root.itemControllable.itemOrEmpty(for: itemId)
     }
  
     var fileTypes: [UTType] {
@@ -103,6 +108,7 @@ private extension ItemDetailRootView {
         .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id, initial: true) {
+            withAnimation { selection.selectedItem = nil }
             guard model.url != nil else {
                 itemIdHasUrl = hasFile(model: model) ? model.id : UUID()
                 return
@@ -133,16 +139,17 @@ private extension ItemDetailRootView {
 #endif
         }
         .sheet(isPresented: $isEditing) {
-            ItemHeaderEditorView(editControllable: root.editControllable, model: model)
+            ItemHeaderEditorView(editControllable: root.editControllable, model: selectedModel(model: model))
                 .presentationContentInteraction(.resizes)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .tint(root.module.tint)
                 .accentColor(root.module.tint)
         }
+        .modifier(OpenFileViewerViewModifier(model: selectedModel(model: model), module: root.module))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                if openFileWindowModel.showItem == false && (hasFile(model: model) || model.specialCategory) {
+                if openFileWindowModel.showItem == false && (hasFile(model: selectedModel(model: model)) || selectedModel(model: model).specialCategory) {
                     Button {
                         withAnimation { isEditing = true }
                     } label: {
@@ -150,11 +157,10 @@ private extension ItemDetailRootView {
                     }
                 }
             }
-            ToolbarItem(placement: .primaryAction) {
-                inspectorButton()
+            ToolbarItemGroup(placement: secondaryMenuPlacement) {
+                inspectorButton
             }
         }
-        .modifier(OpenFileViewerViewModifier(model: model, module: root.module, toolbarSecondaryButton: EmptyView.init))
         .environment(selection)
     }
     
@@ -162,7 +168,7 @@ private extension ItemDetailRootView {
         ZStack(alignment: .bottom) {
             header
             
-            ItemDetailOverlayView(model: model)
+            ItemDetailOverlayView(model: selectedModel(model: model))
                 .padding()
         }
         .overlay(alignment: .top) {
@@ -181,7 +187,7 @@ private extension ItemDetailRootView {
     
     @ViewBuilder func initialFileImporterView(model: any ItemDataAccessable) -> some View {
         HStack {
-            FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes)
+            FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
                 .padding(32)
                 .overlay {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -189,7 +195,7 @@ private extension ItemDetailRootView {
                 }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .opacity(hasFile(model: model) || model.specialCategory ? 0 : 1)
+        .opacity(hasFile(model: selectedModel(model: model)) || selectedModel(model: model).specialCategory ? 0 : 1)
         .transition(.scale)
     }
     
@@ -215,15 +221,15 @@ private extension ItemDetailRootView {
         ZStack {
             initialFileImporterView(model: model)
             
-            if model.specialCategory == false && editorAsBackground {
-                editorContentBackgroundView(model: model)
+            if selectedModel(model: model).specialCategory == false && editorAsBackground {
+                editorContentBackgroundView(model: selectedModel(model: model))
             } else {
 #if os(macOS)
                 ScrollView {
-                    editorContentView(model: model)
+                    editorContentView(model: selectedModel(model: model))
                 }
 #else
-                editorContentView(model: model)
+                editorContentView(model: selectedModel(model: model))
 #endif
             }
         }
@@ -259,6 +265,7 @@ private extension ItemDetailRootView {
 
     func editorContentBackgroundView(model: any ItemDataAccessable) -> some View {
         editor
+            .id(model.id)
             .overlay(alignment: .bottom) {
                 if model.description.isEmpty == false {
                     ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
@@ -277,25 +284,28 @@ private extension ItemDetailRootView {
     }
     
     @ViewBuilder func inspectorView(model: any ItemDataAccessable) -> some View {
-        LinkItemRootView(root: root, type: .inspector)
-//        if model.specialCategory {
-//            LinkItemRootView(root: root, type: .inspector)
-//        } else {
-//            inspector
-//        }
+        if model.specialCategory {
+            LinkItemRootView(root: root, type: .inspector)
+        } else {
+            inspector
+        }
     }
     
     func updateFile(url: URL, model: any ItemDataAccessable) {
-        //root.editControllable.resetFile(url: url, in: model)
+        root.editControllable.resetFile(url: url, module: root.module)
     }
     
-    @ViewBuilder func inspectorButton() -> some View {
+    @ViewBuilder var inspectorButton: some View {
         ControlGroup {
             if canShowInspector && openFileWindowModel.showItem == false {
                 Button {
                     withAnimation { showInspector.toggle() }
                 } label: {
-                    Image(systemName: "scope")
+                    Label {
+                        Text("Inspector", bundle: .module)
+                    } icon: {
+                        Image(systemName: "scope")
+                    }
                 }
             }
         }
