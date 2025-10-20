@@ -17,7 +17,6 @@ struct SpaceDetailEditor: View {
     var body: some View {
         ItemDetailRootView(selectedId: selectedModel?.id, editorAsBackground: true) {
         } editor: {
-            //CachePhotoView(cacheController: root.cacheController, model: model, highResolution: false)
             if let model = selectedModel {
                 SpaceDetailObjectViewer(editController: editController, model: model)
             }

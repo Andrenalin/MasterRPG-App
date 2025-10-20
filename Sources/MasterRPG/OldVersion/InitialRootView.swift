@@ -93,10 +93,12 @@ struct InitialRootView: View {
         }
 #if os(macOS)
         .frame(minWidth: 800, minHeight: 600)
+        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        .toolbar(removing: .title)
 #endif
         .environment(appStore.windowStateModel)
+        .setAppSizeMode()
     }
-    
     
     func handle(userActivity: NSUserActivity) {
         // SIRI & Search

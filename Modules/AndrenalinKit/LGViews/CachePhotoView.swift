@@ -24,7 +24,7 @@ public struct CachePhotoView: View {
                 imageView(image: image)
             } else {
                 VStack {
-                    placeHolder(size: CGSize(width: 96, height: 96))
+                    placeHolder(size: CGSize(width: 105, height: 105))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
@@ -55,11 +55,10 @@ private extension CachePhotoView {
                 .tint(Color.accentColor)
         } else {
             Image(systemName: model.fileUrl == nil ? "photo" : "photo.badge.arrow.down")
-                //.foregroundColor(Color.accentColor)
                 .font(.system(size: 32))
                 .frame(width: size.width, height: size.height)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 24).stroke(Color.accentColor.secondary, lineWidth: 2)
+                    RoundedRectangle(cornerRadius: 20).stroke(Color.accentColor.secondary, lineWidth: 2)
                 }
         }
     }

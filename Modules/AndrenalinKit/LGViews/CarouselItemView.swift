@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import SwiftData
+import CoreExternalRPG
 import SwiftUI
 
 public struct CarouselItemView<Content: View>: View {
@@ -15,46 +15,46 @@ public struct CarouselItemView<Content: View>: View {
     let root: ItemRootControllable
     let selection: GroupItemSelectionModel
     let content: Content
-
-    @Environment(\.modelContext) private var modelContext
-
+        
+    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(\.navigator) private var navigator
+    
+    @State private var showSelection = false
+    
     public var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack {
                 itemView(itemId: model.id, selectedItemId: nil)
-
+                
                 ForEach(model.entries, id: \.self.id) { entry in
                     if let item = root.itemControllable.itemSync(for: entry.childId) {
                         itemView(itemId: item.id, selectedItemId: item.id)
                             .overlay(alignment: .topTrailing) {
-                                GlassButton {
+                                Button {
                                     withAnimation { root.editControllable.removeGroup(childId: item.id) }
                                 } label: {
                                     Image(systemName: "minus")
-                                        .foregroundStyle(.white, .red)
-                                        .padding(6)
-                                        .background(.regularMaterial, in: Circle())
+                                        .foregroundStyle(.white)
+                                        .padding(10)
+                                        .background(.red, in: Circle())
                                 }
+                                .buttonStyle(.plain)
+                                .glassEffect(.regular.interactive())
                             }
                     }
                 }
-
+                
                 dropItemView
             }
         }
     }
-    
+}
+
+private extension CarouselItemView {
     @ViewBuilder
     var dropItemView: some View {
         DropItemModuleArea(module: root.module, contentView: {
-            VStack {
-                Text("Drop \(root.module.title)", bundle: .module)
-
-                Image(systemName: "square.and.arrow.down")
-                    .imageScale(.large)
-            }
-            .padding(.horizontal, 12)
-            .frame(height: 128)
+            areaButton
         }, dropAction: linkHandler(name:itemId:entryId:))
         .background {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -67,6 +67,42 @@ public struct CarouselItemView<Content: View>: View {
         .padding(1)
     }
     
+    var areaButton: some View {
+            VStack {
+                if appSizeMode == .regular {
+                    Text("Drop \(root.module.title)", bundle: .module)
+                    
+                    Image(systemName: "square.and.arrow.down")
+                        .imageScale(.large)
+                }
+                Button {
+                    withAnimation { showSelection.toggle() }
+                    //navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
+                } label: {
+                    VStack {
+                        Text("Select", bundle: .module)
+                        if appSizeMode == .compact {
+                            Text(root.module.title)
+                            Image(systemName: "checkmark.circle")
+                                .imageScale(.large)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .frame(minWidth: 100)
+            .frame(height: 100)
+            .sheet(isPresented: $showSelection) {
+                SelectionModuleRoute.selection
+                    .environment(root.rootController)
+            }
+            .onChange(of: showSelection) {
+                guard showSelection == false, let itemId = root.itemSelectionModel.itemId else { return }
+                linkHandler(name: "", itemId: itemId, entryId: nil)
+                root.itemSelectionModel.resetSelection(itemId: nil)
+            }
+    }
+    
     func linkHandler(name: String, itemId: UUID, entryId: UUID?) {
         withAnimation { root.editControllable.addGroup(childId: itemId) }
     }
@@ -74,7 +110,7 @@ public struct CarouselItemView<Content: View>: View {
     func itemView(itemId: UUID, selectedItemId: UUID?) -> some View {
         content
             .environment(GroupItemSelectionModel(selectedItem: itemId))
-            .frame(height: 128)
+            .frame(height: 110)
             .onTapGesture {
                 withAnimation { selection.selectedItem = selectedItemId }
             }
@@ -86,5 +122,6 @@ public struct CarouselItemView<Content: View>: View {
                 }
             }
             .dropDestination(for: root.module, handler: linkHandler(name:itemId:entryId:))
+            .padding(1)
     }
 }

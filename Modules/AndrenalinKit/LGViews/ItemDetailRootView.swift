@@ -266,10 +266,19 @@ private extension ItemDetailRootView {
     func editorContentBackgroundView(model: any ItemDataAccessable) -> some View {
         editor
             .id(model.id)
+            .overlay(alignment: .top) {
+                HStack {
+                    Text(model.url?.absoluteString ?? "No file is set")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
+                }
+                .padding()
+                .opacity(model.specialCategory ? 0 : 1)
+            }
             .overlay(alignment: .bottom) {
                 if model.description.isEmpty == false {
                     ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
-                        .font(.title)
                         .padding()
                 }
             }

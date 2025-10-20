@@ -118,7 +118,7 @@ struct OpenFileWindowView: View {
         openWindow(id: windowId, value: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
 #elseif os(iOS)
         if horizontalSizeClass == .compact, let route = model.route?(model.itemId) {
-            navigator.navigate(to: route, method: .cover)
+            navigator.navigate(to: route, method: .managedCover)
         } else {
             withAnimation { model.showItem.toggle() }
         }
