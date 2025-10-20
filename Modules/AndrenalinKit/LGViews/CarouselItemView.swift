@@ -39,7 +39,9 @@ public struct CarouselItemView<Content: View>: View {
                                         .background(.red, in: Circle())
                                 }
                                 .buttonStyle(.plain)
+                                #if !os(visionOS)
                                 .glassEffect(.regular.interactive())
+                                #endif
                             }
                     }
                 }
