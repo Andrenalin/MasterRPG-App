@@ -8,17 +8,6 @@ import SwiftData
 import SwiftUI
 import os.log
 
-import AdventureRPG
-import AudioRPG
-import CharacterRPG
-import DiceRPG
-import MapRPG
-import PdfRPG
-import PhotoRPG
-import SpaceRPG
-import TableRPG
-import WeatherRPG
-
 import RPGAdventures
 import RPGDie
 import RPGAudios

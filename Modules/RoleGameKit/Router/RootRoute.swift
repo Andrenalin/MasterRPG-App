@@ -2,7 +2,6 @@
 
 import CoreExternalRPG
 import AndrenalinKit
-import PhotoRPG
 import RPGAdventures
 import RPGAudios
 import RPGDie
@@ -61,6 +60,10 @@ public enum RootRoute: Hashable, Codable {
             self = .settings
         case .editor:
             self = .editors(tabId)
+        case .search:
+            self = .game
+        case .generator:
+            self = .game
         @unknown default:
             fatalError()
         }

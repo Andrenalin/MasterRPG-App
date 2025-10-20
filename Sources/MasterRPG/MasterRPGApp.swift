@@ -2,7 +2,6 @@
 
 import AndrenalinKit
 import AppIntents
-import RolePlayGameKit
 import RoleGameKit
 import SwiftData
 import SwiftUI
@@ -55,28 +54,11 @@ struct MasterRPGApp: App {
     
     var body: some Scene {
         BaseWindow("Game", id: WindowIdentifier.game.rawValue) {
-            Group {
-//                if appStore.isNewUICode {
-//                    AppRootView(appModel: appModel)
-//                } else {
-                    InitialRootView(appStore: appStore, editorOnly: false)
-//                }
-            }
-//            .onChange(of: appStore.isNewUICode) {
-//                appModel.isNewUICode <=> appStore.isNewUICode
-//            }
-//            .onChange(of: appModel.isNewUICode) {
-//                appStore.isNewUICode <=> appModel.isNewUICode
-//            }
+            InitialRootView(appStore: appStore, editorOnly: false)
         }
         .commands {
-//            if appStore.isNewUICode {
-//                MenuMainCommand(appModel: appModel)
-//            } else {
-                OldMenuMainCommand(appStore: appStore)
-//            }
+            OldMenuMainCommand(appStore: appStore)
         }
-//        .modelContainer(appModel.modelContainer)
 #if os(macOS)
         .keyboardShortcut("G", modifiers: [.command, .shift, .option])
 #endif
@@ -106,9 +88,7 @@ struct MasterRPGApp: App {
         OldWindowLinkAltList(appStore: appStore)
         
         WindowViewerList(appStore: appStore)
-//            .modelContainer(appModel.modelContainer)
 //        WindowLinkList(appModel: appModel)
-//            .modelContainer(appModel.modelContainer)
 #endif
         
 #if os(macOS)
