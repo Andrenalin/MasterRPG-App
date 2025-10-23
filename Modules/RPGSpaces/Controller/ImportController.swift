@@ -20,8 +20,4 @@ extension ImportController: ImportControllable {
     var itemControllable: any ItemControllable {
         itemController as (any ItemControllable)
     }
-
-    var fileControllable: (any FileControllable)? {
-        root.fileController
-    }
 }

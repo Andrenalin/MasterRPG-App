@@ -6,7 +6,7 @@ struct FakeItemController: ItemControllable {
     typealias Model = FakeItemModel
     
     var dataControllable: (any DataPersistenceControllable)?
-    
+    var fileUrlDataController: FileUrlDataController? 
     var linkRegisterControllable: any LinkRegisterControllable
     
     var itemDataModel: ItemDataModel

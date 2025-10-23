@@ -21,6 +21,10 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     typealias Model = AudioModel
     
+    var fileUrlDataController: FileUrlDataController? {
+        root.fileUrlDataController
+    }
+    
     @MainActor
     var linkRegisterControllable: LinkRegisterControllable {
         root.rootControllable.linkRegisterControllable
@@ -66,6 +70,11 @@ extension ItemController: ItemControllable {
     func fileUrl(for itemId: UUID) async -> FileUrl? {
         guard let item = await self.item(for: itemId) else { return nil }
         return item.fileUrl
+    }
+    
+    func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {
+        guard let item = item as? AudioModel else { return }
+        item.fileUrl = fileUrl
     }
 
     public func loadableUrl(for model: ItemRowModel) async -> URL? {

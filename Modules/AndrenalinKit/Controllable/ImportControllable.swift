@@ -20,7 +20,6 @@ public final class ItemDataImportModel: Sendable {
 public protocol ImportControllable: Sendable {
     var itemControllable: any ItemControllable { get }
     // overwrite
-    var fileControllable: (any FileControllable)? { get }
     var importModel: ItemDataImportModel { get }
 
     // overwrite
@@ -36,7 +35,7 @@ public enum ItemDataImportableError: Error {
 }
 
 public extension ImportControllable {
-    var fileControllable: (any FileControllable)? { nil }
+    var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
     // Overwrite functions
     func additionalImport(from inputStream: InputStream, counterUpdater: @MainActor @Sendable @escaping () async -> Void) async throws {}
@@ -196,15 +195,15 @@ private extension ImportControllable {
         let _ = await updateTask.result
     }
 
-    func addFile(data: Data, to item: Observable) async throws {
-        guard let fileControllable, var fileUrl = await fileControllable.fileUrl(item: item) else { return }
+    func addFile(data: Data, to item: any Observable) async throws {
+        guard let item = item as? (any ItemDataAccessable), let fileUrlDataController, var fileUrl = item.fileUrl else { return }
         fileUrl.resetData(data)
         do {
-            let updated = try await fileControllable.fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
-            await fileControllable.setFileUrl(updated, item: item)
+            let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
+            await itemControllable.reset(fileUrl: updated, item: item)
         } catch {
             await logImport(title: "Cannot save bookmark the file will be stored as data", count: 0)
-            await fileControllable.setFileUrl(fileUrl, item: item)
+            await itemControllable.reset(fileUrl: fileUrl, item: item)
         }
     }
 }

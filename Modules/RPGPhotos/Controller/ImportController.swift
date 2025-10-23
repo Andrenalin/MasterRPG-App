@@ -21,7 +21,7 @@ extension ImportController: ImportControllable {
         itemController as (any ItemControllable)
     }
     
-    var fileControllable: (any FileControllable)? {
-        root.fileController
+    var fileUrlDataController: FileUrlDataController? {
+        itemController.fileUrlDataController
     }
 }

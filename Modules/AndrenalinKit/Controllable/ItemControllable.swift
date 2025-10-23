@@ -8,6 +8,7 @@ public protocol ItemControllable: Sendable  {
         
     var collectionCategory: ItemListCategory { get }
     var dataControllable: (any DataPersistenceControllable)? { get }
+    var fileUrlDataController: FileUrlDataController? { get }
     
     @MainActor var linkRegisterControllable: LinkRegisterControllable { get }
     var itemDataModel: ItemDataModel { get }
@@ -20,6 +21,7 @@ public protocol ItemControllable: Sendable  {
     func didUpdate(model: ModelType) async
     func duplicate(model: ItemRowModel) async
     func fileUrl(for itemId: UUID) async -> FileUrl?
+    func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async
     func loadableUrl(for model: ItemRowModel) async -> URL?
     @MainActor func itemTree(from rootModel: ItemRowModel?, to childModel: ItemRowModel) -> [ItemRowModel]
     
@@ -30,6 +32,7 @@ public protocol ItemControllable: Sendable  {
 // MARK: - Configuration
 public extension ItemControllable {
     var collectionCategory: ItemListCategory { .collection }
+    var fileUrlDataController: FileUrlDataController? { nil }
 }
 
 // MARK: - Manipulate Model
@@ -43,6 +46,8 @@ public extension ItemControllable {
     func fileUrl(for itemId: UUID) async -> FileUrl? {
         nil
     }
+    
+    func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {}
 
     func merge(with model: ModelType) async -> ModelType? {
         guard let model = model as? Model, let current = await self.item(for: model.id) else { return model }

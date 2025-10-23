@@ -25,6 +25,10 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     typealias Model = PhotoModel
     
+    var fileUrlDataController: FileUrlDataController? {
+        root.fileUrlDataController
+    }
+    
     @MainActor
     var linkRegisterControllable: LinkRegisterControllable {
         root.rootControllable.linkRegisterControllable
@@ -70,6 +74,14 @@ extension ItemController: ItemControllable {
     func fileUrl(for itemId: UUID) async -> FileUrl? {
         guard let item = await self.item(for: itemId) else { return nil }
         return item.fileUrl
+    }
+
+    func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {
+        guard let item = item as? PhotoModel else { return }
+        if let oldFileUlr = item.fileUrl {
+            await root.cacheController.remove(itemId: oldFileUlr.fileId)
+        }
+        item.fileUrl = fileUrl
     }
 
     public func loadableUrl(for model: ItemRowModel) async -> URL? {

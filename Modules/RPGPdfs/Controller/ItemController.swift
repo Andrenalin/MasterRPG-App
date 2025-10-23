@@ -31,6 +31,10 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     typealias Model = PdfModel
     
+    var fileUrlDataController: FileUrlDataController? {
+        root.fileUrlDataController
+    }
+    
     @MainActor
     var linkRegisterControllable: LinkRegisterControllable {
         root.rootControllable.linkRegisterControllable
@@ -83,6 +87,14 @@ extension ItemController: ItemControllable {
         return item.fileUrl
     }
     
+    func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {
+        guard let item = item as? PdfModel else { return }
+        if let oldFileUlr = item.fileUrl {
+            await root.cacheController.remove(itemId: oldFileUlr.fileId)
+        }
+        item.fileUrl = fileUrl
+    }
+
     public func loadableUrl(for model: ItemRowModel) async -> URL? {
         guard let fileUrl = await self.item(for: model.itemId)?.fileUrl else { return nil }
         return await root.fileUrlDataController.url(for: fileUrl, action: { $0 })
