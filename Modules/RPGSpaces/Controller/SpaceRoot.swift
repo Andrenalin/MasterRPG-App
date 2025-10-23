@@ -24,25 +24,41 @@ public final class SpaceRoot: @unchecked Sendable {
     @MainActor
     init(context: NSManagedObjectContext?) {
         rootModel = RootModel()
-        modelContext = ModelContext(try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true)))
+        self.context = context
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         
         let module: NetworkModules = .space
         self.module = module
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.building, .item, .supplement])
+        let searchModel = SearchModel(modelContainer: modelContainer, module: module, categoryTags: [.building, .item, .supplement])
         self.searchModel = searchModel
         
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
 
-        if let context {
-            dataController = DataController(root: self, context: context, token: NetworkModules.space.token)
-        }
         let fileController = FileController(root: self)
+        let cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
+        
+        let dataController: DataController?
+        if let context {
+            dataController = DataController(context: context, token: NetworkModules.space.token)
+        } else {
+            dataController = nil
+        }
+
+        let itemController = ItemController(cacheController: cacheController, dataController: dataController, fileUrlDataController: fileController.fileUrlDataController, linkRegisterControllable: linkRegisterControllable)
+            
+        if let dataController, let context {
+            let syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
+            _syncDataController = syncDataController
+        }
+        _cacheController = cacheController
+        _dataController = dataController
         _fileController = fileController
-        _itemController = ItemController(root: self, dataController: dataController)
+        _itemController = itemController
+
         _editControllers = [EditTypes.main: EditController(root: self, fileUrlDataController: fileController.fileUrlDataController, currentListItem: nil, currentModel: nil)]
         _exportController = ExportController(root: self, gameExporter: false)
         _importController = ImportController(root: self, itemController: self.itemController)
@@ -52,7 +68,7 @@ public final class SpaceRoot: @unchecked Sendable {
     }
     
     public let rootModel: RootModel
-    let modelContext: ModelContext
+    private let context: NSManagedObjectContext?
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -63,13 +79,19 @@ public final class SpaceRoot: @unchecked Sendable {
         rootModel.selectedItem?.itemId
     }
     
-    @ObservationIgnored lazy var cacheController: CacheController = {
-        CacheController(fileUrlDataController: fileController.fileUrlDataController)
-    }()
+    @ObservationIgnored private(set) var _cacheController: CacheController?
+    var cacheController: CacheController {
+        _cacheController.unsafelyUnwrapped
+    }
+    @ObservationIgnored private(set) var _dataController: DataController?
+    var dataController: DataController? {
+        _dataController
+    }
+    @ObservationIgnored private(set) var _syncDataController: SyncDataController?
+    var syncDataController: SyncDataController? {
+        _syncDataController
+    }
 
-    @ObservationIgnored
-    private(set) var dataController: DataController?
-    
     @ObservationIgnored
     private(set) var _fileController: FileController?
     var fileController: FileController {
@@ -162,7 +184,7 @@ extension SpaceRoot {
     public var gameControllable: any GameControllable {
         gameController
     }
-    public var itemControllable: any ItemControllable {
+    @MainActor public var itemControllable: any ItemControllable {
         itemController
     }
     
@@ -209,7 +231,7 @@ extension SpaceRoot {
     public func setRootControllable(_ rootControllable: RootControllable) {
         self._rootControllable = rootControllable
         Task {
-            dataController?.start()
+            syncDataController?.start()
         }
     }
     

@@ -10,7 +10,7 @@ public struct FakeLinkRegisterController: LinkRegisterControllable {
     
     @MainActor public let model: LinkRegisterListModel
     
-    @MainActor  public func used(for link: ItemRowModel) -> [EffectedItemModel] {
+    @MainActor public func used(for link: ItemRowModel) -> [EffectedItemModel] {
         [
             EffectedItemModel(id: UUID(), name: "Mega Schrott", module: .table),
             EffectedItemModel(id: UUID(), name: "Beute 5", module: .table),

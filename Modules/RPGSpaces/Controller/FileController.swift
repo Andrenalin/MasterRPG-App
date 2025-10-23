@@ -51,16 +51,6 @@ extension FileController: FileUrlAccessible, FileControllable {
         item.fileUrl = fileUrl
     }
 
-    func fetchFileUrl() async -> [FileUrl] {
-        var fileUrls: [FileUrl] = []
-        for itemId in await root.itemController.itemDataModel.items {
-            if let fileUrl = await root.itemController.item(for: itemId)?.fileUrl {
-                fileUrls.append(fileUrl)
-            }
-        }
-        return fileUrls
-    }
-
     func saveFileUrl(fileUrl: FileUrl) async {
         guard let item = await root.itemController.item(for: fileUrl.fileId)?.copy() else { return }
         if let fileId = item.fileUrl?.fileId {

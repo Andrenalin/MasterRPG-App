@@ -8,7 +8,6 @@ import os.log
 extension KeyPath: @unchecked @retroactive Sendable {}
 
 public protocol FileUrlAccessible: Sendable {
-    func fetchFileUrl() async -> [FileUrl]
     func saveFileUrl(fileUrl: FileUrl) async
     
     func fileUrl(item: any Observable) async -> FileUrl?
@@ -97,7 +96,7 @@ public extension FileUrlDataController {
             _ = url.startAccessingSecurityScopedResource()
             defer { url.stopAccessingSecurityScopedResource() }
             if let updatedFileUrl = try? await createFileUrl(fileId: fileUrl.fileId, url: url, module: fileUrl.module, category: nil) {
-                let saveTask = Task { @MainActor in
+                let saveTask = Task { @MainActor in                    
                     await fileUrlAccess.saveFileUrl(fileUrl: updatedFileUrl)
                 }
                 let _ = await saveTask.result

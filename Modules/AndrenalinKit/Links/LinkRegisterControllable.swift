@@ -22,7 +22,7 @@ public extension ItemLinkRegistable {
 }
 
 @MainActor
-public class LinkRegisterListModel: Sendable {
+public final class LinkRegisterListModel: Sendable {
     public init() {}
     
     public var items: [UUID: [LinkRegisterModel]] = [:]

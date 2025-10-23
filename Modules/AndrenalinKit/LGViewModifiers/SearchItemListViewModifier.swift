@@ -24,7 +24,7 @@ struct SearchItemListViewModifier: ViewModifier {
                 Label(token.tag.prefix(3), systemImage: "tag")
             })
             .searchSuggestions {
-                ForEach(searchModel.filteredTagSuggestions) { suggestion in
+                ForEach(searchModel.searchTags) { suggestion in
                     Button {
                         withAnimation {
                             searchModel.selectedTokens.append(suggestion)
@@ -46,6 +46,7 @@ struct SearchItemListViewModifier: ViewModifier {
                 withAnimation {
                     listControllable.resetFilter(parentModel: parentModel)
                     cacheItemListModel.reset(search: searchModel.searchText)
+                    searchModel.updateTagSuggestions()
                 }
             }
     }

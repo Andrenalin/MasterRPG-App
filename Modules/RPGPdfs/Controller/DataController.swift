@@ -25,7 +25,11 @@ struct DataController: Sendable {
     let token: String
 }
 
-extension DataController: CoreDataPersistable, DataPersistenceControllable {
+extension DataController: CoreDataPersistable, DataPersistenceControllable, SyncDataControllable {
+    var dataControllable: any CoreDataPersistable {
+        self
+    }
+    
     // MARK: model -> viewlmodel
 
     func mapViewModel(_ model: RPGPdf, token: String) -> PdfModel {

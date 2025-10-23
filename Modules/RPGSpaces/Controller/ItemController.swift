@@ -5,25 +5,28 @@ import Foundation
 import os.log
 
 struct ItemController: Sendable {
-    @MainActor
-    init(root: SpaceRoot, dataController: DataController?) {
-        self.root = root
+    @MainActor init(cacheController: CacheController, dataController: DataController?, fileUrlDataController: FileUrlDataController, linkRegisterControllable: LinkRegisterControllable) {
+        self.cacheController = cacheController
         self.dataControllable = dataController
-        itemDataModel = ItemDataModel(categoryTags: [.building, .item, .supplement], networkModule: .space)
+        self.fileUrlDataController = fileUrlDataController
+        self.linkRegisterController = linkRegisterControllable
+
+        self.itemDataModel = ItemDataModel(categoryTags: [.building, .item, .supplement], networkModule: .space)
     }
 
-    weak var root: SpaceRoot!
+    let cacheController: CacheController
     let collectionCategory: ItemListCategory = .album
     let dataControllable: (any DataPersistenceControllable)?
+    let fileUrlDataController: FileUrlDataController
     let itemDataModel: ItemDataModel
+    let linkRegisterController: LinkRegisterControllable
 }
 
 extension ItemController: ItemControllable {
     typealias Model = SpaceModel
     
-    @MainActor
-    var linkRegisterControllable: LinkRegisterControllable {
-        root.rootControllable.linkRegisterControllable
+    @MainActor var linkRegisterControllable: LinkRegisterControllable {
+        linkRegisterController
     }
 
     @MainActor
@@ -43,23 +46,23 @@ extension ItemController: ItemControllable {
     
     func didDelete(model: ModelType) async {
         guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didDelete(itemId: model.id)
-        }
+//        await root.applyToAllEditController {
+//            await $0.didDelete(itemId: model.id)
+//        }
         await didDelete(fileUrl: model.fileUrl)
     }
     
     func didUpdate(model: ModelType) async {
         guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didUpdate(item: model)
-        }
+//        await root.applyToAllEditController {
+//            await $0.didUpdate(item: model)
+//        }
     }
     
     func duplicate(model: ItemRowModel) async {
         guard let item = await self.item(for: model.itemId) else { return }
         let duplicate = item.duplicate()
-        duplicate.fileUrl = try? await root.fileUrlDataController.duplicate(fileUrl: item.fileUrl, for: duplicate.id)
+        duplicate.fileUrl = try? await fileUrlDataController.duplicate(fileUrl: item.fileUrl, for: duplicate.id)
         await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
     }
 
@@ -70,14 +73,14 @@ extension ItemController: ItemControllable {
 
     public func loadableUrl(for model: ItemRowModel) async -> URL? {
         guard let fileUrl = await self.item(for: model.itemId)?.fileUrl else { return nil }
-        return await root.fileUrlDataController.url(for: fileUrl, action: { $0 })
+        return await fileUrlDataController.url(for: fileUrl, action: { $0 })
     }
 }
 
 extension ItemController {
     func didDelete(fileUrl: FileUrl?) async {
         guard let fileUrl else { return }
-        await root.cacheController.remove(itemId: fileUrl.fileId)
-        root.fileUrlDataController.delete(fileUrl)
+        await cacheController.remove(itemId: fileUrl.fileId)
+        fileUrlDataController.delete(fileUrl)
     }
 }

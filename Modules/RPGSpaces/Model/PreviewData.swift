@@ -42,8 +42,7 @@ public extension SpaceRoot {
     }
 #endif
 
-    @MainActor
-    static let linkRegisterController = FakeLinkRegisterController()
+    @MainActor static let linkRegisterController = FakeLinkRegisterController()
 }
 
 extension SpaceRoot: RootControllable {
@@ -51,7 +50,6 @@ extension SpaceRoot: RootControllable {
         linkController
     }
 
-    @MainActor
     public var linkRegisterControllable: LinkRegisterControllable {
         SpaceRoot.linkRegisterController
     }

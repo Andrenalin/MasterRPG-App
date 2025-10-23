@@ -4,27 +4,18 @@ import AndrenalinKit
 import Foundation
 import CoreData
 
-struct DataController: Sendable {
-    @MainActor
-    init(root: SpaceRoot, context: NSManagedObjectContext, token: String) {
-        self.root = root
-        self.changeObserver = CoreDataChangeObserver()
-        self.dataController = CoreDataController<SpaceModel, RPGSpace>(context: context)
-        self.token = token
-
-        changeObserver.observeCoreDataChanges(from: context, entity: RPGSpace.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
-    }
-    
-    weak var root: SpaceRoot!
-    let dataController: CoreDataController<SpaceModel, RPGSpace>
-    var itemControllable: any ItemControllable {
-        root.itemController
-    }
-    let changeObserver: CoreDataChangeObserver
-    let token: String
+struct DataController: DataPersistenceControllable {
+    @MainActor init(context: NSManagedObjectContext, token: String) {
+            self.dataController = CoreDataController<SpaceModel, RPGSpace>(context: context)
+            self.token = token
+        }
+        
+        let dataController: CoreDataController<SpaceModel, RPGSpace>
+        let token: String
 }
 
-extension DataController: CoreDataPersistable, DataPersistenceControllable {
+extension DataController: CoreDataPersistable {
+
     // MARK: model -> viewlmodel
 
     func mapViewModel(_ model: RPGSpace, token: String) -> SpaceModel {

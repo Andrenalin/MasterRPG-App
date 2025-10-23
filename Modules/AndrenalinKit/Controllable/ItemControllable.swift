@@ -165,8 +165,7 @@ public extension ItemControllable {
         await itemDataModel.resetItems(itemIds)
     }
 
-    @MainActor
-    func update(model: ModelType?) {
+    @MainActor func update(model: ModelType?) {
         guard let model = model as? Model else { return }
         if let orignal = self.itemSync(for: model.id) {
             let updateHidden = orignal.isGroupHidden != model.isGroupHidden

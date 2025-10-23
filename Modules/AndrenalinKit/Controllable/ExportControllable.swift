@@ -140,7 +140,8 @@ public extension ExportControllable {
             return ExportStream(id: itemId, data: try encoder.encode(item))
         }
 
-        try outputStream.append(fileHeader: GmzFileHeader(counter: allIds.count, token: await token().rawValue, version: itemControllable.itemDataModel.version))
+        let version = await itemControllable.itemDataModel.version
+        try outputStream.append(fileHeader: GmzFileHeader(counter: allIds.count, token: await token().rawValue, version: version))
 
         for try await exportData in dataStream {
             if let data = await inlineFiles(for: exportData.id) {
