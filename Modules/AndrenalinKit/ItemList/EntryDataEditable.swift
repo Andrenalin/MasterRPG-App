@@ -141,7 +141,7 @@ public extension EntryDataEditable {
     @MainActor
     func isUsed(rowModels: [ItemRowModel]) -> Bool {
         for rowModel in rowModels {
-            if rootControllable.linkRegisterControllable.isUsed(link: rowModel) {
+            if linkRegisterControllable.isUsed(link: rowModel) {
                 return true
             }
         }
@@ -150,12 +150,12 @@ public extension EntryDataEditable {
 
     @MainActor
     func isUsed(entryId: UUID) -> Bool {
-        rootControllable.linkRegisterControllable.isUsed(link: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.itemDataModel.networkModule))
+        linkRegisterControllable.isUsed(link: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.itemDataModel.networkModule))
     }
 
     @MainActor
     func used(entryId: UUID) -> [EffectedItemModel] {
-        rootControllable.linkRegisterControllable.used(for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.itemDataModel.networkModule))
+        linkRegisterControllable.used(for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.itemDataModel.networkModule))
     }
     
     func scanReplace(entry: Model.Entry, linkEntry: LinkEntryModel, getLink: @Sendable @escaping (Model.Entry) -> String, setLink: @Sendable @escaping (String, Model.Entry) -> Model.Entry, caseInsensitive: Bool, words: Bool) -> Model.Entry {

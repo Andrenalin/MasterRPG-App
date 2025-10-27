@@ -9,9 +9,6 @@ extension KeyPath: @unchecked @retroactive Sendable {}
 
 public protocol FileUrlAccessible: Sendable {
     func saveFileUrl(fileUrl: FileUrl) async
-    
-    func fileUrl(item: any Observable) async -> FileUrl?
-    func setFileUrl(_ fileUrl: FileUrl?, item: any Observable) async
 }
 
 @MainActor @Observable

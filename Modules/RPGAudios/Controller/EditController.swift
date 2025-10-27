@@ -24,8 +24,8 @@ extension EditController: EditControllable {
         root.itemController as (any ItemControllable)
     }
 
-    var rootControllable: any RootControllable {
-        root.rootControllable
+    var linkRegisterControllable: LinkRegisterControllable {
+        root.linkRegisterControllable
     }
 }
 

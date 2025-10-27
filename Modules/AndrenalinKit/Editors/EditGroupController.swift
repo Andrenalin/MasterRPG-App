@@ -113,6 +113,10 @@ public struct EditGroupController<ItemDataController: ItemControllable, ItemEdit
 }
 
 extension EditGroupController: EditControllable {
+    @MainActor public var linkRegisterControllable: any LinkRegisterControllable {
+        rootControllable.linkRegisterControllable
+    }
+    
     public typealias Model = EditGroupModel
 }
 

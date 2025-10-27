@@ -39,8 +39,8 @@ extension EditController: EntryDataEditable {
         root.itemController as (any ItemControllable)
     }
 
-    var rootControllable: any RootControllable {
-        root.rootControllable
+    var linkRegisterControllable: any LinkRegisterControllable {
+        root.linkRegisterControllable
     }
 
     @MainActor func didSetModel() {

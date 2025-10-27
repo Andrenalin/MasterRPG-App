@@ -14,7 +14,7 @@ public protocol EditControllable: Sendable {
 
     var itemControllable: any ItemControllable { get }
     var fileUrlDataController: FileUrlDataController? { get }
-    var rootControllable: any RootControllable { get }
+    @MainActor var linkRegisterControllable: LinkRegisterControllable { get }
 
     var editorModel: ItemEditorModel { get }
 

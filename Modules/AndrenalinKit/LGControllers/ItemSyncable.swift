@@ -42,8 +42,8 @@ public extension SyncDataControllable {
     
     private func fetchUpdates() async {
         guard let newItems = try? await dataControllable.fetch() else { return }
-        Task { @MainActor in
+        //Task { @MainActor in
             await itemControllable.updates(newItems)
-        }
+        //}
     }
 }

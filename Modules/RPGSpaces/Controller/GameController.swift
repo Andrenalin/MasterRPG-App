@@ -19,9 +19,9 @@ struct GameController: Sendable {
     init(root: SpaceRoot, itemController: ItemController) {
         self.root = root
         self.itemController = itemController
-        self.exportController = ExportController(root: root, gameExporter: false)
+        self.exportController = ExportController(itemController: itemController, gameExporter: false)
         let internItemController = ItemController(cacheController: root.cacheController, dataController: nil, fileUrlDataController: root.fileController.fileUrlDataController, linkRegisterControllable: root.linkRegisterControllable)
-        self.importController = ImportController(root: root, itemController: internItemController)
+        self.importController = ImportController(itemController: internItemController)
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
         self.spaceGameModel = SpaceGameModel()
     }

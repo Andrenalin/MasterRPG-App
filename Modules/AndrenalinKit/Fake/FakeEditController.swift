@@ -3,7 +3,10 @@
 import SwiftUI
 
 struct FakeEditController: EditControllable {
-    
+    var linkRegisterControllable: any LinkRegisterControllable {
+        rootControllable.linkRegisterControllable
+    }
+        
     typealias Model = FakeItemModel
     
     var itemControllable: any ItemControllable

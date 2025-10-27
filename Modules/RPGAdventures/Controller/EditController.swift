@@ -48,10 +48,10 @@ extension EditController: EntryDataEditable {
         root.itemController as (any ItemControllable)
     }
 
-    var rootControllable: any RootControllable {
-        root
+    var linkRegisterControllable: any LinkRegisterControllable {
+        root.linkRegisterControllable
     }
-    
+
     @MainActor func didSetModel() {
         guard let id = editorModel.currentItemId else { return }
         if adventureEditModel.photoSelectionModel.id != id {

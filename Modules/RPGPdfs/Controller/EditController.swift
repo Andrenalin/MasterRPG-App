@@ -21,14 +21,14 @@ struct EditController: Sendable {
 
 extension EditController: EntryDataEditable {
     typealias Model = PdfModel
-
+    
     var itemControllable: any ItemControllable {
         itemController as (any ItemControllable)
     }
     
-    var rootControllable: any RootControllable {
-        root.rootControllable
-    }
+    var linkRegisterControllable: LinkRegisterControllable {
+        root.linkRegisterControllable
+    }    
 }
 
 extension EditController {

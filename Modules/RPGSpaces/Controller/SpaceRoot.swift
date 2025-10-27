@@ -59,11 +59,11 @@ public final class SpaceRoot: @unchecked Sendable {
         _fileController = fileController
         _itemController = itemController
 
-        _editControllers = [EditTypes.main: EditController(root: self, fileUrlDataController: fileController.fileUrlDataController, currentListItem: nil, currentModel: nil)]
-        _exportController = ExportController(root: self, gameExporter: false)
-        _importController = ImportController(root: self, itemController: self.itemController)
-        _gameController = GameController(root: self, itemController: self.itemController)
-        _linkController = LinkController(root: self)
+        _editControllers = [EditTypes.main: EditController(itemController: itemController, linkRegisterControllable: linkRegisterControllable, currentListItem: nil, currentModel: nil)]
+        _exportController = ExportController(itemController: itemController, gameExporter: false)
+        _importController = ImportController(itemController: itemController)
+        _gameController = GameController(root: self, itemController: itemController)
+        _linkController = LinkController(itemController: itemController, gameController: gameController)
         _viewController = ViewController(root: self)
     }
     
@@ -198,7 +198,7 @@ extension SpaceRoot {
     func editController(for item: ItemRowTreeModel? = nil, type: EditTypes) -> EditController {
         guard let oldEditController = _editControllers[type] else {
             let model = item.map { itemController.itemOrEmpty(for: $0.model.itemId) }
-            let newEditController = EditController(root: self, fileUrlDataController: fileController.fileUrlDataController, currentListItem: item, currentModel: model)
+            let newEditController = EditController(itemController: itemController, linkRegisterControllable: linkRegisterControllable, currentListItem: item, currentModel: model)
             _editControllers[type] = newEditController
             return newEditController
         }

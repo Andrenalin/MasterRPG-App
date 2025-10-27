@@ -18,7 +18,6 @@ public final class ItemDataExportModel: Sendable {
 
 public protocol ExportControllable: Sendable {
     var itemControllable: any ItemControllable { get }
-    var fileControllable: (any FileControllable)? { get }
 
     var exportModel: ItemDataExportModel { get }
 
@@ -34,7 +33,7 @@ public enum ItemDataExportableError: Error {
 }
 
 public extension ExportControllable {
-    var fileControllable: (any FileControllable)? { nil }
+    var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
     func exportUrl(isSaveGame: Bool) -> URL {
         let dateFormatter = DateFormatter()
@@ -156,9 +155,8 @@ public extension ExportControllable {
     }
 
     func inlineFiles(for itemId: UUID) async -> Data? {
-        guard let fileControllable else { return nil }
-        guard let fileUrl = await itemControllable.fileUrl(for: itemId) else { return nil }
-        return try? await fileControllable.fileUrlDataController.loadData(for: fileUrl)
+        guard let fileUrlDataController, let fileUrl = await itemControllable.fileUrl(for: itemId) else { return nil }
+        return try? await fileUrlDataController.loadData(for: fileUrl)
     }
 
     @MainActor

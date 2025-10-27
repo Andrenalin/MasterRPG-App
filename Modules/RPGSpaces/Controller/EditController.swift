@@ -6,14 +6,14 @@ import Observation
 
 struct EditController: Sendable {
     @MainActor
-    init(root: SpaceRoot, fileUrlDataController: FileUrlDataController, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
-        self.root = root
-        self.fileUrlDataController = fileUrlDataController
+    init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+        self.linkRegisterControllable = linkRegisterControllable
+        self.itemController = itemController
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
     }
 
-    weak var root: SpaceRoot!
-    let fileUrlDataController: FileUrlDataController?
+    let itemController: ItemController
+    let linkRegisterControllable: any LinkRegisterControllable
     let editorModel: ItemEditorModel
 }
 
@@ -21,11 +21,11 @@ extension EditController: EditControllable {
     typealias Model = SpaceModel
     
     var itemControllable: any ItemControllable {
-        root.itemController as (any ItemControllable)
+        itemController
     }
-
-    var rootControllable: any RootControllable {
-        root.rootControllable
+    
+    var fileUrlDataController: FileUrlDataController? {
+        itemControllable.fileUrlDataController
     }
 }
 
@@ -36,8 +36,12 @@ extension EditController {
         let oldFileUrl = model.fileUrl
         model.category = category
         let saveModel = model
+        guard let fileUrlDataController else {
+            save(with: String(localized: "Change to \(category.title)").localizedString)
+            return
+        }
         Task { @MainActor in
-            let newFileUrl = await root.fileUrlDataController.move(fileUrl: oldFileUrl, from: oldCategory, to: category)
+            let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, from: oldCategory, to: category)
             if let newFileUrl {
                 saveModel.fileUrl = newFileUrl
             }
@@ -52,8 +56,12 @@ extension EditController {
         model.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: model.id, text: model.name.markDownText())
         let saveModel = model
+        guard let fileUrlDataController else {
+            save(with: String(localized: "Typing").localizedString)
+            return
+        }
         Task { @MainActor in
-            let newFileUrl = await root.fileUrlDataController.move(fileUrl: oldFileUrl, from: oldName, to: saveModel.name)
+            let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, from: oldName, to: saveModel.name)
             if let newFileUrl {
                 saveModel.fileUrl = newFileUrl
             }
@@ -62,19 +70,19 @@ extension EditController {
     }
     
     func reset(fileUrl: FileUrl, for itemId: UUID) async {
-        let item = await itemId == model.id ? model : root.itemController.itemOrEmpty(for: itemId).copy()
+        let item = await itemId == model.id ? model : itemController.itemOrEmpty(for: itemId).copy()
         item.fileUrl = fileUrl
         if await itemId == model.id {
             await save(with: "")
         } else {
-            await root.itemController.replace(model: item, isInsert: false, shouldRepairLinks: false)
+            await itemController.replace(model: item, isInsert: false, shouldRepairLinks: false)
         }
     }
 }
 
 extension EditController {
     private func resetFileUrl() async {
-        await root.itemController.didDelete(fileUrl: model.fileUrl)
+        await itemController.didDelete(fileUrl: model.fileUrl)
         await model.fileUrl = nil
     }
 
@@ -85,19 +93,20 @@ extension EditController {
     }
 
     func resetSpace(url: URL?, into itemId: UUID) async {
-        let item = await model.id == itemId ? model : root.itemController.item(for: itemId)?.copy()
+        let item = await model.id == itemId ? model : itemController.item(for: itemId)?.copy()
         guard let item else { return }
         await resetSpace(url: url, for: item, undoSave: model.id == itemId)
     }
 
     private func resetSpace(url: URL?, for item: SpaceModel, undoSave: Bool) async {
-        await root.itemController.didDelete(fileUrl: item.fileUrl)
+        guard let fileUrlDataController else { return }
+        await itemController.didDelete(fileUrl: item.fileUrl)
         await resetURL(url: nil, on: item)
         guard let url else {
             if undoSave {
                 await save(with: String(localized: "Remove Space").localizedString)
             } else {
-                await root.itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
+                await itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
             }
             return
         }
@@ -109,12 +118,12 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             item.name = name
         }
-        let fileUrl = try? await root.fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: root.itemController.itemDataModel.networkModule.token, category: item.category.title)
+        let fileUrl = try? await fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: itemController.itemDataModel.networkModule.token, category: item.category.title)
         await resetURL(url: fileUrl, on: item)
         if undoSave {
             await save(with: String(localized: "New Space").localizedString)
         } else {
-            await root.itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
+            await itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
         }
     }
     
