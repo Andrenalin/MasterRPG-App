@@ -22,7 +22,7 @@ struct SpacesSectionEditor: View {
             .padding(4)
             .background(color)
         } selectorView: {
-            root.viewController.viewSelect(filter: .all) {
+            root.viewController.viewSelect(root: root, filter: .all) {
                 model.entries.map { ItemRowModel(itemId: $0.spaceId, typeId: .space) }
             } toggleSelection: { selection, _ in
                 if let index = model.entries.firstIndex(where: { $0.spaceId == selection.itemId }) {

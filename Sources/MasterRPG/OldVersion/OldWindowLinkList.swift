@@ -163,7 +163,7 @@ struct OldWindowLinkList: Scene {
 
             BaseWindow("\(NetworkModules.space.title) Link", id: NetworkModules.space.linkWindowId) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.spaceRoot.viewController.linkWindow()
+                    appStore.spaceRoot.viewController.linkWindow(root: appStore.spaceRoot)
                         .modifier(WindowListSetUpViewModifier(appStore: appStore))
                 }
                 .onDisappear {
@@ -273,7 +273,7 @@ struct OldWindowLinkAltList: Scene {
 
             WindowGroup("\(NetworkModules.space.title) Link", id: NetworkModules.space.linkAltWindowId) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.spaceRoot.viewController.linkWindow()
+                    appStore.spaceRoot.viewController.linkWindow(root: appStore.spaceRoot)
                         .modifier(WindowListSetUpViewModifier(appStore: appStore))
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])

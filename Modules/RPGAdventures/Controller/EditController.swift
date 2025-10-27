@@ -172,7 +172,7 @@ extension EditController {
 
     @MainActor @ViewBuilder
     func selectSpace(for entryId: UUID, linkKeyPath: WritableKeyPath<AdventureModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.spaceRoot.viewController.viewSelect(filter: .all) {
+        root.spaceRoot.viewController.viewSelect(root: root.spaceRoot, filter: .all) {
             let text = self.model[keyPath: linkKeyPath]
             return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .space) }
         } toggleSelection: { sel, _ in

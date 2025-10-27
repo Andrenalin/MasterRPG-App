@@ -64,7 +64,7 @@ public final class SpaceRoot: @unchecked Sendable {
         _importController = ImportController(itemController: itemController)
         _gameController = GameController(root: self, itemController: itemController)
         _linkController = LinkController(itemController: itemController, gameController: gameController)
-        _viewController = ViewController(root: self)
+        _viewController = ViewController()
     }
     
     public let rootModel: RootModel

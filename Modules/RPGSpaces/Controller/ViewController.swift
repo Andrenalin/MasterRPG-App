@@ -5,8 +5,6 @@ import Observation
 import SwiftUI
 
 public struct ViewController: Sendable {
-    weak var root: SpaceRoot!
-
     public let goupViewType: GroupViewType = .photo
     public let thumbnailRowViewType: ThumbnailRowViewType = .photo
 }
@@ -45,7 +43,7 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func detailEditor(for item: ItemRowTreeModel, module: NetworkModules) -> some View {
+    func detailEditor(root: SpaceRoot, for item: ItemRowTreeModel, module: NetworkModules) -> some View {
         SpaceDetailViewer(item: item)
             .environment(root)
     }
@@ -54,7 +52,7 @@ public extension ViewController {
 // MARK: - Game
 public extension ViewController {
     @MainActor @ViewBuilder
-    func gameSpaceView() -> some View {
+    func gameSpaceView(root: SpaceRoot) -> some View {
 #if os(tvOS)
         SpaceQuickLook(root: root, item: ItemSelection(itemId: root.gameController.gameModel.currentItemId ?? UUID(), entryId: nil), startLoading: true, gameMode: true, dismiss: nil)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -73,7 +71,7 @@ public extension ViewController {
     private static let gameTabId = UUID()
     
     @MainActor
-    func gameView(select: Bool = false) -> some View {
+    func gameView(root: SpaceRoot, select: Bool = false) -> some View {
         if select == true, let id = root.gameController.gameModel.currentItemId {
             let item = root.gameController.gameItem(for: id)
             if item.displayState == 0 {
@@ -95,7 +93,7 @@ public extension ViewController {
     private static let selectionTabId = UUID()
     
     @MainActor
-    func viewSelect(filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
+    func viewSelect(root: SpaceRoot, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
         let listController = root.listController(tabId: ViewController.selectionTabId)
         listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: true, focus: nil, mode: SelectionMode(selected: selection, toggle: toggleSelection))
         return RootNaviList(root: root, tabId: ViewController.selectionTabId)
@@ -113,7 +111,7 @@ public extension ViewController {
     private static let linkTabId = UUID()
     
     @MainActor
-    func linkWindow() -> some View {
+    func linkWindow(root: SpaceRoot) -> some View {
         RootNaviList(root: root, tabId: ViewController.linkTabId)
             .itemSplitViewSizeMode(.small)
             .itemListConfiguration(canAdd: false)
@@ -125,13 +123,13 @@ public extension ViewController {
     
 #if os(visionOS)
     @MainActor @ViewBuilder
-    func spaceImmersionWindow(id: UUID, defaultSize: Size3D) -> some View {
+    func spaceImmersionWindow(root: SpaceRoot, id: UUID, defaultSize: Size3D) -> some View {
         SpaceViewer(root: root, id: id, isModal: false)
     }
 #endif
     
     @MainActor
-    func spaceWindow(selection: ItemSelection) -> some View {
+    func spaceWindow(root: SpaceRoot, selection: ItemSelection) -> some View {
         SpaceQuickLook(root: root, item: selection, startLoading: true, gameMode: false, dismiss: nil)
     }
 }
@@ -139,7 +137,7 @@ public extension ViewController {
 // MARK: - Viewer
 
 public extension ViewController {
-    func rowView(item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
+    func rowView(root: SpaceRoot, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
         SpaceRow(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
             .environment(root)
     }

@@ -30,7 +30,7 @@ struct AdventureRow: View {
         case .photo:
             root.photoRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .space:
-            root.spaceRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
+            root.spaceRoot.viewController.rowView(root: root.spaceRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .table:
             root.tableRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .value, .editor:
