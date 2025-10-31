@@ -119,8 +119,10 @@ struct NewSpaceRoute: View {
             SpaceFactory.rootExtendedView(for: appStore.spaceRoot, tabId: tabId)
                 .environment(appStore.spaceRoot)
         } else {
-            SpaceFactory.rootView(for: appStore.spaceRoot, tabId: tabId)
+            SpaceFactory.rootView()
                 .environment(appStore.spaceRoot)
+//            SpaceFactory.rootView(for: appStore.spaceRoot, tabId: tabId)
+//                .environment(appStore.spaceRoot)
         }
     }
 }

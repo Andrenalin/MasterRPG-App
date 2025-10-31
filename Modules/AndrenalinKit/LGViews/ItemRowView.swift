@@ -30,7 +30,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
             specialCategoryIcon
             
             VStack(alignment: .leading, spacing: 4) {
-                NameItemRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
+                NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
                     .font(.headline)
                 
                 if listDisplayModel.displayMode == .regular {
@@ -43,7 +43,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
                     actionBar
                 }
                 if listDisplayModel.displayMode != .compact {
-                    DescriptionItemRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
+                    DescriptionItemNewRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
                         .foregroundStyle(.secondary)
                         .font(.footnote)
                         .lineLimit(3)

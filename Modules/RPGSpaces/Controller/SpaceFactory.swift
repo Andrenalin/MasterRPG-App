@@ -16,6 +16,10 @@ public enum SpaceFactory {
         RootList(root: root, tabId: tabId, selection: true)
             .itemSplitViewSizeMode(.wide)
     }
+    
+    public static func rootView() -> some View {
+        SpaceRootView()
+    }
 
     @MainActor
     public static func rootExtendedView(for root: SpaceRoot, tabId: UUID) -> some View {

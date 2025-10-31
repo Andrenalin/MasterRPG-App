@@ -1,0 +1,112 @@
+// @copyright André Trettin
+
+import CoreExternalRPG
+import Foundation
+import SwiftData
+
+#if os(macOS)
+import AppKit
+#elseif !os(tvOS)
+import UIKit
+#endif
+
+@MainActor
+struct ContextMenuMultiController: ItemListContextMenuControllable {
+    let editController: any EditControllable
+    let itemController: any ItemControllable
+    let listModel: FolderListModel
+
+    var collectionIcon: String {
+        itemController.collectionCategory.icon
+    }
+
+    func selection(currentSelected: UUID?) -> [UUID] {
+        guard let currentSelected else { return listModel.selectionItemIds }
+        return [currentSelected]
+    }
+
+    func selectionId(currentSelected: UUID?) -> [String] {
+        guard let currentSelected else { return listModel.selection }
+        return listModel.ids(selectedItemIds: [currentSelected])
+    }
+
+    func itemName(currentSelected: UUID?) -> String {
+        let selection = selection(currentSelected: currentSelected)
+        guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return "" }
+        if selection.count > 1 {
+            return "\(model.name) and \(selection.count - 1) more"
+        } else {
+            return model.name
+        }
+    }
+    
+    @MainActor func duplicateItem(currentSelected: UUID?) {
+        let selection = selection(currentSelected: currentSelected)
+        for itemId in selection {
+            guard let item = itemController.itemSync(for: itemId) else { continue }
+            //editController.duplicate(item: item)
+        }
+    }
+    
+    func deleteItem(currentSelected: UUID?) -> [ItemRowModel] {
+        //listModel.deleteItems(ids: selectionId(currentSelected: currentSelected))
+        []
+    }
+    
+    func exportItem(currentSelected: UUID?) -> any NavigationDestination {
+        let selection = selection(currentSelected: currentSelected)
+        return InternalRoute.export(ids: selection)
+    }
+    
+    func generateLink(currentSelected: UUID?) {
+        let selection = self.selection(currentSelected: currentSelected)
+
+        let linkText = selection.compactMap { id -> String? in
+            guard let model = itemController.itemSync(for: id) else { return nil }
+            return model.url(linkNumber: 0)
+        }.joined(separator: ", ")
+        
+#if os(macOS)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(linkText, forType: .string)
+#elseif !os(tvOS)
+        let pasteboard = UIPasteboard.general
+        pasteboard.string = linkText
+#endif
+    }
+    
+    func folderItems(currentSelected: UUID?) -> [FolderRepresentable] {
+        let selection = selection(currentSelected: currentSelected)
+        guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return [] }
+//        let folders = itemController.collections(isFolder: true, in: model.parentId)
+//        return folders.map { FolderRepresentable(id: $0.id, name: $0.name) }
+        return []
+    }
+    
+    func moveItem(currentSelected: UUID?, to folder: FolderRepresentable) {
+        let selection = selection(currentSelected: currentSelected)
+        guard let folder = itemController.itemSync(for: folder.id) else { return }
+        for itemId in selection {
+            guard let model = itemController.itemSync(for: itemId) else { continue }
+            //editController.addItem(itemId: model.id, in: folder, folderId: folder.id)
+        }
+    }
+    
+    func collectionItems(currentSelected: UUID?) -> [FolderRepresentable] {
+        let selection = selection(currentSelected: currentSelected)
+        guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return [] }
+//        let folders = itemController.collections(isFolder: false, in: model.parentId)
+//        return folders.map { FolderRepresentable(id: $0.id, name: $0.name) }
+        return []
+    }
+    
+    func addItem(currentSelected: UUID?, to folder: FolderRepresentable) {
+        let selection = selection(currentSelected: currentSelected)
+        guard let collection = itemController.itemSync(for: folder.id) else { return }
+        for itemId in selection {
+            guard let model = itemController.itemSync(for: itemId) else { continue }
+//            editController.addItem(itemId: model.id, in: collection, folderId: nil)
+        }
+    }
+}

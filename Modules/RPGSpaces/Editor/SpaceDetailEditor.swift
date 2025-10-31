@@ -10,7 +10,7 @@ struct SpaceDetailEditor: View {
     let model: SpaceModel
     
     @Environment(SpaceRoot.self) private var root
-    @Environment(ListModel.self) private var listModel
+    //@Environment(ListModel.self) private var listModel
     
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
 
@@ -23,11 +23,11 @@ struct SpaceDetailEditor: View {
         } inspector: {
             LinkRootView(type: .inspector)
         }
-        .onChange(of: listModel.selectedItem, initial: true) {
+        .onChange(of: root.folderListController.listModel.selectedItemId, initial: true) {
             update()
         }
         .environment(openFileWindowModel)
-        .environment(CacheItemListModel())
+        .environment(root.folderListController.cacheListItemModel)
         .environment(root.listDisplayModel)
         .environment(root.searchModel)
         .environment(root.rootController)
@@ -36,14 +36,18 @@ struct SpaceDetailEditor: View {
     }
     
     var selectedModel: SpaceModel? {
-        guard let itemId = listModel.selectedItem?.model.itemId else { return nil }
-        return root.itemController.itemOrEmpty(for: itemId)
+        root.folderListController.selectedModel(for: nil) as? SpaceModel
     }
+
+//    var selectedModel: SpaceModel? {
+//        guard let itemId = listModel.selectedItem?.model.itemId else { return nil }
+//        return root.itemController.itemOrEmpty(for: itemId)
+//    }
     
     func update() {
-        if let item = listModel.selectedItem {
-            if editController.editorModel.currentItemId != item.model.itemId || editController.editorModel.currentEntryId != item.model.entryId {
-                editController.setCurrentItem(to: item)
+        if let item = root.folderListController.listModel.selectedModel as? SpaceModel {
+            if editController.editorModel.currentItemId != item.id {
+                editController.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
             }
         } else {
             if editController.editorModel.currentItemId != nil {

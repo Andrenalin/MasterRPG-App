@@ -19,7 +19,7 @@ public struct ItemDetailOverlayView: View {
     public var body: some View {
         VStack(alignment: .leading) {
             if fullHeader || onlyDesctiption == false {
-                NameItemRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
+                NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
@@ -30,7 +30,7 @@ public struct ItemDetailOverlayView: View {
                 }
             }
             if fullHeader || onlyDesctiption {
-                DescriptionItemRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
+                DescriptionItemNewRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
                     .foregroundColor(.primary)
                     .opacity(0.8)
                     .lineLimit(20)
