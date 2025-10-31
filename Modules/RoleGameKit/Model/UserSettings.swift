@@ -81,23 +81,23 @@ public struct UserSettingsViewModifier: ViewModifier {
                 }
             }
             .onChange(of: settingsModel.defaultSpaceLocation, initial: true) {
-                if appStore.spaceRoot.fileUrlDataController.model.defaultLoaction.id != settingsModel.defaultSpaceLocation {
-                    appStore.spaceRoot.fileUrlDataController.model.defaultLoaction = FileLocation(rawValue: settingsModel.defaultSpaceLocation) ?? .appCloud
+                if appStore.spaceRoot.fileUrlDataController!.model.defaultLoaction.id != settingsModel.defaultSpaceLocation {
+                    appStore.spaceRoot.fileUrlDataController!.model.defaultLoaction = FileLocation(rawValue: settingsModel.defaultSpaceLocation) ?? .appCloud
                 }
             }
-            .onChange(of: appStore.spaceRoot.fileUrlDataController.model.defaultLoaction, initial: false) {
-                if appStore.spaceRoot.fileUrlDataController.model.defaultLoaction.id != settingsModel.defaultSpaceLocation {
-                    settingsModel.defaultSpaceLocation = appStore.spaceRoot.fileUrlDataController.model.defaultLoaction.id
+            .onChange(of: appStore.spaceRoot.fileUrlDataController!.model.defaultLoaction, initial: false) {
+                if appStore.spaceRoot.fileUrlDataController!.model.defaultLoaction.id != settingsModel.defaultSpaceLocation {
+                    settingsModel.defaultSpaceLocation = appStore.spaceRoot.fileUrlDataController!.model.defaultLoaction.id
                 }
             }
             .onChange(of: settingsModel.defaultSpacePath, initial: true) {
-                if let spacePathId = settingsModel.defaultSpacePath, appStore.spaceRoot.fileUrlDataController.model.defaultCloudPath != UUID(uuidString: spacePathId) {
-                    appStore.spaceRoot.fileUrlDataController.model.defaultCloudPath = UUID(uuidString: spacePathId)
+                if let spacePathId = settingsModel.defaultSpacePath, appStore.spaceRoot.fileUrlDataController!.model.defaultCloudPath != UUID(uuidString: spacePathId) {
+                    appStore.spaceRoot.fileUrlDataController!.model.defaultCloudPath = UUID(uuidString: spacePathId)
                 }
             }
-            .onChange(of: appStore.spaceRoot.fileUrlDataController.model.defaultCloudPath, initial: false) {
-                if appStore.spaceRoot.fileUrlDataController.model.defaultCloudPath?.uuidString != settingsModel.defaultSpacePath {
-                    settingsModel.defaultSpacePath = appStore.spaceRoot.fileUrlDataController.model.defaultCloudPath?.uuidString
+            .onChange(of: appStore.spaceRoot.fileUrlDataController!.model.defaultCloudPath, initial: false) {
+                if appStore.spaceRoot.fileUrlDataController!.model.defaultCloudPath?.uuidString != settingsModel.defaultSpacePath {
+                    settingsModel.defaultSpacePath = appStore.spaceRoot.fileUrlDataController!.model.defaultCloudPath?.uuidString
                 }
             }
 #if os(iOS)

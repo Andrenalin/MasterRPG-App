@@ -50,10 +50,10 @@ struct EntryRow: View {
     private func loadImage() {
         Task { @MainActor in
             let loaderTask = Task.detached(priority: .userInitiated) {
-                await root.cacheController.thumbnailId(for: itemId, with: root.itemController.itemOrEmpty(for: itemId).fileUrl)
+                await root.cacheController?.thumbnailId(for: itemId, with: root.itemController.itemOrEmpty(for: itemId).fileUrl)
             }
             _ = await loaderTask.result
-            let newImage = await root.cacheController.thumbnail(for: itemId)
+            let newImage = await root.cacheController?.thumbnail(for: itemId)
             withAnimation { cacheItemListModel.setImageCache(cacheType: .image, itemId: itemId, image: newImage) }
             isLoading = false
         }

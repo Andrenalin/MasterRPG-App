@@ -3,7 +3,7 @@
 import CoreExternalRPG
 import AndrenalinKit
 import SwiftUI
-internal import UniformTypeIdentifiers
+import UniformTypeIdentifiers
 
 struct RootNaviList: View {
     let root: SpaceRoot

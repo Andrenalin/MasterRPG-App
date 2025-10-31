@@ -17,7 +17,7 @@ struct MainRow: View {
 
     var body: some View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheItemListModel, name: \.name, tags: \.tags, description: \.description, isSelected: isSelected, thumbnail: {
-                ThumbnailRowPhotoView(cacheController: root.cacheController, model: model)
+                ThumbnailRowPhotoView(cacheController: root.cacheController!, model: model)
                 .environment(cacheItemListModel)
                 .environment(root.listDisplayModel)
             //ThumbnailItem(model: model)

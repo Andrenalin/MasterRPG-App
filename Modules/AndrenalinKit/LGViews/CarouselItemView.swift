@@ -15,7 +15,7 @@ public struct CarouselItemView<Content: View>: View {
     let root: ItemRootControllable
     let selection: GroupItemSelectionModel
     let content: Content
-        
+    
     @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.navigator) private var navigator
     
@@ -39,9 +39,9 @@ public struct CarouselItemView<Content: View>: View {
                                         .background(.red, in: Circle())
                                 }
                                 .buttonStyle(.plain)
-                                #if !os(visionOS)
+#if !os(visionOS)
                                 .glassEffect(.regular.interactive())
-                                #endif
+#endif
                             }
                     }
                 }
@@ -70,39 +70,39 @@ private extension CarouselItemView {
     }
     
     var areaButton: some View {
-            VStack {
-                if appSizeMode == .regular {
-                    Text("Drop \(root.module.title)", bundle: .module)
-                    
-                    Image(systemName: "square.and.arrow.down")
-                        .imageScale(.large)
-                }
-                Button {
-                    withAnimation { showSelection.toggle() }
-                    //navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
-                } label: {
-                    VStack {
-                        Text("Select", bundle: .module)
-                        if appSizeMode == .compact {
-                            Text(root.module.title)
-                            Image(systemName: "checkmark.circle")
-                                .imageScale(.large)
-                        }
+        VStack {
+            if appSizeMode == .regular {
+                Text("Drop \(root.module.title)", bundle: .module)
+                
+                Image(systemName: "square.and.arrow.down")
+                    .imageScale(.large)
+            }
+            Button {
+                withAnimation { showSelection.toggle() }
+                //navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
+            } label: {
+                VStack {
+                    Text("Select", bundle: .module)
+                    if appSizeMode == .compact {
+                        Text(root.module.title)
+                        Image(systemName: "checkmark.circle")
+                            .imageScale(.large)
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .frame(minWidth: 100)
-            .frame(height: 100)
-            .sheet(isPresented: $showSelection) {
-                SelectionModuleRoute.selection
-                    .environment(root.rootController)
-            }
-            .onChange(of: showSelection) {
-                guard showSelection == false, let itemId = root.itemSelectionModel.itemId else { return }
-                linkHandler(name: "", itemId: itemId, entryId: nil)
-                root.itemSelectionModel.resetSelection(itemId: nil)
-            }
+        }
+        .padding(.horizontal, 12)
+        .frame(minWidth: 100)
+        .frame(height: 100)
+        .sheet(isPresented: $showSelection) {
+            SelectionModuleRoute.selection
+                .environment(root.rootController)
+        }
+        .onChange(of: showSelection) {
+            guard showSelection == false, let itemId = root.itemSelectionModel.itemId else { return }
+            linkHandler(name: "", itemId: itemId, entryId: nil)
+            root.itemSelectionModel.resetSelection(itemId: nil)
+        }
     }
     
     func linkHandler(name: String, itemId: UUID, entryId: UUID?) {

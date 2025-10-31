@@ -37,6 +37,11 @@ public extension ViewController {
         return SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
             .environment(root)
     }
+    
+    @MainActor func selectionView(root: SpaceRoot, model: ItemSelectionModel) -> some View {
+        LinkRootView(type: .selection)
+            .environment(root)
+    }
 }
 
 // MARK: - Edit
@@ -96,6 +101,11 @@ public extension ViewController {
     func viewSelect(root: SpaceRoot, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
         let listController = root.listController(tabId: ViewController.selectionTabId)
         listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: true, focus: nil, mode: SelectionMode(selected: selection, toggle: toggleSelection))
+        
+//        return LinkRootView(type: .selection)
+//            .environment(root)
+//            .environment(listController.model)
+
         return RootNaviList(root: root, tabId: ViewController.selectionTabId)
             .itemSplitViewSizeMode(.small)
             .itemListChildrenConfiguration(canNavigate: false)

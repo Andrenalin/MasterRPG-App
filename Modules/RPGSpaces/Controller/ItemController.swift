@@ -3,21 +3,27 @@
 import AndrenalinKit
 import Foundation
 import os.log
+import UniformTypeIdentifiers
 
 struct ItemController: Sendable {
-    @MainActor init(cacheController: CacheController, dataController: DataController?, fileUrlDataController: FileUrlDataController, linkRegisterControllable: LinkRegisterControllable) {
-        self.cacheController = cacheController
+    static var fileTypes: [UTType] { [.usdz] }
+    static var filenameExtension: String { "usdz" }
+
+    @MainActor init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.dataControllable = dataController
-        self.fileUrlDataController = fileUrlDataController
         self.linkRegisterController = linkRegisterControllable
 
         self.itemDataModel = ItemDataModel(categoryTags: [.building, .item, .supplement], networkModule: .space)
+        
+        let fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.space.token, fileTypes: ItemController.fileTypes, filenameExtension: ItemController.filenameExtension, fileUrlAccess: self)
+        self.cacheController = CacheController(fileUrlDataController: fileUrlDataController)
+        self.fileUrlDataController = fileUrlDataController
     }
 
-    let cacheController: CacheController
+    var cacheController: CacheController?
+    var fileUrlDataController: FileUrlDataController?
     let collectionCategory: ItemListCategory = .album
     let dataControllable: (any DataPersistenceControllable)?
-    var fileUrlDataController: FileUrlDataController?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
 }
@@ -28,7 +34,7 @@ extension ItemController: ItemControllable {
     @MainActor var linkRegisterControllable: LinkRegisterControllable {
         linkRegisterController
     }
-
+    
     @MainActor
     func children(for model: ItemRowModel) -> [ItemRowModel] {
         guard let item = self.itemSync(for: model.itemId) else { return [] }
@@ -74,7 +80,7 @@ extension ItemController: ItemControllable {
     func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {
         guard let item = item as? SpaceModel else { return }
         if let oldFileUlr = item.fileUrl {
-            await cacheController.remove(itemId: oldFileUlr.fileId)
+            await cacheController?.remove(itemId: oldFileUlr.fileId)
         }
         item.fileUrl = fileUrl
     }
@@ -85,10 +91,21 @@ extension ItemController: ItemControllable {
     }
 }
 
+extension ItemController: FileUrlAccessible {
+    func saveFileUrl(fileUrl: FileUrl) async {
+        guard let item = await item(for: fileUrl.fileId)?.copy() else { return }
+        if let fileId = item.fileUrl?.fileId {
+            await cacheController?.remove(itemId: fileId)
+        }
+        item.fileUrl = fileUrl
+        await replace(model: item, isInsert: false, shouldRepairLinks: true)
+    }
+}
+
 extension ItemController {
     func didDelete(fileUrl: FileUrl?) async {
         guard let fileUrl else { return }
-        await cacheController.remove(itemId: fileUrl.fileId)
+        await cacheController?.remove(itemId: fileUrl.fileId)
         fileUrlDataController?.delete(fileUrl)
     }
 }

@@ -50,10 +50,10 @@ struct ThumbnailItem: View {
     func loadImage() {
         Task { @MainActor in
             let loaderTask = Task.detached(priority: .userInitiated) {
-                await root.cacheController.thumbnailId(for: model.id, with: model.fileUrl)
+                await root.cacheController?.thumbnailId(for: model.id, with: model.fileUrl)
             }
             _ = await loaderTask.result
-            let newImage = await root.cacheController.thumbnail(for: model.id)
+            let newImage = await root.cacheController?.thumbnail(for: model.id)
             withAnimation { cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: model.id, image: newImage) }
             isLoading = false
         }

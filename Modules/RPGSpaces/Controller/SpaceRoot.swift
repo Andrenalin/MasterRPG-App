@@ -37,9 +37,6 @@ public final class SpaceRoot: @unchecked Sendable {
         
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
-
-        let fileController = FileController(root: self)
-        let cacheController = CacheController(fileUrlDataController: fileController.fileUrlDataController)
         
         let dataController: DataController?
         if let context {
@@ -48,23 +45,26 @@ public final class SpaceRoot: @unchecked Sendable {
             dataController = nil
         }
 
-        let itemController = ItemController(cacheController: cacheController, dataController: dataController, fileUrlDataController: fileController.fileUrlDataController, linkRegisterControllable: linkRegisterControllable)
+        let itemController = ItemController(dataController: dataController, linkRegisterControllable: linkRegisterControllable)
             
         if let dataController, let context {
             let syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
             _syncDataController = syncDataController
         }
-        _cacheController = cacheController
         _dataController = dataController
-        _fileController = fileController
         _itemController = itemController
 
         _editControllers = [EditTypes.main: EditController(itemController: itemController, linkRegisterControllable: linkRegisterControllable, currentListItem: nil, currentModel: nil)]
         _exportController = ExportController(itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
-        _gameController = GameController(root: self, itemController: itemController)
+        _gameController = GameController(root: self, itemController: itemController, linkRegisterControllable: linkRegisterControllable)
+        //        _gameController = GameController(itemController: itemController, linkRegisterControllable: linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+
         _linkController = LinkController(itemController: itemController, gameController: gameController)
         _viewController = ViewController()
+        
+
+
     }
     
     public let rootModel: RootModel
@@ -79,10 +79,10 @@ public final class SpaceRoot: @unchecked Sendable {
         rootModel.selectedItem?.itemId
     }
     
-    @ObservationIgnored private(set) var _cacheController: CacheController?
-    var cacheController: CacheController {
-        _cacheController.unsafelyUnwrapped
+    var cacheController: CacheController? {
+        itemController.cacheController
     }
+
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? {
         _dataController
@@ -92,14 +92,8 @@ public final class SpaceRoot: @unchecked Sendable {
         _syncDataController
     }
 
-    @ObservationIgnored
-    private(set) var _fileController: FileController?
-    var fileController: FileController {
-        _fileController.unsafelyUnwrapped
-    }
-    
-    public var fileUrlDataController: FileUrlDataController {
-        fileController.fileUrlDataController
+    public var fileUrlDataController: FileUrlDataController? {
+        itemController.fileUrlDataController
     }
     
     @ObservationIgnored
@@ -242,7 +236,15 @@ extension SpaceRoot {
     }
 
     public func moveFiles() async throws {
-        try await fileController.moveFiles()
+        let itemIds = await itemController.itemDataModel.items
+        for itemId in itemIds {
+            let item = await itemController.itemOrEmpty(for: itemId)
+            guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
+            if let newFileUrl = try? await fileUrlDataController?.move(fileUrl: fileUrl, name: item.name, category: item.category.title) {
+                let editController = await editController(type: .main)
+                await editController.reset(fileUrl: newFileUrl, for: itemId)
+            }
+        }
     }
     
     @MainActor

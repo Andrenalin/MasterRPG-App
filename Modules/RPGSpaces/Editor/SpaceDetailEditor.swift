@@ -3,7 +3,7 @@
 import AndrenalinKit
 import CoreExternalRPG
 import SwiftUI
-internal import UniformTypeIdentifiers
+import UniformTypeIdentifiers
 
 struct SpaceDetailEditor: View {
     let editController: EditController
@@ -38,11 +38,6 @@ struct SpaceDetailEditor: View {
     var selectedModel: SpaceModel? {
         guard let itemId = listModel.selectedItem?.model.itemId else { return nil }
         return root.itemController.itemOrEmpty(for: itemId)
-    }
-    
-    @ViewBuilder
-    var editor: some View {
-        SpacesSectionEditor(editController: editController, model: model)
     }
     
     func update() {

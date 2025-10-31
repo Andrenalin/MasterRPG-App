@@ -80,7 +80,7 @@ extension EditController {
     }
 }
 
-extension EditController {
+extension EditController {    
     private func resetFileUrl() async {
         await itemController.didDelete(fileUrl: model.fileUrl)
         await model.fileUrl = nil

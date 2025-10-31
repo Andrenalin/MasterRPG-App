@@ -16,11 +16,11 @@ final class SpaceGameModel: Sendable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: SpaceRoot, itemController: ItemController) {
+    init(root: SpaceRoot, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
         self.root = root
         self.itemController = itemController
         self.exportController = ExportController(itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(cacheController: root.cacheController, dataController: nil, fileUrlDataController: root.fileController.fileUrlDataController, linkRegisterControllable: root.linkRegisterControllable)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
         self.importController = ImportController(itemController: internItemController)
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
         self.spaceGameModel = SpaceGameModel()
@@ -30,6 +30,8 @@ struct GameController: Sendable {
     let itemController: ItemController
     let importController: ImportController
     let exportController: ExportController
+//    let rootExportControllable: any ExportControllable
+//    var rootImportControllable: any ImportControllable
 
     let gameModel: ItemGameModel
     let spaceGameModel: SpaceGameModel

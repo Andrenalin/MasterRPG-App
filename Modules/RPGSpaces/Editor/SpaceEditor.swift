@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-internal import UniformTypeIdentifiers
+import UniformTypeIdentifiers
 
 struct SpaceEditor: View {
     let editController: EditController
@@ -67,8 +67,8 @@ struct SpaceEditor: View {
 
     private func loadImage() {
         Task {
-            await root.cacheController.thumbnailId(for: editController.model.id, with: editController.model.fileUrl)
-            let newImage = await root.cacheController.thumbnail(for: editController.model.id)
+            await root.cacheController?.thumbnailId(for: editController.model.id, with: editController.model.fileUrl)
+            let newImage = await root.cacheController?.thumbnail(for: editController.model.id)
             withAnimation { thumbnail = newImage }
         }
     }

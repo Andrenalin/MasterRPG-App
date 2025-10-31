@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-internal import UniformTypeIdentifiers
+import UniformTypeIdentifiers
 
 struct FileController: Sendable {
     static var fileTypes: [UTType] { [.audio] }

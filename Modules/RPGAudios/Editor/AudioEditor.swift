@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-internal import UniformTypeIdentifiers
+import UniformTypeIdentifiers
 
 struct AudioEditor: View {
     let editController: EditController

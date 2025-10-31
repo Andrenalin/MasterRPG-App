@@ -10,7 +10,7 @@ The buttons for the full-screen overlay UI that control the capture.
 import AndrenalinKit
 import SwiftUI
 import RealityKit
-internal import UniformTypeIdentifiers
+import UniformTypeIdentifiers
 import os
 
 extension CaptureOverlayView {
