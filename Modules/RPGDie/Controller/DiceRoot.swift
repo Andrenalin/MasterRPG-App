@@ -2,6 +2,7 @@
 
 import AndrenalinKit
 import CoreData
+import SwiftData
 import SwiftUI
 
 @MainActor @Observable
@@ -20,8 +21,24 @@ public final class RootModel: Sendable {
 public final class DiceRoot: @unchecked Sendable {
     
     @MainActor
-    init(context: NSManagedObjectContext?) {
+    init(container: ModelContainer) {
         rootModel = RootModel()
+        
+        let module: NetworkModules = .photo
+        self.module = module
+        
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        self.searchModel = searchModel
+        
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
+    }
+    
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
+        self._rootControllable = rootControllable
+
         if let context {
             dataController = DataController(root: self, context: context, token: NetworkModules.dice.token)
         }
@@ -32,9 +49,19 @@ public final class DiceRoot: @unchecked Sendable {
         _gameController = GameController(root: self, itemController: self.itemController)
         _linkController = LinkController(root: self, itemController: self.itemController)
         _viewController = ViewController(root: self)
+        Task {
+            dataController?.start()
+        }
     }
 
     public let rootModel: RootModel
+    public let module: NetworkModules
+    
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
+    public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
+
 #if os(visionOS)
     let diceSpaceModel = DiceSpaceModel()
 #endif
@@ -143,15 +170,7 @@ extension DiceRoot {
         }
         return listController(model: listModel)
     }
-    
-    @MainActor
-    public func setRootControllable(_ rootControllable: RootControllable) {
-        self._rootControllable = rootControllable
-        Task {
-            dataController?.start()
-        }
-    }
-    
+        
     @MainActor
     private func setMainListController(_ listController: ListController) {
         guard mainListController == nil else { return }

@@ -2,15 +2,15 @@
 
 import CoreExternalRPG
 import AndrenalinKit
-import CoreData
+import SwiftData
 import SwiftUI
 
 public enum DiceFactory {
     @MainActor public static var sharedRoot: DiceRoot?
     
     @MainActor
-    public static func root(for context: NSManagedObjectContext) -> DiceRoot {
-        let root = DiceRoot(context: context)
+    public static func root(container: ModelContainer) -> DiceRoot {
+        let root = DiceRoot(container: container)
         if sharedRoot == nil {
             sharedRoot = root
         }

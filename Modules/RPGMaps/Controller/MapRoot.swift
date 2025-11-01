@@ -9,6 +9,7 @@ import RPGPhotos
 import RPGTables
 import RPGValues
 import CoreData
+import SwiftData
 import SwiftUI
 
 @MainActor @Observable
@@ -29,14 +30,30 @@ public final class RootModel: Sendable {
 public final class MapRoot: @unchecked Sendable {
     
     @MainActor
-    init(context: NSManagedObjectContext?, audioRoot: AudioRoot, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) {
+    init(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) {
         rootModel = RootModel()
+        
+        let module: NetworkModules = .map
+        self.module = module
+        
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        self.searchModel = searchModel
+        
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
+
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
         self.valueRoot = valueRoot
+    }
+    
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
+        self._rootControllable = rootControllable
         
         _cacheController = CacheController(root: self)
         if let context {
@@ -49,10 +66,20 @@ public final class MapRoot: @unchecked Sendable {
         _gameController = GameController(root: self, itemController: self.itemController)
         _linkController = LinkController(root: self, itemController: self.itemController)
         _viewController = ViewController(root: self)
+
+        Task {
+            dataController?.start()
+        }
     }
-    
+
     public let rootModel: RootModel
+    public let module: NetworkModules
     
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
+    public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
+        
     let audioRoot: AudioRoot
     let diceRoot: DiceRoot
     let pdfRoot: PdfRoot
@@ -171,14 +198,6 @@ extension MapRoot {
             return newController
         }
         return listController(model: listModel)
-    }
-    
-    @MainActor
-    public func setRootControllable(_ rootControllable: RootControllable) {
-        self._rootControllable = rootControllable
-        Task {
-            dataController?.start()
-        }
     }
     
     @MainActor

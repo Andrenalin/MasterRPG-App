@@ -2,13 +2,13 @@
 
 import CoreExternalRPG
 import AndrenalinKit
-import CoreData
+import SwiftData
 import SwiftUI
 
 public enum AudioFactory {
     @MainActor
-    public static func root(for context: NSManagedObjectContext) -> AudioRoot {
-        AudioRoot(context: context)
+    public static func root(container: ModelContainer) -> AudioRoot {
+        AudioRoot(container: container)
     }
 
     @MainActor

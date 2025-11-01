@@ -6,13 +6,13 @@ import RPGDie
 import RPGPdfs
 import RPGPhotos
 import RPGTables
-import CoreData
+import SwiftData
 import SwiftUI
 
 public enum ValueFactory {
     @MainActor
-    public static func root(for context: NSManagedObjectContext, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot) -> ValueRoot {
-        ValueRoot(context: context, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+    public static func root(container: ModelContainer, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot) -> ValueRoot {
+        ValueRoot(container: container, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
     }
     
     @MainActor

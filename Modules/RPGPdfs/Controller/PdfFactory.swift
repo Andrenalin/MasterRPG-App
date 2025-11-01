@@ -2,13 +2,13 @@
 
 import CoreExternalRPG
 import AndrenalinKit
-import CoreData
+import SwiftData
 import SwiftUI
 
 public enum PdfFactory {
     @MainActor
-    public static func root(for context: NSManagedObjectContext) -> PdfRoot {
-        PdfRoot(context: context)
+    public static func root(container: ModelContainer) -> PdfRoot {
+        PdfRoot(container: container)
     }
 
     @MainActor

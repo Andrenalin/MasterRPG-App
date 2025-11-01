@@ -2,13 +2,13 @@
 
 import CoreExternalRPG
 import AndrenalinKit
-import CoreData
+import SwiftData
 import SwiftUI
 
 public enum SpaceFactory {
     @MainActor
-    public static func root(for context: NSManagedObjectContext) -> SpaceRoot {
-        SpaceRoot(context: context)
+    public static func root(container: ModelContainer) -> SpaceRoot {
+        SpaceRoot(container: container)
     }
 
     @MainActor

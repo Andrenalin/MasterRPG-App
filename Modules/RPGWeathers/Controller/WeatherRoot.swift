@@ -4,6 +4,7 @@ import AndrenalinKit
 import Foundation
 import RPGPhotos
 import CoreData
+import SwiftData
 import SwiftUI
 
 @MainActor @Observable
@@ -21,11 +22,25 @@ public final class RootModel: Sendable {
 @Observable
 public final class WeatherRoot: @unchecked Sendable {
     
-    @MainActor
-    init(context: NSManagedObjectContext?, photoRoot: PhotoRoot) {
+    @MainActor init(container: ModelContainer, photoRoot: PhotoRoot) {
         rootModel = RootModel()
-        self.photoRoot = photoRoot
+        let module: NetworkModules = .weather
+        self.module = module
         
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        self.searchModel = searchModel
+        
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
+
+        self.photoRoot = photoRoot
+    }
+    
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
+        self._rootControllable = rootControllable
+
         if let context {
             dataController = DataController(root: self, context: context, token: NetworkModules.weather.token)
         }
@@ -36,10 +51,20 @@ public final class WeatherRoot: @unchecked Sendable {
         _gameController = GameController(root: self, itemController: self.itemController)
         _linkController = LinkController(root: self, itemController: self.itemController)
         _viewController = ViewController(root: self)
+
+        Task {
+            dataController?.start()
+        }
     }
     
     public let rootModel: RootModel
+    public let module: NetworkModules
     
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
+    public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
+
     let photoRoot: PhotoRoot
     
     @ObservationIgnored
@@ -146,14 +171,6 @@ extension WeatherRoot {
             return newController
         }
         return listController(model: listModel)
-    }
-
-    @MainActor
-    public func setRootControllable(_ rootControllable: RootControllable) {
-        self._rootControllable = rootControllable
-        Task {
-            dataController?.start()
-        }
     }
     
     @MainActor

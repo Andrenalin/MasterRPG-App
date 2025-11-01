@@ -6,6 +6,7 @@ import RPGPdfs
 import RPGPhotos
 import RPGTables
 import CoreData
+import SwiftData
 import SwiftUI
 
 @MainActor @Observable
@@ -40,13 +41,28 @@ public final class RootModel: Sendable {
 public final class ValueRoot: @unchecked Sendable {
 
     @MainActor
-    init(context: NSManagedObjectContext?, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot) {
+    init(container: ModelContainer, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot) {
         rootModel = RootModel()
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
 
+        let module: NetworkModules = .value
+        self.module = module
+        
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        self.searchModel = searchModel
+        
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
+    }
+    
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
+        self._rootControllable = rootControllable
+        
         if let context {
             dataController = DataController(root: self, context: context, token: NetworkModules.value.token)
         }
@@ -57,9 +73,19 @@ public final class ValueRoot: @unchecked Sendable {
         _gameController = GameController(root: self, itemController: self.itemController)
         _linkController = LinkController(root: self, itemController: self.itemController)
         _viewController = ViewController(root: self)
+        
+        Task {
+            dataController?.start()
+        }
     }
 
     public let rootModel: RootModel
+    public let module: NetworkModules
+    
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
+    public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
     
     let diceRoot: DiceRoot
     let pdfRoot: PdfRoot
@@ -184,14 +210,6 @@ extension ValueRoot {
     @MainActor
     func resetGeneratorController(rootItem: ItemRowModel?, saveId: UUID?) {
         rootModel.resetGeneratorController(rootItem: rootItem, generatorController: generatorController(rootItem: rootItem, saveId: saveId))
-    }
-    
-    @MainActor
-    public func setRootControllable(_ rootControllable: RootControllable) {
-        self._rootControllable = rootControllable
-        Task {
-            dataController?.start()
-        }
     }
     
     @MainActor

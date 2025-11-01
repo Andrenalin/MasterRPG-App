@@ -4,13 +4,13 @@ import CoreExternalRPG
 import AndrenalinKit
 import RPGDie
 import RPGPdfs
-import CoreData
+import SwiftData
 import SwiftUI
 
 public enum TableFactory {
     @MainActor
-    public static func root(for context: NSManagedObjectContext, diceRoot: DiceRoot, pdfRoot: PdfRoot) -> TableRoot {
-        TableRoot(context: context, diceRoot: diceRoot, pdfRoot: pdfRoot)
+    public static func root(container: ModelContainer, diceRoot: DiceRoot, pdfRoot: PdfRoot) -> TableRoot {
+        TableRoot(container: container, diceRoot: diceRoot, pdfRoot: pdfRoot)
     }
 
     @MainActor

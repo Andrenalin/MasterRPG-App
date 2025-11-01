@@ -2,13 +2,15 @@
 
 import AndrenalinKit
 import Foundation
+import SwiftData
 import RPGResources
 
 public extension AudioRoot {
     @MainActor
     static let preview: AudioRoot = {
-        var root = AudioRoot(context: nil)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let root = AudioRoot(container: modelContainer)
+        root.setUp(context: nil, rootControllable: root)
         root.editController(type: .main).setCurrentItem(to: .preview)
         return root
     }()
@@ -38,8 +40,9 @@ public extension AudioRoot {
 #if DEBUG
     @MainActor
     static func testRoot() -> AudioRoot {
-        let root = AudioRoot(context: nil)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let root = AudioRoot(container: modelContainer)
+        root.setUp(context: nil, rootControllable: root)
         return root
     }
 #endif

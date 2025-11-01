@@ -16,22 +16,22 @@ final class SpaceGameModel: Sendable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: SpaceRoot, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
-        self.root = root
+    init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
         self.exportController = ExportController(itemController: itemController, gameExporter: false)
         let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
         self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
         self.spaceGameModel = SpaceGameModel()
     }
 
-    weak var root: SpaceRoot!
     let itemController: ItemController
-    let importController: ImportController
     let exportController: ExportController
-//    let rootExportControllable: any ExportControllable
-//    var rootImportControllable: any ImportControllable
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
 
     let gameModel: ItemGameModel
     let spaceGameModel: SpaceGameModel
@@ -66,14 +66,7 @@ extension GameController: GameControllable {
     }
     var importControllable: any ImportControllable {
         importController as ImportControllable
-    }
-    var rootExportControllable: any ExportControllable {
-        root.rootControllable.gameExportControllable
-    }
-    var rootImportControllable: any ImportControllable {
-        root.rootControllable.gameImportControllable
-    }
-    
+    }    
     func resetGameState() {
         spaceGameModel.reset()
     }

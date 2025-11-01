@@ -3,6 +3,7 @@
 import AndrenalinKit
 import AVFoundation
 import CoreData
+import SwiftData
 import SwiftUI
 
 @MainActor @Observable
@@ -21,11 +22,26 @@ public final class RootModel: Sendable {
 public final class AudioRoot: @unchecked Sendable {
     
     @MainActor
-    init(context: NSManagedObjectContext?) {
+    init(container: ModelContainer) {
         rootModel = RootModel()
+        
+        let module: NetworkModules = .audio
+        self.module = module
+        
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        self.searchModel = searchModel
+        
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
         
         let audioPlayerModel = AudioPlayerModel()
         self.audioPlayerModel = audioPlayerModel
+    }
+    
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
+        self._rootControllable = rootControllable
 
         if let context {
             dataController = DataController(root: self, context: context, token: NetworkModules.audio.token)
@@ -40,10 +56,20 @@ public final class AudioRoot: @unchecked Sendable {
         _linkController = LinkController(root: self, itemController: self.itemController)
         _viewController = ViewController(root: self)
         _audioController = AudioController(fileController: fileController, gameController: gameController, model: audioPlayerModel)
-    }
 
-    public let rootModel: RootModel
+        Task {
+            dataController?.start()
+        }
+    }
     
+    public let rootModel: RootModel
+    public let module: NetworkModules
+    
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
+    public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
+
     public let audioPlayerModel: AudioPlayerModel
     
     @ObservationIgnored
@@ -167,14 +193,6 @@ extension AudioRoot {
         return listController(model: listModel)
     }
         
-    @MainActor
-    public func setRootControllable(_ rootControllable: RootControllable) {
-        self._rootControllable = rootControllable
-        Task {
-            dataController?.start()
-        }
-    }
-    
     @MainActor
     private func setMainListController(_ listController: ListController) {
         guard mainListController == nil else { return }

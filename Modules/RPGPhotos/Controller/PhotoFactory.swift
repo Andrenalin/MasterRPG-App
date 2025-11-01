@@ -2,13 +2,13 @@
 
 import CoreExternalRPG
 import AndrenalinKit
-import CoreData
+import SwiftData
 import SwiftUI
 
 public enum PhotoFactory {
     @MainActor
-    public static func root(for context: NSManagedObjectContext) -> PhotoRoot {
-        PhotoRoot(context: context)
+    public static func root(container: ModelContainer) -> PhotoRoot {
+        PhotoRoot(container: container)
     }
 
     @MainActor

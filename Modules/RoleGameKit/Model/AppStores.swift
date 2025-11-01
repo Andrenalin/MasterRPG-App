@@ -179,19 +179,21 @@ public final class AppStore: Sendable {
 extension AppStore {
     @MainActor
     public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
-        let diceRoot = DiceFactory.root(for: context)
-        let photoRoot = PhotoFactory.root(for: context)
-        let audioRoot = AudioFactory.root(for: context)
-        let pdfRoot = PdfFactory.root(for: context)
-        let spaceRoot = SpaceFactory.root(for: context)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
 
-        let tableRoot = TableFactory.root(for: context, diceRoot: diceRoot, pdfRoot: pdfRoot)
-        let weatherRoot = WeatherFactory.root(for: context, photoRoot: photoRoot)
+        let diceRoot = DiceFactory.root(container: modelContainer)
+        let photoRoot = PhotoFactory.root(container: modelContainer)
+        let audioRoot = AudioFactory.root(container: modelContainer)
+        let pdfRoot = PdfFactory.root(container: modelContainer)
+        let spaceRoot = SpaceFactory.root(container: modelContainer)
 
-        let valueRoot = ValueFactory.root(for: context, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+        let tableRoot = TableFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot)
+        let weatherRoot = WeatherFactory.root(container: modelContainer, photoRoot: photoRoot)
 
-        let mapRoot = MapFactory.root(for: context, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
-        let adventureRoot = AdventureFactory.root(for: context, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
+        let valueRoot = ValueFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+
+        let mapRoot = MapFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
+        let adventureRoot = AdventureFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
         let gameRoot = GameRoot(adventureRoot: adventureRoot, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
 
         self._adventureRoot = adventureRoot
@@ -206,15 +208,7 @@ extension AppStore {
         self._valueRoot = valueRoot
         self._weatherRoot = weatherRoot
 
-        audioRoot.setRootControllable(adventureRoot)
-        diceRoot.setRootControllable(adventureRoot)
-        mapRoot.setRootControllable(adventureRoot)
-        pdfRoot.setRootControllable(adventureRoot)
-        photoRoot.setRootControllable(adventureRoot)
-        spaceRoot.setRootControllable(adventureRoot)
-        tableRoot.setRootControllable(adventureRoot)
-        valueRoot.setRootControllable(adventureRoot)
-        weatherRoot.setRootControllable(adventureRoot)
+        adventureRoot.setUp(context: context)
 
         self.rpgSpotlightIndexer = spotlightIndexer
         spotlightIndexer?.observeIndexing()
@@ -222,16 +216,16 @@ extension AppStore {
         hasDatabase = true
     }
     
-    @MainActor
-    public func setupDiceRootModel(context: NSManagedObjectContext) {
-        
-        let diceRoot = DiceFactory.root(for: context)
-
-        self._diceRoot = diceRoot
-
-        diceRoot.setRootControllable(diceRoot)
-        hasDatabase = true
-    }
+//    @MainActor
+//    public func setupDiceRootModel(context: NSManagedObjectContext) {
+//        
+//        let diceRoot = DiceFactory.root(for: context)
+//
+//        self._diceRoot = diceRoot
+//
+//        diceRoot.setRootControllable(diceRoot)
+//        hasDatabase = true
+//    }
 }
 
 // MARK: - Routing

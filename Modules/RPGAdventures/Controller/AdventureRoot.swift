@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
+import CoreData
 import RPGDie
 import RPGAudios
 import RPGMaps
@@ -9,7 +10,7 @@ import RPGPhotos
 import RPGSpaces
 import RPGTables
 import RPGValues
-import CoreData
+import SwiftData
 import SwiftUI
 import RPGWeathers
 
@@ -29,7 +30,7 @@ public final class RootModel: Sendable {
 public final class AdventureRoot: @unchecked Sendable {
 
     @MainActor
-    init(context: NSManagedObjectContext?, audioRoot: AudioRoot, diceRoot: DiceRoot, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRoot) {
+    init(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRoot, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRoot) {
         rootModel = RootModel()
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
@@ -41,6 +42,19 @@ public final class AdventureRoot: @unchecked Sendable {
         self.valueRoot = valueRoot
         self.weatherRoot = weatherRoot
 
+        let module: NetworkModules = .adventure
+        self.module = module
+        
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        self.searchModel = searchModel
+        
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
+    }
+    
+    @MainActor public func setUp(context: NSManagedObjectContext?) {
         if let context {
             dataController = DataController(root: self, context: context, token: NetworkModules.adventure.token)
         }
@@ -53,12 +67,28 @@ public final class AdventureRoot: @unchecked Sendable {
         _linkRegisterController = LinkRegisterController(root: self)
         _viewController = ViewController(root: self)
         
+        audioRoot.setUp(context: context, rootControllable: self)
+        diceRoot.setUp(context: context, rootControllable: self)
+        pdfRoot.setUp(context: context, rootControllable: self)
+        photoRoot.setUp(context: context, rootControllable: self)
+        spaceRoot.setUp(context: context, rootControllable: self)
+        weatherRoot.setUp(context: context, rootControllable: self)
+        tableRoot.setUp(context: context, rootControllable: self)
+        valueRoot.setUp(context: context, rootControllable: self)
+        mapRoot.setUp(context: context, rootControllable: self)
+        
         Task {
             dataController?.start()
         }
     }
-    
+
     public let rootModel: RootModel
+    public let module: NetworkModules
+    
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
+    public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
 
     let audioRoot: AudioRoot
     let diceRoot: DiceRoot

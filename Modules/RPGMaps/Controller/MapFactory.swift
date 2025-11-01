@@ -8,13 +8,13 @@ import RPGPdfs
 import RPGPhotos
 import RPGTables
 import RPGValues
-import CoreData
+import SwiftData
 import SwiftUI
 
 public enum MapFactory {
     @MainActor
-    public static func root(for context: NSManagedObjectContext, audioRoot: AudioRoot, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) -> MapRoot {
-        MapRoot(context: context, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
+    public static func root(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) -> MapRoot {
+        MapRoot(container: container, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
     }
 
     @MainActor

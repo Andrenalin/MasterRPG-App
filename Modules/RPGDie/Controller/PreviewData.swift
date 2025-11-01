@@ -3,14 +3,16 @@
 import AndrenalinKit
 import Foundation
 import RPGResources
+import SwiftData
 
 public extension DiceRoot {
     static let previewDiceId = DiceModel.previewId
     
     @MainActor
     static let preview: DiceRoot = {
-        let root = DiceRoot(context: nil)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let root = DiceRoot(container: modelContainer)
+        root.setUp(context: nil, rootControllable: root)
         root.itemController.replace(model: DiceModel.preview, isInsert: true, shouldRepairLinks: false)
         root.editController(type: .main).setCurrentItem(to: .preview)
 
@@ -22,8 +24,9 @@ public extension DiceRoot {
     
     @MainActor
     static func preview(id: UUID) -> DiceRoot {
-        let root = DiceRoot(context: nil)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let root = DiceRoot(container: modelContainer)
+        root.setUp(context: nil, rootControllable: root)
         root.itemController.replace(model: DiceModel.preview, isInsert: true, shouldRepairLinks: false)
         root.editController(type: .main).setCurrentItem(to: .preview)
         Task {
@@ -62,8 +65,9 @@ public extension DiceRoot {
 #if DEBUG
     @MainActor
     static func testRoot() -> DiceRoot {
-        let root = DiceRoot(context: nil)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let root = DiceRoot(container: modelContainer)
+        root.setUp(context: nil, rootControllable: root)
         return root
     }
 #endif

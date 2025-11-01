@@ -4,6 +4,7 @@ import AndrenalinKit
 import RPGDie
 import RPGPdfs
 import CoreData
+import SwiftData
 import SwiftUI
 
 @MainActor @Observable
@@ -34,10 +35,26 @@ public final class RootModel: Sendable {
 public final class TableRoot: @unchecked Sendable {
     
     @MainActor
-    init(context: NSManagedObjectContext?, diceRoot: DiceRoot, pdfRoot: PdfRoot) {
+    init(container: ModelContainer, diceRoot: DiceRoot, pdfRoot: PdfRoot) {
         rootModel = RootModel()
+        
+        let module: NetworkModules = .photo
+        self.module = module
+        
+        let listDisplayModel = ListDisplayModel()
+        self.listDisplayModel = listDisplayModel
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        self.searchModel = searchModel
+        
+        let itemSelectionModel = ItemSelectionModel()
+        self.itemSelectionModel = itemSelectionModel
+
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
+    }
+    
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
+        self._rootControllable = rootControllable
         
         if let context {
             dataController = DataController(root: self, context: context, token: NetworkModules.table.token)
@@ -49,10 +66,20 @@ public final class TableRoot: @unchecked Sendable {
         _gameController = GameController(root: self, itemController: self.itemController)
         _linkController = LinkController(root: self, itemController: self.itemController)
         _viewController = ViewController(root: self)
+        
+        Task {
+            dataController?.start()
+        }
     }
-    
+
     public let rootModel: RootModel
+    public let module: NetworkModules
     
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
+    public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
+            
     let diceRoot: DiceRoot
     let pdfRoot: PdfRoot
     
@@ -173,14 +200,6 @@ extension TableRoot {
     @MainActor
     func resetGeneratorController(rootItem: ItemRowModel?) {
         rootModel.resetGeneratorController(rootItem: rootItem, generatorController: generatorController(rootItem: rootItem))
-    }
-    
-    @MainActor
-    public func setRootControllable(_ rootControllable: RootControllable) {
-        self._rootControllable = rootControllable
-        Task {
-            dataController?.start()
-        }
     }
     
     @MainActor

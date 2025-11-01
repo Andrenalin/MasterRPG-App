@@ -4,14 +4,16 @@ import AndrenalinKit
 import Foundation
 import RPGResources
 internal import CoreGraphics
+import SwiftData
 
 public extension PdfRoot {
     static let previewSpaceId = PdfModel.previewId
     
     @MainActor
     static let preview: PdfRoot = {
-        let root = PdfRoot(context: nil)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let root = PdfRoot(container: modelContainer)
+        root.setUp(context: nil, rootControllable: root)
         root.editController(type: .main).setCurrentItem(to: .preview)
         return root
     }()
@@ -43,8 +45,9 @@ public extension PdfRoot {
 #if DEBUG
     @MainActor
     static func testRoot() -> PdfRoot {
-        let root = PdfRoot(context: nil)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let root = PdfRoot(container: modelContainer)
+        root.setUp(context: nil, rootControllable: root)
         return root
     }
 #endif

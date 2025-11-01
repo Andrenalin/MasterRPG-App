@@ -10,14 +10,16 @@ import RPGResources
 import RPGTables
 import RPGValues
 import SwiftUI
+import SwiftData
 
 public extension MapRoot {
     static let previewValueId = MapModel.previewId
 
     @MainActor
     static let preview: MapRoot = {
-        var root = MapRoot(context: nil, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, valueRoot: .preview)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        var root = MapRoot(container: modelContainer, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, valueRoot: .preview)
+        root.setUp(context: nil, rootControllable: root)
         //root.editController(type: .main).setCurrentItem(to: .preview)
         return root
     }()
@@ -49,8 +51,9 @@ public extension MapRoot {
 #if DEBUG
     @MainActor
     static func testRoot(audioRoot: AudioRoot, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) -> MapRoot {
-        let root = MapRoot(context: nil, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        var root = MapRoot(container: modelContainer, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, valueRoot: .preview)
+        root.setUp(context: nil, rootControllable: root)
         return root
     }
 #endif

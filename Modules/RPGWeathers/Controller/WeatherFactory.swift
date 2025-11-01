@@ -3,13 +3,13 @@
 import CoreExternalRPG
 import AndrenalinKit
 import RPGPhotos
-import CoreData
+import SwiftData
 import SwiftUI
 
 public enum WeatherFactory {
     @MainActor
-    public static func root(for context: NSManagedObjectContext, photoRoot: PhotoRoot) -> WeatherRoot {
-        WeatherRoot(context: context, photoRoot: photoRoot)
+    public static func root(container: ModelContainer, photoRoot: PhotoRoot) -> WeatherRoot {
+        WeatherRoot(container: container, photoRoot: photoRoot)
     }
 
     @MainActor

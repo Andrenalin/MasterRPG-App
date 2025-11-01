@@ -2,15 +2,17 @@
 
 import AndrenalinKit
 import Foundation
+import SwiftData
 import RPGResources
 import RPGPhotos
 
 public extension WeatherRoot {
     @MainActor
     static let preview: WeatherRoot = {
-        let root = WeatherRoot(context: nil, photoRoot: .preview)
-        root.photoRoot.setRootControllable(root)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let root = WeatherRoot(container: modelContainer, photoRoot: PhotoFactory.root(container: modelContainer))
+        root.photoRoot.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root)
         root.editController(type: .main).setCurrentItem(to: .preview)
         return root
     }()
@@ -41,8 +43,10 @@ public extension WeatherRoot {
 #if DEBUG
     @MainActor
     static func testRoot(photoRoot: PhotoRoot) -> WeatherRoot {
-        let root = WeatherRoot(context: nil, photoRoot: photoRoot)
-        root.setRootControllable(root)
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let root = WeatherRoot(container: modelContainer, photoRoot: PhotoFactory.root(container: modelContainer))
+        root.photoRoot.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root)
         return root
     }
 #endif
