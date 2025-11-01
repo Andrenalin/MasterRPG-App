@@ -54,7 +54,7 @@ struct ItemRootListView: View {
         
         ListRootView(root: root, parentModel: nil)
             .searchItemList(listControllable: root.folderListControllable, parentModel: nil)
-//            .navigationDestinationAutoReceive(InternalRoute.self)
+            //.navigationDestinationAutoReceive(InternalRoute.self)
     }
 }
 

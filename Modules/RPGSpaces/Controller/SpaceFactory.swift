@@ -17,8 +17,8 @@ public enum SpaceFactory {
             .itemSplitViewSizeMode(.wide)
     }
     
-    public static func rootView() -> some View {
-        SpaceRootView()
+    public static func rootView(isTabbed: Bool = false) -> some View {
+        SpaceRootView(isTabbed: isTabbed)
     }
 
     @MainActor

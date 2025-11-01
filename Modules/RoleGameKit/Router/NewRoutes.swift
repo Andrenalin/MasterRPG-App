@@ -116,8 +116,11 @@ struct NewSpaceRoute: View {
     
     var body: some View {
         if isExtended {
-            SpaceFactory.rootExtendedView(for: appStore.spaceRoot, tabId: tabId)
+            SpaceFactory.rootView(isTabbed: true)
                 .environment(appStore.spaceRoot)
+
+//            SpaceFactory.rootExtendedView(for: appStore.spaceRoot, tabId: tabId)
+//                .environment(appStore.spaceRoot)
         } else {
             SpaceFactory.rootView()
                 .environment(appStore.spaceRoot)

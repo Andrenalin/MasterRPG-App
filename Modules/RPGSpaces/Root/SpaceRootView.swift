@@ -5,11 +5,21 @@ import AndrenalinKit
 import SwiftUI
 
 struct SpaceRootView: View {
+    let isTabbed: Bool
+    
     @Environment(SpaceRoot.self) private var root
 
     var body: some View {
         let _ = Self._printChanges()
-        splitWithDetail()
+        if isTabbed {
+            //ManagedNavigationStack(name: "Space") { _ in
+                pureContent
+            //}
+            .environment(root.rootController)
+            .navigationAutoReceive(SpaceNewRoute.self)
+        } else {
+            splitWithDetail()
+        }
     }
     
     var pureContent: some View {
@@ -37,7 +47,6 @@ struct SpaceRootView: View {
             ItemSplitDetailRootView(root: root.rootController)
         }
     }
-
 }
 
 struct SaveView: View {
@@ -58,6 +67,6 @@ struct SaveView: View {
 
 #Preview(traits: .mockData) {
     ManagedNavigationStack {
-        SpaceRootView()
+        SpaceRootView(isTabbed: false)
     }
 }

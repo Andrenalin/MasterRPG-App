@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
+import CoreExternalRPG
 import RPGAdventures
 import RoleGameKit
 import RPGGame
@@ -43,7 +44,7 @@ struct RootView: View {
             }
 #endif
         }
-        .navigationTitle("MasterRPG")
+        //.navigationTitle("MasterRPG")
         .setWideMode()
         .accentColor(.blue)
         .tint(.blue)
@@ -70,7 +71,7 @@ struct RootView: View {
         .environment(appStore.settingsModel)
         .environment(appStore.selectionSheetLinkModel)
         .environment(appStore.deviceRotationModel)
-        .environment(\.navigator, appStore.navigator)
+        .navigationRoot(appStore.navigator)
         .appExitNotifications(handler: appStore.adventureRoot.save)
         .modifier(UserSettingsViewModifier(appStore: appStore))
         .observeRotate(with: appStore.deviceRotationModel)
