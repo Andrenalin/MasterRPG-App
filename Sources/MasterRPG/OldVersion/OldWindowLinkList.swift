@@ -161,21 +161,6 @@ struct OldWindowLinkList: Scene {
             .keyboardShortcut("8", modifiers: [.command, .option])
 #endif
 
-            BaseWindow("\(NetworkModules.space.title) Link", id: NetworkModules.space.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.spaceRoot.viewController.linkWindow(root: appStore.spaceRoot)
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.space] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .space))
-#if os(macOS)
-            .keyboardShortcut("9", modifiers: [.command, .option])
-#endif
-
             BaseWindow("\(NetworkModules.weather.title) Link", id: NetworkModules.weather.linkWindowId) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
                     appStore.weatherRoot.viewController.linkWindow()
@@ -267,14 +252,6 @@ struct OldWindowLinkAltList: Scene {
                     appStore.photoRoot.viewController.linkWindow()
                         .modifier(WindowListSetUpViewModifier(appStore: appStore))
                         .environment(\.mapActions, appStore.mapRoot.mapActions)
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-
-            WindowGroup("\(NetworkModules.space.title) Link", id: NetworkModules.space.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.spaceRoot.viewController.linkWindow(root: appStore.spaceRoot)
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }

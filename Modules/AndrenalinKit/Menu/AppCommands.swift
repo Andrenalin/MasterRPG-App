@@ -4,7 +4,7 @@ import SwiftUI
 
 #if !os(tvOS)
 
-public struct LinkWindowCommandView: View {
+public struct AltLinkWindowCommandView: View {
     public init(title: String, networkModule: NetworkModules, key: AKKeyEquivalent) {
         self.title = title
         self.icon = networkModule.icon

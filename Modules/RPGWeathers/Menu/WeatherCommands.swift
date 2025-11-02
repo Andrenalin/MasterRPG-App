@@ -26,7 +26,7 @@ public struct WeatherCommands: Commands {
     public var body: some Commands {
 #if os(macOS)
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(title: "Weather Link", networkModule: .weather, key: "0")
+            AltLinkWindowCommandView(title: "Weather Link", networkModule: .weather, key: "0")
         }
 #endif
         CommandGroup(after: .toolbar) {

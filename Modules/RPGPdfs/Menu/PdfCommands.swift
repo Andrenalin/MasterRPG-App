@@ -26,7 +26,7 @@ public struct PdfCommands: Commands {
     public var body: some Commands {
 #if os(macOS)
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(title: "Pdf Link", networkModule: .pdf, key: "3")
+            AltLinkWindowCommandView(title: "Pdf Link", networkModule: .pdf, key: "3")
         }
 #endif
         CommandGroup(after: .toolbar) {

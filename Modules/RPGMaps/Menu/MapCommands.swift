@@ -37,7 +37,7 @@ public struct MapCommands: Commands {
     public var body: some Commands {
 #if os(macOS)
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(title: "Map Link", networkModule: .map, key: "5")
+            AltLinkWindowCommandView(title: "Map Link", networkModule: .map, key: "5")
         }
 #endif
         CommandGroup(after: .toolbar) {

@@ -26,7 +26,7 @@ public struct PhotoCommands: Commands {
     public var body: some Commands {
 #if os(macOS)
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(title: "Photo Link", networkModule: .photo, key: "8")
+            AltLinkWindowCommandView(title: "Photo Link", networkModule: .photo, key: "8")
         }
 #endif
         CommandGroup(after: .toolbar) {

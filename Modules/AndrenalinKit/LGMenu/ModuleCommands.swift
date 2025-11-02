@@ -20,7 +20,7 @@ public struct ModuleCommands: Commands {
 
     public var body: some Commands {
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(title: "", networkModule: root.module, key: key)
+            LinkWindowCommandView(networkModule: root.module, key: key)
         }
         CommandGroup(after: .toolbar) {
             NavigateButton(root: root, navigator: navigator, key: key)

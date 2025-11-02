@@ -3,7 +3,6 @@
 import AndrenalinKit
 import AppIntents
 import RoleGameKit
-import SwiftData
 import SwiftUI
 import os.log
 
@@ -46,10 +45,6 @@ struct MasterRPGApp: App {
 //        AppDependencyManager.shared.add(dependency: weatherRootModel)
     }
 
-    // NEW
-    //@State private var appModel = AppModel()
-    
-    // OLD
     @State private var appStore: AppStore = AppStore.shared
     
     var body: some Scene {
@@ -64,7 +59,7 @@ struct MasterRPGApp: App {
                 .setAppSizeMode()
         }
         .commands {
-            OldMenuMainCommand(appStore: appStore)
+            MenuMainCommand(appModel: appStore)
         }
 #if os(macOS)
         .keyboardShortcut("G", modifiers: [.command, .shift, .option])
@@ -94,8 +89,8 @@ struct MasterRPGApp: App {
         
         OldWindowLinkAltList(appStore: appStore)
         
-        WindowViewerList(appStore: appStore)
-//        WindowLinkList(appModel: appModel)
+        WindowViewerList(appModel: appStore)
+        WindowLinkList(appModel: appStore)
 #endif
         
 #if os(macOS)

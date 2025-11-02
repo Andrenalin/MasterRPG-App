@@ -37,7 +37,7 @@ public struct ValueCommands: Commands {
     public var body: some Commands {
 #if os(macOS)
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(title: "Character Link", networkModule: .value, key: "2")
+            AltLinkWindowCommandView(title: "Character Link", networkModule: .value, key: "2")
         }
 #endif
         CommandGroup(after: .toolbar) {

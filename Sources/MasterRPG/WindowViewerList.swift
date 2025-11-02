@@ -10,7 +10,7 @@ import RPGSpaces
 
 
 struct WindowViewerList: Scene {
-    let appStore: AppStore
+    let appModel: AppStore
     
     var body: some Scene {
         Group {
@@ -22,8 +22,8 @@ struct WindowViewerList: Scene {
 //                appStore.pdfRoot.viewController.windowViewer(root: appStore.pdfRoot, selection: selection)
 //            }
 
-            windowGroup(model: appStore, module: .space) { selection in
-                appStore.spaceRoot.viewController.windowViewer(root: appStore.spaceRoot, selection: selection)
+            windowGroup(model: appModel, module: .space) { selection in
+                appModel.spaceRoot.viewController.windowViewer(root: appModel.spaceRoot, selection: selection)
             }
             
 
@@ -40,7 +40,7 @@ struct WindowViewerList: Scene {
     
     private func windowGroup<Content: View>(model: AppStore, module: NetworkModules, content: @escaping (WindowItemSelection) -> Content) -> some Scene {
         WindowGroup("\(module.title) Viewer", id: module.viewerWindowId, for: WindowItemSelection.self) { $selection in
-            DataBaseAppStoreAvailable(appStore: appStore) { _ in
+            DataBaseAppStoreAvailable(appStore: appModel) { _ in
                 content(selection ?? WindowItemSelection(itemId: UUID()))
                     .modifier(WindowViewerSetUpViewModifier(model: model, module: module))
             }

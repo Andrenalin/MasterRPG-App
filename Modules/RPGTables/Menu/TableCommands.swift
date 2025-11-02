@@ -37,7 +37,7 @@ public struct TableCommands: Commands {
     public var body: some Commands {
 #if os(macOS)
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(title: "Table Link", networkModule: .table, key: "4")
+            AltLinkWindowCommandView(title: "Table Link", networkModule: .table, key: "4")
         }
 #endif
         CommandGroup(after: .toolbar) {

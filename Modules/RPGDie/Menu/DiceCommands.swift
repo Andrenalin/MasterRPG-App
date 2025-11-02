@@ -26,7 +26,7 @@ public struct DiceCommands: Commands {
     public var body: some Commands {
 #if os(macOS)
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(title: "\(root.itemController.itemDataModel.networkModule.title) Link", networkModule: root.itemController.itemDataModel.networkModule, key: "7")
+            AltLinkWindowCommandView(title: "\(root.itemController.itemDataModel.networkModule.title) Link", networkModule: root.itemController.itemDataModel.networkModule, key: "7")
         }
 #endif
         CommandGroup(after: .toolbar) {

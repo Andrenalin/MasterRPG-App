@@ -37,7 +37,7 @@ public struct AdventureCommands: Commands {
     public var body: some Commands {
 #if os(macOS)
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(title: "Adventure Link", networkModule: .adventure, key: "1")
+            AltLinkWindowCommandView(title: "Adventure Link", networkModule: .adventure, key: "1")
         }
 #endif
         CommandGroup(after: .toolbar) {

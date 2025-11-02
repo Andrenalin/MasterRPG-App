@@ -26,7 +26,7 @@ public struct AudioCommands: Commands {
     public var body: some Commands {
 #if os(macOS)
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(title: "Audio Link", networkModule: .audio, key: "6")
+            AltLinkWindowCommandView(title: "Audio Link", networkModule: .audio, key: "6")
         }
 #endif
         CommandGroup(after: .toolbar) {

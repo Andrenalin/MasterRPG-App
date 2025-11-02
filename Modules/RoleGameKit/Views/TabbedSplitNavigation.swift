@@ -50,12 +50,6 @@ struct TabSidebar: View {
         @Bindable var appModel = appModel
         List(selection: $appModel.selectedModule) {
             allTabs
-//            ForEach(RootRoute.allTabs) { tab in
-//                NavigationLink(to: tab) {
-//                    Label(tab.title, systemImage: tab.icon)
-//                }
-//                .tag(tab)
-//            }
         }
         .onChange(of: storedTab, initial: true) {
             guard storedTab != appModel.selectedModule else { return }
