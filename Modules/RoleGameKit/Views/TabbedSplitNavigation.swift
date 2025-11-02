@@ -18,7 +18,8 @@ public struct TabbedSplitNavigation: View {
             TabSidebar()
                 .navigationSplitViewColumnWidth(min: 100, ideal: 150, max: 200)
         } content: {
-            ManagedNavigationStack(name: selectedModule.title) { _ in
+            ManagedPresentationView {
+            //ManagedNavigationStack(name: selectedModule.title) { _ in
                 appModel.selectedModule
             }
             .environment(appModel.itemRootController(for: selectedModule))
@@ -48,12 +49,13 @@ struct TabSidebar: View {
     var body: some View {
         @Bindable var appModel = appModel
         List(selection: $appModel.selectedModule) {
-            ForEach(RootRoute.allTabs) { tab in
-                NavigationLink(to: tab) {
-                    Label(tab.title, systemImage: tab.icon)
-                }
-                .tag(tab)
-            }
+            allTabs
+//            ForEach(RootRoute.allTabs) { tab in
+//                NavigationLink(to: tab) {
+//                    Label(tab.title, systemImage: tab.icon)
+//                }
+//                .tag(tab)
+//            }
         }
         .onChange(of: storedTab, initial: true) {
             guard storedTab != appModel.selectedModule else { return }
@@ -63,5 +65,47 @@ struct TabSidebar: View {
             guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
             storedTab = selectedModule
         }
+    }
+    
+    @ViewBuilder var allTabs: some View {
+            Section {
+                tabView(tab: .search)
+
+                tabView(tab: .generator)
+            } header: {
+                Text("Special", bundle: .module)
+            }
+
+            Section {
+                tabView(tab: .adventures)
+                tabView(tab: .values)
+                tabView(tab: .maps)
+                tabView(tab: .weathers)
+            } header: {
+                Text("Library", bundle: .module)
+            }
+
+            Section {
+                tabView(tab: .pdfs)
+                tabView(tab: .tables)
+            } header: {
+                Text("References", bundle: .module)
+            }
+
+            Section {
+                tabView(tab: .audios)
+                tabView(tab: .dice)
+                tabView(tab: .photos)
+                tabView(tab: .space)
+            } header: {
+                Text("Material", bundle: .module)
+            }
+    }
+    
+    @ViewBuilder func tabView(tab: RootRoute) -> some View {
+        NavigationLink(to: tab) {
+            Label(tab.title, systemImage: tab.icon)
+        }
+        .tag(tab)
     }
 }

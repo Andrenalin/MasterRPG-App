@@ -123,13 +123,13 @@ extension RootRoute: NavigationDestination {
     }
     
     public static var allTabs: [RootRoute] {
-//#if os(iOS) || os(visionOS)
         [.game, .adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
-//#else
-//        [.adventures, .values, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .search]
-//#endif
     }
-    
+
+    public static var macTabs: [RootRoute] {
+        [.adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .search]
+    }
+
     static var fiveTabs: [RootRoute] {
         [.game, .adventures, .values, .editors, .search]
     }
