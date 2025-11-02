@@ -115,25 +115,3 @@ public extension LinkRegisterControllable {
         model.setItem(itemId: item.itemId, with: itemLinks)
     }
 }
-
-public struct EffectedItemModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(id: UUID, name: String, entryName: String? = nil, module: NetworkModules) {
-        self.id = id
-        self.name = name
-        self.entryName = entryName
-        self.module = module
-    }
-    
-    public let id: UUID
-    public let name: String
-    public let entryName: String?
-    public let module: NetworkModules
-    
-    var title: String {
-        guard let entryName else {
-            return name
-        }
-        return "\(name) --- \(entryName)"
-    }
-}
-

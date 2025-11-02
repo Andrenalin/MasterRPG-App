@@ -24,14 +24,13 @@ struct InternalRouteDestinationView: View {
         switch route {
         case .export(let ids):
             Text("")
-//            ExportProgressFile(exportController: root.exportControllable) {
-//                let exportIds = root.exportControllable.exporting(ids: Set(ids))
-//                return root.exportControllable.export(ids: exportIds)
-//            }
+            ExportProgressPanelView(exportController: root.exportControllable) {
+                let exportIds = root.exportControllable.exporting(ids: Set(ids))
+                return root.exportControllable.export(ids: exportIds)
+            }
             .presentationDetents([.height(160)])
         case .removeAlert:
-            Text("")
-//            EffectedLinkAction(root: root)
+            EffectedLinkActionPanelView(root: root)
         }
     }
 }

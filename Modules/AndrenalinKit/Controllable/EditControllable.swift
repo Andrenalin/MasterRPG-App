@@ -194,9 +194,43 @@ public extension EditControllable {
         return await itemControllable.item(for: itemRowModel.itemId)
     }
     
+    func delete(itemId: UUID) async {
+        guard var item = await itemControllable.item(for: itemId) else { return }
+//        if let fileUrl = item.fileUrl, let fileUrlDataController = fileUrlDataController {
+//            fileUrlDataController.delete(fileUrl)
+//        } - file needs to be deleted if real delete comes
+        for entry in item.entries {
+            if var entryItem = await itemControllable.item(for: entry.childId) {
+//                if item.category == .folder {
+//                    entryItem.parentId = item.parentId // upper folder
+//                }
+                entryItem.displayState = 0
+                await itemControllable.replace(model: entryItem, isInsert: false, shouldRepairLinks: false)
+            }
+        }
+        item.displayState = 2
+        await itemControllable.replace(model: item, isInsert: false, shouldRepairLinks: false)        
+    }
+    
     func duplicate(item: any ItemDataAccessable) async {
         await itemControllable.duplicate(model: ItemRowModel(itemId: item.id, typeId: itemControllable.itemDataModel.networkModule))
     }
+    
+    func restore(itemId: UUID) async {
+        guard var item = await itemControllable.item(for: itemId) else { return }
+        for entry in item.entries {
+            if var entryItem = await itemControllable.item(for: entry.childId) {
+//                if item.category == .folder {
+//                    entryItem.parentId = item.id // to this folder
+//                }
+                entryItem.displayState = 1 // hidden
+                await itemControllable.replace(model: entryItem, isInsert: false, shouldRepairLinks: false)
+            }
+        }
+        item.displayState = 0
+        await itemControllable.replace(model: item, isInsert: false, shouldRepairLinks: false)
+    }
+
 }
 
 // MARK: - Files

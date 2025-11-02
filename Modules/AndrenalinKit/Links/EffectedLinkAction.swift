@@ -2,18 +2,6 @@
 
 import SwiftUI
 
-@Observable
-public final class RemoveEntryListModel {
-    public init(removeItems: [ItemRowModel] = []) {
-        self.removeItems = removeItems
-        self.linkTree = []
-    }
-
-    public var removeItems: [ItemRowModel] = []
-    var showDeleteAlert: Bool = false
-    var linkTree: [RemoveLinkTreeModel] = []
-}
-
 public struct EffectedLinkAction: View {
     public init(itemControllable: any ItemControllable, removeEntryList: RemoveEntryListModel, overwrite: Bool = false, action: @escaping ([ItemRowModel]) async -> Void) {
         self.itemControllable = itemControllable
@@ -164,16 +152,5 @@ private extension EffectedLinkAction {
             result.append(contentsOf: items)
         }
         return result
-    }
-}
-
-struct RemoveLinkTreeModel: Identifiable {
-    var item: ItemRowModel
-    var link: EffectedItemModel?
-    var canRemoved: Bool
-    var counter: Int
-    
-    var id: UUID {
-        item.entryId ?? item.itemId
     }
 }
