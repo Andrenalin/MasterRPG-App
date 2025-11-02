@@ -33,9 +33,13 @@ public struct SplitNavigation: View {
             appModel.selectedModule = storedTab
         }
         .onChange(of: appModel.selectedModule) {
+            if let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module {
+                appModel.menuSelectedModule = selected.module
+            }
             guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
             storedTab = selectedModule
         }
+        .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
         .onNavigationRoute(RootRouteRouter(appStore: appModel))
         .onNavigationOpenURL(RootURLHandler(appStore: appModel))

@@ -19,7 +19,6 @@ public struct TabbedSplitNavigation: View {
                 .navigationSplitViewColumnWidth(min: 100, ideal: 150, max: 200)
         } content: {
             ManagedPresentationView {
-            //ManagedNavigationStack(name: selectedModule.title) { _ in
                 appModel.selectedModule
             }
             .environment(appModel.itemRootController(for: selectedModule))
@@ -28,8 +27,10 @@ public struct TabbedSplitNavigation: View {
                 .environment(appModel.itemRootController(for: selectedModule))
         }
         .onChange(of: appModel.selectedModule) {
-            print("**** \(appModel.selectedModule?.title ?? "Nothing selected")")
+            guard let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module else { return }
+            appModel.menuSelectedModule = selected.module
         }
+        .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
         .onNavigationRoute(RootRouteRouter(appStore: appModel))
         .onNavigationOpenURL(RootURLHandler(appStore: appModel))

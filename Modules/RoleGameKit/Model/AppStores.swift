@@ -48,6 +48,7 @@ public final class AppStore: Sendable {
     // Routing models
     @ObservationIgnored public var navigator: Navigator
     var selectedModule: RootRoute? = .game
+    var menuSelectedModule: NetworkModules = .game
     
     // Module roots
     @ObservationIgnored public let adventureRoot: AdventureRoot

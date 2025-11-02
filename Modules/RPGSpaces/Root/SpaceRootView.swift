@@ -10,7 +10,6 @@ struct SpaceRootView: View {
     var body: some View {
         let _ = Self._printChanges()
         ItemRootView(root: root.rootController)
-            .navigationAutoReceive(SpaceRoute.self)
             .overlay {
                 SaveView(root: root)
             }

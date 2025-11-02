@@ -42,9 +42,13 @@ public struct TabbedNavigation: View {
             appModel.selectedModule = storedTab
         }
         .onChange(of: appModel.selectedModule) {
+            if let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module {
+                appModel.menuSelectedModule = selected.module
+            }
             guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
             storedTab = selectedModule
         }
+        .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive { (route: RootRoute, navigator) in
             guard RootRoute.fiveTabs.contains(route) else {
                 guard appModel.selectedModule != .editors else { return .immediately }

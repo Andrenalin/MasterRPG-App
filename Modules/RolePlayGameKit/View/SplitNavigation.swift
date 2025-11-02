@@ -32,7 +32,6 @@ public struct SplitNavigation: View {
 #endif
         }
         .environment(tabTitleModel)
-        //.focusedSceneValue(\.selectedModule, $tabSelectedModule)
         .onChange(of: storedTab, initial: true) {
             guard storedTab != appModel.selectedModule else { return }
             appModel.selectedModule = storedTab

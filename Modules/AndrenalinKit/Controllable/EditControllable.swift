@@ -193,24 +193,10 @@ public extension EditControllable {
         let itemRowModel = await itemControllable.addNew(type: itemCategory.rawValue)
         return await itemControllable.item(for: itemRowModel.itemId)
     }
-//    func duplicate(item: ItemDataModel) {
-//        duplicateDataModel(item: item, newItemId: UUID())
-//    }
-//
-//    func duplicateDataModel(item: ItemDataModel, newItemId: UUID) {
-//        let modelContext = itemControllable.container.mainContext
-//        let duplicate = item.duplicate(newItemId: newItemId, url: nil)
-//        modelContext.insert(duplicate)
-//        try? modelContext.save()
-//        guard let fileUrlDataController, let actor = duplicate.modelActor() else { return }
-//        let originalFileUrl = item.fileUrl
-//        Task.detached {
-//            await actor.setup(id: newItemId)
-//            guard let fileUrl = try? await fileUrlDataController.duplicate(fileUrl: originalFileUrl, for: newItemId) else { return }
-//            await actor.update(url: fileUrl.rawUrl)
-//            await actor.save()
-//        }
-//    }
+    
+    func duplicate(item: any ItemDataAccessable) async {
+        await itemControllable.duplicate(model: ItemRowModel(itemId: item.id, typeId: itemControllable.itemDataModel.networkModule))
+    }
 }
 
 // MARK: - Files

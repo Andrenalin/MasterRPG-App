@@ -65,8 +65,10 @@ struct AddItemButton: View {
 
     var body: some View {
         Button {
-//            let item = root.editControllable.addNew(modelContext: root.itemControllable.container.mainContext, module: root.module, type: .item)
-//            navigator.perform(route: KnownRoutes.route(module: root.module, itemId: item.id, entryId: nil))
+            Task {
+                guard let item = await root.editControllable.addNew(type: .item) else { return }
+                navigator.perform(route: KnownRoutes.route(module: root.module, itemId: item.id, entryId: nil))
+            }
         } label: {
             Label { Text("New \(root.module.title)", bundle: .module) } icon: { Image(systemName: "plus") }
         }
@@ -80,7 +82,9 @@ struct DuplicateItemButton: View {
     var body: some View {
         Button {
             if let item {
-                //root.editControllable.duplicate(item: item)
+                Task {
+                    await root.editControllable.duplicate(item: item)
+                }
             }
         } label: {
             Text("Duplicate \(item?.name ?? "")", bundle: .module)
