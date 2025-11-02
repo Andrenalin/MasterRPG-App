@@ -216,6 +216,12 @@ public extension EditControllable {
         await itemControllable.duplicate(model: ItemRowModel(itemId: item.id, typeId: itemControllable.itemDataModel.networkModule))
     }
     
+    func markForDeletion(itemId: UUID) async {
+        guard var item = await itemControllable.item(for: itemId) else { return }
+        item.displayState = 2
+        await itemControllable.replace(model: item, isInsert: false, shouldRepairLinks: false)
+    }
+
     func restore(itemId: UUID) async {
         guard var item = await itemControllable.item(for: itemId) else { return }
         for entry in item.entries {
@@ -231,6 +237,33 @@ public extension EditControllable {
         await itemControllable.replace(model: item, isInsert: false, shouldRepairLinks: false)
     }
 
+//    func removeItem(offsets: IndexSet, model: any ItemDataAccessable) {
+//        let removedEntries = model.entries.filter { offsets.contains($0.index) }
+//        var entries = model.entries
+//        entries.remove(atOffsets: offsets)
+//        reindex(entries: &entries)
+//        model.reset(entries: entries)
+//
+//        if model.category == .folder {
+//            removedEntries.forEach {
+//                modelContext.delete($0)
+//                if let entry = ItemDataModel.model(modelContext: modelContext, id: $0.childId) {
+//                    entry.reset(displayState: 2)
+//                }
+//            }
+//        }
+//    }
+//
+//    func moveItems(source: IndexSet, destination: Int, model: any ItemDataAccessable) {
+//        var entries = model.entries
+//        entries.move(fromOffsets: source, toOffset: destination)
+//        entries = entries.enumerated().map { index, entry in
+//            let updatedEntry = entry
+//            updatedEntry.index = index
+//            return updatedEntry
+//        }
+//        model.reset(entries: entries)
+//    }
 }
 
 // MARK: - Files
