@@ -54,9 +54,9 @@ nonisolated public struct NavigationConfiguration {
 
     public init(
         restorationKey: String? = nil,
-        logger: ((NavigationEvent) -> Void)? = { event in
+        logger: ((NavigationEvent) -> Void)? = {
             #if DEBUG
-            print(event)
+            print($0)
             #endif
         },
         executionDelay: TimeInterval = 0.3,
