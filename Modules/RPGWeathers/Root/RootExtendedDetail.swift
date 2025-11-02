@@ -28,7 +28,7 @@ struct RootDetail: View {
         detailView(selectedItem: listController.model.selectedItem ?? .empty)
             .onChange(of: listController.model.selectedItem) {
                 if listController.model.selectedItem == nil {
-                    navigator.send(WeatherRoute.detail(nil, UUID()))
+                    navigator.back()
                 }
             }
     }

@@ -17,14 +17,14 @@ public struct InAppController {
     
     init(model: InAppModel) {
         self.model = model
-        updates = Task {
-            for await update in StoreKit.Transaction.updates {
-                if let transaction = try? update.payloadValue {
-                    await InAppController.fetchActiveTransactions(in: model)
-                    await transaction.finish()
-                }
-            }
-        }
+//        updates = Task {
+//            for await update in StoreKit.Transaction.updates {
+//                if let transaction = try? update.payloadValue {
+//                    await InAppController.fetchActiveTransactions(in: model)
+//                    await transaction.finish()
+//                }
+//            }
+//        }
     }
     
     static func fetchActiveTransactions(in model: InAppModel) async {

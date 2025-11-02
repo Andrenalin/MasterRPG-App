@@ -29,75 +29,128 @@ extension Logger {
 
 @MainActor @Observable
 public final class AppStore: Sendable {
-    @MainActor
-    public static let shared = AppStore()
-
-    public var isNewUICode: Bool = false
-
+    @MainActor public static let shared = AppStore()
+    
     // Other Models
-    public let windowStateModel: WindowStateModel
-    public let optionKeyDownModel: OptionKeyDownModel
-    public let settingsModel: AppSettingsModel
-    public var selectionSheetLinkModel: SelectionSheetLinkModel
-    public let deviceRotationModel: DeviceRotationModel
-
-    public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
+    @ObservationIgnored public let deviceRotationModel: DeviceRotationModel
+    @ObservationIgnored public let optionKeyDownModel: OptionKeyDownModel
+    @ObservationIgnored public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
+    @ObservationIgnored public let settingsModel: AppSettingsModel
+    @ObservationIgnored public var selectionSheetLinkModel: SelectionSheetLinkModel
+    @ObservationIgnored public let windowStateModel: WindowStateModel
     
     // Options
     public var hasDatabase: Bool = false
     
-    @ObservationIgnored
-    let inAppModel = InAppModel()
+    @ObservationIgnored let inAppModel = InAppModel()
     public let inAppController: InAppController
-
-    // Module Root Controller Models
-
-    public var adventureRoot: AdventureRoot { _adventureRoot.unsafelyUnwrapped }
-    public var audioRoot: AudioRoot { _audioRoot.unsafelyUnwrapped }
-    public var diceRoot: DiceRoot { _diceRoot.unsafelyUnwrapped }
-    public var gameRoot: GameRoot { _gameRoot.unsafelyUnwrapped }
-    public var mapRoot: MapRoot { _mapRoot.unsafelyUnwrapped }
-    public var pdfRoot: PdfRoot { _pdfRoot.unsafelyUnwrapped }
-    public var photoRoot: PhotoRoot { _photoRoot.unsafelyUnwrapped }
-    public var spaceRoot: SpaceRoot { _spaceRoot.unsafelyUnwrapped }
-    public var tableRoot: TableRoot { _tableRoot.unsafelyUnwrapped }
-    public var valueRoot: ValueRoot { _valueRoot.unsafelyUnwrapped }
-    public var weatherRoot: WeatherRoot { _weatherRoot.unsafelyUnwrapped }
-
+    
     // Routing models
-    public var navigator: Navigator
-
-    // Iืืnternals
-    @ObservationIgnored private var _adventureRoot: AdventureRoot?
-    @ObservationIgnored private var _audioRoot: AudioRoot?
-    @ObservationIgnored private var _diceRoot: DiceRoot?
-    @ObservationIgnored private var _gameRoot: GameRoot?
-    @ObservationIgnored private var _mapRoot: MapRoot?
-    @ObservationIgnored private var _pdfRoot: PdfRoot?
-    @ObservationIgnored private var _photoRoot: PhotoRoot?
-    @ObservationIgnored private var _spaceRoot: SpaceRoot?
-    @ObservationIgnored private var _tableRoot: TableRoot?
-    @ObservationIgnored private var _valueRoot: ValueRoot?
-    @ObservationIgnored private var _weatherRoot: WeatherRoot?
-
-    @MainActor
-    public init() {
-        self.windowStateModel = WindowStateModel()
+    @ObservationIgnored public var navigator: Navigator
+    var selectedModule: RootRoute? = .game
+    
+    // Module roots
+    @ObservationIgnored public let adventureRoot: AdventureRoot
+    @ObservationIgnored public let audioRoot: AudioRoot
+    @ObservationIgnored public let diceRoot: DiceRoot
+    @ObservationIgnored public let gameRoot: GameRoot
+    @ObservationIgnored public let mapRoot: MapRoot
+    @ObservationIgnored public let pdfRoot: PdfRoot
+    @ObservationIgnored public let photoRoot: PhotoRoot
+    @ObservationIgnored public let spaceRoot: SpaceRoot
+    @ObservationIgnored public let tableRoot: TableRoot
+    @ObservationIgnored public let valueRoot: ValueRoot
+    @ObservationIgnored public let weatherRoot: WeatherRoot
+    
+    private let root: RootManager
+    
+    @MainActor public init() {
+        self.deviceRotationModel = DeviceRotationModel()
         self.optionKeyDownModel = OptionKeyDownModel()
         self.settingsModel = AppSettingsModel()
         self.selectionSheetLinkModel = SelectionSheetLinkModel()
-        self.deviceRotationModel = DeviceRotationModel()
+        self.windowStateModel = WindowStateModel()
+        
         self.inAppController = InAppController(model: inAppModel)
+        
         self.navigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "1.0.10",
+                restorationKey: "1.0.12",
                 executionDelay: 0.4,
                 verbosity: .info,
-                autoDestinationMode: false
+                autoDestinationMode: true
             )
         )
-    }
+        
+        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        
+        let diceRoot = DiceFactory.root(container: modelContainer)
+        let photoRoot = PhotoFactory.root(container: modelContainer)
+        let audioRoot = AudioFactory.root(container: modelContainer)
+        let pdfRoot = PdfFactory.root(container: modelContainer)
+        let spaceRoot = SpaceFactory.root(container: modelContainer)
+        
+        let tableRoot = TableFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot)
+        let weatherRoot = WeatherFactory.root(container: modelContainer, photoRoot: photoRoot)
+        
+        let valueRoot = ValueFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+        
+        let mapRoot = MapFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
+        let adventureRoot = AdventureFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
+        let gameRoot = GameRoot(adventureRoot: adventureRoot, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
+        
+        self.adventureRoot = adventureRoot
+        self.audioRoot = audioRoot
+        self.diceRoot = diceRoot
+        self.gameRoot = gameRoot
+        self.mapRoot = mapRoot
+        self.pdfRoot = pdfRoot
+        self.photoRoot = photoRoot
+        self.spaceRoot = spaceRoot
+        self.tableRoot = tableRoot
+        self.valueRoot = valueRoot
+        self.weatherRoot = weatherRoot
+        
+#if os(tvOS)
+        root = RootManager(
+            adventureRoot: spaceRoot,
+            audioRoot: spaceRoot,
+            characterRoot: spaceRoot,
+            diceRoot: spaceRoot,
+            generatorRoot: spaceRoot,
+            mapRoot: spaceRoot,
+            pdfRoot: spaceRoot,
+            photoRoot: spaceRoot,
+            spaceRoot: spaceRoot,
+            tableRoot: spaceRoot,
+            weatherRoot: spaceRoot
+        )
+        
+#else
+        
+//        let generatorRoot = GeneratorRootFactory.rootModel(modelContext: modelContainer.mainContext, adventureRoot: adventureRoot, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
+        
+        root = RootManager(
+            adventureRoot: spaceRoot,
+            audioRoot: spaceRoot,
+            characterRoot: spaceRoot,
+            diceRoot: spaceRoot,
+            generatorRoot: spaceRoot,
+            mapRoot: spaceRoot,
+            pdfRoot: spaceRoot,
+            photoRoot: spaceRoot,
+            spaceRoot: spaceRoot,
+            tableRoot: spaceRoot,
+            weatherRoot: spaceRoot
+        )
+#endif
 
+    }
+}
+ 
+// MARK: - Maintanence
+
+extension AppStore {
     public func resetData() async {
         await adventureRoot.resetData()
     }
@@ -177,37 +230,7 @@ public final class AppStore: Sendable {
 // MARK: - DB and Root Models setup
 
 extension AppStore {
-    @MainActor
-    public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-
-        let diceRoot = DiceFactory.root(container: modelContainer)
-        let photoRoot = PhotoFactory.root(container: modelContainer)
-        let audioRoot = AudioFactory.root(container: modelContainer)
-        let pdfRoot = PdfFactory.root(container: modelContainer)
-        let spaceRoot = SpaceFactory.root(container: modelContainer)
-
-        let tableRoot = TableFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot)
-        let weatherRoot = WeatherFactory.root(container: modelContainer, photoRoot: photoRoot)
-
-        let valueRoot = ValueFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-
-        let mapRoot = MapFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
-        let adventureRoot = AdventureFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
-        let gameRoot = GameRoot(adventureRoot: adventureRoot, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
-
-        self._adventureRoot = adventureRoot
-        self._audioRoot = audioRoot
-        self._diceRoot = diceRoot
-        self._gameRoot = gameRoot
-        self._mapRoot = mapRoot
-        self._pdfRoot = pdfRoot
-        self._photoRoot = photoRoot
-        self._spaceRoot = spaceRoot
-        self._tableRoot = tableRoot
-        self._valueRoot = valueRoot
-        self._weatherRoot = weatherRoot
-
+    @MainActor public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
         adventureRoot.setUp(context: context)
 
         self.rpgSpotlightIndexer = spotlightIndexer
@@ -215,22 +238,25 @@ extension AppStore {
         
         hasDatabase = true
     }
-    
-//    @MainActor
-//    public func setupDiceRootModel(context: NSManagedObjectContext) {
-//        
-//        let diceRoot = DiceFactory.root(for: context)
-//
-//        self._diceRoot = diceRoot
-//
-//        diceRoot.setRootControllable(diceRoot)
-//        hasDatabase = true
-//    }
 }
 
 // MARK: - Routing
 
 extension AppStore {
+    func itemRootController(for module: NetworkModules) -> ItemRootController? {
+        root.itemRootController(for: module)
+    }
+        
+    public func resetNavigation() {
+        guard let selectedTab: NetworkModules = selectedModule?.module else { return }
+        let itemId: UUID? = root[selectedTab]?.currentSelectedItemId
+        Task {
+            try await Task.sleep(for: .milliseconds(150))
+            navigator.perform(route: KnownRoutes.route(module: selectedTab, itemId: itemId, entryId: nil))
+        }
+    }
+
+    
     @MainActor var externalRouter: any NavigationRouting<KnownRoutes> {
         NavigationRouter(navigator) { route in
             switch route {
@@ -244,8 +270,7 @@ extension AppStore {
         }
     }
     
-    @MainActor
-    public var routeActions: RouteActions {
+    @MainActor public var routeActions: RouteActions {
         RouteActions { [weak self] module, itemId, entryId in
             guard module != .none, let itemId else { return }
             self?.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: entryId))
@@ -254,37 +279,11 @@ extension AppStore {
 }
 
 extension AppStore {
-    @MainActor
-    public static var preview: AppStore {
+    @MainActor public static var preview: AppStore {
         let dbModel = DataBaseModel.preview
         let model = AppStore()
         model.setupRootModels(context: dbModel.context.unsafelyUnwrapped, spotlightIndexer: nil)
         return model
     }
-    @MainActor
-    public static let previewWithoutDatabase: AppStore = AppStore()
+    @MainActor public static let previewWithoutDatabase: AppStore = AppStore()
 }
-
-//struct DownloadedGamePack {
-//    let productID: String
-//    let request: NSBundleResourceRequest
-//
-//    func resourcePath() -> URL? {
-//        request.bundle.url(forResource: productID, withExtension: "gmz")
-//    }
-//
-//    func getResourceTag(for productId: String) -> String {
-//        productId
-//    }
-//
-//    func downloadGamePack(for productID: String) async throws -> DownloadedGamePack {
-//        let request = NSBundleResourceRequest(tags: Set([getResourceTag(for: productID)]))
-//        do {
-//            try await request.beginAccessingResources()
-//            return DownloadedGamePack(productID: productID, request: request)
-//        } catch {
-//            print(error.localizedDescription)
-//            throw error
-//        }
-//    }
-//}

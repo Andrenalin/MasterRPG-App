@@ -19,6 +19,7 @@ struct RootView: View {
     let editorOnly: Bool
 
     @Environment(\.locale) private var locale: Locale
+    
     @State private var showFirstLunchAlert = false
     @State private var showFirstDataAlert = false
 
@@ -44,10 +45,10 @@ struct RootView: View {
             }
 #endif
         }
-        //.navigationTitle("MasterRPG")
         .setWideMode()
         .accentColor(.blue)
         .tint(.blue)
+        .environmentSetUp(appStore)
         .environment(\.gameModus, appStore.settingsModel.gameModus)
         .environment(\.mapActions, appStore.mapRoot.mapActions)
         .environment(\.networkActions, appStore.gameRoot.networkActions())
@@ -56,25 +57,8 @@ struct RootView: View {
         .environment(\.sharingFeatureActions, appStore.gameRoot.sharingFeatureActions)
         .environment(\.showGameActions, appStore.settingsModel.showGameActions)
         .environment(\.valueActions, appStore.valueRoot.valueActions)
-        .environment(appStore)
-        .environment(appStore.adventureRoot)
-        .environment(appStore.audioRoot)
-        .environment(appStore.diceRoot)
-        .environment(appStore.mapRoot)
-        .environment(appStore.pdfRoot)
-        .environment(appStore.photoRoot)
-        .environment(appStore.spaceRoot)
-        .environment(appStore.tableRoot)
-        .environment(appStore.valueRoot)
-        .environment(appStore.weatherRoot)
-        .environment(appStore.optionKeyDownModel)
-        .environment(appStore.settingsModel)
-        .environment(appStore.selectionSheetLinkModel)
-        .environment(appStore.deviceRotationModel)
         .navigationRoot(appStore.navigator)
         .appExitNotifications(handler: appStore.adventureRoot.save)
-        .modifier(UserSettingsViewModifier(appStore: appStore))
-        .observeRotate(with: appStore.deviceRotationModel)
         .task {
 #if os(tvOS)
             try? await Task.sleep(for: .seconds(1))
@@ -87,10 +71,6 @@ struct RootView: View {
                 showFirstLunchAlert.toggle()
             }
             try? await Task.sleep(for: .seconds(5))
-            try? await appStore.audioRoot.moveFiles()
-            try? await appStore.pdfRoot.moveFiles()
-            try? await appStore.photoRoot.moveFiles()
-            try? await appStore.spaceRoot.moveFiles()
 #endif
         }
         .alert("First Launch", isPresented: $showFirstLunchAlert) {

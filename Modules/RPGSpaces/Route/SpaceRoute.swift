@@ -4,11 +4,11 @@ import CoreExternalRPG
 import AndrenalinKit
 import SwiftUI
 
-public enum SpaceNewRoute: Equatable, Hashable, Codable {
+public enum SpaceRoute: Equatable, Hashable, Codable {
     case detail(UUID)
 }
 
-extension SpaceNewRoute: RawRepresentable {
+extension SpaceRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
             case .detail(let id): "detail/\(id.uuidString)"
@@ -25,7 +25,7 @@ extension SpaceNewRoute: RawRepresentable {
     }
 }
 
-extension SpaceNewRoute: NavigationDestination {
+extension SpaceRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
@@ -34,9 +34,9 @@ extension SpaceNewRoute: NavigationDestination {
     }
 }
 
-extension SpaceNewRoute: ItemDetailRoute {
+extension SpaceRoute: ItemDetailRoute {
     public func reset(detail: UUID) -> Self {
-        SpaceNewRoute.detail(detail)
+        SpaceRoute.detail(detail)
     }
     
     public func detail() -> UUID? {

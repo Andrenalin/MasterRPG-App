@@ -18,46 +18,42 @@ import SwiftUI
 public enum ExtendedTabRoute: String, Hashable, Codable {
     case audios
     case dice
+    case generator
     case maps
     case pdfs
     case photos
     case space
     case tables
     case weathers
+    case settings
 
     public init(networkModule: NetworkModules) {
         switch networkModule {
-        case .audio:
-            self = .audios
-        case .dice:
-            self = .dice
-        case .map:
-            self = .maps
-        case .pdf:
-            self = .pdfs
-        case .photo:
-            self = .photos
-        case .space:
-            self = .space
-        case .table:
-            self = .tables
-        case .weather:
-            self = .weathers
-        default:
-            self = .pdfs
+            case .audio: self = .audios
+            case .dice: self = .dice
+            case .generator: self = .generator
+            case .map: self = .maps
+            case .pdf: self = .pdfs
+            case .photo: self = .photos
+            case .space: self = .space
+            case .table: self = .tables
+            case .weather: self = .weathers
+            default: self = .settings
         }
     }
-
+    
     public var module: NetworkModules {
         switch self {
             case .audios: .audio
             case .dice: .dice
             case .maps: .map
+            case .generator: .generator
             case .pdfs: .pdf
             case .photos: .photo
             case .space: .space
             case .tables: .table
             case .weathers: .weather
+            case .settings: .setting
         }
     }
 }
@@ -78,13 +74,13 @@ extension ExtendedTabRoute: NavigationDestination {
     }
 
     static var allTabs: [ExtendedTabRoute] {
-        [.pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
+        [.pdfs, .tables, .maps, .generator, .photos, .audios, .space, .weathers, .dice, .settings]
     }
 }
 
 struct ExtendedTabRouteDestionationView: View {
     let route: ExtendedTabRoute
-    let tabId = UUID()
+    let tabId = KnownRoutes.mainTabId
 
     @Environment(AppStore.self) private var appStore
 
@@ -94,6 +90,13 @@ struct ExtendedTabRouteDestionationView: View {
                 NewAudioRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .dice:
                 NewDiceRoute(appStore: appStore, tabId: tabId, isExtended: true)
+        case .generator:
+#if os(tvOS)
+            EmptyView()
+#else
+            Text("Comming soon")
+            //GeneratorRootFactory.rootView()
+#endif
             case .maps:
                 NewMapRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .pdfs:
@@ -106,6 +109,8 @@ struct ExtendedTabRouteDestionationView: View {
                 NewTableRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .weathers:
                 NewWeatherRoute(appStore: appStore, tabId: tabId, isExtended: true)
+        case .settings:
+            SettingsView(store: appStore)
         }
     }
 }

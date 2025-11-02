@@ -31,7 +31,7 @@ struct RootDetail: View {
         AudioDetailEditor(editController: editController, model: editController.model)
             .onChange(of: listController.model.selectedItem) {
                 if listController.model.selectedItem == nil {
-                    navigator.send(AudioRoute.detail(nil, UUID()))
+                    navigator.back()
                 }
             }
     }

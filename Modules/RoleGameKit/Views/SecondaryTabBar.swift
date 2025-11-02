@@ -5,15 +5,12 @@ import AndrenalinKit
 import SwiftUI
 
 struct PrimaryTabBar: View {
-    let tabId: UUID
-    @Binding var selectedTab: RootRoute
-
     @Namespace private var hoverEffectNameSpace
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(RootRoute.allTabs(for: tabId)) { tab in
-                SecondaryTabBarButton(selectedTab: $selectedTab, tab: tab, hoverGroup: HoverEffectGroup(hoverEffectNameSpace))
+            ForEach(RootRoute.allTabs) { tab in
+                SecondaryTabBarButton(tab: tab, hoverGroup: HoverEffectGroup(hoverEffectNameSpace))
             }
         }
         .padding(12)
@@ -29,42 +26,17 @@ struct PrimaryTabBar: View {
     }
 }
 
-
-struct SecondaryTabBar: View {
-    let tabId: UUID
-    @Binding var selectedTab: RootRoute
-
-    @Namespace private var hoverEffectNameSpace
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ForEach(RootRoute.splitTrailingTabs(for: tabId), id: \.self.rawValue) { tab in
-                SecondaryTabBarButton(selectedTab: $selectedTab, tab: tab, hoverGroup: HoverEffectGroup(hoverEffectNameSpace))
-            }
-        }
-        .padding(12)
-        .fixedSize()
-        .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
-        .hoverEffect(in: HoverEffectGroup(hoverEffectNameSpace)) { effect, isActive, proxy in
-            effect.animation(.default.delay(isActive ? 0.8 : 0.2)) {
-                $0.clipShape(
-                    .rect(cornerRadius: 28, style: .continuous).size(width: isActive ? proxy.size.width : 64, height: proxy.size.height, anchor: .leading)
-                )
-            }
-        }
-        .padding(.leading, 20)
-    }
-}
 
 struct SecondaryTabBarButton: View {
-    @Binding var selectedTab: RootRoute
     let tab: RootRoute
     let hoverGroup: HoverEffectGroup?
+
+    @Environment(AppStore.self) var appModel
     
     var body: some View {
         Button {
             withAnimation {
-                selectedTab = tab
+                appModel.selectedModule = tab
             }
         } label: {
             HStack(spacing: 12) {
@@ -74,9 +46,8 @@ struct SecondaryTabBarButton: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(BarButtonWithHoverEffectStyle(isSelected: selectedTab == tab, hoverGroup: hoverGroup))
-        .hoverEffect(.lift, isEnabled: selectedTab == tab)
-
+        .buttonStyle(BarButtonWithHoverEffectStyle(isSelected: appModel.selectedModule == tab, hoverGroup: hoverGroup))
+        .hoverEffect(.lift, isEnabled: appModel.selectedModule == tab)
     }
     
     func menuIconView(for icon: String) -> some View {
@@ -156,7 +127,7 @@ struct FadeEffect: CustomHoverEffect {
     TabView {
         Tab("Adventure", systemImage: "photo") {
             VStack(alignment: .leading) {
-                SecondaryTabBar(tabId: UUID(), selectedTab: $otherSplitTab)
+                PrimaryTabBar()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

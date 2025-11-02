@@ -20,7 +20,7 @@ struct RootList: View {
         self.root = root
         self.tabId = tabId
         self.selection = selection
-        self._currentRoute = State(wrappedValue: MapRoute.detail(root.listController(tabId: tabId).model.selectedItem, tabId))
+        self._currentRoute = State(wrappedValue: MapRoute.detail(root.listController(tabId: tabId).model.selectedItem?.model.itemId ?? UUID()))
     }
     
     let root: MapRoot
@@ -82,7 +82,8 @@ struct RootExtendedList: View {
                 withAnimation { listController.setSelectedItem(model: selectedItem) }
             }
             .onChange(of: listController.model.selectedItem, initial: false) {
-                navigator.send(MapRoute.detail(listController.model.selectedItem, tabId))
+                guard let itemId = listController.model.selectedItem?.model.itemId else { return }
+                navigator.navigate(to: MapRoute.detail(itemId))
             }
             .onChange(of: listController.model.searchText, initial: false) {
                 editController.resetSearch(listController.model.searchText)

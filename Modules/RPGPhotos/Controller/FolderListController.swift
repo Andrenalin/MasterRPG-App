@@ -13,6 +13,6 @@ struct FolderListController: FolderListControllable {
     let cacheListItemModel = CacheItemListModel()
     
     func detailDestination(for itemId: UUID) -> any NavigationDestination {
-        PhotoRoute.detail(nil, itemId)
+        PhotoRoute.detail(itemId)
     }
 }

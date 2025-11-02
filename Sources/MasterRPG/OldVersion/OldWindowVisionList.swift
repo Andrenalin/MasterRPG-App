@@ -20,7 +20,7 @@ struct OldWindowVisionList: Scene {
         WindowGroup(id: "SpaceVolume", for: UUID.self) { $id in
             if let id {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.spaceRoot.viewController.spaceImmersionWindow(id: id, defaultSize: defaultSize)
+                    appStore.spaceRoot.viewController.spaceImmersionWindow(root: appStore.spaceRoot, id: id, defaultSize: defaultSize)
                 }
             }
         }
@@ -29,7 +29,7 @@ struct OldWindowVisionList: Scene {
 
         ImmersiveSpace(id: WindowIdentifier.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                appStore.spaceRoot.viewController.spaceImmersionWindow(id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
+                appStore.spaceRoot.viewController.spaceImmersionWindow(root: appStore.spaceRoot, id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
                     .environment(appStore.windowStateModel)
             }
             .handlesExternalEvents(preferring: [], allowing: [])
@@ -42,7 +42,7 @@ struct OldWindowVisionList: Scene {
         ImmersiveSpace(id: "Space3d", for: UUID.self) { $id in
             if let id {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.spaceRoot.viewController.spaceImmersionWindow(id: id, defaultSize: defaultSize)
+                    appStore.spaceRoot.viewController.spaceImmersionWindow(root: appStore.spaceRoot, id: id, defaultSize: defaultSize)
                 }
             }
         }

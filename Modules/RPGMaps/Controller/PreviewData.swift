@@ -52,7 +52,7 @@ public extension MapRoot {
     @MainActor
     static func testRoot(audioRoot: AudioRoot, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) -> MapRoot {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        var root = MapRoot(container: modelContainer, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, valueRoot: .preview)
+        let root = MapRoot(container: modelContainer, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, valueRoot: .preview)
         root.setUp(context: nil, rootControllable: root)
         return root
     }

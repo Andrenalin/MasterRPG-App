@@ -11,6 +11,12 @@
         }
       }
     },
+    "Coming Soon" : {
+
+    },
+    "Comming soon" : {
+
+    },
     "Download free game bundles" : {
       "localizations" : {
         "de" : {
@@ -20,9 +26,6 @@
           }
         }
       }
-    },
-    "Experimental" : {
-
     },
     "Explanation data packages to see how the app works. It explain with real data how to use and add data." : {
       "localizations" : {
@@ -75,6 +78,12 @@
         }
       }
     },
+    "Library" : {
+
+    },
+    "Material" : {
+
+    },
     "Purchased items: %lld" : {
       "localizations" : {
         "de" : {
@@ -85,10 +94,16 @@
         }
       }
     },
-    "Spotlight Indexer Message" : {
+    "References" : {
 
     },
-    "Text new UI" : {
+    "Setting" : {
+
+    },
+    "Special" : {
+
+    },
+    "Spotlight Indexer Message" : {
 
     },
     "The database cannot be loaded. The underlaying error: %@. But we can recover the app by removing the database file. All data will be lost if you click remove database." : {

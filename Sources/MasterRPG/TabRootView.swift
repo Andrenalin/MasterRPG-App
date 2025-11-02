@@ -19,10 +19,15 @@ struct TabRootView: View {
     let appStore: AppStore
     let editorOnly: Bool
 
+    @Environment(\.appSizeMode) private var appSizeMode
+
     var body: some View {
         let _ = Self._printChanges()
 
-        TabNavigation(appStore: appStore, tabId: RouteActions.tabId)
+        layout
+            .onChange(of: appSizeMode) { oldValue, newValue in
+                appStore.resetNavigation()
+            }
             .sizedSheet(isPresented: isSingleSizedSheetPresented(selectionSheetLinkModel: selectionSheetLinkModel)) {
                 selectionSheetLinkModel.dismissedAction?()
             } content: {
@@ -66,6 +71,10 @@ struct TabRootView: View {
                     }
                 }
             }
+    }
+    
+    private var layout: AppRootType {
+        valueFor(iOS: appSizeMode == .compact ? .tabbed : .split, macOS: .tabbedSplit, tvOS: .tabbed, visionOS: .split)
     }
     
     private var selectionSheetLinkModel: SelectionSheetLinkModel {

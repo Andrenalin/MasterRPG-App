@@ -16,133 +16,98 @@ import RPGWeathers
 import SwiftUI
 
 public enum RootRoute: Hashable, Codable {
-    case adventures(UUID)
-    case audios(UUID)
-    case dice(UUID)
-    case editors(UUID)
+    case adventures
+    case audios
+    case dice
+    case editors
     case game
-    case maps(UUID)
-    case pdfs(UUID)
-    case photos(UUID)
+    case generator
+    case maps
+    case pdfs
+    case photos
+    case search
     case settings
-    case space(UUID)
-    case tables(UUID)
-    case values(UUID)
-    case weathers(UUID)
+    case space
+    case tables
+    case values
+    case weathers
     
-    public init(networkModule: NetworkModules, tabId: UUID) {
+    public init(networkModule: NetworkModules) {
         switch networkModule {
-        case .none:
-            self = .game
-        case .photo:
-            self = .photos(tabId)
-        case .map:
-            self = .maps(tabId)
-        case .table:
-            self = .tables(tabId)
-        case .adventure:
-            self = .adventures(tabId)
-        case .dice:
-            self = .dice(tabId)
-        case .value:
-            self = .values(tabId)
-        case .weather:
-            self = .weathers(tabId)
-        case .game:
-            self = .game
-        case .audio:
-            self = .audios(tabId)
-        case .pdf:
-            self = .pdfs(tabId)
-        case .space:
-            self = .space(tabId)
-        case .setting:
-            self = .settings
-        case .editor:
-            self = .editors(tabId)
-        case .search:
-            self = .game
-        case .generator:
-            self = .game
-        @unknown default:
-            fatalError()
+        case .adventure: self = .adventures
+        case .audio: self = .audios
+        case .dice: self = .dice
+        case .editor: self = .editors
+        case .generator: self = .generator
+        case .map: self = .maps
+        case .pdf: self = .pdfs
+        case .photo: self = .photos
+        case .setting: self = .settings
+        case .space: self = .space
+        case .search: self = .search
+        case .table: self = .tables
+        case .value: self = .values
+        case .weather: self = .weathers
+        default: self = .game
         }
     }
     
     public var module: NetworkModules {
         switch self {
-        case .game:
-            return .game
-        case .values:
-            return .value
-        case .adventures:
-            return .adventure
-        case .maps:
-            return .map
-        case .tables:
-            return .table
-        case .photos:
-            return .photo
-        case .weathers:
-            return .weather
-        case .dice:
-            return .dice
-        case .audios:
-            return .audio
-        case .pdfs:
-            return .pdf
-        case .settings:
-            return .setting
-        case .editors:
-            return .editor
-        case .space:
-            return .space
+        case .adventures: .adventure
+        case .audios: .audio
+        case .dice: .dice
+        case .editors: .editor
+        case .game: .game
+        case .generator: .generator
+        case .maps: .map
+        case .pdfs: .pdf
+        case .photos: .photo
+        case .tables: .table
+        case .search: .search
+        case .settings: .setting
+        case .space: .space
+        case .values: .value
+        case .weathers: .weather
+        }
+    }
+    
+    public var hasDetailView: Bool {
+        switch self {
+        case .game, .settings, .search: false
+        default: true
         }
     }
 }
 
 extension RootRoute: RawRepresentable {
     public var rawValue: String {
-        switch self {
-            case .adventures(let id): "\(module.token)/\(id.uuidString)"
-            case .audios(let id): "\(module.token)/\(id.uuidString)"
-            case .dice(let id): "\(module.token)/\(id.uuidString)"
-            case .editors(let id): "\(module.token)/\(id.uuidString)"
-            case .game: "\(module.token)/C352A849-80F9-48B3-9010-8E1B49367192"
-            case .maps(let id): "\(module.token)/\(id.uuidString)"
-            case .pdfs(let id): "\(module.token)/\(id.uuidString)"
-            case .photos(let id): "\(module.token)/\(id.uuidString)"
-            case .settings: "\(module.token)/C352A849-80F9-48B3-9010-8E1B49367192"
-            case .space(let id): "\(module.token)/\(id.uuidString)"
-            case .tables(let id): "\(module.token)/\(id.uuidString)"
-            case .values(let id): "\(module.token)/\(id.uuidString)"
-            case .weathers(let id): "\(module.token)/\(id.uuidString)"
-        }
+        module.token
     }
-
+    
     public init?(rawValue: String) {
-        let values = rawValue.split(separator: "/")
-        guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
-        switch token {
-            case NetworkModules.adventure.token: self = .adventures(uuid)
-            case NetworkModules.audio.token: self = .audios(uuid)
-            case NetworkModules.dice.token: self = .dice(uuid)
-            case NetworkModules.editor.token: self = .editors(uuid)
-            case NetworkModules.game.token: self = .game
-            case NetworkModules.map.token: self = .maps(uuid)
-            case NetworkModules.pdf.token: self = .pdfs(uuid)
-            case NetworkModules.photo.token: self = .photos(uuid)
-            case NetworkModules.setting.token: self = .settings
-            case NetworkModules.space.token: self = .space(uuid)
-            case NetworkModules.table.token: self = .tables(uuid)
-            case NetworkModules.value.token: self = .values(uuid)
-            case NetworkModules.weather.token: self = .weathers(uuid)
-            default: self = .game
+        switch rawValue {
+        case NetworkModules.adventure.token: self = .adventures
+        case NetworkModules.audio.token: self = .audios
+        case NetworkModules.dice.token: self = .dice
+        case NetworkModules.editor.token: self = .editors
+        case NetworkModules.game.token: self = .game
+        case NetworkModules.generator.token: self = .generator
+        case NetworkModules.map.token: self = .maps
+        case NetworkModules.pdf.token: self = .pdfs
+        case NetworkModules.photo.token: self = .photos
+        case NetworkModules.search.token: self = .search
+        case NetworkModules.setting.token: self = .settings
+        case NetworkModules.space.token: self = .space
+        case NetworkModules.table.token: self = .tables
+        case NetworkModules.value.token: self = .values
+        case NetworkModules.weather.token: self = .weathers
+        default: self = .game
         }
     }
 }
 
-extension RootRoute: AppRouter {
+extension RootRoute {
     public var title: String {
         String(module.title)
     }
@@ -157,64 +122,68 @@ extension RootRoute: NavigationDestination {
         RouteRouteDestionationView(route: self)
     }
     
-    static func allTabs(for tabId: UUID) -> [RootRoute] {
-#if os(iOS) || os(visionOS)
-        [.game, .adventures(tabId), .values(tabId), .pdfs(tabId), .tables(tabId), .maps(tabId), .photos(tabId), .audios(tabId), .space(tabId), .weathers(tabId), .dice(tabId), .settings]
-#else
-        [.adventures(tabId), .values(tabId), .pdfs(tabId), .tables(tabId), .maps(tabId), .photos(tabId), .audios(tabId), .space(tabId), .weathers(tabId), .dice(tabId)]
-#endif
+    public static var allTabs: [RootRoute] {
+//#if os(iOS) || os(visionOS)
+        [.game, .adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
+//#else
+//        [.adventures, .values, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .search]
+//#endif
     }
     
-    static func fiveTabs(for tabId: UUID) -> [RootRoute] {
-        [.game, .adventures(tabId), .values(tabId), .editors(tabId), .settings]
-    }
-        
-    static func splitLeadingTabs(for tabId: UUID) -> [RootRoute] {
-        [.game, .adventures(tabId), .values(tabId), .pdfs(tabId), .tables(tabId), .editors(tabId), .settings]
-    }
-    
-    static func splitTrailingTabs(for tabId: UUID) -> [RootRoute] {
-        [.maps(tabId), .photos(tabId), .audios(tabId), .space(tabId), .weathers(tabId), .dice(tabId)]
+    static var fiveTabs: [RootRoute] {
+        [.game, .adventures, .values, .editors, .search]
     }
 }
 
 struct RouteRouteDestionationView: View {
     let route: RootRoute
-    
-    @Environment(AppStore.self) private var appStore
+    let tabId: UUID = KnownRoutes.mainTabId
+    @Environment(AppStore.self) private var appModel
     
     var body: some View {
-        switch route {
-        case .adventures(let tabId):
-            NewAdventureRoute(appStore: appStore, tabId: tabId, isExtended: false)
-        case .audios(let tabId):
-            NewAudioRoute(appStore: appStore, tabId: tabId, isExtended: false)
-        case .dice(let tabId):
-            NewDiceRoute(appStore: appStore, tabId: tabId, isExtended: false)
-        case .editors(let tabId):
+        Group {
+            switch route {
+            case .adventures:
+                NewAdventureRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+            case .audios:
+                NewAudioRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+            case .dice:
+                NewDiceRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+            case .editors:
 #if os(visionOS)
-            EmptyView()
+                EmptyView()
 #else
-            ExtendedTabBar(tabId: tabId)
+                ExtendedTabBar()
 #endif
-        case .game:
-            appStore.gameRoot.viewController.gameTabItem()
-        case .maps(let tabId):
-            NewMapRoute(appStore: appStore, tabId: tabId, isExtended: false)
-        case .pdfs(let tabId):
-            NewPdfRoute(appStore: appStore, tabId: tabId, isExtended: false)
-        case .photos(let tabId):
-            NewPhotoRoute(appStore: appStore, tabId: tabId, isExtended: false)
-        case .space(let tabId):
-            NewSpaceRoute(appStore: appStore, tabId: tabId, isExtended: false)
-        case .settings:
-            SettingsView(store: appStore)
-        case .tables(let tabId):
-            NewTableRoute(appStore: appStore, tabId: tabId, isExtended: false)
-        case .values(let tabId):
-            NewValueRoute(appStore: appStore, tabId: tabId, isExtended: false)
-        case .weathers(let tabId):
-            NewWeatherRoute(appStore: appStore, tabId: tabId, isExtended: false)
+            case .game:
+                appModel.gameRoot.viewController.gameTabItem()
+            case .generator:
+#if os(tvOS)
+                EmptyView()
+#else
+                //GeneratorFactory.rootView()
+                Text("Coming Soon")
+#endif
+            case .maps:
+                NewMapRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+            case .pdfs:
+                NewPdfRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+            case .photos:
+                NewPhotoRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+            case .space:
+                NewSpaceRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+            case .settings:
+                SettingsView(store: appModel)
+            case .tables:
+                NewTableRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+            case .values:
+                NewValueRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+            case .weathers:
+                NewWeatherRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+            case .search:
+                Text("Coming Soon")
+            }
         }
+        .tint(route.module.tint)
     }
 }

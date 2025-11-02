@@ -20,15 +20,6 @@ public struct SettingsView: View {
     public var body: some View {
         AndrenalinKit.SettingsView(store: store.adventureRoot, exportController: store.adventureRoot.exportControllable, importController: store.adventureRoot.importControllable, audioFileStore: store.audioRoot.fileUrlDataController, pdfFileStore: store.pdfRoot.fileUrlDataController, photoFileStore: store.photoRoot.fileUrlDataController, spaceFileStore: store.spaceRoot.fileUrlDataController!) {
 
-            @Bindable var appStore = store
-            SectionGroupEditorView {
-                Toggle(isOn: $appStore.isNewUICode) {
-                    Text("Text new UI")
-                }
-            } header: {
-                Text("Experimental")
-            }
-
 //            SectionGroupEditorView {
 //                InAppView(inAppController: store.inAppController)
 //            } header: {

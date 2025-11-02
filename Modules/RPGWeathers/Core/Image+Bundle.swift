@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
+import RPGResources
 import SwiftUI
 
 extension Image {
@@ -14,22 +15,10 @@ extension Image {
 
     static func loadImage(name: String) -> AKImage? {
         #if os(macOS)
-
-            #if INTERNAL_APP
-                return AKImage(named: name)
-            #else
-                return Bundle.module.image(forResource: name)
-            #endif
-
+            return Bundle.module.image(forResource: name)
         #else
-
-            #if INTERNAL_APP
-                let bundle = Bundle.main
-            #else
-                let bundle = Bundle.module
-            #endif
+        let bundle = RPGResources.Resources.bundle
             return AKImage(named: name, in: bundle, with: nil)
-
         #endif
     }
 }

@@ -27,7 +27,7 @@ struct RootDetail: View {
         PdfDetailEditor(editController: editController, model: editController.model)
             .onChange(of: listController.model.selectedItem) {
                 if listController.model.selectedItem == nil {
-                    navigator.send(PdfRoute.detail(nil, UUID()))
+                    navigator.back()
                 }
             }
     }

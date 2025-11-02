@@ -61,6 +61,7 @@ public final class SpaceRoot: @unchecked Sendable {
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
     @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
+    public let removeEntryListModel = RemoveEntryListModel()
     
 
     var cacheController: CacheController? { itemController.cacheController }
@@ -114,6 +115,18 @@ public final class SpaceRoot: @unchecked Sendable {
             viewControllable: viewController
         )
     }()
+}
+
+extension SpaceRoot: ItemRootControllable {
+    public var cacheControllable: (any ImageCacheControllable)? { cacheController }
+    
+    public var editControllable: any EditControllable { editController(type: .main) }
+    
+    public var listControllable: any ListControllable { listController }
+    
+    public var folderListControllable: any FolderListControllable { folderListController }
+    
+    public var viewControllable: any ViewControllable { viewController }
 }
 
 extension SpaceRoot {

@@ -4,6 +4,7 @@ import AndrenalinKit
 import RoleGameKit
 import SwiftUI
 import SwiftData
+import CoreExternalRPG
 
 struct InitialRootView: View {
     let appStore: AppStore
@@ -16,10 +17,8 @@ struct InitialRootView: View {
     #endif
     
     @State private var showDeleteAlert = false
-    
     @State private var showAccountAlert = false
     @State private var iCloudAccount: CloudKitAccountStatus = .notChecked
-    @Environment(\.openURL) private var openURL
 
     var body: some View {
         let _ = Self._printChanges()
@@ -73,7 +72,8 @@ struct InitialRootView: View {
                 }
                 .onChange(of: databaseModel.context, initial: true) {
                     guard let context = databaseModel.context else { return }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(0.25))
                         appStore.setupRootModels(context: context, spotlightIndexer: databaseModel.spotlightIndexer)
                     }
                 }
@@ -91,13 +91,6 @@ struct InitialRootView: View {
         .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
             handle(userActivity: userActivity)
         }
-#if os(macOS)
-        .frame(minWidth: 800, minHeight: 600)
-        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-        .toolbar(removing: .title)
-#endif
-        .environment(appStore.windowStateModel)
-        .setAppSizeMode()
     }
     
     func handle(userActivity: NSUserActivity) {
@@ -105,10 +98,7 @@ struct InitialRootView: View {
         let module = UserActivity.module(from: userActivity)
         guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
         let childId = UserActivity.childId(from: userActivity)
-        //let command: String? = UserActivity.command(from: userActivity)
-        let child = childId != nil ? "/\(childId?.uuidString ?? "")" : ""
-        let url = URL(string: "\(URL.appScheme)://\(module.token)/0/\(itemId)\(child)")!
-        openURL(url)
+        appStore.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: childId))
     }
 }
 

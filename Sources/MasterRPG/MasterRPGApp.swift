@@ -17,10 +17,10 @@ struct MasterRPGApp: App {
 #endif
     
     init() {
-//        let data = appModel
-//        AppDependencyManager.shared.add(dependency: data)
-//        let navigator = appModel.navigator
-//        AppDependencyManager.shared.add(dependency: navigator)
+        let data = appStore
+        AppDependencyManager.shared.add(dependency: data)
+        let navigator = appStore.navigator
+        AppDependencyManager.shared.add(dependency: navigator)
 //        
 //        let adventureRootModel = appModel.adventureRoot
 //        AppDependencyManager.shared.add(dependency: adventureRootModel)
@@ -38,8 +38,8 @@ struct MasterRPGApp: App {
 //        AppDependencyManager.shared.add(dependency: pdfRootModel)
 //        let photoRootModel = appModel.photoRoot
 //        AppDependencyManager.shared.add(dependency: photoRootModel)
-//        let spaceRootModel = appModel.spaceRoot
-//        AppDependencyManager.shared.add(dependency: spaceRootModel)
+        let spaceRootModel = appStore.spaceRoot
+        AppDependencyManager.shared.add(dependency: spaceRootModel)
 //        let tableRootModel = appModel.tableRoot
 //        AppDependencyManager.shared.add(dependency: tableRootModel)
 //        let weatherRootModel = appModel.weatherRoot
@@ -55,6 +55,13 @@ struct MasterRPGApp: App {
     var body: some Scene {
         BaseWindow("Game", id: WindowIdentifier.game.rawValue) {
             InitialRootView(appStore: appStore, editorOnly: false)
+#if os(macOS)
+                .frame(minWidth: 800, minHeight: 600)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+                .toolbar(removing: .title)
+#endif
+                .modifier(UserSettingsViewModifier(appStore: appStore))
+                .setAppSizeMode()
         }
         .commands {
             OldMenuMainCommand(appStore: appStore)

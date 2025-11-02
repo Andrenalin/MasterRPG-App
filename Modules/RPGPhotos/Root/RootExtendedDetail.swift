@@ -27,7 +27,7 @@ struct RootDetail: View {
         PhotoDetailEditor(editController: editController, model: editController.model)
             .onChange(of: listController.model.selectedItem) {
                 if listController.model.selectedItem == nil {
-                    navigator.send(PhotoRoute.detail(nil, UUID()))
+                    navigator.back()
                 }
             }
     }

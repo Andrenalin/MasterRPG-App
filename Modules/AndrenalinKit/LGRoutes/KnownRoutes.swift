@@ -21,6 +21,8 @@ public enum KnownRoutes: NavigationRoutes {
 }
 
 extension KnownRoutes {
+    public static let mainTabId: UUID = UUID()
+    
     public static func route(module: NetworkModules, itemId: UUID?, entryId: UUID?) -> KnownRoutes {
         switch module {
         case .adventure: .adventures(itemId, entryId)

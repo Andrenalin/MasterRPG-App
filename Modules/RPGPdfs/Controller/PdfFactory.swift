@@ -10,7 +10,7 @@ public enum PdfFactory {
     public static func root(container: ModelContainer) -> PdfRoot {
         PdfRoot(container: container)
     }
-
+    
     @MainActor
     public static func rootView(for root: PdfRoot, tabId: UUID) -> some View {
         RootList(root: root, tabId: tabId, selection: true)
@@ -21,22 +21,66 @@ public enum PdfFactory {
     public static func rootExtendedView(for root: PdfRoot, tabId: UUID) -> some View {
         RootExtendedList(editController: root.editController(type: .main), tabId: tabId, selection: true)
             .itemSplitViewSizeMode(.wide)
+            .navigationAutoReceive(PdfRoute.self)
+    }
+    
+    @MainActor @ViewBuilder public static func detailView(root: PdfRoot) -> some View {
+        ExternalDetailView()
     }
 }
 
-public enum PdfRoute: Hashable, Codable {
-    case detail(ItemRowTreeModel?, UUID)
+struct ExternalDetailView: View {
+    @Environment(PdfRoot.self) private var root
+    
+    var body: some View {
+        if let itemId = root.listController(tabId: KnownRoutes.mainTabId).model.selectedItem?.model.itemId {
+            PdfRoute.detail(itemId)
+                .environment(root.listController(tabId: KnownRoutes.mainTabId).model)
+        } else {
+            SplitContentUnavailable(module: .pdf)
+        }
+    }
+}
+
+public enum PdfRoute: Equatable, Hashable, Codable {
+    case detail(UUID)
+}
+
+extension PdfRoute: RawRepresentable {
+    public var rawValue: String {
+        switch self {
+        case .detail(let id): "detail/\(id.uuidString)"
+        }
+    }
+
+    public init?(rawValue: String) {
+        let values = rawValue.split(separator: "/")
+        guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
+        switch token {
+        case "detail": self = .detail(uuid)
+        default: return nil
+        }
+    }
 }
 
 extension PdfRoute: NavigationDestination {
     public var body: some View {
         switch self {
-            case .detail(let itemRowTreeModel, let tabId):
-                if let itemRowTreeModel {
-                    RootExtendedDetail(itemRowTreeModel: itemRowTreeModel, tabId: tabId)
-                } else {
-                    SplitContentUnavailable(module: .pdf)
-                }
+        case .detail(let itemId):
+            DetailRouteDestinationView(itemId: itemId)
         }
+    }
+}
+
+struct DetailRouteDestinationView: View {
+    let itemId: UUID
+    @Environment(PdfRoot.self) private var root
+    
+    var body: some View {
+        RootExtendedDetail(itemRowTreeModel: ItemRowTreeModel(itemId: itemId, typeId: .pdf), tabId: KnownRoutes.mainTabId)
+        //DetailRootView(selectedId: itemId)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+        //    .environment(root.rootController)
     }
 }

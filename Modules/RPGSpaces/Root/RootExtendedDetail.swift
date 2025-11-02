@@ -27,7 +27,7 @@ struct RootDetail: View {
         SpaceDetailEditor(editController: editController, model: editController.model)
             .onChange(of: listController.model.selectedItem) {
                 if listController.model.selectedItem == nil {
-                    navigator.send(SpaceRoute.detail(nil, UUID()))
+                    navigator.back()
                 }
             }
     }
@@ -39,6 +39,6 @@ struct RootDetail: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(SpaceRoot.self) var root
-    RootExtendedDetail(itemRowTreeModel: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items.first!, typeId: .space), tabId: UUID())
+    RootExtendedDetail(itemRowTreeModel: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items.first!, typeId: .space), tabId: KnownRoutes.mainTabId)
         .environment(\.locale, .init(identifier: "de"))
 }

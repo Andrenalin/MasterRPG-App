@@ -24,5 +24,24 @@ public enum TableFactory {
         RootExtendedList(editController: root.editController(type: .main), tabId: tabId, selection: true)
             .itemSplitViewSizeMode(.wide)
             .navigationDestinationAutoReceive(InternalRoute.self)
+            .navigationAutoReceive(TableRoute.self)
+    }
+
+    @MainActor @ViewBuilder public static func detailView(root: TableRoot) -> some View {
+        ExternalDetailView()
     }
 }
+
+struct ExternalDetailView: View {
+    @Environment(TableRoot.self) private var root
+    
+    var body: some View {
+        if let itemId = root.listController(tabId: KnownRoutes.mainTabId).model.selectedItem?.model.itemId {
+            TableRoute.detail(itemId)
+                .environment(root.listController(tabId: KnownRoutes.mainTabId).model)
+        } else {
+            SplitContentUnavailable(module: .table)
+        }
+    }
+}
+
