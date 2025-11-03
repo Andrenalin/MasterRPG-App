@@ -38,6 +38,7 @@ final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplica
     var displayState: Int
     var isGroupHiddenToggle: Bool
     var fileUrl: FileUrl?
+    var parentId: UUID?
     
     static let empty: FakeItemModel =  empty(UUID())
     static func empty(_ id: UUID) -> FakeItemModel {

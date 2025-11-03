@@ -88,6 +88,8 @@ public final class PdfModel: Identifiable, @unchecked Sendable {
         set { entries_.wrappedValue = newValue }
     }
     public var entries_: CRDTDataUpdate<[PdfEntryModel]>
+    
+    public var parentId: UUID? = nil
 }
 
 extension PdfModel: Comparable {

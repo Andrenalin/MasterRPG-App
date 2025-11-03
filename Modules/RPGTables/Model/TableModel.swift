@@ -103,6 +103,8 @@ public final class TableModel: Identifiable, @unchecked Sendable {
     var entries_: CRDTDataUpdate<[TableEntryModel]>
 
     var diceResult: String? = nil
+    
+    public var parentId: UUID? = nil
 }
 
 extension TableModel: Comparable {

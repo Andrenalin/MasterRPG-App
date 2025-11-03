@@ -178,6 +178,40 @@ public extension EditControllable {
     }
 }
 
+// MARK: - Folder / Colllection
+
+public extension EditControllable {
+    @MainActor func addItem(itemId: UUID, parentId: UUID?, folderId: UUID?) {
+        guard let parentId, let item = itemControllable.itemSync(for: parentId) as? Model else { return }
+        addItem(itemId: itemId, in: item, folderId: folderId)
+    }
+
+    @MainActor func addItem(itemId: UUID, in parentModel: any ItemDataAccessable, folderId: UUID?) {
+        guard let parentModel = parentModel as? Model, itemId != parentModel.id else { return }
+        guard let item = itemControllable.itemSync(for: itemId) else { return }
+        if item.specialCategory && !parentModel.isFolder {
+            return
+        }
+        var entries = parentModel.entries
+        let entry = Model.Entry.newChild(id: itemId)
+        entries.append(entry)
+        
+        if parentModel.id == model.id {
+            model.entries = entries
+        }
+        var updatedModel = parentModel.id == model.id ? model : parentModel
+        updatedModel.entries = entries
+        if parentModel.category == .folder {
+            //item.parentId = model.id
+        }
+        if parentModel.id == model.id {
+            save(with: String(localized: "Added item").localizedString)
+        } else {
+            itemControllable.replace(model: updatedModel, isInsert: false, shouldRepairLinks: false)
+        }
+    }
+}
+
 // MARK: - Menu
 
 public extension EditControllable {

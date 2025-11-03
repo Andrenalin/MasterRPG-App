@@ -92,7 +92,7 @@ public final class ValueModel: Identifiable, @unchecked Sendable {
     var entries_: CRDTDataUpdate<[ValueEntryModel]>
     
     public var parentId: UUID?
-    public var quickEditEntries: Set<UUID> = []
+    public var quickEditEntries: Set<UUID> = []    
 }
 
 extension ValueModel: Comparable {

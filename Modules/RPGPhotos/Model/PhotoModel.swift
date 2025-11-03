@@ -90,6 +90,8 @@ public final class PhotoModel: Identifiable, @unchecked Sendable {
     }
     var entries_: CRDTDataUpdate<[PhotoEntryModel]>
 
+    public var parentId: UUID? = nil
+    
     // only game properties
     public var players: [UUID] = []
 }

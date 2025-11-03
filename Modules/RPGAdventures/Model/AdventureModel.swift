@@ -80,6 +80,8 @@ public final class AdventureModel: Identifiable, @unchecked Sendable {
         set { entries_.wrappedValue = newValue }
     }
     var entries_: CRDTDataUpdate<[AdventureEntryModel]>
+    
+    public var parentId: UUID? = nil
 }
 
 extension AdventureModel: ItemLinkRegistable {

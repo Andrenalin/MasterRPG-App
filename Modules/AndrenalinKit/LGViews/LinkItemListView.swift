@@ -8,7 +8,7 @@ public struct LinkItemListView: View {
     init(root: any ItemRootControllable, type: LinkRootType, parentModel: (any ItemDataAccessable)?) {
         self.root = root
         self.type = type
-        root.folderListControllable.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
+        root.folderLinkControllable.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
     }
 
     let root: any ItemRootControllable
@@ -27,32 +27,32 @@ public struct LinkItemListView: View {
 
             contentView
                 .onChange(of: listDisplayModel.displayMode, initial: true) {
-                    root.folderListControllable.listDisplayModel.displayMode = listDisplayModel.displayMode
-                    withAnimation { root.folderListControllable.resetFilter(parentModel: nil) }
+                    root.folderLinkControllable.listDisplayModel.displayMode = listDisplayModel.displayMode
+                    withAnimation { root.folderLinkControllable.resetFilter(parentModel: nil) }
                 }
-                .onChange(of: root.folderListControllable.listDisplayModel.listMode) {
-                    withAnimation { root.folderListControllable.resetFilter(parentModel: nil) }
+                .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
+                    withAnimation { root.folderLinkControllable.resetFilter(parentModel: nil) }
                 }
                 .applyIf(type != .inspector) { content in
                     content
-                        .toolbarItemListModifier(root: root, listControllable: root.folderListControllable, parentModel: nil, modal: true)
-                        .searchItemList(listControllable: root.folderListControllable, parentModel: nil)
+                        .toolbarItemListModifier(root: root, listControllable: root.folderLinkControllable, parentModel: nil, modal: true)
+                        .searchItemList(listControllable: root.folderLinkControllable, parentModel: nil)
                         .navigationTitle(root.module.title)
                 }
         }
-        .environment(root.folderListControllable.listDisplayModel)
-        .environment(root.folderListControllable.searchModel)
+        .environment(root.folderLinkControllable.listDisplayModel)
+        .environment(root.folderLinkControllable.searchModel)
     }
 }
 
 private extension LinkItemListView {
     var listModel: FolderListModel {
-        root.folderListControllable.listModel(for: nil)
+        root.folderLinkControllable.listModel(for: nil)
     }
 
     @ViewBuilder
     var pickerView: some View {
-        @Bindable var inspectorDisplayModel = root.folderListControllable.listDisplayModel
+        @Bindable var inspectorDisplayModel = root.folderLinkControllable.listDisplayModel
         
         Picker(selection: $inspectorDisplayModel.listMode) {
             ForEach(ListDisplayModel.ListMode.allCases) { mode in
@@ -68,7 +68,7 @@ private extension LinkItemListView {
     
     @ViewBuilder
     var filterFieldView: some View {
-        @Bindable var searchModel = root.folderListControllable.searchModel
+        @Bindable var searchModel = root.folderLinkControllable.searchModel
         
         TextField(text: $searchModel.searchText, prompt: textFieldText) {
             textFieldText
@@ -83,7 +83,7 @@ private extension LinkItemListView {
         .padding(.horizontal)
         .onChange(of: searchModel.searchText) {
             withAnimation {
-                root.folderListControllable.resetFilter(parentModel: nil)
+                root.folderLinkControllable.resetFilter(parentModel: nil)
                 cacheItemListModel.reset(search: searchModel.searchText)
             }
         }
@@ -97,7 +97,7 @@ private extension LinkItemListView {
         listView
             .frame(minWidth: 150, idealWidth: 250)
             .overlay {
-                if listModel.displayedItems.isEmpty && !root.folderListControllable.searchModel.searchText.isEmpty {
+                if listModel.displayedItems.isEmpty && !root.folderLinkControllable.searchModel.searchText.isEmpty {
                     ContentUnavailableView.search
                 }
             }
@@ -162,7 +162,7 @@ private extension LinkItemListView {
                 .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    withAnimation { root.folderListControllable.toggleFolder(item: item, parentModel: nil) }
+                    withAnimation { root.folderLinkControllable.toggleFolder(item: item, parentModel: nil) }
                 }
         }
     }

@@ -15,4 +15,8 @@ struct FolderListController: FolderListControllable {
     func detailDestination(for itemId: UUID) -> any NavigationDestination {
         WeatherRoute.detail(itemId)
     }
+    
+    func copy() -> FolderListController {
+        FolderListController(listModel: FolderListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel)
+    }
 }

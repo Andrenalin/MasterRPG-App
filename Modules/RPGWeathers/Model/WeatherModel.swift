@@ -108,6 +108,8 @@ public final class WeatherModel: Identifiable, @unchecked Sendable {
     public var lightningForkProbability: Double
 
     public var photoId: UUID?
+    
+    public var parentId: UUID? = nil
 }
 
 extension WeatherModel {

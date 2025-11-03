@@ -241,7 +241,7 @@ private extension ItemDetailRootView {
                 ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
                     .padding()
                 
-                //ListRootView(root: root, parentModel: model)
+                ListRootView(root: root, parentModel: model)
             } else {
                 Form {
                     if model.description.isEmpty == false {

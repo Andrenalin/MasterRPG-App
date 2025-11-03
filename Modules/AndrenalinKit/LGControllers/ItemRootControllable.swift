@@ -21,6 +21,7 @@ public protocol ItemRootControllable: Sendable {
     var linkControllable: any LinkControllable { get }
     var listControllable: any ListControllable { get }
     var folderListControllable: any FolderListControllable { get }
+    var folderLinkControllable: any FolderListControllable { get }
     var viewControllable: any ViewControllable { get }
     
     var rootController: ItemRootController { get }
@@ -57,6 +58,7 @@ public final class ItemRootController: ItemRootControllable {
         self.linkControllable = linkControllable
         self.listControllable = listControllable
         self.folderListControllable = folderListControllable
+        self.folderLinkControllable = folderListControllable.copy()
         self.viewControllable = viewControllable
     }
     
@@ -67,7 +69,6 @@ public final class ItemRootController: ItemRootControllable {
     public var itemSelectionModel: ItemSelectionModel
     public var currentSelectedItemId: UUID? {
         listControllable.model.selectedItem?.id
-            //.listModel(for: nil).selectedItemId
     }
 
     public let cacheControllable: (any ImageCacheControllable)?
@@ -78,6 +79,7 @@ public final class ItemRootController: ItemRootControllable {
     public let linkControllable: any LinkControllable
     public let listControllable: any ListControllable
     public let folderListControllable: any FolderListControllable
+    public let folderLinkControllable: any FolderListControllable
     public let viewControllable: any ViewControllable
     
     public let removeEntryListModel: RemoveEntryListModel

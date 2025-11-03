@@ -296,6 +296,8 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
     }
 
     var resultCategory: ResultCategory? = nil
+    
+    public var parentId: UUID? = nil
 }
 
 extension DiceModel {

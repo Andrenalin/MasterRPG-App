@@ -83,6 +83,8 @@ public final class AudioModel: Identifiable, @unchecked Sendable {
 
     // only game properties
     public var players: [UUID] = []
+    
+    public var parentId: UUID? = nil
 }
 
 extension AudioModel {

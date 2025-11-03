@@ -10,7 +10,6 @@ struct SpaceDetailEditor: View {
     let model: SpaceModel
     
     @Environment(SpaceRoot.self) private var root
-    //@Environment(ListModel.self) private var listModel
     
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
 
@@ -39,11 +38,6 @@ struct SpaceDetailEditor: View {
         root.folderListController.selectedModel(for: nil) as? SpaceModel
     }
 
-//    var selectedModel: SpaceModel? {
-//        guard let itemId = listModel.selectedItem?.model.itemId else { return nil }
-//        return root.itemController.itemOrEmpty(for: itemId)
-//    }
-    
     func update() {
         if let item = root.folderListController.listModel.selectedModel as? SpaceModel {
             if editController.editorModel.currentItemId != item.id {

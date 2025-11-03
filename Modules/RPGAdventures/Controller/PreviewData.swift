@@ -62,15 +62,6 @@ public extension AdventureRoot {
     static func testRoot(audioRoot: AudioRoot, diceRoot: DiceRoot, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRoot) -> AdventureRoot {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let root = AdventureRoot(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
-        root.audioRoot.setUp(context: nil, rootControllable: root)
-        root.diceRoot.setUp(context: nil, rootControllable: root)
-        root.mapRoot.setUp(context: nil, rootControllable: root)
-        root.pdfRoot.setUp(context: nil, rootControllable: root)
-        root.photoRoot.setUp(context: nil, rootControllable: root)
-        root.spaceRoot.setUp(context: nil, rootControllable: root)
-        root.tableRoot.setUp(context: nil, rootControllable: root)
-        root.valueRoot.setUp(context: nil, rootControllable: root)
-        root.weatherRoot.setUp(context: nil, rootControllable: root)
         root.setUp(context: nil)
         root.editController(type: .main).setCurrentItem(to: .preview)
         return root

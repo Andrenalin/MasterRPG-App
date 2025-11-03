@@ -41,6 +41,8 @@ public final class EditGroupModel: @unchecked Sendable {
     public var fileUrl: FileUrl? = nil
     
     public var entries: [FakeEntryModel] = []
+    
+    public var parentId: UUID?
 }
 
 extension EditGroupModel: ItemDataAccessable & ItemDiffComparable {

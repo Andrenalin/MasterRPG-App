@@ -12,6 +12,8 @@ public protocol FolderListControllable: Sendable {
     var cacheListItemModel: CacheItemListModel { get }
     
     func detailDestination(for itemId: UUID) -> any NavigationDestination
+    
+    func copy() -> Self
 }
 
 extension FolderListControllable {
@@ -46,8 +48,8 @@ extension FolderListControllable {
 public extension FolderListControllable {
     func update(items: [any ItemDataAccessable], parentModel: (any ItemDataAccessable)?) {
         if let parentModel {
-//            let subItems = items.filter { $0.parentId == parentModel.id }
-//            update(items: subItems, on: listModel(for: parentModel), parentModel: parentModel)
+            let subItems = items.filter { $0.parentId == parentModel.id }
+            update(items: subItems, on: listModel(for: parentModel), parentModel: parentModel)
         } else {
             update(items: items, on: listModel(for: parentModel), parentModel: parentModel)
         }
@@ -139,13 +141,13 @@ private extension FolderListControllable {
             }
         } else {
             if let parentId = parentModel?.id {
-//                if item.model.parentId != parentId {
-//                    return nil
-//                }
+               if item.model.parentId != parentId {
+                    return nil
+                }
             } else if item.level == 0 {
-//                if item.model.parentId != nil {
-//                    return nil
-//                }
+                if item.model.parentId != nil {
+                    return nil
+                }
             }
         }
         if !searchModel.selectedTokens.isEmpty {

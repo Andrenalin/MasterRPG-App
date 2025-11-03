@@ -139,6 +139,8 @@ public final class MapModel: Identifiable, @unchecked Sendable {
     public var pointer: MapPinModel = MapPinModel(id: UUID(), name: "Pointer", color: .red, isShown: false)
 
     private(set) var degrees: Double = 0
+    
+    public var parentId: UUID? = nil
 }
 
 extension MapModel {

@@ -90,6 +90,8 @@ public final class SpaceModel: Identifiable, @unchecked Sendable {
     }
     var entries_: CRDTDataUpdate<[SpaceEntryModel]>
 
+    public var parentId: UUID? = nil
+    
     // only game properties
     public var players: [UUID] = []
 }

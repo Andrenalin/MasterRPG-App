@@ -87,6 +87,9 @@ public final class SpaceRoot: @unchecked Sendable {
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel)
     }()
+    @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
+        folderListController.copy()
+    }()
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
     }()
@@ -119,13 +122,10 @@ public final class SpaceRoot: @unchecked Sendable {
 
 extension SpaceRoot: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { cacheController }
-    
     public var editControllable: any EditControllable { editController(type: .main) }
-    
     public var listControllable: any ListControllable { listController }
-    
     public var folderListControllable: any FolderListControllable { folderListController }
-    
+    public var folderLinkControllable: any FolderListControllable { folderLinkController }
     public var viewControllable: any ViewControllable { viewController }
 }
 

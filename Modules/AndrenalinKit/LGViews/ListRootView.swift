@@ -86,16 +86,15 @@ private extension ListRootView {
 
     func updateFile(url: URL) {
         Task { @MainActor in
-//            let modelContext = root.itemControllable.container.mainContext
-//            let model = root.editControllable.addNew(modelContext: modelContext, module: root.module, type: .item)
-//            try? await Task.sleep(for: .seconds(0.5))
-//            withAnimation {
-//                root.editControllable.resetFile(url: url, in: model)
-//                if parentModel != nil {
-//                    root.editControllable.addItem(itemId: model.id, in: modelContext, parentId: listModel.selectedParentId, folderId:  listModel.lastFolderId)
-//                }
-//                listController.add(model: model)
-//            }
+            guard let model = await root.editControllable.addNew(type: .item) else { return }
+            try? await Task.sleep(for: .seconds(0.5))
+            withAnimation {
+                root.editControllable.resetFile(url: url, module: root.module)
+                if parentModel != nil {
+                    root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId, folderId: listModel.lastFolderId)
+                }
+                listController.add(model: model)
+            }
         }
     }
 
@@ -127,7 +126,12 @@ private extension ListRootView {
         }
     }
 
-    func itemRows() -> some View {
+    @ViewBuilder func itemRows() -> some View {
+        if displayItems.isEmpty && parentModel != nil {
+            Text("Drop here")
+                .dropDestination(for: root.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
+        }
+        
         ForEach(displayItems) { item in
             HStack {
                 ItemRowView(root: root, model: item.model, cacheItemListModel: listController.cacheListItemModel, isSelected: false) {
@@ -159,7 +163,7 @@ private extension ListRootView {
 
     func addLink(name: String, itemId: UUID, entryId: UUID?) {
         guard let parentModel else { return }
-//        withAnimation { root.editControllable.addItem(itemId: itemId, in: parentModel, folderId: listModel.lastFolderId) }
+        withAnimation { root.editControllable.addItem(itemId: itemId, in: parentModel, folderId: listModel.lastFolderId) }
     }
     
     func deleteItems(offsets: IndexSet) {

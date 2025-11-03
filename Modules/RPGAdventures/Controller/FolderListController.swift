@@ -16,4 +16,7 @@ struct FolderListController: FolderListControllable {
         AdventureRoute.detail(itemId)
     }
 
+    func copy() -> FolderListController {
+        FolderListController(listModel: FolderListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel)
+    }
 }
