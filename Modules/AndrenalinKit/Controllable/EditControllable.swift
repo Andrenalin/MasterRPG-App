@@ -216,10 +216,10 @@ public extension EditControllable {
         await itemControllable.duplicate(model: ItemRowModel(itemId: item.id, typeId: itemControllable.itemDataModel.networkModule))
     }
     
-    func markForDeletion(itemId: UUID) async {
-        guard var item = await itemControllable.item(for: itemId) else { return }
+    @MainActor func markForDeletion(itemId: UUID) {
+        guard var item = itemControllable.itemSync(for: itemId) else { return }
         item.displayState = 2
-        await itemControllable.replace(model: item, isInsert: false, shouldRepairLinks: false)
+        itemControllable.replace(model: item, isInsert: false, shouldRepairLinks: false)
     }
 
     func restore(itemId: UUID) async {
@@ -237,33 +237,35 @@ public extension EditControllable {
         await itemControllable.replace(model: item, isInsert: false, shouldRepairLinks: false)
     }
 
-//    func removeItem(offsets: IndexSet, model: any ItemDataAccessable) {
-//        let removedEntries = model.entries.filter { offsets.contains($0.index) }
-//        var entries = model.entries
-//        entries.remove(atOffsets: offsets)
-//        reindex(entries: &entries)
-//        model.reset(entries: entries)
-//
-//        if model.category == .folder {
-//            removedEntries.forEach {
-//                modelContext.delete($0)
-//                if let entry = ItemDataModel.model(modelContext: modelContext, id: $0.childId) {
-//                    entry.reset(displayState: 2)
-//                }
-//            }
-//        }
-//    }
-//
-//    func moveItems(source: IndexSet, destination: Int, model: any ItemDataAccessable) {
-//        var entries = model.entries
-//        entries.move(fromOffsets: source, toOffset: destination)
-//        entries = entries.enumerated().map { index, entry in
-//            let updatedEntry = entry
-//            updatedEntry.index = index
-//            return updatedEntry
-//        }
-//        model.reset(entries: entries)
-//    }
+    @MainActor func removeItem(offsets: IndexSet, item: any ItemDataAccessable) {
+        guard var updatedModel = item.id == model.id ? model : item as? Model else { return }
+        let removedEntries = updatedModel.entries.enumerated().filter { offsets.contains($0.offset) }
+        var entries = updatedModel.entries
+        entries.remove(atOffsets: offsets)
+        updatedModel.entries = entries
+
+        if updatedModel.category == .folder {
+            removedEntries.forEach {
+                if var entry = itemControllable.itemSync(for: $0.element.childId) {
+                    entry.displayState = 2
+                    itemControllable.replace(model: entry, isInsert: false, shouldRepairLinks: false)
+                }
+            }
+        }
+        if item.id != model.id {
+            itemControllable.replace(model: updatedModel, isInsert: false, shouldRepairLinks: false)
+        }
+    }
+
+    @MainActor func moveItems(source: IndexSet, destination: Int, item: any ItemDataAccessable) {
+        guard var updatedModel = item.id == model.id ? model : item as? Model else { return }
+        var entries = updatedModel.entries
+        entries.move(fromOffsets: source, toOffset: destination)
+        updatedModel.entries = entries
+        if item.id != model.id {
+            itemControllable.replace(model: updatedModel, isInsert: false, shouldRepairLinks: false)
+        }
+    }
 }
 
 // MARK: - Files

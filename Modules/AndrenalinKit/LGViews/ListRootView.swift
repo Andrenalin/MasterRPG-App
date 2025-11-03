@@ -163,23 +163,23 @@ private extension ListRootView {
     }
     
     func deleteItems(offsets: IndexSet) {
-//        if let parentModel {
-//            root.editControllable.removeItem(offsets: offsets, model: parentModel)
-//            listModel.deleteItems(offsets: offsets)
-//        } else {
-//            let removingItems = listController.delete(offsets: offsets, parentModel: parentModel)
-//            guard !removingItems.isEmpty else { return }
-//            root.removeEntryListModel.removeItems = removingItems
-//            removingItems.forEach {
-//                root.editControllable.markForDeletion(itemId: $0.itemId)
-//            }
-//            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
-//        }
+        if let parentModel {
+            root.editControllable.removeItem(offsets: offsets, item: parentModel)
+            listModel.deleteItems(offsets: offsets)
+        } else {
+            let removingItems = listController.delete(offsets: offsets, parentModel: parentModel)
+            guard !removingItems.isEmpty else { return }
+            root.removeEntryListModel.removeItems = removingItems
+            removingItems.forEach {
+                root.editControllable.markForDeletion(itemId: $0.itemId)
+            }
+            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
+        }
     }
     
     func moveItems(source: IndexSet, destination: Int) {
         guard let parentModel else { return }
-  //      root.editControllable.moveItems(source: source, destination: destination, model: parentModel)
+        root.editControllable.moveItems(source: source, destination: destination, item: parentModel)
     }
 
     var leadingPadding: CGFloat {
