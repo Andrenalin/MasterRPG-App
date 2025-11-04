@@ -4,13 +4,14 @@ import CoreExternalRPG
 import SwiftUI
 
 extension View {
-    func listModelUpdatesModifier(listControllable: any FolderListControllable, parentModel: (any ItemDataAccessable)?) -> some View {
-        modifier(ListModelUpdatesViewModifier(listControllable: listControllable, parentModel: parentModel))
+    func listModelUpdatesModifier(listControllable: any FolderListControllable, itemControllable: any ItemControllable, parentModel: (any ItemDataAccessable)?) -> some View {
+        modifier(ListModelUpdatesViewModifier(listControllable: listControllable, itemControllable: itemControllable, parentModel: parentModel))
     }
 }
 
 struct ListModelUpdatesViewModifier: ViewModifier {
     let listControllable: any FolderListControllable
+    let itemControllable: any ItemControllable
     let parentModel: (any ItemDataAccessable)?
     
     @Environment(\.navigator) private var navigator
@@ -39,10 +40,32 @@ struct ListModelUpdatesViewModifier: ViewModifier {
                 withAnimation { editMode = listControllable.listDisplayModel.isSelectionMode ? .active : .inactive }
 #endif
             }
+            .task {
+                await updateStreamChanges()
+            }
     }
 }
 
 private extension ListModelUpdatesViewModifier {
+    func updateStreamChanges() async {
+        let stream = Observations {
+            if let parentModel {
+                parentModel.entries.map(\.childId)
+            } else {
+                itemControllable.itemDataModel.items
+            }
+        }
+
+        for await itemIds in stream {
+            var updatedItems: [any ItemDataAccessable] = []
+            for item in itemIds {
+                guard let item = await itemControllable.item(for: item), item.displayState != 2 else { continue }
+                updatedItems.append(item)
+            }
+            listControllable.update(items: updatedItems, parentModel: parentModel)
+        }
+    }
+    
     var listModel: FolderListModel {
         listControllable.listModel(for: parentModel)
     }

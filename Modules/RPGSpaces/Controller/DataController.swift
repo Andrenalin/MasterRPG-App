@@ -28,7 +28,8 @@ extension DataController: CoreDataPersistable {
             displayState: Int(model.displayState),
             degrees: CRDT(string: model.degrees ?? "", defaultValue: 0.0),
             fileUrl: CRDTDataUpdate(wrappedValue: FileUrl(string: model.fileUrl ?? "", fileId: model.uuid ?? UUID(), module: token, unconvertedData: nil), update: CRDT(string: model.fileUrlUpdate ?? "", defaultValue: UUID())),
-            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID()))
+            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
+            parentId: model.parentId
         )
     }
 
@@ -52,6 +53,7 @@ extension DataController: CoreDataPersistable {
                 return entry
             }
         }
+        model.parentId <=> viewModel.parentId
     }
 
     // MARK: - SpaceEntryViewModel

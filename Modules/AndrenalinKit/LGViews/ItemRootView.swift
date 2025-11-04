@@ -52,7 +52,7 @@ struct ItemRootListView: View {
     var body: some View {
         let _ = Self._printChanges()
         
-        ListRootView(root: root, parentModel: nil)
+        ListRootView(root: root, listController: root.folderListControllable, parentModel: nil)
             .searchItemList(listControllable: root.folderListControllable, parentModel: nil)
             .navigationDestinationAutoReceive(InternalRoute.self)
     }

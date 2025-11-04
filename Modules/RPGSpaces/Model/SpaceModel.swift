@@ -6,7 +6,7 @@ import Observation
 
 @Observable
 public final class SpaceModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .item, displayState: Int = 0, degrees: Double = 0, fileUrl: FileUrl? = nil, entries: [SpaceEntryModel] = []) {
+    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .item, displayState: Int = 0, degrees: Double = 0, fileUrl: FileUrl? = nil, entries: [SpaceEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -16,9 +16,10 @@ public final class SpaceModel: Identifiable, @unchecked Sendable {
         degrees_ = CRDT(wrappedValue: degrees)
         fileUrl_ = CRDTDataUpdate(wrappedValue: fileUrl)
         entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self.parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, degrees: CRDT<Double>, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[SpaceEntryModel]>) {
+    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, degrees: CRDT<Double>, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[SpaceEntryModel]>, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -28,6 +29,7 @@ public final class SpaceModel: Identifiable, @unchecked Sendable {
         degrees_ = degrees
         fileUrl_ = fileUrl
         entries_ = entries
+        self.parentId = parentId
     }
 
     public init(from decoder: Decoder) throws {
@@ -42,6 +44,7 @@ public final class SpaceModel: Identifiable, @unchecked Sendable {
         self._degrees_ = try container.decode(CRDT<Double>.self, forKey: SpaceModel.CodingKeys._degrees_)
         self._fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: SpaceModel.CodingKeys._fileUrl_)
         self._entries_ = try container.decode(CRDTDataUpdate<[SpaceEntryModel]>.self, forKey: SpaceModel.CodingKeys._entries_)
+        self._parentId = try container.decodeIfPresent(UUID.self, forKey: SpaceModel.CodingKeys._parentId)
     }
 
     public var id: UUID
@@ -122,7 +125,8 @@ extension SpaceModel: ItemDiffComparable {
             displayState: other.displayState,
             degrees: degrees_.merged(other: other.degrees_),
             fileUrl: fileUrl_.merged(other: other.fileUrl_),
-            entries: entries_.merged(other: other.entries_)
+            entries: entries_.merged(other: other.entries_),
+            parentId: other.parentId
         )
     }
 
@@ -133,7 +137,8 @@ extension SpaceModel: ItemDiffComparable {
         category == other.category &&
         degrees == other.degrees &&
         fileUrl_.update == other.fileUrl_.update &&
-        entries_.update == other.entries_.update
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId
     }
     
     public var version: Int {
@@ -144,7 +149,7 @@ extension SpaceModel: ItemDiffComparable {
 extension SpaceModel: ItemDuplicatable {
     public func duplicate() -> SpaceModel {
         let copyName = duplicateName(from: name)
-        return SpaceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() })
+        return SpaceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: parentId)
     }
 }
 
@@ -156,7 +161,7 @@ extension SpaceModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .space
 
     public func copy() -> SpaceModel {
-        SpaceModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, degrees: degrees_, fileUrl: fileUrl_, entries: entries_)
+        SpaceModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, degrees: degrees_, fileUrl: fileUrl_, entries: entries_, parentId: parentId)
     }
     
     public func filter(_ filter: String) -> Bool {
@@ -188,6 +193,7 @@ extension SpaceModel: ItemDataAccessable {
         degrees_ <=> model.degrees_
         fileUrl_ <=> model.fileUrl_
         entries_ <=> model.entries_
+        parentId <=> model.parentId
         return true
     }
 
@@ -218,6 +224,7 @@ extension SpaceModel: Codable {
         case _degrees_
         case _fileUrl_
         case _entries_
+        case _parentId
     }
 
     public final func encode(to encoder: Encoder) throws {
@@ -232,6 +239,7 @@ extension SpaceModel: Codable {
         try container.encode(self._degrees_, forKey: SpaceModel.CodingKeys._degrees_)
         try container.encode(self._fileUrl_, forKey: SpaceModel.CodingKeys._fileUrl_)
         try container.encode(self._entries_, forKey: SpaceModel.CodingKeys._entries_)
+        try container.encode(self._parentId, forKey: SpaceModel.CodingKeys._parentId)
     }
 }
 

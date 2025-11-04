@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 
 struct ListRootView: View {
     let root: ItemRootControllable
+    let listController: any FolderListControllable
     let parentModel: (any ItemDataAccessable)?
 
     @Environment(\.navigator) private var navigator
@@ -53,7 +54,7 @@ struct ListRootView: View {
                     listController.update(items: items, parentModel: parentModel)
                 }
             }
-            .listModelUpdatesModifier(listControllable: listController, parentModel: parentModel)
+            .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable, parentModel: parentModel)
             .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
 #if !os(tvOS)
             .applyIf(!fileTypes.isEmpty) {
@@ -64,10 +65,6 @@ struct ListRootView: View {
 }
 
 private extension ListRootView {
-    var listController: any FolderListControllable {
-        root.folderListControllable
-    }
-
     var displayItems: [ListItemModel] {
         listController.displayItems(for: parentModel)
     }

@@ -11,6 +11,7 @@ public protocol FolderListControllable: Sendable {
     var searchModel: SearchModel { get }
     var cacheListItemModel: CacheItemListModel { get }
     
+    var itemControllable: any ItemControllable { get }
     func detailDestination(for itemId: UUID) -> any NavigationDestination
     
     func copy() -> Self
@@ -41,14 +42,15 @@ extension FolderListControllable {
             let subListmodel = listModel.lastSubListModel()
             return subListmodel.selectedModel
         }
-        return nil // ItemDataModel.model(modelContext: modelContext, id: selectedId)
+        return itemControllable.itemSync(for: selectedId)
     }
 }
 
 public extension FolderListControllable {
     func update(items: [any ItemDataAccessable], parentModel: (any ItemDataAccessable)?) {
         if let parentModel {
-            let subItems = items.filter { $0.parentId == parentModel.id }
+            let subItems = parentModel.entries.map { $0.childId }.compactMap { itemControllable.itemSync(for: $0) }
+            //items.filter { $0.parentId == parentModel.id }
             update(items: subItems, on: listModel(for: parentModel), parentModel: parentModel)
         } else {
             update(items: items, on: listModel(for: parentModel), parentModel: parentModel)
@@ -140,15 +142,15 @@ private extension FolderListControllable {
                 return nil
             }
         } else {
-            if let parentId = parentModel?.id {
-               if item.model.parentId != parentId {
-                    return nil
-                }
-            } else if item.level == 0 {
-                if item.model.parentId != nil {
-                    return nil
-                }
-            }
+//            if let parentId = parentModel?.id {
+//               if item.model.parentId != parentId {
+//                    return nil
+//                }
+//            } else if item.level == 0 {
+//                if item.model.parentId != nil {
+//                    return nil
+//                }
+//            }
         }
         if !searchModel.selectedTokens.isEmpty {
             let selectedTags = searchModel.selectedTokens.map { $0.tag }
@@ -166,11 +168,11 @@ private extension FolderListControllable {
         let itemModel = ListItemModel(id: "\(level)-\(index)-\(model.id)", model: model, isOpen: folderOpened, level: level)
         var models = [itemModel]
         if folderOpened {
-//            let subModels = model.subItems.0
-//            let subItemModels = subModels.enumerated().flatMap { (subIndex, subModel) in
-//                map(model: subModel, index: subIndex, level: level + 1)
-//            }
-//            models.append(contentsOf: subItemModels)
+            let subModels = model.entries.compactMap { itemControllable.itemSync(for: $0.childId ) }
+            let subItemModels = subModels.enumerated().flatMap { (subIndex, subModel) in
+                map(model: subModel, index: subIndex, level: level + 1)
+            }
+            models.append(contentsOf: subItemModels)
         }
         return models
     }
