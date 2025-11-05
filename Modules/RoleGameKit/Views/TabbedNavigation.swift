@@ -31,9 +31,11 @@ public struct TabbedNavigation: View {
         }
 #if os(iOS)
         .tabBarMinimizeBehavior26(.onScrollDown)
-        .tabViewBottomAccessory {
-            if appSizeMode == .compact && appModel.audioRoot.audioPlayerModel.showPlayerToolBar {
-                AudioPlayerMiniBarView()
+        .applyIf(appModel.audioRoot.audioPlayerModel.showPlayerToolBar) {
+            $0.tabViewBottomAccessory {
+                if appSizeMode == .compact && appModel.audioRoot.audioPlayerModel.showPlayerToolBar {
+                    AudioPlayerMiniBarView()
+                }
             }
         }
 #endif

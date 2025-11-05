@@ -9,7 +9,7 @@ import Testing
 
 struct SpaceModelTests {
     func setUp() async throws -> SpaceModel {
-        SpaceModel(id: UUID(), name: "Hello", degrees: 90.0)
+        SpaceModel(id: UUID(), name: "Hello", displayState: 0, degrees: 90.0)
     }
 
     @Test func assignAndDuplicate() async throws {

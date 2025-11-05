@@ -24,7 +24,7 @@ struct ConvertController {
                 
                 if folderId == nil {
                     // If not found, create
-                    let newModel = SpaceModel(id: UUID(), name: folderName, description: "", tags: [], category: .folder, displayState: 0, degrees: 0, fileUrl: nil, entries: [], parentId: currentParentId)
+                    let newModel = SpaceModel(id: UUID(), name: folderName, description: "", tags: [], category: .folder, displayState: 0, degrees: 0, fileUrl: nil, entries: [], parentId: nil)
                     itemController.replace(model: newModel, isInsert: true, shouldRepairLinks: false)
                     editController.addItem(itemId: newModel.id, parentId: currentParentId)
                     folderId = newModel.id
