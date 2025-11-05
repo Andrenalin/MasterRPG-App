@@ -40,17 +40,16 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
         }
     }
     
-    @MainActor func duplicateItem(currentSelected: UUID?) {
+    @MainActor func duplicateItem(currentSelected: UUID?) async {
         let selection = selection(currentSelected: currentSelected)
         for itemId in selection {
             guard let item = itemController.itemSync(for: itemId) else { continue }
-            //editController.duplicate(item: item)
+            await editController.duplicate(item: item)
         }
     }
     
     func deleteItem(currentSelected: UUID?) -> [ItemRowModel] {
-        //listModel.deleteItems(ids: selectionId(currentSelected: currentSelected))
-        []
+        listModel.deleteItems(ids: selectionId(currentSelected: currentSelected))
     }
     
     func exportItem(currentSelected: UUID?) -> any NavigationDestination {

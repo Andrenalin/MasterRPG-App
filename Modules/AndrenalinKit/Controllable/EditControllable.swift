@@ -181,15 +181,12 @@ public extension EditControllable {
 // MARK: - Folder / Colllection
 
 public extension EditControllable {
-    @MainActor func addItem(itemId: UUID, parentId: UUID?, folderId: UUID?) {
-        guard let parentId, let item = editModel(for: parentId) else { return }
-        addItem(itemId: itemId, in: item, folderId: folderId)
-    }
-
-    @MainActor func addItem(itemId: UUID, in parentModel: any ItemDataAccessable, folderId: UUID?) {
-        guard var parentModel = editModel(for: parentModel.id), itemId != parentModel.id else { return }
-        guard var item = editModel(for: itemId) else { return }
+    @MainActor func addItem(itemId: UUID, parentId: UUID?) {
+        guard let parentId, itemId != parentId, var parentModel = editModel(for: parentId), var item = editModel(for: itemId) else { return }
         if item.specialCategory && !parentModel.isFolder {
+            return
+        }
+        if parentModel.isFolder && item.parentId == parentId {
             return
         }
         var entries = parentModel.entries
@@ -198,7 +195,7 @@ public extension EditControllable {
         parentModel.entries = entries
 
         if parentModel.category == .folder {
-            item.parentId = model.id
+            item.parentId = parentModel.id
             save(updated: item, message: String(localized: "Added parent").localizedString)
         }
         save(updated: parentModel, message: String(localized: "Added item").localizedString)
@@ -239,7 +236,7 @@ public extension EditControllable {
         save(updated: item, message: String(localized: "Delete").localizedString)
     }
     
-    func duplicate(item: any ItemDataAccessable) async {
+    @MainActor func duplicate(item: any ItemDataAccessable) async {
         await itemControllable.duplicate(model: ItemRowModel(itemId: item.id, typeId: itemControllable.itemDataModel.networkModule))
     }
     
@@ -429,7 +426,7 @@ private extension EditControllable {
 
     @MainActor func editModel(for itemId: UUID) -> Model? {
         guard model.id != itemId else { return model }
-        return itemControllable.itemSync(for: itemId) as? Model
+        return itemControllable.itemSync(for: itemId)?.copy() as? Model
     }
     
     @MainActor func save(updated: Model, message: String) {

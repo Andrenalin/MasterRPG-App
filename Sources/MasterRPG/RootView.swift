@@ -71,6 +71,8 @@ struct RootView: View {
                 showFirstLunchAlert.toggle()
             }
             try? await Task.sleep(for: .seconds(5))
+            
+            try? await appStore.spaceRoot.spaceDataCleanup()
 #endif
         }
         .alert("First Launch", isPresented: $showFirstLunchAlert) {

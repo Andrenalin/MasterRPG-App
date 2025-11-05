@@ -68,15 +68,15 @@ public final class FolderListModel {
 
 // MARK: - Items
 extension FolderListModel {
-//    func deleteItems(ids: [String]) -> [ItemRowModel] {
-//        let removed = ids.compactMap { id -> ItemRowModel? in
-//            guard let index = displayedItems.firstIndex(where: { $0.id == id }) else { return nil }
-//            let model = displayedItems[index].model
-//            deleteItems(offsets: IndexSet(integer: index))
-//            return ItemRowModel(itemId: model.id, typeId: model.module)
-//        }
-//        return removed
-//    }
+    func deleteItems(ids: [String]) -> [ItemRowModel] {
+        let removed = ids.compactMap { id -> ItemRowModel? in
+            guard let index = displayedItems.firstIndex(where: { $0.id == id }) else { return nil }
+            let model = displayedItems[index].model
+            deleteItems(offsets: IndexSet(integer: index))
+            return ItemRowModel(itemId: model.id, typeId: .none)
+        }
+        return removed
+    }
     
     func deleteItems(offsets: IndexSet) {
         for index in offsets {

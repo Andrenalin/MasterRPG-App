@@ -50,7 +50,10 @@ public extension FolderListControllable {
     func update(items: [any ItemDataAccessable], parentModel: (any ItemDataAccessable)?) {
         if let parentModel {
             let subItems = parentModel.entries.map { $0.childId }.compactMap { itemControllable.itemSync(for: $0) }
-            //items.filter { $0.parentId == parentModel.id }
+            let otherFilter = items.filter { $0.parentId == parentModel.id }
+            if subItems.map(\.id) != otherFilter.map(\.id) {
+                print("******* ---->>> \(subItems.count) != \(otherFilter.count)")
+            }
             update(items: subItems, on: listModel(for: parentModel), parentModel: parentModel)
         } else {
             update(items: items, on: listModel(for: parentModel), parentModel: parentModel)
@@ -137,20 +140,21 @@ extension FolderListControllable {
 
 private extension FolderListControllable {
     func filter(item: ListItemModel, parentModel: (any ItemDataAccessable)?) -> ListItemModel? {
+        guard item.model.displayState != 2 else { return nil }
         if listDisplayModel.listMode == .list {
             if item.model.specialCategory {
                 return nil
             }
         } else {
-//            if let parentId = parentModel?.id {
-//               if item.model.parentId != parentId {
-//                    return nil
-//                }
-//            } else if item.level == 0 {
-//                if item.model.parentId != nil {
-//                    return nil
-//                }
-//            }
+            if let parentId = parentModel?.id {
+               if item.model.parentId != parentId {
+                    return nil
+                }
+            } else if item.level == 0 {
+                if item.model.parentId != nil {
+                    return nil
+                }
+            }
         }
         if !searchModel.selectedTokens.isEmpty {
             let selectedTags = searchModel.selectedTokens.map { $0.tag }

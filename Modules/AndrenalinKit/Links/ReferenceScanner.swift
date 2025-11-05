@@ -16,6 +16,12 @@ public enum ReferenceScanner {
         let tableEntries = parseUrlsEntryWithCommand(for: scheme, in: text) + parseUrlsEntry(for: scheme, in: text)
         return AllReferenceLinks(tables: tables, tableEntries: tableEntries)
     }
+    
+    // [name](SCHEME://UUID)
+    // [name](SCHEME://UUID/COMMAND)
+    public static func parseUrlsUuid(for scheme: String, in content: String) -> [ReferenceShortLink] {
+        parseUrlsLinkCommand(for: scheme, in: content) + parseUrlsLink(for: scheme, in: content)
+    }
 }
 
 private extension ReferenceScanner {
@@ -24,6 +30,39 @@ private extension ReferenceScanner {
     static let modulePattern = "[a-zA-Z]+"
     static let numberPattern = "[0-9]+"
     static let commandPattern = "[a-zA-Z]+"
+    
+    static func parseUrlsLink(for scheme: String, in content: String) -> [ReferenceShortLink] {
+        var links: [ReferenceShortLink] = []
+        let pattern = "\\[(?<Name>\(namePattern))\\]\\(\(scheme):\\/\\/(?<Id>\(uuidPattern))\\)"
+        let results = RegularExpressionParser.parse(content, with: pattern, extract: ["Name", "Id",])
+        for i in 0 ..< (results.count / 2) {
+            let name = results[i * 2]
+            let idString = results[i * 2 + 1]
+            if let id = UUID(uuidString: idString) {
+                links.append(ReferenceShortLink(name: name, linkId: id))
+            } else {
+                Logger.linkController.error("ReferenceScanner Parse error UUID nil for id:\(idString). Link will be ignored")
+            }
+        }
+        return links
+    }
+
+    static func parseUrlsLinkCommand(for scheme: String, in content: String) -> [ReferenceShortLink] {
+        var links: [ReferenceShortLink] = []
+        let pattern = "\\[(?<Name>\(namePattern))\\]\\(\(scheme):\\/\\/(?<Id>\(uuidPattern))\\/(?<Command>\(commandPattern))\\)"
+        let results = RegularExpressionParser.parse(content, with: pattern, extract: ["Name", "Id", "Command"])
+        for i in 0 ..< (results.count / 3) {
+            let name = results[i * 3]
+            let idString = results[i * 3 + 1]
+            let command = results[i * 3 + 2]
+            if let id = UUID(uuidString: idString) {
+                links.append(ReferenceShortLink(name: name, linkId: id, command: command))
+            } else {
+                Logger.linkController.error("ReferenceScanner Parse error UUID nil for id:\(idString). Link will be ignored")
+            }
+        }
+        return links
+    }
     
     static func parseUrlsTable(for scheme: String, in content: String) -> [ReferenceTableLink] {
         var links: [ReferenceTableLink] = []

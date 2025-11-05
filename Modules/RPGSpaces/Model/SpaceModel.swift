@@ -6,7 +6,7 @@ import Observation
 
 @Observable
 public final class SpaceModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .item, displayState: Int = 0, degrees: Double = 0, fileUrl: FileUrl? = nil, entries: [SpaceEntryModel] = [], parentId: UUID? = nil) {
+    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .item, displayState: Int, degrees: Double = 0, fileUrl: FileUrl? = nil, entries: [SpaceEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -19,7 +19,7 @@ public final class SpaceModel: Identifiable, @unchecked Sendable {
         self.parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, degrees: CRDT<Double>, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[SpaceEntryModel]>, parentId: UUID?) {
+    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, degrees: CRDT<Double>, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[SpaceEntryModel]>, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -156,7 +156,7 @@ extension SpaceModel: ItemDuplicatable {
 extension SpaceModel: ItemDataAccessable {
     public static var empty: SpaceModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> SpaceModel {
-        SpaceModel(id: id, name: "")
+        SpaceModel(id: id, name: "", displayState: 0)
     }
     public static let typeId: NetworkModules = .space
 

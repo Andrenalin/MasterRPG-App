@@ -50,7 +50,10 @@ struct ListRootView: View {
             }
             .onChange(of: root.itemControllable.itemDataModel.items, initial: true) {
                 withAnimation {
-                    let items = root.itemControllable.itemDataModel.items.map { root.itemControllable.itemOrEmpty(for: $0) }
+                    let items = root.itemControllable.itemDataModel.items.compactMap {
+                        let model = root.itemControllable.itemOrEmpty(for: $0)
+                        return model.displayState != 2 ? model : nil
+                    }
                     listController.update(items: items, parentModel: parentModel)
                 }
             }
@@ -88,7 +91,7 @@ private extension ListRootView {
             withAnimation {
                 root.editControllable.resetFile(url: url, module: root.module)
                 if parentModel != nil {
-                    root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId, folderId: listModel.lastFolderId)
+                    root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
                 }
                 listController.add(model: model)
             }
@@ -160,7 +163,7 @@ private extension ListRootView {
 
     func addLink(name: String, itemId: UUID, entryId: UUID?) {
         guard let parentModel else { return }
-        withAnimation { root.editControllable.addItem(itemId: itemId, in: parentModel, folderId: listModel.lastFolderId) }
+        withAnimation { root.editControllable.addItem(itemId: itemId, parentId: parentModel.id) }
     }
     
     func deleteItems(offsets: IndexSet) {

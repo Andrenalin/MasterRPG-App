@@ -37,7 +37,9 @@ private extension ListRootContextMenu {
 
     var duplicateItemView: some View {
         Button {
-            withAnimation { controller.duplicateItem(currentSelected: currentSelected) }
+            Task {
+                await controller.duplicateItem(currentSelected: currentSelected)
+            }
         } label: {
             Label {
                 Text("Duplicate \(title)", bundle: .module)
@@ -53,9 +55,9 @@ private extension ListRootContextMenu {
                 let removingItems = controller.deleteItem(currentSelected: currentSelected)
                 guard !removingItems.isEmpty else { return }
                 root.removeEntryListModel.removeItems = removingItems
-//                removingItems.forEach {
-//                    root.editControllable.markForDeletion(itemId: $0.itemId)
-//                }
+                removingItems.forEach {
+                    root.editControllable.markForDeletion(itemId: $0.itemId)
+                }
             }
             navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
         } label: {
