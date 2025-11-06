@@ -29,7 +29,7 @@ struct SearchItemListViewModifier: ViewModifier {
                         withAnimation {
                             searchModel.selectedTokens.append(suggestion)
                             searchModel.searchFieldText = ""
-                            listControllable.resetFilter(parentModel: parentModel)
+                            listControllable.resetFilter()
                         }
                     } label: {
                         Label(suggestion.tag, systemImage: "tag")
@@ -44,7 +44,7 @@ struct SearchItemListViewModifier: ViewModifier {
             }
             .onChange(of: searchModel.searchText, initial: true) {
                 withAnimation {
-                    listControllable.resetFilter(parentModel: parentModel)
+                    listControllable.resetFilter()
                     cacheItemListModel.reset(search: searchModel.searchText)
                     searchModel.updateTagSuggestions()
                 }

@@ -7,6 +7,8 @@ import SwiftUI
 
 @MainActor
 struct FolderListController: FolderListControllable {
+    var parentModel: (any ItemDataAccessable)?
+    
     let listModel: FolderListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
@@ -17,7 +19,7 @@ struct FolderListController: FolderListControllable {
         DiceRoute.detail(itemId)
     }
     
-    func copy() -> FolderListController {
-        FolderListController(listModel: FolderListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel, itemControllable: itemControllable)
+    func copy(parentModel: (any ItemDataAccessable)?) -> FolderListController {
+        FolderListController(parentModel: parentModel, listModel: FolderListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel, itemControllable: itemControllable)
     }
 }

@@ -53,7 +53,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
 
 private extension ToolbarItemListViewModifier {
     var listModel: FolderListModel {
-        listController.listModel(for: parentModel)
+        listController.listModel
     }
 
     var listDisplayModel: ListDisplayModel {

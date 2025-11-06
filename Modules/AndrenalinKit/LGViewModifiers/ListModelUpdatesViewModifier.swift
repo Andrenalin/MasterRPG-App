@@ -4,15 +4,14 @@ import CoreExternalRPG
 import SwiftUI
 
 extension View {
-    func listModelUpdatesModifier(listControllable: any FolderListControllable, itemControllable: any ItemControllable, parentModel: (any ItemDataAccessable)?) -> some View {
-        modifier(ListModelUpdatesViewModifier(listControllable: listControllable, itemControllable: itemControllable, parentModel: parentModel))
+    func listModelUpdatesModifier(listControllable: any FolderListControllable, itemControllable: any ItemControllable) -> some View {
+        modifier(ListModelUpdatesViewModifier(listControllable: listControllable, itemControllable: itemControllable))
     }
 }
 
 struct ListModelUpdatesViewModifier: ViewModifier {
     let listControllable: any FolderListControllable
     let itemControllable: any ItemControllable
-    let parentModel: (any ItemDataAccessable)?
     
     @Environment(\.navigator) private var navigator
     
@@ -31,8 +30,8 @@ struct ListModelUpdatesViewModifier: ViewModifier {
             .onChange(of: listModel.selected) {
                 withAnimation { updateSelected() }
             }
-            .onChange(of: listControllable.listDisplayModel.listMode) {
-                withAnimation { listControllable.resetFilter(parentModel: parentModel) }
+            .onChange(of: listControllable.listDisplayModel.listMode, initial: true) {
+                withAnimation { listControllable.resetFilter() }
             }
             .onChange(of: listControllable.listDisplayModel.isSelectionMode) {
                 withAnimation { listModel.update(selectionMode: listControllable.listDisplayModel.isSelectionMode) }
@@ -49,7 +48,7 @@ struct ListModelUpdatesViewModifier: ViewModifier {
 private extension ListModelUpdatesViewModifier {
     func updateStreamChanges() async {
         let stream = Observations {
-            if let parentModel {
+            if let parentModel = listModel.parentModel {
                 parentModel.entries.map(\.childId)
             } else {
                 itemControllable.itemDataModel.items
@@ -62,16 +61,16 @@ private extension ListModelUpdatesViewModifier {
                 guard let item = await itemControllable.item(for: item), item.displayState != 2 else { continue }
                 updatedItems.append(item)
             }
-            listControllable.update(items: updatedItems, parentModel: parentModel)
+            listControllable.update()
         }
     }
     
     var listModel: FolderListModel {
-        listControllable.listModel(for: parentModel)
+        listControllable.listModel
     }
 
     var displayItems: [ListItemModel] {
-        listControllable.displayItems(for: parentModel)
+        listControllable.displayItems
     }
 
     func updateListSelection() {

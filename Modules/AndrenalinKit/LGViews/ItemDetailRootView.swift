@@ -5,7 +5,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Overlay: View, EntryEditor: View>: View {
-    public init(selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
+    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
+        self.detailListController = detailListController
         self.selectedId = selectedId
         self.editorAsBackground = editorAsBackground
         self.header = header()
@@ -16,7 +17,8 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.entryEditor = entryEditor()
     }
 
-    public init(selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
+    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
+        self.detailListController = detailListController
         self.selectedId = selectedId
         self.editorAsBackground = editorAsBackground
         self.header = header()
@@ -51,6 +53,8 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @State private var itemIdHasUrl = UUID()
     @State private var selection = GroupItemSelectionModel()
     @State private var showInspector = false
+    
+    @State private var detailListController: FolderListControllable
 
     public var body: some View {
         let _ = Self._printChanges()
@@ -108,6 +112,7 @@ private extension ItemDetailRootView {
         .animation(.default, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id, initial: true) {
+            detailListController.resetParentModel(model: model)
             withAnimation { selection.selectedItem = nil }
             guard model.url != nil else {
                 itemIdHasUrl = hasFile(model: model) ? model.id : UUID()
@@ -241,7 +246,7 @@ private extension ItemDetailRootView {
                 ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
                     .padding()
                 
-                ListRootView(root: root, listController: root.folderListControllable.copy(), parentModel: model)
+                ListRootView(root: root, listController: detailListController, parentModel: model)
             } else {
                 Form {
                     if model.description.isEmpty == false {
@@ -327,6 +332,7 @@ private extension ItemDetailRootView {
         .secondaryAction
 #endif
     }
+    
 }
 
 //#Preview("Folder", traits: .mockData) {

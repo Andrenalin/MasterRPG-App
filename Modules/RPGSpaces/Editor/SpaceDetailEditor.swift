@@ -14,7 +14,7 @@ struct SpaceDetailEditor: View {
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
 
     var body: some View {
-        ItemDetailRootView(selectedId: selectedModel?.id, editorAsBackground: true) {
+        ItemDetailRootView(detailListController: root.folderListController.copy(parentModel: selectedModel), selectedId: selectedModel?.id, editorAsBackground: true) {
         } editor: {
             if let model = selectedModel {
                 SpaceDetailObjectViewer(editController: editController, model: model)

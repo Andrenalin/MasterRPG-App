@@ -88,7 +88,7 @@ public final class SpaceRoot: @unchecked Sendable {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
     }()
     @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
-        folderListController.copy()
+        folderListController.copy(parentModel: nil)
     }()
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()

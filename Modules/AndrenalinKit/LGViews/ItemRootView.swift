@@ -42,7 +42,7 @@ struct ItemRootSingleListView: View {
     }
     
     var listModel: FolderListModel {
-        root.folderListControllable.listModel(for: nil)
+        root.folderListControllable.listModel
     }
 }
 

@@ -48,16 +48,7 @@ struct ListRootView: View {
                     ContentUnavailableView.search
                 }
             }
-            .onChange(of: root.itemControllable.itemDataModel.items, initial: true) {
-                withAnimation {
-                    let items = root.itemControllable.itemDataModel.items.compactMap {
-                        let model = root.itemControllable.itemOrEmpty(for: $0)
-                        return model.displayState != 2 ? model : nil
-                    }
-                    listController.update(items: items, parentModel: parentModel)
-                }
-            }
-            .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable, parentModel: parentModel)
+            .listModelUpdatesModifier(listControllable: listController, itemControllable: root.itemControllable)
             .toolbarItemListModifier(root: root, listControllable: listController, parentModel: parentModel)
 #if !os(tvOS)
             .applyIf(!fileTypes.isEmpty) {
@@ -69,11 +60,11 @@ struct ListRootView: View {
 
 private extension ListRootView {
     var displayItems: [ListItemModel] {
-        listController.displayItems(for: parentModel)
+        listController.displayItems
     }
 
     var listModel: FolderListModel {
-        listController.listModel(for: parentModel)
+        listController.listModel
     }
     
     var fileTypes: [UTType] {
@@ -171,7 +162,7 @@ private extension ListRootView {
             root.editControllable.removeItem(offsets: offsets, item: parentModel)
             listModel.deleteItems(offsets: offsets)
         } else {
-            let removingItems = listController.delete(offsets: offsets, parentModel: parentModel)
+            let removingItems = listController.delete(offsets: offsets)
             guard !removingItems.isEmpty else { return }
             root.removeEntryListModel.removeItems = removingItems
             removingItems.forEach {
@@ -200,7 +191,7 @@ private extension ListRootView {
                 .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    withAnimation { listController.toggleFolder(item: item, parentModel: parentModel) }
+                    withAnimation { listController.toggleFolder(item: item) }
                 }
         }
     }

@@ -23,8 +23,5 @@ public struct LinkItemRootView: View {
             .environment(root.searchModel)
             .environment(CacheItemListModel())
             .environment(root.folderLinkControllable.cacheListItemModel)
-            .onChange(of: root.itemControllable.itemDataModel.items, initial: true) {
-                withAnimation { root.folderLinkControllable.update(items: root.itemControllable.itemDataModel.items.map { root.itemControllable.itemOrEmpty(for: $0) }, parentModel: nil) }
-            }
     }
 }

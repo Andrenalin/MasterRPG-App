@@ -28,10 +28,10 @@ public struct LinkItemListView: View {
             contentView
                 .onChange(of: listDisplayModel.displayMode, initial: true) {
                     root.folderLinkControllable.listDisplayModel.displayMode = listDisplayModel.displayMode
-                    withAnimation { root.folderLinkControllable.resetFilter(parentModel: nil) }
+                    withAnimation { root.folderLinkControllable.resetFilter() }
                 }
                 .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
-                    withAnimation { root.folderLinkControllable.resetFilter(parentModel: nil) }
+                    withAnimation { root.folderLinkControllable.resetFilter() }
                 }
                 .applyIf(type != .inspector) { content in
                     content
@@ -47,7 +47,7 @@ public struct LinkItemListView: View {
 
 private extension LinkItemListView {
     var listModel: FolderListModel {
-        root.folderLinkControllable.listModel(for: nil)
+        root.folderLinkControllable.listModel
     }
 
     @ViewBuilder
@@ -83,7 +83,7 @@ private extension LinkItemListView {
         .padding(.horizontal)
         .onChange(of: searchModel.searchText) {
             withAnimation {
-                root.folderLinkControllable.resetFilter(parentModel: nil)
+                root.folderLinkControllable.resetFilter()
                 cacheItemListModel.reset(search: searchModel.searchText)
             }
         }
@@ -162,7 +162,7 @@ private extension LinkItemListView {
                 .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
                 .contentShape(.rect)
                 .onTapGesture {
-                    withAnimation { root.folderLinkControllable.toggleFolder(item: item, parentModel: nil) }
+                    withAnimation { root.folderLinkControllable.toggleFolder(item: item) }
                 }
         }
     }
