@@ -39,8 +39,15 @@ extension FolderListControllable {
 
 public extension FolderListControllable {
     private func originalItems() -> [ListItemModel] {
-        let currentItems = itemControllable.itemDataModel.items.compactMap {
-            itemControllable.itemSync(for: $0)
+        var currentItems: [any ItemDataAccessable] = []
+        if let parentModel = listModel.parentModel {
+            currentItems = parentModel.entries.compactMap {
+                itemControllable.itemSync(for: $0.childId)
+            }
+        } else {
+            currentItems = itemControllable.itemDataModel.items.compactMap {
+                itemControllable.itemSync(for: $0)
+            }
         }
         guard currentItems.map(\.id) != listModel.originalItems.map(\.model.id) else {
             return listModel.originalItems
@@ -120,21 +127,27 @@ extension FolderListControllable {
 private extension FolderListControllable {
     func filter(item: ListItemModel, level: Int) -> ListItemModel? {
         guard item.model.displayState != 2 else { return nil }
-        if listDisplayModel.listMode == .list {
-            if item.model.specialCategory {
-                return nil
-            }
-            if item.level > 0 {
+        if let parentModel = listModel.parentModel {
+            if !parentModel.entries.contains(where: { $0.childId == item.model.id }) {
                 return nil
             }
         } else {
-            if let parentId = listModel.parentModel?.id {
-               if item.model.parentId != parentId {
+            if listDisplayModel.listMode == .list {
+                if item.model.specialCategory {
                     return nil
                 }
-            } else if item.level == 0 {
-                if item.model.parentId != nil {
+                if item.level > 0 {
                     return nil
+                }
+            } else {
+                if let parentId = listModel.parentModel?.id {
+                    if item.model.parentId != parentId {
+                        return nil
+                    }
+                } else if item.level == 0 {
+                    if item.model.parentId != nil {
+                        return nil
+                    }
                 }
             }
         }
