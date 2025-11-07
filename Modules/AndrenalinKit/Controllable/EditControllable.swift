@@ -269,7 +269,7 @@ public extension EditControllable {
         updatedModel.entries = entries
 
         if updatedModel.category == .folder {
-            for (index, entry) in removedEntries {
+            for (_, entry) in removedEntries {
                 delete(itemId: entry.childId)
             }
         }
@@ -292,6 +292,16 @@ public extension EditControllable {
         guard fileUrlDataController != nil else { return }
         Task.detached {
             await resetFile(url: url, id: model.id, module: module)
+        }
+    }
+    
+    func moved(oldName: String) async {
+        guard let fileUrlDataController else { return }
+        let oldFileUrl = await model.fileUrl
+        let newName = await model.name
+        let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, from: oldName, to: newName)
+        if let newFileUrl {
+            await reset(fileUrl: newFileUrl, saveIt: true)
         }
     }
     
