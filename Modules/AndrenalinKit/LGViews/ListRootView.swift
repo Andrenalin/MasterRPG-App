@@ -99,10 +99,12 @@ private extension ListRootView {
                     List(selection: $listModel.listSelection) {
                         itemRows()
                     }
+                    .frame(minHeight: 300, maxHeight: .infinity)
                 } else {
                     List(selection: $listModel.selected) {
                         itemRows()
                     }
+                    .frame(minHeight: 300, maxHeight: .infinity)
                 }
 #else
                 List(selection: $listModel.listSelection) {

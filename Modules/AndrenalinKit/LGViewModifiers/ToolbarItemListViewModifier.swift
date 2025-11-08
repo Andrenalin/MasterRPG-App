@@ -70,6 +70,11 @@ private extension ToolbarItemListViewModifier {
                     addItemButton(for: .collection)
                         .disabled(listDisplayModel.isListMode)
                     Divider()
+                    
+                    toggleFolder()
+                        .disabled(listModel.selected == nil)
+
+                    Divider()
                 }
             }
         } label: {
@@ -99,7 +104,28 @@ private extension ToolbarItemListViewModifier {
                 ListModeToggle(listDisplayModel: listDisplayModel)
                 FolderModeToggle(listDisplayModel: listDisplayModel)
             }
+            
+            ControlGroup {
+                toggleFolder()
+            }
         }
+    }
+
+    func toggleFolder() -> some View {
+        Button {
+            if let selected = listModel.selected, let item = listController.displayItems.first(where: { $0.id == selected }) {
+                listController.toggleFolder(item: item)
+            }
+        } label: {
+            Label {
+                Text("Toggle Folder", bundle: .module)
+            } icon: {
+                Image(systemName: "list.bullet.indent")
+            }
+        }
+#if !os(tvOS)
+        .keyboardShortcut(.leftArrow, modifiers: [.command, .shift])
+#endif
     }
 
     func addItemButton(for type: EditControllerAddType) -> some View {
@@ -117,12 +143,12 @@ private extension ToolbarItemListViewModifier {
     }
 
     func addItem(for type: EditControllerAddType) async {        
-        let newModel = await root.editControllable.addNew(type: type)
+        guard let newModel = await root.editControllable.addNew(type: type) else { return }
         withAnimation {
             if parentModel != nil {
-                //root.editControllable.addItem(itemId: newModel.id, in: modelContext, parentId: listModel.selectedParentId, folderId:  listModel.lastFolderId)
+                root.editControllable.addItem(itemId: newModel.id, parentId: listModel.selectedParentId)
             }
-            //listController.add(model: newModel)
+            listController.add(model: newModel)
         }
     }
     

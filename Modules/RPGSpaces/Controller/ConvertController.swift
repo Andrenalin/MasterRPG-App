@@ -14,8 +14,9 @@ struct ConvertController {
             // Extract folder path components from the file URL
             var currentParentId: UUID? = nil
             var currentFolderModel: SpaceModel? = nil
-            let folderComponents = url.pathComponents.dropFirst().dropLast() // drop root '/' and the file name
+            let folderComponents = url.pathComponents.dropLast() // drop root '/' and the file name
             for folderName in folderComponents {
+                guard folderName != "/" else { continue }
                 // Find folder at this level with the same name and parent
                 var folderId = itemController.itemDataModel.items.first {
                     let item = itemController.itemOrEmpty(for: $0)

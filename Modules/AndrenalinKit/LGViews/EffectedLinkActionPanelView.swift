@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import SwiftUI
 import SwiftData
 
@@ -14,11 +15,11 @@ public struct EffectedLinkActionPanelView: View {
     let overwrite: Bool
     let action: (([ItemRowModel]) -> Void)?
     
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.navigator) private var navigator
     @Environment(\.colorScheme) private var colorScheme
         
     public var body: some View {
-        NavigationStack {
+        ManagedNavigationStack {
             List {
                 ForEach(removeEntryList.linkTree) { item in
                     Group {
@@ -32,6 +33,7 @@ public struct EffectedLinkActionPanelView: View {
                     .listRowBackground(colorBackground(for: item))
                 }
             }
+            .frame(minHeight: 300)
             .navigationTitle(Text("Mark for remove \(removeEntryList.linkTree.filter { $0.canRemoved }.count) Item", bundle: .module))
             .toolbar {
                 ToolbarItem(placement: .destructiveAction) {
@@ -44,7 +46,7 @@ public struct EffectedLinkActionPanelView: View {
                             removeItems(models: removedItems)
                             restoreItems(models: restoredItems)
                         }
-                        dismiss()
+                        navigator.dismiss()
                     } label: {
                         Label {
                             Text("Remove", bundle: .module)
@@ -57,7 +59,7 @@ public struct EffectedLinkActionPanelView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
                         restoreItems(models: removeEntryList.linkTree.map { $0.item })
-                        dismiss()
+                        navigator.dismiss()
                     } label: {
                         Label {
                             Text("Cancel", bundle: .module)
@@ -153,9 +155,20 @@ private extension EffectedLinkActionPanelView {
         }
     }
     
+    private var nameNotSetResource: LocalizedStringResource {
+        "Untitled"
+    }
+    
+    private var nameNotSet: String {
+        String(localized: nameNotSetResource).localizedString
+    }
+    
     func itemName(item: RemoveLinkTreeModel) -> String {
         guard let model = root.itemControllable.itemSync(for: item.item.itemId) else { return "" }
         var name = model.name
+        if name.isEmpty {
+            name = nameNotSet
+        }
         if let entryId = item.item.entryId, let index = model.entries.firstIndex(where: { $0.id == entryId }) {
             name = "\(name) --- \(model.entries[index].name)"
         }

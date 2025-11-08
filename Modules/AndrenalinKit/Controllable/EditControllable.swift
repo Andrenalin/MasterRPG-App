@@ -189,9 +189,23 @@ public extension EditControllable {
         if parentModel.isFolder && item.parentId == parentId {
             return
         }
-        var entries = parentModel.entries
+        if item.parentId != nil {
+            removeItemFromParent(itemId: itemId)
+        }
         let entry = Model.Entry.newChild(id: itemId)
+        var entries = parentModel.entries
+        if parentModel.category == .folder {
+            entries.removeAll { $0.childId == itemId }
+        }
         entries.append(entry)
+        if parentModel.category == .folder {
+            entries = entries.sorted {
+                guard let item1 = itemControllable.itemSync(for: $0.childId),
+                      let item2 = itemControllable.itemSync(for: $1.childId) else { return true }
+                return item1.name.localizedStandardCompare(item2.name) == .orderedAscending
+            }
+        }
+
         parentModel.entries = entries
 
         if parentModel.category == .folder {
@@ -199,6 +213,17 @@ public extension EditControllable {
             save(updated: item, message: String(localized: "Added parent").localizedString)
         }
         save(updated: parentModel, message: String(localized: "Added item").localizedString)
+    }
+    
+    @MainActor func removeItemFromParent(itemId: UUID) {
+        guard var item = editModel(for: itemId), let parentId = item.parentId, var parentModel = editModel(for: parentId) else { return }
+        item.parentId = nil
+        save(updated: item, message: String(localized: "Removed parent").localizedLowercase.localizedString)
+
+        var entries = parentModel.entries
+        entries.removeAll(where: { $0.childId == itemId })
+        parentModel.entries = entries
+        save(updated: parentModel, message: String(localized: "Removed item").localizedLowercase.localizedString)
     }
 }
 
