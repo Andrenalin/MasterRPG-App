@@ -4,8 +4,7 @@ import AndrenalinKit
 import Foundation
 
 struct ImportController: Sendable {
-    @MainActor
-    init(itemController: ItemController) {
+    @MainActor init(itemController: ItemController) {
         self.itemController = itemController
         self.importModel = ItemDataImportModel()
     }

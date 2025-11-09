@@ -4,31 +4,17 @@ import AndrenalinKit
 import CoreData
 import Foundation
 
-struct DataController: Sendable {
-    @MainActor
-    init(root: AudioRoot, context: NSManagedObjectContext, token: String) {
-        self.root = root
-        self.changeObserver = CoreDataChangeObserver()
+struct DataController: DataPersistenceControllable {
+    @MainActor init(context: NSManagedObjectContext, token: String) {
         self.dataController = CoreDataController<AudioModel, RPGAudio>(context: context)
         self.token = token
-
-        changeObserver.observeCoreDataChanges(from: context, entity: RPGAudio.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
     }
     
-    weak var root: AudioRoot!
     let dataController: CoreDataController<AudioModel, RPGAudio>
-    var itemControllable: any ItemControllable {
-        root.itemController
-    }
-    let changeObserver: CoreDataChangeObserver
     let token: String
 }
 
-extension DataController: CoreDataPersistable, DataPersistenceControllable, SyncDataControllable {
-    var dataControllable: any CoreDataPersistable {
-        self
-    }
-    
+extension DataController: CoreDataPersistable {
     // MARK: model -> viewlmodel
 
     func mapViewModel(_ model: RPGAudio, token: String) -> AudioModel {

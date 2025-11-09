@@ -63,7 +63,6 @@ public final class SpaceRoot: @unchecked Sendable {
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     
-
     var cacheController: CacheController? { itemController.cacheController }
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }
@@ -218,7 +217,7 @@ extension SpaceRoot {
             }
         }
         
-        let cc = await ConvertController(itemController: itemController, editController: editController(type: .main))
-        await cc.checkFolders()
+//        let cc = await ConvertController(itemController: itemController, editController: editController(type: .main))
+//        await cc.checkFolders()
     }
 }

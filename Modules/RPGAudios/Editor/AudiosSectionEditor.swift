@@ -15,7 +15,7 @@ struct AudiosSectionEditor: View {
         ItemsSelectionEditor(editController: editController, model: $model.entries, title: "PLaylist", bundle: .module, value: .audio, minimumWidth: 200) {  entry in
             PlayListHiddenEditor(editController: editController, model: root.itemController.itemOrEmpty(for: entry.audioId))
         } selectorView: {
-            root.viewController.viewSelect(filter: .all) {
+            root.viewController.viewSelect(root: root, filter: .all) {
                 model.entries.map { ItemRowModel(itemId: $0.audioId, typeId: .audio) }
             } toggleSelection: { selection, _ in
                 if let index = model.entries.firstIndex(where: { $0.audioId == selection.itemId }) {

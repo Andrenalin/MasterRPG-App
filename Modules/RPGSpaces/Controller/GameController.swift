@@ -15,8 +15,7 @@ final class SpaceGameModel: Sendable {
 }
 
 struct GameController: Sendable {
-    @MainActor
-    init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
         self.exportController = ExportController(itemController: itemController, gameExporter: false)
         let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)

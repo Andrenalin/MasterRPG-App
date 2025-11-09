@@ -15,7 +15,6 @@ struct DataController: DataPersistenceControllable {
 }
 
 extension DataController: CoreDataPersistable {
-
     // MARK: model -> viewlmodel
 
     func mapViewModel(_ model: RPGSpace, token: String) -> SpaceModel {

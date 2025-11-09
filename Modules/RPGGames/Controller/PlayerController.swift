@@ -300,7 +300,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                await root.audioRoot.gameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.gameConfig.id])
+                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.gameConfig.id])
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
                 return await response(for: model, isSuccess: true, requestData: true)
@@ -311,10 +311,10 @@ extension PlayerController {
         case .update:
             switch model.subType {
             case .audioList:
-                await root.audioRoot.gameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
+                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
             case .playAudio:
-                await root.audioRoot.gameControllable.applyAudio(id: model.data.id, for: model.gameConfig.controls.map { $0.id } + [model.gameConfig.master.id])
-                let _ = await root.audioRoot.gameControllable.play(with: model.data).result
+                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: model.gameConfig.controls.map { $0.id } + [model.gameConfig.master.id])
+                let _ = await root.audioRoot.audioGameControllable.play(with: model.data).result
             default:
                 break
             }
@@ -596,6 +596,6 @@ extension PlayerController {
     }
 
     func sendAudioList() async {
-        await send(counter: 0, type: .update, subType: .audioList, updated: root.audioRoot.gameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id), useJournal: false)
+        await send(counter: 0, type: .update, subType: .audioList, updated: root.audioRoot.audioGameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id), useJournal: false)
     }
 }

@@ -117,7 +117,7 @@ struct OldWindowLinkList: Scene {
 
             BaseWindow("\(NetworkModules.audio.title) Link", id: NetworkModules.audio.linkWindowId) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.audioRoot.viewController.linkWindow()
+                    appStore.audioRoot.viewController.linkWindow(root: appStore.audioRoot)
                         .modifier(WindowListSetUpViewModifier(appStore: appStore))
                 }
                 .onDisappear {
@@ -233,7 +233,7 @@ struct OldWindowLinkAltList: Scene {
 
             WindowGroup("\(NetworkModules.audio.title) Link", id: NetworkModules.audio.linkAltWindowId) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.audioRoot.viewController.linkWindow()
+                    appStore.audioRoot.viewController.linkWindow(root: appStore.audioRoot)
                         .modifier(WindowListSetUpViewModifier(appStore: appStore))
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])

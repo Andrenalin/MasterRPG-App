@@ -23,7 +23,9 @@ struct AudioDetailEditor: View {
             Section {
                 AudioEditor(editController: editController)
                 
-                FileLocationEditor(editController: editController, fileStore: root.fileUrlDataController, fileUrlBinding: $model.fileUrl)
+                if let fileUrlDataController = editController.fileUrlDataController {
+                    FileLocationEditor(editController: editController, fileStore: fileUrlDataController, fileUrlBinding: $model.fileUrl)
+                }
                 
             } header: {
 #if os(macOS)

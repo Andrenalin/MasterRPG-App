@@ -19,7 +19,7 @@ struct MapRow: View {
     var body: some View {
         switch item.model.typeId {
         case .audio:
-            root.audioRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
+            root.audioRoot.viewController.rowView(root: root.audioRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .pdf:
             root.pdfRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .photo:

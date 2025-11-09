@@ -1,35 +1,39 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import CoreData
 import Foundation
+import os.log
+import UniformTypeIdentifiers
 
 struct ItemController: Sendable {
+    static var fileTypes: [UTType] { [.audio] }
+    static var filenameExtension: String { "m4a" }
+
     @MainActor
-    init(root: AudioRoot, dataController: DataController?) {
-        self.root = root
+    init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.dataControllable = dataController
+        self.linkRegisterController = linkRegisterControllable
+
         itemDataModel = ItemDataModel(categoryTags: [.music, .playlist, .sound], networkModule: .audio)
+        
+        let fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.audio.token, fileTypes: ItemController.fileTypes, filenameExtension: ItemController.filenameExtension, fileUrlAccess: self)
+        self.fileUrlDataController = fileUrlDataController
     }
 
-    weak var root: AudioRoot!
+    var fileUrlDataController: FileUrlDataController?
     let collectionCategory: ItemListCategory = .playlist
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
+    let linkRegisterController: LinkRegisterControllable
 }
 
 extension ItemController: ItemControllable {
     typealias Model = AudioModel
     
-    var fileUrlDataController: FileUrlDataController? {
-        root.fileUrlDataController
+    @MainActor var linkRegisterControllable: LinkRegisterControllable {
+        linkRegisterController
     }
-    
-    @MainActor
-    var linkRegisterControllable: LinkRegisterControllable {
-        root.rootControllable.linkRegisterControllable
-    }
-    
+
     @MainActor
     func children(for model: ItemRowModel) -> [ItemRowModel] {
         guard let item = self.itemSync(for: model.itemId) else { return [] }
@@ -47,23 +51,16 @@ extension ItemController: ItemControllable {
 
     func didDelete(model: ModelType) async {
         guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didDelete(itemId: model.id)
-        }
         await didDelete(fileUrl: model.fileUrl)
     }
     
     func didUpdate(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didUpdate(item: model)
-        }
     }
 
     func duplicate(model: ItemRowModel) async {
         guard let item = await self.item(for: model.itemId) else { return }
         let duplicate = item.duplicate()
-        duplicate.fileUrl = try? await root.fileUrlDataController.duplicate(fileUrl: item.fileUrl, for: duplicate.id)
+        duplicate.fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: item.fileUrl, for: duplicate.id)
         await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
     }
 
@@ -79,13 +76,21 @@ extension ItemController: ItemControllable {
 
     public func loadableUrl(for model: ItemRowModel) async -> URL? {
         guard let fileUrl = await self.item(for: model.itemId)?.fileUrl else { return nil }
-        return await root.fileUrlDataController.url(for: fileUrl, action: { $0 })
+        return await fileUrlDataController?.url(for: fileUrl, action: { $0 })
+    }
+}
+
+extension ItemController: FileUrlAccessible {
+    func saveFileUrl(fileUrl: FileUrl) async {
+        guard let item = await item(for: fileUrl.fileId)?.copy() else { return }
+        item.fileUrl = fileUrl
+        await replace(model: item, isInsert: false, shouldRepairLinks: true)
     }
 }
 
 extension ItemController {
     func didDelete(fileUrl: FileUrl?) async {
         guard let fileUrl else { return }
-        root.fileUrlDataController.delete(fileUrl)
-    }    
+        fileUrlDataController?.delete(fileUrl)
+    }
 }

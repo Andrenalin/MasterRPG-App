@@ -143,7 +143,7 @@ extension EditController {
 extension EditController {
     @MainActor @ViewBuilder
     func selectAudio(for entryId: UUID, linkKeyPath: WritableKeyPath<MapModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.audioRoot.viewController.viewSelect(filter: .all) {
+        root.audioRoot.viewController.viewSelect(root: root.audioRoot, filter: .all) {
             let text = self.model[keyPath: linkKeyPath]
             return LinkReplaceController.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .audio) }
         } toggleSelection: { sel, _ in

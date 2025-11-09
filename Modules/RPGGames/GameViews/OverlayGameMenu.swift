@@ -34,7 +34,7 @@ private extension OverlayGameMenu {
             titleView
 
             HStack(alignment: .bottom, spacing: marginWidth + 4) {
-                root.audioRoot.viewController.viewVolume(alignment: .top)
+                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .top)
                     .padding(.horizontal, marginWidth)
                     .padding(.leading, marginWidth / 2)
                     .zIndex(2)
@@ -53,7 +53,7 @@ private extension OverlayGameMenu {
             titleView
             
             HStack {
-                root.audioRoot.viewController.viewVolume(alignment: .bottomTrailing)
+                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .bottomTrailing)
                 
                 if isMaster {
                     ControlSharingView(alignment: .bottomLeading) {}
@@ -85,7 +85,7 @@ private extension OverlayGameMenu {
             titleView
             
             HStack(spacing: marginWidth + 4) {
-                root.audioRoot.viewController.viewVolume(alignment: wideMode == .small ? .bottom : .bottomTrailing)
+                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: wideMode == .small ? .bottom : .bottomTrailing)
                     .padding(.horizontal, marginWidth)
                     .padding(.leading, marginWidth / 2)
                     .zIndex(2)

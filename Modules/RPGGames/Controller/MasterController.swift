@@ -231,7 +231,7 @@ extension MasterController {
     func handleAudio(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else {
             await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.gameConfig.id)
-            await send(type: .update, subtype: .audioList, updated: root.audioRoot.gameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id))
+            await send(type: .update, subtype: .audioList, updated: root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id))
             return nil
         }
         switch model.type {
@@ -245,8 +245,8 @@ extension MasterController {
             case .playAudio:
                 return model.data
             case .audioList:
-                await root.audioRoot.gameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
-                await send(type: .update, subtype: .audioList, updated: root.audioRoot.gameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id))
+                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
+                await send(type: .update, subtype: .audioList, updated: root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id))
             default:
                 break
             }

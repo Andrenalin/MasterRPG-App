@@ -5,11 +5,17 @@ import Foundation
 import SwiftUI
 
 public struct LinkController: Sendable {
-    weak var root: AudioRoot!
+    init(itemController: ItemController, audioController: AudioController, gameController: GameController) {
+        self.itemController = itemController
+        self.audioController = audioController
+        self.gameController = gameController
+    }
     let itemController: ItemController
-
+    let audioController: AudioController
+    let gameController: GameController
+    
     public var itemControllable: any ItemControllable {
-        itemController as ItemController
+        itemController
     }
 }
 
@@ -31,25 +37,25 @@ extension LinkController: LinkControllable {
                 let playUrl = specialLink(linkType: .play, linkNumber: linkNumber, itemId: itemId, entryId: entryId)
 
                 if let shareResult, shareResult.showGame {
-                    if root.gameController.allPlayersReported(for: itemId) {
-                        let isPlaying = root.audioController.model.isPlaying
-                        shareResult.networkActions?.game(root.gameController.requestPlay(id: itemId), .playAudio)
+                    if gameController.allPlayersReported(for: itemId) {
+                        let isPlaying = audioController.model.isPlaying
+                        shareResult.networkActions?.game(gameController.requestPlay(id: itemId), .playAudio)
                         return text.toggleLink(url: playUrl, with: "\(!isPlaying ? "playing" : "pause")", replace: true)
                     } else {
                         Task { @MainActor in
-                            await shareResult.networkActions?.shareId(root.gameController.share(id: itemId))
+                            await shareResult.networkActions?.shareId(gameController.share(id: itemId))
                         }
                         return text.toggleLink(url: playUrl, with: "share audio", replace: true)
                     }
                 } else {
-                    let isPlaying = root.audioController.model.isPlaying && root.audioController.model.currentId == itemId
-                    root.audioController.loadAndPlay(id: itemId)
+                    let isPlaying = audioController.model.isPlaying && audioController.model.currentId == itemId
+                    audioController.loadAndPlay(id: itemId)
                     return text.toggleLink(url: playUrl, with: "\(!isPlaying ? "playing" : "pause")", replace: true)
                 }
             }
             // send
             Task { @MainActor in
-                await shareResult?.networkActions?.shareId(root.gameController.share(id: itemId))
+                await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
             }
             return text
         } else {
@@ -58,7 +64,7 @@ extension LinkController: LinkControllable {
                     await toggler(itemId, itemControllable.itemDataModel.networkModule)
                 }
             }
-            let item = root.itemController.itemOrEmpty(for: itemId)
+            let item = itemController.itemOrEmpty(for: itemId)
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? "\(specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId)) " : ""
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.itemDataModel.networkModule)) ?? false

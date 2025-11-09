@@ -65,7 +65,7 @@ struct OverlayPlayerTabBar: View {
                 root.pdfRoot.viewController.gameView()
                     .gameOverlayTabBarView(value: NetworkModules.pdf)
 
-                root.audioRoot.viewController.gameView()
+                root.audioRoot.viewController.gameView(root: root.audioRoot)
                     .gameOverlayTabBarView(value: NetworkModules.audio)
 
                 root.photoRoot.viewController.gameView()
@@ -100,7 +100,7 @@ struct OverlayPlayerTabBar: View {
                         .gameOverlayTabBarView(value: NetworkModules.value)
                 }
 
-                root.audioRoot.viewController.gameView()
+                root.audioRoot.viewController.gameView(root: root.audioRoot)
                     .gameOverlayTabBarView(value: NetworkModules.audio)
 
                 root.photoRoot.viewController.gameView()

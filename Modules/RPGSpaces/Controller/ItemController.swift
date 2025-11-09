@@ -52,17 +52,10 @@ extension ItemController: ItemControllable {
     
     func didDelete(model: ModelType) async {
         guard let model = model as? Model else { return }
-//        await root.applyToAllEditController {
-//            await $0.didDelete(itemId: model.id)
-//        }
         await didDelete(fileUrl: model.fileUrl)
     }
     
     func didUpdate(model: ModelType) async {
-        guard let model = model as? Model else { return }
-//        await root.applyToAllEditController {
-//            await $0.didUpdate(item: model)
-//        }
     }
     
     func duplicate(model: ItemRowModel) async {

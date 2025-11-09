@@ -12,7 +12,7 @@ struct OldMenuBarView: View {
                 .padding()
             Divider()
 
-            audioRoot.viewController.viewAudioPlayer(with: nil)
+            audioRoot.viewController.viewAudioPlayer(root: audioRoot, with: nil)
                 .padding()
         }
     }

@@ -9,14 +9,12 @@ import Observation
 
 final class AudioController {
     @MainActor
-    init(fileController: FileController, gameController: GameController, model: AudioPlayerModel) {
-        self.fileController = fileController
-        self.gameController = gameController
+    init(itemController: ItemController, model: AudioPlayerModel) {
+        self.itemController = itemController
         self.model = model
     }
     
-    let fileController: FileController
-    let gameController: GameController
+    let itemController: ItemController
     let model: AudioPlayerModel
 }
 
@@ -154,12 +152,12 @@ extension AudioController {
 //    }
     
     private func audioAsset(for item: AudioModel) async -> PlaylistItem? {
-        guard let fileUrl = item.fileUrl else { return nil }
+        guard let fileUrl = item.fileUrl, let fileUrlDataController = itemController.fileUrlDataController else { return nil }
 
         var audioAsset: PlaylistItem? = nil
         do {
-            _ = await fileController.fileUrlDataController.fileDownloaded(for: fileUrl)
-            audioAsset = try await fileController.fileUrlDataController.url(for: fileUrl) { url -> PlaylistItem? in
+            _ = await fileUrlDataController.fileDownloaded(for: fileUrl)
+            audioAsset = try await fileUrlDataController.url(for: fileUrl) { url -> PlaylistItem? in
                 guard let url else { return nil }
                 let data = try Data(contentsOf: url)
                 let fileExtension = url.pathExtension
@@ -176,7 +174,7 @@ extension AudioController {
 
         do {
             if audioAsset == nil, let data = fileUrl.data {
-                let tempUrl = URL.temporaryDirectory.appending(path: item.id.uuidString).appendingPathExtension(FileController.filenameExtension)
+                let tempUrl = URL.temporaryDirectory.appending(path: item.id.uuidString).appendingPathExtension(ItemController.filenameExtension)
                 try data.write(to: tempUrl)
                 let asset = AVURLAsset(url: tempUrl)
                 let duration = try await asset.load(.duration)
@@ -194,7 +192,7 @@ extension AudioController {
             togglePlay(id: id)
             return
         }
-        let models = gameController.fetchPlaylist(id: id)
+        let models = [itemController.itemOrEmpty(for: id)]  // gameController.fetchPlaylist(id: id)
         guard !models.isEmpty else { return }
         Task {
             await add(audio: models, replace: true)

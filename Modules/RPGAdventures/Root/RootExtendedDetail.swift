@@ -54,7 +54,7 @@ struct RootDetail: View {
     private func detailView(selectedItem: ItemRowTreeModel) -> some View {
         switch selectedItem.model.typeId {
         case .audio:
-            root.audioRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
+            root.audioRoot.viewController.detailEditor(root: root.audioRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .map:
             root.mapRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .pdf:

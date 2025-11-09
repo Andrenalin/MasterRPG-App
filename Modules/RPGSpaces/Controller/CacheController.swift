@@ -49,7 +49,7 @@ extension CacheController: ImageCacheControllable {
 #if os(macOS)
             return result.nsImage
 #else
-            return result.uiImage
+            return result.uiImage.removeWhiteBackground()
 #endif
         } catch let error {
             Logger.cacheController.error("QLThumbnail failed \(error.localizedDescription, privacy: .public)")

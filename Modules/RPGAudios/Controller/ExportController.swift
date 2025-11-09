@@ -5,31 +5,27 @@ import Foundation
 import Observation
 
 struct ExportController: Sendable {
-    @MainActor
-    init(root: AudioRoot, gameExporter: Bool) {
-        self.root = root
+    @MainActor init(itemController: ItemController, gameExporter: Bool) {
+        self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
-
-    weak var root: AudioRoot!
+    
+    let itemController: ItemController
     public let exportModel: ItemDataExportModel
 }
 
 extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable {
-        root.itemController as (any ItemControllable)
-    }
-    var fileControllable: (any FileControllable)? {
-        root.fileController
+        itemController
     }
 
     public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
-        var checkIds = itemIds.ids[root.itemController.itemDataModel.networkModule, default: []]
+        var checkIds = itemIds.ids[itemController.itemDataModel.networkModule, default: []]
         var results: Set<UUID> = []
 
         while !checkIds.isEmpty {
             let id = checkIds.removeLast()
-            guard let item = root.itemController.itemSync(for: id) else {
+            guard let item = itemController.itemSync(for: id) else {
                 Task {
                     await logExport(title: "exporting not found \(id.uuidString))", count: 1)
                 }
@@ -39,7 +35,7 @@ extension ExportController: ExportControllable {
             
             let ids = item.entries.compactMap { entryId -> UUID? in
                 let subId = entryId.audioId
-                if !(results.contains(subId) || checkIds.contains(subId)) && root.itemController.itemSync(for: subId) != nil {
+                if !(results.contains(subId) || checkIds.contains(subId)) && itemController.itemSync(for: subId) != nil {
                     return subId
                 }
                 return nil
@@ -47,7 +43,7 @@ extension ExportController: ExportControllable {
             checkIds.append(contentsOf: ids)
         }
         var allIds = itemIds
-        allIds.ids[root.itemController.itemDataModel.networkModule] = Array(results)
+        allIds.ids[itemController.itemDataModel.networkModule] = Array(results)
         return allIds
     }
 }

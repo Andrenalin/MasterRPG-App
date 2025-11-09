@@ -22,7 +22,7 @@ struct AdventureRow: View {
     var body: some View {
         switch item.model.typeId {
         case .audio:
-            root.audioRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
+            root.audioRoot.viewController.rowView(root: root.audioRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .map:
             root.mapRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .pdf:

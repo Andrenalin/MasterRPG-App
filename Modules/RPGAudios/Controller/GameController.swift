@@ -17,21 +17,24 @@ public protocol AudioGameStoreable {
 }
 
 struct GameController: Sendable {
-    @MainActor
-    init(root: AudioRoot, itemController: ItemController) {
-        self.root = root
+    @MainActor init(itemController: ItemController, audioController: AudioController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
-        self.exportController = ExportController(root: root, gameExporter: false)
-        let internItemController = ItemController(root: root, dataController: nil)
-        self.importController = ImportController(root: root, itemController: internItemController)
+        self.audioController = audioController
+        self.exportController = ExportController(itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
 
-    weak var root: AudioRoot!
     let itemController: ItemController
+    let audioController: AudioController
     let importController: ImportController
     let exportController: ExportController
-    
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
+
     let gameModel: ItemGameModel
 
     @MainActor
@@ -65,12 +68,6 @@ extension GameController: GameControllable {
     var importControllable: any ImportControllable {
         importController as ImportControllable
     }
-    var rootExportControllable: any ExportControllable {
-        root.rootControllable.gameExportControllable
-    }
-    var rootImportControllable: any ImportControllable {
-        root.rootControllable.gameImportControllable
-    }
     
     @MainActor
     func allPlayersReported(for id: UUID, deep: Int = 0) -> Bool {
@@ -100,12 +97,12 @@ extension GameController: GameControllable {
 extension GameController {
     func audioAsset(for itemId: UUID) async -> PlaylistItem? {
         let item = await gameItem(for: itemId)
-        guard let fileUrl = item.fileUrl else { return nil }
+        guard let fileUrl = item.fileUrl, let fileUrlDataController = itemController.fileUrlDataController else { return nil }
 
         var audioAsset: PlaylistItem? = nil
         do {
-            _ = await root.fileUrlDataController.fileDownloaded(for: fileUrl)
-            audioAsset = try await root.fileUrlDataController.url(for: fileUrl) { url -> PlaylistItem? in
+            _ = await fileUrlDataController.fileDownloaded(for: fileUrl)
+            audioAsset = try await fileUrlDataController.url(for: fileUrl) { url -> PlaylistItem? in
                 guard let url else { return nil }
                 let data = try Data(contentsOf: url)
                 let fileExtension = url.pathExtension
@@ -135,9 +132,9 @@ extension GameController {
 
     @MainActor
     func isPlayingPlaylist(id: UUID) -> Bool {
-        guard root.audioController.model.isPlaying else { return false }
+        guard audioController.model.isPlaying else { return false }
         let list = fetchPlaylist(id: id)
-        return list.map { $0.id }.contains(root.audioController.model.currentId)
+        return list.map { $0.id }.contains(audioController.model.currentId)
     }
 
     @MainActor
@@ -169,8 +166,8 @@ extension GameController: AudioGameStoreable {
         Task { @MainActor in
             guard let id else { return }
             let list = fetchPlaylist(id: id)
-            await root.audioController.add(audio: fetchPlaylist(id: id), replace: true)
-            root.audioController.togglePlay(id: list.first?.id)
+            await audioController.add(audio: fetchPlaylist(id: id), replace: true)
+            audioController.togglePlay(id: list.first?.id)
         }
     }
     
@@ -232,7 +229,7 @@ extension GameController: AudioGameStoreable {
 
     @MainActor
     func requestPlay(id: UUID) -> NetworkCodableDataType {
-        let requestData = AudioPlayRequest(id: id, shouldPlay: !(root.audioController.model.currentId == id && root.audioController.model.isPlaying))
+        let requestData = AudioPlayRequest(id: id, shouldPlay: !(audioController.model.currentId == id && audioController.model.isPlaying))
         return NetworkCodableDataType(id: id, type: .audio, version: 0, data: requestData.encodeData())
     }
 }

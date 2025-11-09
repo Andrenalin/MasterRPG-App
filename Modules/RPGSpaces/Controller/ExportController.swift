@@ -4,8 +4,7 @@ import AndrenalinKit
 import Foundation
 
 struct ExportController: Sendable {
-    @MainActor
-    init(itemController: ItemController, gameExporter: Bool) {
+    @MainActor init(itemController: ItemController, gameExporter: Bool) {
         self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
