@@ -94,3 +94,20 @@ extension ItemController {
         fileUrlDataController?.delete(fileUrl)
     }
 }
+
+extension ItemController {
+    @MainActor func hasAudio(itemId: UUID) -> Bool {
+        guard let model = itemSync(for: itemId) else { return false }
+        guard model.specialCategory else { return model.url != nil }
+        return model.entries.contains { hasAudio(itemId: $0.childId) }
+    }
+    
+    @MainActor func audioList(itemId: UUID) -> [AudioModel] {
+        guard let model = itemSync(for: itemId) else { return [] }
+        guard model.specialCategory else {
+            guard model.url != nil else { return [] }
+            return [model]
+        }
+        return model.entries.flatMap { audioList(itemId: $0.childId) }
+    }
+}

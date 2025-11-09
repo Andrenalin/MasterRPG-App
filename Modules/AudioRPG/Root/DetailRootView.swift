@@ -41,8 +41,8 @@ private extension DetailRootView {
                 FileImporterView(editControllable: root.editControllable, model: model, fileTypes: root.editControllable.fileUrlDataController?.fileTypes ?? [])
                 
                 Text(model.url?.absoluteString ?? "No file is set")
+                    .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                
             }
             .opacity(model.specialCategory ? 0 : 1)
             

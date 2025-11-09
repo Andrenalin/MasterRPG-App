@@ -26,7 +26,8 @@ extension DataController: CoreDataPersistable {
             category: CRDT(string: model.audioCategory ?? "", defaultValue: ItemListCategory.music),
             displayState: Int(model.displayState),
             fileUrl: CRDTDataUpdate(wrappedValue: FileUrl(string: model.fileUrl ?? "", fileId: model.uuid ?? UUID(), module: token, unconvertedData: nil), update: CRDT(string: model.fileUrlUpdate ?? "", defaultValue: UUID())),
-            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID()))
+            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
+            parentId: model.parentId
         )
     }
 
@@ -49,6 +50,7 @@ extension DataController: CoreDataPersistable {
                 return entry
             }
         }
+        model.parentId <=> viewModel.parentId
     }
 
     // MARK: - AudioEntryViewModel

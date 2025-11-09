@@ -3,7 +3,6 @@
 import AndrenalinKit
 import CoreExternalRPG
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct SpaceDetailEditor: View {
     let editController: EditController

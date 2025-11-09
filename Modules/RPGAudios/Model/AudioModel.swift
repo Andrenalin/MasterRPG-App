@@ -6,7 +6,7 @@ import Observation
 
 @Observable
 public final class AudioModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .music, displayState: Int = 0, fileUrl: FileUrl? = nil, entries: [AudioEntryModel] = []) {
+    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .music, displayState: Int = 0, fileUrl: FileUrl? = nil, entries: [AudioEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -15,9 +15,10 @@ public final class AudioModel: Identifiable, @unchecked Sendable {
         self.displayState = displayState
         fileUrl_ = CRDTDataUpdate(wrappedValue: fileUrl)
         entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self.parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[AudioEntryModel]>) {
+    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[AudioEntryModel]>, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -26,6 +27,7 @@ public final class AudioModel: Identifiable, @unchecked Sendable {
         self.displayState = displayState
         fileUrl_ = fileUrl
         entries_ = entries
+        self.parentId = parentId
     }
 
     public init(from decoder: Decoder) throws {
@@ -39,6 +41,7 @@ public final class AudioModel: Identifiable, @unchecked Sendable {
         self._displayState = try container.decode(Int.self, forKey: AudioModel.CodingKeys._displayState)
         self._fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: AudioModel.CodingKeys._fileUrl_)
         self._entries_ = try container.decode(CRDTDataUpdate<[AudioEntryModel]>.self, forKey: AudioModel.CodingKeys._entries_)
+        self._parentId = try container.decodeIfPresent(UUID.self, forKey: AudioModel.CodingKeys._parentId)
     }
 
     public var id: UUID
@@ -81,10 +84,10 @@ public final class AudioModel: Identifiable, @unchecked Sendable {
     }
     var entries_: CRDTDataUpdate<[AudioEntryModel]>
 
+    public var parentId: UUID? = nil
+
     // only game properties
     public var players: [UUID] = []
-    
-    public var parentId: UUID? = nil
 }
 
 extension AudioModel {
@@ -112,7 +115,8 @@ extension AudioModel: ItemDiffComparable {
             category: category_.merged(other: other.category_),
             displayState: other.displayState,
             fileUrl: fileUrl_.merged(other: other.fileUrl_),
-            entries: entries_.merged(other: other.entries_)
+            entries: entries_.merged(other: other.entries_),
+            parentId: other.parentId
         )
     }
 
@@ -123,6 +127,7 @@ extension AudioModel: ItemDiffComparable {
         category == other.category &&
         fileUrl_.update == other.fileUrl_.update &&
         entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
         // santity checks
         entries.count == other.entries.count &&
         entries.enumerated().allSatisfy { index, entry in
@@ -138,7 +143,7 @@ extension AudioModel: ItemDiffComparable {
 extension AudioModel: ItemDuplicatable {
     public func duplicate() -> AudioModel {
         let copyName = duplicateName(from: name)
-        return AudioModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() })
+        return AudioModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: parentId)
     }
 }
 
@@ -150,7 +155,7 @@ extension AudioModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .audio
 
     public func copy() -> AudioModel {
-        AudioModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, fileUrl: fileUrl_, entries: entries_)
+        AudioModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, fileUrl: fileUrl_, entries: entries_, parentId: parentId)
     }
 
     public func filter(_ filter: String) -> Bool {
@@ -181,6 +186,7 @@ extension AudioModel: ItemDataAccessable {
         displayState <=> model.displayState
         fileUrl_ <=> model.fileUrl_
         entries_ <=> model.entries_
+        parentId <=> model.parentId
         return true
     }
 
@@ -215,6 +221,7 @@ extension AudioModel: Codable {
         case _displayState
         case _fileUrl_
         case _entries_
+        case _parentId
     }
 
     public final func encode(to encoder: Encoder) throws {
@@ -228,6 +235,7 @@ extension AudioModel: Codable {
         try container.encode(self._displayState, forKey: AudioModel.CodingKeys._displayState)
         try container.encode(self._fileUrl_, forKey: AudioModel.CodingKeys._fileUrl_)
         try container.encode(self._entries_, forKey: AudioModel.CodingKeys._entries_)
+        try container.encode(self._parentId, forKey: AudioModel.CodingKeys._parentId)
     }
 }
 

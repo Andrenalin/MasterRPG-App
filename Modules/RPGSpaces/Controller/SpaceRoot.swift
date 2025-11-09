@@ -216,8 +216,11 @@ extension SpaceRoot {
                 await itemController.delete(itemId: model.id)
             }
         }
-        
-//        let cc = await ConvertController(itemController: itemController, editController: editController(type: .main))
-//        await cc.checkFolders()
     }
+    
+    public func checkFolders() async {
+        let cc = await ConvertController(itemController: itemController, editController: editController(type: .main))
+        await cc.checkFolders()
+    }
+
 }

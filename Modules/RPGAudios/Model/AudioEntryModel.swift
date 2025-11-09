@@ -16,32 +16,18 @@ public struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable {
     public var displayState: Int = 0
 }
 
-extension AudioEntryModel: ItemDiffComparable {
-    public func merge(_ other: AudioEntryModel) -> AudioEntryModel {
-        AudioEntryModel(
-            id: id,
-            audioId: other.audioId
-        )
-    }
-
-    public func isSame(_ other: AudioEntryModel) -> Bool {
-        audioId == other.audioId
-    }
-}
-
 extension AudioEntryModel: EntryDataAccessable {
-    public var childId: UUID { id }
-    public static func newChild(id: UUID) -> Self {
-        AudioEntryModel(id: UUID(), audioId: id)
-    }
-
     public var name: String {
         "Track"
     }
+    public var childId: UUID { audioId }
     
     public static var empty: AudioEntryModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> AudioEntryModel {
         AudioEntryModel(id: id, audioId: UUID())
+    }
+    public static func newChild(id: UUID) -> Self {
+        AudioEntryModel(id: UUID(), audioId: id)
     }
 
     public func duplicate() -> AudioEntryModel {
@@ -50,5 +36,15 @@ extension AudioEntryModel: EntryDataAccessable {
     
     public func filter(with search: String) -> Bool {
         true
+    }
+}
+
+extension AudioEntryModel: ItemDiffComparable {
+    public func merge(_ other: AudioEntryModel) -> AudioEntryModel {
+        AudioEntryModel(id: id, audioId: other.audioId)
+    }
+
+    public func isSame(_ other: AudioEntryModel) -> Bool {
+        audioId == other.audioId
     }
 }

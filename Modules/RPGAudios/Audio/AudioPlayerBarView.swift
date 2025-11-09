@@ -107,9 +107,11 @@ private extension AudioPlayerBarView {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(currentItem?.title ?? "")
                         .font(.headline).bold()
+                        .lineLimit(1)
                     Text(currentItem?.artist ?? "")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }.overlay {

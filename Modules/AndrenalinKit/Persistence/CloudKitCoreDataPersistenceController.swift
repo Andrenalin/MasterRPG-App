@@ -137,9 +137,9 @@ public struct CloudKitCoreDataPersistenceController {
             print("\(#function): initializeCloudKitSchema: \(error)")
         }
         print("Successfull")
-#endif
-
+#else
         setupContext()
+#endif        
     }
     
     @MainActor

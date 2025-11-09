@@ -28,6 +28,19 @@ public struct SettingsView: View {
 
             SectionGroupEditorView {
                 Button {
+                    Task {
+                        await store.audioRoot.checkFolders()
+                        await store.spaceRoot.checkFolders()
+                    }
+                } label: {
+                    Label("Create Folders", systemImage: "folder")
+                }
+            } header: {
+                Text("Data Checks")
+            }
+
+            SectionGroupEditorView {
+                Button {
                     store.installExampleData()
                 } label: {
                     Label("Import Explanation English Data", systemImage: "square.and.arrow.down")

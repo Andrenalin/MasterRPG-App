@@ -31,8 +31,8 @@ struct NewAudioRoute: View {
     let isExtended: Bool
     
     var body: some View {
-            AudioFactory.rootExtendedView(for: appStore.audioRoot, tabId: tabId)
-                .environment(appStore.audioRoot)
+        AudioFactory.rootView()
+            .environment(appStore.audioRoot)
     }
 }
 
