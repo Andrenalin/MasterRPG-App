@@ -11,7 +11,6 @@ struct AudioDetailEditor: View {
     @Environment(AudioRoot.self) private var root
 
     @State private var openFileWindowModel = OpenFileWindowModel()
-    //(windowId: NetworkModules.audio.viewerWindowId, route: { DetailRoute.viewer($0) })
 
     var body: some View {
         ItemDetailRootView(detailListController: root.folderListController.copy(parentModel: selectedModel), selectedId: selectedModel?.id, editorAsBackground: false) {
@@ -26,6 +25,11 @@ struct AudioDetailEditor: View {
         }
         .onChange(of: root.folderListController.listModel.selectedItemId, initial: true) {
             update()
+        }
+        .toolbar {
+            ToolbarItem(placement: .secondaryAction) {
+                playButton
+            }
         }
         .environment(openFileWindowModel)
         .environment(root.folderListController.cacheListItemModel)
@@ -62,18 +66,6 @@ struct AudioDetailEditor: View {
                 
             }
             .opacity(model.specialCategory ? 0 : 1)
-            
-            Button {
-                Task {
-                    let list = root.itemController.audioList(itemId: model.id)
-                    await root.audioController.add(audio: list, replace: true)
-                    root.audioController.togglePlay(id: list.first?.id)
-                }
-            } label: {
-                Image(systemName: "play.rectangle.on.rectangle")
-                    .font(.largeTitle)
-            }
-            .disabled(!root.itemController.hasAudio(itemId: model.id))
         }
         .padding()
     }
@@ -88,6 +80,23 @@ struct AudioDetailEditor: View {
                 .padding()
         }
 #endif
+    }
+    
+    var playButton: some View {
+        Button {
+            Task {
+                let list = root.itemController.audioList(itemId: model.id)
+                await root.audioController.add(audio: list, replace: true)
+                root.audioController.togglePlay(id: list.first?.id)
+            }
+        } label: {
+            Label {
+                Text("Play", bundle: .module)
+            } icon: {
+                Image(systemName: "play.rectangle.on.rectangle")
+            }
+        }
+        .disabled(!root.itemController.hasAudio(itemId: model.id))
     }
 }
 
