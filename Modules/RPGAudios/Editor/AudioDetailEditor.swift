@@ -27,7 +27,7 @@ struct AudioDetailEditor: View {
             update()
         }
         .toolbar {
-            ToolbarItem(placement: .secondaryAction) {
+            ToolbarItem(placement: .secondaryActionAll) {
                 playButton
             }
         }

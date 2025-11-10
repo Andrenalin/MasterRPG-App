@@ -7,7 +7,7 @@ import RPGResourcesDebug
 import Testing
 
 @testable import RPGPdfs
-internal import CoreGraphics
+import CoreGraphics
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {

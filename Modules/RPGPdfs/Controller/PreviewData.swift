@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import RPGResources
-internal import CoreGraphics
+import CoreGraphics
 import SwiftData
 
 public extension PdfRoot {

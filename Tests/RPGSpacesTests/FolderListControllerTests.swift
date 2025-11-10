@@ -16,7 +16,7 @@ struct FolderListControllerTests {
         #expect(await root.itemController.itemDataModel.items.count == 1)
         let model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         model.fileUrl = FileUrl(fileId: model.id, url: URL(filePath: "/Rollenspiel/Example/3dmodel/3ditem.usdz"), location: .other, module: "Test", relativeUrl: nil)
-        convertController.checkFolders()
+        await convertController.checkFolders()
         try #require(await root.itemController.itemDataModel.items.count == 4)
         // structure test in converterController
         

@@ -162,7 +162,7 @@ private extension ItemDetailRootView {
                     }
                 }
             }
-            ToolbarItemGroup(placement: secondaryMenuPlacement) {
+            ToolbarItemGroup(placement: .secondaryActionAll) {
                 inspectorButton
             }
         }
@@ -324,15 +324,6 @@ private extension ItemDetailRootView {
             }
         }
     }
-    
-    var secondaryMenuPlacement: ToolbarItemPlacement {
-#if os(tvOS)
-        .automatic
-#else
-        .secondaryAction
-#endif
-    }
-    
 }
 
 //#Preview("Folder", traits: .mockData) {

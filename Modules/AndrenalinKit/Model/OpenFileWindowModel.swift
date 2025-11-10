@@ -36,7 +36,7 @@ struct OpenFileViewerViewModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content.toolbar {
-            ToolbarItem(placement: secondaryMenuPlacement) {
+            ToolbarItem(placement: .secondaryActionAll) {
                 if !model.specialCategory && openFileWindowModel.showItem == false && openFileWindowModel.enabled {
                     OpenFileWindowView(model: openFileWindowModel, module: module)
                 }
@@ -53,14 +53,7 @@ struct OpenFileViewerViewModifier: ViewModifier {
             openFileWindowModel.itemId = selection.selectedItem ?? model.id
         }
     }
-    
-    var secondaryMenuPlacement: ToolbarItemPlacement {
-#if os(tvOS)
-        .automatic
-#else
-        .secondaryAction
-#endif
-    }
+
 }
 
 

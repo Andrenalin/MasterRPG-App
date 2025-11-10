@@ -5,7 +5,7 @@ import RoleGameKit
 import RPGDie
 import SwiftUI
 import WidgetKit
-internal import _AppIntents_SwiftUI
+import _AppIntents_SwiftUI
 
 struct DiceWidgetProvider: AppIntentTimelineProvider {
     init(sharedDataBase: DataBaseLoader) {

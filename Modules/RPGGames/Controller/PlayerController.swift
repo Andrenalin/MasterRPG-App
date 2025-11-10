@@ -14,9 +14,9 @@ import RPGWeathers
 import RPGPdfs
 import RPGSpaces
 #if os(macOS)
-internal import AppKit
+import AppKit
 #else
-internal import UIKit
+import UIKit
 #endif
 
 @MainActor @Observable

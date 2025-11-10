@@ -4,9 +4,9 @@ import CoreRPG
 import Foundation
 import os.log
 #if os(macOS)
-internal import AppKit
+import AppKit
 #else
-internal import UIKit
+import UIKit
 #endif
 
 @MainActor @Observable

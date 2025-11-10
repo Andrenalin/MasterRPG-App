@@ -26,7 +26,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
                     actionMenu
                 }
 #else
-                ToolbarItemGroup(placement: secondaryMenuPlacement) {
+                ToolbarItemGroup(placement: .secondaryActionAll) {
                     secondaryActionMenu
                 }
 #endif
@@ -158,13 +158,5 @@ private extension ToolbarItemListViewModifier {
         } label: {
             Image(systemName: "checkmark")
         }
-    }
-
-    var secondaryMenuPlacement: ToolbarItemPlacement {
-#if os(tvOS)
-        .automatic
-#else
-        .secondaryAction
-#endif
     }
 }

@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import CoreData
-internal import CoreGraphics
+import CoreGraphics
 
 struct DataController: Sendable {
     @MainActor

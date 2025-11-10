@@ -4,7 +4,7 @@ import Testing
 
 @testable import AndrenalinKit
 import Foundation
-internal import CoreGraphics
+import CoreGraphics
 
 struct LinkHighLightLocationTests {
 

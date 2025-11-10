@@ -15,7 +15,7 @@ import CoreRPG
 import Foundation
 import SwiftData
 #if !os(macOS)
-internal import UIKit
+import UIKit
 #endif
 
 @Observable

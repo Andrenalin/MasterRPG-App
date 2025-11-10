@@ -5,7 +5,7 @@ import RoleGameKit
 import SwiftUI
 import UniformTypeIdentifiers
 import os.log
-internal import RegexBuilder
+import RegexBuilder
 
 struct SharingView: View {
     @MainActor

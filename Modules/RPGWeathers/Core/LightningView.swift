@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-internal import Combine
+import Combine
 
 struct LightningView: View {
     var timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()

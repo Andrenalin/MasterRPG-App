@@ -33,6 +33,7 @@ extension AudioController {
     
     @MainActor
     func toggle() {
+        model.showPlayerToolBar = true
         if model.isPlaying {
             pause()
         } else {

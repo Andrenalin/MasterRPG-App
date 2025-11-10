@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-internal import UniformTypeIdentifiers
+import UniformTypeIdentifiers
 
 struct FileController: Sendable {
     weak var root: PdfRoot!    

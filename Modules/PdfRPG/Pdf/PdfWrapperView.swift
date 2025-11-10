@@ -7,7 +7,7 @@ import QuickLook
 import SwiftUI
 
 #if os(macOS)
-internal import AppKit
+import AppKit
 import QuickLookUI
 #endif
 

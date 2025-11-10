@@ -4,9 +4,9 @@
 import CoreRPG
 
 #if canImport(UIKit)
-internal import UIKit
+import UIKit
 #elseif canImport(AppKit)
-internal import AppKit
+import AppKit
 #endif
 
 extension PhotoEntity {

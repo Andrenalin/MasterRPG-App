@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct ConvertController {
+public struct ConvertController: Sendable {
     public init(itemController: any ItemControllable, editController: any EditControllable) {
         self.itemController = itemController
         self.editController = editController

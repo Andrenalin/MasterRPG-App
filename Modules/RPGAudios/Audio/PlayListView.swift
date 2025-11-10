@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-internal import CoreMedia
+import CoreMedia
 
 struct PlayListView: View {
     let root: AudioRoot

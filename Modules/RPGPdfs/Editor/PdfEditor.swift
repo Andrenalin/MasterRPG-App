@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-internal import UniformTypeIdentifiers
+import UniformTypeIdentifiers
 
 struct PdfEditor: View {
     let editController: EditController
