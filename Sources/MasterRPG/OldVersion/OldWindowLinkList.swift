@@ -115,21 +115,6 @@ struct OldWindowLinkList: Scene {
             .keyboardShortcut("5", modifiers: [.command, .option])
 #endif
 
-            BaseWindow("\(NetworkModules.audio.title) Link", id: NetworkModules.audio.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.audioRoot.viewController.linkWindow(root: appStore.audioRoot)
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.audio] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .audio))
-#if os(macOS)
-            .keyboardShortcut("6", modifiers: [.command, .option])
-#endif
-
             BaseWindow("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkWindowId) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
                     appStore.diceRoot.viewController.linkWindow()
@@ -231,14 +216,6 @@ struct OldWindowLinkAltList: Scene {
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
 
-            WindowGroup("\(NetworkModules.audio.title) Link", id: NetworkModules.audio.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.audioRoot.viewController.linkWindow(root: appStore.audioRoot)
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            
             WindowGroup("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkAltWindowId) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
                     appStore.diceRoot.viewController.linkWindow()

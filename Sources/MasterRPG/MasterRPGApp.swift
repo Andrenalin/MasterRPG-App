@@ -23,8 +23,8 @@ struct MasterRPGApp: App {
 //        
 //        let adventureRootModel = appModel.adventureRoot
 //        AppDependencyManager.shared.add(dependency: adventureRootModel)
-//        let audioRootModel = appModel.audioRoot
-//        AppDependencyManager.shared.add(dependency: audioRootModel)
+        let audioRootModel = appStore.audioRoot
+        AppDependencyManager.shared.add(dependency: audioRootModel)
 //        let characterRootModel = appModel.characterRoot
 //        AppDependencyManager.shared.add(dependency: characterRootModel)
 //        let diceRootModel = appModel.diceRoot

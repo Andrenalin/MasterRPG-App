@@ -25,17 +25,6 @@ struct NewAdventureRoute: View {
     }
 }
 
-struct NewAudioRoute: View {
-    let appStore: AppStore
-    let tabId: UUID
-    let isExtended: Bool
-    
-    var body: some View {
-        AudioFactory.rootView()
-            .environment(appStore.audioRoot)
-    }
-}
-
 struct NewDiceRoute: View {
     let appStore: AppStore
     let tabId: UUID
@@ -76,17 +65,6 @@ struct NewPhotoRoute: View {
     var body: some View {
             PhotoFactory.rootExtendedView(for: appStore.photoRoot, tabId: tabId)
                 .environment(appStore.photoRoot)
-    }
-}
-
-struct NewSpaceRoute: View {
-    let appStore: AppStore
-    let tabId: UUID
-    let isExtended: Bool
-    
-    var body: some View {
-            SpaceFactory.rootView()
-                .environment(appStore.spaceRoot)
     }
 }
 

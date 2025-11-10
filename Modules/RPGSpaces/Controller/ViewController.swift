@@ -120,17 +120,6 @@ public extension ViewController {
     @MainActor
     private static let linkTabId = UUID()
     
-//    @MainActor
-//    func linkWindow(root: SpaceRoot) -> some View {
-//        RootNaviList(root: root, tabId: ViewController.linkTabId)
-//            .itemSplitViewSizeMode(.small)
-//            .itemListConfiguration(canAdd: false)
-//            .itemListChildrenConfiguration(canNavigate: false)
-//            .focusedSceneValue(\.selectedModule, .constant(root.itemController.itemDataModel.networkModule))
-//            .environment(root)
-//            .environment(SelectionSheetLinkModel())
-//    }
-    
 #if os(visionOS)
     @MainActor @ViewBuilder
     func spaceImmersionWindow(root: SpaceRoot, id: UUID, defaultSize: Size3D) -> some View {

@@ -146,7 +146,8 @@ struct RouteRouteDestionationView: View {
             case .adventures:
                 NewAdventureRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .audios:
-                NewAudioRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                AudioFactory.rootView()
+                    .environment(appModel.audioRoot)
             case .dice:
                 NewDiceRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .editors:
@@ -171,7 +172,8 @@ struct RouteRouteDestionationView: View {
             case .photos:
                 NewPhotoRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .space:
-                NewSpaceRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                SpaceFactory.rootView()
+                    .environment(appModel.spaceRoot)
             case .settings:
                 SettingsView(store: appModel)
             case .tables:

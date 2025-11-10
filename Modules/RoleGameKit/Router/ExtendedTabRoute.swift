@@ -87,10 +87,11 @@ struct ExtendedTabRouteDestionationView: View {
     var body: some View {
         switch route {
             case .audios:
-                NewAudioRoute(appStore: appStore, tabId: tabId, isExtended: true)
+                AudioFactory.rootView()
+                    .environment(appStore.audioRoot)
             case .dice:
                 NewDiceRoute(appStore: appStore, tabId: tabId, isExtended: true)
-        case .generator:
+            case .generator:
 #if os(tvOS)
             EmptyView()
 #else
@@ -104,7 +105,8 @@ struct ExtendedTabRouteDestionationView: View {
             case .photos:
                 NewPhotoRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .space:
-                NewSpaceRoute(appStore: appStore, tabId: tabId, isExtended: true)
+                SpaceFactory.rootView()
+                    .environment(appStore.spaceRoot)
             case .tables:
                 NewTableRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .weathers:

@@ -71,7 +71,7 @@ public final class AudioRoot: @unchecked Sendable {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
+    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     
     public let audioPlayerModel: AudioPlayerModel

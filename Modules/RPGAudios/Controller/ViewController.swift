@@ -16,33 +16,12 @@ extension ViewController: ViewControllable {}
 public extension ViewController {
     @MainActor
     func linkWindow(root: AudioRoot, isInspector: Bool = false) -> some View {
-        Text("")
-//        LinkRootView(type: isInspector ? .inspector : .window)
-//            .environment(root)
-    }
-    
-    @MainActor
-    func windowViewer(root: AudioRoot, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return NavigationStack {
-//            SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
-        }
-        .ignoresSafeArea()
-        .navigationTitle(model.name)
-        .environment(root)
-    }
-
-    @MainActor
-    func inlineViewer(root: AudioRoot, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return Text("")
-//        return SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
+        LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
     }
-    
+        
     @MainActor func selectionView(root: AudioRoot, model: ItemSelectionModel) -> some View {
-        Text("")
-//        LinkRootView(type: .selection)
+        LinkRootView(type: .selection)
             .environment(root)
     }
 }
@@ -73,24 +52,6 @@ public extension ViewController {
             .itemSplitViewSizeMode(.small)
             .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
             .environment(root)
-    }
-}
-
-// MARK: Links
-
-public extension ViewController {
-    @MainActor
-    private static let linkTabId = UUID(uuidString: "939EE771-278F-4332-902F-7E9C93A07A24")!
-
-    @MainActor
-    func linkWindow(root: AudioRoot) -> some View {
-        RootNaviList(root: root, tabId: ViewController.linkTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListConfiguration(canAdd: false)
-            .itemListChildrenConfiguration(canNavigate: false)
-            .focusedSceneValue(\.selectedModule, .constant(root.itemController.itemDataModel.networkModule))
-            .environment(root)
-            .environment(SelectionSheetLinkModel())
     }
 }
 

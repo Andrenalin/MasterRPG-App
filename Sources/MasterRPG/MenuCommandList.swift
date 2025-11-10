@@ -30,7 +30,7 @@ struct MenuCommandList: Commands {
                     MapCommands(root: appModel.mapRoot)
                 }
                 Group {
-                    AudioCommands(root: appModel.audioRoot)
+                    AudioCommands(root: appModel.audioRoot, navigator: appModel.navigator)
                     DiceCommands(root: appModel.diceRoot)
                     PhotoCommands(root: appModel.photoRoot)
 
