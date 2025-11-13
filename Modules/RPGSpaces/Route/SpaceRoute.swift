@@ -51,7 +51,7 @@ struct DetailRouteDestinationView: View {
     @Environment(SpaceRoot.self) private var root
     
     var body: some View {
-        SpaceDetailEditor(editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: itemId))
+        DetailRootView(editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: itemId))
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
             .environment(root.rootController)

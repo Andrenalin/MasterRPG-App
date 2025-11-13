@@ -185,6 +185,8 @@ private extension ItemDetailRootView {
     var canShowInspector: Bool {
 #if os(iOS)
         horizontalSizeClass == .regular
+#elseif(visionOS)
+        false
 #else
         true
 #endif
@@ -272,19 +274,27 @@ private extension ItemDetailRootView {
         editor
             .id(model.id)
             .overlay(alignment: .top) {
-                HStack {
-                    Text(model.url?.absoluteString ?? "No file is set")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
+                GlassEffectContainer {
+                    HStack {
+                        Text(model.url?.absoluteString ?? "No file is set")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
+                    }
+                    .padding()
+                    .glassEffect(.regular.interactive())
                 }
                 .padding()
                 .opacity(model.specialCategory ? 0 : 1)
             }
             .overlay(alignment: .bottom) {
                 if model.description.isEmpty == false {
-                    ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
-                        .padding()
+                    GlassEffectContainer {
+                        ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true, lines: 3)
+                            .padding()
+                            .glassEffect(.regular)
+                    }
+                    .padding()
                 }
             }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)

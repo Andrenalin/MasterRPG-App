@@ -4,7 +4,7 @@ import AndrenalinKit
 import CoreExternalRPG
 import SwiftUI
 
-struct AudioDetailEditor: View {
+struct DetailRootView: View {
     let editController: EditController
     let model: AudioModel
     
@@ -113,7 +113,7 @@ struct AudioDetailEditor: View {
             }
     } else {
         ManagedNavigationStack {
-            AudioDetailEditor(editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId))
+            DetailRootView(editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId))
                 .preferredColorScheme(.dark)
         }
     }

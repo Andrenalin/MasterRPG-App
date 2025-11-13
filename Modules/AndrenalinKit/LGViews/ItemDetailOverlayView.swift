@@ -4,16 +4,18 @@ import SwiftData
 import SwiftUI
 
 public struct ItemDetailOverlayView: View {
-    public init(model: any ItemDataAccessable, fullHeader: Bool = false, onlyDescription: Bool = false) {
+    public init(model: any ItemDataAccessable, fullHeader: Bool = false, onlyDescription: Bool = false, lines: Int = 20) {
         self.model = model
         self.fullHeader = fullHeader
         self.onlyDesctiption = onlyDescription
+        self.lines = lines
         self.cacheItemListModel = CacheItemListModel()
     }
     
     let model: any ItemDataAccessable
     let fullHeader: Bool
     let onlyDesctiption: Bool
+    let lines: Int
     let cacheItemListModel: CacheItemListModel
 
     public var body: some View {
@@ -33,7 +35,7 @@ public struct ItemDetailOverlayView: View {
                 DescriptionItemNewRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
                     .foregroundColor(.primary)
                     .opacity(0.8)
-                    .lineLimit(20)
+                    .lineLimit(lines)
             }
         }
     }

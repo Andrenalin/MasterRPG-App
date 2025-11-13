@@ -51,8 +51,7 @@ struct DetailRouteDestinationView: View {
     @Environment(PdfRoot.self) private var root
     
     var body: some View {
-        RootExtendedDetail(itemRowTreeModel: ItemRowTreeModel(itemId: itemId, typeId: .pdf), tabId: KnownRoutes.mainTabId)
-        //DetailRootView(selectedId: itemId)
+        DetailRootView(editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: itemId))
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
             .environment(root.rootController)

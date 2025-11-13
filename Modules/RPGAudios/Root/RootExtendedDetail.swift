@@ -28,7 +28,7 @@ struct RootDetail: View {
     var body: some View {
         let _ = Self._printChanges()
         
-        AudioDetailEditor(editController: editController, model: editController.model)
+        DetailRootView(editController: editController, model: editController.model)
             .onChange(of: listController.model.selectedItem) {
                 if listController.model.selectedItem == nil {
                     navigator.back()

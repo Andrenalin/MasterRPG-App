@@ -4,7 +4,7 @@ import AndrenalinKit
 import CoreExternalRPG
 import SwiftUI
 
-struct SpaceDetailEditor: View {
+struct DetailRootView: View {
     let editController: EditController
     let model: SpaceModel
     
@@ -23,6 +23,13 @@ struct SpaceDetailEditor: View {
         }
         .onChange(of: root.folderListController.listModel.selectedItemId, initial: true) {
             update()
+        }
+        .overlay {
+            if openFileWindowModel.showItem {
+                root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId) {
+                    openFileWindowModel.showItem = false
+                }
+            }
         }
         .environment(openFileWindowModel)
         .environment(root.folderListController.cacheListItemModel)
@@ -81,9 +88,8 @@ struct SpaceDetailObjectViewer: View {
             }
     } else {
         ManagedNavigationStack {
-            SpaceDetailEditor(editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRoot.previewSpaceId))
+            DetailRootView(editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRoot.previewSpaceId))
                 .preferredColorScheme(.dark)
         }
     }
-    
 }

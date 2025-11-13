@@ -53,9 +53,7 @@ struct OpenFileViewerViewModifier: ViewModifier {
             openFileWindowModel.itemId = selection.selectedItem ?? model.id
         }
     }
-
 }
-
 
 struct OpenFileWindowView: View {
     let model: OpenFileWindowModel

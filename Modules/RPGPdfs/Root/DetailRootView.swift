@@ -4,25 +4,32 @@ import AndrenalinKit
 import CoreExternalRPG
 import SwiftUI
 
-struct PdfDetailEditor: View {
+struct DetailRootView: View {
     let editController: EditController
     let model: PdfModel
 
     @Environment(PdfRoot.self) private var root
 
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.pdf.viewerWindowId, route: { DetailRoute.viewer($0) })
 
     var body: some View {
         ItemDetailRootView(detailListController: root.folderListController.copy(parentModel: selectedModel), selectedId: selectedModel?.id, editorAsBackground: true) {
         } editor: {
-            if let model = selectedModel {
-                PdfDetailObjectViewer(editController: editController, model: model)
+            if let model = selectedModel, let cacheController = root.cacheController {
+                CachePhotoView(cacheController: cacheController, model: model, highResolution: false)
             }
         } inspector: {
             LinkRootView(type: .inspector)
         }
         .onChange(of: root.folderListController.listModel.selectedItemId, initial: true) {
             update()
+        }
+        .overlay {
+            if openFileWindowModel.showItem {
+                root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId, withoutBookmark: false) {
+                    openFileWindowModel.showItem = false
+                }
+            }
         }
         .environment(openFileWindowModel)
         .environment(root.folderListController.cacheListItemModel)
@@ -68,9 +75,22 @@ struct PdfDetailObjectViewer: View {
     }
 }
 
-#Preview {
-    PdfDetailEditor(editController: PdfRoot.previewWithData.editController(type: .main), model: .preview)
-        .environment(PdfRoot.previewWithData)
-        .environment(ListModel.preview)
-        .environment(SelectionSheetLinkModel())
+
+#Preview(traits: .mockData) {
+    @Previewable @Environment(PdfRoot.self) var root
+    @Previewable @Environment(ListModel.self) var listModel
+    
+    if listModel.selectedItem == nil {
+        Text("Hello")
+            .onAppear {
+                let id = root.itemController.itemDataModel.items.first ?? PdfRoot.previewSpaceId
+                root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRoot.previewSpaceId)
+                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
+            }
+    } else {
+        ManagedNavigationStack {
+            DetailRootView(editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRoot.previewSpaceId))
+                .preferredColorScheme(.dark)
+        }
+    }
 }
