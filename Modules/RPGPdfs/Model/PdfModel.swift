@@ -14,7 +14,7 @@ import QuickLookThumbnailing
 
 @Observable
 public final class PdfModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, fileUrl: FileUrl? = nil, entries: [PdfEntryModel] = []) {
+    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, fileUrl: FileUrl? = nil, entries: [PdfEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -23,9 +23,10 @@ public final class PdfModel: Identifiable, @unchecked Sendable {
         self.displayState = displayState
         fileUrl_ = CRDTDataUpdate(wrappedValue: fileUrl)
         entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self.parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[PdfEntryModel]>) {
+    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[PdfEntryModel]>, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -34,6 +35,7 @@ public final class PdfModel: Identifiable, @unchecked Sendable {
         self.displayState = displayState
         fileUrl_ = fileUrl
         entries_ = entries
+        self.parentId = parentId
     }
 
     public init(from decoder: Decoder) throws {
@@ -47,6 +49,7 @@ public final class PdfModel: Identifiable, @unchecked Sendable {
         self._displayState = try container.decode(Int.self, forKey: PdfModel.CodingKeys._displayState)
         self._fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: PdfModel.CodingKeys._fileUrl_)
         self._entries_ = try container.decode(CRDTDataUpdate<[PdfEntryModel]>.self, forKey: PdfModel.CodingKeys._entries_)
+        self._parentId = try container.decodeIfPresent(UUID.self, forKey: PdfModel.CodingKeys._parentId)
     }
 
     public var id: UUID
@@ -114,7 +117,8 @@ extension PdfModel: ItemDiffComparable {
             category: category_.merged(other: other.category_),
             displayState: other.displayState,
             fileUrl: fileUrl_.merged(other: other.fileUrl_),
-            entries: entries_.merged(other: other.entries_)
+            entries: entries_.merged(other: other.entries_),
+            parentId: other.parentId
         )
     }
 
@@ -125,6 +129,7 @@ extension PdfModel: ItemDiffComparable {
         category == other.category &&
         fileUrl_.update == other.fileUrl_.update &&
         entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
         // santity checks
         entries.count == other.entries.count &&
         entries.enumerated().allSatisfy { index, entry in
@@ -152,7 +157,7 @@ extension PdfModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .pdf
 
     public func copy() -> PdfModel {
-        PdfModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, fileUrl: fileUrl_, entries: entries_)
+        PdfModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, fileUrl: fileUrl_, entries: entries_, parentId: parentId)
     }
 
     public func filter(_ filter: String) -> Bool {
@@ -183,6 +188,7 @@ extension PdfModel: ItemDataAccessable {
         displayState <=> model.displayState
         fileUrl_ <=> model.fileUrl_
         entries_ <=> model.entries_
+        parentId <=> model.parentId
         return true
     }
 
@@ -208,6 +214,7 @@ extension PdfModel: Codable {
         case _displayState
         case _fileUrl_
         case _entries_
+        case _parentId
     }
 
     public final func encode(to encoder: Encoder) throws {
@@ -221,6 +228,7 @@ extension PdfModel: Codable {
         try container.encode(self._displayState, forKey: PdfModel.CodingKeys._displayState)
         try container.encode(self._fileUrl_, forKey: PdfModel.CodingKeys._fileUrl_)
         try container.encode(self._entries_, forKey: PdfModel.CodingKeys._entries_)
+        try container.encode(self._parentId, forKey: PdfModel.CodingKeys._parentId)
     }
 }
 

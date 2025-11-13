@@ -5,31 +5,17 @@ import Foundation
 import CoreData
 import CoreGraphics
 
-struct DataController: Sendable {
-    @MainActor
-    init(root: PdfRoot, context: NSManagedObjectContext, token: String) {
-        self.root = root
-        self.changeObserver = CoreDataChangeObserver()
-        self.dataController = CoreDataController<PdfModel, RPGPdf>(context: context)
-        self.token = token
-
-        changeObserver.observeCoreDataChanges(from: context, entity: RPGPdf.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
-    }
-    
-    weak var root: PdfRoot!
-    let dataController: CoreDataController<PdfModel, RPGPdf>
-    var itemControllable: any ItemControllable {
-        root.itemController
-    }
-    let changeObserver: CoreDataChangeObserver
-    let token: String
+struct DataController: DataPersistenceControllable {
+    @MainActor init(context: NSManagedObjectContext, token: String) {
+            self.dataController = CoreDataController<PdfModel, RPGPdf>(context: context)
+            self.token = token
+        }
+        
+        let dataController: CoreDataController<PdfModel, RPGPdf>
+        let token: String
 }
 
-extension DataController: CoreDataPersistable, DataPersistenceControllable, SyncDataControllable {
-    var dataControllable: any CoreDataPersistable {
-        self
-    }
-    
+extension DataController: CoreDataPersistable {
     // MARK: model -> viewlmodel
 
     func mapViewModel(_ model: RPGPdf, token: String) -> PdfModel {
@@ -41,7 +27,8 @@ extension DataController: CoreDataPersistable, DataPersistenceControllable, Sync
             category: CRDT(string: model.pdfCategory ?? "", defaultValue: ItemListCategory.rules),
             displayState: Int(model.displayState),
             fileUrl: CRDTDataUpdate(wrappedValue: FileUrl(string: model.fileUrl ?? "", fileId: model.uuid ?? UUID(), module: token, unconvertedData: nil), update: CRDT(string: model.fileUrlUpdate ?? "", defaultValue: UUID())),
-            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID()))
+            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
+            parentId: model.parentId
         )
     }
     
@@ -64,6 +51,7 @@ extension DataController: CoreDataPersistable, DataPersistenceControllable, Sync
                 return entry
             }
         }
+        model.parentId <=> viewModel.parentId
     }
 
     // MARK: - PdfEntryViewModel

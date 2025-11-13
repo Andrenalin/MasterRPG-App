@@ -53,7 +53,7 @@ struct RootDetail: View {
         case .audio:
             root.audioRoot.viewController.detailEditor(root: root.audioRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .pdf:
-            root.pdfRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
+            root.pdfRoot.viewController.detailEditor(root: root.pdfRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .photo:
             root.photoRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .table:

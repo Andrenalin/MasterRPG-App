@@ -26,7 +26,7 @@ struct PdfInlineViewer: View {
         @Bindable var model = model
         Group {
             if let pdfUrl {
-                PreviewControllerWrapperView(fileStore: root.fileUrlDataController, pathUrl: pdfUrl)
+                PreviewControllerWrapperView(fileStore: root.fileUrlDataController!, pathUrl: pdfUrl)
                     .frame(height: 450)
             } else {
                 Text("Loading PDF document ...", bundle: .module)
@@ -43,7 +43,7 @@ struct PdfInlineViewer: View {
     func loadPdf() {
         Task { @MainActor in
             guard let fileUrl = model.fileUrl else { return }
-            pdfUrl = await root.fileUrlDataController.url(for: fileUrl, action: { url -> NSURL? in
+            pdfUrl = await root.fileUrlDataController?.url(for: fileUrl, action: { url -> NSURL? in
                 guard let url else { return nil }
                 return NSURL(fileURLWithPath: url.path)
             })

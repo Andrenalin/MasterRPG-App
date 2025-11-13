@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import Observation
 import SwiftUI
 
 public struct ViewController: Sendable {
@@ -14,14 +13,12 @@ extension ViewController: ViewControllable {}
 // MARK: - New Views
 
 public extension ViewController {
-    @MainActor
-    func linkWindow(root: SpaceRoot, isInspector: Bool = false) -> some View {
+    @MainActor func linkWindow(root: SpaceRoot, isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
     }
     
-    @MainActor
-    func windowViewer(root: SpaceRoot, selection: WindowItemSelection) -> some View {
+    @MainActor func windowViewer(root: SpaceRoot, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return NavigationStack {
             SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
@@ -31,8 +28,7 @@ public extension ViewController {
         .environment(root)
     }
 
-    @MainActor
-    func inlineViewer(root: SpaceRoot, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+    @MainActor func inlineViewer(root: SpaceRoot, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
             .environment(root)

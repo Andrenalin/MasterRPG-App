@@ -137,7 +137,6 @@ extension RootRoute: NavigationDestination {
 
 struct RouteRouteDestionationView: View {
     let route: RootRoute
-    let tabId: UUID = KnownRoutes.mainTabId
     @Environment(AppStore.self) private var appModel
     
     var body: some View {
@@ -168,7 +167,8 @@ struct RouteRouteDestionationView: View {
             case .maps:
                 NewMapRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .pdfs:
-                NewPdfRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                PdfFactory.rootView()
+                    .environment(appModel.pdfRoot)
             case .photos:
                 NewPhotoRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .space:
@@ -187,5 +187,6 @@ struct RouteRouteDestionationView: View {
             }
         }
         .tint(route.module.tint)
+        .accentColor(route.module.tint)
     }
 }

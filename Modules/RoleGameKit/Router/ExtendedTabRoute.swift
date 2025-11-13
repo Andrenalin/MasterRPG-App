@@ -101,7 +101,8 @@ struct ExtendedTabRouteDestionationView: View {
             case .maps:
                 NewMapRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .pdfs:
-                NewPdfRoute(appStore: appStore, tabId: tabId, isExtended: true)
+                PdfFactory.rootView()
+                    .environment(appStore.pdfRoot)
             case .photos:
                 NewPhotoRoute(appStore: appStore, tabId: tabId, isExtended: true)
             case .space:

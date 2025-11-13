@@ -69,14 +69,18 @@ public struct ItemSplitDetailRootView: View {
         let _ = Self._printChanges()
         let _ = print("*** ->", root.module)
         
-        if let itemId = listModel.selectedItemId {
-            ManagedNavigationStack {
-                root.folderListControllable.detailDestination(for: itemId).asAnyView()
-                    .environment(root)
+        Group {
+            if let itemId = listModel.selectedItemId {
+                ManagedNavigationStack {
+                    root.folderListControllable.detailDestination(for: itemId).asAnyView()
+                        .environment(root)
+                }
+            } else {
+                SplitContentUnavailableView(module: root.module)
             }
-        } else {
-            SplitContentUnavailableView(module: root.module)
         }
+        .tint(root.module.tint)
+        .accentColor(root.module.tint)
     }
     
     var listModel: FolderListModel {

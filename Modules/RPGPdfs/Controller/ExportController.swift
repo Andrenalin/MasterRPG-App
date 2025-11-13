@@ -4,29 +4,25 @@ import AndrenalinKit
 import Foundation
 
 struct ExportController: Sendable {
-    @MainActor
-    init(root: PdfRoot, gameExporter: Bool) {
-        self.root = root
+    @MainActor init(itemController: ItemController, gameExporter: Bool) {
+        self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
-
-    weak var root: PdfRoot!
+    
+    let itemController: ItemController
     public let exportModel: ItemDataExportModel
 }
 
 extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable {
-        root.itemController as (any ItemControllable)
-    }
-    var fileControllable: (any FileControllable)? {
-        root.fileController
+        itemController
     }
 
     public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
-        let checkIds = itemIds.ids[root.itemController.itemDataModel.networkModule, default: []]
-        let results = checkIds.compactMap { root.itemController.itemSync(for: $0)?.id }
+        let checkIds = itemIds.ids[itemController.itemDataModel.networkModule, default: []]
+        let results = checkIds.compactMap { itemController.itemSync(for: $0)?.id }
         var allIds = itemIds
-        allIds.ids[root.itemController.itemDataModel.networkModule] = results
+        allIds.ids[itemController.itemDataModel.networkModule] = results
         return allIds
     }
 }

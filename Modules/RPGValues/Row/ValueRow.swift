@@ -18,7 +18,7 @@ struct ValueRow: View {
     var body: some View {
         switch item.model.typeId {
         case .pdf:
-            root.pdfRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
+            root.pdfRoot.viewController.rowView(root: root.pdfRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .photo:
             root.photoRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .table:

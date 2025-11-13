@@ -4,21 +4,22 @@ import AndrenalinKit
 import Foundation
 
 struct GameController: Sendable {
-    @MainActor
-    init(root: PdfRoot, itemController: ItemController) {
-        self.root = root
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
-        self.exportController = ExportController(root: root, gameExporter: false)
-        let internItemController = ItemController(root: root, dataController: nil)
-        self.importController = ImportController(root: root, itemController: internItemController)
+        self.exportController = ExportController(itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
     
-    weak var root: PdfRoot!
     let itemController: ItemController
-    let importController: ImportController
     let exportController: ExportController
-    
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
+
     let gameModel: ItemGameModel
     
     @MainActor
@@ -51,12 +52,6 @@ extension GameController: GameControllable {
     }
     var importControllable: any ImportControllable {
         importController as ImportControllable
-    }
-    var rootExportControllable: any ExportControllable {
-        root.rootControllable.gameExportControllable
-    }
-    var rootImportControllable: any ImportControllable {
-        root.rootControllable.gameImportControllable
     }
 }
 

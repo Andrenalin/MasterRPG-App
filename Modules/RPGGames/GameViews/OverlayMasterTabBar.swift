@@ -89,7 +89,7 @@ struct OverlayMasterTabBar: View {
             Group {
                 root.valueRoot.viewController.gameView()
                     .gameOverlayTabBarView(value: NetworkModules.value)
-                root.pdfRoot.viewController.gameView()
+                root.pdfRoot.viewController.gameView(root: root.pdfRoot)
                     .gameOverlayTabBarView(value: NetworkModules.pdf)
                 root.spaceRoot.viewController.gameView(root: root.spaceRoot)
                     .gameOverlayTabBarView(value: NetworkModules.space)

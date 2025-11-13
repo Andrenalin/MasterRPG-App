@@ -67,10 +67,10 @@ extension PdfRoot: RootControllable {
     }
     
     public var gameExportControllable: any ExportControllable {
-        gameController.exportController
+        exportController
     }
     public var gameImportControllable: any ImportControllable {
-        gameController.importController
+        importController
     }
 }
 

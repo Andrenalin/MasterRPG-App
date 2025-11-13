@@ -33,7 +33,7 @@ struct InternalRouteView: View {
         case .quickEditor:
             QuickEntryEditor(editController: editController)
         case .selectPdf:
-            root.pdfRoot.viewController.selectForScanning(model: editController.valueEditModel.pdfSelectionModel)
+            root.pdfRoot.viewController.selectForScanning(root: root.pdfRoot, model: editController.valueEditModel.pdfSelectionModel)
         }
     }
     

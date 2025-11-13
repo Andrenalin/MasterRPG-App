@@ -69,7 +69,7 @@ struct PdfEditor: View {
         ShowQuickLook(listController: root.listController(model: itemListModel), windowId: WindowIdentifier.pdfViewer.rawValue) { model in
             root.itemController.itemOrEmpty(for: model.itemId).hasPdf
         } content: { model in
-            root.viewController.pdfWindow(selection: ItemSelection(itemId: model.itemId, entryId: model.entryId))
+            root.viewController.pdfWindow(root: root, selection: ItemSelection(itemId: model.itemId, entryId: model.entryId))
                 .environment(\.showGame, false)
         }
     }
@@ -84,8 +84,8 @@ struct PdfEditor: View {
     
     private func loadImage(for id: UUID) {
         Task {
-            await root.cacheController.thumbnailId(for: id, with: editController.model.fileUrl, shouldDownload: true)
-            let newImage = await root.cacheController.thumbnail(for: id)
+            await root.cacheController?.thumbnailId(for: id, with: editController.model.fileUrl)
+            let newImage = await root.cacheController?.thumbnail(for: id)
             if editController.model.id == id {
                 withAnimation { thumbnail = newImage }
             }

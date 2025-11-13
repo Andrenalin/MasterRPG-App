@@ -508,7 +508,7 @@ extension EditController {
     @MainActor @ViewBuilder
     func selectPdf(for entryId: UUID, linkKeyPath: WritableKeyPath<ValueModel, String>?, dismissAction: @escaping () -> Void) -> some View {
         if let linkKeyPath {
-            root.pdfRoot.viewController.viewSelect(filter: .all) {
+            root.pdfRoot.viewController.viewSelect(root: root.pdfRoot, filter: .all) {
                 let text = self.model[keyPath: linkKeyPath]
                 return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .pdf) }
             } toggleSelection: { sel, _ in

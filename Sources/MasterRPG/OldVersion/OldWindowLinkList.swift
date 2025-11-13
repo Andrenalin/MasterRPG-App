@@ -69,21 +69,6 @@ struct OldWindowLinkList: Scene {
             .keyboardShortcut("2", modifiers: [.command, .option])
 #endif
 
-            BaseWindow("\(NetworkModules.pdf.title) Link", id: NetworkModules.pdf.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.pdfRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.pdf] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .pdf))
-#if os(macOS)
-            .keyboardShortcut("3", modifiers: [.command, .option])
-#endif
-
             BaseWindow("\(NetworkModules.table.title) Link", id: NetworkModules.table.linkWindowId) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
                     appStore.tableRoot.viewController.linkWindow()
@@ -191,14 +176,6 @@ struct OldWindowLinkAltList: Scene {
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
             
-            WindowGroup("\(NetworkModules.pdf.title) Link", id: NetworkModules.pdf.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.pdfRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-
             WindowGroup("\(NetworkModules.table.title) Link", id: NetworkModules.table.linkAltWindowId) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
                     appStore.tableRoot.viewController.linkWindow()

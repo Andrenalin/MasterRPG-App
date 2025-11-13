@@ -47,16 +47,6 @@ struct NewMapRoute: View {
     }
 }
 
-struct NewPdfRoute: View {
-    let appStore: AppStore
-    let tabId: UUID
-    let isExtended: Bool
-    
-    var body: some View {
-            PdfFactory.rootExtendedView(for: appStore.pdfRoot, tabId: tabId)
-                .environment(appStore.pdfRoot)
-    }
-}
 struct NewPhotoRoute: View {
     let appStore: AppStore
     let tabId: UUID

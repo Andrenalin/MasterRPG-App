@@ -26,7 +26,7 @@ struct AdventureRow: View {
         case .map:
             root.mapRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .pdf:
-            root.pdfRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
+            root.pdfRoot.viewController.rowView(root: root.pdfRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .photo:
             root.photoRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .space:

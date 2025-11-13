@@ -38,7 +38,7 @@ struct EntryRow: View {
                 openWindow(id: WindowIdentifier.pdfViewer.rawValue, value: ItemSelection(itemId: item.model.itemId, entryId: item.model.entryId))
 #else
                 withAnimation {
-                    selectionSheetLinkModel.selectionFullView = AnyView(                root.viewController.pdfWindow(selection: ItemSelection(itemId: item.model.itemId, entryId: item.model.entryId))
+                    selectionSheetLinkModel.selectionFullView = AnyView(                root.viewController.pdfWindow(root: root, selection: ItemSelection(itemId: item.model.itemId, entryId: item.model.entryId))
                         .environment(\.showGame, false))
                     selectionSheetLinkModel.selectionFullScreen = true
                 }

@@ -18,9 +18,9 @@ struct WindowViewerList: Scene {
 //                appStore.generatorRoot.viewController.windowViewer(root: appStore.generatorRoot, selection: selection)
 //            }
 
-//            windowGroup(model: appStore, module: .pdf) { selection in
-//                appStore.pdfRoot.viewController.windowViewer(root: appStore.pdfRoot, selection: selection)
-//            }
+            windowGroup(model: appModel, module: .pdf) { selection in
+                appModel.pdfRoot.viewController.windowViewer(root: appModel.pdfRoot, selection: selection)
+            }
 
             windowGroup(model: appModel, module: .space) { selection in
                 appModel.spaceRoot.viewController.windowViewer(root: appModel.spaceRoot, selection: selection)

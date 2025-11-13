@@ -10,7 +10,7 @@ struct PdfDetailViewer: View {
     @Environment(\.routeActions) private var routeActions
 
     var body: some View {
-        root.viewController.pdfWindow(selection: ItemSelection(itemId: item.model.itemId, entryId: item.model.entryId))
+        root.viewController.pdfWindow(root: root, selection: ItemSelection(itemId: item.model.itemId, entryId: item.model.entryId))
             .environment(\.showGame, true)
             .padding(.top, 64)
             .overlay(alignment: .topTrailing) {

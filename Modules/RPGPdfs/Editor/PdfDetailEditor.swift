@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
+import CoreExternalRPG
 import SwiftUI
 
 struct PdfDetailEditor: View {
@@ -9,58 +10,61 @@ struct PdfDetailEditor: View {
 
     @Environment(PdfRoot.self) private var root
 
-    @State private var detailHeaderModel = DetailHeaderModel(minHeight: 144, maxHeight: 400, maxHeightFromScreenHeight: true)
-    @State private var externalHeaderModel = ExternalHeaderModel()
-    
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
+
     var body: some View {
-        @Bindable var model = editController.model
+        ItemDetailRootView(detailListController: root.folderListController.copy(parentModel: selectedModel), selectedId: selectedModel?.id, editorAsBackground: true) {
+        } editor: {
+            if let model = selectedModel {
+                PdfDetailObjectViewer(editController: editController, model: model)
+            }
+        } inspector: {
+            LinkRootView(type: .inspector)
+        }
+        .onChange(of: root.folderListController.listModel.selectedItemId, initial: true) {
+            update()
+        }
+        .environment(openFileWindowModel)
+        .environment(root.folderListController.cacheListItemModel)
+        .environment(root.listDisplayModel)
+        .environment(root.searchModel)
+        .environment(root.rootController)
+        .tint(NetworkModules.pdf.tint)
+        .accentColor(NetworkModules.pdf.tint)
+    }
+    
+    var selectedModel: PdfModel? {
+        root.folderListController.selectedModel(for: nil) as? PdfModel
+    }
 
-        DetailEditor(editController: editController) {
-            HeaderEditor(editController: editController)
-            
-            FileLocationEditor(editController: editController, fileStore: root.fileUrlDataController, fileUrlBinding: $model.fileUrl)
-            
-#if !os(macOS)
-            PdfEntrySectionEditor(editController: editController)
-#endif
-        } headerView: {
-            PdfEditor(editController: editController)
-#if !os(macOS)
-                .ignoresSafeArea(.container, edges: .top)
-#endif
-                .id(editController.model.id)
-        } extHeaderView: {
-            PdfExternalHeader(editController: editController)
-        } extContentView: {
-#if !os(tvOS)
-            PdfEntryEditor(root: root, editController: editController)
-#endif
+    func update() {
+        if let item = root.folderListController.listModel.selectedModel as? PdfModel {
+            if editController.editorModel.currentItemId != item.id {
+                editController.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
+            }
+        } else {
+            if editController.editorModel.currentItemId != nil {
+                editController.resetCurrentItem(with: "save".localizedString)
+            }
         }
-        .focusedSceneValue(\.selectedPdf, $model.id)
-        .environment(detailHeaderModel)
-        .environment(externalHeaderModel)
-        .onChange(of: model.entries, initial: true) {
-            externalHeaderModel.minHeight = Double(model.entries.count * 128)
-        }
-        .onChange(of: model.hasPdf, initial: true) {
-            detailHeaderModel.maxHeight <=> model.hasPdf ? 400 : 144
-            detailHeaderModel.maxHeightFromScreenHeight <=> model.hasPdf
-        }
-
     }
 }
 
-struct PdfExternalHeader: View {
+struct PdfDetailObjectViewer: View {
     let editController: EditController
-
+    let model: PdfModel
+    
     @Environment(PdfRoot.self) private var root
-    @Environment(ExternalHeaderModel.self) private var externalHeaderModel
-
+    @Environment(GroupItemSelectionModel.self) private var selection
+    
     var body: some View {
-        root.viewController.viewPdfInline(with: editController.model.id, withoutBookmark: false) {
-            externalHeaderModel.showExtHeader = false
-        }
-        .id(editController.model.id)
+        PdfDetailViewer(item: ItemRowTreeModel(itemId: model.id, typeId: .pdf))
+            .id(selectedModel.id)
+    }
+    
+    private var selectedModel: PdfModel {
+        guard let itemId = selection.selectedItem else { return model }
+        return root.itemController.itemOrEmpty(for: itemId)
     }
 }
 

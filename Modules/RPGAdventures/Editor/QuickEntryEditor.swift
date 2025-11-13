@@ -147,7 +147,7 @@ private extension QuickEntryEditor {
         .overlay {
 #if os(iOS) || os(tvOS)
             if let selectedPdf = editController.adventureEditModel.pdfSelectionModel.selectedValue {
-                root.pdfRoot.viewController.viewPdfInline(with: selectedPdf, withoutBookmark: true) {
+                root.pdfRoot.viewController.viewPdfInline(root: root.pdfRoot, with: selectedPdf, withoutBookmark: true) {
                     withAnimation { editController.adventureEditModel.pdfSelectionModel.selectedValue = nil }
                 }
                 .background(.black)

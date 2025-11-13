@@ -222,5 +222,4 @@ extension SpaceRoot {
         let cc = await ConvertController(itemController: itemController, editController: editController(type: .main))
         await cc.checkFolders()
     }
-
 }

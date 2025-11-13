@@ -59,7 +59,7 @@ struct GameRootViewer<MapContent: View>: View {
     private func otherViews<Content: View>(@ViewBuilder defaultContentView: () -> Content) -> some View {
         switch playerController.gameModel.gameUpdateType {
             case .pdf:
-                root.pdfRoot.viewController.gamePdfView()
+                root.pdfRoot.viewController.gamePdfView(root: root.pdfRoot)
                     .id(root.pdfRoot.gameControllable.gameModel.currentItemId ?? UUID())
             case .photo:
                 root.photoRoot.viewController.gamePhotoView()
