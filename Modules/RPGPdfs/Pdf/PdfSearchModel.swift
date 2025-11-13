@@ -1,37 +1,42 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+//import CoreRPG
 #if !os(tvOS)
-@preconcurrency import PDFKit
+import PDFKit
 #endif
 import SwiftUI
 
 @MainActor @Observable
 final class PdfSearchModel: Sendable {
+#if os(tvOS)
+    init(selectedEntry: PdfEntryDataModel? = nil) {
+    }
+#else
+    init(pdfDoc: PDFDocument? = nil, selectedEntry: PdfEntryModel? = nil) {
+        self.pdfDoc = pdfDoc
+        self.selectedEntry = selectedEntry
+    }
+#endif
+    
     private(set) var searchText: String = ""
     var isSearching: Bool = false
 #if os(tvOS)
     var matches: [String] = []
 #else
     var matches: [PDFSelection] = []
-    
     var setSearchMatch: (([PDFSelection], Int) -> Void)?
 #endif
     
     var currentIndex = 0
-    
     var selectedEntry: PdfEntryModel?
 
     @ObservationIgnored var displaySearchText = ""
-
     @ObservationIgnored var pdfSearching = false
 
-    // Helper for the UIKIt wrapper
 #if !os(tvOS)
     @ObservationIgnored var pdfView: PDFView?
     @ObservationIgnored var pdfDoc: PDFDocument?
 #endif
-    // updater for the view
     var pdfId = UUID()
     
     func resetSearch() {

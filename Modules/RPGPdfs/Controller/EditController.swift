@@ -105,4 +105,10 @@ extension EditController {
             itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
         }
     }
+    
+    func createBookmark(itemId: UUID, content: String, page: String, bounds: CGRect) -> PdfEntryModel {
+        let name = String(content.split(separator: " ").first ?? "Unnamed")
+        return PdfEntryModel(id: itemId, name: name, content: content, pageNumber: page, bounds: bounds, displayState: 0)        
+    }
+
 }

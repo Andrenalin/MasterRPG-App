@@ -21,7 +21,7 @@ public extension ViewController {
     @MainActor func windowViewer(root: PdfRoot, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return NavigationStack {
-            PdfViewerView(editController: root.editController(type: .main), model: model, entryId: selection.entryId, withoutBookmark: false)
+            PdfViewerView(model: model, entryId: selection.entryId, withoutBookmark: false)
         }
         .ignoresSafeArea()
         .navigationTitle(model.name)
@@ -30,7 +30,7 @@ public extension ViewController {
 
     @MainActor func inlineViewer(root: PdfRoot, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
-        return PdfViewerView(editController: root.editController(type: .main), model: model, entryId: nil, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
+        return PdfViewerView(model: model, entryId: nil, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
             .environment(root)
     }
     
@@ -67,7 +67,7 @@ public extension ViewController {
 
     @MainActor
     func gamePdfView(root: PdfRoot) -> some View {
-        PdfViewerView(editController: root.editController(type: .main), model: root.gameController.currentItem(), entryId: nil, withoutBookmark: true, dismissAction: nil)
+        PdfViewerView(model: root.gameController.currentItem(), entryId: nil, withoutBookmark: true, dismissAction: nil)
             .padding(32)
             .padding(.top, 64)
             .environment(root)
@@ -110,7 +110,7 @@ public extension ViewController {
 public extension ViewController {
     @MainActor
     func pdfWindow(root: PdfRoot, selection: ItemSelection) -> some View {
-        PdfViewerView(editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: selection.itemId), entryId: selection.entryId, withoutBookmark: false)
+        PdfViewerView(model: root.itemController.itemOrEmpty(for: selection.itemId), entryId: selection.entryId, withoutBookmark: false)
             .navigationTitle(root.itemController.itemOrEmpty(for: selection.itemId).name)
             .environment(root)
     }
@@ -122,7 +122,7 @@ public extension ViewController {
 
     @MainActor
     func viewPdfInline(root: PdfRoot, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
-        PdfViewerView(editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: id), entryId: nil, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
+        PdfViewerView(model: root.itemController.itemOrEmpty(for: id), entryId: nil, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
             .environment(root)
     }
 }

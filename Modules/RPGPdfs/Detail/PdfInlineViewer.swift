@@ -25,12 +25,12 @@ struct PdfInlineViewer: View {
 #else
         @Bindable var model = model
         Group {
-            if let pdfUrl {
-                PreviewControllerWrapperView(fileStore: root.fileUrlDataController!, pathUrl: pdfUrl)
-                    .frame(height: 450)
-            } else {
+//            if let pdfUrl {
+//                PreviewControllerWrapperView(fileStore: root.fileUrlDataController!, pathUrl: pdfUrl)
+//                    .frame(height: 450)
+//            } else {
                 Text("Loading PDF document ...", bundle: .module)
-            }
+//            }
         }
         .onChange(of: model.fileUrl, initial: true) {
             withAnimation {
