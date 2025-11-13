@@ -209,7 +209,7 @@ extension SpaceRoot {
     }
     
     
-    public func spaceDataCleanup() async throws {
+    public func itemDataCleanup() async throws {
         for itemId in await itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {

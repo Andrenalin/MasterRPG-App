@@ -72,7 +72,9 @@ struct RootView: View {
             }
             try? await Task.sleep(for: .seconds(5))
             
-            try? await appStore.spaceRoot.spaceDataCleanup()
+            try? await appStore.audioRoot.itemDataCleanup()
+            try? await appStore.pdfRoot.itemDataCleanup()
+            try? await appStore.spaceRoot.itemDataCleanup()
 #endif
         }
         .alert("First Launch", isPresented: $showFirstLunchAlert) {

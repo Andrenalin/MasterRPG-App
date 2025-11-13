@@ -54,7 +54,7 @@ struct OldWindowMacVisionList: Scene {
             
             WindowGroup("Pdf Viewer", id: WindowIdentifier.pdfViewer.rawValue, for: ItemSelection.self) { $selection in
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.pdfRoot.viewController.pdfWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
+                    appStore.pdfRoot.viewController.pdfWindow(root: appStore.pdfRoot, selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)

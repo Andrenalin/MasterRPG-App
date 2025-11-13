@@ -30,6 +30,7 @@ public struct SettingsView: View {
                 Button {
                     Task {
                         await store.audioRoot.checkFolders()
+                        await store.pdfRoot.checkFolders()
                         await store.spaceRoot.checkFolders()
                     }
                 } label: {

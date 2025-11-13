@@ -9,7 +9,7 @@ import SwiftUI
 @MainActor @Observable
 final class PdfSearchModel: Sendable {
 #if os(tvOS)
-    init(selectedEntry: PdfEntryDataModel? = nil) {
+    init(selectedEntry: PdfEntryModel? = nil) {
     }
 #else
     init(pdfDoc: PDFDocument? = nil, selectedEntry: PdfEntryModel? = nil) {

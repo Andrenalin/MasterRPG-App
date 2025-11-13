@@ -274,25 +274,28 @@ private extension ItemDetailRootView {
         editor
             .id(model.id)
             .overlay(alignment: .top) {
-                GlassEffectContainer {
-                    HStack {
-                        Text(model.url?.absoluteString ?? "No file is set")
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
+                Group {
+#if os(visionOS)
+                    overlayFileImporter(model: model)
+#else
+                    GlassEffectContainer {
+                        overlayFileImporter(model: model)
                     }
-                    .padding()
-                    .glassEffect(.regular.interactive())
+#endif
                 }
                 .padding()
                 .opacity(model.specialCategory ? 0 : 1)
             }
             .overlay(alignment: .bottom) {
                 if model.description.isEmpty == false {
-                    GlassEffectContainer {
-                        ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true, lines: 3)
-                            .padding()
-                            .glassEffect(.regular)
+                    Group {
+#if os(visionOS)
+                        overlayDescription(model: model)
+#else
+                        GlassEffectContainer {
+                            overlayDescription(model: model)
+                        }
+#endif
                     }
                     .padding()
                 }
@@ -305,6 +308,27 @@ private extension ItemDetailRootView {
                 overlay.opacity(0)
             }
         }
+    }
+
+    func overlayDescription(model: any ItemDataAccessable) -> some View {
+        ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true, lines: 3)
+            .padding()
+#if !os(visionOS)
+            .glassEffect(.regular)
+#endif
+    }
+    
+    func overlayFileImporter(model: any ItemDataAccessable) -> some View {
+        HStack {
+            Text(model.url?.absoluteString ?? "No file is set")
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
+        }
+        .padding()
+        #if !os(visionOS)
+        .glassEffect(.regular.interactive())
+        #endif
     }
     
     @ViewBuilder func inspectorView(model: any ItemDataAccessable) -> some View {
