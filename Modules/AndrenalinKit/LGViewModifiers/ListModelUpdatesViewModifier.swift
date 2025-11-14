@@ -80,12 +80,16 @@ private extension ListModelUpdatesViewModifier {
     func updateSelected() {
         if let id = listModel.selected {
             listModel.listSelection <=> Set(arrayLiteral: id)
+            if let itemId = listModel.selectedItemId {
+                if listModel.parentModel != nil {
+                    listModel.subFolderRoute = itemId
+                } else {
+                    listModel.itemRoute = itemId
+                }
+            }
         } else {
             listModel.resetListSelection()
         }
         
-        if listModel.parentModel != nil, let id = listModel.selectedItemId {
-            listModel.subFolderRoute = id
-        }
     }
 }

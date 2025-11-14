@@ -21,8 +21,8 @@ struct ItemRootRouteViewModifier<Route: ItemDetailRoute>: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: listControllable.listModel.selected) {
-                if let selected = listControllable.listModel.selectedItemId {
+            .onChange(of: listControllable.listModel.itemRoute) {
+                if let selected = listControllable.listModel.itemRoute {
                     route.wrappedValue <=> route.wrappedValue?.reset(detail: selected)
                 } else {
                     route.wrappedValue <=> nil

@@ -5,46 +5,44 @@ import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
+    init(root: AudioRoot, editController: EditController, model: AudioModel, isSubFolder: Bool) {
+        self.root = root
+        self.editController = editController
+        self.model = model
+        self.isSubFolder = isSubFolder
+        let listController = root.folderListController.copy(parentModel: model) as! FolderListController
+        self._detailFolderListController = State(wrappedValue: listController)
+    }
+    
+    let root: AudioRoot
     let editController: EditController
     let model: AudioModel
+    let isSubFolder: Bool
     
-    @Environment(AudioRoot.self) private var root
     @Environment(\.navigator) private var navigator
     
+    @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel()
-    @State private var detailFolderListController: FolderListController?
     
     var body: some View {
-        Group {
-            if let detailFolderListController {
-                content(listController: detailFolderListController)
-                    .onChange(of: detailFolderListController.listModel.subFolderRoute) {
-                        guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
-                        navigator.navigate(to: AudioRoute.detail(subItemId), method: .push)
-                        detailFolderListController.listModel.subFolderRoute = nil
-                    }
-            } else {
-                Color.clear
-                    .onAppear {
-                        resetFolderListController()
-                    }
+        content(listController: detailFolderListController)
+            .onChange(of: detailFolderListController.listModel.subFolderRoute) {
+                guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
+                navigator.navigate(to: AudioDetailRoute.folder(subItemId), method: .push)
+                detailFolderListController.listModel.subFolderRoute = nil
             }
-        }
     }
     
     func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedId: selectedModel?.id, editorAsBackground: false) {
+        ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: false) {
         } editor: {
-            if let model = selectedModel {
-                fileAndPlayerView(model: model)
-            }
+            fileAndPlayerView(model: model)
         } inspector: {
-            LinkRootView(type: .inspector)
+            if !isSubFolder {
+                LinkRootView(type: .inspector)
+            }
         } overlay: {
             playerView
-        }
-        .onChange(of: root.folderListController.listModel.selectedItemId, initial: true) {
-            update()
         }
         .toolbar {
             ToolbarItem(placement: .secondaryActionAll) {
@@ -56,36 +54,10 @@ struct DetailRootView: View {
         .environment(root.listDisplayModel)
         .environment(root.searchModel)
         .environment(root.rootController)
-        .tint(NetworkModules.audio.tint)
-        .accentColor(NetworkModules.audio.tint)
-    }
-    
-    func resetFolderListController() {
-        guard let selectedModel else { return }
-        guard let detailFolderListController, detailFolderListController.listModel.parentModel?.id == selectedModel.id else {
-            self.detailFolderListController = root.folderListController.copy(parentModel: selectedModel) as? FolderListController
-            return
-        }
-        return
-    }
-    
-    var selectedModel: AudioModel? {
-        model //root.folderListController.selectedModel(for: nil) as? AudioModel
+        .tint(root.module.tint)
+        .accentColor(root.module.tint)
     }
 
-    func update() {
-        resetFolderListController()
-        if let item = root.folderListController.listModel.selectedModel as? AudioModel {
-            if editController.editorModel.currentItemId != item.id {
-                editController.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
-            }
-        } else {
-            if editController.editorModel.currentItemId != nil {
-                editController.resetCurrentItem(with: "save".localizedString)
-            }
-        }
-    }
-    
     func fileAndPlayerView(model: AudioModel) -> some View {
         HStack {
             HStack {
@@ -139,11 +111,11 @@ struct DetailRootView: View {
             .onAppear {
                 let id = root.itemController.itemDataModel.items.first ?? AudioModel.previewId
                 root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId)
-                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
+                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: root.module)
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId))
+            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId), isSubFolder: false)
                 .preferredColorScheme(.dark)
         }
     }

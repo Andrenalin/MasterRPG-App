@@ -12,7 +12,6 @@ struct AudioRootView: View {
         let _ = Self._printChanges()
         
         ItemRootView(root: root.rootController)
-            .navigationAutoReceive(AudioRoute.self)
             .overlay {
                 SaveView(root: root)
             }

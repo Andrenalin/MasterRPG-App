@@ -5,43 +5,42 @@ import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
+    init(root: SpaceRoot, editController: EditController, model: SpaceModel, isSubFolder: Bool) {
+        self.root = root
+        self.editController = editController
+        self.model = model
+        self.isSubFolder = isSubFolder
+        let listController = root.folderListController.copy(parentModel: model) as! FolderListController
+        self._detailFolderListController = State(wrappedValue: listController)
+    }
+    
+    let root: SpaceRoot
     let editController: EditController
     let model: SpaceModel
+    let isSubFolder: Bool
     
-    @Environment(SpaceRoot.self) private var root
+    @Environment(\.navigator) private var navigator
     
-    @State private var detailFolderListController: FolderListController?
+    @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
 
     var body: some View {
-        Group {
-            if let detailFolderListController {
-                content(listController: detailFolderListController)
-                    .onChange(of: detailFolderListController.listModel.subFolderRoute) {
-                        guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
-                        //navigator.navigate(to: AudioRoute.detail(subItemId), method: .push)
-                        detailFolderListController.listModel.subFolderRoute = nil
-                    }
-            } else {
-                Color.clear
-                    .onAppear {
-                        resetFolderListController()
-                    }
+        content(listController: detailFolderListController)
+            .onChange(of: detailFolderListController.listModel.subFolderRoute) {
+                guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
+                navigator.navigate(to: SpaceDetailRoute.folder(subItemId), method: .push)
+                detailFolderListController.listModel.subFolderRoute = nil
             }
-        }
     }
     
     func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedId: selectedModel?.id, editorAsBackground: true) {
+        ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: true) {
         } editor: {
-            if let model = selectedModel {
-                SpaceDetailObjectViewer(editController: editController, model: model)
-            }
+            SpaceDetailObjectViewer(editController: editController, model: model)
         } inspector: {
-            LinkRootView(type: .inspector)
-        }
-        .onChange(of: root.folderListController.listModel.selectedItemId, initial: true) {
-            update()
+            if !isSubFolder {
+                LinkRootView(type: .inspector)
+            }
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -55,34 +54,8 @@ struct DetailRootView: View {
         .environment(root.listDisplayModel)
         .environment(root.searchModel)
         .environment(root.rootController)
-        .tint(NetworkModules.space.tint)
-        .accentColor(NetworkModules.space.tint)
-    }
-    
-    func resetFolderListController() {
-        guard let selectedModel else { return }
-        guard let detailFolderListController, detailFolderListController.listModel.parentModel?.id == selectedModel.id else {
-            self.detailFolderListController = root.folderListController.copy(parentModel: selectedModel) as? FolderListController
-            return
-        }
-        return
-    }
-
-    var selectedModel: SpaceModel? {
-        root.folderListController.selectedModel(for: nil) as? SpaceModel
-    }
-
-    func update() {
-        resetFolderListController()
-        if let item = root.folderListController.listModel.selectedModel as? SpaceModel {
-            if editController.editorModel.currentItemId != item.id {
-                editController.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
-            }
-        } else {
-            if editController.editorModel.currentItemId != nil {
-                editController.resetCurrentItem(with: "save".localizedString)
-            }
-        }
+        .tint(root.module.tint)
+        .accentColor(root.module.tint)
     }
 }
 
@@ -117,7 +90,7 @@ struct SpaceDetailObjectViewer: View {
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRoot.previewSpaceId))
+            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRoot.previewSpaceId), isSubFolder: false)
                 .preferredColorScheme(.dark)
         }
     }

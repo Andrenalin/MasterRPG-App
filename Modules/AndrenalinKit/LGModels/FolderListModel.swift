@@ -67,6 +67,7 @@ public final class FolderListModel {
     @ObservationIgnored var subListModel: FolderListModel?
     
     // MARK: - Routing
+    public var itemRoute: UUID?
     public var subFolderRoute: UUID?
 }
 

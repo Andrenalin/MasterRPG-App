@@ -22,6 +22,7 @@ public struct ItemRootView: View {
             .environment(root)
             .tabBarPlacementModifier(listControllable: root.folderListControllable)
             .tint(root.module.tint)
+            .accentColor(root.module.tint)
     }
 }
 
@@ -35,9 +36,15 @@ struct ItemRootSingleListView: View {
         let _ = Self._printChanges()
         
         ItemRootListView(root: root)
-            .onChange(of: listModel.selectedItemId) {
-                guard appSizeMode == .compact, let itemId = listModel.selectedItemId else { return }
+            .onChange(of: listModel.selected) {
+                if let itemId = listModel.selectedItemId {
+                    root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: root.module))
+                }
+            }
+            .onChange(of: listModel.itemRoute) {
+                guard appSizeMode == .compact, let itemId = listModel.itemRoute else { return }
                 navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
+                listModel.itemRoute = nil
             }
     }
     
@@ -54,7 +61,7 @@ struct ItemRootListView: View {
         
         ListRootView(root: root, listController: root.folderListControllable, parentModel: nil)
             .searchItemList(listControllable: root.folderListControllable, parentModel: nil)
-            .navigationDestinationAutoReceive(InternalRoute.self)
+            .navigationAutoReceive(InternalRoute.self)
     }
 }
 
@@ -69,22 +76,31 @@ public struct ItemSplitDetailRootView: View {
         let _ = Self._printChanges()
         let _ = print("*** ->", root.module)
         
-        Group {
-            if let itemId = listModel.selectedItemId {
-                ManagedNavigationStack {
-                    root.folderListControllable.detailDestination(for: itemId).asAnyView()
-                        .environment(root)
-                }
-            } else {
-                SplitContentUnavailableView(module: root.module)
-            }
+        ManagedNavigationStack(name: "Split-\(root.module.token)") {
+            SplitContentDetailRootView(root: root, itemId: listModel.selectedItemId)
         }
+        .environment(root)
         .tint(root.module.tint)
         .accentColor(root.module.tint)
     }
     
     var listModel: FolderListModel {
         root.folderListControllable.listModel
+    }
+}
+
+struct SplitContentDetailRootView: View {
+    let root: ItemRootController
+    let itemId: UUID?
+    
+    var body: some View {
+        let _ = Self._printChanges()
+        
+        if let itemId {
+            root.folderListControllable.detailDestination(for: itemId).asAnyView()
+        } else {
+            SplitContentUnavailableView(module: root.module)
+        }
     }
 }
 

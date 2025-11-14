@@ -60,14 +60,18 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     public var body: some View {
         let _ = Self._printChanges()
         if let detailModel {
+            let _ = print("\(selectedId?.uuidString ?? "Not set") --> \(detailModel.name)")
+
             contentScrollView(model: detailModel)
+                .tint(root.module.tint)
+                .accentColor(root.module.tint)
         }
     }
 }
 
 private extension ItemDetailRootView {
     var detailModel: (any ItemDataAccessable)? {
-        guard let itemId =  selectedId ?? root.listControllable.model.selectedItem?.model.itemId else { return nil }
+        guard let itemId = selectedId else { return nil }
         return root.itemControllable.itemSync(for: itemId)
     }
     
@@ -163,9 +167,11 @@ private extension ItemDetailRootView {
                     }
                 }
             }
+            #if !os(visionOS)
             ToolbarItemGroup(placement: .secondaryActionAll) {
                 inspectorButton
             }
+            #endif
         }
         .environment(selection)
     }
