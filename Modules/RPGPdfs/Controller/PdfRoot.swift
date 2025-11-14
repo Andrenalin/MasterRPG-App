@@ -47,7 +47,7 @@ public final class PdfRoot: @unchecked Sendable {
         _dataController = dataController
         let itemController = ItemController(dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
-        _editControllers = [EditTypes.main: EditController(itemController: itemController, linkRegisterControllable: linkRegisterControllable, currentListItem: nil, currentModel: nil)]
+        _editController = EditController(itemController: itemController, linkRegisterControllable: linkRegisterControllable, currentListItem: nil, currentModel: nil)
         _exportController = ExportController(itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
         _gameController = GameController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
@@ -81,7 +81,7 @@ public final class PdfRoot: @unchecked Sendable {
     @ObservationIgnored private(set) var _itemController: ItemController?
     var itemController: ItemController { _itemController.unsafelyUnwrapped }
     
-    @ObservationIgnored private var _editControllers: [EditTypes: EditController] = [:]
+    @ObservationIgnored private(set) var _editController: EditController?
     @ObservationIgnored private(set) var _exportController: ExportController?
     var exportController: ExportController { _exportController.unsafelyUnwrapped }
     @ObservationIgnored private(set) var _importController: ImportController?
@@ -150,21 +150,9 @@ extension PdfRoot {
         itemController
     }
 
-    func applyToAllEditController(handler: @escaping @Sendable (EditController) async -> Void) async {
-        for editController in _editControllers.values {
-            await handler(editController)
-        }
-    }
-
     @MainActor
     func editController(for item: ItemRowTreeModel? = nil, type: EditTypes) -> EditController {
-        guard let oldEditController = _editControllers[type] else {
-            let model = item.map { itemController.itemOrEmpty(for: $0.model.itemId) }
-            let newEditController = EditController(itemController: itemController, linkRegisterControllable: linkRegisterControllable, currentListItem: item, currentModel: model)
-            _editControllers[type] = newEditController
-            return newEditController
-        }
-        return oldEditController
+        _editController.unsafelyUnwrapped
     }
 
     @MainActor
