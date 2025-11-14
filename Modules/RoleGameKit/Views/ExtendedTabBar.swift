@@ -37,8 +37,12 @@ struct ExtendedTabBar: View {
         .navigationBarTitleDisplayMode(.inline)
 #endif
         .navigationModifier { destination in
-            destination()
-                .modifier(ZoomTransitionViewModifier(sourceID: (destination as? ExtendedTabRoute)?.module.token ?? "Dead", namespace: zoomNamespace))
+            if let extened = destination as? ExtendedTabRoute {
+                destination()
+                    .modifier(ZoomTransitionViewModifier(sourceID: extened.module.token, namespace: zoomNamespace))
+            } else {
+                destination()
+            }
         }
         .navigationAutoReceive(ExtendedTabRoute.self)
         .onNavigationRoute(RootFiveRouteRouter(appStore: appModel))

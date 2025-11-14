@@ -85,8 +85,7 @@ private extension ListModelUpdatesViewModifier {
         }
         
         if listModel.parentModel != nil, let id = listModel.selectedItemId {
-            let newRoute = listControllable.detailDestination(for: id)
-            print(newRoute)
+            listModel.subFolderRoute = id
         }
     }
 }

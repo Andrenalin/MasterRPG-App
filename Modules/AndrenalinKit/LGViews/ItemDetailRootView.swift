@@ -42,7 +42,8 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
-
+    @Environment(\.navigator) private var navigator
+    
     @Environment(ListDisplayModel.self) private var listDisplayModel
     @Environment(SearchModel.self) private var searchModel
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel

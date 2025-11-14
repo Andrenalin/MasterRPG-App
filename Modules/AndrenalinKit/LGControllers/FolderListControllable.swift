@@ -30,8 +30,7 @@ extension FolderListControllable {
 
     public func selectedModel(for selectedId: UUID?) -> (any ItemDataAccessable)? {
         guard let selectedId else {
-            let subListmodel = listModel.lastSubListModel()
-            return subListmodel.selectedModel
+            return listModel.selectedModel
         }
         return itemControllable.itemSync(for: selectedId)
     }

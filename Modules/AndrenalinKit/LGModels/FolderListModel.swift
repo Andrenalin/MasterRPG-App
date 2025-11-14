@@ -11,9 +11,8 @@ public final class FolderListModel {
         update(selection: Set(selection))
     }
     
-    public init(listModel: FolderListModel, parentId: UUID?, lastFolderId: UUID?) {
-        self.selectedParentId = parentId
-        self.lastFolderId = lastFolderId
+    public init(parentModel: (any ItemDataAccessable)?) {
+        self.parentModel = parentModel
         self.isSelectionMode = false
         self.selection = []
         self.listSelection = []
@@ -66,6 +65,9 @@ public final class FolderListModel {
     
     // MARK: - ListModels
     @ObservationIgnored var subListModel: FolderListModel?
+    
+    // MARK: - Routing
+    public var subFolderRoute: UUID?
 }
 
 // MARK: - Items
@@ -150,22 +152,6 @@ public extension FolderListModel {
 // MARK: - Navigation
 
 public extension FolderListModel {
-    func lastSubListModel(for parentId: UUID, parentIsFolder: Bool) -> FolderListModel {
-        guard let subListModel, subListModel.selectedParentId == parentId else {
-            let listModel = FolderListModel(listModel: self, parentId: parentId, lastFolderId: parentIsFolder ? parentId : lastFolderId)
-            self.subListModel = listModel
-            return listModel
-        }
-        return subListModel
-    }
-
-    func lastSubListModel() -> FolderListModel {
-        guard let listModel = subListModel else {
-            return self
-        }
-        return listModel.lastSubListModel()
-    }
-    
     func resetListModel() {
         resetListSelection()
         update(selection: Set())

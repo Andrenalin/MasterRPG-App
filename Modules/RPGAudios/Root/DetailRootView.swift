@@ -9,11 +9,31 @@ struct DetailRootView: View {
     let model: AudioModel
     
     @Environment(AudioRoot.self) private var root
-
+    @Environment(\.navigator) private var navigator
+    
     @State private var openFileWindowModel = OpenFileWindowModel()
-
+    @State private var detailFolderListController: FolderListController?
+    
     var body: some View {
-        ItemDetailRootView(detailListController: root.folderListController.copy(parentModel: selectedModel), selectedId: selectedModel?.id, editorAsBackground: false) {
+        Group {
+            if let detailFolderListController {
+                content(listController: detailFolderListController)
+                    .onChange(of: detailFolderListController.listModel.subFolderRoute) {
+                        guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
+                        navigator.navigate(to: AudioRoute.detail(subItemId), method: .push)
+                        detailFolderListController.listModel.subFolderRoute = nil
+                    }
+            } else {
+                Color.clear
+                    .onAppear {
+                        resetFolderListController()
+                    }
+            }
+        }
+    }
+    
+    func content(listController: any FolderListControllable) -> some View {
+        ItemDetailRootView(detailListController: listController, selectedId: selectedModel?.id, editorAsBackground: false) {
         } editor: {
             if let model = selectedModel {
                 fileAndPlayerView(model: model)
@@ -40,11 +60,21 @@ struct DetailRootView: View {
         .accentColor(NetworkModules.audio.tint)
     }
     
+    func resetFolderListController() {
+        guard let selectedModel else { return }
+        guard let detailFolderListController, detailFolderListController.listModel.parentModel?.id == selectedModel.id else {
+            self.detailFolderListController = root.folderListController.copy(parentModel: selectedModel) as? FolderListController
+            return
+        }
+        return
+    }
+    
     var selectedModel: AudioModel? {
-        root.folderListController.selectedModel(for: nil) as? AudioModel
+        model //root.folderListController.selectedModel(for: nil) as? AudioModel
     }
 
     func update() {
+        resetFolderListController()
         if let item = root.folderListController.listModel.selectedModel as? AudioModel {
             if editController.editorModel.currentItemId != item.id {
                 editController.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))

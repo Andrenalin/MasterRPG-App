@@ -18,6 +18,6 @@ struct FolderListController: FolderListControllable {
     }
     
     func copy(parentModel: (any ItemDataAccessable)?) -> FolderListController {
-        FolderListController(listModel: FolderListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel, itemControllable: itemControllable)
+        FolderListController(listModel: FolderListModel(parentModel: parentModel), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel, itemControllable: itemControllable)
     }
 }
