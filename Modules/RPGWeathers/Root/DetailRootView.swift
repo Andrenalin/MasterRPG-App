@@ -23,7 +23,7 @@ struct DetailRootView: View {
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.weather.viewerWindowId, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.weather.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
 
     var body: some View {
         content(listController: detailFolderListController)
@@ -39,7 +39,9 @@ struct DetailRootView: View {
         } editor: {
             WeatherEditor(model: model)
         } inspector: {
-            root.photoRoot.viewController.linkWindow(root: root.photoRoot, isInspector: true)
+            if !isSubFolder {
+                root.photoRoot.viewController.linkWindow(root: root.photoRoot, isInspector: true)
+            }
         }
         .overlay {
             if openFileWindowModel.showItem {

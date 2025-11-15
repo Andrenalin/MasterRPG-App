@@ -38,9 +38,6 @@ struct DetailRootView: View {
         } editor: {
             SpaceDetailObjectViewer(editController: editController, model: model)
         } inspector: {
-            if !isSubFolder {
-                LinkRootView(type: .inspector)
-            }
         }
         .overlay {
             if openFileWindowModel.showItem {

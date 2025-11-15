@@ -96,15 +96,6 @@ struct WeatherViewer: View {
             }
         }
         .frame(width: containerSize.width, height: containerSize.height)
-        .overlay(alignment: .bottomTrailing) {
-            ImageOverlayButton(icon: "film\(isAnimating ? ".fill" : "")") {
-                withAnimation { isAnimating.toggle() }
-            }
-            .contentTransition(.symbolEffect(.replace.wholeSymbol))
-            .padding(.trailing, valueFor(iOS: 12, macOS: 12, tvOS: 12, visionOS: 24))
-            .padding(.bottom)
-            .opacity(useGame ? 0 : 1)
-        }
         .background {
             LinearGradient(colors: [
                 backgroundTopStops.interpolated(amount: model.time),
@@ -118,6 +109,21 @@ struct WeatherViewer: View {
         .onDisappear {
             isAnimating = false
         }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                animateButton
+            }
+        }
+    }
+
+    var animateButton: some View {
+        Button {
+            withAnimation { isAnimating.toggle() }
+        } label: {
+            Image(systemName: "film\(isAnimating ? ".fill" : "")")
+        }
+        .contentTransition(.symbolEffect(.replace.wholeSymbol))
+        .opacity(useGame ? 0 : 1)
     }
 
     var containerSize: CGSize {

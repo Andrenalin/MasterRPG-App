@@ -35,17 +35,13 @@ public extension ViewController {
     
     @MainActor func windowViewer(root: WeatherRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return NavigationStack {
-            WeatherViewer(model: model, size: CGSize(width: 400, height: 400), useGame: false)
-        }
-        .ignoresSafeArea()
-        .navigationTitle(model.name)
-        .environment(root)
+        return ViewerRootView(model: model)
+            .environment(root)
     }
 
     @MainActor func inlineViewer(root: WeatherRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
-        return WeatherViewer(model: model, size: CGSize(width: 400, height: 400), useGame: false)
+        return ViewerRootView(model: model, dismissAction: dismissAction)
             .environment(root)
     }
     
