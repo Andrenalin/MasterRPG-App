@@ -42,9 +42,9 @@ struct DiceRootTests {
         await sut.gameController.focus(on: dice.id)
         #expect(await sut.gameController.isFocusedDice(itemId: dice.id))
         
-        await sut.editController(type: .main).remove(die: dice.entries[0])
-        await sut.editController(type: .main).save(with: "Die")
-        #expect(await sut.itemController.item(for: dice.id)?.entries.count == 3)
+        await sut.editController.remove(die: dice.dice[0])
+        await sut.editController.save(with: "Die")
+        #expect(await sut.itemController.item(for: dice.id)?.dice.count == 3)
     }
 }
 #endif
