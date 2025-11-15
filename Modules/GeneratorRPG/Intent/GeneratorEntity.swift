@@ -5,7 +5,7 @@ import CoreSpotlight
 import CoreTransferable
 import SwiftUI
 import PDFKit
-import CoreRPG
+import AndrenalinKit
 
 struct GeneratorEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {

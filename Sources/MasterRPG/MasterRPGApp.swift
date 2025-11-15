@@ -57,6 +57,7 @@ struct MasterRPGApp: App {
 #endif
                 .modifier(UserSettingsViewModifier(appModel: appModel))
                 .setAppSizeMode()
+                .environmentSetUp(appModel)
         }
         .commands {
             MenuMainCommand(appModel: appModel)

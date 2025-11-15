@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
-import CoreRPG
-import CharacterRPG
+import AndrenalinKit
+import RPGValues
 import FoundationModels
 import SwiftUI
 

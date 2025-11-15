@@ -1,17 +1,17 @@
 // @copyright André Trettin
 
-import AdventureRPG
-import AudioRPG
-import CharacterRPG
-import DiceRPG
-import MapRPG
-import PdfRPG
-import PhotoRPG
-import SpaceRPG
-import TableRPG
-import WeatherRPG
+import RPGAdventures
+import RPGAudios
+import RPGValues
+import RPGDie
+import RPGMaps
+import RPGPdfs
+import RPGPhotos
+import RPGSpaces
+import RPGTables
+import RPGWeathers
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 import SwiftData
 

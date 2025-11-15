@@ -169,13 +169,10 @@ struct RouteRouteDestionationView: View {
                 NewMapRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .pdfs:
                 PdfFactory.rootView()
-                    .environment(appModel.pdfRoot)
             case .photos:
                 PhotoFactory.rootView()
-                    .environment(appModel.photoRoot)
             case .space:
                 SpaceFactory.rootView()
-                    .environment(appModel.spaceRoot)
             case .settings:
                 SettingsView(store: appModel)
             case .tables:
@@ -184,7 +181,6 @@ struct RouteRouteDestionationView: View {
                 NewValueRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .weathers:
                 WeatherRootFactory.rootView()
-                    .environment(appModel.weatherRoot)
             case .search:
                 Text("Coming Soon")
             }

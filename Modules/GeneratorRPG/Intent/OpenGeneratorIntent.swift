@@ -3,7 +3,7 @@
 import AppIntents
 import Foundation
 import SwiftUI
-import CoreRPG
+import AndrenalinKit
 import CoreExternalRPG
 
 struct OpenGeneratorIntent: OpenIntent {

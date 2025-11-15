@@ -2,7 +2,7 @@
 
 #if !os(tvOS)
 
-import CharacterRPG
+import RPGValues
 import FoundationModels
 import Foundation
 

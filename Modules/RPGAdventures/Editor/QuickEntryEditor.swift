@@ -137,7 +137,7 @@ private extension QuickEntryEditor {
             ForEach(model.entries) { entry in
                 EntryRow(model: model, item: ItemRowTreeModel(itemId: model.id, entryId: entry.id, typeId: root.itemController.itemDataModel.networkModule), isEditing: false, cacheItemListModel: editController.cacheItemListModel)
                     .foregroundStyle(.primary)
-                    .environment(ListModel.preview)
+                    .environment(root.mainListController?.model ?? ListModel(searchToken: .adventure, categoryTags: [], listStoreName: "Empty", hasChildren: false))
             }
         }
 #if !os(tvOS)

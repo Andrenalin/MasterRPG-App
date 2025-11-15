@@ -47,6 +47,7 @@ struct ExtendedTabBar: View {
         .navigationAutoReceive(ExtendedTabRoute.self)
         .onNavigationRoute(RootFiveRouteRouter(appModel: appModel))
         .onChange(of: currentModule, initial: true) {
+            appModel.selectedExtendedModule = currentModule
             guard let currentModule else { return }
             tabSelectedModule = currentModule.module
         }

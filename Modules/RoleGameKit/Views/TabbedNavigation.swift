@@ -68,7 +68,7 @@ public struct TabbedNavigation: View {
     }
     
     var selectedModule: NetworkModules {
-        (appModel.selectedModule ?? .game).module
+        (appModel.selectedExtendedModule?.module ?? appModel.selectedModule?.module) ?? .game
     }
 
 }
