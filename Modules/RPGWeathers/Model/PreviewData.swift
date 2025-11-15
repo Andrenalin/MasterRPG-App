@@ -6,22 +6,22 @@ import SwiftData
 import RPGResources
 import RPGPhotos
 
-public extension WeatherRoot {
+public extension WeatherRootModel {
     @MainActor
-    static let preview: WeatherRoot = {
+    static let preview: WeatherRootModel = {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = WeatherRoot(container: modelContainer, photoRoot: PhotoFactory.root(container: modelContainer))
+        let root = WeatherRootModel(container: modelContainer, photoRoot: PhotoFactory.root(container: modelContainer))
         root.photoRoot.setUp(context: nil, rootControllable: root)
         root.setUp(context: nil, rootControllable: root)
-        root.editController(type: .main).setCurrentItem(to: .preview)
+        root.editController.setCurrentItem(to: .preview)
         return root
     }()
     
     @MainActor
-    static let previewWithData: WeatherRoot = {
-        let root = WeatherRoot.preview
+    static let previewWithData: WeatherRootModel = {
+        let root = WeatherRootModel.preview
         let importController = root.importController
-        let editController = root.editController(type: .main)
+        let editController = root.editController
 #if DEBUG
         Task.detached(priority: .userInitiated) {
             let bundle = Resources.bundle
@@ -42,9 +42,9 @@ public extension WeatherRoot {
     
 #if DEBUG
     @MainActor
-    static func testRoot(photoRoot: PhotoRoot) -> WeatherRoot {
+    static func testRoot(photoRoot: PhotoRoot) -> WeatherRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = WeatherRoot(container: modelContainer, photoRoot: PhotoFactory.root(container: modelContainer))
+        let root = WeatherRootModel(container: modelContainer, photoRoot: PhotoFactory.root(container: modelContainer))
         root.photoRoot.setUp(context: nil, rootControllable: root)
         root.setUp(context: nil, rootControllable: root)
         return root
@@ -55,21 +55,21 @@ public extension WeatherRoot {
     static let linkRegisterController = FakeLinkRegisterController()
 }
 
-extension WeatherRoot: RootControllable {
+extension WeatherRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
     }
 
     @MainActor
     public var linkRegisterControllable: LinkRegisterControllable {
-        WeatherRoot.linkRegisterController
+        WeatherRootModel.linkRegisterController
     }
     
     public var gameExportControllable: any ExportControllable {
-        gameController.exportController
+        exportController
     }
     public var gameImportControllable: any ImportControllable {
-        gameController.importController
+        importController
     }
 }
 
@@ -113,7 +113,7 @@ extension WeatherModel {
 extension WeatherModel {
     static let previewId = UUID()
     @MainActor
-    static let preview = WeatherRoot.previewWithData.editController(type: .main).model
+    static let preview = WeatherRootModel.previewWithData.editController.model
 }
 
 extension ItemRowTreeModel {
@@ -126,13 +126,13 @@ extension ItemRowTreeModel {
 
 extension ItemController {
     @MainActor
-    static var preview = WeatherRoot.preview.itemController
+    static var preview = WeatherRootModel.preview.itemController
 }
 
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = WeatherRoot.preview.editController(type: .main)
+        let controller = WeatherRootModel.preview.editController
         controller.setCurrentItem(to: .preview)
         return controller
     }()
@@ -140,17 +140,17 @@ extension EditController {
 
 extension GameController {
     @MainActor
-    static var preview = WeatherRoot.preview.gameController
+    static var preview = WeatherRootModel.preview.gameController
 }
 
 extension ImportController {
     @MainActor
-    static var preview = WeatherRoot.preview.importController
+    static var preview = WeatherRootModel.preview.importController
 }
 
 extension ExportController {
     @MainActor
-    static var preview = WeatherRoot.preview.exportController
+    static var preview = WeatherRootModel.preview.exportController
 }
 
 extension ListController {
@@ -158,7 +158,7 @@ extension ListController {
     static let previewTabId = UUID()
     
     @MainActor
-    static var preview = WeatherRoot.preview.listController(tabId: previewTabId)
+    static var preview = WeatherRootModel.preview.listController(tabId: previewTabId)
 }
 
 extension ListModel {
@@ -168,10 +168,10 @@ extension ListModel {
 
 extension ViewController {
     @MainActor
-    static var preview = WeatherRoot.preview.viewController
+    static var preview = WeatherRootModel.preview.viewController
 }
 
 extension LinkController {
     @MainActor
-    static var preview = WeatherRoot.preview.linkController
+    static var preview = WeatherRootModel.preview.linkController
 }

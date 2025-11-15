@@ -9,10 +9,10 @@ struct RootExtendedDetail: View {
     let itemRowTreeModel: ItemRowTreeModel
     let tabId: UUID
     
-    @Environment(WeatherRoot.self) private var root
+    @Environment(WeatherRootModel.self) private var root
     
     var body: some View {
-        RootDetail(editController: root.editController(for: itemRowTreeModel, type: .main))
+        RootDetail(editController: root.editController)
             .environment(root.listController(tabId: tabId).model)
     }
 }
@@ -20,7 +20,7 @@ struct RootExtendedDetail: View {
 struct RootDetail: View {
     let editController: EditController
     
-    @Environment(WeatherRoot.self) private var root
+    @Environment(WeatherRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     @Environment(ListModel.self) private var listModel
     
@@ -43,7 +43,7 @@ struct RootDetail: View {
         case .photo:
             root.photoRoot.viewController.detailEditor(root: root.photoRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         default:
-            WeatherDetailEditor(editController: editController, model: editController.model)
+            DetailRootView(root: root, editController: editController, model: editController.model, isSubFolder: false)
         }
     }
 }

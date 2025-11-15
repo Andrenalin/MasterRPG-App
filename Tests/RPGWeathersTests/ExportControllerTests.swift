@@ -11,7 +11,7 @@ import Testing
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
-        let root = await WeatherRoot.testRoot(photoRoot: PhotoRoot.testRoot())
+        let root = await WeatherRootModel.testRoot(photoRoot: PhotoRoot.testRoot())
         await root.itemController.resetData()
 
         let sut = root.exportController
@@ -32,7 +32,7 @@ struct ExportControllerTests {
     }
 
     @Test func exporting() async throws {
-        let root = await WeatherRoot.testRoot(photoRoot: PhotoRoot.testRoot())
+        let root = await WeatherRootModel.testRoot(photoRoot: PhotoRoot.testRoot())
         await root.itemController.resetData()
 
         let sut = root.exportController

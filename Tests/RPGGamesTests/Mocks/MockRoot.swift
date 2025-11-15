@@ -39,7 +39,7 @@ struct MockRoot {
         let pdfRoot = await PdfRoot.testRoot()
         let photoRoot = await PhotoRoot.testRoot()
         let spaceRoot = await SpaceRoot.testRoot()
-        let weatherRoot = await WeatherRoot.testRoot(photoRoot: photoRoot)
+        let weatherRoot = await WeatherRootModel.testRoot(photoRoot: photoRoot)
         let tableRoot = await TableRoot.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
         let valueRoot = await ValueRoot.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         let mapRoot = await MapRoot.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)

@@ -104,12 +104,12 @@ public final class GameRoot: @unchecked Sendable {
     let spaceRoot: SpaceRoot
     let tableRoot: TableRoot
     let valueRoot: ValueRoot
-    let weatherRoot: WeatherRoot
+    let weatherRoot: WeatherRootModel
 
     let gameModel: GameModel
 
     @MainActor
-    public init(adventureRoot: AdventureRoot, audioRoot: AudioRoot, diceRoot: DiceRoot, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRoot) {
+    public init(adventureRoot: AdventureRoot, audioRoot: AudioRoot, diceRoot: DiceRoot, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRootModel) {
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot

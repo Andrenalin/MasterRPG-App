@@ -38,9 +38,6 @@ struct DetailRootView: View {
         } editor: {
             fileAndPlayerView(model: model)
         } inspector: {
-            if !isSubFolder {
-                LinkRootView(type: .inspector)
-            }
         } overlay: {
             playerView
         }

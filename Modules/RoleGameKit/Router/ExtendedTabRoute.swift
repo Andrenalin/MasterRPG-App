@@ -112,7 +112,8 @@ struct ExtendedTabRouteDestionationView: View {
             case .tables:
                 NewTableRoute(appModel: appModel, tabId: tabId, isExtended: true)
             case .weathers:
-                NewWeatherRoute(appModel: appModel, tabId: tabId, isExtended: true)
+                WeatherRootFactory.rootView()
+                    .environment(appModel.weatherRoot)
         case .settings:
             SettingsView(store: appModel)
         }

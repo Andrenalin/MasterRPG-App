@@ -9,7 +9,7 @@ struct WeatherEditHeader: View {
 #if os(visionOS) || os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
-    @Environment(WeatherRoot.self) private var root
+    @Environment(WeatherRootModel.self) private var root
     @Environment(DetailHeaderModel.self) private var headerModel
 
     @State private var isReading = false
@@ -31,7 +31,7 @@ struct WeatherEditHeader: View {
             }
 #endif
             .sheetFullScreen(isPresented: $isReading) {
-                root.viewController.weatherWindow(selection: ItemSelection(itemId: editController.model.id, entryId: nil))
+                root.viewController.weatherWindow(root: root, selection: ItemSelection(itemId: editController.model.id, entryId: nil))
             }
     }
 
@@ -49,6 +49,6 @@ struct WeatherEditHeader: View {
 
 #Preview {
     WeatherEditHeader(editController: .preview)
-        .environment(WeatherRoot.preview)
+        .environment(WeatherRootModel.preview)
         .environment(DetailHeaderModel(size: CGSize(width: 375, height: 375), isInline: false))
 }

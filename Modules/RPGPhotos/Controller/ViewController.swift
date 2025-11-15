@@ -11,12 +11,35 @@ public struct ViewController: Sendable {
 
 extension ViewController: ViewControllable {}
 
-// MARK: - New Views
+// MARK: - Viewer
 
 public extension ViewController {
     @MainActor func linkWindow(root: PhotoRoot, isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
+    }
+    
+    @MainActor func inlineViewer(root: PhotoRoot, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: id)
+        return RootPhotoViewer(model: model, toolBarModel: GameToolBarModel())
+            .environment(root)
+    }
+    
+    @MainActor func selectionView(root: PhotoRoot, model: ItemSelectionModel) -> some View {
+        LinkRootView(type: .selection)
+            .environment(root)
+    }
+    
+    func dropSelectionView(root: PhotoRoot, model: ItemSelectionModel) -> some View {
+        PhotoDropChooseView(model: model)
+            .environment(root)
+    }
+        
+    @ViewBuilder @MainActor
+    func thumbnailRow(root: PhotoRoot, for itemId: UUID) -> some View {
+        if let model = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
+            ThumbnailRowPhotoView(cacheController: cacheController, model: model)
+        }
     }
     
     @MainActor func windowViewer(root: PhotoRoot, selection: WindowItemSelection) -> some View {
@@ -27,17 +50,6 @@ public extension ViewController {
         .ignoresSafeArea()
         .navigationTitle(model.name)
         .environment(root)
-    }
-
-    @MainActor func inlineViewer(root: PhotoRoot, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return RootPhotoViewer(model: model, toolBarModel: GameToolBarModel())
-            .environment(root)
-    }
-    
-    @MainActor func selectionView(root: PhotoRoot, model: ItemSelectionModel) -> some View {
-        LinkRootView(type: .selection)
-            .environment(root)
     }
 }
 

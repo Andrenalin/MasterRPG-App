@@ -39,7 +39,7 @@ struct WindowLinkList: Scene {
 
             windowGroup(model: appModel, module: .space, key: "9", content: appModel.spaceRoot.viewController.linkWindow(root: appModel.spaceRoot))
 
-//            windowGroup(model: appModel, module: .weather, key: "0", content: appModel.weatherRoot.viewController.linkWindow(root: appModel.weatherRoot))
+            windowGroup(model: appModel, module: .weather, key: "0", content: appModel.weatherRoot.viewController.linkWindow(root: appModel.weatherRoot))
         }
         .defaultSize(CGSize(width: 400, height: 800))
     }

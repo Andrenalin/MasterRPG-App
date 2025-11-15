@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct RootGame: View {
-    @Environment(WeatherRoot.self) private var root
+    @Environment(WeatherRootModel.self) private var root
     
     var body: some View {
         GeometryReader { proxy in
@@ -19,7 +19,7 @@ struct WeatherWindow: View {
     let selection: ItemSelection
     
     @Environment(\.dismiss) private var dismiss
-    @Environment(WeatherRoot.self) private var root
+    @Environment(WeatherRootModel.self) private var root
     
     var body: some View {
         GeometryReader { proxy in

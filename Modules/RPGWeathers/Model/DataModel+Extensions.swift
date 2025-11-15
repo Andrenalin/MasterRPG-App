@@ -1,9 +1,35 @@
 // @copyright André Trettin
 
 import AndrenalinKit
+import CoreData
 import CoreSpotlight
 
 extension RPGWeather: CoreDataId {}
+extension RPGWeatherEntry: CoreDataId {}
+
+extension RPGWeather {
+    var entriesModel: [RPGWeatherEntry] {
+        get {
+            guard let all = entries?.allObjects as? [RPGWeatherEntry] else {
+                return []
+            }
+            return all.sorted { $0.index < $1.index }
+        }
+        set {
+            entries = NSSet(array: newValue)
+        }
+    }
+    
+    func entryOrNew(for uuid: UUID) -> RPGWeatherEntry {
+        if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
+            return entry
+        }
+        if let context = managedObjectContext {
+            return RPGWeatherEntry(context: context)
+        }
+        fatalError("ManagedObjectContext should be available!")
+    }
+}
 
 extension RPGWeather: SpotlightIndexerAtyribute {
 #if !os(tvOS)

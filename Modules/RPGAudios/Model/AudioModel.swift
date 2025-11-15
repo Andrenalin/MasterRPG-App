@@ -235,7 +235,7 @@ extension AudioModel: Codable {
         try container.encode(self._displayState, forKey: AudioModel.CodingKeys._displayState)
         try container.encode(self._fileUrl_, forKey: AudioModel.CodingKeys._fileUrl_)
         try container.encode(self._entries_, forKey: AudioModel.CodingKeys._entries_)
-        try container.encode(self._parentId, forKey: AudioModel.CodingKeys._parentId)
+        try container.encodeIfPresent(self._parentId, forKey: AudioModel.CodingKeys._parentId)
     }
 }
 

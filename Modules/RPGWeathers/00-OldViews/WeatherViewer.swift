@@ -8,7 +8,7 @@ struct WeatherViewer: View {
     let size: CGSize
     let useGame: Bool
 
-    @Environment(WeatherRoot.self) private var root
+    @Environment(WeatherRootModel.self) private var root
 
     @State private var isAnimating = false
 
@@ -75,7 +75,7 @@ struct WeatherViewer: View {
     var body: some View {
         ZStack {
             if let photoId = model.photoId {
-                root.viewController.photo(for: photoId, useGame: useGame, size: containerSize)
+                root.viewController.photo(root: root, for: photoId, useGame: useGame, size: containerSize)
             }
 
             if isAnimating || useGame {
@@ -127,5 +127,5 @@ struct WeatherViewer: View {
 
 #Preview {
     WeatherViewer(model: .heavy, size: CGSize(width: 375, height: 375), useGame: false)
-        .environment(WeatherRoot.preview)
+        .environment(WeatherRootModel.preview)
 }

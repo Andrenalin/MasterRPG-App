@@ -228,7 +228,7 @@ extension PdfModel: Codable {
         try container.encode(self._displayState, forKey: PdfModel.CodingKeys._displayState)
         try container.encode(self._fileUrl_, forKey: PdfModel.CodingKeys._fileUrl_)
         try container.encode(self._entries_, forKey: PdfModel.CodingKeys._entries_)
-        try container.encode(self._parentId, forKey: PdfModel.CodingKeys._parentId)
+        try container.encodeIfPresent(self._parentId, forKey: PdfModel.CodingKeys._parentId)
     }
 }
 

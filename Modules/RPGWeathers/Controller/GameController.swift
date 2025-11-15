@@ -3,24 +3,26 @@
 import AndrenalinKit
 import Foundation
 import Observation
+import RPGPhotos
 
 public protocol WeatherGameStorable {}
 
 struct GameController: Sendable {
-    @MainActor
-    init(root: WeatherRoot, itemController: ItemController) {
-        self.root = root
+    @MainActor init(photoRoot: PhotoRoot, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
-        self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(root: root, dataController: nil)
-        self.importController = ImportController(root: root, itemController: internItemController, gameImporter: true)
+        self.exportController = ExportController(photoRoot: photoRoot, itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
 
-    weak var root: WeatherRoot!
     let itemController: ItemController
-    let importController: ImportController
     let exportController: ExportController
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
 
     let gameModel: ItemGameModel
 
@@ -54,12 +56,6 @@ extension GameController: GameControllable {
     }
     var importControllable: any ImportControllable {
         importController as ImportControllable
-    }
-    var rootExportControllable: any ExportControllable {
-        root.rootControllable.gameExportControllable
-    }
-    var rootImportControllable: any ImportControllable {
-        root.rootControllable.gameImportControllable
     }
 }
 

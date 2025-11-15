@@ -7,7 +7,7 @@ struct EntryRow: View {
     let item: ItemRowTreeModel
     let isSelected: Bool
 
-    @Environment(WeatherRoot.self) private var root
+    @Environment(WeatherRootModel.self) private var root
 
 #if os(visionOS) || os(macOS)
     @Environment(\.openWindow) private var openWindow
@@ -26,7 +26,7 @@ struct EntryRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .sheetFullScreen(isPresented: $showItem) {
-                root.viewController.weatherWindow(selection: ItemSelection(itemId: item.model.itemId, entryId: item.model.entryId))
+                root.viewController.weatherWindow(root: root, selection: ItemSelection(itemId: item.model.itemId, entryId: item.model.entryId))
                     .environment(\.showGame, false)
             }
 
@@ -40,5 +40,5 @@ struct EntryRow: View {
 
 #Preview {
     EntryRow(item: .preview, isSelected: true)
-        .environment(WeatherRoot.preview)
+        .environment(WeatherRootModel.preview)
 }

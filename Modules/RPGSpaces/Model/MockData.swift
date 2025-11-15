@@ -58,7 +58,8 @@ struct MockRootViewModifier: ViewModifier {
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif
-            .tint(NetworkModules.space.tint)
+            .tint(root.module.tint)
+            .accentColor(root.module.tint)
     }
 }
 

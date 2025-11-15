@@ -25,7 +25,7 @@ public enum AdventureFactory {
         spaceRoot: SpaceRoot,
         tableRoot: TableRoot,
         valueRoot: ValueRoot,
-        weatherRoot: WeatherRoot
+        weatherRoot: WeatherRootModel
     ) -> AdventureRoot {
         AdventureRoot(
             container: container,

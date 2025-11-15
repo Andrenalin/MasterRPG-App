@@ -3,15 +3,34 @@
 import AndrenalinKit
 import SwiftUI
 
-struct WeatherSectionEditor: View {
-    let editController: EditController
-    
-    @Environment(WeatherRoot.self) private var root
+struct WeatherEditor: View {
+    let model: WeatherModel
+
+    @Environment(WeatherRootModel.self) private var root
     
     var body: some View {
         Section {
-            timeEditorView
+            root.viewController.photoSelection(root: root, selectionModel: root.editController.weatherEditModel.selectionPhoto)
+                .onChange(of: root.editController.weatherEditModel.selectionPhoto.selection) {
+                    withAnimation { root.editController
+                        .add(photoId: root.editController.weatherEditModel.selectionPhoto.itemId) }
+                }
+                .onChange(of: model.photoId, initial: true) {
+                    withAnimation { root.editController.weatherEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
+                }
+        } header: {
+#if os(macOS)
+            Divider()
+                .padding(.top)
+#endif
+            Text("Photo", bundle: .module)
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
 
+        Section {
+            timeEditorView
+            
             cloudsEditorView
         } header: {
 #if os(macOS)
@@ -22,7 +41,7 @@ struct WeatherSectionEditor: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
-
+        
         Section {
             precipitationEditorView
             rainIntensityEditorView
@@ -37,7 +56,7 @@ struct WeatherSectionEditor: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
-
+        
         Section {
             lightningFrequencyEditorView
             lightningMaxBoltsEditorView
@@ -51,12 +70,13 @@ struct WeatherSectionEditor: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
-
     }
+}
 
+private extension WeatherEditor {
     @ViewBuilder
     var timeEditorView: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
 
         LabeledContent {
 #if os(tvOS)
@@ -71,7 +91,7 @@ struct WeatherSectionEditor: View {
 
     @ViewBuilder
     var cloudsEditorView: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         
         LabeledContent {
             Picker("Thickness", selection: $model.cloudThickness) {
@@ -88,7 +108,7 @@ struct WeatherSectionEditor: View {
 
     @ViewBuilder
     var precipitationEditorView: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         
         LabeledContent {
             Picker("Precipitation", selection: $model.stormType) {
@@ -105,7 +125,7 @@ struct WeatherSectionEditor: View {
 
     @ViewBuilder
     var rainIntensityEditorView: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         
         LabeledContent {
 #if os(tvOS)
@@ -120,7 +140,7 @@ struct WeatherSectionEditor: View {
 
     @ViewBuilder
     var rainAngleEditorView: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         
         LabeledContent {
 #if os(tvOS)
@@ -135,7 +155,7 @@ struct WeatherSectionEditor: View {
 
     @ViewBuilder
     var rainDirectionEditorView: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         
         LabeledContent {
             Toggle(isOn: $model.rainDirection) {
@@ -149,7 +169,7 @@ struct WeatherSectionEditor: View {
 
     @ViewBuilder
     var lightningFrequencyEditorView: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         
         LabeledContent {
 #if os(tvOS)
@@ -164,7 +184,7 @@ struct WeatherSectionEditor: View {
 
     @ViewBuilder
     var lightningMaxBoltsEditorView: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         
         LabeledContent {
 #if os(tvOS)
@@ -179,7 +199,7 @@ struct WeatherSectionEditor: View {
 
     @ViewBuilder
     var lightningForkEditorView: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         
         LabeledContent {
 #if os(tvOS)
@@ -193,10 +213,14 @@ struct WeatherSectionEditor: View {
     }
 
     private var formattedTime: String {
-        let model = editController.model
-        
         let start = Calendar.current.startOfDay(for: Date.now)
         let advanced = start.addingTimeInterval(model.time * 24 * 60 * 60)
         return advanced.formatted(date: .omitted, time: .shortened)
     }
+}
+
+#Preview(traits: .mockData) {
+    @Previewable @Environment(WeatherRootModel.self) var root
+
+    WeatherEditor(model: root.itemController.itemOrEmpty(for: MockData.previewId))
 }

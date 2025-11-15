@@ -5,38 +5,36 @@ import Foundation
 import RPGPhotos
 
 struct ExportController: Sendable {
-    @MainActor
-    init(root: WeatherRoot, itemController: ItemController, gameExporter: Bool) {
-        self.root = root
+    @MainActor init(photoRoot: PhotoRoot, itemController: ItemController, gameExporter: Bool) {
+        self.photoRoot = photoRoot
         self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
-
-    weak var root: WeatherRoot!
+    
+    let photoRoot: PhotoRoot
     let itemController: ItemController
-
     public let exportModel: ItemDataExportModel
 }
 
 extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
+        itemController
     }
 
-    public func exportingAll() -> ItemModuleIds {
-        var allIds = root.photoRoot.exportControllable.exportingAll()
+    @MainActor public func exportingAll() -> ItemModuleIds {
+        var allIds = photoRoot.exportControllable.exportingAll()
         allIds.merge(other: ItemModuleIds(dictionary: [itemController.itemDataModel.networkModule: itemController.itemDataModel.items.map { $0 }]))
         return allIds
     }
 
-    public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+    @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         let checkIds = itemIds.ids[itemController.itemDataModel.networkModule, default: []]
         let results = checkIds.compactMap { itemController.itemSync(for: $0)?.id }
         var allIds = itemIds
         allIds.ids[itemController.itemDataModel.networkModule] = results
 
         let photoIds = Set(results.compactMap { itemController.itemSync(for: $0)?.photoId })
-        let newPhotoIds = root.photoRoot.exportControllable.exporting(ids: photoIds)
+        let newPhotoIds = photoRoot.exportControllable.exporting(ids: photoIds)
         allIds.merge(other: newPhotoIds)
 
         return allIds

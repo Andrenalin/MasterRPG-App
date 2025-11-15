@@ -4,31 +4,17 @@ import AndrenalinKit
 import Foundation
 import CoreData
 
-struct DataController: Sendable {
-    @MainActor
-    init(root: WeatherRoot, context: NSManagedObjectContext, token: String) {
-        self.root = root
-        self.changeObserver = CoreDataChangeObserver()
-        self.dataController = CoreDataController<WeatherModel, RPGWeather>(context: context)
-        self.token = token
-
-        changeObserver.observeCoreDataChanges(from: context, entity: RPGWeather.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
-    }
-    
-    weak var root: WeatherRoot!
-    let dataController: CoreDataController<WeatherModel, RPGWeather>
-    var itemControllable: any ItemControllable {
-        root.itemController
-    }
-    let changeObserver: CoreDataChangeObserver
-    let token: String
+struct DataController: DataPersistenceControllable {
+    @MainActor init(context: NSManagedObjectContext, token: String) {
+            self.dataController = CoreDataController<WeatherModel, RPGWeather>(context: context)
+            self.token = token
+        }
+        
+        let dataController: CoreDataController<WeatherModel, RPGWeather>
+        let token: String
 }
 
-extension DataController: CoreDataPersistable, DataPersistenceControllable, SyncDataControllable {
-    var dataControllable: any CoreDataPersistable {
-        self
-    }
-    
+extension DataController: CoreDataPersistable {
     // MARK: model -> viewlmodel
 
     func mapViewModel(_ model: RPGWeather, token: String) -> WeatherModel {
@@ -48,7 +34,9 @@ extension DataController: CoreDataPersistable, DataPersistenceControllable, Sync
             lightningFrequency: Double(model.lightningFrequency),
             lightningMaxBolts: Double(model.lightningMaxBolts),
             lightningForkProbability: Double(model.lightningForkProbability),
-            photoId: model.photoUUID
+            photoId: model.photoUUID,
+            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
+            parentId: model.parentId
         )
     }
 
@@ -71,5 +59,29 @@ extension DataController: CoreDataPersistable, DataPersistenceControllable, Sync
         model.lightningMaxBolts <=> Float(viewModel.lightningMaxBolts)
         model.lightningForkProbability <=> Float(viewModel.lightningForkProbability)
         model.photoUUID <=> viewModel.photoId
+        unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
+            model.entriesModel = viewModel.entries.enumerated().map {
+                let entry = model.entryOrNew(for: $1.id)
+                self.map($1, into: entry, index: $0)
+                return entry
+            }
+        }
+        model.parentId <=> viewModel.parentId
     }
+    
+    // MARK: - ChildEntryViewModel
+
+    private func map(_ model: RPGWeatherEntry) -> ChildEntryModel {
+        ChildEntryModel(
+            id: model.uuid ?? UUID(),
+            childId: (model.childUUID ?? model.uuid ?? UUID())
+        )
+    }
+
+    private func map(_ viewModel: ChildEntryModel, into entry: RPGWeatherEntry, index: Int) {
+        entry.uuid = viewModel.id
+        entry.childUUID = viewModel.childId
+        entry.index = Int16(index)
+    }
+
 }

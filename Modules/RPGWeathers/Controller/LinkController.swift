@@ -7,11 +7,17 @@ import SwiftUI
 import os.log
 
 public struct LinkController: Sendable {
-    weak var root: WeatherRoot!
+    init(photoRoot: PhotoRoot, itemController: ItemController, gameController: GameController) {
+        self.photoRoot = photoRoot
+        self.itemController = itemController
+        self.gameController = gameController
+    }
+    let photoRoot: PhotoRoot
     let itemController: ItemController
+    let gameController: GameController
     
     public var itemControllable: any ItemControllable {
-        itemController as ItemController
+        itemController
     }
 }
 
@@ -30,7 +36,7 @@ extension LinkController: LinkControllable {
                 return text
             }
             Task { @MainActor in
-                await shareResult?.networkActions?.shareId(root.gameController.share(id: itemId))
+                await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
             }
             return text
         } else {
@@ -39,7 +45,7 @@ extension LinkController: LinkControllable {
                     await toggler(itemId, itemControllable.itemDataModel.networkModule)
                 }
             }
-            let item = root.itemController.itemOrEmpty(for: itemId)
+            let item = itemController.itemOrEmpty(for: itemId)
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? "\(specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.itemDataModel.networkModule)) ?? false
@@ -54,7 +60,7 @@ extension LinkController: LinkControllable {
         guard let inspectedItem = itemController.itemSync(for: itemId), let replacedItem = itemController.copy(of: itemId) else { return }
         
         if let photoId = replacedItem.photoId {
-            if !root.photoRoot.linkController.validateLink(itemId: photoId) {
+            if !photoRoot.linkController.validateLink(itemId: photoId) {
                 Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
             }
@@ -75,7 +81,7 @@ extension LinkController: LinkControllable {
 
 public extension LinkController {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
-        guard let item = root.itemController.itemSync(for: itemId) else { return [] }
+        guard let item = itemController.itemSync(for: itemId) else { return [] }
         if let id = item.photoId {
             return [id]
         }

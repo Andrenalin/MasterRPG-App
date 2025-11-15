@@ -8,7 +8,7 @@ struct WeatherRow: View {
     let isSelected: Bool
     let cacheItemListModel: CacheItemListModel
 
-    @Environment(WeatherRoot.self) private var root
+    @Environment(WeatherRootModel.self) private var root
     @Environment(ListModel.self) private var itemListModel
     
     var body: some View {

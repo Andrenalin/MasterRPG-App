@@ -182,7 +182,8 @@ struct RouteRouteDestionationView: View {
             case .values:
                 NewValueRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .weathers:
-                NewWeatherRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                WeatherRootFactory.rootView()
+                    .environment(appModel.weatherRoot)
             case .search:
                 Text("Coming Soon")
             }

@@ -5,25 +5,25 @@ import AndrenalinKit
 import SwiftUI
 
 struct RootNaviList: View {
-    let root: WeatherRoot
+    let root: WeatherRootModel
     let tabId: UUID
     
     var body: some View {
         ManagedNavigationStack {
-            RootExtendedList(editController: root.editController(type: .link), tabId: tabId, selection: false)
+            RootExtendedList(editController: root.editController, tabId: tabId, selection: false)
         }
     }
 }
 
 struct RootList: View {
-    init(root: WeatherRoot, tabId: UUID, selection: Bool = false) {
+    init(root: WeatherRootModel, tabId: UUID, selection: Bool = false) {
         self.root = root
         self.tabId = tabId
         self.selection = selection
         self._currentRoute = State(wrappedValue: WeatherRoute.detail(root.listController(tabId: tabId).model.selectedItem?.model.itemId ?? UUID()))
     }
     
-    let root: WeatherRoot
+    let root: WeatherRootModel
     let tabId: UUID
     let selection: Bool
     
@@ -32,7 +32,7 @@ struct RootList: View {
     
     var body: some View {
         NavigationSplitView(columnVisibility: $column) {
-            RootExtendedList(editController: root.editController(type: .main), tabId: tabId, selection: selection)
+            RootExtendedList(editController: root.editController, tabId: tabId, selection: selection)
                 .frame(minWidth: 250)
         } detail: {
             ManagedPresentationView {
@@ -50,7 +50,7 @@ struct RootExtendedList: View {
     let tabId: UUID
     let selection: Bool
     
-    @Environment(WeatherRoot.self) private var root
+    @Environment(WeatherRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     @State private var firstInit: Bool = true
     

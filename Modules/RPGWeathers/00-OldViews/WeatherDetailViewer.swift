@@ -6,7 +6,7 @@ import SwiftUI
 struct WeatherDetailViewer: View {
     let item: ItemRowTreeModel
     
-    @Environment(WeatherRoot.self) private var root
+    @Environment(WeatherRootModel.self) private var root
     @Environment(\.routeActions) private var routeActions
 
     var body: some View {

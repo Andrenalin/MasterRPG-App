@@ -68,14 +68,3 @@ struct NewValueRoute: View {
                 .environment(appModel.valueRoot)
     }
 }
-
-struct NewWeatherRoute: View {
-    let appModel: AppStore
-    let tabId: UUID
-    let isExtended: Bool
-    
-    var body: some View {
-            WeatherFactory.rootExtendedView(for: appModel.weatherRoot, tabId: tabId)
-                .environment(appModel.weatherRoot)
-    }
-}

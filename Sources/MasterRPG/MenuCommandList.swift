@@ -36,7 +36,7 @@ struct MenuCommandList: Commands {
 
                     SpaceCommands(root: appModel.spaceRoot, navigator: appModel.navigator)
 
-                    WeatherCommands(root: appModel.weatherRoot)
+                    WeatherCommands(root: appModel.weatherRoot, navigator: appModel.navigator)
                 }
             }
         }

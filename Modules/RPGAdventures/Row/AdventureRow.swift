@@ -36,7 +36,7 @@ struct AdventureRow: View {
         case .value, .editor:
             root.valueRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .weather:
-            root.weatherRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
+            root.weatherRoot.viewController.rowView(root: root.weatherRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .adventure:
             rowAdventureView
         default:

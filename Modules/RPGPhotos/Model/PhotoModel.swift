@@ -248,7 +248,7 @@ extension PhotoModel: Codable {
         try container.encode(self._degrees_, forKey: PhotoModel.CodingKeys._degrees_)
         try container.encode(self._fileUrl_, forKey: PhotoModel.CodingKeys._fileUrl_)
         try container.encode(self._entries_, forKey: PhotoModel.CodingKeys._entries_)
-        try container.encode(self._parentId, forKey: PhotoModel.CodingKeys._parentId)
+        try container.encodeIfPresent(self._parentId, forKey: PhotoModel.CodingKeys._parentId)
     }
 }
 

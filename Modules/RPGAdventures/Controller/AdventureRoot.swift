@@ -30,7 +30,7 @@ public final class RootModel: Sendable {
 public final class AdventureRoot: @unchecked Sendable {
 
     @MainActor
-    init(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRoot, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRoot) {
+    init(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRoot, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRootModel) {
         rootModel = RootModel()
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
@@ -98,7 +98,7 @@ public final class AdventureRoot: @unchecked Sendable {
     let spaceRoot: SpaceRoot
     let tableRoot: TableRoot
     let valueRoot: ValueRoot
-    let weatherRoot: WeatherRoot
+    let weatherRoot: WeatherRootModel
 
     @ObservationIgnored
     private(set) var dataController: DataController?

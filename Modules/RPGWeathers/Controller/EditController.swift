@@ -8,19 +8,19 @@ import SwiftUI
 @MainActor @Observable
 final class WeatherEditModel: Sendable {
     let photoSelectionModel = SelectionModel(id: UUID(), filter: .weather)
+    let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
 }
 
 struct EditController: Sendable {
-    @MainActor
-    init(root: WeatherRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
-        self.root = root
-        self.fileUrlDataController = nil
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+        self.linkRegisterControllable = linkRegisterControllable
+        self.itemController = itemController
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
         self.weatherEditModel = WeatherEditModel()
     }
 
-    weak var root: WeatherRoot!
-    let fileUrlDataController: FileUrlDataController?
+    let itemController: ItemController
+    let linkRegisterControllable: any LinkRegisterControllable
     let editorModel: ItemEditorModel
     let weatherEditModel: WeatherEditModel
 }
@@ -29,19 +29,28 @@ extension EditController: EditControllable {
     typealias Model = WeatherModel
     
     var itemControllable: any ItemControllable {
-        root.itemController as (any ItemControllable)
-    }
-
-    var linkRegisterControllable: any LinkRegisterControllable {
-        root.linkRegisterControllable
+        itemController
     }
     
+    var fileUrlDataController: FileUrlDataController? {
+        itemControllable.fileUrlDataController
+    }
+
     @MainActor func didSetModel() {
         guard let id = editorModel.currentItemId, weatherEditModel.photoSelectionModel.id != id else { return }
         weatherEditModel.photoSelectionModel.id = id
         if weatherEditModel.photoSelectionModel.currentValue != model.photoId {
             weatherEditModel.photoSelectionModel.currentValue = model.photoId
         }
+    }
+}
+
+// MARK: - Module Editor
+
+extension EditController {
+    @MainActor func add(photoId: UUID?) {
+        model.photoId = photoId
+        save(with: String(localized: "Change Photo").localizedString)
     }
 }
 

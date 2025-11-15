@@ -11,6 +11,9 @@
         }
       }
     },
+    "%@" : {
+
+    },
     "%lf" : {
       "localizations" : {
         "de" : {
@@ -20,6 +23,9 @@
           }
         }
       }
+    },
+    "%lld Weather" : {
+
     },
     "Angle" : {
       "localizations" : {
@@ -72,6 +78,7 @@
       }
     },
     "Duplicate %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -132,6 +139,7 @@
       }
     },
     "New Weather" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -150,6 +158,12 @@
           }
         }
       }
+    },
+    "Open Weather" : {
+
+    },
+    "Photo" : {
+
     },
     "Precipitation" : {
       "localizations" : {
@@ -172,6 +186,7 @@
       }
     },
     "Redo %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -192,6 +207,7 @@
       }
     },
     "Show Weathers" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -282,6 +298,7 @@
       }
     },
     "Undo %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -300,6 +317,9 @@
           }
         }
       }
+    },
+    "Which Weather?" : {
+
     }
   },
   "version" : "1.0"

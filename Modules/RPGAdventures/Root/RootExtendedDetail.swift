@@ -68,7 +68,7 @@ struct RootDetail: View {
         case .value:
             root.valueRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .weather:
-            root.weatherRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
+            root.weatherRoot.viewController.detailEditor(root: root.weatherRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         default:
             AdventureDetailEditor(editController: editController, model: editController.model)
         }

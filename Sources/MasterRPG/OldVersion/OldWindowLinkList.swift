@@ -115,21 +115,6 @@ struct OldWindowLinkList: Scene {
             .keyboardShortcut("7", modifiers: [.command, .option])
 #endif
 
-            BaseWindow("\(NetworkModules.weather.title) Link", id: NetworkModules.weather.linkWindowId) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.weatherRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
-                }
-                .onDisappear {
-                    appModel.windowStateModel.openWindowState[.weather] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .weather))
-#if os(macOS)
-            .keyboardShortcut("0", modifiers: [.command, .option])
-#endif
-
         }
         .defaultSizeAll(CGSize(width: 400, height: 800))
 #if os(macOS)
@@ -183,15 +168,7 @@ struct OldWindowLinkAltList: Scene {
                         .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            
-            WindowGroup("\(NetworkModules.weather.title) Link", id: NetworkModules.weather.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.weatherRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
+            }            
         }
         .defaultSizeAll(CGSize(width: 400, height: 800))
 #if os(macOS)

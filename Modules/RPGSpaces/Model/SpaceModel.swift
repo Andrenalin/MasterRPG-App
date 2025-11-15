@@ -239,7 +239,7 @@ extension SpaceModel: Codable {
         try container.encode(self._degrees_, forKey: SpaceModel.CodingKeys._degrees_)
         try container.encode(self._fileUrl_, forKey: SpaceModel.CodingKeys._fileUrl_)
         try container.encode(self._entries_, forKey: SpaceModel.CodingKeys._entries_)
-        try container.encode(self._parentId, forKey: SpaceModel.CodingKeys._parentId)
+        try container.encodeIfPresent(self._parentId, forKey: SpaceModel.CodingKeys._parentId)
     }
 }
 

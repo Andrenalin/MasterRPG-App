@@ -61,7 +61,7 @@ public final class AppStore: Sendable {
     @ObservationIgnored public let spaceRoot: SpaceRoot
     @ObservationIgnored public let tableRoot: TableRoot
     @ObservationIgnored public let valueRoot: ValueRoot
-    @ObservationIgnored public let weatherRoot: WeatherRoot
+    @ObservationIgnored public let weatherRoot: WeatherRootModel
     
     private let root: RootManager
     
@@ -92,7 +92,7 @@ public final class AppStore: Sendable {
         let spaceRoot = SpaceFactory.root(container: modelContainer)
         
         let tableRoot = TableFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot)
-        let weatherRoot = WeatherFactory.root(container: modelContainer, photoRoot: photoRoot)
+        let weatherRoot = WeatherRootFactory.root(container: modelContainer, photoRoot: photoRoot)
         
         let valueRoot = ValueFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         

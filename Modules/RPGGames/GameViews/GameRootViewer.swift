@@ -71,7 +71,7 @@ struct GameRootViewer<MapContent: View>: View {
                 root.tableRoot.viewController.gameTableView()
                     .id(root.tableRoot.gameControllable.gameModel.currentItemId ?? UUID())
             case .weather:
-                root.weatherRoot.viewController.gameWeatherView()
+                root.weatherRoot.viewController.gameWeatherView(root: root.weatherRoot)
                     .id(root.weatherRoot.gameControllable.gameModel.currentItemId ?? UUID())
             default:
                 defaultContentView()

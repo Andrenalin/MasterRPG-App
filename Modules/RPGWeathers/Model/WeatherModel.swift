@@ -6,7 +6,7 @@ import Observation
 
 @Observable
 public final class WeatherModel: Identifiable, @unchecked Sendable {
-    public init(id: UUID, name: String, description: String, tags: [String], category: ItemListCategory = .scenario, displayState: Int = 0, weatherUpdate: UUID = UUID(), time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?) {
+    public init(id: UUID, name: String, description: String, tags: [String], category: ItemListCategory = .scenario, displayState: Int = 0, weatherUpdate: UUID = UUID(), time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?, entries: [ChildEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -23,9 +23,11 @@ public final class WeatherModel: Identifiable, @unchecked Sendable {
         self.lightningMaxBolts = lightningMaxBolts
         self.lightningForkProbability = lightningForkProbability
         self.photoId = photoId
+        entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self.parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, weatherUpdate: CRDT<UUID>, time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?) {
+    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, weatherUpdate: CRDT<UUID>, time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?, entries: CRDTDataUpdate<[ChildEntryModel]>, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -42,6 +44,8 @@ public final class WeatherModel: Identifiable, @unchecked Sendable {
         self.lightningMaxBolts = lightningMaxBolts
         self.lightningForkProbability = lightningForkProbability
         self.photoId = photoId
+        entries_ = entries
+        self.parentId = parentId
     }
 
     public init(from decoder: Decoder) throws {
@@ -63,6 +67,9 @@ public final class WeatherModel: Identifiable, @unchecked Sendable {
         self._lightningMaxBolts = try container.decode(Double.self, forKey: WeatherModel.CodingKeys._lightningMaxBolts)
         self._lightningForkProbability = try container.decode(Double.self, forKey: WeatherModel.CodingKeys._lightningForkProbability)
         self._photoId = try container.decodeIfPresent(UUID.self, forKey: WeatherModel.CodingKeys._photoId)
+        self._entries_ = try container.decode(CRDTDataUpdate<[ChildEntryModel]>.self, forKey: WeatherModel.CodingKeys._entries_)
+        self._parentId = try container.decodeIfPresent(UUID.self, forKey: WeatherModel.CodingKeys._parentId)
+
     }
 
     public var id: UUID
@@ -92,8 +99,6 @@ public final class WeatherModel: Identifiable, @unchecked Sendable {
 
     public var displayState: Int
 
-    public var entries: [EmtpyEntryViewModel] = []
-
     var weatherUpdate_: CRDT<UUID>
 
     public var time: Double
@@ -109,6 +114,12 @@ public final class WeatherModel: Identifiable, @unchecked Sendable {
 
     public var photoId: UUID?
     
+    public var entries: [ChildEntryModel] {
+        get { entries_.wrappedValue }
+        set { entries_.wrappedValue = newValue }
+    }
+    var entries_: CRDTDataUpdate<[ChildEntryModel]>
+
     public var parentId: UUID? = nil
 }
 
@@ -160,7 +171,9 @@ extension WeatherModel: ItemDiffComparable {
             lightningFrequency: shouldUpdate ? lightningFrequency : other.lightningFrequency,
             lightningMaxBolts: shouldUpdate ? lightningMaxBolts : other.lightningMaxBolts,
             lightningForkProbability: shouldUpdate ? lightningForkProbability : other.lightningForkProbability,
-            photoId: shouldUpdate ? photoId : other.photoId
+            photoId: shouldUpdate ? photoId : other.photoId,
+            entries: entries_.merged(other: other.entries_),
+            parentId: other.parentId
         )
     }
 
@@ -178,14 +191,16 @@ extension WeatherModel: ItemDiffComparable {
         lightningFrequency == other.lightningFrequency &&
         lightningMaxBolts == other.lightningMaxBolts &&
         lightningForkProbability == other.lightningForkProbability &&
-        photoId == other.photoId
+        photoId == other.photoId &&
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId
     }
 }
 
 extension WeatherModel: ItemDuplicatable {
     public func duplicate() -> WeatherModel {
         let copyName = duplicateName(from: name)
-        return WeatherModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId)
+        return WeatherModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId)
     }
 }
 
@@ -195,7 +210,6 @@ extension WeatherModel: ItemDataAccessable {
         set(newValue) {}
     }
 
-    public typealias Entry = EmtpyEntryViewModel
     public static var empty: WeatherModel { empty(UUID()) }
     public static func empty(_ id: UUID) -> WeatherModel {
         WeatherModel(id: id, name: "", description: "", tags: [], time: 0.0, cloudThickness: .none, stormType: .none, rainAngle: 0, rainIntensity: 0, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
@@ -203,7 +217,7 @@ extension WeatherModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .weather
 
     public func copy() -> WeatherModel {
-        WeatherModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, weatherUpdate: weatherUpdate_, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId)
+        WeatherModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, weatherUpdate: weatherUpdate_, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries_, parentId: parentId)
     }
 
     public func filter(_ filter: String) -> Bool {
@@ -242,12 +256,20 @@ extension WeatherModel: ItemDataAccessable {
         lightningMaxBolts <=> model.lightningMaxBolts
         lightningForkProbability <=> model.lightningForkProbability
         photoId <=> model.photoId
+        entries_ <=> model.entries_
+        parentId <=> parentId
         return true
     }
-
-    public subscript(id: UUID) -> EmtpyEntryViewModel {
-        get { .empty }
-        set {}
+    
+    public subscript(id: UUID) -> ChildEntryModel {
+        get {
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return ChildEntryModel.empty(id) }
+            return entries[index]
+        }
+        set {
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+            entries[index] = newValue
+        }
     }
 
     public func urlName(entryId: UUID) -> String {
@@ -277,6 +299,8 @@ extension WeatherModel: Codable {
         case _lightningMaxBolts
         case _lightningForkProbability
         case _photoId
+        case _entries_
+        case _parentId
     }
 
     public final func encode(to encoder: Encoder) throws {
@@ -298,6 +322,9 @@ extension WeatherModel: Codable {
         try container.encode(self._lightningMaxBolts, forKey: WeatherModel.CodingKeys._lightningMaxBolts)
         try container.encode(self._lightningForkProbability, forKey: WeatherModel.CodingKeys._lightningForkProbability)
         try container.encodeIfPresent(self._photoId, forKey: WeatherModel.CodingKeys._photoId)
+        try container.encode(self._entries_, forKey: WeatherModel.CodingKeys._entries_)
+        try container.encodeIfPresent(self._parentId, forKey: WeatherModel.CodingKeys._parentId)
+
     }
 }
 

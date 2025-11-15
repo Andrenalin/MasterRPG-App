@@ -8,6 +8,7 @@ import SwiftUI
 import RPGPdfs
 import RPGPhotos
 import RPGSpaces
+import RPGWeathers
 
 struct WindowViewerList: Scene {
     let appModel: AppStore
@@ -35,9 +36,9 @@ struct WindowViewerList: Scene {
 //                appModel.tableRoot.viewController.windowViewer(root: appModel.tableRoot, selection: selection)
 //            }
 //
-//            windowGroup(model: appModel, module: .weather) { selection in
-//                appModel.weatherRoot.viewController.windowViewer(root: appModel.weatherRoot, selection: selection)
-//            }
+            windowGroup(model: appModel, module: .weather) { selection in
+                appModel.weatherRoot.viewController.windowViewer(root: appModel.weatherRoot, selection: selection)
+            }
         }
         .defaultSize(CGSize(width: 600, height: 800))
     }

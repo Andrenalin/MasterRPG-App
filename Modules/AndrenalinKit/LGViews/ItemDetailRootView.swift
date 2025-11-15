@@ -33,7 +33,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     let editorAsBackground: Bool
     let header: Header
     let editor: Editor
-    let inspector: Inspector
+    let inspector: Inspector?
     let overlay: Overlay
     let hasOverlay: Bool
     let entryEditor: EntryEditor

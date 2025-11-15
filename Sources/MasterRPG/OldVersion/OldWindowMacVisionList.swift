@@ -51,29 +51,7 @@ struct OldWindowMacVisionList: Scene {
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
             .defaultWindowPlacementAll( .below(WindowIdentifier.game.rawValue))
-            
-            WindowGroup("Pdf Viewer", id: WindowIdentifier.pdfViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.pdfRoot.viewController.pdfWindow(root: appModel.pdfRoot, selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
-                        .accentColor(.teal)
-                        .tint(.teal)
-                        .frame(minWidth: 600, minHeight: 400)
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll( .below(WindowIdentifier.game.rawValue))
-            
-            WindowGroup("Photo Viewer", id: WindowIdentifier.photoViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.photoRoot.viewController.photoWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
-                        .accentColor(.teal)
-                        .tint(.teal)
-                        .frame(minWidth: 600, minHeight: 400)
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll( .above(WindowIdentifier.game.rawValue))
-            
+                        
             WindowGroup("Character Viewer", id: WindowIdentifier.valueViewer.rawValue, for: ItemSelection.self) { $selection in
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.valueRoot.viewController.characterWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
@@ -95,17 +73,6 @@ struct OldWindowMacVisionList: Scene {
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
             .defaultWindowPlacementAll( .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue))
-            
-            WindowGroup("Weather Viewer", id: WindowIdentifier.weatherViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.weatherRoot.viewController.weatherWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
-                        .accentColor(.teal)
-                        .tint(.teal)
-                        .frame(minWidth: 600, minHeight: 400)
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll( .above(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue))
             
         }
         .defaultSize(CGSize(width: 600, height: 800))

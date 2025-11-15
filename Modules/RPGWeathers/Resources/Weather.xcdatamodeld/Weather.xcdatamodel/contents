@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788" systemVersion="24E248" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24411" systemVersion="25B78" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="RPGWeather" representedClassName="RPGWeather" syncable="YES" codeGenerationType="class">
         <attribute name="cloudThickness" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="entriesUpdate" attributeType="String" defaultValueString=""/>
         <attribute name="information" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>
         <attribute name="lightningForkProbability" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="lightningFrequency" attributeType="Float" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="lightningMaxBolts" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="name" attributeType="String" defaultValueString="New" spotlightIndexingEnabled="YES"/>
+        <attribute name="parentId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="photoUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="rainAngle" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="rainIntensity" attributeType="Float" defaultValueString="0" usesScalarValueType="YES"/>
@@ -17,5 +19,12 @@
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="weatherCategory" attributeType="String" defaultValueString=""/>
         <attribute name="weatherUpdate" attributeType="String" defaultValueString=""/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGWeatherEntry" inverseName="weather" inverseEntity="RPGWeatherEntry"/>
+    </entity>
+    <entity name="RPGWeatherEntry" representedClassName="RPGWeatherEntry" syncable="YES" codeGenerationType="class">
+        <attribute name="childUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="weather" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGWeather" inverseName="entries" inverseEntity="RPGWeather"/>
     </entity>
 </model>

@@ -262,7 +262,7 @@ extension ValueModel: Codable {
         try container.encode(self._photoId_, forKey: ValueModel.CodingKeys._photoId_)
         try container.encode(self._photos_, forKey: ValueModel.CodingKeys._photos_)
         try container.encode(self._entries_, forKey: ValueModel.CodingKeys._entries_)
-        try container.encode(self._parentId, forKey: ValueModel.CodingKeys._parentId)
+        try container.encodeIfPresent(self._parentId, forKey: ValueModel.CodingKeys._parentId)
     }
 }
 

@@ -78,6 +78,9 @@
         }
       }
     },
+    "Choose %@" : {
+
+    },
     "Convert Photo to JPEG" : {
       "localizations" : {
         "de" : {
@@ -97,6 +100,9 @@
           }
         }
       }
+    },
+    "Drop %@" : {
+
     },
     "Duplicate %@" : {
       "extractionState" : "stale",

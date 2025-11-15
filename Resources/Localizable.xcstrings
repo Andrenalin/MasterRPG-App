@@ -246,6 +246,7 @@
       }
     },
     "Pdf Viewer" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -256,6 +257,7 @@
       }
     },
     "Photo Viewer" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -326,6 +328,7 @@
       }
     },
     "Weather Viewer" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
