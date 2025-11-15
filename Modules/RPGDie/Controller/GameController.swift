@@ -159,7 +159,7 @@ extension GameController: DiceGameStorable {
                 await focus(on: diceId)
             } else {
                 let gameDice = DiceModel.empty(UUID())
-                gameDice.entries.append(DieModel.die20)
+                gameDice.dice.append(DieModel.die20)
                 setGame(item: gameDice, itemId: gameDice.id)
                 await focus(on: gameDice.id)
             }
@@ -215,7 +215,7 @@ extension GameController {
     
     @MainActor
     func hasResults(itemId: UUID) -> Bool {
-        !gameItem(for: itemId).entries.flatMap { $0.result }.isEmpty
+        !gameItem(for: itemId).dice.flatMap { $0.result }.isEmpty
     }
     
     @MainActor
@@ -339,10 +339,10 @@ extension GameController {
     func calculate(itemId: UUID) -> DiceResultModel {
         let item = gameItem(for: itemId)
         var result = DiceResultModel(diceModel: item)
-        guard item.entries.reduce(0, { $0 + $1.result.count }) > 0 else { return result }
+        guard item.dice.reduce(0, { $0 + $1.result.count }) > 0 else { return result }
         
         result.result = .rolled
-        let text = item.entries.compactMap {
+        let text = item.dice.compactMap {
             guard !$0.result.isEmpty else { return nil }
             return $0.result.map { "\($0)" }.joined(separator: ",")
         }.joined(separator: "|")
@@ -406,7 +406,7 @@ extension GameController {
     @MainActor
     func coup(for itemId: UUID) -> Bool {
         let item = gameItem(for: itemId)
-        let allResults = item.coupOnlyOnFirstDie ? [item.entries.first?.result.first ?? 0] : item.entries.compactMap { $0.result.first }
+        let allResults = item.coupOnlyOnFirstDie ? [item.dice.first?.result.first ?? 0] : item.dice.compactMap { $0.result.first }
         let coup = allResults.contains(where: { value in item.coupValues.contains(where: { $0.isDiceValue(value) }) })
         if coup { return true }
         let result = allResults.reduce(0) { $0 + $1 }
@@ -416,7 +416,7 @@ extension GameController {
     @MainActor
     func diceSuccess(for itemId: UUID) -> [(UUID, [Bool])] {
         let item = gameItem(for: itemId)
-        guard item.entries.reduce(0, { $0 + $1.result.count }) > 0,
+        guard item.dice.reduce(0, { $0 + $1.result.count }) > 0,
               !fumble(for: itemId),
               item.sumUp else { return [] }
         let orderedDice = reorder(for: itemId)
@@ -445,7 +445,7 @@ extension GameController {
     @MainActor
     func fumble(for itemId: UUID) -> Bool {
         let item = gameItem(for: itemId)
-        let allResults = item.fumbleOnlyOnFirstDie ? [item.entries.first?.result.first ?? 0] : item.entries.compactMap { $0.result.first }
+        let allResults = item.fumbleOnlyOnFirstDie ? [item.dice.first?.result.first ?? 0] : item.dice.compactMap { $0.result.first }
         let fumble = allResults.contains(where: { value in item.fumbleValues.contains(where: { $0.isDiceValue(value) }) })
         if fumble { return true }
         let result = allResults.reduce(0) { $0 + $1 }
@@ -455,7 +455,7 @@ extension GameController {
     @MainActor
     func maxValuePerDice(for index: Int, itemId: UUID) -> Int {
         let item = gameItem(for: itemId)
-        let maxDieValue = item.entries.first?.die.max ?? 1
+        let maxDieValue = item.dice.first?.die.max ?? 1
         guard item.addDiceEvery > 0 else { return maxDieValue }
         let maxValue = Int(item.compareValue)
         return max(0, min((maxValue + maxDieValue) - item.addDiceEvery * index, maxDieValue))
@@ -494,8 +494,8 @@ extension GameController {
     @MainActor
     func reorder(for itemId: UUID) -> [DieModel] {
         let item = gameItem(for: itemId)
-        guard item.reorderDice else { return item.entries }
-        let dice = item.entries.sorted {
+        guard item.reorderDice else { return item.dice }
+        let dice = item.dice.sorted {
             var first = $0.result.first ?? 0
             var second = $1.result.first ?? 0
             if let firstRerole = item.rerollOptions.first(where: { $0.number == first }) {
@@ -519,7 +519,7 @@ extension GameController {
     
     @MainActor
     func reset(for itemId: UUID) {
-        gameItem(for: itemId).entries = gameItem(for: itemId).entries.map { die in
+        gameItem(for: itemId).dice = gameItem(for: itemId).dice.map { die in
             die.resetResults()
         }
     }
@@ -535,10 +535,10 @@ extension GameController {
         }
         
         let item = gameItem(for: itemId)
-        if let die, let index = item.entries.firstIndex(where: { $0.id == die.id }) {
-            gameItem(for: itemId).entries[index] = die.role(reroleOptions: item.rerollOptions)
+        if let die, let index = item.dice.firstIndex(where: { $0.id == die.id }) {
+            gameItem(for: itemId).dice[index] = die.role(reroleOptions: item.rerollOptions)
         } else {
-            gameItem(for: itemId).entries = gameItem(for: itemId).entries.map { die in
+            gameItem(for: itemId).dice = gameItem(for: itemId).dice.map { die in
                 die.role(reroleOptions: item.rerollOptions)
             }
         }

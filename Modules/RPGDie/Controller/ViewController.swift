@@ -158,7 +158,7 @@ extension ViewController {
 
     @MainActor
     func height(for dice: DiceModel, minResult: Int = 0, maxResult: Int = 25) -> CGFloat {
-        var values = dice.entries.reduce(0) { $1.result.count > $0 ? $1.result.count : $0 } - 1
+        var values = dice.dice.reduce(0) { $1.result.count > $0 ? $1.result.count : $0 } - 1
         values = min(max(minResult, values), maxResult)
         return CGFloat(values) * 36.0 + 82.0
     }

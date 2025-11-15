@@ -67,7 +67,7 @@ public final class WeatherModel: Identifiable, @unchecked Sendable {
         self._lightningMaxBolts = try container.decode(Double.self, forKey: WeatherModel.CodingKeys._lightningMaxBolts)
         self._lightningForkProbability = try container.decode(Double.self, forKey: WeatherModel.CodingKeys._lightningForkProbability)
         self._photoId = try container.decodeIfPresent(UUID.self, forKey: WeatherModel.CodingKeys._photoId)
-        self._entries_ = try container.decode(CRDTDataUpdate<[ChildEntryModel]>.self, forKey: WeatherModel.CodingKeys._entries_)
+        self._entries_ = try container.decodeIfPresent(CRDTDataUpdate<[ChildEntryModel]>.self, forKey: WeatherModel.CodingKeys._entries_) ?? CRDTDataUpdate<[ChildEntryModel]>(wrappedValue: [])
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: WeatherModel.CodingKeys._parentId)
 
     }

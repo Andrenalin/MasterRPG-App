@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788" systemVersion="24E248" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24411" systemVersion="25B78" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="RPGDice" representedClassName="RPGDice" syncable="YES" codeGenerationType="class">
         <attribute name="addDiceEvery" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="compareOption" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
@@ -10,16 +10,25 @@
         <attribute name="diceCategory" attributeType="String" defaultValueString=""/>
         <attribute name="diceUpdate" attributeType="String" defaultValueString=""/>
         <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="entriesUpdate" attributeType="String" defaultValueString=""/>
         <attribute name="fumbleOnlyOnFirstDie" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="fumbleValues" attributeType="String" defaultValueString=""/>
         <attribute name="information" optional="YES" attributeType="String" spotlightIndexingEnabled="YES"/>
         <attribute name="modifier" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="String" spotlightIndexingEnabled="YES"/>
+        <attribute name="parentId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="percentDice" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="reorderDice" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="rerollOptions" attributeType="String" defaultValueString=""/>
         <attribute name="sumUp" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
         <attribute name="tags" optional="YES" attributeType="String"/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGDiceEntry" inverseName="die" inverseEntity="RPGDiceEntry"/>
+    </entity>
+    <entity name="RPGDiceEntry" representedClassName="RPGDiceEntry" syncable="YES" codeGenerationType="class">
+        <attribute name="childUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="die" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGDice" inverseName="entries" inverseEntity="RPGDice"/>
     </entity>
 </model>

@@ -5,6 +5,31 @@ import CoreData
 import CoreSpotlight
 
 extension RPGDice: CoreDataId {}
+extension RPGDiceEntry: CoreDataId {}
+
+extension RPGDice {
+    var entriesModel: [RPGDiceEntry] {
+        get {
+            guard let all = entries?.allObjects as? [RPGDiceEntry] else {
+                return []
+            }
+            return all.sorted { $0.index < $1.index }
+        }
+        set {
+            entries = NSSet(array: newValue)
+        }
+    }
+    
+    func entryOrNew(for uuid: UUID) -> RPGDiceEntry {
+        if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
+            return entry
+        }
+        if let context = managedObjectContext {
+            return RPGDiceEntry(context: context)
+        }
+        fatalError("ManagedObjectContext should be available!")
+    }
+}
 
 extension RPGDice: SpotlightIndexerAtyribute {
 #if !os(tvOS)

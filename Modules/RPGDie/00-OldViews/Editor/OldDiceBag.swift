@@ -11,7 +11,7 @@ struct OldDiceBag: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(root.itemController.diceBag.entries) { die in
+                ForEach(root.itemController.diceBag.dice) { die in
                     Button {
                         addAction(generateDie(from: die.die))
                     } label: {

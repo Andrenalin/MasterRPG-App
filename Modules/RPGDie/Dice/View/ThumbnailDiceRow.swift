@@ -11,7 +11,7 @@ struct ThumbnailDiceRow: View {
     
     var body: some View {
         let _ = Self._printChanges()
-        if let die = model?.entries.first {
+        if let die = model?.dice.first {
             ThumbnailDice(die: die)
         }
     }

@@ -15,7 +15,7 @@ struct MainRow: View {
 
     var body: some View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheItemListModel, name: \.name, tags: \.tags, description: \.description, isSelected: isSelected, thumbnail: {
-            if let die = model.entries.first {
+            if let die = model.dice.first {
                 DieViewerView(gameController: root.gameController, diceId: model.id, die: die, withoutResult: true, resultColor: [])
             }
         }, tagAdds: {

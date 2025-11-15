@@ -37,7 +37,9 @@ extension DataController: CoreDataPersistable {
             fumbleOnlyOnFirstDie: model.fumbleOnlyOnFirstDie,
             rerollOptions: reroleOptions(from: model.rerollOptions),
             reorderDice: model.reorderDice,
-            addDiceEvery: Int(model.addDiceEvery)
+            addDiceEvery: Int(model.addDiceEvery),
+            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
+            parentId: model.parentId
         )
     }
 
@@ -51,7 +53,7 @@ extension DataController: CoreDataPersistable {
         model.diceCategory <=> viewModel.category_.rawValue
         model.displayState <=> Int32(viewModel.displayState)
         unequalSet(lhs: &model.diceUpdate, rhs: viewModel.dice_.$update.rawValue) {
-            model.dice = viewModel.entries.map { $0.die.text }.joined(separator: ",")
+            model.dice = viewModel.dice.map { $0.die.text }.joined(separator: ",")
         }
         model.sumUp <=> viewModel.sumUp
         model.modifier <=> Float(viewModel.modifier)
@@ -65,6 +67,14 @@ extension DataController: CoreDataPersistable {
         model.rerollOptions <=> viewModel.rerollOptions.map { "\($0.number)/\($0.value)/\($0.maxDiceValue ? "1" : "0")" }.joined(separator: ",")
         model.reorderDice <=> viewModel.reorderDice
         model.addDiceEvery <=> Int16(viewModel.addDiceEvery)
+        unequalSet(lhs: &model.entriesUpdate, rhs: viewModel.entries_.$update.rawValue) {
+            model.entriesModel = viewModel.entries.enumerated().map {
+                let entry = model.entryOrNew(for: $1.id)
+                self.map($1, into: entry, index: $0)
+                return entry
+            }
+        }
+        model.parentId <=> viewModel.parentId
     }
 
     // MARK: - other mappers
@@ -102,5 +112,20 @@ extension DataController: CoreDataPersistable {
             }
             return DieModel(id: UUID(), die: RawDie(text: $0))
         }
+    }
+    
+    // MARK: - ChildEntryViewModel
+
+    private func map(_ model: RPGDiceEntry) -> ChildEntryModel {
+        ChildEntryModel(
+            id: model.uuid ?? UUID(),
+            childId: (model.childUUID ?? model.uuid ?? UUID())
+        )
+    }
+
+    private func map(_ viewModel: ChildEntryModel, into entry: RPGDiceEntry, index: Int) {
+        entry.uuid = viewModel.id
+        entry.childUUID = viewModel.childId
+        entry.index = Int16(index)
     }
 }

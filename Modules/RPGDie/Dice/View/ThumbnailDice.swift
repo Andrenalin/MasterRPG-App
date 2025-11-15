@@ -31,7 +31,7 @@ struct ThumbnailDice: View {
 #Preview(traits: .mockData) {
     @Previewable @Environment(DiceRootModel.self) var root
 
-    ThumbnailDice(die: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]).entries[0], withoutResult: false)
+    ThumbnailDice(die: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]).dice[0], withoutResult: false)
     
-    ThumbnailDice(die: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[1]).entries[0], withoutResult: false)
+    ThumbnailDice(die: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[1]).dice[0], withoutResult: false)
 }

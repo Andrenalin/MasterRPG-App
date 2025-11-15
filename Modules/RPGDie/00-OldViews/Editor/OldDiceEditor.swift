@@ -18,7 +18,7 @@ struct OldDiceEditor: View {
 
             LabeledContent {
                 OldDiceBag { die in
-                    Task { await editController.add(die: die) }
+                    Task { editController.add(die: die) }
                 }
             } label: {
                 Text("Add", bundle: .module)
@@ -40,9 +40,9 @@ private extension OldDiceEditor {
     var diceView: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                ForEach(editController.model.entries) { die in
+                ForEach(editController.model.dice) { die in
                     Button {
-                        Task { await editController.remove(die: die) }
+                        Task { editController.remove(die: die) }
                     } label: {
                         HStack(alignment: .top, spacing: 8) {
                             DieViewerView(gameController: root.gameController, diceId: UUID(), die: die, withoutResult: true, resultColor: [])

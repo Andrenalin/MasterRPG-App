@@ -3,7 +3,6 @@
 import AndrenalinKit
 import CoreExternalRPG
 import SwiftUI
-import RPGPhotos
 
 struct DetailRootView: View {
     init(root: DiceRootModel, editController: EditController, model: DiceModel, isSubFolder: Bool) {

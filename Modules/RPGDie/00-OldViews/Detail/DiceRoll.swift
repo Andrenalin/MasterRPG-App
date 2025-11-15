@@ -13,7 +13,7 @@ struct DiceRoll: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top, spacing: valueFor(iOS: 0, macOS: 0, tvOS: 8, visionOS: 0)) {
-                ForEach(root.gameController.gameItem(for: itemId).entries) { die in
+                ForEach(root.gameController.gameItem(for: itemId).dice) { die in
                     Button {
                         Task {
                             await roleDice(die)

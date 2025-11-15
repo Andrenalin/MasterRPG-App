@@ -34,7 +34,7 @@ private extension OLdSpecialOptionEditor {
             editController.model.addDiceEvery > 0
         } set: {
             if $0 {
-                let newMax = editController.model.entries.first?.die.max ?? 20
+                let newMax = editController.model.dice.first?.die.max ?? 20
                 if newMax != editController.model.addDiceEvery {
                     editController.model.addDiceEvery = newMax
                     editController.save(with: String(localized: "Change add dice every").localizedString)

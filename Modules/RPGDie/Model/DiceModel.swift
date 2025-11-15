@@ -7,7 +7,7 @@ import SwiftUI
 
 @Observable
 public final class DiceModel: Identifiable, @unchecked Sendable {
-    public init(id: UUID, name: String = "", description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, dice: [DieModel], sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceModel.CompareValue = .off, compareValue: Double = 0.0, coupValues: [DiceModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, reroleOptions: [DiceModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, resultCategory: ResultCategory? = nil) {
+    public init(id: UUID, name: String = "", description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, dice: [DieModel], sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceModel.CompareValue = .off, compareValue: Double = 0.0, coupValues: [DiceModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, reroleOptions: [DiceModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, resultCategory: ResultCategory? = nil, entries: [ChildEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -28,9 +28,11 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         self.reorderDice = reorderDice
         self.addDiceEvery = addDiceEvery
         self.resultCategory = resultCategory
+        entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self.parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, dice: CRDTDataUpdate<[DieModel]>, sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceModel.CompareValue = .off, compareValue: Double = 0.0, coupValues: [DiceModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [DiceModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, resultCategory: ResultCategory? = nil) {
+    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, dice: CRDTDataUpdate<[DieModel]>, sumUp: Bool = true, modifier: Double = 0.0, percentDice: Bool = false, compareOption: DiceModel.CompareValue = .off, compareValue: Double = 0.0, coupValues: [DiceModel.CoupFumbleOption] = [], coupOnlyOnFirstDie: Bool = false, fumbleValues: [DiceModel.CoupFumbleOption] = [], fumbleOnlyOnFirstDie: Bool = false, rerollOptions: [DiceModel.RerollOption] = [], reorderDice: Bool = false, addDiceEvery: Int = 0, resultCategory: ResultCategory? = nil, entries: CRDTDataUpdate<[ChildEntryModel]>, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -51,6 +53,8 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         self.reorderDice = reorderDice
         self.addDiceEvery = addDiceEvery
         self.resultCategory = resultCategory
+        entries_ = entries
+        self.parentId = parentId
     }
 
     public init(from decoder: Decoder) throws {
@@ -76,6 +80,8 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         self._reorderDice = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._reorderDice)
         self._addDiceEvery = try container.decode(Int.self, forKey: DiceModel.CodingKeys._addDiceEvery)
         self._resultCategory = try container.decodeIfPresent(ResultCategory.self, forKey: DiceModel.CodingKeys._resultCategory)
+        self._entries_ = try container.decodeIfPresent(CRDTDataUpdate<[ChildEntryModel]>.self, forKey: DiceModel.CodingKeys._entries_) ?? CRDTDataUpdate<[ChildEntryModel]>(wrappedValue: [])
+        self._parentId = try container.decodeIfPresent(UUID.self, forKey: DiceModel.CodingKeys._parentId)
     }
     
     public var id: UUID
@@ -105,7 +111,7 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
 
     public var displayState: Int
 
-    public var entries: [DieModel] {
+    public var dice: [DieModel] {
         get { dice_.wrappedValue }
         set { dice_.wrappedValue = newValue }
     }
@@ -297,6 +303,12 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
 
     var resultCategory: ResultCategory? = nil
     
+    public var entries: [ChildEntryModel] {
+        get { entries_.wrappedValue }
+        set { entries_.wrappedValue = newValue }
+    }
+    var entries_: CRDTDataUpdate<[ChildEntryModel]>
+
     public var parentId: UUID? = nil
 }
 
@@ -312,12 +324,12 @@ extension DiceModel {
     }
     
     var canPercentDice: Bool {
-        guard entries.count == 2 else { return false }
-        return entries[0].die.sides == .ten && entries[1].die.sides == .ten
+        guard dice.count == 2 else { return false }
+        return dice[0].die.sides == .ten && dice[1].die.sides == .ten
     }
     
     var inlineText: String {
-        var diceModel = RawDice(dice: entries.map { $0.die })
+        var diceModel = RawDice(dice: dice.map { $0.die })
         diceModel.modifier = Int(modifier)
         return diceModel.text
     }
@@ -328,29 +340,29 @@ extension DiceModel {
         if number <= 0 {
             number = 1
         }
-        if entries.count != number, let die = entries.first {
-            entries = (1 ... number).map { _ in die.duplicate() }
+        if dice.count != number, let die = dice.first {
+            dice = (1 ... number).map { _ in die.duplicate() }
         }
     }
     
     func applyResult(text: String) {
         let diceResult = text.split(separator: "|")
-        guard diceResult.count == entries.count else { return }
-        for index in 0 ..< entries.count {
+        guard diceResult.count == dice.count else { return }
+        for index in 0 ..< dice.count {
             let dieResult = diceResult[index]
                 .split(separator: ",", omittingEmptySubsequences: false)
                 .compactMap { Int($0) }
-            let die = entries[index].applyResult(values: dieResult)
-            entries[index] = die
+            let die = dice[index].applyResult(values: dieResult)
+            dice[index] = die
         }
     }
     
     var minValue: Int {
-        entries.reduce(0) { $0 + $1.die.min }
+        dice.reduce(0) { $0 + $1.die.min }
     }
     
     var maxValue: Int {
-        entries.reduce(0) { $0 + $1.die.max }
+        dice.reduce(0) { $0 + $1.die.max }
     }
 }
 
@@ -386,7 +398,9 @@ extension DiceModel: ItemDiffComparable {
             rerollOptions: isLeftDice ? rerollOptions : other.rerollOptions,
             reorderDice: isLeftDice ? reorderDice : other.reorderDice,
             addDiceEvery: isLeftDice ? addDiceEvery : other.addDiceEvery,
-            resultCategory: resultCategory
+            resultCategory: resultCategory,
+            entries: entries_.merged(other: other.entries_),
+            parentId: other.parentId
         )
     }
 
@@ -408,17 +422,19 @@ extension DiceModel: ItemDiffComparable {
         rerollOptions == other.rerollOptions &&
         reorderDice == other.reorderDice &&
         addDiceEvery == other.addDiceEvery &&
-        resultCategory == other.resultCategory
+        resultCategory == other.resultCategory &&
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId
     }
 }
 
 extension DiceModel: ItemDuplicatable {
     public func duplicate() -> DiceModel {
         let copyName = duplicateName(from: name)
-        let dupDice = entries.map { dieVM -> DieModel in
+        let dupDice = dice.map { dieVM -> DieModel in
             DieModel(id: UUID(), die: dieVM.die)
         }
-        return DiceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, dice: dupDice, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, reroleOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery)
+        return DiceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, dice: dupDice, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, reroleOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, entries: entries.map { $0.duplicate() }, parentId: parentId)
     }
 }
 
@@ -435,7 +451,7 @@ extension DiceModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .dice
 
     public func copy() -> DiceModel {
-        DiceModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, dice: dice_, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, rerollOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, resultCategory: resultCategory)
+        DiceModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, dice: dice_, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, rerollOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, resultCategory: resultCategory, entries: entries_, parentId: parentId)
     }
 
     public func filter(_ filter: String) -> Bool {
@@ -478,18 +494,30 @@ extension DiceModel: ItemDataAccessable {
         reorderDice <=> model.reorderDice
         addDiceEvery <=> model.addDiceEvery
         resultCategory <=> model.resultCategory
+        entries_ <=> model.entries_
+        parentId <=> parentId
         return true
     }
 
-    public subscript(id: UUID) -> DieModel {
+    public subscript(id: UUID) -> ChildEntryModel {
         get {
-            guard let index = entries.firstIndex(where: { $0.id == id }) else { return .empty(id) }
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return ChildEntryModel.empty(id) }
             return entries[index]
         }
         set {
             guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
             entries[index] = newValue
         }
+    }
+
+    public func die(for id: UUID) -> DieModel {
+        guard let index = dice.firstIndex(where: { $0.id == id }) else { return .empty(id) }
+        return dice[index]
+    }
+    
+    public func resetDie(_ die: DieModel) {
+        guard let index = dice.firstIndex(where: { $0.id == die.id }) else { return }
+        dice[index] = die
     }
 
     public func urlName() -> String {
@@ -527,6 +555,8 @@ extension DiceModel: Codable {
         case _reorderDice
         case _addDiceEvery
         case _resultCategory
+        case _entries_
+        case _parentId
     }
 
     public final func encode(to encoder: Encoder) throws {
@@ -552,6 +582,8 @@ extension DiceModel: Codable {
         try container.encode(self._reorderDice, forKey: DiceModel.CodingKeys._reorderDice)
         try container.encode(self._addDiceEvery, forKey: DiceModel.CodingKeys._addDiceEvery)
         try container.encodeIfPresent(self._resultCategory, forKey: DiceModel.CodingKeys._resultCategory)
+        try container.encode(self._entries_, forKey: DiceModel.CodingKeys._entries_)
+        try container.encodeIfPresent(self._parentId, forKey: DiceModel.CodingKeys._parentId)
     }
 }
 

@@ -79,7 +79,7 @@ struct DicePlayer: View {
 
     private func playerDice(playerId: UUID) -> some View {
         HStack(alignment: .top, spacing: 0) {
-            ForEach(root.gameController.gameItem(for: playerId).entries) { die in
+            ForEach(root.gameController.gameItem(for: playerId).dice) { die in
                 VStack {
                     DieViewerView(gameController: root.gameController, diceId: playerId, die: die, withoutResult: false, resultColor: resultColor(for: die.id, playerId: playerId))
                         .padding(4)

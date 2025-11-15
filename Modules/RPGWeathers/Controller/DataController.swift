@@ -83,5 +83,4 @@ extension DataController: CoreDataPersistable {
         entry.childUUID = viewModel.childId
         entry.index = Int16(index)
     }
-
 }

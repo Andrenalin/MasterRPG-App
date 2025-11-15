@@ -30,13 +30,13 @@ extension EditController: EditControllable {
 
 extension EditController {
     @MainActor func add(die: DieModel) {
-        model.entries.append(die)
+        model.dice.append(die)
         save(with: String(localized: "Add \(die.name)").localizedString)
     }
 
     @MainActor func remove(die: DieModel) {
-        guard let index = model.entries.firstIndex(where: { $0.id == die.id }) else { return }
-        model.entries.remove(at: index)
+        guard let index = model.dice.firstIndex(where: { $0.id == die.id }) else { return }
+        model.dice.remove(at: index)
         save(with: String(localized: "Remove \(die.name)").localizedString)
     }
 

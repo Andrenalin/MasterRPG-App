@@ -49,7 +49,7 @@ struct PlayerGameScreen: View {
         }
 #if os(visionOS)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
-            root.diceRoot.viewController.dicePlayerView()
+            root.diceRoot.viewController.dicePlayerView(root: root.diceRoot)
                 .environment(diceShowOptionModel)
         }
         .ornament(attachmentAnchor: .scene(.topTrailing), contentAlignment: .bottomTrailing) {
@@ -65,17 +65,17 @@ struct PlayerGameScreen: View {
             .padding(12)
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
-            root.diceRoot.viewController.diceActionBarView()
+            root.diceRoot.viewController.diceActionBarView(root: root.diceRoot)
                 .padding(.top, 12)
                 .environment(diceShowOptionModel)
         }
         .ornament(attachmentAnchor: .scene(.bottom), contentAlignment: .top) {
-            root.diceRoot.viewController.diceRollView()
+            root.diceRoot.viewController.diceRollView(root: root.diceRoot)
                 .padding(.top, 56)
                 .environment(diceShowOptionModel)
         }
         .ornament(attachmentAnchor: .scene(.bottomTrailing), contentAlignment: .topTrailing) {
-            root.diceRoot.viewController.diceResultView()
+            root.diceRoot.viewController.diceResultView(root: root.diceRoot)
                 .padding(.top, 12)
                 .environment(diceShowOptionModel)
         }

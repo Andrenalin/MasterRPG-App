@@ -12,7 +12,7 @@ struct DiceInlineEditor: View {
         VStack(alignment: .leading, spacing: 8) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 8) {
-                    ForEach(root.gameController.gameItem(for: itemId).entries) { die in
+                    ForEach(root.gameController.gameItem(for: itemId).dice) { die in
                         Button {
                             root.gameController.remove(die: die, from: itemId)
                         } label: {
@@ -40,7 +40,7 @@ struct DiceInlineEditor: View {
             .padding(.top)
 
             OldDiceBag { die in
-                withAnimation { root.gameController.gameItem(for: itemId).entries.append(die) }
+                withAnimation { root.gameController.gameItem(for: itemId).dice.append(die) }
             }
         }
     }

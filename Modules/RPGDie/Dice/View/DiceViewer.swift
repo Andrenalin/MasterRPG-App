@@ -13,7 +13,7 @@ struct DiceViewer: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                ForEach(model.entries) { die in
+                ForEach(model.dice) { die in
                     Button {
                         if isEditor {
                             withAnimation { root.editController.remove(die: die) }
