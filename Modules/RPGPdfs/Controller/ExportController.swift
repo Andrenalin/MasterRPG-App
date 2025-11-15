@@ -18,7 +18,7 @@ extension ExportController: ExportControllable {
         itemController
     }
 
-    public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+    @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         let checkIds = itemIds.ids[itemController.itemDataModel.networkModule, default: []]
         let results = checkIds.compactMap { itemController.itemSync(for: $0)?.id }
         var allIds = itemIds

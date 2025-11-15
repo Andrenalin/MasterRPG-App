@@ -30,7 +30,7 @@ struct CharacterSheet: View {
 
 private extension CharacterSheet {
     func imageView(size: CGSize) -> some View {
-        root.photoRoot.viewController.photoDetailView(for: model.photoId, useGame: false, size: size)
+        root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: model.photoId, useGame: false, size: size)
     }
 }
 

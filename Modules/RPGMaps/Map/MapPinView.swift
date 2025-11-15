@@ -78,7 +78,7 @@ struct MapPinView: View {
     private var pinView: some View {
         VStack {
             if let position {
-                root.photoRoot.viewController.mapImage(for: position.photoId, size: pinSize, color: position.color)
+                root.photoRoot.viewController.mapImage(root: root.photoRoot, for: position.photoId, size: pinSize, color: position.color)
             }
         }
         .clipShape(.circle)

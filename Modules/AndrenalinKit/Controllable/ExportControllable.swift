@@ -139,7 +139,7 @@ public extension ExportControllable {
             return ExportStream(id: itemId, data: try encoder.encode(item))
         }
 
-        let version = await itemControllable.itemDataModel.version
+        let version = itemControllable.itemDataModel.version
         try outputStream.append(fileHeader: GmzFileHeader(counter: allIds.count, token: await token().rawValue, version: version))
 
         for try await exportData in dataStream {

@@ -11,7 +11,7 @@ struct PhotoSelectionEditor: View {
     
     var body: some View {
         let _ = Self._printChanges()
-        root.photoRoot.viewController.photoSelection(editController: editController, selectionModel: editController.weatherEditModel.photoSelectionModel)
+        root.photoRoot.viewController.photoSelection(root: root.photoRoot, editController: editController, selectionModel: editController.weatherEditModel.photoSelectionModel)
             .onChange(of: editController.weatherEditModel.photoSelectionModel.currentValue) {
                 guard editController.weatherEditModel.photoSelectionModel.currentValue != editController.model.photoId else { return }
                 Task {

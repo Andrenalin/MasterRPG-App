@@ -69,7 +69,7 @@ public extension ViewController {
 extension ViewController {
     @MainActor @ViewBuilder
     func photo(for itemId: UUID, useGame: Bool, size: CGSize) -> some View {
-        root.photoRoot.viewController.photoDetailView(for: itemId, useGame: useGame, size: size, contentMode: .fill)
+        root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: itemId, useGame: useGame, size: size, contentMode: .fill)
     }
 }
 

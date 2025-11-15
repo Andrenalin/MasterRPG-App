@@ -47,17 +47,6 @@ struct NewMapRoute: View {
     }
 }
 
-struct NewPhotoRoute: View {
-    let appStore: AppStore
-    let tabId: UUID
-    let isExtended: Bool
-    
-    var body: some View {
-            PhotoFactory.rootExtendedView(for: appStore.photoRoot, tabId: tabId)
-                .environment(appStore.photoRoot)
-    }
-}
-
 struct NewTableRoute: View {
     let appStore: AppStore
     let tabId: UUID

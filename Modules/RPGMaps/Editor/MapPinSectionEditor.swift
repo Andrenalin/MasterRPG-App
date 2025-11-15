@@ -61,7 +61,7 @@ struct MapPinSectionEditor: View {
                 Text(size.text)
             }
             
-            root.photoRoot.viewController.inlinePhotoSelectionButton(editController: editController, photoId: $model[MapPinId.id, pinId].photoId, entryId: pinId, showSelector: $showSelectorForId)
+            root.photoRoot.viewController.inlinePhotoSelectionButton(root: root.photoRoot, editController: editController, photoId: $model[MapPinId.id, pinId].photoId, entryId: pinId, showSelector: $showSelectorForId)
                         
             UpdateMapPinEditor(editController: editController, entryId: nil, pinId: pinId)
             
@@ -111,7 +111,7 @@ struct MapPinSectionEditor: View {
     }
     
     private func showPhotoSelectionView(for selectedId: UUID) -> some View {
-        root.photoRoot.viewController.viewSelect(filter: .character) {
+        root.photoRoot.viewController.viewSelect(root: root.photoRoot, filter: .character) {
             editController.selectedPinPhoto(for: selectedId)
         } toggleSelection: { selection, _ in
             editController.toggleSelectedPinPhoto(for: selectedId, selection: selection)

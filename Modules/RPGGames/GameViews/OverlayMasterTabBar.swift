@@ -60,7 +60,7 @@ struct OverlayMasterTabBar: View {
                     .gameOverlayTabBarView(value: NetworkModules.table)
                 root.audioRoot.viewController.gameView(root: root.audioRoot)
                     .gameOverlayTabBarView(value: NetworkModules.audio)
-                root.photoRoot.viewController.gameView()
+                root.photoRoot.viewController.gameView(root: root.photoRoot)
                     .gameOverlayTabBarView(value: NetworkModules.photo)
                 root.mapRoot.viewController.gameView()
                     .gameOverlayTabBarView(value: NetworkModules.map)

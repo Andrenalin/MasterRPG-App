@@ -15,7 +15,7 @@ struct PhotoSectionEditor: View {
         Section {
             PhotoOrientationEditor(editController: editController)
 
-            FileLocationEditor(editController: editController, fileStore: root.fileUrlDataController, fileUrlBinding: $model.fileUrl)
+            FileLocationEditor(editController: editController, fileStore: root.fileUrlDataController!, fileUrlBinding: $model.fileUrl)
 
             ConvertImageEditor(editController: editController, model: model)
         } header: {

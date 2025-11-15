@@ -45,8 +45,8 @@ struct OnMapPin: View {
 
     func loadThumbnail() {
         Task {
-            await root.cacheController.thumbnailId(for: model.id, with: model.fileUrl)
-            let newimage = await root.cacheController.thumbnail(for: model.id)
+            await root.cacheController?.thumbnailId(for: model.id, with: model.fileUrl)
+            let newimage = await root.cacheController?.thumbnail(for: model.id)
             withAnimation { image = newimage }
         }
     }

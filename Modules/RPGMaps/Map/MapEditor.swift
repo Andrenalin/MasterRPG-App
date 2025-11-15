@@ -664,9 +664,9 @@ private extension MapEditor {
 #Preview {
     Group {
 #if os(macOS)
-        MapEditor(editController: .preview, image: AKImage(named: "photo")!.resize(to: CGSize(width: 500, height: 400))!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
+        MapEditor(editController: .preview, image: AKImage(named: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
 #else
-        MapEditor(editController: .preview, image: AKImage(systemName: "photo")!.resize(to: CGSize(width: 500, height: 400))!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
+        MapEditor(editController: .preview, image: AKImage(systemName: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
 #endif
     }
     .environment(MapRoot.previewWithData)

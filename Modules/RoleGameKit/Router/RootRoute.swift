@@ -170,7 +170,8 @@ struct RouteRouteDestionationView: View {
                 PdfFactory.rootView()
                     .environment(appModel.pdfRoot)
             case .photos:
-                NewPhotoRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                PhotoFactory.rootView()
+                    .environment(appModel.photoRoot)
             case .space:
                 SpaceFactory.rootView()
                     .environment(appModel.spaceRoot)

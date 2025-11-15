@@ -4,31 +4,17 @@ import AndrenalinKit
 import Foundation
 import CoreData
 
-struct DataController: Sendable {
-    @MainActor
-    init(root: PhotoRoot, context: NSManagedObjectContext, token: String) {
-        self.root = root
-        self.changeObserver = CoreDataChangeObserver()
-        self.dataController = CoreDataController<PhotoModel, RPGPhoto>(context: context)
-        self.token = token
-
-        changeObserver.observeCoreDataChanges(from: context, entity: RPGPhoto.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
-    }
-    
-    weak var root: PhotoRoot!
-    let dataController: CoreDataController<PhotoModel, RPGPhoto>
-    var itemControllable: any ItemControllable {
-        root.itemController
-    }
-    let changeObserver: CoreDataChangeObserver
-    let token: String
+struct DataController: DataPersistenceControllable {
+    @MainActor init(context: NSManagedObjectContext, token: String) {
+            self.dataController = CoreDataController<PhotoModel, RPGPhoto>(context: context)
+            self.token = token
+        }
+        
+        let dataController: CoreDataController<PhotoModel, RPGPhoto>
+        let token: String
 }
 
-extension DataController: CoreDataPersistable, DataPersistenceControllable, SyncDataControllable {
-    var dataControllable: any CoreDataPersistable {
-        self
-    }
-    
+extension DataController: CoreDataPersistable {
     // MARK: model -> viewlmodel
 
     func mapViewModel(_ model: RPGPhoto, token: String) -> PhotoModel {
@@ -41,7 +27,8 @@ extension DataController: CoreDataPersistable, DataPersistenceControllable, Sync
             displayState: Int(model.displayState),
             degrees: CRDT(string: model.degrees ?? "", defaultValue: 0.0),
             fileUrl: CRDTDataUpdate(wrappedValue: FileUrl(string: model.fileUrl ?? "", fileId: model.uuid ?? UUID(), module: token, unconvertedData: nil), update: CRDT(string: model.fileUrlUpdate ?? "", defaultValue: UUID())),
-            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID()))
+            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
+            parentId: model.parentId
         )
     }
 
@@ -65,6 +52,7 @@ extension DataController: CoreDataPersistable, DataPersistenceControllable, Sync
                 return entry
             }
         }
+        model.parentId <=> viewModel.parentId
     }
 
     // MARK: - PhotoEntryViewModel

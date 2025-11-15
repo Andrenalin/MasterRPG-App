@@ -57,7 +57,7 @@ private extension MapReader {
             .font(.largeTitle)
             .padding(.top, 8)
 
-            root.photoRoot.viewController.photoDetailView(for: map.photoId, useGame: false, size: CGSize(width: 256, height: 256))
+            root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: map.photoId, useGame: false, size: CGSize(width: 256, height: 256))
         }
     }
 

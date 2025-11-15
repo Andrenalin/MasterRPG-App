@@ -20,7 +20,7 @@ struct ValueRow: View {
         case .pdf:
             root.pdfRoot.viewController.rowView(root: root.pdfRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .photo:
-            root.photoRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
+            root.photoRoot.viewController.rowView(root: root.photoRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .table:
             root.tableRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .value:

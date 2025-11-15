@@ -18,7 +18,7 @@ struct MainRow: View {
         ItemRow(itemId: model.id, model: model, cacheItemListModel: cacheItemListModel, name: \.name, tags: \.tags, description: \.description, isSelected: isSelected, thumbnail: {
             @Bindable var model = model
             if let photoId = model.photoId {
-                root.photoRoot.viewController.thumbnailView(with: photoId)
+                root.photoRoot.viewController.thumbnailView(root: root.photoRoot, with: photoId)
             }
         }, tagAdds: {
             CategoryItemRow(category: model.category)

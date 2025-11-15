@@ -60,7 +60,7 @@ struct PinImageDropArea: View {
     @State private var photoId: UUID?
 
     var body: some View {
-        root.photoRoot.viewController.onMapView(photoId: photoId, color: pin.color, size: pin.size.size, isDragging: false, isSelected: false)
+        root.photoRoot.viewController.onMapView(root: root.photoRoot, photoId: photoId, color: pin.color, size: pin.size.size, isDragging: false, isSelected: false)
             .id(photoId)
             .onChange(of: editController.model[MapPinId.id, pin.id], initial: true) {
                 withAnimation { photoId <=> editController.model[MapPinId.id, pin.id].photoId }

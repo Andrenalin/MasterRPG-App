@@ -13,7 +13,7 @@ struct MinimumRow: View {
         @Bindable var model = model
         VStack {
             if let photoId = model.photoId {
-                root.photoRoot.viewController.thumbnailView(with: photoId)
+                root.photoRoot.viewController.thumbnailView(root: root.photoRoot, with: photoId)
             }
 
             Text(model.name)

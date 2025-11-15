@@ -6,7 +6,7 @@ import Observation
 
 @Observable
 public final class PhotoModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, degrees: Double = 0, fileUrl: FileUrl? = nil, entries: [PhotoEntryModel] = []) {
+    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, degrees: Double = 0, fileUrl: FileUrl? = nil, entries: [PhotoEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -16,9 +16,10 @@ public final class PhotoModel: Identifiable, @unchecked Sendable {
         degrees_ = CRDT(wrappedValue: degrees)
         fileUrl_ = CRDTDataUpdate(wrappedValue: fileUrl)
         entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self.parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, degrees: CRDT<Double>, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[PhotoEntryModel]>) {
+    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, degrees: CRDT<Double>, fileUrl: CRDTDataUpdate<FileUrl?>, entries: CRDTDataUpdate<[PhotoEntryModel]>, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -28,6 +29,7 @@ public final class PhotoModel: Identifiable, @unchecked Sendable {
         degrees_ = degrees
         fileUrl_ = fileUrl
         entries_ = entries
+        self.parentId = parentId
     }
 
     public init(from decoder: Decoder) throws {
@@ -42,6 +44,7 @@ public final class PhotoModel: Identifiable, @unchecked Sendable {
         self._degrees_ = try container.decode(CRDT<Double>.self, forKey: PhotoModel.CodingKeys._degrees_)
         self._fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: PhotoModel.CodingKeys._fileUrl_)
         self._entries_ = try container.decode(CRDTDataUpdate<[PhotoEntryModel]>.self, forKey: PhotoModel.CodingKeys._entries_)
+        self._parentId = try container.decodeIfPresent(UUID.self, forKey: PhotoModel.CodingKeys._parentId)
     }
 
     public var id: UUID
@@ -121,7 +124,8 @@ extension PhotoModel: ItemDiffComparable {
             displayState: other.displayState,
             degrees: degrees_.merged(other: other.degrees_),
             fileUrl: fileUrl_.merged(other: other.fileUrl_),
-            entries: entries_.merged(other: other.entries_)
+            entries: entries_.merged(other: other.entries_),
+            parentId: other.parentId
         )
     }
 
@@ -133,6 +137,7 @@ extension PhotoModel: ItemDiffComparable {
         degrees == other.degrees &&
         fileUrl_.update == other.fileUrl_.update &&
         entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
         // santity checks
         entries.count == other.entries.count &&
         entries.enumerated().allSatisfy { index, entry in
@@ -160,7 +165,7 @@ extension PhotoModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .photo
 
     public func copy() -> PhotoModel {
-        PhotoModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, degrees: degrees_, fileUrl: fileUrl_, entries: entries_)
+        PhotoModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, degrees: degrees_, fileUrl: fileUrl_, entries: entries_, parentId: parentId)
     }
     
     public func filter(_ filter: String) -> Bool {
@@ -192,6 +197,7 @@ extension PhotoModel: ItemDataAccessable {
         degrees_ <=> model.degrees_
         fileUrl_ <=> model.fileUrl_
         entries_ <=> model.entries_
+        parentId <=> model.parentId
         return true
     }
 
@@ -227,6 +233,7 @@ extension PhotoModel: Codable {
         case _degrees_
         case _fileUrl_
         case _entries_
+        case _parentId
     }
 
     final public func encode(to encoder: Encoder) throws {
@@ -241,6 +248,7 @@ extension PhotoModel: Codable {
         try container.encode(self._degrees_, forKey: PhotoModel.CodingKeys._degrees_)
         try container.encode(self._fileUrl_, forKey: PhotoModel.CodingKeys._fileUrl_)
         try container.encode(self._entries_, forKey: PhotoModel.CodingKeys._entries_)
+        try container.encode(self._parentId, forKey: PhotoModel.CodingKeys._parentId)
     }
 }
 

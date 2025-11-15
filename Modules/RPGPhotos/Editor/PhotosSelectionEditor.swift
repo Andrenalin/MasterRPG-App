@@ -21,7 +21,7 @@ struct PhotosSectionEditor: View {
             .padding(4)
             .background(color, in: .rect(cornerRadius: 8.0))
         } selectorView: {
-            root.viewController.viewSelect(filter: .all) {
+            root.viewController.viewSelect(root: root, filter: .all) {
                 model.entries.map { ItemRowModel(itemId: $0.photoId, typeId: .photo) }
             } toggleSelection: { selection, _ in
                 if let index = model.entries.firstIndex(where: { $0.photoId == selection.itemId }) {

@@ -20,7 +20,7 @@ struct PhotoSelection: View {
     var body: some View {
         let _ = Self._printChanges()
         ItemSelectionNaviEditor(editController: editController, selectionModel: selectionModel, title: "Photo", bundle: .module, value: .photo, inline: inline, selectorRoute: SelectionRoute.selection(selectionModel)) { photoId in
-            root.viewController.rowView(item: ItemRowTreeModel(itemId: photoId, typeId: root.itemController.itemDataModel.networkModule), isSelected: false, cacheItemListModel: editController.cacheItemListModel)
+            root.viewController.rowView(root: root, item: ItemRowTreeModel(itemId: photoId, typeId: root.itemController.itemDataModel.networkModule), isSelected: false, cacheItemListModel: editController.cacheItemListModel)
         }
     }
 }
@@ -39,9 +39,9 @@ struct PhotosSelection<Action: View>: View {
     
     var body: some View {
         ItemsSelectionEditor(editController: editController, model: model, selected: selected, title: "Photos", bundle: .module, value: .photo) { photoId in
-            root.viewController.rowView(item: ItemRowTreeModel(itemId: photoId, typeId: root.itemController.itemDataModel.networkModule), isSelected: false, cacheItemListModel: editController.cacheItemListModel)
+            root.viewController.rowView(root: root, item: ItemRowTreeModel(itemId: photoId, typeId: root.itemController.itemDataModel.networkModule), isSelected: false, cacheItemListModel: editController.cacheItemListModel)
         } selectorView: {
-            root.viewController.viewSelect(filter: filter, selection: selection, toggleSelection: toggleSelection) { selectionSheetLinkModel.selection = false }
+            root.viewController.viewSelect(root: root, filter: filter, selection: selection, toggleSelection: toggleSelection) { selectionSheetLinkModel.selection = false }
         } actionView: {
             actionView()
         } valueFactory: { id in

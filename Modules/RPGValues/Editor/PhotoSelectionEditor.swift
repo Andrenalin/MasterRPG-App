@@ -12,7 +12,7 @@ struct PhotoSelectionEditor: View {
     var body: some View {
         let _ = Self._printChanges()
         @Bindable var model = editController.model
-        root.photoRoot.viewController.photosSelection(editController: editController, model: $model.photos, selected: $model.photoId, filter: .value) {
+        root.photoRoot.viewController.photosSelection(root: root.photoRoot, editController: editController, model: $model.photos, selected: $model.photoId, filter: .value) {
             Button {
                 Task {
                     await editController.setGroupPhotos()

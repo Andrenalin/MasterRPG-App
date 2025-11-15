@@ -536,10 +536,10 @@ final class ImageViewerModel {
 #Preview {
     Group {
 #if os(macOS)
-        MapViewer(image: AKImage(named: "photo")!.resize(to: CGSize(width: 500, height: 400))!, photoDegrees: 0, map: MapModel.preview, toolBarModel: GameToolBarModel(), playerPinId: nil, mapMode: .gameMaster, containerSize: CGSize(width: 300, height: 800), focusedId: nil) {
+        MapViewer(image: AKImage(named: "photo")!, photoDegrees: 0, map: MapModel.preview, toolBarModel: GameToolBarModel(), playerPinId: nil, mapMode: .gameMaster, containerSize: CGSize(width: 300, height: 800), focusedId: nil) {
         } focused: {}
 #else
-        MapViewer(image: AKImage(systemName: "photo")!.resize(to: CGSize(width: 500, height: 400))!, photoDegrees: 0, map: MapModel.preview, toolBarModel: GameToolBarModel(), playerPinId: nil, mapMode: .gameMaster, containerSize: CGSize(width: 300, height: 800), focusedId: nil) {
+        MapViewer(image: AKImage(systemName: "photo")!, photoDegrees: 0, map: MapModel.preview, toolBarModel: GameToolBarModel(), playerPinId: nil, mapMode: .gameMaster, containerSize: CGSize(width: 300, height: 800), focusedId: nil) {
         } focused: {}
 #endif
     }

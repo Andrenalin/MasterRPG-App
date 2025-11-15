@@ -35,7 +35,7 @@ struct WindowLinkList: Scene {
 
 //            windowGroup(model: appModel, module: .dice, key: "7", content: appModel.diceRoot.viewController.linkWindow(root: appModel.diceRoot))
 //
-//            windowGroup(model: appModel, module: .photo, key: "8", content: appModel.photoRoot.viewController.linkWindow(root: appModel.photoRoot))
+            windowGroup(model: appModel, module: .photo, key: "8", content: appModel.photoRoot.viewController.linkWindow(root: appModel.photoRoot))
 
             windowGroup(model: appModel, module: .space, key: "9", content: appModel.spaceRoot.viewController.linkWindow(root: appModel.spaceRoot))
 

@@ -5,11 +5,15 @@ import Foundation
 import SwiftUI
 
 public struct LinkController: Sendable {
-    weak var root: PhotoRoot!
+    init(itemController: ItemController, gameController: GameController) {
+        self.itemController = itemController
+        self.gameController = gameController
+    }
     let itemController: ItemController
-
+    let gameController: GameController
+    
     public var itemControllable: any ItemControllable {
-        itemController as ItemController
+        itemController
     }
 }
 
@@ -31,14 +35,14 @@ extension LinkController: LinkControllable {
             Task { @MainActor in
                 if command == LinkType.share.rawValue {
                     if shareResult.gameModus == .master {
-                        await shareResult.networkActions?.shareId(root.gameController.share(id: itemId))
+                        await shareResult.networkActions?.shareId(gameController.share(id: itemId))
                     } else {
-                        if let result = try? await root.gameController.createGameData(for: itemId) {
+                        if let result = try? await gameController.createGameData(for: itemId) {
                             shareResult.networkActions?.game(result, .generic)
                         }
                     }
                 } else {
-                    if let result = try? await root.gameController.createGameData(for: itemId) {
+                    if let result = try? await gameController.createGameData(for: itemId) {
                         shareResult.networkActions?.game(result, .photoSpace)
                     }
                 }
@@ -50,7 +54,7 @@ extension LinkController: LinkControllable {
                     await toggler(itemId, itemControllable.itemDataModel.networkModule)
                 }
             }
-            let item = root.itemController.itemOrEmpty(for: itemId)
+            let item = itemController.itemOrEmpty(for: itemId)
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? "\(specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId))  \(specialLink(linkType: .photoImmersive, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.itemDataModel.networkModule)) ?? false

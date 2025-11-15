@@ -1,5 +1,6 @@
-#if !os(tvOS)
+// @copyright André Trettin
 
+#if !os(tvOS)
 import AndrenalinKit
 
 #if canImport(UIKit)

@@ -19,7 +19,7 @@ extension ExportController: ExportControllable {
         itemController
     }
 
-    public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+    @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         var checkIds = itemIds.ids[itemController.itemDataModel.networkModule, default: []]
         var results: Set<UUID> = []
 

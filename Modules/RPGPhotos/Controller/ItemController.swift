@@ -9,31 +9,35 @@ import AppKit
 #endif
 
 struct ItemController: Sendable {
-    @MainActor
-    init(root: PhotoRoot, dataController: DataController?) {
-        self.root = root
+    static var fileTypes: [UTType] { [.image] }
+    static var filenameExtension: String { "jpg" }
+
+    @MainActor init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.dataControllable = dataController
-        itemDataModel = ItemDataModel(categoryTags: [.adventure, .map, .value, .weather], networkModule: .photo)
+        self.linkRegisterController = linkRegisterControllable
+
+        self.itemDataModel = ItemDataModel(categoryTags: [.adventure, .map, .value, .weather], networkModule: .photo)
+        
+        let fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.photo.token, fileTypes: ItemController.fileTypes, filenameExtension: ItemController.filenameExtension, fileUrlAccess: self)
+        self.cacheController = CacheController(fileUrlDataController: fileUrlDataController)
+        self.fileUrlDataController = fileUrlDataController
     }
 
-    weak var root: PhotoRoot!
+    var cacheController: CacheController?
+    var fileUrlDataController: FileUrlDataController?
     let collectionCategory: ItemListCategory = .album
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
+    let linkRegisterController: LinkRegisterControllable
 }
 
 extension ItemController: ItemControllable {
     typealias Model = PhotoModel
     
-    var fileUrlDataController: FileUrlDataController? {
-        root.fileUrlDataController
+    @MainActor var linkRegisterControllable: LinkRegisterControllable {
+        linkRegisterController
     }
     
-    @MainActor
-    var linkRegisterControllable: LinkRegisterControllable {
-        root.rootControllable.linkRegisterControllable
-    }
-
     @MainActor
     func children(for model: ItemRowModel) -> [ItemRowModel] {
         guard let item = self.itemSync(for: model.itemId) else { return [] }
@@ -51,23 +55,16 @@ extension ItemController: ItemControllable {
     
     func didDelete(model: ModelType) async {
         guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didDelete(itemId: model.id)
-        }
         await didDelete(fileUrl: model.fileUrl)
     }
     
     func didUpdate(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didUpdate(item: model)
-        }
     }
 
     func duplicate(model: ItemRowModel) async {
         guard let item = await self.item(for: model.itemId) else { return }
         let duplicate = item.duplicate()
-        duplicate.fileUrl = try? await root.fileUrlDataController.duplicate(fileUrl: item.fileUrl, for: duplicate.id)
+        duplicate.fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: item.fileUrl, for: duplicate.id)
         await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
     }
     
@@ -79,22 +76,33 @@ extension ItemController: ItemControllable {
     func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {
         guard let item = item as? PhotoModel else { return }
         if let oldFileUlr = item.fileUrl {
-            await root.cacheController.remove(itemId: oldFileUlr.fileId)
+            await cacheController?.remove(itemId: oldFileUlr.fileId)
         }
         item.fileUrl = fileUrl
     }
 
     public func loadableUrl(for model: ItemRowModel) async -> URL? {
         guard let fileUrl = await self.item(for: model.itemId)?.fileUrl else { return nil }
-        return await root.fileUrlDataController.url(for: fileUrl, action: { $0 })
+        return await fileUrlDataController?.url(for: fileUrl, action: { $0 })
+    }
+}
+
+extension ItemController: FileUrlAccessible {
+    func saveFileUrl(fileUrl: FileUrl) async {
+        guard let item = await item(for: fileUrl.fileId)?.copy() else { return }
+        if let fileId = item.fileUrl?.fileId {
+            await cacheController?.remove(itemId: fileId)
+        }
+        item.fileUrl = fileUrl
+        await replace(model: item, isInsert: false, shouldRepairLinks: true)
     }
 }
 
 extension ItemController {
     func didDelete(fileUrl: FileUrl?) async {
         guard let fileUrl else { return }
-        await root.cacheController.remove(itemId: fileUrl.fileId)
-        root.fileUrlDataController.delete(fileUrl)
+        await cacheController?.remove(itemId: fileUrl.fileId)
+        fileUrlDataController?.delete(fileUrl)
     }
 }
 

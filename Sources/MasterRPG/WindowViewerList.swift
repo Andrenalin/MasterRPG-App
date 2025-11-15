@@ -6,8 +6,8 @@ import RoleGameKit
 import SwiftUI
 
 import RPGPdfs
+import RPGPhotos
 import RPGSpaces
-
 
 struct WindowViewerList: Scene {
     let appModel: AppStore
@@ -20,6 +20,10 @@ struct WindowViewerList: Scene {
 
             windowGroup(model: appModel, module: .pdf) { selection in
                 appModel.pdfRoot.viewController.windowViewer(root: appModel.pdfRoot, selection: selection)
+            }
+
+            windowGroup(model: appModel, module: .photo) { selection in
+                appModel.photoRoot.viewController.windowViewer(root: appModel.photoRoot, selection: selection)
             }
 
             windowGroup(model: appModel, module: .space) { selection in

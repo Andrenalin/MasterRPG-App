@@ -18,7 +18,7 @@ public struct SettingsView: View {
     @Environment(\.navigator) private var navigator
 
     public var body: some View {
-        AndrenalinKit.SettingsView(store: store.adventureRoot, exportController: store.adventureRoot.exportControllable, importController: store.adventureRoot.importControllable, audioFileStore: store.audioRoot.fileUrlDataController!, pdfFileStore: store.pdfRoot.fileUrlDataController!, photoFileStore: store.photoRoot.fileUrlDataController, spaceFileStore: store.spaceRoot.fileUrlDataController!) {
+        AndrenalinKit.SettingsView(store: store.adventureRoot, exportController: store.adventureRoot.exportControllable, importController: store.adventureRoot.importControllable, audioFileStore: store.audioRoot.fileUrlDataController!, pdfFileStore: store.pdfRoot.fileUrlDataController!, photoFileStore: store.photoRoot.fileUrlDataController!, spaceFileStore: store.spaceRoot.fileUrlDataController!) {
 
 //            SectionGroupEditorView {
 //                InAppView(inAppController: store.inAppController)
@@ -31,6 +31,7 @@ public struct SettingsView: View {
                     Task {
                         await store.audioRoot.checkFolders()
                         await store.pdfRoot.checkFolders()
+                        await store.photoRoot.checkFolders()
                         await store.spaceRoot.checkFolders()
                     }
                 } label: {

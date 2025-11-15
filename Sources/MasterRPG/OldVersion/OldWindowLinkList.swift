@@ -115,22 +115,6 @@ struct OldWindowLinkList: Scene {
             .keyboardShortcut("7", modifiers: [.command, .option])
 #endif
 
-            BaseWindow("\(NetworkModules.photo.title) Link", id: NetworkModules.photo.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.photoRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                        .environment(\.mapActions, appStore.mapRoot.mapActions)
-                }
-                .onDisappear {
-                    appStore.windowStateModel.openWindowState[.photo] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .photo))
-#if os(macOS)
-            .keyboardShortcut("8", modifiers: [.command, .option])
-#endif
-
             BaseWindow("\(NetworkModules.weather.title) Link", id: NetworkModules.weather.linkWindowId) {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
                     appStore.weatherRoot.viewController.linkWindow()
@@ -197,15 +181,6 @@ struct OldWindowLinkAltList: Scene {
                 DataBaseAppStoreAvailable(appStore: appStore) { appStore in
                     appStore.diceRoot.viewController.linkWindow()
                         .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            
-            WindowGroup("\(NetworkModules.photo.title) Link", id: NetworkModules.photo.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.photoRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                        .environment(\.mapActions, appStore.mapRoot.mapActions)
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }

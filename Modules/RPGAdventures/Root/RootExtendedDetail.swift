@@ -60,7 +60,7 @@ struct RootDetail: View {
         case .pdf:
             root.pdfRoot.viewController.detailEditor(root: root.pdfRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .photo:
-            root.photoRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
+            root.photoRoot.viewController.detailEditor(root: root.photoRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .space:
             root.spaceRoot.viewController.detailEditor(root: root.spaceRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .table:

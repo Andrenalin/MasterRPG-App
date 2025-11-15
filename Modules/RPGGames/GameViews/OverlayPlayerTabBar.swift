@@ -68,7 +68,7 @@ struct OverlayPlayerTabBar: View {
                 root.audioRoot.viewController.gameView(root: root.audioRoot)
                     .gameOverlayTabBarView(value: NetworkModules.audio)
 
-                root.photoRoot.viewController.gameView()
+                root.photoRoot.viewController.gameView(root: root.photoRoot)
                     .gameOverlayTabBarView(value: NetworkModules.photo)
 
             }
@@ -103,7 +103,7 @@ struct OverlayPlayerTabBar: View {
                 root.audioRoot.viewController.gameView(root: root.audioRoot)
                     .gameOverlayTabBarView(value: NetworkModules.audio)
 
-                root.photoRoot.viewController.gameView()
+                root.photoRoot.viewController.gameView(root: root.photoRoot)
                     .gameOverlayTabBarView(value: NetworkModules.photo)
 
                 root.spaceRoot.viewController.gameView(root: root.spaceRoot)

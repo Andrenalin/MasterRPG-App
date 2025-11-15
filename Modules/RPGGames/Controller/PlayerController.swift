@@ -421,7 +421,7 @@ extension PlayerController {
             if try await root.photoRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
                 Task { @MainActor in
                     gameModel.gameUpdateType = .photo
-                    root.photoRoot.gameControllable.resetPhotoSpace()
+                    root.photoRoot.photoGameControllable.resetPhotoSpace()
                 }
                 
                 return await response(for: model, isSuccess: true, requestData: false)

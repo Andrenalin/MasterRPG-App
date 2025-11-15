@@ -10,7 +10,7 @@ struct PhotoSelectionEditor: View {
     @Environment(AdventureRoot.self) private var root
     
     var body: some View {
-        root.photoRoot.viewController.photoSelection(editController: editController, selectionModel: editController.adventureEditModel.photoSelectionModel)
+        root.photoRoot.viewController.photoSelection(root: root.photoRoot, editController: editController, selectionModel: editController.adventureEditModel.photoSelectionModel)
             .onChange(of: editController.adventureEditModel.photoSelectionModel.currentValue) {
                 guard editController.adventureEditModel.photoSelectionModel.currentValue != editController.model.photoId else { return }
                 Task {

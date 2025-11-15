@@ -35,8 +35,8 @@ struct MasterRPGApp: App {
 //        AppDependencyManager.shared.add(dependency: mapRootModel)
         let pdfRootModel = appStore.pdfRoot
         AppDependencyManager.shared.add(dependency: pdfRootModel)
-//        let photoRootModel = appModel.photoRoot
-//        AppDependencyManager.shared.add(dependency: photoRootModel)
+        let photoRootModel = appStore.photoRoot
+        AppDependencyManager.shared.add(dependency: photoRootModel)
         let spaceRootModel = appStore.spaceRoot
         AppDependencyManager.shared.add(dependency: spaceRootModel)
 //        let tableRootModel = appModel.tableRoot

@@ -29,16 +29,16 @@ struct AsyncThumbnail: View {
     }
 
     private func loadImage() {
-        let cacheController = root.cacheController
+        let cacheController = root.itemController.cacheController
         let id = model.id
         let fileUrl = model.fileUrl
         let loaderTask = Task.detached(priority: .userInitiated) {
-            await cacheController.thumbnailId(for: id, with: fileUrl)
+            await cacheController?.thumbnailId(for: id, with: fileUrl)
         }
 
         Task { @MainActor in
             let _ = await loaderTask.result
-            let newImage = await cacheController.thumbnail(for: id)
+            let newImage = await cacheController?.thumbnail(for: id)
             withAnimation { self.image = newImage }
         }
     }

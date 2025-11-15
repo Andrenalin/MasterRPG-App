@@ -41,7 +41,7 @@ struct RootDetail: View {
     private func detailView(selectedItem: ItemRowTreeModel) -> some View {
         switch selectedItem.model.typeId {
         case .photo:
-            root.photoRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
+            root.photoRoot.viewController.detailEditor(root: root.photoRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         default:
             WeatherDetailEditor(editController: editController, model: editController.model)
         }

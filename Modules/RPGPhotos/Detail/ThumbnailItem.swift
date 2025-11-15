@@ -62,13 +62,13 @@ struct ThumbnailItem: View {
         Task { @MainActor in
             let loaderTask = Task.detached(priority: .userInitiated) {
                 if highResolution {
-                    await root.cacheController.photoId(for: model.id, with: model.fileUrl)
+                    await root.cacheController?.photoId(for: model.id, with: model.fileUrl)
                 } else {
-                    await root.cacheController.thumbnailId(for: model.id, with: model.fileUrl)
+                    await root.cacheController?.thumbnailId(for: model.id, with: model.fileUrl)
                 }
             }
             _ = await loaderTask.result
-            let newImage = highResolution ? await root.cacheController.image(for: model.id) : await root.cacheController.thumbnail(for: model.id)
+            let newImage = highResolution ? await root.cacheController?.photo(for: model.id) : await root.cacheController?.thumbnail(for: model.id)
             withAnimation { cacheItemListModel.setImageCache(cacheType: highResolution ? .image : .thumbnail, itemId: model.id, image: newImage) }
             isLoading = false
         }

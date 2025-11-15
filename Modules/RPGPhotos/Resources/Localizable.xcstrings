@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@" : {
+
+    },
+    "%lld photos" : {
+
+    },
     "0" : {
       "localizations" : {
         "de" : {
@@ -62,6 +68,7 @@
       }
     },
     "Change to %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -92,6 +99,7 @@
       }
     },
     "Duplicate %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -130,6 +138,9 @@
           }
         }
       }
+    },
+    "Open Photo" : {
+
     },
     "Orientation" : {
       "localizations" : {
@@ -172,6 +183,7 @@
       }
     },
     "Redo %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -222,6 +234,7 @@
       }
     },
     "Show Photos" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -241,10 +254,8 @@
         }
       }
     },
-    "Typing" : {
-
-    },
     "Undo %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -263,6 +274,9 @@
           }
         }
       }
+    },
+    "Which photo?" : {
+
     }
   },
   "version" : "1.0"
