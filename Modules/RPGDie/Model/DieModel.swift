@@ -5,6 +5,15 @@ import RPGResources
 import SwiftUI
 
 public struct DieModel: Equatable, Hashable, Identifiable, Codable, @unchecked Sendable {
+    internal init(id: UUID, die: RawDie, color: String = ColorCode.Random.rawValue, rotation: Double = 0, result: [Int] = [], displayState: Int = 0) {
+        self.id = id
+        self.die = die
+        self.color = color
+        self.rotation = rotation
+        self.result = result
+        self.displayState = displayState
+    }
+    
     public let id: UUID
     public let die: RawDie
     
@@ -13,6 +22,38 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, @unchecked S
     var rotation: Double = 0
     var result: [Int] = []
     public var displayState: Int = 0
+    
+    private enum CodingKeys: CodingKey {
+        case id
+        case die
+        case color
+        case rotation
+        case result
+        case displayState
+    }
+    
+    public init(from decoder: any Decoder) throws {
+        let container: KeyedDecodingContainer<DieModel.CodingKeys> = try decoder.container(keyedBy: DieModel.CodingKeys.self)
+        
+        self.id = try container.decode(UUID.self, forKey: DieModel.CodingKeys.id)
+        self.die = try container.decode(RawDie.self, forKey: DieModel.CodingKeys.die)
+        self.color = try container.decodeIfPresent(String.self, forKey: DieModel.CodingKeys.color) ?? "G"
+        self.rotation = try container.decode(Double.self, forKey: DieModel.CodingKeys.rotation)
+        self.result = try container.decode([Int].self, forKey: DieModel.CodingKeys.result)
+        self.displayState = try container.decode(Int.self, forKey: DieModel.CodingKeys.displayState)
+        
+    }
+    
+    public func encode(to encoder: any Encoder) throws {
+        var container: KeyedEncodingContainer<DieModel.CodingKeys> = encoder.container(keyedBy: DieModel.CodingKeys.self)
+        
+        try container.encode(self.id, forKey: DieModel.CodingKeys.id)
+        try container.encode(self.die, forKey: DieModel.CodingKeys.die)
+        try container.encode(self.color, forKey: DieModel.CodingKeys.color)
+        try container.encode(self.rotation, forKey: DieModel.CodingKeys.rotation)
+        try container.encode(self.result, forKey: DieModel.CodingKeys.result)
+        try container.encode(self.displayState, forKey: DieModel.CodingKeys.displayState)
+    }
 }
 
 extension DieModel {
