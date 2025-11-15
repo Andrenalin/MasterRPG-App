@@ -30,7 +30,7 @@ public final class RootModel: Sendable {
 public final class MapRoot: @unchecked Sendable {
     
     @MainActor
-    init(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) {
+    init(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRootModel, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) {
         rootModel = RootModel()
         
         let module: NetworkModules = .map
@@ -81,7 +81,7 @@ public final class MapRoot: @unchecked Sendable {
     @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
         
     let audioRoot: AudioRoot
-    let diceRoot: DiceRoot
+    let diceRoot: DiceRootModel
     let pdfRoot: PdfRoot
     let photoRoot: PhotoRoot
     let tableRoot: TableRoot

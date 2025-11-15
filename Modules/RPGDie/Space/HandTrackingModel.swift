@@ -9,11 +9,11 @@ import SwiftUI
 /// A model that contains up-to-date hand coordinate information.
 @MainActor
 public class DiceHandTrackingGestureModel: ObservableObject, @unchecked Sendable {
-    public init(diceRoot: DiceRoot) {
+    public init(diceRoot: DiceRootModel) {
         self.root = diceRoot
     }
 
-    let root: DiceRoot
+    let root: DiceRootModel
     let session = ARKitSession()
     var handTracking = HandTrackingProvider()
     @Published var latestHandTracking: HandsUpdates = .init(left: nil, right: nil)

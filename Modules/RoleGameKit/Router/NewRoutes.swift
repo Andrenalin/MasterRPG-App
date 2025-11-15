@@ -25,17 +25,6 @@ struct NewAdventureRoute: View {
     }
 }
 
-struct NewDiceRoute: View {
-    let appModel: AppStore
-    let tabId: UUID
-    let isExtended: Bool
-    
-    var body: some View {
-            DiceFactory.rootExtendedView(for: appModel.diceRoot, tabId: tabId)
-                .environment(appModel.diceRoot)
-    }
-}
-
 struct NewMapRoute: View {
     let appModel: AppStore
     let tabId: UUID

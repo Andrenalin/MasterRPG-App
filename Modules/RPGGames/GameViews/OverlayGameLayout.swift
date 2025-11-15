@@ -70,7 +70,7 @@ private extension OverlayGameLayout {
     }
     
     var diceOverlay: some View {
-        root.diceRoot.viewController.overlayGameView(hideDice: hideDice)
+        root.diceRoot.viewController.overlayGameView(root: root.diceRoot, hideDice: hideDice)
     }
 }
 

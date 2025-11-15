@@ -35,7 +35,7 @@ public final class RootModel: Sendable {
 public final class TableRoot: @unchecked Sendable {
     
     @MainActor
-    init(container: ModelContainer, diceRoot: DiceRoot, pdfRoot: PdfRoot) {
+    init(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRoot) {
         rootModel = RootModel()
         
         let module: NetworkModules = .photo
@@ -80,7 +80,7 @@ public final class TableRoot: @unchecked Sendable {
     public var itemSelectionModel: ItemSelectionModel
     @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
             
-    let diceRoot: DiceRoot
+    let diceRoot: DiceRootModel
     let pdfRoot: PdfRoot
     
     @ObservationIgnored

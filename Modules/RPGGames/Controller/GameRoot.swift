@@ -95,7 +95,7 @@ final class GameModel: Sendable {
 public final class GameRoot: @unchecked Sendable {
     let adventureRoot: AdventureRoot
     let audioRoot: AudioRoot
-    let diceRoot: DiceRoot
+    let diceRoot: DiceRootModel
     let mapRoot: MapRoot
     var networkStore: NetworkController
     var networkProxyStore: NetworkProxyController
@@ -109,7 +109,7 @@ public final class GameRoot: @unchecked Sendable {
     let gameModel: GameModel
 
     @MainActor
-    public init(adventureRoot: AdventureRoot, audioRoot: AudioRoot, diceRoot: DiceRoot, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRootModel) {
+    public init(adventureRoot: AdventureRoot, audioRoot: AudioRoot, diceRoot: DiceRootModel, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRootModel) {
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
@@ -226,7 +226,7 @@ extension GameRoot {
 
         await gameModel.masterController?.start()
         valueRoot.gameControllable.startGame(for: gameModel.selectedGameMaster!)
-        diceRoot.gameControllable.setFocusDice(on: valueRoot.gameControllable.focusDice(for: gameModel.selectedGameMaster!))
+        diceRoot.diceGameControllable.setFocusDice(on: valueRoot.gameControllable.focusDice(for: gameModel.selectedGameMaster!))
         
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = true
@@ -294,7 +294,7 @@ extension GameRoot {
         gameModel.gameConfig.state = .started
         if type != .observer {
             valueRoot.gameControllable.startGame(for: gameModel.selectedCharacter)
-            diceRoot.gameControllable.setFocusDice(on: valueRoot.gameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
+            diceRoot.diceGameControllable.setFocusDice(on: valueRoot.gameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
         }
     }
 

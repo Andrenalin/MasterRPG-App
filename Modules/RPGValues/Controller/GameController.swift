@@ -88,7 +88,7 @@ extension GameController {
         } else {
             gameDiceId = gameDiceModel.gameDiceId[entryId]
         }
-        let newDiceId = root.diceRoot.gameControllable.createGameDice(for: diceId, gameDiceId: gameDiceId)
+        let newDiceId = root.diceRoot.diceGameControllable.createGameDice(for: diceId, gameDiceId: gameDiceId)
         if gameDiceId != nil {
             return gameDiceId
         }

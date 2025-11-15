@@ -27,8 +27,8 @@ struct MasterRPGApp: App {
         AppDependencyManager.shared.add(dependency: audioRootModel)
 //        let characterRootModel = appModel.characterRoot
 //        AppDependencyManager.shared.add(dependency: characterRootModel)
-//        let diceRootModel = appModel.diceRoot
-//        AppDependencyManager.shared.add(dependency: diceRootModel)
+        let diceRootModel = appModel.diceRoot
+        AppDependencyManager.shared.add(dependency: diceRootModel)
 //        let generatorRootModel = appModel.generatorRoot
 //        AppDependencyManager.shared.add(dependency: generatorRootModel)
 //        let mapRootModel = appModel.mapRoot

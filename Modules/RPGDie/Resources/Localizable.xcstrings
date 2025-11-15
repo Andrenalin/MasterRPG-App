@@ -79,6 +79,9 @@
         }
       }
     },
+    "%lld Dice" : {
+
+    },
     "+/- 5" : {
       "localizations" : {
         "de" : {
@@ -300,6 +303,7 @@
       }
     },
     "Duplicate %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -360,6 +364,7 @@
       }
     },
     "New Dice" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -429,6 +434,9 @@
         }
       }
     },
+    "Open Dice" : {
+
+    },
     "Options" : {
       "localizations" : {
         "de" : {
@@ -490,6 +498,7 @@
       }
     },
     "Redo %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -680,6 +689,7 @@
       }
     },
     "Show Dice" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -720,6 +730,7 @@
       }
     },
     "Undo %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -758,6 +769,9 @@
           }
         }
       }
+    },
+    "Which die?" : {
+
     }
   },
   "version" : "1.0"

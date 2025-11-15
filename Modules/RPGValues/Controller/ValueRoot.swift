@@ -41,7 +41,7 @@ public final class RootModel: Sendable {
 public final class ValueRoot: @unchecked Sendable {
 
     @MainActor
-    init(container: ModelContainer, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot) {
+    init(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot) {
         rootModel = RootModel()
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
@@ -87,7 +87,7 @@ public final class ValueRoot: @unchecked Sendable {
     public var itemSelectionModel: ItemSelectionModel
     @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
     
-    let diceRoot: DiceRoot
+    let diceRoot: DiceRootModel
     let pdfRoot: PdfRoot
     let photoRoot: PhotoRoot
     let tableRoot: TableRoot

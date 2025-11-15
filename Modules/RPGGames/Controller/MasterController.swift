@@ -91,7 +91,7 @@ extension MasterController {
             await playerNames.append(root.gameModel.gameConfig.master.name)
             playerNames = playerNames.sorted()
         }
-        await root.diceRoot.gameControllable.resetPlayerDice(to: playerNames)
+        await root.diceRoot.diceGameControllable.resetPlayerDice(to: playerNames)
         if await !gameModel.asProxy {
             await root.mapRoot.gameControllable.resetPlayerPins(for: root.gameModel.gameConfig.players.filter { $0.type != .observer })
         }
@@ -179,7 +179,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         
         if await gameModel.asProxy {
             if model.data.type == .dice && model.type == .update {
-                _ = await root.diceRoot.gameControllable.addGameDiceResult(data: model.data, name: root.gameModel.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
+                _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: root.gameModel.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
                 let sendData = await GameNetworkModel(counter: model.counter, proxyCounter: model.proxyCounter, type: model.type, subType: model.subType, gameConfig: root.gameModel.gameConfig, data: model.data)
                 await root.networkStore.sendMaster(data: sendData, fileJournal: false)
             } else {
@@ -261,7 +261,7 @@ extension MasterController {
         case .reveal, .store:
             return try await root.diceRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
-            let (diceResult, resultCategory) = await root.diceRoot.gameControllable.addGameDiceResult(data: model.data, name: model.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
+            let (diceResult, resultCategory) = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
             if let diceResult, let resultCategory {
                 await root.tableRoot.gameControllable.addResult(resultCategory, value: diceResult)
             }

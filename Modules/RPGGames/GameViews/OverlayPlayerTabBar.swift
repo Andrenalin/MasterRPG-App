@@ -110,7 +110,7 @@ struct OverlayPlayerTabBar: View {
                     .gameOverlayTabBarView(value: NetworkModules.space)
 
                 if root.gameModel.gameConfig.type != .observer {
-                    root.diceRoot.viewController.gameView()
+                    root.diceRoot.viewController.gameView(root: root.diceRoot)
                         .gameOverlayTabBarView(value: NetworkModules.dice)
                 }
             }

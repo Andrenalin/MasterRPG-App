@@ -34,22 +34,23 @@ public protocol DiceGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor
-    init(root: DiceRoot!, itemController: ItemController) {
-        self.root = root
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
-        self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(root: root, dataController: nil)
-        self.importController = ImportController(root: root, itemController: internItemController)
+        self.exportController = ExportController(itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
         self.diceGameModel = DiceGameModel()
     }
-    
-    weak var root: DiceRoot!
+
     let itemController: ItemController
-    let importController: ImportController
     let exportController: ExportController
-    
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
+
     let gameModel: ItemGameModel
     let diceGameModel: DiceGameModel
     
@@ -79,15 +80,7 @@ extension GameController: GameControllable {
     var importControllable: any ImportControllable {
         importController as ImportControllable
     }
-    var rootExportControllable: any ExportControllable {
-        root.rootControllable.gameExportControllable
-    }
-    var rootImportControllable: any ImportControllable {
-        root.rootControllable.gameImportControllable
-    }
-    
-    @MainActor
-    func resetGameState() {
+    @MainActor func resetGameState() {
         diceGameModel.reset()
     }
 }
@@ -279,7 +272,7 @@ extension GameController {
             
             if let networkActions {
                 Task {
-                    let sendedResult = resultCategopry ?? gameItem(for: itemId).resultCategory ?? ResultCategory(id: itemId, module: root.itemController.itemDataModel.networkModule)
+                    let sendedResult = resultCategopry ?? gameItem(for: itemId).resultCategory ?? ResultCategory(id: itemId, module: itemController.itemDataModel.networkModule)
                     let result = await createDiceResult(for: itemId, resultCategory: sendedResult)
                     networkActions.game(result, .generic)
                 }

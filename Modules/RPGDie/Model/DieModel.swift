@@ -7,36 +7,49 @@ import SwiftUI
 public struct DieModel: Equatable, Hashable, Identifiable, Codable, @unchecked Sendable {
     public let id: UUID
     public let die: RawDie
+    
+    var color: String = ColorCode.Random.rawValue
+    
     var rotation: Double = 0
     var result: [Int] = []
     public var displayState: Int = 0
 }
 
 extension DieModel {
+    enum ColorCode: String {
+        case Random
+        case A, G
+    }
+    
     public var name: String {
         name(for: 1)
     }
-    
-    public func name(for number: Int) -> String {
-        switch die.sides {
-        case .four:
-            return "D4G-\(number)"
-        case .six:
-            return "D6G-\(number)"
-        case .eight:
-            return "D8G-\(number)"
-        case .ten:
-            return "D10G-\(number)"
-        case .twelve:
-            return "D12G-\(number)"
-        case .twenty:
-            return "D20G-\(number)"
-        case .number:
-            return "D20-1"
+
+    func name(for number: Int) -> String {
+        var code = color
+        if die.sides == .four || die.sides == .twenty {
+            if color == ColorCode.Random.rawValue || color.isEmpty {
+                if RawDie(.number(2)).role() == 1 {
+                    code = ColorCode.A.rawValue
+                } else {
+                    code = ColorCode.G.rawValue
+                }
+            }
+        } else {
+            code = ColorCode.G.rawValue
+        }
+        return switch die.sides {
+        case .four: "D4\(code)-\(number)"
+        case .six: "D6\(code)-\(number)"
+        case .eight: "D8\(code)-\(number)"
+        case .ten: "D10\(code)-\(number)"
+        case .twelve: "D12\(code)-\(number)"
+        case .twenty: "D20\(code)-\(number)"
+        case .number: "D20\(code)-1"
         }
     }
 
-    public func diceImage(for number: Int) -> Image {
+    func diceImage(for number: Int) -> Image {
         Image(name(for: number), bundle: Resources.bundle)
     }
 }
@@ -98,26 +111,50 @@ extension DieModel {
     }
 
     static var die4: DieModel {
-        DieModel(id: UUID(), die: RawDie.four)
+        die4(color: .Random)
+    }
+
+    static func die4(color: ColorCode) -> DieModel {
+        DieModel(id: UUID(), die: RawDie.four, color: color.rawValue)
     }
 
     static var die6: DieModel {
-        DieModel(id: UUID(), die: RawDie.six)
+        die6(color: .Random)
+    }
+
+    static func die6(color: ColorCode) -> DieModel {
+        DieModel(id: UUID(), die: RawDie.six, color: color.rawValue)
     }
 
     static var die8: DieModel {
-        DieModel(id: UUID(), die: RawDie.eight)
+        die8(color: .Random)
+    }
+
+    static func die8(color: ColorCode) -> DieModel {
+        DieModel(id: UUID(), die: RawDie.eight, color: color.rawValue)
     }
 
     static var die10: DieModel {
-        DieModel(id: UUID(), die: RawDie.ten)
+        die10(color: .Random)
+    }
+
+    static func die10(color: ColorCode) -> DieModel {
+        DieModel(id: UUID(), die: RawDie.ten, color: color.rawValue)
     }
 
     static var die12: DieModel {
-        DieModel(id: UUID(), die: RawDie.twelve)
+        die12(color: .Random)
+    }
+
+    static func die12(color: ColorCode) -> DieModel {
+        DieModel(id: UUID(), die: RawDie.twelve, color: color.rawValue)
     }
 
     static var die20: DieModel {
-        DieModel(id: UUID(), die: RawDie.twenty)
+        die20(color: .Random)
+    }
+    
+    static func die20(color: ColorCode) -> DieModel {
+        DieModel(id: UUID(), die: RawDie.twenty, color: color.rawValue)
     }
 }

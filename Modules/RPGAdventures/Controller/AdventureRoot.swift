@@ -30,7 +30,7 @@ public final class RootModel: Sendable {
 public final class AdventureRoot: @unchecked Sendable {
 
     @MainActor
-    init(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRoot, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRootModel) {
+    init(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRootModel, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, valueRoot: ValueRoot, weatherRoot: WeatherRootModel) {
         rootModel = RootModel()
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
@@ -91,7 +91,7 @@ public final class AdventureRoot: @unchecked Sendable {
     @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
 
     let audioRoot: AudioRoot
-    let diceRoot: DiceRoot
+    let diceRoot: DiceRootModel
     let mapRoot: MapRoot
     let pdfRoot: PdfRoot
     let photoRoot: PhotoRoot

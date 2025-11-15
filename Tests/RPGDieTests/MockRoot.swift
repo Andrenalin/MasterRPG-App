@@ -9,8 +9,8 @@ import Testing
 @testable import RPGDie
 
 struct MockRoot {
-    static func importTestData(_ name: String = ResourcesDebug.diceTestData, itemCounter: Int = 5) async throws -> DiceRoot {
-        let root = await DiceRoot.testRoot()
+    static func importTestData(_ name: String = ResourcesDebug.diceTestData, itemCounter: Int = 5) async throws -> DiceRootModel {
+        let root = await DiceRootModel.testRoot()
 
         try await resetTestData(for: root)
 
@@ -23,7 +23,7 @@ struct MockRoot {
         return root
     }
     
-    static func resetTestData(for root: DiceRoot) async throws {
+    static func resetTestData(for root: DiceRootModel) async throws {
         await root.itemController.resetData()
     }
 }

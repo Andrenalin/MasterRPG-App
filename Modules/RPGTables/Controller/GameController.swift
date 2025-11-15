@@ -81,7 +81,7 @@ extension GameController: TableGameStorable {
     func requestTableResult(for itemId: UUID, diceId: UUID, diceResult: String, networkActions: NetworkActions?, valueActions: ValueActions) async {
         guard let networkActions else { return }
         _ = await setCurrent(itemId: itemId)
-        let diceNum = await root.diceRoot.gameControllable.number(for: diceId, result: diceResult)
+        let diceNum = await root.diceRoot.diceGameControllable.number(for: diceId, result: diceResult)
         guard let entryId = await entry(for: itemId, with: diceNum) else { return }
 
         let model = await gameItem(for: itemId)

@@ -77,7 +77,7 @@ struct RootQuickLinkEditor: View {
             } selectionView: { selectedIds, module, action in
                 switch module {
                     case .dice:
-                        root.diceRoot.viewController.selectForScan(ids: selectedIds, dismissAction: action)
+                        root.diceRoot.viewController.selectForScan(root: root.diceRoot, ids: selectedIds, dismissAction: action)
                     case .table:
                         root.tableRoot.viewController.selectForScan(ids: selectedIds, dismissAction: action)
                     default:

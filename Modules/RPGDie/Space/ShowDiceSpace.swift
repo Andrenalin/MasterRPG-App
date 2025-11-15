@@ -5,7 +5,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct ShowDiceSpace: View {
-    let root: DiceRoot
+    let root: DiceRootModel
     let itemId: UUID?
 
     var viewModel: DiceSpaceModel

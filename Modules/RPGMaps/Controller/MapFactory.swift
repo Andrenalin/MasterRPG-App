@@ -13,7 +13,7 @@ import SwiftUI
 
 public enum MapFactory {
     @MainActor
-    public static func root(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) -> MapRoot {
+    public static func root(container: ModelContainer, audioRoot: AudioRoot, diceRoot: DiceRootModel, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) -> MapRoot {
         MapRoot(container: container, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
     }
     

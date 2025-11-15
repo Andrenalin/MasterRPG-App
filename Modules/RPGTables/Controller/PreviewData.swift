@@ -51,7 +51,7 @@ public extension TableRoot {
     
 #if DEBUG
     @MainActor
-    static func testRoot(diceRoot: DiceRoot, pdfRoot: PdfRoot) -> TableRoot {
+    static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRoot) -> TableRoot {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let root = TableRoot(container: modelContainer, diceRoot: .preview, pdfRoot: .preview)
         root.setUp(context: nil, rootControllable: root)

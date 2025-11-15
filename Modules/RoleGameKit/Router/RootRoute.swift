@@ -148,7 +148,8 @@ struct RouteRouteDestionationView: View {
                 AudioFactory.rootView()
                     .environment(appModel.audioRoot)
             case .dice:
-                NewDiceRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                DiceFactory.rootView()
+                    .environment(appModel.diceRoot)
             case .editors:
 #if os(visionOS)
                 EmptyView()

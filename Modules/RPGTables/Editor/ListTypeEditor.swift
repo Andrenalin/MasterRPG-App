@@ -32,7 +32,7 @@ struct ListTypeEditor: View {
                 ItemSelectionEditor(editController: editController, model: $model.diceId, title: "Dice", bundle: .module, value: .dice, inline: false) { diceId in
                     root.viewController.rowDiceView(for: model.diceId, cacheItemListModel: editController.cacheItemListModel)
                 } selectorView: {
-                    root.diceRoot.viewController.viewSelect(filter: .table, selection: {
+                    root.diceRoot.viewController.viewSelect(root: root.diceRoot, filter: .table, selection: {
                         guard let diceId = model.diceId else { return [] }
                         return [ItemRowModel(itemId: diceId, typeId: .dice)]
                     }, toggleSelection: { selection, _ in

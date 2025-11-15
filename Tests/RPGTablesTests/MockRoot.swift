@@ -12,7 +12,7 @@ import Testing
 
 struct MockRoot {
     static func importTestData(_ name: String = ResourcesDebug.tableTestData, itemCounter: Int = 16) async throws -> TableRoot {
-        let diceRoot = await DiceRoot.testRoot()
+        let diceRoot = await DiceRootModel.testRoot()
         let pdfRoot = await PdfRoot.testRoot()
         let root = await TableRoot.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
 

@@ -35,7 +35,7 @@ struct MockRoot {
     
     static func createGameRoot() async throws -> GameRoot {
         let audioRoot = await AudioRoot.testRoot()
-        let diceRoot = await DiceRoot.testRoot()
+        let diceRoot = await DiceRootModel.testRoot()
         let pdfRoot = await PdfRoot.testRoot()
         let photoRoot = await PhotoRoot.testRoot()
         let spaceRoot = await SpaceRoot.testRoot()

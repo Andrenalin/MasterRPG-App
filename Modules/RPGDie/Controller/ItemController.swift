@@ -5,27 +5,26 @@ import Foundation
 import CoreData
 
 struct ItemController: Sendable {
-    @MainActor
-    init(root: DiceRoot, dataController: DataController?) {
-        self.root = root
+    @MainActor init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.dataControllable = dataController
-        itemDataModel = ItemDataModel(categoryTags: [.rules, .table, .value], networkModule: .dice)
+        self.linkRegisterController = linkRegisterControllable
+
+        self.itemDataModel = ItemDataModel(categoryTags: [.rules, .table, .value], networkModule: .dice)
     }
 
-    weak var root: DiceRoot!
     let collectionCategory: ItemListCategory = .diceBag
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
-    
+    let linkRegisterController: LinkRegisterControllable
+
     let diceBag = DiceModel(id: UUID(), dice: [.die4, .die6, .die8, .die10, .die12, .die20])
 }
 
 extension ItemController: ItemControllable {
     typealias Model = DiceModel
     
-    @MainActor
-    var linkRegisterControllable: LinkRegisterControllable {
-        root.rootControllable.linkRegisterControllable
+    @MainActor var linkRegisterControllable: LinkRegisterControllable {
+        linkRegisterController
     }
 
     @MainActor
@@ -34,16 +33,8 @@ extension ItemController: ItemControllable {
     }
 
     func didDelete(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didDelete(itemId: model.id)
-        }
     }
     
     func didUpdate(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didUpdate(item: model)
-        }
     }
 }

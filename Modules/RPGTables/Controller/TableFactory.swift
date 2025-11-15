@@ -9,7 +9,7 @@ import SwiftUI
 
 public enum TableFactory {
     @MainActor
-    public static func root(container: ModelContainer, diceRoot: DiceRoot, pdfRoot: PdfRoot) -> TableRoot {
+    public static func root(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRoot) -> TableRoot {
         TableRoot(container: container, diceRoot: diceRoot, pdfRoot: pdfRoot)
     }
 

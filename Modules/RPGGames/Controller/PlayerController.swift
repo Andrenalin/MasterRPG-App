@@ -125,7 +125,7 @@ extension PlayerController {
         let players = root.gameModel.gameConfig.controls.compactMap { $0.show ? $0.id : nil }
         root.audioRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
         let playerNames = root.gameModel.gameConfig.controls.map { $0.name }.sorted()
-        root.diceRoot.gameControllable.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
+        root.diceRoot.diceGameControllable.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
     }
 }
 
@@ -339,9 +339,9 @@ extension PlayerController {
         case .update:
             switch model.subType {
             case .show, .store:
-                try await root.diceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, focus: model.subType == .show)
+                try await root.diceRoot.diceGameControllable.updateGame(data: model.data, hide: model.subType == .store, focus: model.subType == .show)
             case .generic:
-                _ = await root.diceRoot.gameControllable.addGameDiceResult(data: model.data, name: model.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
+                _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
                 break
             default:
                 break

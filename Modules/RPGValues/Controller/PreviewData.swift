@@ -42,7 +42,7 @@ public extension ValueRoot {
     
 #if DEBUG
     @MainActor
-    static func testRoot(diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot) -> ValueRoot {
+    static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot) -> ValueRoot {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let root = ValueRoot(container: modelContainer, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
         root.setUp(context: nil, rootControllable: root)

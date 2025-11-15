@@ -107,7 +107,7 @@ struct ValueEntryEditor: View {
             .width(min: 32)
             
             TableColumn(Text("Dice", bundle: .module)) { entry in
-                root.diceRoot.viewController.viewDiceDropDownMenu(editController: editController, model: $model[entry.id].diceId)
+                root.diceRoot.viewController.viewDiceDropDownMenu(root: root.diceRoot, editController: editController, model: $model[entry.id].diceId)
                     .id(entry.id)
             }
             .width(96)

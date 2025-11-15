@@ -21,13 +21,13 @@ struct MyAppPackage: AppIntentsPackage {
 //        AdventureFrameworkPackage.self,
         AudioFrameworkPackage.self,
 //        CharacterFrameworkPackage.self,
-//        DiceFrameworkPackage.self,
+        DiceFrameworkPackage.self,
 //        MapFrameworkPackage.self,
-//        PdfFrameworkPackage.self,
-//        PhotoFrameworkPackage.self,
+        PdfFrameworkPackage.self,
+        PhotoFrameworkPackage.self,
         SpaceFrameworkPackage.self,
 //        TableFrameworkPackage.self,
-//        WeatherFrameworkPackage.self,
+        WeatherFrameworkPackage.self,
        ]
    }
 }

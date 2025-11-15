@@ -8,7 +8,7 @@ import Testing
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
-        let root = await DiceRoot.testRoot()
+        let root = await DiceRootModel.testRoot()
         await root.itemController.resetData()
         
         let sut = root.exportController
@@ -29,7 +29,7 @@ struct ExportControllerTests {
     }
     
     @Test func exporting() async throws {
-        let root = await DiceRoot.testRoot()
+        let root = await DiceRootModel.testRoot()
         await root.itemController.resetData()
         
         let sut = root.exportController

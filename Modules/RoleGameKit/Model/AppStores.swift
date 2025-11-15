@@ -53,7 +53,7 @@ public final class AppStore: Sendable {
     // Module roots
     @ObservationIgnored public let adventureRoot: AdventureRoot
     @ObservationIgnored public let audioRoot: AudioRoot
-    @ObservationIgnored public let diceRoot: DiceRoot
+    @ObservationIgnored public let diceRoot: DiceRootModel
     @ObservationIgnored public let gameRoot: GameRoot
     @ObservationIgnored public let mapRoot: MapRoot
     @ObservationIgnored public let pdfRoot: PdfRoot

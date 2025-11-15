@@ -151,7 +151,7 @@ extension ViewController {
     @MainActor @ViewBuilder
     func rowDiceView(for id: UUID?, cacheItemListModel: CacheItemListModel) -> some View {
         if let id {
-            root.diceRoot.viewController.viewRow(item: ItemRowTreeModel(itemId: id, typeId: .table), isSelected: false, cacheItemListModel: cacheItemListModel)
+            root.diceRoot.viewController.viewRow(root: root.diceRoot, item: ItemRowTreeModel(itemId: id, typeId: .table), isSelected: false, cacheItemListModel: cacheItemListModel)
         } else {
             EmptyView()
         }
@@ -160,7 +160,7 @@ extension ViewController {
     @MainActor @ViewBuilder
     func diceView(for id: UUID?, from itemId: UUID) -> some View {
         if let id {
-            root.diceRoot.viewController.viewDice(with: id, for: ResultCategory(id: itemId, module: root.itemController.itemDataModel.networkModule))
+            root.diceRoot.viewController.viewDice(root: root.diceRoot, with: id, for: ResultCategory(id: itemId, module: root.itemController.itemDataModel.networkModule))
         } else {
             EmptyView()
         }

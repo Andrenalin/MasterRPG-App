@@ -9,7 +9,7 @@ import Testing
 
 struct DiceRootTests {
     @Test func importer() async throws {
-        let sut = await DiceRoot.testRoot()
+        let sut = await DiceRootModel.testRoot()
         await sut.itemController.resetData()
         
         let dice = DiceModel(

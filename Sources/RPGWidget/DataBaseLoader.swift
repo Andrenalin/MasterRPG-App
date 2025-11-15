@@ -37,7 +37,7 @@ final class DataBaseLoader {
     }
     
     let appModel: AppStore
-    var diceRoot: DiceRoot?
+    var diceRoot: DiceRootModel?
     private var hasInitialized: Bool = false
     private var databaseModel: DataBaseModel?
     

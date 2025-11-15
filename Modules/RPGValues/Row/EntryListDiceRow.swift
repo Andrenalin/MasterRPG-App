@@ -14,7 +14,7 @@ struct EntryListDiceRow: View {
     var body: some View {
         @Bindable var model = root.itemController.itemOrEmpty(for: itemId)
         if let id = root.gameController.gameDiceId(itemId: itemId, entryId: entryId) {
-            root.diceRoot.viewController.viewDice(with: id, for: ResultCategory(id: itemId, childId: entryId, module: root.itemController.itemDataModel.networkModule), onlyPrimaryAction: true)
+            root.diceRoot.viewController.viewDice(root: root.diceRoot, with: id, for: ResultCategory(id: itemId, childId: entryId, module: root.itemController.itemDataModel.networkModule), onlyPrimaryAction: true)
                 .onChange(of: model[entryId].diceId, initial: false) {
                     updateDiceValue(id: id)
                 }
@@ -34,7 +34,7 @@ struct EntryListDiceRow: View {
 
     private func updateDiceValue(id: UUID) {
         let diceValue = diceValue(itemId: itemId, entryId: entryId)
-        withAnimation { root.diceRoot.gameControllable.validateForValue(diceId: id, compareValue: diceValue) }
+        withAnimation { root.diceRoot.diceGameControllable.validateForValue(diceId: id, compareValue: diceValue) }
     }
 
     private func diceValue(itemId: UUID, entryId: UUID) -> Int? {

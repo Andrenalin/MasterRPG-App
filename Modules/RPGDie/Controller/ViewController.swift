@@ -5,15 +5,37 @@ import Observation
 import SwiftUI
 
 public struct ViewController {
-    weak var root: DiceRoot!
+    public let goupViewType: GroupViewType = .none
+    public let thumbnailRowViewType: ThumbnailRowViewType = .custom
 }
+
+extension ViewController: ViewControllable {
+    public func thumbnailRowView(for itemId: UUID) -> AnyView {
+        AnyView(ThumbnailDiceRow(itemId: itemId))
+    }
+}
+
+// MARK: Viewer
+
+public extension ViewController {
+    @MainActor func linkWindow(root: DiceRootModel, isInspector: Bool = false) -> some View {
+        LinkRootView(type: isInspector ? .inspector : .window)
+            .environment(root)
+    }
+    
+//    func selectionView(root: DiceRootModel, model: ItemSelectionModel) -> some View {
+//        DiceDropChooseView(model: model)
+//            .environment(root)
+//    }
+}
+
 
 public extension ViewController {
     @MainActor
     private static let gameTabId = UUID()
 
     @MainActor
-    func gameView(select: Bool = false) -> some View {
+    func gameView(root: DiceRootModel, select: Bool = false) -> some View {
         var model: ItemRowModel? = nil
         if select == true, let id = root.gameController.gameModel.currentItemId {
             let item = root.gameController.gameItem(for: id)
@@ -28,27 +50,27 @@ public extension ViewController {
             .environment(root)
     }
 
-    func diceRollView() -> some View {
+    func diceRollView(root: DiceRootModel) -> some View {
         DiceFocusRoll()
             .environment(root)
     }
 
-    func diceActionBarView() -> some View {
+    func diceActionBarView(root: DiceRootModel) -> some View {
         DiceFocusActionBar()
             .environment(root)
     }
 
-    func diceResultView() -> some View {
+    func diceResultView(root: DiceRootModel) -> some View {
         DiceFocusResult()
             .environment(root)
     }
 
-    func dicePlayerView() -> some View {
+    func dicePlayerView(root: DiceRootModel) -> some View {
         DicePlayerRoot()
             .environment(root)
     }
 
-    func overlayGameView(hideDice: Bool) -> some View {
+    func overlayGameView(root: DiceRootModel, hideDice: Bool) -> some View {
         RootDiceOverlay(hideDice: hideDice)
             .environment(root)
     }
@@ -58,22 +80,8 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    private static let linkTabId = UUID()
-
-    @MainActor
-    func linkWindow() -> some View {
-        RootNaviList(root: root, tabId: ViewController.linkTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListConfiguration(canAdd: false)
-            .itemListChildrenConfiguration(canNavigate: false)
-            .focusedSceneValue(\.selectedModule, .constant(root.itemController.itemDataModel.networkModule))
-            .environment(root)
-            .environment(SelectionSheetLinkModel())
-    }
-    
-    @MainActor
-    func selectForScan(ids: Binding<[UUID]?>, dismissAction: @escaping () -> Void) -> some View {
-        viewSelect(filter: .table) {
+    func selectForScan(root: DiceRootModel, ids: Binding<[UUID]?>, dismissAction: @escaping () -> Void) -> some View {
+        viewSelect(root: root, filter: .table) {
             if let links = ids.wrappedValue {
                 return links.map { ItemRowModel(itemId: $0, typeId: root.itemController.itemDataModel.networkModule) }
             } else {
@@ -101,7 +109,7 @@ public extension ViewController {
     private static let selectionTabId = UUID()
 
     @MainActor
-    func viewSelect(filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
+    func viewSelect(root: DiceRootModel, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
         let listController = root.listController(tabId: ViewController.selectionTabId)
         listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: false, focus: nil, mode: SelectionMode(selected: selection, toggle: toggleSelection))
         return RootNaviList(root: root, tabId: ViewController.selectionTabId)
@@ -117,32 +125,32 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func viewRow(item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
+    func viewRow(root: DiceRootModel, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
         DiceRow(item: item, isSelected: false, cacheItemListModel: cacheItemListModel)
             .environment(root)
     }
 
     @MainActor
-    func viewCompactDice(itemId: UUID) -> some View {
+    func viewCompactDice(root: DiceRootModel, itemId: UUID) -> some View {
         let item = root.itemController.itemOrEmpty(for: itemId)
         return Text(item.inlineText)
     }
 
     @MainActor
-    func viewDice(with id: UUID?, for resultCategory: ResultCategory, onlyPrimaryAction: Bool = false) -> some View {
+    func viewDice(root: DiceRootModel, with id: UUID?, for resultCategory: ResultCategory, onlyPrimaryAction: Bool = false) -> some View {
         DiceInline(itemId: id ?? UUID(), resultCategory: resultCategory, onlyPrimaryAction: onlyPrimaryAction)
             .environment(root)
     }
     
     @MainActor
-    func viewDiceDropDownMenu(editController: any EditControllable, model: Binding<UUID?>) -> some View {
+    func viewDiceDropDownMenu(root: DiceRootModel, editController: any EditControllable, model: Binding<UUID?>) -> some View {
         DiceDropDownMenuArea(editController: editController, model: model)
             .environment(root)
     }
 }
 
 extension ViewController {
-    @MainActor public func gameGiceHeight() -> CGFloat {
+    @MainActor public func gameGiceHeight(root: DiceRootModel) -> CGFloat {
         guard let itemId = root.gameController.gameModel.currentItemId else { return 82.0 }
         let dice = root.gameController.gameItem(for: itemId)
         return height(for: dice)

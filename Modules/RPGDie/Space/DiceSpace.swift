@@ -11,7 +11,7 @@ import SwiftUI
 let dice3dAssetsBundle: Bundle? = nil
 
 public struct DiceSpace: View {
-    public init(root: DiceRoot) {
+    public init(root: DiceRootModel) {
         self.root = root
         self._gestureModel =
          StateObject(wrappedValue: DiceHandTrackingGestureModel(diceRoot: root))
@@ -19,7 +19,7 @@ public struct DiceSpace: View {
     
     public static let immersiveSpaceId = "DiceSpace"
 
-    let root: DiceRoot
+    let root: DiceRootModel
 
     @StateObject private var gestureModel: DiceHandTrackingGestureModel
 

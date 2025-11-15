@@ -90,7 +90,8 @@ struct ExtendedTabRouteDestionationView: View {
                 AudioFactory.rootView()
                     .environment(appModel.audioRoot)
             case .dice:
-                NewDiceRoute(appModel: appModel, tabId: tabId, isExtended: true)
+                DiceFactory.rootView()
+                    .environment(appModel.diceRoot)
             case .generator:
 #if os(tvOS)
             EmptyView()

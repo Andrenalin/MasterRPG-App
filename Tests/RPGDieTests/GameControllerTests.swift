@@ -280,8 +280,8 @@ private extension GameControllerTests {
     }
 
     @MainActor
-    static func setupDice() async -> (DiceRoot, DiceModel) {
-        let root = DiceRoot.testRoot()
+    static func setupDice() async -> (DiceRootModel, DiceModel) {
+        let root = DiceRootModel.testRoot()
         await root.itemController.resetData()
         await root.gameController.reset()
 

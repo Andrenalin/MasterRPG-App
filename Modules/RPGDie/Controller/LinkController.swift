@@ -5,11 +5,15 @@ import Foundation
 import SwiftUI
 
 public struct LinkController: Sendable {
-    weak var root: DiceRoot!
+    init(itemController: ItemController, gameController: GameController) {
+        self.itemController = itemController
+        self.gameController = gameController
+    }
     let itemController: ItemController
-
+    let gameController: GameController
+    
     public var itemControllable: any ItemControllable {
-        itemController as ItemController
+        itemController
     }
 }
 
@@ -22,9 +26,9 @@ extension LinkController: LinkControllable {
                 return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
             }
             if command == LinkType.roll.rawValue {
-                root.gameController.rollDice(itemId: itemId, networkActions: shareResult?.networkActions, resultCategopry: nil, rollSynced: true)
+                gameController.rollDice(itemId: itemId, networkActions: shareResult?.networkActions, resultCategopry: nil, rollSynced: true)
                 let rollUrl = specialLink(linkType: .roll, linkNumber: linkNumber, itemId: itemId, entryId: entryId)
-                return text.toggleLink(url: rollUrl, with: root.gameController.resultText(itemId: itemId), replace: true)
+                return text.toggleLink(url: rollUrl, with: gameController.resultText(itemId: itemId), replace: true)
             }
             if command == LinkType.show.rawValue {
                 Task { @MainActor in
@@ -34,7 +38,7 @@ extension LinkController: LinkControllable {
             }
             // send
             Task { @MainActor in
-                if let shareResult, let result = try? await root.gameController.createGameData(for: itemId, resultCategory: shareResult.resultCategory) {
+                if let shareResult, let result = try? await gameController.createGameData(for: itemId, resultCategory: shareResult.resultCategory) {
                     shareResult.networkActions?.game(result, .show)
                 }
             }

@@ -100,21 +100,6 @@ struct OldWindowLinkList: Scene {
             .keyboardShortcut("5", modifiers: [.command, .option])
 #endif
 
-            BaseWindow("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkWindowId) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.diceRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
-                }
-                .onDisappear {
-                    appModel.windowStateModel.openWindowState[.dice] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .dice))
-#if os(macOS)
-            .keyboardShortcut("7", modifiers: [.command, .option])
-#endif
-
         }
         .defaultSizeAll(CGSize(width: 400, height: 800))
 #if os(macOS)
@@ -161,14 +146,6 @@ struct OldWindowLinkAltList: Scene {
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
-
-            WindowGroup("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.diceRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }            
         }
         .defaultSizeAll(CGSize(width: 400, height: 800))
 #if os(macOS)

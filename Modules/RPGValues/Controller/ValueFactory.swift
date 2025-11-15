@@ -11,7 +11,7 @@ import SwiftUI
 
 public enum ValueFactory {
     @MainActor
-    public static func root(container: ModelContainer, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot) -> ValueRoot {
+    public static func root(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot) -> ValueRoot {
         ValueRoot(container: container, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
     }
     

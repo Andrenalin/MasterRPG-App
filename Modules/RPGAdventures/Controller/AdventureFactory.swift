@@ -18,7 +18,7 @@ public enum AdventureFactory {
     @MainActor public static func root(
         container: ModelContainer,
         audioRoot: AudioRoot,
-        diceRoot: DiceRoot,
+        diceRoot: DiceRootModel,
         mapRoot: MapRoot,
         pdfRoot: PdfRoot,
         photoRoot: PhotoRoot,

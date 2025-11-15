@@ -5,15 +5,14 @@ import Foundation
 import Observation
 
 struct EditController: Sendable {
-    @MainActor
-    init(root: DiceRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
-        self.root = root
-        self.fileUrlDataController = nil
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+        self.linkRegisterControllable = linkRegisterControllable
+        self.itemController = itemController
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
     }
 
-    weak var root: DiceRoot!
-    let fileUrlDataController: FileUrlDataController?
+    let itemController: ItemController
+    let linkRegisterControllable: any LinkRegisterControllable
     let editorModel: ItemEditorModel
 }
 
@@ -21,23 +20,21 @@ extension EditController: EditControllable {
     typealias Model = DiceModel
     
     var itemControllable: any ItemControllable {
-        root.itemController as (any ItemControllable)
+        itemController
     }
-
-    var linkRegisterControllable: any LinkRegisterControllable {
-        root.linkRegisterControllable
+    
+    var fileUrlDataController: FileUrlDataController? {
+        itemControllable.fileUrlDataController
     }
 }
 
 extension EditController {
-    @MainActor
-    func add(die: DieModel) async {
+    @MainActor func add(die: DieModel) {
         model.entries.append(die)
         save(with: String(localized: "Add \(die.name)").localizedString)
     }
 
-    @MainActor
-    func remove(die: DieModel) async {
+    @MainActor func remove(die: DieModel) {
         guard let index = model.entries.firstIndex(where: { $0.id == die.id }) else { return }
         model.entries.remove(at: index)
         save(with: String(localized: "Remove \(die.name)").localizedString)

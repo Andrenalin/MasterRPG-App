@@ -50,7 +50,7 @@ public extension MapRoot {
     
 #if DEBUG
     @MainActor
-    static func testRoot(audioRoot: AudioRoot, diceRoot: DiceRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) -> MapRoot {
+    static func testRoot(audioRoot: AudioRoot, diceRoot: DiceRootModel, pdfRoot: PdfRoot, photoRoot: PhotoRoot, tableRoot: TableRoot, valueRoot: ValueRoot) -> MapRoot {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let root = MapRoot(container: modelContainer, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, valueRoot: .preview)
         root.setUp(context: nil, rootControllable: root)

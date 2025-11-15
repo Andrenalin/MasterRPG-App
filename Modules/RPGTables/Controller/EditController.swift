@@ -66,7 +66,7 @@ extension EditController: EntryDataEditable {
 extension EditController {
     @MainActor @ViewBuilder
     func selectDice(for entryId: UUID, linkKeyPath: WritableKeyPath<TableModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.diceRoot.viewController.viewSelect(filter: .table) {
+        root.diceRoot.viewController.viewSelect(root: root.diceRoot, filter: .table) {
             let text = self.model[keyPath: linkKeyPath]
             return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .dice) }
         } toggleSelection: { sel, _ in
@@ -79,7 +79,7 @@ extension EditController {
 
     @MainActor 
     func selectDice(dismissAction: @escaping () -> Void) -> some View {
-        root.diceRoot.viewController.viewSelect(filter: .table) {
+        root.diceRoot.viewController.viewSelect(root: root.diceRoot, filter: .table) {
             if let diceId = self.model.diceId {
                 return [ItemRowModel(itemId: diceId, typeId: .dice)]
             } else {
