@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import Combine
-import CoreData
+@preconcurrency import CoreData
 import Foundation
 import os.log
 

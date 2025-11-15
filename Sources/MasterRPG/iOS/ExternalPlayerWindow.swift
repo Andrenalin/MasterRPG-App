@@ -5,12 +5,12 @@ import RPGGame
 import SwiftUI
 
 struct ExternalPlayerWindow: View {
-    let appStore: AppStore
+    let appModel: AppStore
 
     var body: some View {
         VStack {
-            if appStore.hasDatabase {
-                ExternalGameRootView(root: appStore.gameRoot)
+            if appModel.hasDatabase {
+                ExternalGameRootView(root: appModel.gameRoot)
             } else {
                 Color.blue
                     .overlay {

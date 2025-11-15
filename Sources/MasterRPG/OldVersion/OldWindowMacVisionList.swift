@@ -15,13 +15,13 @@ import RPGWeathers
 import RPGTables
 
 struct OldWindowMacVisionList: Scene {
-    let appStore: AppStore
+    let appModel: AppStore
     
     var body: some Scene {
         Group {
             WindowGroup("Adventure Viewer", id: WindowIdentifier.adventureViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.adventureRoot.viewController.adventureWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.adventureRoot.viewController.adventureWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)
@@ -31,8 +31,8 @@ struct OldWindowMacVisionList: Scene {
             .defaultWindowPlacementAll( .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue))
             
             WindowGroup("Map Book Viewer", id: WindowIdentifier.mapBookViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.mapRoot.viewController.mapBookWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.mapRoot.viewController.mapBookWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)
@@ -42,8 +42,8 @@ struct OldWindowMacVisionList: Scene {
             .defaultWindowPlacementAll( .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue))
             
             BaseWindow("Map Edit Viewer", id: WindowIdentifier.mapEditor.rawValue) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.mapRoot.viewController.mapEditWindow()
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.mapRoot.viewController.mapEditWindow()
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)
@@ -53,8 +53,8 @@ struct OldWindowMacVisionList: Scene {
             .defaultWindowPlacementAll( .below(WindowIdentifier.game.rawValue))
             
             WindowGroup("Pdf Viewer", id: WindowIdentifier.pdfViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.pdfRoot.viewController.pdfWindow(root: appStore.pdfRoot, selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.pdfRoot.viewController.pdfWindow(root: appModel.pdfRoot, selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)
@@ -64,8 +64,8 @@ struct OldWindowMacVisionList: Scene {
             .defaultWindowPlacementAll( .below(WindowIdentifier.game.rawValue))
             
             WindowGroup("Photo Viewer", id: WindowIdentifier.photoViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.photoRoot.viewController.photoWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.photoRoot.viewController.photoWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)
@@ -75,8 +75,8 @@ struct OldWindowMacVisionList: Scene {
             .defaultWindowPlacementAll( .above(WindowIdentifier.game.rawValue))
             
             WindowGroup("Character Viewer", id: WindowIdentifier.valueViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.valueRoot.viewController.characterWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.valueRoot.viewController.characterWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)
@@ -86,8 +86,8 @@ struct OldWindowMacVisionList: Scene {
             .defaultWindowPlacementAll( .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue))
             
             WindowGroup("Table Viewer", id: WindowIdentifier.tableViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.tableRoot.viewController.tableSheetWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.tableRoot.viewController.tableSheetWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)
@@ -97,8 +97,8 @@ struct OldWindowMacVisionList: Scene {
             .defaultWindowPlacementAll( .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue))
             
             WindowGroup("Weather Viewer", id: WindowIdentifier.weatherViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.weatherRoot.viewController.weatherWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.weatherRoot.viewController.weatherWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)

@@ -16,7 +16,7 @@ import SwiftUI
 import RPGWeathers
 
 struct TabRootView: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let editorOnly: Bool
 
     @Environment(\.appSizeMode) private var appSizeMode
@@ -26,7 +26,7 @@ struct TabRootView: View {
 
         layout
             .onChange(of: appSizeMode) { oldValue, newValue in
-                appStore.resetNavigation()
+                appModel.resetNavigation()
             }
             .sizedSheet(isPresented: isSingleSizedSheetPresented(selectionSheetLinkModel: selectionSheetLinkModel)) {
                 selectionSheetLinkModel.dismissedAction?()
@@ -78,22 +78,22 @@ struct TabRootView: View {
     }
     
     private var selectionSheetLinkModel: SelectionSheetLinkModel {
-        appStore.selectionSheetLinkModel
+        appModel.selectionSheetLinkModel
     }
     
     private var fullScreenBinding: Binding<Bool> {
         Binding {
-            appStore.selectionSheetLinkModel.selectionFullScreen
+            appModel.selectionSheetLinkModel.selectionFullScreen
         } set: {
-            appStore.selectionSheetLinkModel.selectionFullScreen = $0
+            appModel.selectionSheetLinkModel.selectionFullScreen = $0
         }
     }
 
     private var sheetBinding: Binding<Bool> {
         Binding {
-            appStore.selectionSheetLinkModel.selection
+            appModel.selectionSheetLinkModel.selection
         } set: {
-            appStore.selectionSheetLinkModel.selection = $0
+            appModel.selectionSheetLinkModel.selection = $0
         }
     }
 
@@ -109,5 +109,5 @@ struct TabRootView: View {
 }
 
 #Preview {
-    TabRootView(appStore: .preview, editorOnly: false)
+    TabRootView(appModel: .preview, editorOnly: false)
 }

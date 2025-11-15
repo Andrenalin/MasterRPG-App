@@ -10,7 +10,7 @@ import RPGAdventures
 import RPGPhotos
 
 struct SaveAction: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let inputModel: InputModel
     let imageListModel: ImageListModel
     let moduleChooserModel: ModuleChooserModel
@@ -22,25 +22,25 @@ struct SaveAction: View {
                 var photoIds: [UUID] = []
                 var photoLinks: [String] = []
                 for image in imageListModel.images {
-                    let (id, link) = await appStore.photoRoot.addNewPhoto(data: image.imageData, name: inputModel.name, text: inputModel.text)
+                    let (id, link) = await appModel.photoRoot.addNewPhoto(data: image.imageData, name: inputModel.name, text: inputModel.text)
                     photoIds.append(id)
                     photoLinks.append(link)
                 }
                 switch moduleChooserModel.currentModule {
                 case .map:
-                    await appStore.mapRoot.addNewMap(name: inputModel.name, text: inputModel.text, photoId: photoIds.first)
+                    await appModel.mapRoot.addNewMap(name: inputModel.name, text: inputModel.text, photoId: photoIds.first)
                 case .adventure:
-                    await appStore.adventureRoot.addNewAdventure(name: inputModel.name, text: inputModel.text, photoIds: photoIds, photoLinks: photoLinks)
+                    await appModel.adventureRoot.addNewAdventure(name: inputModel.name, text: inputModel.text, photoIds: photoIds, photoLinks: photoLinks)
                 case .weather:
-                    await appStore.weatherRoot.addNewWeather(name: inputModel.name, text: inputModel.text, photoId: photoIds.first)
+                    await appModel.weatherRoot.addNewWeather(name: inputModel.name, text: inputModel.text, photoId: photoIds.first)
                 case .value:
-                    await appStore.valueRoot.addNewValue(name: inputModel.name, text: inputModel.text, photoIds: photoIds)
+                    await appModel.valueRoot.addNewValue(name: inputModel.name, text: inputModel.text, photoIds: photoIds)
                 default:
                     break
                 }
                 
                 
-                await appStore.save()
+                await appModel.save()
                 closeAction()
             }
         } label: {
@@ -52,6 +52,6 @@ struct SaveAction: View {
     }
     
     private var disableSave: Bool {
-        !appStore.hasDatabase || inputModel.name.isEmpty
+        !appModel.hasDatabase || inputModel.name.isEmpty
     }
 }

@@ -6,13 +6,13 @@ import SwiftUI
 
 @main
 struct MasterTVApp: App {
-    @State private var appStore = AppStore()
+    @State private var appModel = AppStore()
 
     @UIApplicationDelegateAdaptor private var appDelegate: IosAppDelegate
 
     var body: some Scene {
         WindowGroup("Game", id: WindowIdentifier.game.rawValue) {
-            InitialRootView(appStore: appStore, editorOnly: false)
+            InitialRootView(appModel: appModel, editorOnly: false)
         }
     }
 }

@@ -15,7 +15,7 @@ public struct RootURLHandler: NavigationURLHandler {
         guard !url.isGmzDocument else {
             // GMZ document
             //appModel.photoRoot.importControllable.canImportUrl(from: url) {
-            //_ = appStore.adventureRoot.importControllable.importUrl(from: url)
+            //_ = appModel.adventureRoot.importControllable.importUrl(from: url)
             return true
         }
 

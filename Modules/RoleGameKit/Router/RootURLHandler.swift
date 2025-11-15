@@ -6,17 +6,17 @@ import SwiftUI
 import RPGAdventures
 
 public struct RootURLHandler: NavigationURLHandler {
-    public init(appStore: AppStore) {
-        self.appStore = appStore
+    public init(appModel: AppStore) {
+        self.appModel = appModel
     }
     
-    let appStore: AppStore
+    let appModel: AppStore
     
     @MainActor public func handles(_ url: URL, with navigator: Navigator) -> Bool {
         guard !url.isGmzDocument else {
             // GMZ document
-            if appStore.hasDatabase {
-                _ = appStore.adventureRoot.importControllable.importUrl(from: url)
+            if appModel.hasDatabase {
+                _ = appModel.adventureRoot.importControllable.importUrl(from: url)
             }
             return true
         }

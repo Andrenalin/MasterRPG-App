@@ -60,11 +60,11 @@ private extension AudioPlayerSession {
 #if !os(macOS)
     func setCategory() {
         do {
-            #if os(tvOS)
+#if os(tvOS)
             try audioSession.setCategory(.playback, mode: .default, policy: .default, options: [.allowAirPlay, .mixWithOthers])
-            #else
-            try audioSession.setCategory(.playback, mode: .default, policy: .default, options: [.allowAirPlay, .mixWithOthers, .allowBluetooth, .allowBluetoothA2DP])
-            #endif
+#else
+            try audioSession.setCategory(.playback, mode: .default, policy: .default, options: [.allowAirPlay, .mixWithOthers, .allowBluetoothHFP, .allowBluetoothA2DP])
+#endif
         } catch {
             print("an error occurred when audio session category.\n \(error)")
         }

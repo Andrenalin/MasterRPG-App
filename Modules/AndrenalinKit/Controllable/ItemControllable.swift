@@ -255,6 +255,14 @@ public extension ItemControllable {
         itemDataModel.insert(itemId: model.id, at: foundIndex)
     }
 
+    @MainActor func collections(isFolder: Bool, in parentId: UUID?) -> [Model] {
+        return itemDataModel.items.compactMap { itemId -> Model? in
+            guard let item = itemSync(for: itemId),
+                  item.displayState == 0 && item.parentId == parentId && (item.category == (isFolder ? .folder : collectionCategory)) else { return nil }
+            return item
+        }
+    }
+    
     func delete(itemId: UUID) async {
         await delete(model: ItemRowModel(itemId: itemId, typeId: itemDataModel.networkModule))
     }

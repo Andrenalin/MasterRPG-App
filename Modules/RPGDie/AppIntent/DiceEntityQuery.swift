@@ -46,7 +46,7 @@ import AppIntents
 //    }
 //    
 //    @MainActor func suggestedEntities() async throws -> [DiceWidgetIntentEntity] {
-//        let root = DataBaseLoader.shared.appStore.diceRoot
+//        let root = DataBaseLoader.shared.appModel.diceRoot
 //        var results: [DiceWidgetIntentEntity] = []
 //        for itemId in root.itemControllable.itemDataModel.items {
 //            let name = root.itemControllable.nameSync(itemId: itemId)

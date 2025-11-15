@@ -7,7 +7,7 @@ import SwiftData
 import CoreExternalRPG
 
 struct InitialRootView: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let editorOnly: Bool
 
     #if os(tvOS)
@@ -23,12 +23,12 @@ struct InitialRootView: View {
     var body: some View {
         let _ = Self._printChanges()
         Group {
-            if appStore.hasDatabase {
-                RootView(appStore: appStore, editorOnly: editorOnly)
-                    .onChange(of: appStore.settingsModel.useCloudKit, initial: false) {
-                        if databaseModel.resetDatabase(useCloudKit: appStore.settingsModel.useCloudKit) {
+            if appModel.hasDatabase {
+                RootView(appModel: appModel, editorOnly: editorOnly)
+                    .onChange(of: appModel.settingsModel.useCloudKit, initial: false) {
+                        if databaseModel.resetDatabase(useCloudKit: appModel.settingsModel.useCloudKit) {
                             withAnimation {
-                                appStore.hasDatabase = false
+                                appModel.hasDatabase = false
                             }
                         }
                     }
@@ -36,7 +36,7 @@ struct InitialRootView: View {
                 VStack {
                     Text("Init Database").font(.largeTitle).padding()
 
-                    if appStore.hasDatabase {
+                    if appModel.hasDatabase {
                         Text("Database is loaded")
                     } else {
                         if databaseModel.hasError {
@@ -61,7 +61,7 @@ struct InitialRootView: View {
                     }
                 }
                 .task {
-                    if appStore.settingsModel.useCloudKit {
+                    if appModel.settingsModel.useCloudKit {
                         iCloudAccount = await CloudKitAccountController.checkAccountStatus()
                         if iCloudAccount != .available {
                             showAccountAlert.toggle()
@@ -74,7 +74,7 @@ struct InitialRootView: View {
                     guard let context = databaseModel.context else { return }
                     Task { @MainActor in
                         try? await Task.sleep(for: .seconds(0.25))
-                        appStore.setupRootModels(context: context, spotlightIndexer: databaseModel.spotlightIndexer)
+                        appModel.setupRootModels(context: context, spotlightIndexer: databaseModel.spotlightIndexer)
                     }
                 }
                 .alert("iCloud Account issues", isPresented: $showAccountAlert) {
@@ -98,17 +98,17 @@ struct InitialRootView: View {
         let module = UserActivity.module(from: userActivity)
         guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
         let childId = UserActivity.childId(from: userActivity)
-        appStore.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: childId))
+        appModel.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: childId))
     }
 }
 
 struct DataBaseAppStoreAvailable<Content: View>: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let contentView: (AppStore) -> Content
     
     var body: some View {
-        if appStore.hasDatabase {
-            contentView(appStore)
+        if appModel.hasDatabase {
+            contentView(appModel)
         } else {
             Text("Wait for Database initialization...")
                 .font(.largeTitle)
@@ -118,6 +118,6 @@ struct DataBaseAppStoreAvailable<Content: View>: View {
 }
 
 #Preview {
-    InitialRootView(appStore: .previewWithoutDatabase, editorOnly: true)
+    InitialRootView(appModel: .previewWithoutDatabase, editorOnly: true)
         .frame(width: 400, height: 400)
 }

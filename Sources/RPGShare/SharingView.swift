@@ -21,7 +21,7 @@ struct SharingView: View {
     let extensionContext: NSExtensionContext?
     
     // Extension State
-    @State private var appStore: AppStore
+    @State private var appModel: AppStore
     @State private var databaseModel: DataBaseModel
     @State private var loaded = false
 
@@ -43,7 +43,7 @@ struct SharingView: View {
 
                     SharingInput(model: inputModel)
 
-                    SaveAction(appStore: appStore, inputModel: inputModel, imageListModel: imageListModel, moduleChooserModel: moduleChooserModel, closeAction: close)
+                    SaveAction(appModel: appModel, inputModel: inputModel, imageListModel: imageListModel, moduleChooserModel: moduleChooserModel, closeAction: close)
                     
                     Spacer(minLength: /*@START_MENU_TOKEN@*/0/*@END_MENU_TOKEN@*/)
                 }
@@ -59,7 +59,7 @@ struct SharingView: View {
             .onChange(of: databaseModel.context, initial: true) {
                 guard let context = databaseModel.context else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    appStore.setupRootModels(context: context, spotlightIndexer: nil)
+                    appModel.setupRootModels(context: context, spotlightIndexer: nil)
                 }
             }
         }

@@ -10,16 +10,16 @@ import RPGGame
 
 
 struct OldWindowMacList: Scene {
-    let appStore: AppStore
+    let appModel: AppStore
 
     @State private var selectionSheetLinkModel = SelectionSheetLinkModel()
 
     var body: some Scene {
         WindowGroup("Editor", id: WindowIdentifier.additionalEditor.rawValue) {
-            DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                RootView(appStore: appStore, editorOnly: true)
-                    .environment(appStore.optionKeyDownModel)
-                    .environment(appStore.settingsModel)
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                RootView(appModel: appModel, editorOnly: true)
+                    .environment(appModel.optionKeyDownModel)
+                    .environment(appModel.settingsModel)
                     .frame(minWidth: 600, minHeight: 400)
             }
         }
@@ -27,29 +27,29 @@ struct OldWindowMacList: Scene {
 
         Group {
             Window("Character Generator", id: WindowIdentifier.generatorValueEditor.rawValue) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.valueRoot.viewController.generatorEditorWindow()
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.valueRoot.viewController.generatorEditorWindow()
                         .accentColor(NetworkModules.value.tint)
                         .tint(NetworkModules.value.tint)
                         .frame(minWidth: 600, minHeight: 400)
-                        .environment(\.networkActions, appStore.gameRoot.networkActions())
-                        .environment(\.valueActions, appStore.valueRoot.valueActions)
-                        .environment(\.gameModus, appStore.settingsModel.gameModus)
-                        .environment(\.showGame, appStore.settingsModel.showGame)
+                        .environment(\.networkActions, appModel.gameRoot.networkActions())
+                        .environment(\.valueActions, appModel.valueRoot.valueActions)
+                        .environment(\.gameModus, appModel.settingsModel.gameModus)
+                        .environment(\.showGame, appModel.settingsModel.showGame)
                         .environment(selectionSheetLinkModel)
                 }
             }
             
             Window("Table Generator", id: WindowIdentifier.generatorTableEditor.rawValue) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.tableRoot.viewController.generatorEditorWindow()
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.tableRoot.viewController.generatorEditorWindow()
                         .accentColor(NetworkModules.table.tint)
                         .tint(NetworkModules.table.tint)
                         .frame(minWidth: 600, minHeight: 400)
-                        .environment(\.networkActions, appStore.gameRoot.networkActions())
-                        .environment(\.valueActions, appStore.valueRoot.valueActions)
-                        .environment(\.gameModus, appStore.settingsModel.gameModus)
-                        .environment(\.showGame, appStore.settingsModel.showGame)
+                        .environment(\.networkActions, appModel.gameRoot.networkActions())
+                        .environment(\.valueActions, appModel.valueRoot.valueActions)
+                        .environment(\.gameModus, appModel.settingsModel.gameModus)
+                        .environment(\.showGame, appModel.settingsModel.showGame)
                         .environment(selectionSheetLinkModel)
                 }
             }
@@ -57,9 +57,9 @@ struct OldWindowMacList: Scene {
         .defaultSize(CGSize(width: 600, height: 800))
         
         Settings {
-            DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                SettingsView(store: appStore)
-                    .environment(appStore.settingsModel)
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                SettingsView(store: appModel)
+                    .environment(appModel.settingsModel)
                     .accentColor(.teal)
                     .tint(.teal)
                     .frame(minWidth: 600, minHeight: 400)

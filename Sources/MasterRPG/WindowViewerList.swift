@@ -14,8 +14,8 @@ struct WindowViewerList: Scene {
     
     var body: some Scene {
         Group {
-//            windowGroup(model: appStore, module: .generator) { selection in
-//                appStore.generatorRoot.viewController.windowViewer(root: appStore.generatorRoot, selection: selection)
+//            windowGroup(model: appModel, module: .generator) { selection in
+//                appModel.generatorRoot.viewController.windowViewer(root: appModel.generatorRoot, selection: selection)
 //            }
 
             windowGroup(model: appModel, module: .pdf) { selection in
@@ -31,12 +31,12 @@ struct WindowViewerList: Scene {
             }
             
 
-//            windowGroup(model: appStore, module: .table) { selection in
-//                appStore.tableRoot.viewController.windowViewer(root: appStore.tableRoot, selection: selection)
+//            windowGroup(model: appModel, module: .table) { selection in
+//                appModel.tableRoot.viewController.windowViewer(root: appModel.tableRoot, selection: selection)
 //            }
 //
-//            windowGroup(model: appStore, module: .weather) { selection in
-//                appStore.weatherRoot.viewController.windowViewer(root: appStore.weatherRoot, selection: selection)
+//            windowGroup(model: appModel, module: .weather) { selection in
+//                appModel.weatherRoot.viewController.windowViewer(root: appModel.weatherRoot, selection: selection)
 //            }
         }
         .defaultSize(CGSize(width: 600, height: 800))
@@ -44,7 +44,7 @@ struct WindowViewerList: Scene {
     
     private func windowGroup<Content: View>(model: AppStore, module: NetworkModules, content: @escaping (WindowItemSelection) -> Content) -> some Scene {
         WindowGroup("\(module.title) Viewer", id: module.viewerWindowId, for: WindowItemSelection.self) { $selection in
-            DataBaseAppStoreAvailable(appStore: appModel) { _ in
+            DataBaseAppStoreAvailable(appModel: appModel) { _ in
                 content(selection ?? WindowItemSelection(itemId: UUID()))
                     .modifier(WindowViewerSetUpViewModifier(model: model, module: module))
             }

@@ -12,13 +12,13 @@ final class DataBaseLoader {
     static let shared = DataBaseLoader()
     
     init() {
-        self.appStore = AppStore.shared
+        self.appModel = AppStore.shared
     }
     
     func setup() async {
         guard !hasInitialized else { return }
         let waiter = Task { @MainActor in
-            let databaseModel = DataBaseModel(useCloudKit: appStore.settingsModel.useCloudKit, currentActor: .rpgWidget)
+            let databaseModel = DataBaseModel(useCloudKit: appModel.settingsModel.useCloudKit, currentActor: .rpgWidget)
             databaseModel.setup()
             
             self.databaseModel = databaseModel
@@ -29,14 +29,14 @@ final class DataBaseLoader {
                 context = databaseModel.context
             }
             guard let context else { return }
-            appStore.setupDiceRootModel(context: context)
+            appModel.setupDiceRootModel(context: context)
         }
         let _ = await waiter.result
         hasInitialized = true
-        diceRoot = appStore.diceRoot
+        diceRoot = appModel.diceRoot
     }
     
-    let appStore: AppStore
+    let appModel: AppStore
     var diceRoot: DiceRoot?
     private var hasInitialized: Bool = false
     private var databaseModel: DataBaseModel?

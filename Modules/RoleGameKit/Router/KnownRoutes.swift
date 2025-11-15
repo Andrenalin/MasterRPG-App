@@ -15,7 +15,7 @@ import RPGValues
 import RPGWeathers
 
 struct RootRouteRouter: NavigationRouteHandling {
-    let appStore: AppStore
+    let appModel: AppStore
     
     @MainActor func route(to route: KnownRoutes, with navigator: Navigator) {
         navigator.perform(actions: actions(for: route))
@@ -94,7 +94,7 @@ struct RootRouteRouter: NavigationRouteHandling {
 
 
 struct RootFiveRouteRouter: NavigationRouteHandling {
-    let appStore: AppStore
+    let appModel: AppStore
     
     @MainActor func route(to route: KnownRoutes, with navigator: Navigator) {
         navigator.perform(actions: actions(for: route))

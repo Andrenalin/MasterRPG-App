@@ -5,13 +5,13 @@ import SwiftData
 
 @MainActor
 public struct LinkRegisterController {
-    public  init(container: ModelContainer, itemControllable: ItemControllable) {
+    public  init(container: ModelContainer, itemControllable: any ItemControllable) {
         self.container = container
         self.itemControllable = itemControllable
     }
     
     let container: ModelContainer
-    let itemControllable: ItemControllable
+    let itemControllable: any ItemControllable
 }
 
 public extension LinkRegisterController {
@@ -61,15 +61,6 @@ public extension LinkRegisterController {
     }
 
     
-    func verifyLinks(in text: String, destinationItemId: UUID, destinationEntryId: UUID?, destinationModule: NetworkModules) -> String {
-        let rawLinks = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
-        guard !rawLinks.isEmpty else { return text }
-        var resultText = text
-        for rawLink in rawLinks {
-        }
-        return resultText
-    }
-
     func replaceLinks(in text: String, newItemId: UUID, newEntryId: UUID?) -> String {
         let rawLinks = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
         guard !rawLinks.isEmpty else { return text }

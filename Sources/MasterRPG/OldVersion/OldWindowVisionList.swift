@@ -10,7 +10,7 @@ import SwiftUI
 
 
 struct OldWindowVisionList: Scene {
-    let appStore: AppStore
+    let appModel: AppStore
     
     @State private var immersionState: any ImmersionStyle = .mixed
 
@@ -19,8 +19,8 @@ struct OldWindowVisionList: Scene {
 
         WindowGroup(id: "SpaceVolume", for: UUID.self) { $id in
             if let id {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.spaceRoot.viewController.spaceImmersionWindow(root: appStore.spaceRoot, id: id, defaultSize: defaultSize)
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: id, defaultSize: defaultSize)
                 }
             }
         }
@@ -28,9 +28,9 @@ struct OldWindowVisionList: Scene {
         .defaultSize(defaultSize, in: .meters)
 
         ImmersiveSpace(id: WindowIdentifier.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
-            DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                appStore.spaceRoot.viewController.spaceImmersionWindow(root: appStore.spaceRoot, id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
-                    .environment(appStore.windowStateModel)
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
+                    .environment(appModel.windowStateModel)
             }
             .handlesExternalEvents(preferring: [], allowing: [])
         }
@@ -41,16 +41,16 @@ struct OldWindowVisionList: Scene {
 
         ImmersiveSpace(id: "Space3d", for: UUID.self) { $id in
             if let id {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.spaceRoot.viewController.spaceImmersionWindow(root: appStore.spaceRoot, id: id, defaultSize: defaultSize)
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: id, defaultSize: defaultSize)
                 }
             }
         }
         .immersionStyle(selection: $immersionState, in: .mixed)
 
         ImmersiveSpace(id: DiceSpace.immersiveSpaceId) {
-            DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                DiceSpace(root: appStore.diceRoot)
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                DiceSpace(root: appModel.diceRoot)
             }
         }
         .immersionStyle(selection: $immersionState, in: .mixed)
@@ -58,8 +58,8 @@ struct OldWindowVisionList: Scene {
         // Defines an immersive space to present a destination in which to watch the video.
         ImmersiveSpace(id: "PhotoWorld", for: PhotoWorldSelection.self) { $photoSelection in
             if let photoSelection {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    ImmersivePhotoView(root: appStore.photoRoot, photoSelection: photoSelection)
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    ImmersivePhotoView(root: appModel.photoRoot, photoSelection: photoSelection)
                 }
             }
         }

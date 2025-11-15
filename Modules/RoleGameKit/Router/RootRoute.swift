@@ -143,12 +143,12 @@ struct RouteRouteDestionationView: View {
         Group {
             switch route {
             case .adventures:
-                NewAdventureRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                NewAdventureRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .audios:
                 AudioFactory.rootView()
                     .environment(appModel.audioRoot)
             case .dice:
-                NewDiceRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                NewDiceRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .editors:
 #if os(visionOS)
                 EmptyView()
@@ -165,7 +165,7 @@ struct RouteRouteDestionationView: View {
                 Text("Coming Soon")
 #endif
             case .maps:
-                NewMapRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                NewMapRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .pdfs:
                 PdfFactory.rootView()
                     .environment(appModel.pdfRoot)
@@ -178,11 +178,11 @@ struct RouteRouteDestionationView: View {
             case .settings:
                 SettingsView(store: appModel)
             case .tables:
-                NewTableRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                NewTableRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .values:
-                NewValueRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                NewValueRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .weathers:
-                NewWeatherRoute(appStore: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                NewWeatherRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .search:
                 Text("Coming Soon")
             }

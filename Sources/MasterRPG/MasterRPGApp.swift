@@ -16,14 +16,14 @@ struct MasterRPGApp: App {
 #endif
     
     init() {
-        let data = appStore
+        let data = appModel
         AppDependencyManager.shared.add(dependency: data)
-        let navigator = appStore.navigator
+        let navigator = appModel.navigator
         AppDependencyManager.shared.add(dependency: navigator)
 //        
 //        let adventureRootModel = appModel.adventureRoot
 //        AppDependencyManager.shared.add(dependency: adventureRootModel)
-        let audioRootModel = appStore.audioRoot
+        let audioRootModel = appModel.audioRoot
         AppDependencyManager.shared.add(dependency: audioRootModel)
 //        let characterRootModel = appModel.characterRoot
 //        AppDependencyManager.shared.add(dependency: characterRootModel)
@@ -33,11 +33,11 @@ struct MasterRPGApp: App {
 //        AppDependencyManager.shared.add(dependency: generatorRootModel)
 //        let mapRootModel = appModel.mapRoot
 //        AppDependencyManager.shared.add(dependency: mapRootModel)
-        let pdfRootModel = appStore.pdfRoot
+        let pdfRootModel = appModel.pdfRoot
         AppDependencyManager.shared.add(dependency: pdfRootModel)
-        let photoRootModel = appStore.photoRoot
+        let photoRootModel = appModel.photoRoot
         AppDependencyManager.shared.add(dependency: photoRootModel)
-        let spaceRootModel = appStore.spaceRoot
+        let spaceRootModel = appModel.spaceRoot
         AppDependencyManager.shared.add(dependency: spaceRootModel)
 //        let tableRootModel = appModel.tableRoot
 //        AppDependencyManager.shared.add(dependency: tableRootModel)
@@ -45,21 +45,21 @@ struct MasterRPGApp: App {
 //        AppDependencyManager.shared.add(dependency: weatherRootModel)
     }
 
-    @State private var appStore: AppStore = AppStore.shared
+    @State private var appModel: AppStore = AppStore.shared
     
     var body: some Scene {
         BaseWindow("Game", id: WindowIdentifier.game.rawValue) {
-            InitialRootView(appStore: appStore, editorOnly: false)
+            InitialRootView(appModel: appModel, editorOnly: false)
 #if os(macOS)
                 .frame(minWidth: 800, minHeight: 600)
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
                 .toolbar(removing: .title)
 #endif
-                .modifier(UserSettingsViewModifier(appStore: appStore))
+                .modifier(UserSettingsViewModifier(appModel: appModel))
                 .setAppSizeMode()
         }
         .commands {
-            MenuMainCommand(appModel: appStore)
+            MenuMainCommand(appModel: appModel)
         }
 #if os(macOS)
         .keyboardShortcut("G", modifiers: [.command, .shift, .option])
@@ -67,10 +67,10 @@ struct MasterRPGApp: App {
         
 #if os(macOS)
         Window("Editor", id: WindowIdentifier.editor.rawValue) {
-            DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                RootView(appStore: appStore, editorOnly: true)
-                    .environment(appStore.optionKeyDownModel)
-                    .environment(appStore.settingsModel)
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                RootView(appModel: appModel, editorOnly: true)
+                    .environment(appModel.optionKeyDownModel)
+                    .environment(appModel.settingsModel)
                     .frame(minWidth: 600, minHeight: 400)
             }
         }
@@ -85,24 +85,24 @@ struct MasterRPGApp: App {
 #endif
         
 #if !os(tvOS)
-        OldWindowLinkList(appStore: appStore)
+        OldWindowLinkList(appModel: appModel)
         
-        OldWindowLinkAltList(appStore: appStore)
+        OldWindowLinkAltList(appModel: appModel)
         
-        WindowViewerList(appModel: appStore)
-        WindowLinkList(appModel: appStore)
+        WindowViewerList(appModel: appModel)
+        WindowLinkList(appModel: appModel)
 #endif
         
 #if os(macOS)
-        OldWindowMacList(appStore: appStore)
+        OldWindowMacList(appModel: appModel)
 #endif
         
 #if os(macOS) || os(visionOS)
-        OldWindowMacVisionList(appStore: appStore)
+        OldWindowMacVisionList(appModel: appModel)
 #endif
         
 #if os(visionOS)
-        OldWindowVisionList(appStore: appStore)
+        OldWindowVisionList(appModel: appModel)
 #endif
     }
 }

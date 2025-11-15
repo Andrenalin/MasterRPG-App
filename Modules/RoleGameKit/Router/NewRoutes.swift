@@ -15,67 +15,67 @@ import RPGWeathers
 import SwiftUI
 
 struct NewAdventureRoute: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let tabId: UUID
     let isExtended: Bool
     
     var body: some View {
-        AdventureFactory.rootExtendedView(for: appStore.adventureRoot, tabId: tabId)
-            .environment(appStore.adventureRoot)
+        AdventureFactory.rootExtendedView(for: appModel.adventureRoot, tabId: tabId)
+            .environment(appModel.adventureRoot)
     }
 }
 
 struct NewDiceRoute: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let tabId: UUID
     let isExtended: Bool
     
     var body: some View {
-            DiceFactory.rootExtendedView(for: appStore.diceRoot, tabId: tabId)
-                .environment(appStore.diceRoot)
+            DiceFactory.rootExtendedView(for: appModel.diceRoot, tabId: tabId)
+                .environment(appModel.diceRoot)
     }
 }
 
 struct NewMapRoute: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let tabId: UUID
     let isExtended: Bool
     
     var body: some View {
-            MapFactory.rootExtendedView(for: appStore.mapRoot, tabId: tabId)
-                .environment(appStore.mapRoot)
+            MapFactory.rootExtendedView(for: appModel.mapRoot, tabId: tabId)
+                .environment(appModel.mapRoot)
     }
 }
 
 struct NewTableRoute: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let tabId: UUID
     let isExtended: Bool
     
     var body: some View {
-            TableFactory.rootExtendedView(for: appStore.tableRoot, tabId: tabId)
-                .environment(appStore.tableRoot)
+            TableFactory.rootExtendedView(for: appModel.tableRoot, tabId: tabId)
+                .environment(appModel.tableRoot)
     }
 }
 
 struct NewValueRoute: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let tabId: UUID
     let isExtended: Bool
     
     var body: some View {
-            ValueFactory.rootExtendedView(for: appStore.valueRoot, tabId: tabId)
-                .environment(appStore.valueRoot)
+            ValueFactory.rootExtendedView(for: appModel.valueRoot, tabId: tabId)
+                .environment(appModel.valueRoot)
     }
 }
 
 struct NewWeatherRoute: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let tabId: UUID
     let isExtended: Bool
     
     var body: some View {
-            WeatherFactory.rootExtendedView(for: appStore.weatherRoot, tabId: tabId)
-                .environment(appStore.weatherRoot)
+            WeatherFactory.rootExtendedView(for: appModel.weatherRoot, tabId: tabId)
+                .environment(appModel.weatherRoot)
     }
 }

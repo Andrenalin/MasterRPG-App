@@ -24,14 +24,14 @@ typealias BaseWindow = WindowGroup
 #if !os(tvOS)
 
 struct OldWindowLinkList: Scene {
-    let appStore: AppStore
+    let appModel: AppStore
 
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         BaseWindow("Logs", id: WindowIdentifier.logs.rawValue) {
-            DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                appStore.gameRoot.viewController.logWindow()
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                appModel.gameRoot.viewController.logWindow()
             }
             .handlesExternalEvents(preferring: [], allowing: [])
         }
@@ -40,92 +40,92 @@ struct OldWindowLinkList: Scene {
 
         Group {
             BaseWindow("\(NetworkModules.adventure.title) Link", id: NetworkModules.adventure.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.adventureRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.adventureRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .onDisappear {
-                    appStore.windowStateModel.openWindowState[.adventure] = false
+                    appModel.windowStateModel.openWindowState[.adventure] = false
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .adventure))
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .adventure))
 #if os(macOS)
             .keyboardShortcut("1", modifiers: [.command, .option])
 #endif
 
             BaseWindow("\(NetworkModules.value.title) Link", id: NetworkModules.value.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.valueRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.valueRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .onDisappear {
-                    appStore.windowStateModel.openWindowState[.value] = false
+                    appModel.windowStateModel.openWindowState[.value] = false
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .value))
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .value))
 #if os(macOS)
             .keyboardShortcut("2", modifiers: [.command, .option])
 #endif
 
             BaseWindow("\(NetworkModules.table.title) Link", id: NetworkModules.table.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.tableRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                        .environment(\.valueActions, appStore.valueRoot.valueActions)
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.tableRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
+                        .environment(\.valueActions, appModel.valueRoot.valueActions)
                 }
                 .onDisappear {
-                    appStore.windowStateModel.openWindowState[.table] = false
+                    appModel.windowStateModel.openWindowState[.table] = false
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .table))
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .table))
 #if os(macOS)
             .keyboardShortcut("4", modifiers: [.command, .option])
 #endif
 
             BaseWindow("\(NetworkModules.map.title) Link", id: NetworkModules.map.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.mapRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.mapRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .onDisappear {
-                    appStore.windowStateModel.openWindowState[.map] = false
+                    appModel.windowStateModel.openWindowState[.map] = false
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .map))
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .map))
 #if os(macOS)
             .keyboardShortcut("5", modifiers: [.command, .option])
 #endif
 
             BaseWindow("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.diceRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.diceRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .onDisappear {
-                    appStore.windowStateModel.openWindowState[.dice] = false
+                    appModel.windowStateModel.openWindowState[.dice] = false
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .dice))
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .dice))
 #if os(macOS)
             .keyboardShortcut("7", modifiers: [.command, .option])
 #endif
 
             BaseWindow("\(NetworkModules.weather.title) Link", id: NetworkModules.weather.linkWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.weatherRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.weatherRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .onDisappear {
-                    appStore.windowStateModel.openWindowState[.weather] = false
+                    appModel.windowStateModel.openWindowState[.weather] = false
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
-            .defaultWindowPlacementAll(appStore.windowPlacement(for: .weather))
+            .defaultWindowPlacementAll(appModel.windowPlacement(for: .weather))
 #if os(macOS)
             .keyboardShortcut("0", modifiers: [.command, .option])
 #endif
@@ -140,55 +140,55 @@ struct OldWindowLinkList: Scene {
 }
 
 struct OldWindowLinkAltList: Scene {
-    let appStore: AppStore
+    let appModel: AppStore
     
     var body: some Scene {
         Group {
             WindowGroup("\(NetworkModules.adventure.title) Link", id: NetworkModules.adventure.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.adventureRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.adventureRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
 
             WindowGroup("\(NetworkModules.value.title) Link", id: NetworkModules.value.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.valueRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.valueRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
             
             WindowGroup("\(NetworkModules.table.title) Link", id: NetworkModules.table.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.tableRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
-                        .environment(\.valueActions, appStore.valueRoot.valueActions)
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.tableRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
+                        .environment(\.valueActions, appModel.valueRoot.valueActions)
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
 
             WindowGroup("\(NetworkModules.map.title) Link", id: NetworkModules.map.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.mapRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.mapRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
 
             WindowGroup("\(NetworkModules.dice.title) Link", id: NetworkModules.dice.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.diceRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.diceRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
             
             WindowGroup("\(NetworkModules.weather.title) Link", id: NetworkModules.weather.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appStore: appStore) { appStore in
-                    appStore.weatherRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appStore: appStore))
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.weatherRoot.viewController.linkWindow()
+                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
@@ -202,7 +202,7 @@ struct OldWindowLinkAltList: Scene {
 }
 
 struct WindowListSetUpViewModifier: ViewModifier {
-    let appStore: AppStore
+    let appModel: AppStore
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -213,15 +213,15 @@ struct WindowListSetUpViewModifier: ViewModifier {
             .frame(minWidth: 250, minHeight: 250)
 #endif
 #if os(iOS)
-            .environment(\.colorScheme, appStore.settingsModel.appColorScheme.colorScheme(for: colorScheme))
+            .environment(\.colorScheme, appModel.settingsModel.appColorScheme.colorScheme(for: colorScheme))
 #endif
-            .environment(\.gameModus, appStore.settingsModel.gameModus)
-            .environment(\.networkActions, appStore.gameRoot.networkActions())
-            .environment(\.sharingControlActions, appStore.gameRoot.sharingControlActions)
-            .environment(\.sharingFeatureActions, appStore.gameRoot.sharingFeatureActions)
-            .environment(\.showGame, appStore.settingsModel.showGame)
-            .environment(appStore.optionKeyDownModel)
-            .environment(appStore.deviceRotationModel)
+            .environment(\.gameModus, appModel.settingsModel.gameModus)
+            .environment(\.networkActions, appModel.gameRoot.networkActions())
+            .environment(\.sharingControlActions, appModel.gameRoot.sharingControlActions)
+            .environment(\.sharingFeatureActions, appModel.gameRoot.sharingFeatureActions)
+            .environment(\.showGame, appModel.settingsModel.showGame)
+            .environment(appModel.optionKeyDownModel)
+            .environment(appModel.deviceRotationModel)
             .tint(.teal)
     }
 }

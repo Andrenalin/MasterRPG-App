@@ -45,7 +45,7 @@ struct ExtendedTabBar: View {
             }
         }
         .navigationAutoReceive(ExtendedTabRoute.self)
-        .onNavigationRoute(RootFiveRouteRouter(appStore: appModel))
+        .onNavigationRoute(RootFiveRouteRouter(appModel: appModel))
         .onChange(of: currentModule, initial: true) {
             guard let currentModule else { return }
             tabSelectedModule = currentModule.module
@@ -100,7 +100,7 @@ private extension ExtendedTabBar {
 //
 //    @State var currentModule: ExtendedTabRoute?
 //
-//    @Environment(AppStore.self) private var appStore
+//    @Environment(AppStore.self) private var appModel
 //    @Environment(\.navigator) private var navigator
 //
 //    @Namespace private var zoomNamespace
@@ -133,35 +133,35 @@ private extension ExtendedTabBar {
 //            }
 //            .navigationDestination(for: AudioRoute.self) { route in
 //                route
-//                    .environment(appStore.audioRoot)
+//                    .environment(appModel.audioRoot)
 //            }
 //            .navigationDestination(for: DiceRoute.self) { route in
 //                route
-//                    .environment(appStore.diceRoot)
+//                    .environment(appModel.diceRoot)
 //            }
 //            .navigationDestination(for: MapRoute.self) { route in
 //                route
-//                    .environment(appStore.mapRoot)
+//                    .environment(appModel.mapRoot)
 //            }
 //            .navigationDestination(for: PdfRoute.self) { route in
 //                route
-//                    .environment(appStore.pdfRoot)
+//                    .environment(appModel.pdfRoot)
 //            }
 //            .navigationDestination(for: PhotoRoute.self) { route in
 //                route
-//                    .environment(appStore.photoRoot)
+//                    .environment(appModel.photoRoot)
 //            }
 //            .navigationDestination(for: SpaceRoute.self) { route in
 //                route
-//                    .environment(appStore.spaceRoot)
+//                    .environment(appModel.spaceRoot)
 //            }
 //            .navigationDestination(for: TableRoute.self) { route in
 //                route
-//                    .environment(appStore.tableRoot)
+//                    .environment(appModel.tableRoot)
 //            }
 //            .navigationDestination(for: WeatherRoute.self) { route in
 //                route
-//                    .environment(appStore.weatherRoot)
+//                    .environment(appModel.weatherRoot)
 //            }
 //            .onNavigationReceive { (route: ExtendedTabRoute, navigator) in
 //                if currentModule == route {
@@ -218,7 +218,7 @@ private extension ExtendedTabBar {
 //                }
 //                return .auto
 //            }
-//            .onNavigationRoute(RootFiveRouteRouter(appStore: appStore, tabId: tabId))
+//            .onNavigationRoute(RootFiveRouteRouter(appModel: appModel, tabId: tabId))
 //        }
 //    }
 //}

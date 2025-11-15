@@ -17,7 +17,7 @@ struct DiceWidgetProvider: AppIntentTimelineProvider {
     @MainActor
     private func root() async -> DiceRoot {
         await sharedDataBase.setup()
-        let dbloadRoot = sharedDataBase.appStore.diceRoot
+        let dbloadRoot = sharedDataBase.appModel.diceRoot
         return dbloadRoot
     }
     

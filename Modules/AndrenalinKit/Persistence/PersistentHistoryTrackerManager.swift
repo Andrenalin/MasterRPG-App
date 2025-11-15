@@ -1,11 +1,11 @@
 // @copyright André Trettin
 
 import Combine
-import CoreData
+@preconcurrency import CoreData
 import Foundation
 import os.log
 
-public enum AppPersistentActor: String, CaseIterable {
+public enum AppPersistentActor: String, CaseIterable, Sendable {
     case mainApp
     case sharingExtension
     // extensions that can read / write to the app group core database

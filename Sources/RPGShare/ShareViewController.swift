@@ -10,7 +10,7 @@ import UniformTypeIdentifiers
 import UIKit
 
 final class ShareViewController: UIViewController {
-    let appStore = AppStore()
+    let appModel = AppStore()
     
     override func viewDidLoad() {
         super.viewDidLoad()

@@ -82,15 +82,15 @@ struct ExtendedTabRouteDestionationView: View {
     let route: ExtendedTabRoute
     let tabId = KnownRoutes.mainTabId
 
-    @Environment(AppStore.self) private var appStore
+    @Environment(AppStore.self) private var appModel
 
     var body: some View {
         switch route {
             case .audios:
                 AudioFactory.rootView()
-                    .environment(appStore.audioRoot)
+                    .environment(appModel.audioRoot)
             case .dice:
-                NewDiceRoute(appStore: appStore, tabId: tabId, isExtended: true)
+                NewDiceRoute(appModel: appModel, tabId: tabId, isExtended: true)
             case .generator:
 #if os(tvOS)
             EmptyView()
@@ -99,22 +99,22 @@ struct ExtendedTabRouteDestionationView: View {
             //GeneratorRootFactory.rootView()
 #endif
             case .maps:
-                NewMapRoute(appStore: appStore, tabId: tabId, isExtended: true)
+                NewMapRoute(appModel: appModel, tabId: tabId, isExtended: true)
             case .pdfs:
                 PdfFactory.rootView()
-                    .environment(appStore.pdfRoot)
+                    .environment(appModel.pdfRoot)
             case .photos:
                 PhotoFactory.rootView()
-                    .environment(appStore.photoRoot)
+                    .environment(appModel.photoRoot)
             case .space:
                 SpaceFactory.rootView()
-                    .environment(appStore.spaceRoot)
+                    .environment(appModel.spaceRoot)
             case .tables:
-                NewTableRoute(appStore: appStore, tabId: tabId, isExtended: true)
+                NewTableRoute(appModel: appModel, tabId: tabId, isExtended: true)
             case .weathers:
-                NewWeatherRoute(appStore: appStore, tabId: tabId, isExtended: true)
+                NewWeatherRoute(appModel: appModel, tabId: tabId, isExtended: true)
         case .settings:
-            SettingsView(store: appStore)
+            SettingsView(store: appModel)
         }
     }
 }

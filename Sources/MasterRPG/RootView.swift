@@ -15,7 +15,7 @@ import RPGSpaces
 
 @MainActor
 struct RootView: View {
-    let appStore: AppStore
+    let appModel: AppStore
     let editorOnly: Bool
 
     @Environment(\.locale) private var locale: Locale
@@ -29,65 +29,65 @@ struct RootView: View {
         Group {
 #if os(macOS)
             if editorOnly {
-                TabRootView(appStore: appStore, editorOnly: editorOnly)
+                TabRootView(appModel: appModel, editorOnly: editorOnly)
             } else {
-                appStore.gameRoot.viewController.gameWindow {
+                appModel.gameRoot.viewController.gameWindow {
                     EmptyView()
                 }
             }
 #elseif os(tvOS)
-            appStore.gameRoot.viewController.gameWindow {
-                appStore.gameRoot.viewController.gameTabItem()
+            appModel.gameRoot.viewController.gameWindow {
+                appModel.gameRoot.viewController.gameTabItem()
             }
 #else
-            appStore.gameRoot.viewController.gameWindow {
-                TabRootView(appStore: appStore, editorOnly: editorOnly)
+            appModel.gameRoot.viewController.gameWindow {
+                TabRootView(appModel: appModel, editorOnly: editorOnly)
             }
 #endif
         }
         .setWideMode()
         .accentColor(.blue)
         .tint(.blue)
-        .environmentSetUp(appStore)
-        .environment(\.gameModus, appStore.settingsModel.gameModus)
-        .environment(\.mapActions, appStore.mapRoot.mapActions)
-        .environment(\.networkActions, appStore.gameRoot.networkActions())
-        .environment(\.routeActions, appStore.routeActions)
-        .environment(\.sharingControlActions, appStore.gameRoot.sharingControlActions)
-        .environment(\.sharingFeatureActions, appStore.gameRoot.sharingFeatureActions)
-        .environment(\.showGameActions, appStore.settingsModel.showGameActions)
-        .environment(\.valueActions, appStore.valueRoot.valueActions)
-        .navigationRoot(appStore.navigator)
-        .appExitNotifications(handler: appStore.adventureRoot.save)
+        .environmentSetUp(appModel)
+        .environment(\.gameModus, appModel.settingsModel.gameModus)
+        .environment(\.mapActions, appModel.mapRoot.mapActions)
+        .environment(\.networkActions, appModel.gameRoot.networkActions())
+        .environment(\.routeActions, appModel.routeActions)
+        .environment(\.sharingControlActions, appModel.gameRoot.sharingControlActions)
+        .environment(\.sharingFeatureActions, appModel.gameRoot.sharingFeatureActions)
+        .environment(\.showGameActions, appModel.settingsModel.showGameActions)
+        .environment(\.valueActions, appModel.valueRoot.valueActions)
+        .navigationRoot(appModel.navigator)
+        .appExitNotifications(handler: appModel.adventureRoot.save)
         .task {
 #if os(tvOS)
             try? await Task.sleep(for: .seconds(1))
-            if appStore.photoRoot.itemControllable.itemDataModel.items.isEmpty {
-                appStore.installExampleData(isGerman: locale.identifier.hasPrefix("de"))
+            if appModel.photoRoot.itemControllable.itemDataModel.items.isEmpty {
+                appModel.installExampleData(isGerman: locale.identifier.hasPrefix("de"))
             }
 #else
             try? await Task.sleep(for: .seconds(1))
-            if appStore.settingsModel.firstLaunch {
+            if appModel.settingsModel.firstLaunch {
                 showFirstLunchAlert.toggle()
             }
             try? await Task.sleep(for: .seconds(5))
             
-            try? await appStore.audioRoot.itemDataCleanup()
-            try? await appStore.pdfRoot.itemDataCleanup()
-            try? await appStore.spaceRoot.itemDataCleanup()
+            try? await appModel.audioRoot.itemDataCleanup()
+            try? await appModel.pdfRoot.itemDataCleanup()
+            try? await appModel.spaceRoot.itemDataCleanup()
 #endif
         }
         .alert("First Launch", isPresented: $showFirstLunchAlert) {
             Button {
-                appStore.installExampleData(isGerman: locale.identifier.hasPrefix("de"))
-                appStore.settingsModel.firstLaunch = false
+                appModel.installExampleData(isGerman: locale.identifier.hasPrefix("de"))
+                appModel.settingsModel.firstLaunch = false
                 withAnimation { showFirstDataAlert.toggle() }
             } label: {
                 Text("Initialize")
             }
             
             Button {
-                appStore.settingsModel.firstLaunch = false
+                appModel.settingsModel.firstLaunch = false
             } label: {
                 Text("Not now")
             }
@@ -106,9 +106,9 @@ struct RootView: View {
 }
 
 #Preview("Game") {
-    RootView(appStore: .preview, editorOnly: false)
+    RootView(appModel: .preview, editorOnly: false)
 }
 
 #Preview("Editor") {
-    RootView(appStore: .preview, editorOnly: true)
+    RootView(appModel: .preview, editorOnly: true)
 }
