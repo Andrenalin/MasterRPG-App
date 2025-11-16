@@ -1,15 +1,17 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
+import AndrenalinKit
 import AppIntents
 import Foundation
 import SwiftUI
-import AndrenalinKit
 import CoreExternalRPG
 
 struct OpenGeneratorIntent: OpenIntent {
     static let title: LocalizedStringResource = "Open Generator"
 
-    @Parameter(title: "Space", requestValueDialog: "Which generator intructions?")
+    @Parameter(title: "Generator", requestValueDialog: "Which generator intructions?")
     var target: GeneratorEntity
 
     @Dependency var navigator: Navigator
@@ -22,4 +24,6 @@ struct OpenGeneratorIntent: OpenIntent {
 
 #if os(iOS)
 extension OpenGeneratorIntent: TargetContentProvidingIntent {}
+#endif
+
 #endif

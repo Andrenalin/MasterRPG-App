@@ -18,20 +18,20 @@ import SwiftUI
 @MainActor
 public struct GeneratorRootFactory {
     public static func rootModel(
-        modelContext: ModelContext,
-        adventureRoot: AdventureRootModel,
-        audioRoot: AudioRootModel,
-        characterRoot: CharacterRootModel,
+        container: ModelContainer,
+        adventureRoot: AdventureRoot,
+        audioRoot: AudioRoot,
+        characterRoot: ValueRoot,
         diceRoot: DiceRootModel,
-        mapRoot: MapRootModel,
-        pdfRoot: PdfRootModel,
-        photoRoot: PhotoRootModel,
-        spaceRoot: SpaceRootModel,
-        tableRoot: TableRootModel,
+        mapRoot: MapRoot,
+        pdfRoot: PdfRoot,
+        photoRoot: PhotoRoot,
+        spaceRoot: SpaceRoot,
+        tableRoot: TableRoot,
         weatherRoot: WeatherRootModel
     ) -> GeneratorRootModel {
         GeneratorRootModel(
-            modelContext: modelContext,
+            container: container,
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,
             characterRoot: characterRoot,

@@ -1,7 +1,9 @@
 // @copyright André Trettin
 
+import RPGDie
 import RPGValues
 import RPGTables
+import RPGPhotos
 
 import AndrenalinKit
 import SwiftData
@@ -33,9 +35,12 @@ struct LinkRootView: View {
             ZStack {
                 switch selection {
                 case .value:
-                    root.characterRoot.viewController.linkWindow(root: root.characterRoot, isInspector: type == .inspector)
+                    root.photoRoot.viewController.linkWindow(root: root.photoRoot, isInspector: type == .inspector)
+//                    root.characterRoot.viewController.linkWindow(root: root.characterRoot, isInspector: type == .inspector)
                 default:
-                    root.tableRoot.viewController.linkWindow(root: root.tableRoot, isInspector: type == .inspector)
+//                    root.tableRoot.viewController.linkWindow(root: root.tableRoot, isInspector: type == .inspector)
+                    root.diceRoot.viewController.linkWindow(root: root.diceRoot, isInspector: type == .inspector)
+
                 }
             }
         }

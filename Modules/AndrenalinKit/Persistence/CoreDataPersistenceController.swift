@@ -80,7 +80,13 @@ public struct CoreDataPersistenceController {
 #if os(macOS)
         let frameworks = Bundle.allFrameworks.filter { $0.bundleIdentifier?.hasPrefix("de.andretrettin") ?? false }
 #else
-        let frameworks = Bundle.allFrameworks.filter { $0.resourceURL?.lastPathComponent.hasPrefix("RPG") ?? false }
+        let frameworks = Bundle.allFrameworks.filter {
+            guard let lastPath = $0.resourceURL?.lastPathComponent.replacing(".framework", with: "") else { return false }
+            if lastPath.hasPrefix("RPG") || lastPath.hasSuffix("RPG") {
+                return true
+            }
+            return false
+        }
 #endif
         var path = Bundle.main.paths(forResourcesOfType: "bundle", inDirectory: nil)
         if path.isEmpty {

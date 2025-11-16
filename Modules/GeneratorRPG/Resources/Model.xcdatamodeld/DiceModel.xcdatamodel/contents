@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24411" systemVersion="25B78" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="RPGGenerator" representedClassName="RPGGenerator" syncable="YES" codeGenerationType="class">
+        <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="entriesUpdate" attributeType="String" defaultValueString=""/>
+        <attribute name="generatorCategory" attributeType="String" defaultValueString=""/>
+        <attribute name="genType" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="information" optional="YES" attributeType="String" spotlightIndexingEnabled="YES"/>
+        <attribute name="name" optional="YES" attributeType="String" spotlightIndexingEnabled="YES"/>
+        <attribute name="parentId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="referenceId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="tags" optional="YES" attributeType="String"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGGeneratorEntry" inverseName="generator" inverseEntity="RPGGeneratorEntry"/>
+    </entity>
+    <entity name="RPGGeneratorEntry" representedClassName="RPGGeneratorEntry" syncable="YES" codeGenerationType="class">
+        <attribute name="childUUID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="index" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="generator" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGGenerator" inverseName="entries" inverseEntity="RPGGenerator"/>
+    </entity>
+</model>

@@ -1,11 +1,13 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
+import AndrenalinKit
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
 import PDFKit
-import AndrenalinKit
 
 struct GeneratorEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -17,7 +19,8 @@ struct GeneratorEntity: IndexedEntity {
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "\(name)"
+            title: "\(name)",
+            image: .init(systemName: icon)
         )
     }
 
@@ -26,16 +29,19 @@ struct GeneratorEntity: IndexedEntity {
     var id: UUID { model.id }
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name.wrappedValue }
+    var name: String { model.name }
 
-    // Maps the description variable to the Spotlight indexing key `contentDescription`.
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.information.wrappedValue }
+    var description: String { model.description }
 
-    var root: GeneratorRootModel
-    var model: ItemDataCodableModel
+    var icon: String {
+        model.specialCategory ? model.category.icon : root.module.icon
+    }
     
-    init(root: GeneratorRootModel, model: ItemDataCodableModel) {
+    var root: GeneratorRootModel
+    var model: GeneratorModel
+    
+    init(root: GeneratorRootModel, model: GeneratorModel) {
         self.root = root
         self.model = model
     }
@@ -43,32 +49,6 @@ struct GeneratorEntity: IndexedEntity {
 
 extension GeneratorEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
-            let url = URL.documentsDirectory.appending(path: "\(landmark.name).pdf")
-
-            let renderer = ImageRenderer(content: VStack {
-//                Image(landmark.landmark.backgroundImageName)
-//                    .resizable()
-//                    .aspectRatio(contentMode: .fit)
-                Text(landmark.name)
-                Text(landmark.description)
-            }.frame(width: 600))
-
-            renderer.render { size, renderer in
-                var box = CGRect(x: 0, y: 0, width: size.width, height: size.height)
-
-                guard let pdf = CGContext(url as CFURL, mediaBox: &box, nil) else {
-                    return
-                }
-                pdf.beginPDFPage(nil)
-                renderer(pdf)
-                pdf.endPDFPage()
-                pdf.closePDF()
-            }
-
-            return .init(url)
-        }
-
         DataRepresentation(exportedContentType: .plainText) {
             """
             Name: \($0.name)
@@ -83,10 +63,10 @@ struct GeneratorEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     @Dependency var root: GeneratorRootModel
 
     func suggestedEntities() async throws -> [GeneratorEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [GeneratorEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = GeneratorEntity(root: root, model: model)
             results.append(entity)
         }
@@ -96,7 +76,7 @@ struct GeneratorEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     func entities(for identifiers: [GeneratorEntity.ID]) async throws -> [GeneratorEntity] {
         var results: [GeneratorEntity] = []
         for id in identifiers {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = GeneratorEntity(root: root, model: model)
             results.append(entity)
         }
@@ -104,11 +84,11 @@ struct GeneratorEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     }
 
     func entities(matching: String) async throws -> [GeneratorEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [GeneratorEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
-            guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
             let entity = GeneratorEntity(root: root, model: model)
             results.append(entity)
         }
@@ -125,3 +105,5 @@ extension GeneratorEntity {
         SharePreview(name, icon: Image(systemName: "apple.intelligence"))
     }
 }
+
+#endif

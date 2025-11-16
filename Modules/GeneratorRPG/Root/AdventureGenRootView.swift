@@ -6,15 +6,15 @@ import FoundationModels
 import SwiftUI
 
 struct AdventureGenRootView: View {
-    let model: GeneratorDataModel
+    let model: GeneratorModel
     var dismissAction: (() -> Void)? = nil
     
     @Environment(GeneratorRootModel.self) private var root
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     
-//    @State private var prompt: String = "Create a new Campaign for DungeonSlayer under the mountain in an old deserted Dwarven empire."
-    @State private var prompt: String = "Erstelle ein Zwergenkampagne unter dem Berg in einem verlassenen, alten Königreich."
+    @State private var prompt: String = "Create a new Campaign for DungeonSlayer under the mountain in an old deserted Dwarven empire."
+//    @State private var prompt: String = "Erstelle ein Zwergenkampagne unter dem Berg in einem verlassenen, alten Königreich."
     
     var body: some View {
         checkView
@@ -146,7 +146,7 @@ private extension AdventureGenRootView {
     @Previewable @Environment(GeneratorRootModel.self) var root
     
     NavigationStack {
-        if let model = root.itemController.model(for: MockData.previewId) {
+        if let model = root.itemController.itemSync(for: MockData.previewId) {
             AdventureGenRootView(model: model, dismissAction: nil)
         }
     }

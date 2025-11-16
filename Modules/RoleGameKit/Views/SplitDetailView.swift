@@ -11,10 +11,11 @@ import RPGSpaces
 import RPGTables
 import RPGValues
 import RPGWeathers
-#if !os(tvOS)
-
-#endif
 import SwiftUI
+
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 
 struct SplitDetailView: View {
     @Environment(AppStore.self) private var appModel
@@ -26,12 +27,11 @@ struct SplitDetailView: View {
         case .dice: DiceFactory.detailView(root: appModel.diceRoot)
         case .game: EmptyView()
         case .generator:
-            #if os(tvOS)
+#if os(tvOS)
             EmptyView()
-            #else
-            EmptyView()
-            //GeneratorRootFactory.detailView(root: appModel.generatorRoot)
-            #endif
+#else
+            GeneratorRootFactory.detailView(root: appModel.generatorRoot)
+#endif
         case .map: MapFactory.detailView(root: appModel.mapRoot)
         case .pdf: PdfFactory.detailView(root: appModel.pdfRoot)
         case .photo: PhotoFactory.detailView(root: appModel.photoRoot)

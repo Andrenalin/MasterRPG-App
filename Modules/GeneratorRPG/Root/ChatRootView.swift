@@ -6,7 +6,7 @@ import FoundationModels
 import SwiftUI
 
 struct ChatRootView: View {
-    let model: GeneratorDataModel
+    let model: GeneratorModel
     var dismissAction: (() -> Void)? = nil
     
     @Environment(GeneratorRootModel.self) private var root
@@ -43,6 +43,17 @@ struct ChatRootView: View {
                 }
             }
 
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    let message = prompt
+                    Task {
+                        root.generatorController.request(message: message)
+                    }
+                    prompt = ""
+                } label: {
+                    Image(systemName: "gear")
+                }
+            }
         }
     }
 }
@@ -125,7 +136,7 @@ private extension ChatRootView {
 }
 
 struct CharacterGenView: View {
-    let value: CharacterDataModel.GenValue
+    let value: CharacterGenModel
     let level: Int
     
     var body: some View {
@@ -165,7 +176,7 @@ struct SegmentsView: View {
                             CharacterGenView(value: value, level: 0)
                         }
                         Group {
-                            if let value = try? CharacterDataModel.GenValue(sturcture.content) {
+                            if let value = try? CharacterGenModel(sturcture.content) {
                                 CharacterGenView(value: value, level: 0)
                             } else {
                                 Text(LocalizedStringKey(sturcture.description))
@@ -200,7 +211,7 @@ struct SegmentsView: View {
     @Previewable @Environment(GeneratorRootModel.self) var root
     
     NavigationStack {
-        if let model = root.itemController.model(for: MockData.previewId) {
+        if let model = root.itemController.itemSync(for: MockData.previewId) {
             ChatRootView(model: model, dismissAction: nil)
         }
     }

@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
+
 import AndrenalinKit
 import AppIntents
 import Foundation
@@ -20,3 +22,4 @@ struct GeneratorShortcuts: AppShortcutsProvider {
 
 public struct GeneratorFrameworkPackage: AppIntentsPackage { }
 
+#endif

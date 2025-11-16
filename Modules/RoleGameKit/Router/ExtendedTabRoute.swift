@@ -15,6 +15,10 @@ import RPGValues
 import RPGWeathers
 import SwiftUI
 
+#if !os(tvOS)
+import GeneratorRPG
+#endif
+
 public enum ExtendedTabRoute: String, Hashable, Codable {
     case audios
     case dice
@@ -88,33 +92,26 @@ struct ExtendedTabRouteDestionationView: View {
         switch route {
             case .audios:
                 AudioFactory.rootView()
-                    .environment(appModel.audioRoot)
             case .dice:
                 DiceFactory.rootView()
-                    .environment(appModel.diceRoot)
             case .generator:
 #if os(tvOS)
             EmptyView()
 #else
-            Text("Comming soon")
-            //GeneratorRootFactory.rootView()
+            GeneratorRootFactory.rootView()
 #endif
             case .maps:
                 NewMapRoute(appModel: appModel, tabId: tabId, isExtended: true)
             case .pdfs:
                 PdfFactory.rootView()
-                    .environment(appModel.pdfRoot)
             case .photos:
                 PhotoFactory.rootView()
-                    .environment(appModel.photoRoot)
             case .space:
                 SpaceFactory.rootView()
-                    .environment(appModel.spaceRoot)
             case .tables:
                 NewTableRoute(appModel: appModel, tabId: tabId, isExtended: true)
             case .weathers:
                 WeatherRootFactory.rootView()
-                    .environment(appModel.weatherRoot)
         case .settings:
             SettingsView(store: appModel)
         }

@@ -1,8 +1,8 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import SwiftUI
 import CoreExternalRPG
+import SwiftUI
 
 #if !os(tvOS)
 public struct GeneratorCommands: Commands {

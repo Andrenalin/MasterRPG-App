@@ -14,12 +14,12 @@ final class GeneratorSessionModel {
         self.session = session
     }
     
-    var responses: [LanguageModelSession.ResponseStream<CharacterDataModel.GenValue>.Snapshot] = []
+    var responses: [LanguageModelSession.ResponseStream<CharacterGenModel>.Snapshot] = []
     
-    var result: CharacterDataModel.GenValue?
+    var result: CharacterGenModel?
     
-    func append(_ content: LanguageModelSession.ResponseStream<CharacterDataModel.GenValue>.Snapshot) {
-        result = try? CharacterDataModel.GenValue(content.rawContent)
+    func append(_ content: LanguageModelSession.ResponseStream<CharacterGenModel>.Snapshot) {
+        result = try? CharacterGenModel(content.rawContent)
         responses.append(content)
     }
     
@@ -27,17 +27,23 @@ final class GeneratorSessionModel {
 }
 
 struct GeneratorController: Sendable {
-    @MainActor init(characterRoot: CharacterRootModel) {
+    @MainActor init(characterRoot: ValueRoot) {
         self.characterRoot = characterRoot
         self.model = GeneratorSessionModel()
     }
     
-    let characterRoot: CharacterRootModel
+    let characterRoot: ValueRoot
     let model: GeneratorSessionModel
     let llm = SystemLanguageModel.default
     
-    @MainActor func generate(from model: GeneratorDataModel) {
-        let reference: CharacterDataModel.GenValue? = characterRoot.generable(id: model.referenceId)
+    @MainActor func generate(from model: GeneratorModel) {
+        let reference: CharacterGenModel = CharacterGenModel(name: "He-Man", information: "He-Man is a legendary hero from the Marvel Universe.", tags: ["Warrior", "Weapon Master", "Swordsman"], entries: [
+            CharacterEntryGenModel(name: "Attributes", content: "", valueType: .text, groupedValues: CharacterGenModel(name: "Attributes", information: "The attributes of the character", tags: ["Values"], entries: [
+            CharacterEntryGenModel(name: "BODY", content: "10", valueType: .number, groupedValues: nil),
+            CharacterEntryGenModel(name: "MOBILITY", content: "8", valueType: .number, groupedValues: nil),
+            CharacterEntryGenModel(name: "MIND", content: "4", valueType: .number, groupedValues: nil)
+            ]))
+        ])
         
         let session = LanguageModelSession {
         """
@@ -48,13 +54,13 @@ struct GeneratorController: Sendable {
         session.prewarm()
     }
     
-    @MainActor func generateAdventure(from model: GeneratorDataModel) {
-//        let instructions = """
-//                Your are an assistent to create new adventures for a RPG game.
-//                """
+    @MainActor func generateAdventure(from model: GeneratorModel) {
         let instructions = """
-                Helfe dabei ein Abenteuer zu erstellen fuer ein Fantasy RPG.
+                Your are an assistent to create new adventures for a RPG game.
                 """
+//        let instructions = """
+//                Helfe dabei ein Abenteuer zu erstellen fuer ein Fantasy RPG.
+//                """
         let session = LanguageModelSession(instructions: instructions)
         
         self.model.set(session: session)
@@ -65,7 +71,7 @@ struct GeneratorController: Sendable {
         Task {
             do {
                 let stream = model.session.streamResponse(
-                    generating: CharacterDataModel.GenValue.self,
+                    generating: CharacterGenModel.self,
                     includeSchemaInPrompt: false,
                     options: GenerationOptions()) {
                         "\(message)"
@@ -88,9 +94,6 @@ struct GeneratorController: Sendable {
         do {
             let prompt = Prompt {
                             "\(message)"
-//                            "Give it a fun title and description."
-//                            "Here is an example of the desired format, but don't copy its content:"
-//                            Itinerary.exampleTripToJapan
                         }
 
             let stream = model.session.streamResponse(to: prompt, generating: CampaignGenModel.self)

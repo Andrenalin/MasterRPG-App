@@ -21,6 +21,10 @@ import RPGTables
 import RPGValues
 import RPGWeathers
 
+#if !os(tvOS)
+import GeneratorRPG
+#endif
+
 extension Logger {
     private static let subsystem = Bundle.main.bundleIdentifier!
     @MainActor
@@ -64,6 +68,10 @@ public final class AppStore: Sendable {
     @ObservationIgnored public let valueRoot: ValueRoot
     @ObservationIgnored public let weatherRoot: WeatherRootModel
     
+#if !os(tvOS)
+    @ObservationIgnored public let generatorRoot: GeneratorRootModel
+#endif
+
     private let root: RootManager
     
     @MainActor public init() {
@@ -130,7 +138,8 @@ public final class AppStore: Sendable {
         
 #else
         
-//        let generatorRoot = GeneratorRootFactory.rootModel(modelContext: modelContainer.mainContext, adventureRoot: adventureRoot, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
+        let generatorRoot = GeneratorRootFactory.rootModel(container: modelContainer, adventureRoot: adventureRoot, audioRoot: audioRoot, characterRoot: valueRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
+        self.generatorRoot = generatorRoot
         
         root = RootManager(
             adventureRoot: spaceRoot,
@@ -234,7 +243,8 @@ extension AppStore {
 extension AppStore {
     @MainActor public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
         adventureRoot.setUp(context: context)
-
+        generatorRoot.setUp(context: context, rootControllable: adventureRoot)
+        
         self.rpgSpotlightIndexer = spotlightIndexer
         spotlightIndexer?.observeIndexing()
         

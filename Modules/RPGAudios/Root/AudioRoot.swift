@@ -45,7 +45,7 @@ public final class AudioRoot: @unchecked Sendable {
 
         let itemController = ItemController(dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
-        _editController = EditController(itemController: itemController, linkRegisterControllable: linkRegisterControllable, currentListItem: nil, currentModel: nil)
+        _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
         _exportController = ExportController(itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
 

@@ -81,7 +81,7 @@ struct DetailRootView: View {
             .onAppear {
                 let id = root.itemController.itemDataModel.items.first ?? DiceModel.previewId
                 root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? DiceModel.previewId)
-                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
+                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .dice)
             }
     } else {
         ManagedNavigationStack {

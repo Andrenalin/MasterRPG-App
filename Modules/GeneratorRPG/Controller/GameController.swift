@@ -2,23 +2,45 @@
 
 import AndrenalinKit
 import Foundation
-import os.log
 
 struct GameController: Sendable {
-    @MainActor
-    init(itemController: ItemController) {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
-        self.exportController = ExportController(module: itemController.module, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(container: itemController.container, module: itemController.module)
-        self.importController = ImportController(itemController: internItemController, module: itemController.module)
-        self.gameModel = ItemGameModel()
+        self.exportController = ExportController(itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
+        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
 
     let itemController: ItemController
-    let importController: ImportController
     let exportController: ExportController
-    
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
+
     let gameModel: ItemGameModel
+    
+    @MainActor
+    func gameItem(for itemId: UUID) -> GeneratorModel {
+        (gameModel.itemData[itemId] as? GeneratorModel) ?? itemController.itemOrEmpty(for: itemId)
+    }
+    
+    @MainActor
+    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
+            gameModel.itemData[itemId] = item
+        } else {
+            gameModel.items.insert(itemId, at: 0)
+            gameModel.itemData[itemId] = item
+        }
+    }
+    
+    @MainActor
+    func currentItem() -> GeneratorModel {
+        gameItem(for: gameModel.currentItemId ?? UUID())
+    }
 }
 
 extension GameController: GameControllable {
@@ -28,7 +50,7 @@ extension GameController: GameControllable {
     var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    @MainActor var importControllable: any ImportControllable {
+    var importControllable: any ImportControllable {
         importController as ImportControllable
     }
 }

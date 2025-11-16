@@ -13,19 +13,18 @@ import RPGWeathers
 
 import AndrenalinKit
 import Foundation
+import CoreData
 import SwiftData
 
 @MainActor @Observable
 public final class GeneratorRootModel {
-    init(modelContext: ModelContext, adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, characterRoot: CharacterRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, weatherRoot: WeatherRootModel) {
-        self.modelContext = modelContext
-        
+    init(container: ModelContainer, adventureRoot: AdventureRoot, audioRoot: AudioRoot, characterRoot: ValueRoot, diceRoot: DiceRootModel, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, weatherRoot: WeatherRootModel) {
         let module: NetworkModules = .generator
         self.module = module
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.character, .item, .adventure])
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.character, .item, .adventure])
         self.searchModel = searchModel
         
         let itemSelectionModel = ItemSelectionModel()
@@ -41,74 +40,96 @@ public final class GeneratorRootModel {
         self.spaceRoot = spaceRoot
         self.tableRoot = tableRoot
         self.weatherRoot = weatherRoot
-
-        itemController.cleanDeleted()
     }
     
-    let modelContext: ModelContext
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
+        let dataController = context.map { DataController(context: $0, token: module.token) }
+        _dataController = dataController
+        let itemController = ItemController(dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        _itemController = itemController
+        _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
+        _exportController = ExportController(itemController: itemController, gameExporter: false)
+        _importController = ImportController(itemController: itemController)
+        _gameController = GameController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+        _linkController = LinkController(itemController: itemController, gameController: gameController)
+
+        if let dataController, let context {
+            _syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
+            Task {
+                syncDataController?.start()
+            }
+        }
+    }
+
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
-    public var currentSelectedItemId: UUID? {
-        listController.listModel.selectedItemId
-    }
+    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
-    
-    let adventureRoot: AdventureRootModel
-    let audioRoot: AudioRootModel
-    let characterRoot: CharacterRootModel
+
+    let adventureRoot: AdventureRoot
+    let audioRoot: AudioRoot
+    let characterRoot: ValueRoot
     let diceRoot: DiceRootModel
-    let mapRoot: MapRootModel
-    let pdfRoot: PdfRootModel
-    let photoRoot: PhotoRootModel
-    let spaceRoot: SpaceRootModel
-    let tableRoot: TableRootModel
+    let mapRoot: MapRoot
+    let pdfRoot: PdfRoot
+    let photoRoot: PhotoRoot
+    let spaceRoot: SpaceRoot
+    let tableRoot: TableRoot
     let weatherRoot: WeatherRootModel
 
-    @ObservationIgnored lazy var editController: EditController = {
-        EditController(itemController: itemController)
+    @ObservationIgnored private(set) var _dataController: DataController?
+    var dataController: DataController? { _dataController }
+    public var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
+    @ObservationIgnored private(set) var _syncDataController: SyncDataController?
+    var syncDataController: SyncDataController? { _syncDataController }
+    
+    @ObservationIgnored private(set) var _itemController: ItemController?
+    var itemController: ItemController { _itemController.unsafelyUnwrapped }
+    
+    @ObservationIgnored private(set) var _editController: EditController?
+    var editController: EditController { _editController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _exportController: ExportController?
+    var exportController: ExportController { _exportController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _importController: ImportController?
+    var importController: ImportController { _importController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _gameController: GameController?
+    var gameController: GameController { _gameController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _linkController: LinkController?
+    public var linkController: LinkController { _linkController.unsafelyUnwrapped }
+    
+    @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
+        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
     }()
-    @ObservationIgnored lazy var exportController: ExportController = {
-        ExportController(module: module, itemController: itemController, gameExporter: false)
-    }()
-    @ObservationIgnored lazy var gameController: GameController = {
-        GameController(itemController: itemController)
-    }()
-    @ObservationIgnored lazy var importController: ImportController = {
-        ImportController(itemController: itemController, module: module)
-    }()
-    @ObservationIgnored lazy var itemController: ItemController = {
-        ItemController(container: modelContext.container, module: module)
-    }()
-    @ObservationIgnored lazy var linkController: LinkController = {
-        LinkController(module: module, itemController: itemController)
-    }()
-    @ObservationIgnored lazy var listController: ListController = {
-        ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
-    }()
-    @ObservationIgnored lazy var listLinkController: ListController = {
-        ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
+    @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
+        folderListController.copy(parentModel: nil)
     }()
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
     }()
-    @ObservationIgnored lazy public var rootController: ItemRootController = {
+
+    
+    @ObservationIgnored private(set) var _rootControllable: RootControllable?
+    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
+    
+    
+    @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: itemSelectionModel,
-            removeEntryListModel: removeEntryListModel,
+            itemSelectionModel: ItemSelectionModel(),
+            removeEntryListModel: RemoveEntryListModel(),
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,
-            gameControllable: gameController,
-            itemControllable: itemController,
-            linkControllable: linkController,
+            gameControllable: gameControllable,
+            itemControllable: itemControllable,
+            linkControllable: linkControllable,
             listControllable: listController,
-            listLinkControllable: listLinkController,
+            folderListControllable: folderListController,
             viewControllable: viewController
         )
     }()
@@ -119,6 +140,7 @@ public final class GeneratorRootModel {
 }
 
 extension GeneratorRootModel: ItemRootControllable {
+    
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var exportControllable: any ExportControllable { exportController }
@@ -127,9 +149,14 @@ extension GeneratorRootModel: ItemRootControllable {
     public var itemControllable: any ItemControllable { itemController }
     public var linkControllable: any LinkControllable { linkController }
     public var listControllable: any ListControllable { listController }
-    public var listLinkControllable: any ListControllable { listLinkController }
+    public var folderListControllable: any FolderListControllable { folderListController }
+    public var folderLinkControllable: any FolderListControllable { folderLinkController }
     public var viewControllable: any ViewControllable { viewController }
 }
 
 extension GeneratorRootModel {
+    @MainActor
+    private var listController: ListController {
+        ListController(itemController: itemController, listStoreName: "Generator", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
+    }
 }

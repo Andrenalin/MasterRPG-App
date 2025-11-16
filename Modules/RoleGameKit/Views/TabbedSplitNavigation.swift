@@ -6,7 +6,7 @@ import SwiftUI
 
 public struct TabbedSplitNavigation: View {
     public init() {}
-
+    
     @Environment(AppStore.self) private var appModel
     
     public var body: some View {
@@ -44,7 +44,7 @@ public struct TabbedSplitNavigation: View {
 
 struct TabSidebar: View {
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
-
+    
     @Environment(AppStore.self) private var appModel
     
     var body: some View {
@@ -63,38 +63,38 @@ struct TabSidebar: View {
     }
     
     @ViewBuilder var allTabs: some View {
-            Section {
-                tabView(tab: .search)
-
-                tabView(tab: .generator)
-            } header: {
-                Text("Special", bundle: .module)
-            }
-
-            Section {
-                tabView(tab: .adventures)
-                tabView(tab: .values)
-                tabView(tab: .maps)
-                tabView(tab: .weathers)
-            } header: {
-                Text("Library", bundle: .module)
-            }
-
-            Section {
-                tabView(tab: .pdfs)
-                tabView(tab: .tables)
-            } header: {
-                Text("References", bundle: .module)
-            }
-
-            Section {
-                tabView(tab: .audios)
-                tabView(tab: .dice)
-                tabView(tab: .photos)
-                tabView(tab: .space)
-            } header: {
-                Text("Material", bundle: .module)
-            }
+        Section {
+            tabView(tab: .adventures)
+            tabView(tab: .values)
+            tabView(tab: .maps)
+            tabView(tab: .weathers)
+        } header: {
+            Text("Library", bundle: .module)
+        }
+        
+        Section {
+            tabView(tab: .pdfs)
+            tabView(tab: .tables)
+        } header: {
+            Text("References", bundle: .module)
+        }
+        
+        Section {
+            tabView(tab: .audios)
+            tabView(tab: .dice)
+            tabView(tab: .photos)
+            tabView(tab: .space)
+        } header: {
+            Text("Material", bundle: .module)
+        }
+        
+        Section {
+            tabView(tab: .search)
+            
+            tabView(tab: .generator)
+        } header: {
+            Text("Special", bundle: .module)
+        }
     }
     
     @ViewBuilder func tabView(tab: RootRoute) -> some View {

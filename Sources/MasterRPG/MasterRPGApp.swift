@@ -43,6 +43,9 @@ struct MasterRPGApp: App {
 //        AppDependencyManager.shared.add(dependency: tableRootModel)
         let weatherRootModel = appModel.weatherRoot
         AppDependencyManager.shared.add(dependency: weatherRootModel)
+
+        let generatorRootModel = appModel.generatorRoot
+        AppDependencyManager.shared.add(dependency: generatorRootModel)
     }
 
     @State private var appModel: AppStore = AppStore.shared

@@ -10,14 +10,16 @@ import RPGPhotos
 import RPGSpaces
 import RPGWeathers
 
+import GeneratorRPG
+
 struct WindowViewerList: Scene {
     let appModel: AppStore
     
     var body: some Scene {
         Group {
-//            windowGroup(model: appModel, module: .generator) { selection in
-//                appModel.generatorRoot.viewController.windowViewer(root: appModel.generatorRoot, selection: selection)
-//            }
+            windowGroup(model: appModel, module: .generator) { selection in
+                appModel.generatorRoot.viewController.windowViewer(root: appModel.generatorRoot, selection: selection)
+            }
 
             windowGroup(model: appModel, module: .pdf) { selection in
                 appModel.pdfRoot.viewController.windowViewer(root: appModel.pdfRoot, selection: selection)

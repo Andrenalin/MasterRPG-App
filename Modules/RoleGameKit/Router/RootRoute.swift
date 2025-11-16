@@ -15,6 +15,10 @@ import RPGValues
 import RPGWeathers
 import SwiftUI
 
+#if !os(tvOS)
+import GeneratorRPG
+#endif
+
 public enum RootRoute: Hashable, Codable {
     case adventures
     case audios
@@ -146,10 +150,8 @@ struct RouteRouteDestionationView: View {
                 NewAdventureRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .audios:
                 AudioFactory.rootView()
-                    .environment(appModel.audioRoot)
             case .dice:
                 DiceFactory.rootView()
-                    .environment(appModel.diceRoot)
             case .editors:
 #if os(visionOS)
                 EmptyView()
@@ -162,8 +164,7 @@ struct RouteRouteDestionationView: View {
 #if os(tvOS)
                 EmptyView()
 #else
-                //GeneratorFactory.rootView()
-                Text("Coming Soon")
+                GeneratorRootFactory.rootView()
 #endif
             case .maps:
                 NewMapRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)

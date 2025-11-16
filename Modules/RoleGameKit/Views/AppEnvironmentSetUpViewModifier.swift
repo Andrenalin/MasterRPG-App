@@ -23,9 +23,9 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.audioRoot)
             .environment(appModel.valueRoot)
             .environment(appModel.diceRoot)
-//        #if !os(tvOS)
-//            .environment(appModel.generatorRoot)
-//        #endif
+#if !os(tvOS)
+            .environment(appModel.generatorRoot)
+#endif
             .environment(appModel.mapRoot)
             .environment(appModel.pdfRoot)
             .environment(appModel.photoRoot)
