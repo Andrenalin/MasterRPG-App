@@ -14,13 +14,13 @@ import RPGSpaces
 
 struct ImportController: Sendable {
     @MainActor
-    init(root: AdventureRoot, itemController: ItemController, gameImporter: Bool) {
+    init(root: AdventureRootModel, itemController: ItemController, gameImporter: Bool) {
         self.root = root
         self.itemController = itemController
         self.importModel = ItemDataImportModel(gameImporter: gameImporter)
     }
     
-    weak var root: AdventureRoot!
+    weak var root: AdventureRootModel!
     let itemController: ItemController
     public let importModel: ItemDataImportModel
 }

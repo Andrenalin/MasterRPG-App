@@ -5,13 +5,13 @@ import Foundation
 import RPGPhotos
 
 struct ExportController: Sendable {
-    @MainActor init(photoRoot: PhotoRoot, itemController: ItemController, gameExporter: Bool) {
+    @MainActor init(photoRoot: PhotoRootModel, itemController: ItemController, gameExporter: Bool) {
         self.photoRoot = photoRoot
         self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
     
-    let photoRoot: PhotoRoot
+    let photoRoot: PhotoRootModel
     let itemController: ItemController
     public let exportModel: ItemDataExportModel
 }

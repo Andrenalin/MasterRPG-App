@@ -5,13 +5,13 @@ import Foundation
 
 struct ImportController: Sendable {
     @MainActor
-    init(root: TableRoot, itemController: ItemController, gameImporter: Bool) {
+    init(root: TableRootModel, itemController: ItemController, gameImporter: Bool) {
         self.root = root
         self.itemController = itemController
         self.importModel = ItemDataImportModel(gameImporter: gameImporter)
     }
     
-    weak var root: TableRoot!
+    weak var root: TableRootModel!
     let itemController: ItemController
     public let importModel: ItemDataImportModel
 }

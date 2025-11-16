@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct QuickEditValueRow: View {
-    init(root: ValueRoot, editController: EditController, itemId: UUID, entryId: UUID) {
+    init(root: CharacterRootModel, editController: EditController, itemId: UUID, entryId: UUID) {
         self.root = root
         self.editController = editController
         self.itemId = itemId
@@ -16,7 +16,7 @@ struct QuickEditValueRow: View {
         self._linkReplacment = State(wrappedValue: controller)
     }
     
-    let root: ValueRoot
+    let root: CharacterRootModel
     let editController: EditController
     let itemId: UUID
     let entryId: UUID
@@ -166,8 +166,8 @@ private extension QuickEditValueRow {
 
 #Preview {
     VStack {
-        QuickEditValueRow(root: ValueRoot.preview, editController: .preview, itemId: ValueModel.previewId, entryId: ValueEntryModel.previewId)
-            .environment(ValueRoot.preview)
+        QuickEditValueRow(root: CharacterRootModel.preview, editController: .preview, itemId: ValueModel.previewId, entryId: ValueEntryModel.previewId)
+            .environment(CharacterRootModel.preview)
             .environment(\.colorScheme, .dark)
     }
     .padding()

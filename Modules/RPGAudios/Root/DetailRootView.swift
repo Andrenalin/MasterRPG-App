@@ -5,7 +5,7 @@ import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
-    init(root: AudioRoot, editController: EditController, model: AudioModel, isSubFolder: Bool) {
+    init(root: AudioRootModel, editController: EditController, model: AudioModel, isSubFolder: Bool) {
         self.root = root
         self.editController = editController
         self.model = model
@@ -14,7 +14,7 @@ struct DetailRootView: View {
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
-    let root: AudioRoot
+    let root: AudioRootModel
     let editController: EditController
     let model: AudioModel
     let isSubFolder: Bool
@@ -100,7 +100,7 @@ struct DetailRootView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Environment(AudioRoot.self) var root
+    @Previewable @Environment(AudioRootModel.self) var root
     @Previewable @Environment(ListModel.self) var listModel
     
     if listModel.selectedItem == nil {

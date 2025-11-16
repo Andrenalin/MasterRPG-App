@@ -9,7 +9,7 @@ import Testing
 
 struct ImportControllerTests {
     @Test func importing() async throws {
-        let root = await PdfRoot.testRoot()
+        let root = await PdfRootModel.testRoot()
         await root.itemController.resetData()
 
         let sut = root.importController

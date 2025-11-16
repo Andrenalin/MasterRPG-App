@@ -11,7 +11,7 @@ public struct SplitNavigation: View {
     @AppStorage("MasterRPGCustomization") private var customization: TabViewCustomization
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
 
-    @Environment(AppStore.self) private var appModel
+    @Environment(AppModel.self) private var appModel
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar

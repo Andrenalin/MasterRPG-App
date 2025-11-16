@@ -6,12 +6,12 @@ import CoreExternalRPG
 
 #if !os(tvOS)
 public struct PhotoCommands: Commands {
-    public init(root: PhotoRoot, navigator: Navigator) {
+    public init(root: PhotoRootModel, navigator: Navigator) {
         self.root = root
         self.navigator = navigator
     }
     
-    let root: PhotoRoot
+    let root: PhotoRootModel
     let navigator: Navigator
 
     public var body: some Commands {

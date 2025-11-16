@@ -10,7 +10,7 @@ import SwiftUI
 
 
 struct OldWindowVisionList: Scene {
-    let appModel: AppStore
+    let appModel: AppModel
     
     @State private var immersionState: any ImmersionStyle = .mixed
 

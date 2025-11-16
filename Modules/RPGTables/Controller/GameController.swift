@@ -11,7 +11,7 @@ public protocol TableGameStorable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: TableRoot, itemController: ItemController) {
+    init(root: TableRootModel, itemController: ItemController) {
         self.root = root
         self.itemController = itemController
         self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
@@ -20,7 +20,7 @@ struct GameController: Sendable {
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
 
-    weak var root: TableRoot!
+    weak var root: TableRootModel!
     let itemController: ItemController
     let importController: ImportController
     let exportController: ExportController

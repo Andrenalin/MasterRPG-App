@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct EntryThumbnail: View {
-    let root: MapRoot
+    let root: MapRootModel
     let item: MapModel
     let entryId: UUID
 

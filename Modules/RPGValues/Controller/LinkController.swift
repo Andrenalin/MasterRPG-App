@@ -9,7 +9,7 @@ import RPGDie
 import RPGPhotos
 
 public struct LinkController: Sendable {
-    weak var root: ValueRoot!
+    weak var root: CharacterRootModel!
     let itemController: ItemController
     
     public var itemControllable: any ItemControllable {

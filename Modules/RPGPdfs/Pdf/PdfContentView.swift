@@ -10,7 +10,7 @@ struct PdfContentView: View {
     let horizontal: Bool
     let entry: PdfEntryModel?
     
-    @Environment(PdfRoot.self) private var root
+    @Environment(PdfRootModel.self) private var root
     @State private var showThumbnail = false
     
     var body: some View {

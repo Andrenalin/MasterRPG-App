@@ -6,7 +6,7 @@ import SwiftUI
 struct MapEntrySectionEditor: View {
     let editController: EditController
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(SelectionSheetLinkModel.self) private var selectionModel
     @Environment(\.dismiss) private var dismiss
 
@@ -67,6 +67,6 @@ struct MapEntrySectionEditor: View {
 
 #Preview {
     MapEntrySectionEditor(editController: .preview)
-        .environment(MapRoot.previewWithData)
+        .environment(MapRootModel.previewWithData)
         .environment(ListModel.preview)
 }

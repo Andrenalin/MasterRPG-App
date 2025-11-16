@@ -16,7 +16,7 @@ import SwiftUI
 import RPGWeathers
 
 struct TabRootView: View {
-    let appModel: AppStore
+    let appModel: AppModel
     let editorOnly: Bool
 
     @Environment(\.appSizeMode) private var appSizeMode

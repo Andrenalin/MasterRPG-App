@@ -7,7 +7,7 @@ import SwiftUI
 public struct TabbedSplitNavigation: View {
     public init() {}
     
-    @Environment(AppStore.self) private var appModel
+    @Environment(AppModel.self) private var appModel
     
     public var body: some View {
         let _ = Self._printChanges()
@@ -45,7 +45,7 @@ public struct TabbedSplitNavigation: View {
 struct TabSidebar: View {
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
     
-    @Environment(AppStore.self) private var appModel
+    @Environment(AppModel.self) private var appModel
     
     var body: some View {
         @Bindable var appModel = appModel

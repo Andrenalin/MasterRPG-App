@@ -10,7 +10,7 @@ import RPGAdventures
 import RPGPhotos
 
 struct SaveAction: View {
-    let appModel: AppStore
+    let appModel: AppModel
     let inputModel: InputModel
     let imageListModel: ImageListModel
     let moduleChooserModel: ModuleChooserModel

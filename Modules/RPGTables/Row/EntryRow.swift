@@ -10,7 +10,7 @@ struct EntryRow: View {
     let isEditing: Bool
     let cacheItemListModel: CacheItemListModel
 
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(ListModel.self) private var itemListModel
 
     @Environment(\.navigator) private var navigator
@@ -128,5 +128,5 @@ struct EntryRow: View {
 
 #Preview {
     EntryRow(model: .preview, item: .preview, isEditing: false, cacheItemListModel: .preview)
-        .environment(TableRoot.preview)
+        .environment(TableRootModel.preview)
 }

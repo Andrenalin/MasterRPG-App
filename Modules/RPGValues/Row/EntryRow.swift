@@ -142,5 +142,5 @@ struct EntryRow: View {
 
 #Preview {
     EntryRow(linkController: .preview, model: .preview, item: .preview, isEditing: false, hasQuickEditor: true, cacheItemListModel: .preview)
-        .environment(ValueRoot.preview)
+        .environment(CharacterRootModel.preview)
 }

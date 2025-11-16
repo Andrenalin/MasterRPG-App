@@ -7,7 +7,7 @@ import SwiftUI
 import RPGDie
 
 struct TableEntryEditor: View {
-    let root: TableRoot
+    let root: TableRootModel
     let editController: EditController
     
     var body: some View {

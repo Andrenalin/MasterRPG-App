@@ -10,7 +10,7 @@ import Testing
 struct ImportControllerTests {
 
     @Test func importing() async throws {
-        let root = await SpaceRoot.testRoot()
+        let root = await SpaceRootModel.testRoot()
         await root.itemController.resetData()
 
         let sut = root.importController

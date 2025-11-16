@@ -41,7 +41,7 @@ struct ViewerRouteDestinationView: View {
     
     let itemId: UUID
 
-    @Environment(PhotoRoot.self) private var root
+    @Environment(PhotoRootModel.self) private var root
     
     var body: some View {
         root.viewController.inlineViewer(root: root, with: itemId)

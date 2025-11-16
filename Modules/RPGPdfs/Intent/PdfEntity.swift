@@ -38,10 +38,10 @@ struct PdfEntity: IndexedEntity {
         model.specialCategory ? model.category.icon : root.module.icon
     }
 
-    var root: PdfRoot
+    var root: PdfRootModel
     var model: PdfModel
     
-    init(root: PdfRoot, model: PdfModel) {
+    init(root: PdfRootModel, model: PdfModel) {
         self.root = root
         self.model = model
     }
@@ -90,7 +90,7 @@ extension PdfEntity: Transferable {
 
 @MainActor
 struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
-    @Dependency var root: PdfRoot
+    @Dependency var root: PdfRootModel
 
     func suggestedEntities() async throws -> [PdfEntity] {
         let ids = root.itemController.itemDataModel.items

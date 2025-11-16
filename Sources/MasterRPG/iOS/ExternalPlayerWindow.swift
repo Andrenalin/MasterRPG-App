@@ -5,7 +5,7 @@ import RPGGame
 import SwiftUI
 
 struct ExternalPlayerWindow: View {
-    let appModel: AppStore
+    let appModel: AppModel
 
     var body: some View {
         VStack {

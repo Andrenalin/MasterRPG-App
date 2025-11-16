@@ -5,7 +5,7 @@ import AVKit
 import SwiftUI
 
 struct AudioPlayerView: View {
-    @Environment(AudioRoot.self) private var root
+    @Environment(AudioRootModel.self) private var root
     
     @Environment(\.networkActions) private var networkActions
     @Environment(\.showGame) private var showGame

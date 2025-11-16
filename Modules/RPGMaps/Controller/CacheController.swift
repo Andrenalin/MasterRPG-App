@@ -10,7 +10,7 @@ import QuickLookThumbnailing
 #endif
 
 struct CacheController: Sendable {
-    weak var root: MapRoot!
+    weak var root: MapRootModel!
     
     private let thumbnailCacheController: ImageCacheController = ImageCacheController()
     

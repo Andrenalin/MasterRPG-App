@@ -5,15 +5,15 @@ import SwiftData
 import SwiftUI
 
 public enum SpaceFactory {
-    @MainActor public static func root(container: ModelContainer) -> SpaceRoot {
-        SpaceRoot(container: container)
+    @MainActor public static func root(container: ModelContainer) -> SpaceRootModel {
+        SpaceRootModel(container: container)
     }
     
     public static func rootView() -> some View {
         SpaceRootView()
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: SpaceRoot) -> some View {
+    @MainActor @ViewBuilder public static func detailView(root: SpaceRootModel) -> some View {
         ItemSplitDetailRootView(root: root.rootController)
     }
 }

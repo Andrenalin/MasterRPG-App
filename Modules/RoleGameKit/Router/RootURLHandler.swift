@@ -6,11 +6,11 @@ import SwiftUI
 import RPGAdventures
 
 public struct RootURLHandler: NavigationURLHandler {
-    public init(appModel: AppStore) {
+    public init(appModel: AppModel) {
         self.appModel = appModel
     }
     
-    let appModel: AppStore
+    let appModel: AppModel
     
     @MainActor public func handles(_ url: URL, with navigator: Navigator) -> Bool {
         guard !url.isGmzDocument else {

@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct AdventureContentColumn<Menu: View>: View {
-    let root: AdventureRoot
+    let root: AdventureRootModel
     let editController: EditController
     let entryId: UUID
     let menuView: () -> Menu

@@ -8,7 +8,7 @@ import RPGPhotos
 public protocol WeatherGameStorable {}
 
 struct GameController: Sendable {
-    @MainActor init(photoRoot: PhotoRoot, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+    @MainActor init(photoRoot: PhotoRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
         self.exportController = ExportController(photoRoot: photoRoot, itemController: itemController, gameExporter: false)
         let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)

@@ -7,7 +7,7 @@ import SwiftUI
 
 struct DataController: Sendable {
     @MainActor
-    init(root: MapRoot, context: NSManagedObjectContext, token: String) {
+    init(root: MapRootModel, context: NSManagedObjectContext, token: String) {
         self.root = root
         self.changeObserver = CoreDataChangeObserver()
         self.dataController = CoreDataController<MapModel, RPGMap>(context: context)
@@ -16,7 +16,7 @@ struct DataController: Sendable {
         changeObserver.observeCoreDataChanges(from: context, entity: RPGMap.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
     }
     
-    weak var root: MapRoot!
+    weak var root: MapRootModel!
     let dataController: CoreDataController<MapModel, RPGMap>
     var itemControllable: any ItemControllable {
         root.itemController

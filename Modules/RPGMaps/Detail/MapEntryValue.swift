@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct MapEntryValue: View {
-    let root: MapRoot
+    let root: MapRootModel
     let editController: EditController
     let entryId: UUID
 

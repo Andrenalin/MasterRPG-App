@@ -7,7 +7,7 @@ struct ValueEntryEditRow: View {
     let editController: EditController
     let entrySectionEditorModel: EntrySectionEditorModel<ValueModel>
 
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
 
     var body: some View {

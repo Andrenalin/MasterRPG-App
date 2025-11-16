@@ -7,13 +7,13 @@ import SwiftData
 import CoreExternalRPG
 
 struct InitialRootView: View {
-    let appModel: AppStore
+    let appModel: AppModel
     let editorOnly: Bool
 
     #if os(tvOS)
     @State private var databaseModel = DataBaseModel(useCloudKit: false, currentActor: .mainApp)
     #else
-    @State private var databaseModel = DataBaseModel(useCloudKit: AppStore.shared.settingsModel.useCloudKit, currentActor: .mainApp)
+    @State private var databaseModel = DataBaseModel(useCloudKit: AppModel.shared.settingsModel.useCloudKit, currentActor: .mainApp)
     #endif
     
     @State private var showDeleteAlert = false
@@ -103,8 +103,8 @@ struct InitialRootView: View {
 }
 
 struct DataBaseAppStoreAvailable<Content: View>: View {
-    let appModel: AppStore
-    let contentView: (AppStore) -> Content
+    let appModel: AppModel
+    let contentView: (AppModel) -> Content
     
     var body: some View {
         if appModel.hasDatabase {

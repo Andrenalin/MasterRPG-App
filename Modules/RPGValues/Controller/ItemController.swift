@@ -7,14 +7,14 @@ import RPGTables
 
 struct ItemController: Sendable {
     @MainActor
-    init(root: ValueRoot, dataController: DataController?, tableChildren: (@MainActor @Sendable (ItemRowModel) -> [ItemRowModel])? = nil) {
+    init(root: CharacterRootModel, dataController: DataController?, tableChildren: (@MainActor @Sendable (ItemRowModel) -> [ItemRowModel])? = nil) {
         self.root = root
         self.dataControllable = dataController
         itemDataModel = ItemDataModel(categoryTags: [.character, .gameMaster, .item, .monster], networkModule: .value)
         self.tableChildren = tableChildren
     }
 
-    weak var root: ValueRoot!
+    weak var root: CharacterRootModel!
     let collectionCategory: ItemListCategory = .collection
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel

@@ -37,10 +37,10 @@ struct AudioEntity: IndexedEntity {
         model.specialCategory ? model.category.icon : root.module.icon
     }
 
-    var root: AudioRoot
+    var root: AudioRootModel
     var model: AudioModel
     
-    init(root: AudioRoot, model: AudioModel) {
+    init(root: AudioRootModel, model: AudioModel) {
         self.root = root
         self.model = model
     }
@@ -59,7 +59,7 @@ extension AudioEntity: Transferable {
 
 @MainActor
 struct AudioEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
-    @Dependency var root: AudioRoot
+    @Dependency var root: AudioRootModel
 
     func suggestedEntities() async throws -> [AudioEntity] {
         let ids = root.itemController.itemDataModel.items

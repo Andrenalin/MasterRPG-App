@@ -7,7 +7,7 @@ import SwiftUI
 struct AudioDetailPlayerView: View {
     let item: ItemRowTreeModel
     
-    @Environment(AudioRoot.self) private var root
+    @Environment(AudioRootModel.self) private var root
     @Environment(\.routeActions) private var routeActions
 
     var body: some View {

@@ -6,7 +6,7 @@ import SwiftUI
 struct CharacterDetailSheet: View {
     let item: ItemRowTreeModel
     
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(\.routeActions) private var routeActions
     
     var body: some View {
@@ -29,5 +29,5 @@ struct CharacterDetailSheet: View {
 
 #Preview {
     CharacterDetailSheet(item: .preview)
-        .environment(ValueRoot.previewWithData)
+        .environment(CharacterRootModel.previewWithData)
 }

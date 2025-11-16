@@ -18,7 +18,7 @@ import GeneratorRPG
 #endif
 
 struct SplitDetailView: View {
-    @Environment(AppStore.self) private var appModel
+    @Environment(AppModel.self) private var appModel
     
     var body: some View {
         switch selectedModule {

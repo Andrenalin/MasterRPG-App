@@ -7,7 +7,7 @@ struct AdventureEntryEditRow: View {
     let editController: EditController
     let entrySectionEditorModel: EntrySectionEditorModel<AdventureModel>
 
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
 
     var body: some View {

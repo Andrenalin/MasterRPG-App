@@ -36,7 +36,7 @@ extension TableRoute: NavigationDestination {
 
 struct DetailRouteDestinationView: View {
     let itemId: UUID
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     
     var body: some View {
         RootExtendedDetail(itemRowTreeModel: ItemRowTreeModel(itemId: itemId, typeId: .table), tabId: KnownRoutes.mainTabId)

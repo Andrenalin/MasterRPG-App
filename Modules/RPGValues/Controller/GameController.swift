@@ -32,7 +32,7 @@ public protocol ValueGameStorable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: ValueRoot, itemController: ItemController) {
+    init(root: CharacterRootModel, itemController: ItemController) {
         self.root = root
         self.itemController = itemController
         self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
@@ -42,7 +42,7 @@ struct GameController: Sendable {
         self.gameDiceModel = ValueGameModel()
     }
     
-    weak var root: ValueRoot!
+    weak var root: CharacterRootModel!
     let itemController: ItemController
     let importController: ImportController
     let exportController: ExportController

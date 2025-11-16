@@ -24,7 +24,7 @@ typealias BaseWindow = WindowGroup
 #if !os(tvOS)
 
 struct OldWindowLinkList: Scene {
-    let appModel: AppStore
+    let appModel: AppModel
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -110,7 +110,7 @@ struct OldWindowLinkList: Scene {
 }
 
 struct OldWindowLinkAltList: Scene {
-    let appModel: AppStore
+    let appModel: AppModel
     
     var body: some Scene {
         Group {
@@ -156,7 +156,7 @@ struct OldWindowLinkAltList: Scene {
 }
 
 struct WindowListSetUpViewModifier: ViewModifier {
-    let appModel: AppStore
+    let appModel: AppModel
     
     @Environment(\.colorScheme) private var colorScheme
     

@@ -15,7 +15,7 @@ import RPGValues
 import RPGWeathers
 
 public struct LinkController: Sendable {
-    weak var root: AdventureRoot!
+    weak var root: AdventureRootModel!
     let itemController: ItemController
 
     public var itemControllable: any ItemControllable {

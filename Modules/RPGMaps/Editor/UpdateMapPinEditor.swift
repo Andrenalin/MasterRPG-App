@@ -9,7 +9,7 @@ struct UpdateMapPinEditor: View {
     let entryId: UUID?
     let pinId: UUID?
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(SelectionSheetLinkModel.self) private var selectionModel
     
     @State private var characterPinId: UUID?

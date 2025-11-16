@@ -6,7 +6,7 @@ import SwiftUI
 struct LinkRootView: View {
     let type: LinkRootType
 
-    @Environment(SpaceRoot.self) private var root
+    @Environment(SpaceRootModel.self) private var root
     
     var body: some View {
         LinkItemRootView(root: root.rootController, type: type)

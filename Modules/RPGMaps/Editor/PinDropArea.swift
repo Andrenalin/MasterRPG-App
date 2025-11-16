@@ -5,7 +5,7 @@ import SwiftUI
 import RPGPhotos
 
 struct PinDropArea: View {
-    let root: MapRoot
+    let root: MapRootModel
     let editController: EditController
 
     @State private var dropBackgroundColor: Color = .clear
@@ -53,7 +53,7 @@ struct PinDropArea: View {
 }
 
 struct PinImageDropArea: View {
-    let root: MapRoot
+    let root: MapRootModel
     let editController: EditController
     let pin: MapPinModel
     

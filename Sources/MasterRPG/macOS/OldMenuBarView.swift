@@ -4,7 +4,7 @@ import RPGAudios
 import SwiftUI
 
 struct OldMenuBarView: View {
-    let audioRoot: AudioRoot
+    let audioRoot: AudioRootModel
 
     var body: some View {
         VStack {

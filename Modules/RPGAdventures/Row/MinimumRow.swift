@@ -7,7 +7,7 @@ import RPGPhotos
 struct MinimumRow: View {
     let itemId: UUID
 
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
         @Bindable var model = model
@@ -27,6 +27,6 @@ struct MinimumRow: View {
 
 #Preview {
     MinimumRow(itemId: AdventureModel.previewId)
-        .environment(AdventureRoot.preview)
+        .environment(AdventureRootModel.preview)
 }
 

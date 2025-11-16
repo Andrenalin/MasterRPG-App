@@ -21,7 +21,7 @@ extension InternalRoute: NavigationDestination {
 struct InternalRouteView: View {
     let route: InternalRoute
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     
     var body: some View {

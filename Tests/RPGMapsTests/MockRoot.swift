@@ -16,14 +16,14 @@ import RPGResourcesDebug
 import Testing
 
 struct MockRoot {
-    static func importTestData(_ name: String = ResourcesDebug.mapTestData, itemCounter: Int = 1) async throws -> MapRoot {
-        let audioRoot = await AudioRoot.testRoot()
+    static func importTestData(_ name: String = ResourcesDebug.mapTestData, itemCounter: Int = 1) async throws -> MapRootModel {
+        let audioRoot = await AudioRootModel.testRoot()
         let diceRoot = await DiceRootModel.testRoot()
-        let pdfRoot = await PdfRoot.testRoot()
-        let photoRoot = await PhotoRoot.testRoot()
-        let tableRoot = await TableRoot.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
-        let valueRoot = await ValueRoot.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-        let root = await MapRoot.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
+        let pdfRoot = await PdfRootModel.testRoot()
+        let photoRoot = await PhotoRootModel.testRoot()
+        let tableRoot = await TableRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
+        let valueRoot = await CharacterRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+        let root = await MapRootModel.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
 
         await root.itemController.resetData()
 
@@ -49,7 +49,7 @@ struct MockRoot {
         return root
     }
     
-    static func resetTestData(for root: MapRoot) async throws {
+    static func resetTestData(for root: MapRootModel) async throws {
         await root.itemController.resetData()
         await root.audioRoot.itemControllable.resetData()
         await root.diceRoot.itemControllable.resetData()

@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct PlayerVolumeView: View {
-    let root: AudioRoot
+    let root: AudioRootModel
     let alignment: Alignment
 
     @State private var showVolume: Bool = false

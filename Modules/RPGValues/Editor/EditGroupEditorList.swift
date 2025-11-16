@@ -8,7 +8,7 @@ struct EditGroupEditorList: View {
     let editController: EditGroupController<ItemController, EditController>
     @Binding var isPresented: Bool
     
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
 
     var body: some View {
         EditGroupEditor(editGroupController: editController, isPresented: $isPresented) { model in

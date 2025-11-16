@@ -10,7 +10,7 @@ import RPGValues
 struct SpecialEditor: View {
     let editController: EditController
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     
     @State private var showHexmapAlert = false
@@ -126,7 +126,7 @@ struct SpecialEditor: View {
 struct RootQuickLinkEditor: View {
     let editController: EditController
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     
     var body: some View {
         @Bindable var model = editController.model

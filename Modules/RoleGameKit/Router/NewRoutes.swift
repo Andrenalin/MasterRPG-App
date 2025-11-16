@@ -15,7 +15,7 @@ import RPGWeathers
 import SwiftUI
 
 struct NewAdventureRoute: View {
-    let appModel: AppStore
+    let appModel: AppModel
     let tabId: UUID
     let isExtended: Bool
     
@@ -26,7 +26,7 @@ struct NewAdventureRoute: View {
 }
 
 struct NewMapRoute: View {
-    let appModel: AppStore
+    let appModel: AppModel
     let tabId: UUID
     let isExtended: Bool
     
@@ -37,7 +37,7 @@ struct NewMapRoute: View {
 }
 
 struct NewTableRoute: View {
-    let appModel: AppStore
+    let appModel: AppModel
     let tabId: UUID
     let isExtended: Bool
     
@@ -48,7 +48,7 @@ struct NewTableRoute: View {
 }
 
 struct NewValueRoute: View {
-    let appModel: AppStore
+    let appModel: AppModel
     let tabId: UUID
     let isExtended: Bool
     

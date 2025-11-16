@@ -36,7 +36,7 @@ public protocol MapGameStorable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: MapRoot, itemController: ItemController) {
+    init(root: MapRootModel, itemController: ItemController) {
         self.root = root
         self.itemController = itemController
         self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
@@ -46,7 +46,7 @@ struct GameController: Sendable {
         self.mapGameModel = MapGameModel()
     }
 
-    weak var root: MapRoot!
+    weak var root: MapRootModel!
     let itemController: ItemController
     let importController: ImportController
     let exportController: ExportController

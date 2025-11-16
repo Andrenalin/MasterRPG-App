@@ -11,7 +11,7 @@ import CoreGraphics
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
-        let root = await PdfRoot.testRoot()
+        let root = await PdfRootModel.testRoot()
         await root.itemController.resetData()
 
         let sut = root.exportController
@@ -36,7 +36,7 @@ struct ExportControllerTests {
 
 
     @Test func exporting() async throws {
-        let root = await PdfRoot.testRoot()
+        let root = await PdfRootModel.testRoot()
         await root.itemController.resetData()
 
         let sut = root.exportController

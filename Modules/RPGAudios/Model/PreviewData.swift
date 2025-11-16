@@ -5,19 +5,19 @@ import Foundation
 import SwiftData
 import RPGResources
 
-public extension AudioRoot {
+public extension AudioRootModel {
     @MainActor
-    static let preview: AudioRoot = {
+    static let preview: AudioRootModel = {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = AudioRoot(container: modelContainer)
+        let root = AudioRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
         root.editController(type: .main).setCurrentItem(to: .preview)
         return root
     }()
     
     @MainActor
-    static let previewWithData: AudioRoot = {
-        let root = AudioRoot.preview
+    static let previewWithData: AudioRootModel = {
+        let root = AudioRootModel.preview
         let importController = root.importController
         let editController = root.editController(type: .main)
 #if DEBUG
@@ -39,9 +39,9 @@ public extension AudioRoot {
     
 #if DEBUG
     @MainActor
-    static func testRoot() -> AudioRoot {
+    static func testRoot() -> AudioRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = AudioRoot(container: modelContainer)
+        let root = AudioRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
         return root
     }
@@ -51,14 +51,14 @@ public extension AudioRoot {
     static let linkRegisterController = FakeLinkRegisterController()
 }
 
-extension AudioRoot: RootControllable {
+extension AudioRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
     }
     
     @MainActor
     public var linkRegisterControllable: LinkRegisterControllable {
-        AudioRoot.linkRegisterController
+        AudioRootModel.linkRegisterController
     }
     
     public var gameExportControllable: any ExportControllable {
@@ -79,20 +79,20 @@ extension ItemRowTreeModel {
     static let preview = ItemRowTreeModel(itemId: AudioModel.previewId, typeId: .audio)
     @MainActor
     static var previewWithData: ItemRowTreeModel = {
-        let root = AudioRoot.previewWithData
+        let root = AudioRootModel.previewWithData
         return ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], typeId: .audio)
     }()
 }
 
 extension ItemController {
     @MainActor
-    static var preview = AudioRoot.preview.itemController
+    static var preview = AudioRootModel.preview.itemController
     }
 
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = AudioRoot.preview.editController(type: .main)
+        let controller = AudioRootModel.preview.editController(type: .main)
         controller.setCurrentItem(to: .preview)
         return controller
     }()
@@ -100,17 +100,17 @@ extension EditController {
 
 extension GameController {
     @MainActor
-    static var preview = AudioRoot.preview.gameController
+    static var preview = AudioRootModel.preview.gameController
 }
 
 extension ImportController {
     @MainActor
-    static var preview = AudioRoot.preview.importController
+    static var preview = AudioRootModel.preview.importController
 }
 
 extension ExportController {
     @MainActor
-    static var preview = AudioRoot.preview.exportController
+    static var preview = AudioRootModel.preview.exportController
 }
 
 extension ListController {
@@ -118,7 +118,7 @@ extension ListController {
     static let previewTabId = UUID()
     
     @MainActor
-    static var preview = AudioRoot.preview.listController(tabId: previewTabId)
+    static var preview = AudioRootModel.preview.listController(tabId: previewTabId)
 }
 
 extension ListModel {
@@ -128,10 +128,10 @@ extension ListModel {
 
 extension ViewController {
     @MainActor
-    static var preview = AudioRoot.preview.viewController
+    static var preview = AudioRootModel.preview.viewController
 }
 
 extension LinkController {
     @MainActor
-    static var preview = AudioRoot.preview.linkController
+    static var preview = AudioRootModel.preview.linkController
 }

@@ -10,7 +10,7 @@ struct CharacterSheet: View {
     let showTopImage: Bool
     let dismissAction: (() -> Void)?
     
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
 
     @State private var sheetModel: SheetModel = SheetModel(id: UUID(), name: "", description: "", groups: [])
     
@@ -36,5 +36,5 @@ private extension CharacterSheet {
 
 #Preview {
     CharacterSheet(model: .preview, showTopImage: false, dismissAction: nil)
-        .environment(ValueRoot.previewWithData)
+        .environment(CharacterRootModel.previewWithData)
 }

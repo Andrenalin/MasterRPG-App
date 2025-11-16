@@ -7,7 +7,7 @@ struct MapEntryMapEditButton: View {
     let editController: EditController
     let entrySectionEditorModel: EntrySectionEditorModel<MapModel>
 
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(EntrySectionSelectionModel.self) private var entrySectionSelectionModel
     @Environment(SelectionSheetLinkModel.self) private var selectionModel
 

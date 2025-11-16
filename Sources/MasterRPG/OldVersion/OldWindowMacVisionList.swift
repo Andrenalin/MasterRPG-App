@@ -15,7 +15,7 @@ import RPGWeathers
 import RPGTables
 
 struct OldWindowMacVisionList: Scene {
-    let appModel: AppStore
+    let appModel: AppModel
     
     var body: some Scene {
         Group {

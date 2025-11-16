@@ -64,14 +64,14 @@ final class GeneratorDataModel: Sendable {
 }
 
 struct GeneratorController: Sendable {
-    weak var root: TableRoot!
+    weak var root: TableRootModel!
 
     let itemController: ItemController
     let listController: ListControllable
     let genDataModel: GeneratorDataModel
 
     @MainActor
-    init(root: TableRoot, rootItemId: UUID, parentItem: ItemRowModel, listControllable: ListControllable) {
+    init(root: TableRootModel, rootItemId: UUID, parentItem: ItemRowModel, listControllable: ListControllable) {
         self.root = root
         let itemController = ItemController(root: root, dataController: nil)
         self.itemController = itemController
@@ -83,7 +83,7 @@ struct GeneratorController: Sendable {
     }
 
     @MainActor
-    init(root: TableRoot, rootItemId: UUID) {
+    init(root: TableRootModel, rootItemId: UUID) {
         self.root = root
         let itemController = ItemController(root: root, dataController: nil)
         self.itemController = itemController

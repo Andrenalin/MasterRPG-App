@@ -12,7 +12,7 @@ import RPGPhotos
 import RPGTables
 
 struct MapEntryEditor: View {
-    let root: MapRoot
+    let root: MapRootModel
     let editController: EditController
     
     @Environment(\.openWindow) private var openWindow

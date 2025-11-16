@@ -127,8 +127,8 @@ struct GameControllerTests {
 }
 
 private extension GameControllerTests {
-    static func setupPhoto() async throws -> PhotoRoot {
-        let root = await PhotoRoot.testRoot()
+    static func setupPhoto() async throws -> PhotoRootModel {
+        let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         await root.gameController.reset()
 

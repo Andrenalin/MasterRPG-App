@@ -6,7 +6,7 @@ import RPGTables
 import SwiftUI
 
 public struct ViewController {
-    weak var root: ValueRoot!
+    weak var root: CharacterRootModel!
 }
 
 public extension ViewController {

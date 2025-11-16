@@ -9,7 +9,7 @@ import Testing
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
-        let root = await AudioRoot.testRoot()
+        let root = await AudioRootModel.testRoot()
         await root.itemController.resetData()
 
         let sut = root.exportController
@@ -33,7 +33,7 @@ struct ExportControllerTests {
     }
 
     @Test func exporting() async throws {
-        let root = await AudioRoot.testRoot()
+        let root = await AudioRootModel.testRoot()
         await root.itemController.resetData()
 
         let sut = root.exportController

@@ -29,13 +29,13 @@ final class AdventureEditModel: Sendable {
 
 struct EditController: Sendable {
     @MainActor
-    init(root: AdventureRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    init(root: AdventureRootModel, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
         self.adventureEditModel = AdventureEditModel()
     }
 
-    weak var root: AdventureRoot!
+    weak var root: AdventureRootModel!
     var fileUrlDataController: FileUrlDataController? = nil
     let editorModel: ItemEditorModel
     let adventureEditModel: AdventureEditModel

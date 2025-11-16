@@ -5,7 +5,7 @@ import SwiftUI
 import RPGDie
 
 public struct ViewController {
-    weak var root: TableRoot!
+    weak var root: TableRootModel!
 }
 
 public extension ViewController {

@@ -7,7 +7,7 @@ import RPGPhotos
 struct MapPinSectionEditor: View {
     let editController: EditController
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(SelectionSheetLinkModel.self) private var selectionModel
     
     @State private var showMapEditor = false
@@ -131,7 +131,7 @@ struct MapPinSectionEditor: View {
 
 #Preview {
     MapPinSectionEditor(editController: .preview)
-        .environment(MapRoot.previewWithData)
+        .environment(MapRootModel.previewWithData)
         .environment(ListModel.preview)
 }
 

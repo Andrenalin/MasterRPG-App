@@ -15,13 +15,13 @@ import RPGTables
 
 struct ItemController: Sendable {
     @MainActor
-    init(root: AdventureRoot, dataController: DataController?) {
+    init(root: AdventureRootModel, dataController: DataController?) {
         self.root = root
         self.dataControllable = dataController
         itemDataModel = ItemDataModel(categoryTags: [.adventure, .campaign, .scenario, .rules, .supplement], networkModule: .adventure)
     }
 
-    weak var root: AdventureRoot!
+    weak var root: AdventureRootModel!
     let collectionCategory: ItemListCategory = .collection
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel

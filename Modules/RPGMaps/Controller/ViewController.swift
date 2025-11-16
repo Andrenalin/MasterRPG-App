@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 public struct ViewController {
-    weak var root: MapRoot!
+    weak var root: MapRootModel!
 }
 
 public extension ViewController {

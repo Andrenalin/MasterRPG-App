@@ -9,7 +9,7 @@ struct AdventureSheet: View {
     let showImage: Bool
     let dismissAction: (() -> Void)?
 
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
 
     @State private var sheetModel: SheetModel = SheetModel(id: UUID(), name: "", description: "", groups: [])
 
@@ -32,7 +32,7 @@ struct AdventureSheet: View {
 }
 
 struct TableGameSheet: View {
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
 
     @State private var model: AdventureModel = .empty
 
@@ -47,6 +47,6 @@ struct TableGameSheet: View {
 
 #Preview {
     TableGameSheet()
-        .environment(AdventureRoot.previewWithData)
+        .environment(AdventureRootModel.previewWithData)
 
 }

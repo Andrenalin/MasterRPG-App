@@ -21,7 +21,7 @@ final class IosSceneDelegate: NSObject, UIWindowSceneDelegate, ObservableObject 
 
         if session.role == .windowExternalDisplayNonInteractive {
             window = UIWindow(windowScene: scene)
-            let content = ExternalPlayerWindow(appModel: AppStore.shared)
+            let content = ExternalPlayerWindow(appModel: AppModel.shared)
             window?.rootViewController = UIHostingController(rootView: content)
             window?.isHidden = false
         }

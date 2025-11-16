@@ -19,7 +19,7 @@ struct NavigateIntent: AppIntent {
     )
     var navigationOption: NavigationOption
 
-    @Dependency var appModel: AppStore
+    @Dependency var appModel: AppModel
 
     func perform() async throws -> some IntentResult {
         switch navigationOption {

@@ -9,7 +9,7 @@ import Testing
 
 struct ImportControllerTests {
     @Test func importing() async throws {
-        let root = await PhotoRoot.testRoot()
+        let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
 
         let sut = root.importController

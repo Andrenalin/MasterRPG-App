@@ -5,21 +5,21 @@ import Foundation
 import SwiftData
 import RPGResources
 
-public extension SpaceRoot {
+public extension SpaceRootModel {
     static let previewSpaceId = SpaceModel.previewId
     
     @MainActor
-    static let preview: SpaceRoot = {
+    static let preview: SpaceRootModel = {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = SpaceRoot(container: modelContainer)
+        let root = SpaceRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
         root.editController(type: .main).setCurrentItem(to: .preview)
         return root
     }()
     
     @MainActor
-    static let previewWithData: SpaceRoot = {
-        let root = SpaceRoot.preview
+    static let previewWithData: SpaceRootModel = {
+        let root = SpaceRootModel.preview
         let importController = root.importController
 #if DEBUG
         Task.detached(priority: .userInitiated) {
@@ -37,9 +37,9 @@ public extension SpaceRoot {
     
 #if DEBUG
     @MainActor
-    static func testRoot() -> SpaceRoot {
+    static func testRoot() -> SpaceRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = SpaceRoot(container: modelContainer)
+        let root = SpaceRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
         return root
     }
@@ -48,13 +48,13 @@ public extension SpaceRoot {
     @MainActor static let linkRegisterController = FakeLinkRegisterController()
 }
 
-extension SpaceRoot: RootControllable {
+extension SpaceRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
     }
 
     public var linkRegisterControllable: LinkRegisterControllable {
-        SpaceRoot.linkRegisterController
+        SpaceRootModel.linkRegisterController
     }
     
     public var gameExportControllable: any ExportControllable {
@@ -78,13 +78,13 @@ extension ItemRowTreeModel {
 
 extension ItemController {
     @MainActor
-    static var preview = SpaceRoot.preview.itemController
+    static var preview = SpaceRootModel.preview.itemController
 }
 
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = SpaceRoot.preview.editController(type: .main)
+        let controller = SpaceRootModel.preview.editController(type: .main)
         controller.setCurrentItem(to: .preview)
         return controller
     }()
@@ -92,17 +92,17 @@ extension EditController {
 
 extension GameController {
     @MainActor
-    static var preview = SpaceRoot.preview.gameController
+    static var preview = SpaceRootModel.preview.gameController
 }
 
 extension ImportController {
     @MainActor
-    static var preview = SpaceRoot.preview.importController
+    static var preview = SpaceRootModel.preview.importController
 }
 
 extension ExportController {
     @MainActor
-    static var preview = SpaceRoot.preview.exportController
+    static var preview = SpaceRootModel.preview.exportController
 }
 
 extension ListController {
@@ -110,7 +110,7 @@ extension ListController {
     static let previewTabId = UUID()
     
     @MainActor
-    static var preview = SpaceRoot.preview.listController(tabId: previewTabId)
+    static var preview = SpaceRootModel.preview.listController(tabId: previewTabId)
 }
 
 extension ListModel {
@@ -120,10 +120,10 @@ extension ListModel {
 
 extension ViewController {
     @MainActor
-    static var preview = SpaceRoot.preview.viewController
+    static var preview = SpaceRootModel.preview.viewController
 }
 
 extension LinkController {
     @MainActor
-    static var preview = SpaceRoot.preview.linkController
+    static var preview = SpaceRootModel.preview.linkController
 }

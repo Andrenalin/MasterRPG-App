@@ -26,13 +26,13 @@ final class MapEditModel: Sendable {
 
 struct EditController: Sendable {
     @MainActor
-    init(root: MapRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    init(root: MapRootModel, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
         self.mapEditModel = MapEditModel()
     }
 
-    weak var root: MapRoot!
+    weak var root: MapRootModel!
     var fileUrlDataController: FileUrlDataController? = nil
     let editorModel: ItemEditorModel
     let mapEditModel: MapEditModel

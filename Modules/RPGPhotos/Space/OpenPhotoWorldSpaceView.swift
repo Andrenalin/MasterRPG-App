@@ -7,7 +7,7 @@ struct OpenPhotoWorldSpace: View {
     let editController: EditController
     let itemId: UUID
 
-    @Environment(PhotoRoot.self) private var root
+    @Environment(PhotoRootModel.self) private var root
 
 #if os(visionOS)
     @Environment(\.openImmersiveSpace) private var openSpace
@@ -46,5 +46,5 @@ struct OpenPhotoWorldSpace: View {
 
 #Preview {
     OpenPhotoWorldSpace(editController: .preview, itemId: PhotoModel.previewId)
-        .environment(PhotoRoot.preview)
+        .environment(PhotoRootModel.preview)
 }

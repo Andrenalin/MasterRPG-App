@@ -38,10 +38,10 @@ struct SpaceEntity: IndexedEntity {
         model.specialCategory ? model.category.icon : root.module.icon
     }
     
-    var root: SpaceRoot
+    var root: SpaceRootModel
     var model: SpaceModel
     
-    init(root: SpaceRoot, model: SpaceModel) {
+    init(root: SpaceRootModel, model: SpaceModel) {
         self.root = root
         self.model = model
     }
@@ -90,7 +90,7 @@ extension SpaceEntity: Transferable {
 
 @MainActor
 struct SpaceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
-    @Dependency var root: SpaceRoot
+    @Dependency var root: SpaceRootModel
 
     func suggestedEntities() async throws -> [SpaceEntity] {
         let ids = root.itemController.itemDataModel.items

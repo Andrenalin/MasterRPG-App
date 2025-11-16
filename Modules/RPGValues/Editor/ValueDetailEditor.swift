@@ -7,7 +7,7 @@ struct ValueDetailEditor: View {
     let editController: EditController
     let model: ValueModel
 
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(\.wideMode) private var wideMode
     
     @State private var changeChildModel = ChangeChildModel()
@@ -61,5 +61,5 @@ struct ValueExternalHeader: View {
 }
 #Preview {
     ValueDetailEditor(editController: .preview, model: .preview)
-        .environment(ValueRoot.preview)
+        .environment(CharacterRootModel.preview)
 }

@@ -13,7 +13,7 @@ import Testing
 @testable import RPGValues
 
 struct LinkRegisterControllerTests {
-    func setUp() async throws -> ValueRoot {
+    func setUp() async throws -> CharacterRootModel {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
         let sut = await root.linkRegisterControllable

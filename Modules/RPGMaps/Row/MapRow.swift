@@ -13,7 +13,7 @@ struct MapRow: View {
     let isSelected: Bool
     let cacheItemListModel: CacheItemListModel
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(ListModel.self) private var itemListModel
     
     var body: some View {

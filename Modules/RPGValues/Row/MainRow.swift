@@ -9,7 +9,7 @@ struct MainRow: View {
     let isSelected: Bool
     let cacheItemListModel: CacheItemListModel
 
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(\.gameModus) private var gameModus
     @Environment(\.networkActions) private var networkActions
     @Environment(\.showGame) private var showGame
@@ -36,5 +36,5 @@ struct MainRow: View {
 
 #Preview {
     MainRow(model: .preview, isSelected: true, cacheItemListModel: .preview)
-        .environment(ValueRoot.preview)
+        .environment(CharacterRootModel.preview)
 }

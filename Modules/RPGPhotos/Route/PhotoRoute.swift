@@ -51,7 +51,7 @@ extension PhotoRoute: ItemDetailRoute {
 struct DetailRouteDestinationView: View {
     let itemId: UUID
     let isSubFolder: Bool
-    @Environment(PhotoRoot.self) private var root
+    @Environment(PhotoRootModel.self) private var root
     
     var body: some View {
         DetailRootView(root: root, editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: itemId), isSubFolder: isSubFolder)

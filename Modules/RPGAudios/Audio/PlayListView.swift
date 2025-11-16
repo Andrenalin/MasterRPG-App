@@ -5,7 +5,7 @@ import SwiftUI
 import CoreMedia
 
 struct PlayListView: View {
-    let root: AudioRoot
+    let root: AudioRootModel
     
     @Environment(\.networkActions) private var networkActions
     @Environment(\.showGame) private var showGame

@@ -6,7 +6,7 @@ import CoreData
 
 struct DataController: Sendable {
     @MainActor
-    init(root: AdventureRoot, context: NSManagedObjectContext, token: String) {
+    init(root: AdventureRootModel, context: NSManagedObjectContext, token: String) {
         self.root = root
         self.changeObserver = CoreDataChangeObserver()
         self.dataController = CoreDataController<AdventureModel, RPGAdventure>(context: context)
@@ -15,7 +15,7 @@ struct DataController: Sendable {
         changeObserver.observeCoreDataChanges(from: context, entity: RPGAdventure.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
     }
     
-    weak var root: AdventureRoot!
+    weak var root: AdventureRootModel!
     let dataController: CoreDataController<AdventureModel, RPGAdventure>
     var itemControllable: any ItemControllable {
         root.itemController

@@ -8,7 +8,7 @@ struct TableSheet: View {
     let showTopImage: Bool
     let dismissAction: (() -> Void)?
 
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
 
     @State private var sheetModel: SheetModel = SheetModel(id: UUID(), name: "", description: "", groups: [])
 

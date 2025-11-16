@@ -6,12 +6,12 @@ import CoreExternalRPG
 
 #if !os(tvOS)
 public struct PdfCommands: Commands {
-    public init(root: PdfRoot, navigator: Navigator) {
+    public init(root: PdfRootModel, navigator: Navigator) {
         self.root = root
         self.navigator = navigator
     }
     
-    let root: PdfRoot
+    let root: PdfRootModel
     let navigator: Navigator
 
     public var body: some Commands {

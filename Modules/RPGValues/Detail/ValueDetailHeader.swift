@@ -11,7 +11,7 @@ struct ValueDetailHeader: View {
 #if os(visionOS) || os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(DetailHeaderModel.self) private var headerModel
 
     @State private var isReading = false
@@ -52,7 +52,7 @@ struct ValueDetailHeader: View {
 
 #Preview {
     ValueDetailHeader(model: .preview)
-        .environment(ValueRoot.preview)
+        .environment(CharacterRootModel.preview)
         .environment(DetailHeaderModel(size: CGSize(width: 375, height: 200), topSafeAreaHeight: 0, isInline: false))
 
 }

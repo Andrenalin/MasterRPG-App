@@ -5,7 +5,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct RootNaviList: View {
-    let root: ValueRoot
+    let root: CharacterRootModel
     let tabId: UUID
     
     var body: some View {
@@ -17,14 +17,14 @@ struct RootNaviList: View {
 }
 
 struct RootList: View {
-    init(root: ValueRoot, tabId: UUID, selection: Bool = false) {
+    init(root: CharacterRootModel, tabId: UUID, selection: Bool = false) {
         self.root = root
         self.tabId = tabId
         self.selection = selection
         self._currentRoute = State(wrappedValue: CharacterRoute.detail(root.listController(tabId: tabId).model.selectedItem?.model.itemId ?? UUID()))
     }
     
-    let root: ValueRoot
+    let root: CharacterRootModel
     let tabId: UUID
     let selection: Bool
     
@@ -53,7 +53,7 @@ struct RootExtendedList: View {
     let tabId: UUID
     let selection: Bool
     
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     @State private var firstInit: Bool = true
     

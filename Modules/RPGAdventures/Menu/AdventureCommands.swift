@@ -27,11 +27,11 @@ extension FocusedValues {
 
 #if !os(tvOS)
 public struct AdventureCommands: Commands {
-    public init(root: AdventureRoot) {
+    public init(root: AdventureRootModel) {
         self.root = root
     }
 
-    let root: AdventureRoot
+    let root: AdventureRootModel
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
     public var body: some Commands {
@@ -91,7 +91,7 @@ struct SwitchWindowButton: View {
 }
 
 struct AddItemButton: View {
-    let root: AdventureRoot
+    let root: AdventureRootModel
     
     @Environment(\.openWindow) private var openWindow
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
@@ -120,7 +120,7 @@ struct AddItemButton: View {
 }
 
 struct DuplicateItemButton: View {
-    let root: AdventureRoot
+    let root: AdventureRootModel
 
     @FocusedBinding(\.selectedAdventure) private var selectedAdventure: UUID?
 
@@ -140,7 +140,7 @@ struct DuplicateItemButton: View {
 }
 
 struct UndoButton: View {
-    let root: AdventureRoot
+    let root: AdventureRootModel
     
     var body: some View {
         Button {
@@ -154,7 +154,7 @@ struct UndoButton: View {
 }
 
 struct RedoButton: View {
-    let root: AdventureRoot
+    let root: AdventureRootModel
 
     var body: some View {
         Button {

@@ -9,12 +9,12 @@ import RPGWeathers
 
 @MainActor
 struct LinkRegisterController: Sendable {
-    init(root: AdventureRoot) {
+    init(root: AdventureRootModel) {
         self.root = root
         self.model = LinkRegisterListModel()
     }
     
-    weak var root: AdventureRoot!
+    weak var root: AdventureRootModel!
     @MainActor let model: LinkRegisterListModel
 }
 

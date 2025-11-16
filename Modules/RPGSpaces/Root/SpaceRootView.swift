@@ -5,7 +5,7 @@ import CoreExternalRPG
 import SwiftUI
 
 struct SpaceRootView: View {
-    @Environment(SpaceRoot.self) private var root
+    @Environment(SpaceRootModel.self) private var root
 
     var body: some View {
         let _ = Self._printChanges()
@@ -17,7 +17,7 @@ struct SpaceRootView: View {
 }
 
 struct SaveView: View {
-    let root: SpaceRoot
+    let root: SpaceRootModel
     
     @SceneStorage("SpaceRoute") private var route: SpaceRoute?
     @SceneStorage("SpaceDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium

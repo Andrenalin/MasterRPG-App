@@ -21,7 +21,7 @@ import RPGPhotos
 import RPGPdfs
 
 struct RootNaviList: View {
-    let root: AdventureRoot
+    let root: AdventureRootModel
     let tabId: UUID
     var openAction: ((NetworkModules) -> Void)? = nil
     
@@ -35,14 +35,14 @@ struct RootNaviList: View {
 }
 
 struct RootList: View {
-    init(root: AdventureRoot, tabId: UUID, selection: Bool = false) {
+    init(root: AdventureRootModel, tabId: UUID, selection: Bool = false) {
         self.root = root
         self.tabId = tabId
         self.selection = selection
         self._currentRoute = State(wrappedValue: AdventureRoute.detail(root.listController(tabId: tabId).model.selectedItem?.model.itemId ?? UUID()))
     }
     
-    let root: AdventureRoot
+    let root: AdventureRootModel
     let tabId: UUID
     let selection: Bool
     
@@ -73,7 +73,7 @@ struct RootExtendedList: View {
     let selection: Bool
     var openAction: ((NetworkModules) -> Void)?
     
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     @State private var firstInit: Bool = true
     

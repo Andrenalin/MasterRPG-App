@@ -5,21 +5,21 @@ import Foundation
 import SwiftData
 import RPGResources
 
-public extension PhotoRoot {
+public extension PhotoRootModel {
     static let previewPhotoId = PhotoModel.previewId
 
     @MainActor
-    static let preview: PhotoRoot = {
+    static let preview: PhotoRootModel = {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = PhotoRoot(container: modelContainer)
+        let root = PhotoRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
         root.editController(type: .main).setCurrentItem(to: .preview)
         return root
     }()
     
     @MainActor
-    static let previewWithData: PhotoRoot = {
-        let root = PhotoRoot.preview
+    static let previewWithData: PhotoRootModel = {
+        let root = PhotoRootModel.preview
         let importController = root.importController
         let editController = root.editController(type: .main)
 #if DEBUG
@@ -41,9 +41,9 @@ public extension PhotoRoot {
     
 #if DEBUG
     @MainActor
-    static func testRoot() -> PhotoRoot {
+    static func testRoot() -> PhotoRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = PhotoRoot(container: modelContainer)
+        let root = PhotoRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
         return root
     }
@@ -53,14 +53,14 @@ public extension PhotoRoot {
     static let linkRegisterController = FakeLinkRegisterController()
 }
 
-extension PhotoRoot: RootControllable {
+extension PhotoRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
     }
 
     @MainActor
     public var linkRegisterControllable: LinkRegisterControllable {
-        PhotoRoot.linkRegisterController
+        PhotoRootModel.linkRegisterController
     }
     
     public var gameExportControllable: any ExportControllable {
@@ -81,7 +81,7 @@ extension ItemRowTreeModel {
     static let preview = ItemRowTreeModel(itemId: PhotoModel.previewId, typeId: .photo)
     @MainActor
     static var previewWithData: ItemRowTreeModel = {
-        let root = PhotoRoot.previewWithData
+        let root = PhotoRootModel.previewWithData
         return ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], entryId: nil, typeId: .photo)
     }()
 
@@ -89,13 +89,13 @@ extension ItemRowTreeModel {
 
 extension ItemController {
     @MainActor
-    static let preview = PhotoRoot.preview.itemController
+    static let preview = PhotoRootModel.preview.itemController
 }
 
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = PhotoRoot.preview.editController(type: .main)
+        let controller = PhotoRootModel.preview.editController(type: .main)
         controller.setCurrentItem(to: .preview)
         return controller
     }()
@@ -103,17 +103,17 @@ extension EditController {
 
 extension GameController {
     @MainActor
-    static var preview = PhotoRoot.preview.gameController
+    static var preview = PhotoRootModel.preview.gameController
 }
 
 extension ImportController {
     @MainActor
-    static var preview = PhotoRoot.preview.importController
+    static var preview = PhotoRootModel.preview.importController
 }
 
 extension ExportController {
     @MainActor
-    static var preview = PhotoRoot.preview.exportController
+    static var preview = PhotoRootModel.preview.exportController
 }
 
 extension ListController {
@@ -121,7 +121,7 @@ extension ListController {
     static let previewTabId = UUID()
     
     @MainActor
-    static var preview = PhotoRoot.preview.listController(tabId: previewTabId)
+    static var preview = PhotoRootModel.preview.listController(tabId: previewTabId)
 }
 
 extension ListModel {
@@ -131,10 +131,10 @@ extension ListModel {
 
 extension ViewController {
     @MainActor
-    static var preview = PhotoRoot.preview.viewController
+    static var preview = PhotoRootModel.preview.viewController
 }
 
 extension LinkController {
     @MainActor
-    static var preview = PhotoRoot.preview.linkController
+    static var preview = PhotoRootModel.preview.linkController
 }

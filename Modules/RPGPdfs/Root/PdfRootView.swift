@@ -5,7 +5,7 @@ import CoreExternalRPG
 import SwiftUI
 
 struct PdfRootView: View {
-    @Environment(PdfRoot.self) private var root
+    @Environment(PdfRootModel.self) private var root
 
     var body: some View {
         let _ = Self._printChanges()
@@ -17,7 +17,7 @@ struct PdfRootView: View {
 }
 
 struct SaveView: View {
-    let root: PdfRoot
+    let root: PdfRootModel
     
     @SceneStorage("PdfRoute") private var route: PdfRoute?
     @SceneStorage("PdfDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium

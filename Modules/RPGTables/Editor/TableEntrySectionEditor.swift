@@ -6,7 +6,7 @@ import SwiftUI
 struct TableEntrySectionEditor: View {
     let editController: EditController
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(SelectionSheetLinkModel.self) private var selectionSheetLinkModel
 
     @State private var entrySectionEditorModel = EntrySectionEditorModel<TableModel>()
@@ -55,5 +55,5 @@ struct TableEntrySectionEditor: View {
 
 #Preview {
     TableEntrySectionEditor(editController: .preview)
-        .environment(TableRoot.preview)
+        .environment(TableRootModel.preview)
 }

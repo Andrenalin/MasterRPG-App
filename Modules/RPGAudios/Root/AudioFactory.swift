@@ -1,22 +1,20 @@
 // @copyright André Trettin
 
-import CoreExternalRPG
 import AndrenalinKit
+import CoreExternalRPG
 import SwiftData
 import SwiftUI
 
 public enum AudioFactory {
-    @MainActor
-    public static func root(container: ModelContainer) -> AudioRoot {
-        AudioRoot(container: container)
+    @MainActor public static func root(container: ModelContainer) -> AudioRootModel {
+        AudioRootModel(container: container)
     }
 
-    @MainActor
-    public static func rootView() -> some View {
+    @MainActor public static func rootView() -> some View {
         AudioRootView()
     }
 
-    @MainActor @ViewBuilder public static func detailView(root: AudioRoot) -> some View {
+    @MainActor @ViewBuilder public static func detailView(root: AudioRootModel) -> some View {
         ItemSplitDetailRootView(root: root.rootController)
     }
 }

@@ -8,12 +8,12 @@ import RPGPhotos
 import RPGPdfs
 
 public struct UserSettingsViewModifier: ViewModifier {
-    public init(appModel: AppStore) {
+    public init(appModel: AppModel) {
         self.appModel = appModel
         self.settingsModel = appModel.settingsModel
     }
     
-    let appModel: AppStore
+    let appModel: AppModel
     let settingsModel: AppSettingsModel
 
     @Environment(\.colorScheme) private var colorScheme

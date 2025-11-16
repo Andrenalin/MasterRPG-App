@@ -10,7 +10,7 @@ struct MockData: PreviewModifier {
     static let previewId2 = UUID()
     static let previewId3 = UUID()
     
-    static var previewRoot: PhotoRoot?
+    static var previewRoot: PhotoRootModel?
 
     func body(content: Content, context: ModelContainer) -> some View {
         content
@@ -29,7 +29,7 @@ struct MockData: PreviewModifier {
             return container
         }
 
-        let root = PhotoRoot.preview
+        let root = PhotoRootModel.preview
         let task = root.importController.importUrl(from: url)
         let _ = try await task.value
 
@@ -39,10 +39,10 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        self._root = State(wrappedValue: PhotoRoot.preview)
+        self._root = State(wrappedValue: PhotoRootModel.preview)
     }
 
-    @State private var root: PhotoRoot
+    @State private var root: PhotoRootModel
 
     func body(content: Content) -> some View {
         content

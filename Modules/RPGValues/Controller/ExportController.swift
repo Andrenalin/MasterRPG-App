@@ -8,13 +8,13 @@ import RPGDie
 
 struct ExportController: Sendable {
     @MainActor
-    init(root: ValueRoot, itemController: ItemController, gameExporter: Bool) {
+    init(root: CharacterRootModel, itemController: ItemController, gameExporter: Bool) {
         self.root = root
         self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
 
-    weak var root: ValueRoot!
+    weak var root: CharacterRootModel!
     let itemController: ItemController
 
     public let exportModel: ItemDataExportModel

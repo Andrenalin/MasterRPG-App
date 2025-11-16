@@ -9,7 +9,7 @@ struct RootEditCanvasMap: View {
     var tile: MapEntryModel?
     var isPinEdit: Bool = false
 
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
 
     @State private var image: AKImage?
     @State private var degrees: Double = 0

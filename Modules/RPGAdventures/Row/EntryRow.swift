@@ -10,7 +10,7 @@ struct EntryRow: View {
     let isEditing: Bool
     let cacheItemListModel: CacheItemListModel
 
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     @Environment(ListModel.self) private var itemListModel
 
     @Environment(\.navigator) private var navigator

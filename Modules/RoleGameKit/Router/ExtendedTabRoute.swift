@@ -86,7 +86,7 @@ struct ExtendedTabRouteDestionationView: View {
     let route: ExtendedTabRoute
     let tabId = KnownRoutes.mainTabId
 
-    @Environment(AppStore.self) private var appModel
+    @Environment(AppModel.self) private var appModel
 
     var body: some View {
         switch route {

@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct AudioPlayerBarView: View {
-    @Environment(AudioRoot.self) private var root
+    @Environment(AudioRootModel.self) private var root
     
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass

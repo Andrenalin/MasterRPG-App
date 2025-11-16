@@ -48,14 +48,14 @@ final class GeneratorDataModel: Sendable {
 
 
 struct GeneratorController {
-    weak var root: ValueRoot!
+    weak var root: CharacterRootModel!
     
     let itemController: ItemController
     let listController: ListController
     let genDataModel: GeneratorDataModel
     
     @MainActor
-    init(root: ValueRoot, rootItemId: UUID, saveId: UUID?) {
+    init(root: CharacterRootModel, rootItemId: UUID, saveId: UUID?) {
         self.root = root
         let genDataModel = GeneratorDataModel(rootItemId: rootItemId)
         genDataModel.saveId = saveId

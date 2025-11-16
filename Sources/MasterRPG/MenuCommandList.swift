@@ -17,7 +17,7 @@ import SwiftUI
 import RPGWeathers
 
 struct MenuCommandList: Commands {
-    let appModel: AppStore
+    let appModel: AppModel
 
     var body: some Commands {
         if appModel.hasDatabase {

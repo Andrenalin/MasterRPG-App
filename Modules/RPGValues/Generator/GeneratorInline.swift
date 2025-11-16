@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct GeneratorInline: View {
-    init(root: ValueRoot, item: Binding<ItemRowModel?>, saveId: UUID?) {
+    init(root: CharacterRootModel, item: Binding<ItemRowModel?>, saveId: UUID?) {
         self._item = item
         self._generatorController = State(wrappedValue: root.generatorController(rootItem: item.wrappedValue, saveId: saveId))
     }
@@ -36,12 +36,12 @@ struct GeneratorInline: View {
 
 struct GeneratorWindow: View {
     @MainActor
-    init(root: ValueRoot) {
+    init(root: CharacterRootModel) {
         self.root = root
         self._generatorController = State(wrappedValue: root.rootModel.generatorController)
         self._item = State(wrappedValue: ItemRowModel(itemId: UUID(), typeId: .value))
     }
-    let root: ValueRoot
+    let root: CharacterRootModel
     
 #if os(macOS)
     @Environment(\.dismissWindow) private var dismissWindow

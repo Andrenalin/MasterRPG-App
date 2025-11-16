@@ -6,7 +6,7 @@ import RoleGameKit
 import SwiftUI
 
 struct MenuMainCommand: Commands {
-    let appModel: AppStore
+    let appModel: AppModel
     var body: some Commands {
         
 #if os(macOS)

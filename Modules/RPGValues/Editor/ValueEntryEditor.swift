@@ -9,7 +9,7 @@ import RPGPdfs
 import RPGTables
 
 struct ValueEntryEditor: View {
-    let root: ValueRoot
+    let root: CharacterRootModel
     let editController: EditController
     let changeChildModel: ChangeChildModel
     

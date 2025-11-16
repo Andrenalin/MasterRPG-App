@@ -11,7 +11,7 @@ import RPGMaps
 struct SpecialEditor: View {
     let editController: EditController
     
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     @Environment(\.navigator) private var navigator
 
     var body: some View {
@@ -68,7 +68,7 @@ struct SpecialEditor: View {
 struct RootQuickLinkEditor: View {
     let editController: EditController
     
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
         @Bindable var model = editController.model

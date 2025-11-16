@@ -21,7 +21,7 @@ public final class RootModel: Sendable {
 
 @Observable
 public final class WeatherRootModel: @unchecked Sendable {
-    @MainActor init(container: ModelContainer, photoRoot: PhotoRoot) {
+    @MainActor init(container: ModelContainer, photoRoot: PhotoRootModel) {
         rootModel = RootModel()
         let module: NetworkModules = .weather
         self.module = module
@@ -58,7 +58,7 @@ public final class WeatherRootModel: @unchecked Sendable {
         }
     }
     
-    let photoRoot: PhotoRoot
+    let photoRoot: PhotoRootModel
 
     public let rootModel: RootModel
     public let module: NetworkModules

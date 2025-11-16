@@ -9,7 +9,7 @@ struct AnimatedMap: View {
     let date: Date
     let size: CGSize
 
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
 
     @State private var entryId = UUID()
     @State private var dropPinModel = DropPinModel()

@@ -8,7 +8,7 @@ import SwiftUI
 struct QuickEntryEditor: View {
     let editController: EditController
     
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
     @Environment(\.navigator) private var navigator
 

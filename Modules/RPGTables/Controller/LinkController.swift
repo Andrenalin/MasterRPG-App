@@ -7,7 +7,7 @@ import SwiftUI
 import os.log
 
 public struct LinkController: Sendable {
-    weak var root: TableRoot!
+    weak var root: TableRootModel!
     let itemController: ItemController
     
     public var itemControllable: any ItemControllable {

@@ -5,7 +5,7 @@ import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
-    init(root: PdfRoot, editController: EditController, model: PdfModel, isSubFolder: Bool) {
+    init(root: PdfRootModel, editController: EditController, model: PdfModel, isSubFolder: Bool) {
         self.root = root
         self.editController = editController
         self.model = model
@@ -14,7 +14,7 @@ struct DetailRootView: View {
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
-    let root: PdfRoot
+    let root: PdfRootModel
     let editController: EditController
     let model: PdfModel
     let isSubFolder: Bool
@@ -62,7 +62,7 @@ struct PdfDetailObjectViewer: View {
     let editController: EditController
     let model: PdfModel
     
-    @Environment(PdfRoot.self) private var root
+    @Environment(PdfRootModel.self) private var root
     @Environment(GroupItemSelectionModel.self) private var selection
     
     var body: some View {
@@ -78,19 +78,19 @@ struct PdfDetailObjectViewer: View {
 
 
 #Preview(traits: .mockData) {
-    @Previewable @Environment(PdfRoot.self) var root
+    @Previewable @Environment(PdfRootModel.self) var root
     @Previewable @Environment(ListModel.self) var listModel
     
     if listModel.selectedItem == nil {
         Text("Hello")
             .onAppear {
-                let id = root.itemController.itemDataModel.items.first ?? PdfRoot.previewSpaceId
-                root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRoot.previewSpaceId)
+                let id = root.itemController.itemDataModel.items.first ?? PdfRootModel.previewSpaceId
+                root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRootModel.previewSpaceId)
                 listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: root.module)
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRoot.previewSpaceId), isSubFolder: false)
+            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRootModel.previewSpaceId), isSubFolder: false)
                 .preferredColorScheme(.dark)
         }
     }

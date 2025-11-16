@@ -10,7 +10,7 @@ import RPGGame
 
 
 struct OldWindowMacList: Scene {
-    let appModel: AppStore
+    let appModel: AppModel
 
     @State private var selectionSheetLinkModel = SelectionSheetLinkModel()
 

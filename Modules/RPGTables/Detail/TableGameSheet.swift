@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct TableGameSheet: View {
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
 
     @State private var model: TableModel = .empty
 
@@ -22,5 +22,5 @@ struct TableGameSheet: View {
 
 #Preview {
     TableGameSheet()
-        .environment(TableRoot.previewWithData)
+        .environment(TableRootModel.previewWithData)
 }

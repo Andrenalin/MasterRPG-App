@@ -22,7 +22,7 @@ extension InternalRoute: NavigationDestination {
 struct InternalRouteView: View {
     let route: InternalRoute
     
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     
     var body: some View {

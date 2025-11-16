@@ -27,11 +27,11 @@ extension FocusedValues {
 
 #if !os(tvOS)
 public struct ValueCommands: Commands {
-    public init(root: ValueRoot) {
+    public init(root: CharacterRootModel) {
         self.root = root
     }
 
-    let root: ValueRoot
+    let root: CharacterRootModel
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
     public var body: some Commands {
@@ -89,7 +89,7 @@ struct SwitchWindowButton: View {
 }
 
 struct AddItemButton: View {
-    let root: ValueRoot
+    let root: CharacterRootModel
     
     @Environment(\.openWindow) private var openWindow
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
@@ -139,7 +139,7 @@ struct DuplicateItemButton: View {
 }
 
 struct UndoButton: View {
-    let root: ValueRoot
+    let root: CharacterRootModel
     
     var body: some View {
         Button {
@@ -153,7 +153,7 @@ struct UndoButton: View {
 }
 
 struct RedoButton: View {
-    let root: ValueRoot
+    let root: CharacterRootModel
 
     var body: some View {
         Button {

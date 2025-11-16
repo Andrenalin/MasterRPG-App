@@ -15,7 +15,7 @@ import RPGSpaces
 
 @MainActor
 struct RootView: View {
-    let appModel: AppStore
+    let appModel: AppModel
     let editorOnly: Bool
 
     @Environment(\.locale) private var locale: Locale

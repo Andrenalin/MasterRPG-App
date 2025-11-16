@@ -5,7 +5,7 @@ import SwiftUI
 public struct AudioPlayerMiniBarView: View {
     public init() {}
 
-    @Environment(AudioRoot.self) private var root
+    @Environment(AudioRootModel.self) private var root
     @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
 
     public var body: some View {

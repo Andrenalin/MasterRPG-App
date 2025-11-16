@@ -10,7 +10,7 @@ struct TableDetailHeader: View {
 #if os(visionOS) || os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(DetailHeaderModel.self) private var headerModel
 
     @State private var isReading = false
@@ -73,6 +73,6 @@ struct TableDetailHeader: View {
 
 #Preview {
     TableDetailHeader(editController: .preview, model: .preview)
-        .environment(TableRoot.preview)
+        .environment(TableRootModel.preview)
         .environment(DetailHeaderModel(size: CGSize(width: 375, height: 64), topSafeAreaHeight: 0))
 }

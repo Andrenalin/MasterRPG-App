@@ -5,7 +5,7 @@ import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
-    init(root: SpaceRoot, editController: EditController, model: SpaceModel, isSubFolder: Bool) {
+    init(root: SpaceRootModel, editController: EditController, model: SpaceModel, isSubFolder: Bool) {
         self.root = root
         self.editController = editController
         self.model = model
@@ -14,7 +14,7 @@ struct DetailRootView: View {
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
-    let root: SpaceRoot
+    let root: SpaceRootModel
     let editController: EditController
     let model: SpaceModel
     let isSubFolder: Bool
@@ -60,7 +60,7 @@ struct SpaceDetailObjectViewer: View {
     let editController: EditController
     let model: SpaceModel
     
-    @Environment(SpaceRoot.self) private var root
+    @Environment(SpaceRootModel.self) private var root
     @Environment(GroupItemSelectionModel.self) private var selection
     
     var body: some View {
@@ -75,19 +75,19 @@ struct SpaceDetailObjectViewer: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Environment(SpaceRoot.self) var root
+    @Previewable @Environment(SpaceRootModel.self) var root
     @Previewable @Environment(ListModel.self) var listModel
     
     if listModel.selectedItem == nil {
         Text("Hello")
             .onAppear {
-                let id = root.itemController.itemDataModel.items.first ?? SpaceRoot.previewSpaceId
-                root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRoot.previewSpaceId)
+                let id = root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId
+                root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId)
                 listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRoot.previewSpaceId), isSubFolder: false)
+            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId), isSubFolder: false)
                 .preferredColorScheme(.dark)
         }
     }

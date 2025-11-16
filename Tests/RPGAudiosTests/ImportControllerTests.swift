@@ -9,7 +9,7 @@ import Testing
 
 struct ImportControllerTests {
     @Test func importing() async throws {
-        let root = await AudioRoot.testRoot()
+        let root = await AudioRootModel.testRoot()
         await root.itemController.resetData()
 
         let sut = root.importController

@@ -10,7 +10,7 @@ struct EntryRow: View {
     let isEditing: Bool
     let cacheItemListModel: CacheItemListModel
 
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(ListModel.self) private var listModel
 
     @Environment(\.navigator) private var navigator
@@ -99,7 +99,7 @@ struct EntryRow: View {
 #Preview {
     EntryRow(model: .preview, item: .preview, isEditing: false, cacheItemListModel: .preview)
         .padding()
-        .environment(MapRoot.preview)
+        .environment(MapRootModel.preview)
         .environment(\.gameModus, .master)
         .environment(\.showGame, true)
 }

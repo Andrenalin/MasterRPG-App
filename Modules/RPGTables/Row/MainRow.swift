@@ -8,7 +8,7 @@ struct MainRow: View {
     let isSelected: Bool
     let cacheItemListModel: CacheItemListModel
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(\.showGame) private var showGame
     @Environment(ListModel.self) private var listModel
 

@@ -13,7 +13,7 @@ import RPGMaps
 import RPGDie
 
 struct AdventureDropArea: View {
-    let root: AdventureRoot
+    let root: AdventureRootModel
     let editController: EditController
     let entryId: AdventureEntryModel.ID
 

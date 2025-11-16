@@ -38,10 +38,10 @@ struct PhotoEntity: IndexedEntity {
         model.specialCategory ? model.category.icon : root.module.icon
     }
     
-    var root: PhotoRoot
+    var root: PhotoRootModel
     var model: PhotoModel
     
-    init(root: PhotoRoot, model: PhotoModel) {
+    init(root: PhotoRootModel, model: PhotoModel) {
         self.root = root
         self.model = model
     }
@@ -90,7 +90,7 @@ extension PhotoEntity: Transferable {
 
 @MainActor
 struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
-    @Dependency var root: PhotoRoot
+    @Dependency var root: PhotoRootModel
 
     func suggestedEntities() async throws -> [PhotoEntity] {
         let ids = root.itemController.itemDataModel.items

@@ -12,7 +12,7 @@ struct ValueRow: View {
     let hasQuickEditor: Bool
     let cacheItemListModel: CacheItemListModel
 
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(ListModel.self) private var itemListModel
     
     var body: some View {
@@ -64,7 +64,7 @@ struct ValueRowModel: View {
     let hasQuickEditor: Bool
     let cacheItemListModel: CacheItemListModel
 
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     
     var body: some View {
         if item.model.entryId == nil {

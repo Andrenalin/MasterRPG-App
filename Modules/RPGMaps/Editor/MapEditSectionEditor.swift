@@ -6,7 +6,7 @@ import SwiftUI
 struct MapEditSectionEditor: View {
     let editController: EditController
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
 
     @State private var isReading = false
     @State private var isPlaying = false
@@ -52,7 +52,7 @@ struct MapEditSectionEditor: View {
 struct MapEditWindow: View {
     let editController: EditController
 
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
 
     var body: some View {
         @Bindable var model = editController.editorModel

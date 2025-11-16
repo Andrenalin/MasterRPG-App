@@ -7,7 +7,7 @@ import RPGPhotos
 struct MapReader: View {
     let map: MapModel
 
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) private var colorScheme

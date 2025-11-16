@@ -18,7 +18,7 @@ import SwiftData
 
 @MainActor @Observable
 public final class GeneratorRootModel {
-    init(container: ModelContainer, adventureRoot: AdventureRoot, audioRoot: AudioRoot, characterRoot: ValueRoot, diceRoot: DiceRootModel, mapRoot: MapRoot, pdfRoot: PdfRoot, photoRoot: PhotoRoot, spaceRoot: SpaceRoot, tableRoot: TableRoot, weatherRoot: WeatherRootModel) {
+    init(container: ModelContainer, adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, characterRoot: CharacterRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, weatherRoot: WeatherRootModel) {
         let module: NetworkModules = .generator
         self.module = module
         
@@ -69,15 +69,15 @@ public final class GeneratorRootModel {
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
 
-    let adventureRoot: AdventureRoot
-    let audioRoot: AudioRoot
-    let characterRoot: ValueRoot
+    let adventureRoot: AdventureRootModel
+    let audioRoot: AudioRootModel
+    let characterRoot: CharacterRootModel
     let diceRoot: DiceRootModel
-    let mapRoot: MapRoot
-    let pdfRoot: PdfRoot
-    let photoRoot: PhotoRoot
-    let spaceRoot: SpaceRoot
-    let tableRoot: TableRoot
+    let mapRoot: MapRootModel
+    let pdfRoot: PdfRootModel
+    let photoRoot: PhotoRootModel
+    let spaceRoot: SpaceRootModel
+    let tableRoot: TableRootModel
     let weatherRoot: WeatherRootModel
 
     @ObservationIgnored private(set) var _dataController: DataController?

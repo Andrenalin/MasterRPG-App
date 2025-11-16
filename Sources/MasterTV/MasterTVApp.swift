@@ -6,7 +6,7 @@ import SwiftUI
 
 @main
 struct MasterTVApp: App {
-    @State private var appModel = AppStore()
+    @State private var appModel = AppModel()
 
     @UIApplicationDelegateAdaptor private var appDelegate: IosAppDelegate
 

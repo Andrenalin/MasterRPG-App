@@ -44,7 +44,7 @@ struct MapPinView: View {
     let doubleTapAction: (() -> Void)?
     let dragEndAction: (() -> Void)?
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     
     @GestureState private var isDragging = false
     @State private var isDraggingStarts = false
@@ -160,5 +160,5 @@ struct MapPinView: View {
         print("end")
     }
     .offset(x: model.mapPins[0].location.x, y: model.mapPins[0].location.y)
-    .environment(MapRoot.preview)
+    .environment(MapRootModel.preview)
 }

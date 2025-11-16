@@ -31,7 +31,7 @@ struct SecondaryTabBarButton: View {
     let tab: RootRoute
     let hoverGroup: HoverEffectGroup?
 
-    @Environment(AppStore.self) var appModel
+    @Environment(AppModel.self) var appModel
     
     var body: some View {
         Button {

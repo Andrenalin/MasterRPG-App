@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct ValueValueColumn<Menu: View>: View {
-    let root: ValueRoot
+    let root: CharacterRootModel
     let editController: EditController
     let entryId: UUID
     let menuView: () -> Menu

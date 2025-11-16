@@ -14,12 +14,12 @@ import RPGResourcesDebug
 import Testing
 
 struct MockRoot {
-    static func importTestData(_ name: String = ResourcesDebug.valueTestData, itemCounter: Int = 15) async throws -> ValueRoot {
+    static func importTestData(_ name: String = ResourcesDebug.valueTestData, itemCounter: Int = 15) async throws -> CharacterRootModel {
         let diceRoot = await DiceRootModel.testRoot()
-        let pdfRoot = await PdfRoot.testRoot()
-        let photoRoot = await PhotoRoot.testRoot()
-        let tableRoot = await TableRoot.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
-        let root = await ValueRoot.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+        let pdfRoot = await PdfRootModel.testRoot()
+        let photoRoot = await PhotoRootModel.testRoot()
+        let tableRoot = await TableRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
+        let root = await CharacterRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         
         try await resetTestData(for: root)
 
@@ -43,7 +43,7 @@ struct MockRoot {
         return root
     }
     
-    static func resetTestData(for root: ValueRoot) async throws {
+    static func resetTestData(for root: CharacterRootModel) async throws {
         await root.itemController.resetData()
         await root.diceRoot.itemControllable.resetData()
         await root.pdfRoot.itemControllable.resetData()

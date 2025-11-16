@@ -15,7 +15,7 @@ import RPGDie
 import RPGAudios
 
 struct AdventureEntryEditor: View {
-    let root: AdventureRoot
+    let root: AdventureRootModel
     let editController: EditController
 
     var body: some View {
@@ -114,7 +114,7 @@ struct AdventureEntryEditor: View {
 #Preview {
     AdventureEntryEditor(root: .preview, editController: .preview)
         .padding()
-        .environment(AdventureRoot.preview)
+        .environment(AdventureRootModel.preview)
         .environment(ListModel.preview)
 }
 

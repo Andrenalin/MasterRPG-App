@@ -12,7 +12,7 @@ final class DataBaseLoader {
     static let shared = DataBaseLoader()
     
     init() {
-        self.appModel = AppStore.shared
+        self.appModel = AppModel.shared
     }
     
     func setup() async {
@@ -36,7 +36,7 @@ final class DataBaseLoader {
         diceRoot = appModel.diceRoot
     }
     
-    let appModel: AppStore
+    let appModel: AppModel
     var diceRoot: DiceRootModel?
     private var hasInitialized: Bool = false
     private var databaseModel: DataBaseModel?

@@ -6,7 +6,7 @@ import SwiftData
 import SwiftUI
 
 public enum WeatherRootFactory {
-    @MainActor public static func root(container: ModelContainer, photoRoot: PhotoRoot) -> WeatherRootModel {
+    @MainActor public static func root(container: ModelContainer, photoRoot: PhotoRootModel) -> WeatherRootModel {
         WeatherRootModel(container: container, photoRoot: photoRoot)
     }
 

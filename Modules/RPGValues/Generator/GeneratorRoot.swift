@@ -8,7 +8,7 @@ struct GeneratorRoot: View {
     let generatorController: GeneratorController
     @Binding var item: ItemRowModel?
 
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     
     @State private var showInputField = false
     

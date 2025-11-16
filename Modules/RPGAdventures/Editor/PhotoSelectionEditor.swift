@@ -7,7 +7,7 @@ import RPGPhotos
 struct PhotoSelectionEditor: View {
     let editController: EditController
 
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
         root.photoRoot.viewController.photoSelection(root: root.photoRoot, editController: editController, selectionModel: editController.adventureEditModel.photoSelectionModel)

@@ -36,7 +36,7 @@ extension AdventureRoute: NavigationDestination {
 
 struct DetailRouteDestinationView: View {
     let itemId: UUID
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
         //DetailRootView(selectedId: itemId)

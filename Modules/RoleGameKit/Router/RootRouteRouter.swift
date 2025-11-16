@@ -19,7 +19,7 @@ import GeneratorRPG
 #endif
 
 struct RootRouteRouter: NavigationRouteHandling {
-    let appModel: AppStore
+    let appModel: AppModel
     
     @MainActor func route(to route: KnownRoutes, with navigator: Navigator) {
         navigator.perform(actions: actions(for: route))

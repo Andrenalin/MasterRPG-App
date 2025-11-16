@@ -7,7 +7,7 @@ struct AdventureDetailEditor: View {
     let editController: EditController
     let model: AdventureModel
 
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     @Environment(\.wideMode) private var wideMode
 
     @State private var detailHeaderModel = DetailHeaderModel(minHeight: 144, maxHeight: 400, maxHeightFromScreenHeight: true)
@@ -63,6 +63,6 @@ struct AdventureExternalHeader: View {
 
 #Preview {
     AdventureDetailEditor(editController: .preview, model: .preview)
-        .environment(AdventureRoot.previewWithData)
+        .environment(AdventureRootModel.previewWithData)
         .environment(ListModel.preview)
 }

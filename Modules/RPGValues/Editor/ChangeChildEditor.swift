@@ -20,7 +20,7 @@ struct ChangeChildEditorViewModifier: ViewModifier {
     let editController: EditController
     let model: ChangeChildModel
 
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
 
     func body(content: Content) -> some View {
         @Bindable var model = model
@@ -79,5 +79,5 @@ struct ChangeChildEditorViewModifier: ViewModifier {
     Color.blue.modifier(
         ChangeChildEditorViewModifier(editController: .preview, model: ChangeChildModel(showChildLinkAlert: true, childId: nil, entryId: nil))
     )
-    .environment(ValueRoot.previewWithData)
+    .environment(CharacterRootModel.previewWithData)
 }

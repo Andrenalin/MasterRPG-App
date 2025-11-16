@@ -10,7 +10,7 @@ struct MockData: PreviewModifier {
     static let previewId2 = UUID()
     static let previewId3 = UUID()
     
-    static var previewRoot: AudioRoot?
+    static var previewRoot: AudioRootModel?
 
     func body(content: Content, context: ModelContainer) -> some View {
         content
@@ -29,7 +29,7 @@ struct MockData: PreviewModifier {
             return container
         }
 
-        let root = AudioRoot.preview
+        let root = AudioRootModel.preview
         let task = root.importController.importUrl(from: url)
         let _ = try await task.value
 
@@ -39,10 +39,10 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        self._root = State(wrappedValue: AudioRoot.preview)
+        self._root = State(wrappedValue: AudioRootModel.preview)
     }
 
-    @State private var root: AudioRoot
+    @State private var root: AudioRootModel
 
     func body(content: Content) -> some View {
         content

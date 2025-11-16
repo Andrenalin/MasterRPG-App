@@ -13,12 +13,12 @@ extension ViewController: ViewControllable {}
 // MARK: Viewer
 
 public extension ViewController {
-    @MainActor func linkWindow(root: PdfRoot, isInspector: Bool = false) -> some View {
+    @MainActor func linkWindow(root: PdfRootModel, isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
     }
 
-    @MainActor func windowViewer(root: PdfRoot, selection: WindowItemSelection) -> some View {
+    @MainActor func windowViewer(root: PdfRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return NavigationStack {
             PdfViewerView(model: model, entryId: selection.entryId, withoutBookmark: false)
@@ -28,13 +28,13 @@ public extension ViewController {
         .environment(root)
     }
 
-    @MainActor func inlineViewer(root: PdfRoot, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
+    @MainActor func inlineViewer(root: PdfRootModel, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return PdfViewerView(model: model, entryId: nil, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
             .environment(root)
     }
     
-    @MainActor func selectionView(root: PdfRoot, model: ItemSelectionModel) -> some View {
+    @MainActor func selectionView(root: PdfRootModel, model: ItemSelectionModel) -> some View {
         LinkRootView(type: .selection)
             .environment(root)
     }
@@ -42,7 +42,7 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func detailEditor(root: PdfRoot, for item: ItemRowTreeModel, module: NetworkModules) -> some View {
+    func detailEditor(root: PdfRootModel, for item: ItemRowTreeModel, module: NetworkModules) -> some View {
         PdfDetailViewer(item: item)
             .environment(root)
     }
@@ -51,7 +51,7 @@ public extension ViewController {
     private static let gameTabId = UUID()
 
     @MainActor
-    func gameView(root: PdfRoot, select: Bool = false) -> some View {
+    func gameView(root: PdfRootModel, select: Bool = false) -> some View {
         if select == true, let id = root.gameController.gameModel.currentItemId {
             let item = root.gameController.gameItem(for: id)
             if item.displayState == 0 {
@@ -66,7 +66,7 @@ public extension ViewController {
     }
 
     @MainActor
-    func gamePdfView(root: PdfRoot) -> some View {
+    func gamePdfView(root: PdfRootModel) -> some View {
         PdfViewerView(model: root.gameController.currentItem(), entryId: nil, withoutBookmark: true, dismissAction: nil)
             .padding(32)
             .padding(.top, 64)
@@ -82,7 +82,7 @@ public extension ViewController {
     private static let linkTabId = UUID()
 
     @MainActor
-    func selectForScanning(root: PdfRoot, model: SelectionModel) -> some View {
+    func selectForScanning(root: PdfRootModel, model: SelectionModel) -> some View {
         PdfSelectionView(root: root, selectionModel: model)
     }
 }
@@ -94,7 +94,7 @@ public extension ViewController {
     static let selectionTabId = UUID(uuidString: "55BDB18F-18CA-4900-B7FB-7EDD5F667FF9")!
 
     @MainActor
-    func viewSelect(root: PdfRoot, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
+    func viewSelect(root: PdfRootModel, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
         let listController = root.listController(tabId: ViewController.selectionTabId)
         listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: false, focus: nil, mode: SelectionMode(selected: selection, toggle: toggleSelection))
         return RootNaviList(root: root, tabId: ViewController.selectionTabId)
@@ -109,19 +109,19 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func pdfWindow(root: PdfRoot, selection: ItemSelection) -> some View {
+    func pdfWindow(root: PdfRootModel, selection: ItemSelection) -> some View {
         PdfViewerView(model: root.itemController.itemOrEmpty(for: selection.itemId), entryId: selection.entryId, withoutBookmark: false)
             .navigationTitle(root.itemController.itemOrEmpty(for: selection.itemId).name)
             .environment(root)
     }
 
-    func rowView(root: PdfRoot, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
+    func rowView(root: PdfRootModel, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
         PdfRow(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
             .environment(root)
     }
 
     @MainActor
-    func viewPdfInline(root: PdfRoot, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
+    func viewPdfInline(root: PdfRootModel, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
         PdfViewerView(model: root.itemController.itemOrEmpty(for: id), entryId: nil, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
             .environment(root)
     }

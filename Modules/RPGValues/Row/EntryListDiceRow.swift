@@ -8,7 +8,7 @@ struct EntryListDiceRow: View {
     let itemId: UUID
     let entryId: UUID
 
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @State private var updateOtherValue: Bool = false
 
     var body: some View {
@@ -47,5 +47,5 @@ struct EntryListDiceRow: View {
 
 #Preview {
     EntryListDiceRow(itemId: ValueModel.previewId, entryId: UUID())
-        .environment(ValueRoot.preview)
+        .environment(CharacterRootModel.preview)
 }

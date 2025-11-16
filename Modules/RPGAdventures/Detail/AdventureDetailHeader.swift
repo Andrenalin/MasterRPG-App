@@ -12,7 +12,7 @@ struct AdventureDetailHeader: View {
 #if os(visionOS) || os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     @Environment(DetailHeaderModel.self) private var headerModel
 
     @State private var isReading = false

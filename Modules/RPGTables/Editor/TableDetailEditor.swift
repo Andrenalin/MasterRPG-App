@@ -7,7 +7,7 @@ struct TableDetailEditor: View {
     let editController: EditController
     let model: TableModel
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
 
     @State private var detailHeaderModel = DetailHeaderModel()
     @State private var externalHeaderModel = ExternalHeaderModel()
@@ -59,5 +59,5 @@ struct TableExternalHeader: View {
 
 #Preview {
     TableDetailEditor(editController: .preview, model: .preview)
-        .environment(TableRoot.preview)
+        .environment(TableRootModel.preview)
 }

@@ -8,7 +8,7 @@ struct RootExtendedDetail: View {
     let itemRowTreeModel: ItemRowTreeModel
     let tabId: UUID
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     
     var body: some View {
         RootDetail(editController: root.editController(for: itemRowTreeModel, type: .main))
@@ -19,7 +19,7 @@ struct RootExtendedDetail: View {
 struct RootDetail: View {
     let editController: EditController
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     @Environment(ListModel.self) private var listModel
     
@@ -40,7 +40,7 @@ struct RootDetail: View {
 struct RootEditDetail: View {
     let itemId: UUID
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     
     @State private var loaded: Bool = false
@@ -71,7 +71,7 @@ struct RootEditDetailIm: View {
     let listController: ListController
     let editController: EditController
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     
     var body: some View {

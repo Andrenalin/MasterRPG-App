@@ -11,10 +11,10 @@ import RPGResourcesDebug
 import Testing
 
 struct MockRoot {
-    static func importTestData(_ name: String = ResourcesDebug.tableTestData, itemCounter: Int = 16) async throws -> TableRoot {
+    static func importTestData(_ name: String = ResourcesDebug.tableTestData, itemCounter: Int = 16) async throws -> TableRootModel {
         let diceRoot = await DiceRootModel.testRoot()
-        let pdfRoot = await PdfRoot.testRoot()
-        let root = await TableRoot.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
+        let pdfRoot = await PdfRootModel.testRoot()
+        let root = await TableRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
 
         await root.itemController.resetData()
 
@@ -32,7 +32,7 @@ struct MockRoot {
         return root
     }
     
-    static func resetTestData(for root: TableRoot) async throws {
+    static func resetTestData(for root: TableRootModel) async throws {
         await root.itemController.resetData()
         await root.diceRoot.itemControllable.resetData()
         await root.pdfRoot.itemControllable.resetData()

@@ -11,7 +11,7 @@ import RPGTables
 import RPGValues
 
 public struct LinkController: Sendable {
-    weak var root: MapRoot!
+    weak var root: MapRootModel!
     let itemController: ItemController
     
     public var itemControllable: any ItemControllable {

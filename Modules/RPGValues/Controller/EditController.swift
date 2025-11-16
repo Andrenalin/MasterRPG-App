@@ -27,13 +27,13 @@ final class ValueEditModel: Sendable {
 
 struct EditController: Sendable {
     @MainActor
-    init(root: ValueRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    init(root: CharacterRootModel, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel, categorySelection: root.itemControllable.itemDataModel.categoryTags.first ?? .all)
         self.valueEditModel = ValueEditModel()
     }
 
-    weak var root: ValueRoot!
+    weak var root: CharacterRootModel!
     var fileUrlDataController: FileUrlDataController? = nil
     let editorModel: ItemEditorModel
     let valueEditModel: ValueEditModel

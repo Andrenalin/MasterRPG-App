@@ -17,7 +17,7 @@ import RPGSpaces
 import RPGWeathers
 
 struct WindowLinkList: Scene {
-    let appModel: AppStore
+    let appModel: AppModel
     
     var body: some Scene {
         Group {
@@ -44,7 +44,7 @@ struct WindowLinkList: Scene {
         .defaultSize(CGSize(width: 400, height: 800))
     }
     
-    private func windowGroup<Content: View>(model: AppStore, module: NetworkModules, key: KeyEquivalent, content: Content) -> some Scene {
+    private func windowGroup<Content: View>(model: AppModel, module: NetworkModules, key: KeyEquivalent, content: Content) -> some Scene {
         WindowGroup("\(module.title) Link", id: module.linkWindowId) {
             content
                 .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
@@ -58,7 +58,7 @@ struct WindowLinkList: Scene {
 }
 
 struct WindowLinkSetUpViewModifier: ViewModifier {
-    let model: AppStore
+    let model: AppModel
     let module: NetworkModules
     
     @Environment(\.colorScheme) private var colorScheme

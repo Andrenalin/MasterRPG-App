@@ -16,7 +16,7 @@ struct AdventureRow: View {
     let isSelected: Bool
     let cacheItemListModel: CacheItemListModel
 
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     @Environment(ListModel.self) private var itemListModel
 
     var body: some View {

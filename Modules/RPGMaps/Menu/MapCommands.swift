@@ -27,11 +27,11 @@ extension FocusedValues {
 
 #if !os(tvOS)
 public struct MapCommands: Commands {
-    public init(root: MapRoot) {
+    public init(root: MapRootModel) {
         self.root = root
     }
     
-    let root: MapRoot
+    let root: MapRootModel
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
     
     public var body: some Commands {
@@ -88,7 +88,7 @@ struct SwitchWindowButton: View {
 }
 
 struct AddItemButton: View {
-    let root: MapRoot
+    let root: MapRootModel
     
     @Environment(\.openWindow) private var openWindow
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
@@ -117,7 +117,7 @@ struct AddItemButton: View {
 }
 
 struct DuplicateItemButton: View {
-    let root: MapRoot
+    let root: MapRootModel
     
     @FocusedBinding(\.selectedMap) private var selectedMap: UUID?
     
@@ -137,7 +137,7 @@ struct DuplicateItemButton: View {
 }
 
 struct UndoButton: View {
-    let root: MapRoot
+    let root: MapRootModel
     
     var body: some View {
         Button {
@@ -151,7 +151,7 @@ struct UndoButton: View {
 }
 
 struct RedoButton: View {
-    let root: MapRoot
+    let root: MapRootModel
 
     var body: some View {
         Button {

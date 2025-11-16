@@ -72,7 +72,7 @@ private extension SearchBar {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Environment(PdfRoot.self) var root
+    @Previewable @Environment(PdfRootModel.self) var root
     @Previewable @State var searchModel = PdfSearchModel()
     
     NavigationStack {

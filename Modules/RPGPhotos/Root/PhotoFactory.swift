@@ -7,8 +7,8 @@ import SwiftUI
 
 public enum PhotoFactory {
     @MainActor
-    public static func root(container: ModelContainer) -> PhotoRoot {
-        PhotoRoot(container: container)
+    public static func root(container: ModelContainer) -> PhotoRootModel {
+        PhotoRootModel(container: container)
     }
 
     @MainActor
@@ -16,7 +16,7 @@ public enum PhotoFactory {
         PhotoRootView()
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: PhotoRoot) -> some View {
+    @MainActor @ViewBuilder public static func detailView(root: PhotoRootModel) -> some View {
         ItemSplitDetailRootView(root: root.rootController)
     }
 }

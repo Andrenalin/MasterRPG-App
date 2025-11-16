@@ -27,12 +27,12 @@ final class GeneratorSessionModel {
 }
 
 struct GeneratorController: Sendable {
-    @MainActor init(characterRoot: ValueRoot) {
+    @MainActor init(characterRoot: CharacterRootModel) {
         self.characterRoot = characterRoot
         self.model = GeneratorSessionModel()
     }
     
-    let characterRoot: ValueRoot
+    let characterRoot: CharacterRootModel
     let model: GeneratorSessionModel
     let llm = SystemLanguageModel.default
     

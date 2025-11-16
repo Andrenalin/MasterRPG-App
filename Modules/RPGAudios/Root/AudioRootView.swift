@@ -5,7 +5,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct AudioRootView: View {
-    @Environment(AudioRoot.self) private var root
+    @Environment(AudioRootModel.self) private var root
 
     var body: some View {
         let _ = Self._printChanges()
@@ -17,7 +17,7 @@ struct AudioRootView: View {
 }
 
 struct SaveView: View {
-    let root: AudioRoot
+    let root: AudioRootModel
     
     @SceneStorage("AudioRoute") private var route: AudioRoute?
     @SceneStorage("AudioDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium

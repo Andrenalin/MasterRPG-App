@@ -6,7 +6,7 @@ import SwiftUI
 struct MapDetailSheet: View {
     let item: ItemRowTreeModel
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(\.routeActions) private var routeActions
     
     var body: some View {
@@ -29,5 +29,5 @@ struct MapDetailSheet: View {
 
 #Preview {
     MapDetailSheet(item: .preview)
-        .environment(MapRoot.previewWithData)
+        .environment(MapRootModel.previewWithData)
 }

@@ -20,7 +20,7 @@ struct PdfViewerView: View {
     let withoutBookmark: Bool
     let dismissAction: (() -> Void)?
     
-    @Environment(PdfRoot.self) private var root
+    @Environment(PdfRootModel.self) private var root
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss

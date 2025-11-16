@@ -7,13 +7,13 @@ import CoreData
 
 struct ItemController: Sendable {
     @MainActor
-    init(root: TableRoot, dataController: DataController?) {
+    init(root: TableRootModel, dataController: DataController?) {
         self.root = root
         self.dataControllable = dataController
         itemDataModel = ItemDataModel(categoryTags: [.rules, .loot, .supplement, .generator], networkModule: .table)
     }
 
-    weak var root: TableRoot!
+    weak var root: TableRootModel!
     let collectionCategory: ItemListCategory = .bookshelf
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel

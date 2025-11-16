@@ -19,13 +19,13 @@ final class TableEditModel: Sendable {
 
 struct EditController: Sendable {
     @MainActor
-    init(root: TableRoot, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    init(root: TableRootModel, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
         self.tableEditModel = TableEditModel()
     }
 
-    weak var root: TableRoot!
+    weak var root: TableRootModel!
     var fileUrlDataController: FileUrlDataController? = nil
     let editorModel: ItemEditorModel
     let tableEditModel: TableEditModel

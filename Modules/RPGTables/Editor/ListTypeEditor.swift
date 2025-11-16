@@ -7,7 +7,7 @@ import SwiftUI
 struct ListTypeEditor: View {
     let editController: EditController
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(SelectionSheetLinkModel.self) private var selectionSheetLinkModel
 
     var body: some View {
@@ -99,5 +99,5 @@ private extension ListTypeEditor {
 
 #Preview {
     ListTypeEditor(editController: .preview)
-        .environment(TableRoot.previewWithData)
+        .environment(TableRootModel.previewWithData)
 }

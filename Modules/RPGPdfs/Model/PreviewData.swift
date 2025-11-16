@@ -6,21 +6,21 @@ import RPGResources
 import CoreGraphics
 import SwiftData
 
-public extension PdfRoot {
+public extension PdfRootModel {
     static let previewSpaceId = PdfModel.previewId
     
     @MainActor
-    static let preview: PdfRoot = {
+    static let preview: PdfRootModel = {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = PdfRoot(container: modelContainer)
+        let root = PdfRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
         root.editController(type: .main).setCurrentItem(to: .preview)
         return root
     }()
     
     @MainActor
-    static let previewWithData: PdfRoot = {
-        let root = PdfRoot.preview
+    static let previewWithData: PdfRootModel = {
+        let root = PdfRootModel.preview
         let itemController = root.itemController
         let importController = root.importController
         let editController = root.editController(type: .main)
@@ -44,9 +44,9 @@ public extension PdfRoot {
     
 #if DEBUG
     @MainActor
-    static func testRoot() -> PdfRoot {
+    static func testRoot() -> PdfRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = PdfRoot(container: modelContainer)
+        let root = PdfRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
         return root
     }
@@ -56,14 +56,14 @@ public extension PdfRoot {
     static let linkRegisterController = FakeLinkRegisterController()
 }
 
-extension PdfRoot: RootControllable {
+extension PdfRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
     }
 
     @MainActor
     public var linkRegisterControllable: LinkRegisterControllable {
-        PdfRoot.linkRegisterController
+        PdfRootModel.linkRegisterController
     }
     
     public var gameExportControllable: any ExportControllable {
@@ -84,13 +84,13 @@ extension ItemRowTreeModel {
 
 extension ItemController {
     @MainActor
-    static let preview: ItemController = PdfRoot.preview.itemController
+    static let preview: ItemController = PdfRootModel.preview.itemController
 }
 
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = PdfRoot.preview.editController(type: .main)
+        let controller = PdfRootModel.preview.editController(type: .main)
         controller.setCurrentItem(to: .preview)
         return controller
     }()
@@ -98,17 +98,17 @@ extension EditController {
 
 extension GameController {
     @MainActor
-    static var preview = PdfRoot.preview.gameController
+    static var preview = PdfRootModel.preview.gameController
 }
 
 extension ImportController {
     @MainActor
-    static var preview = PdfRoot.preview.importController
+    static var preview = PdfRootModel.preview.importController
 }
 
 extension ExportController {
     @MainActor
-    static var preview = PdfRoot.preview.exportController
+    static var preview = PdfRootModel.preview.exportController
 }
 
 extension ListController {
@@ -116,7 +116,7 @@ extension ListController {
     static let previewTabId = UUID()
     
     @MainActor
-    static var preview = PdfRoot.preview.listController(tabId: previewTabId)
+    static var preview = PdfRootModel.preview.listController(tabId: previewTabId)
 }
 
 extension ListModel {
@@ -126,12 +126,12 @@ extension ListModel {
 
 extension ViewController {
     @MainActor
-    static var preview = PdfRoot.preview.viewController
+    static var preview = PdfRootModel.preview.viewController
 }
 
 extension LinkController {
     @MainActor
-    static var preview = PdfRoot.preview.linkController
+    static var preview = PdfRootModel.preview.linkController
 }
 
 extension PdfModel {

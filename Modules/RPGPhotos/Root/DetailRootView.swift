@@ -5,7 +5,7 @@ import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
-    init(root: PhotoRoot, editController: EditController, model: PhotoModel, isSubFolder: Bool) {
+    init(root: PhotoRootModel, editController: EditController, model: PhotoModel, isSubFolder: Bool) {
         self.root = root
         self.editController = editController
         self.model = model
@@ -14,7 +14,7 @@ struct DetailRootView: View {
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
-    let root: PhotoRoot
+    let root: PhotoRootModel
     let editController: EditController
     let model: PhotoModel
     let isSubFolder: Bool
@@ -62,19 +62,19 @@ struct DetailRootView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Environment(PhotoRoot.self) var root
+    @Previewable @Environment(PhotoRootModel.self) var root
     @Previewable @Environment(ListModel.self) var listModel
     
     if listModel.selectedItem == nil {
         Text("Hello")
             .onAppear {
-                let id = root.itemController.itemDataModel.items.first ?? PhotoRoot.previewPhotoId
-                root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PhotoRoot.previewPhotoId)
+                let id = root.itemController.itemDataModel.items.first ?? PhotoRootModel.previewPhotoId
+                root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PhotoRootModel.previewPhotoId)
                 listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PhotoRoot.previewPhotoId), isSubFolder: false)
+            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PhotoRootModel.previewPhotoId), isSubFolder: false)
                 .preferredColorScheme(.dark)
         }
     }

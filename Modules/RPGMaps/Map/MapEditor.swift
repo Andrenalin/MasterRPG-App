@@ -35,7 +35,7 @@ struct MapEditor: View {
     @State private var model: ImageViewerModel
     
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(DropPinModel.self) private var dropPinModel
     
     @State private var pins: MapPinViewModel = MapPinViewModel(mapPins: [], pointer: .empty)
@@ -669,6 +669,6 @@ private extension MapEditor {
         MapEditor(editController: .preview, image: AKImage(systemName: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
 #endif
     }
-    .environment(MapRoot.previewWithData)
+    .environment(MapRootModel.previewWithData)
     .environment(DropPinModel())
 }

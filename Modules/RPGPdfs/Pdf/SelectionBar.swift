@@ -13,7 +13,7 @@ struct SelectionBar: View {
     let searchModel: PdfSearchModel
     let withoutBookmark: Bool
     
-    @Environment(PdfRoot.self) private var root
+    @Environment(PdfRootModel.self) private var root
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
@@ -76,7 +76,7 @@ private extension SelectionBar {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Environment(PdfRoot.self) var root
+    @Previewable @Environment(PdfRootModel.self) var root
     @Previewable @State var searchModel = PdfSearchModel()
     
     NavigationStack {

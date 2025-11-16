@@ -4,13 +4,13 @@ import AndrenalinKit
 import SwiftUI
 
 public extension View {
-    func environmentSetUp(_ appModel: AppStore) -> some View {
+    func environmentSetUp(_ appModel: AppModel) -> some View {
         modifier(AppEnvironmentSetUpViewModifier(appModel: appModel))
     }
 }
 
 struct AppEnvironmentSetUpViewModifier: ViewModifier {
-    let appModel: AppStore
+    let appModel: AppModel
     
     func body(content: Content) -> some View {
         content

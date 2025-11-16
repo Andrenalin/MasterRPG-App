@@ -9,11 +9,11 @@ import RPGPhotos
 import RPGSpaces
 
 public struct SettingsView: View {
-    public init(store: AppStore) {
+    public init(store: AppModel) {
         self.store = store
     }
     
-    let store: AppStore
+    let store: AppModel
 
     @Environment(\.navigator) private var navigator
 

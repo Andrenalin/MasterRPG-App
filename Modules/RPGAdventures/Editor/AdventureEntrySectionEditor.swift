@@ -6,7 +6,7 @@ import SwiftUI
 struct AdventureEntrySectionEditor: View {
     let editController: EditController
     
-    @Environment(AdventureRoot.self) private var root
+    @Environment(AdventureRootModel.self) private var root
     @Environment(SelectionSheetLinkModel.self) private var selectionSheetLinkModel
 
     @State private var entrySectionEditorModel = EntrySectionEditorModel<AdventureModel>()
@@ -75,6 +75,6 @@ struct AdventureEntrySectionEditor: View {
 
 #Preview {
     AdventureEntrySectionEditor(editController: .preview)
-        .environment(AdventureRoot.previewWithData)
+        .environment(AdventureRootModel.previewWithData)
         .environment(ListModel.preview)
 }

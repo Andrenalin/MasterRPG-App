@@ -7,7 +7,7 @@ struct MapDetailEditor: View {
     let editController: EditController
     let model: MapModel
 
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     
     @State private var detailHeaderModel = DetailHeaderModel(minHeight: 144, maxHeight: 400, maxHeightFromScreenHeight: true)
     @State private var externalHeaderModel = ExternalHeaderModel()
@@ -66,6 +66,6 @@ struct MapExternalHeader: View {
 
 #Preview {
     MapDetailEditor(editController: .preview, model: .preview)
-        .environment(MapRoot.previewWithData)
+        .environment(MapRootModel.previewWithData)
         .environment(ListModel.preview)
 }

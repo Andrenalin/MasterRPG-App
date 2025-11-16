@@ -13,7 +13,7 @@ import RPGWeathers
 import GeneratorRPG
 
 struct WindowViewerList: Scene {
-    let appModel: AppStore
+    let appModel: AppModel
     
     var body: some Scene {
         Group {
@@ -45,7 +45,7 @@ struct WindowViewerList: Scene {
         .defaultSize(CGSize(width: 600, height: 800))
     }
     
-    private func windowGroup<Content: View>(model: AppStore, module: NetworkModules, content: @escaping (WindowItemSelection) -> Content) -> some Scene {
+    private func windowGroup<Content: View>(model: AppModel, module: NetworkModules, content: @escaping (WindowItemSelection) -> Content) -> some Scene {
         WindowGroup("\(module.title) Viewer", id: module.viewerWindowId, for: WindowItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { _ in
                 content(selection ?? WindowItemSelection(itemId: UUID()))
@@ -61,7 +61,7 @@ struct WindowViewerList: Scene {
 }
 
 struct WindowViewerSetUpViewModifier: ViewModifier {
-    let model: AppStore
+    let model: AppModel
     let module: NetworkModules
     
     @Environment(\.colorScheme) private var colorScheme

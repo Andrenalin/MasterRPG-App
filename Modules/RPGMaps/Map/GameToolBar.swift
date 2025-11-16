@@ -55,7 +55,7 @@ struct GameToolBar: View {
     let model: GameToolBarModel
     let isMaster: Bool
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
     @Environment(\.networkActions) private var networkActions
     @Environment(\.wideMode) private var wideMode
@@ -270,7 +270,7 @@ struct GameToolBar: View {
 #Preview {
     HStack {
         GameToolBar(editController: .preview, model: GameToolBarModel(), isMaster: true)
-            .environment(MapRoot.preview)
+            .environment(MapRootModel.preview)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
 }

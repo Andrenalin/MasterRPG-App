@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct ValueEntryName: View {
-    let root: ValueRoot
+    let root: CharacterRootModel
     let editController: EditController
     let itemId: UUID
     let entryId: UUID

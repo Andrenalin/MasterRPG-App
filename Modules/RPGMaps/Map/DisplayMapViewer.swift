@@ -11,7 +11,7 @@ struct DisplayMapViewer: View {
     @Binding var entryId: UUID
     let size: CGSize
 
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @State private var mapUpdated: MapModel = .empty
 
     var body: some View {

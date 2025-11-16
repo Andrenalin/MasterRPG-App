@@ -6,7 +6,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct MapPinEditor: View {
-    let root: MapRoot
+    let root: MapRootModel
     let editController: EditController
 
 #if !os(tvOS)

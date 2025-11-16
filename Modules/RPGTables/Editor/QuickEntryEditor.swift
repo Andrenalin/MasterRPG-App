@@ -8,7 +8,7 @@ import SwiftUI
 struct QuickEntryEditor: View {
     let editController: EditController
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
     @Environment(\.navigator) private var navigator
 
@@ -321,5 +321,5 @@ private extension QuickEntryEditor {
 
 #Preview {
     QuickEntryEditor(editController: .preview)
-        .environment(TableRoot.preview)
+        .environment(TableRootModel.preview)
 }

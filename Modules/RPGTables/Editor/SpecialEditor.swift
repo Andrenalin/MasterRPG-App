@@ -8,7 +8,7 @@ import RPGDie
 struct SpecialEditor: View {
     let editController: EditController
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     
     var body: some View {
@@ -65,7 +65,7 @@ struct SpecialEditor: View {
 struct RootQuickLinkEditor: View {
     let editController: EditController
     
-    @Environment(TableRoot.self) private var root
+    @Environment(TableRootModel.self) private var root
 
     var body: some View {
         @Bindable var model = editController.model
@@ -96,6 +96,6 @@ struct RootQuickLinkEditor: View {
         SpecialEditor(editController: .preview)
             .tint(Color.accentColor)
             .accentColor(.teal)
-            .environment(TableRoot.preview)
+            .environment(TableRootModel.preview)
     }
 }

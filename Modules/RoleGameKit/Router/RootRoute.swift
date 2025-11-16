@@ -141,7 +141,7 @@ extension RootRoute: NavigationDestination {
 
 struct RouteRouteDestionationView: View {
     let route: RootRoute
-    @Environment(AppStore.self) private var appModel
+    @Environment(AppModel.self) private var appModel
     
     var body: some View {
         Group {

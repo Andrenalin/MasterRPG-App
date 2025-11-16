@@ -20,7 +20,7 @@ final class ChangeGeneratorModel {
 struct ChangeGeneratorEditorViewModifier: ViewModifier {
     let model: ChangeGeneratorModel
 
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
 
     var itemBinding: Binding<ItemRowModel?> {
         Binding {

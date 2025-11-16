@@ -7,7 +7,7 @@ struct EditGroupEditorList: View {
     let editController: EditGroupController<ItemController, EditController>
     @Binding var isPresented: Bool
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
 
     var body: some View {
         EditGroupEditor(editGroupController: editController, isPresented: $isPresented) { model in

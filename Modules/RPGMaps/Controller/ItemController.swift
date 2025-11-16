@@ -12,13 +12,13 @@ import RPGValues
 
 struct ItemController: Sendable {
     @MainActor
-    init(root: MapRoot, dataController: DataController?) {
+    init(root: MapRootModel, dataController: DataController?) {
         self.root = root
         self.dataControllable = dataController
         itemDataModel = ItemDataModel(categoryTags: [.building, .dungeon, .map], networkModule: .map)
     }
 
-    weak var root: MapRoot!
+    weak var root: MapRootModel!
     let collectionCategory: ItemListCategory = .collection
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel

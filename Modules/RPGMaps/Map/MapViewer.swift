@@ -45,7 +45,7 @@ struct MapViewer: View {
     @State private var model: ImageViewerModel
     
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(DropPinModel.self) private var dropPinModel
     
     @State private var pins: MapPinViewModel = MapPinViewModel(mapPins: [], pointer: .empty)
@@ -543,6 +543,6 @@ final class ImageViewerModel {
         } focused: {}
 #endif
     }
-    .environment(MapRoot.preview)
+    .environment(MapRootModel.preview)
     .environment(DropPinModel())
 }

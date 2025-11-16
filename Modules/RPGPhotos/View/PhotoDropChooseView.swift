@@ -8,7 +8,7 @@ import SwiftUI
 struct PhotoDropChooseView: View {
     let model: ItemSelectionModel
     
-    @Environment(PhotoRoot.self) private var root
+    @Environment(PhotoRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     
 #if os(iOS)

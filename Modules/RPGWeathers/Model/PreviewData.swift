@@ -42,7 +42,7 @@ public extension WeatherRootModel {
     
 #if DEBUG
     @MainActor
-    static func testRoot(photoRoot: PhotoRoot) -> WeatherRootModel {
+    static func testRoot(photoRoot: PhotoRootModel) -> WeatherRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let root = WeatherRootModel(container: modelContainer, photoRoot: PhotoFactory.root(container: modelContainer))
         root.photoRoot.setUp(context: nil, rootControllable: root.photoRoot)

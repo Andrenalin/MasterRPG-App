@@ -42,7 +42,7 @@ struct EditToolBar: View {
     let model: EditToolBarModel
     let closeAction: (() -> Void)?
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
     @Environment(\.wideMode) private var wideMode
     
@@ -248,7 +248,7 @@ struct EditToolBar: View {
             EditToolBar(editController: .preview, model: EditToolBarModel()) {
                 print("Close")
             }
-            .environment(MapRoot.preview)
+            .environment(MapRootModel.preview)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

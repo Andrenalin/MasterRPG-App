@@ -14,13 +14,13 @@ import RPGValues
 
 struct ExportController: Sendable {
     @MainActor
-    init(root: AdventureRoot, itemController: ItemController, gameExporter: Bool) {
+    init(root: AdventureRootModel, itemController: ItemController, gameExporter: Bool) {
         self.root = root
         self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
 
-    weak var root: AdventureRoot!
+    weak var root: AdventureRootModel!
     let itemController: ItemController
 
     public let exportModel: ItemDataExportModel

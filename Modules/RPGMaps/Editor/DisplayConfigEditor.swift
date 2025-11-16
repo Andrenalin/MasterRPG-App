@@ -7,7 +7,7 @@ struct DisplayConfigEditor: View {
     let editController: EditController
     let constTime = Date.now
     
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     
     @State private var isAnimating = false
     @State private var showTileEditor = false
@@ -72,7 +72,7 @@ struct DisplayConfigEditor: View {
 
 struct DisplayConfigBorderEditor: View {
     let editController: EditController
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     
     var body: some View {
         @Bindable var model = editController.model

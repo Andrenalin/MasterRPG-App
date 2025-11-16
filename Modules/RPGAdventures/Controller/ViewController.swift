@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 public struct ViewController: Sendable {
-    weak var root: AdventureRoot!
+    weak var root: AdventureRootModel!
 }
 
 // MARK: - Viewer

@@ -8,7 +8,7 @@ struct ValueEntrySectionEditor: View {
     let changeChildModel: ChangeChildModel
     let changeGeneratorModel: ChangeGeneratorModel
 
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(SelectionSheetLinkModel.self) private var selectionSheetLinkModel
     @Environment(\.dismiss) private var dismiss
 
@@ -88,7 +88,7 @@ struct ValueEntrySectionEditor: View {
 
 #Preview {
     ValueEntrySectionEditor(editController: .preview, changeChildModel: ChangeChildModel(), changeGeneratorModel: ChangeGeneratorModel())
-        .environment(ValueRoot.preview)
+        .environment(CharacterRootModel.preview)
         .environment(ListModel.preview)
         .environment(SelectionSheetLinkModel())
         .environment(\.locale, .init(identifier: "de"))

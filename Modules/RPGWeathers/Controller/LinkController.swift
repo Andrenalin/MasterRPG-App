@@ -7,12 +7,12 @@ import SwiftUI
 import os.log
 
 public struct LinkController: Sendable {
-    init(photoRoot: PhotoRoot, itemController: ItemController, gameController: GameController) {
+    init(photoRoot: PhotoRootModel, itemController: ItemController, gameController: GameController) {
         self.photoRoot = photoRoot
         self.itemController = itemController
         self.gameController = gameController
     }
-    let photoRoot: PhotoRoot
+    let photoRoot: PhotoRootModel
     let itemController: ItemController
     let gameController: GameController
     

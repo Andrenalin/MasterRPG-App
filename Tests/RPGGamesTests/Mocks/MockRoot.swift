@@ -20,7 +20,7 @@ import RPGWeathers
 import Testing
 
 struct MockRoot {
-    static func importTestData(into root: AdventureRoot, name: String = ResourcesDebug.adventureTestData, itemCounter: Int = 3) async throws {
+    static func importTestData(into root: AdventureRootModel, name: String = ResourcesDebug.adventureTestData, itemCounter: Int = 3) async throws {
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: name, withExtension: "gmz").unsafelyUnwrapped
@@ -29,21 +29,21 @@ struct MockRoot {
         await #expect(root.itemController.itemDataModel.items.count == itemCounter)
     }
     
-    static func resetTestData(for root: AdventureRoot) async throws {
+    static func resetTestData(for root: AdventureRootModel) async throws {
         await root.resetData()
     }
     
     static func createGameRoot() async throws -> GameRoot {
-        let audioRoot = await AudioRoot.testRoot()
+        let audioRoot = await AudioRootModel.testRoot()
         let diceRoot = await DiceRootModel.testRoot()
-        let pdfRoot = await PdfRoot.testRoot()
-        let photoRoot = await PhotoRoot.testRoot()
-        let spaceRoot = await SpaceRoot.testRoot()
+        let pdfRoot = await PdfRootModel.testRoot()
+        let photoRoot = await PhotoRootModel.testRoot()
+        let spaceRoot = await SpaceRootModel.testRoot()
         let weatherRoot = await WeatherRootModel.testRoot(photoRoot: photoRoot)
-        let tableRoot = await TableRoot.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
-        let valueRoot = await ValueRoot.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-        let mapRoot = await MapRoot.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
-        let adventureRoot = await AdventureRoot.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
+        let tableRoot = await TableRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
+        let valueRoot = await CharacterRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+        let mapRoot = await MapRootModel.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
+        let adventureRoot = await AdventureRootModel.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
         
         return await GameRoot(adventureRoot: adventureRoot, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
     }

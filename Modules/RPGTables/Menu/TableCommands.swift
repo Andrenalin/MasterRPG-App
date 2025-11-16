@@ -27,11 +27,11 @@ extension FocusedValues {
 
 #if !os(tvOS)
 public struct TableCommands: Commands {
-    public init(root: TableRoot) {
+    public init(root: TableRootModel) {
         self.root = root
     }
 
-    let root: TableRoot
+    let root: TableRootModel
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
 
     public var body: some Commands {
@@ -88,7 +88,7 @@ struct SwitchWindowButton: View {
 }
 
 struct AddItemButton: View {
-    let root: TableRoot
+    let root: TableRootModel
     
     @Environment(\.openWindow) private var openWindow
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
@@ -137,7 +137,7 @@ struct DuplicateItemButton: View {
 }
 
 struct UndoButton: View {
-    let root: TableRoot
+    let root: TableRootModel
     
     var body: some View {
         Button {
@@ -151,7 +151,7 @@ struct UndoButton: View {
 }
 
 struct RedoButton: View {
-    let root: TableRoot
+    let root: TableRootModel
 
     var body: some View {
         Button {

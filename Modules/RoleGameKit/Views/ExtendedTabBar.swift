@@ -7,7 +7,7 @@ import SwiftUI
 struct ExtendedTabBar: View {
     @SceneStorage("ExtendedTabRoute") var currentModule: ExtendedTabRoute?
 
-    @Environment(AppStore.self) private var appModel
+    @Environment(AppModel.self) private var appModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
 

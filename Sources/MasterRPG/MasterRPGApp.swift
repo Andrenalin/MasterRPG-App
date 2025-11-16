@@ -48,7 +48,7 @@ struct MasterRPGApp: App {
         AppDependencyManager.shared.add(dependency: generatorRootModel)
     }
 
-    @State private var appModel: AppStore = AppStore.shared
+    @State private var appModel: AppModel = AppModel.shared
     
     var body: some Scene {
         BaseWindow("Game", id: WindowIdentifier.game.rawValue) {

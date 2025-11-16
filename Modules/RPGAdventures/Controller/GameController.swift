@@ -22,7 +22,7 @@ public protocol AdventureStoreGameable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: AdventureRoot!, itemController: ItemController) {
+    init(root: AdventureRootModel!, itemController: ItemController) {
         self.root = root
         self.itemController = itemController
         self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
@@ -32,7 +32,7 @@ struct GameController: Sendable {
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
     
-    weak var root: AdventureRoot!
+    weak var root: AdventureRootModel!
     let itemController: ItemController
     let importController: ImportController
     let exportController: ExportController

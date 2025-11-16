@@ -7,12 +7,12 @@ import RealityKit
 import SwiftUI
 
 public struct ImmersivePhotoView: View {
-    let root: PhotoRoot
+    let root: PhotoRootModel
 
     @State private var photoSelection: PhotoWorldSelection
     @State private var destinationChanged = false
 
-    public init(root: PhotoRoot, photoSelection: PhotoWorldSelection) {
+    public init(root: PhotoRootModel, photoSelection: PhotoWorldSelection) {
         self.root = root
         self._photoSelection = State(wrappedValue: photoSelection)
     }
@@ -42,7 +42,7 @@ public struct ImmersivePhotoView: View {
 }
 
 extension Entity {
-    func addSkybox(root: PhotoRoot, for photoSelection: PhotoWorldSelection) {
+    func addSkybox(root: PhotoRootModel, for photoSelection: PhotoWorldSelection) {
         let subscription = Task {
             guard let url = await root.itemController.loadableUrl(for: ItemRowModel(itemId: photoSelection.id, typeId: .photo)) else { return }
             guard let texture = try? await TextureResource(contentsOf: url) else { return }
@@ -62,7 +62,7 @@ extension Entity {
         components.set(Entity.SubscriptionComponent(subscription: subscription))
     }
 
-    func updateTexture(root: PhotoRoot, for photoSelection: PhotoWorldSelection) {
+    func updateTexture(root: PhotoRootModel, for photoSelection: PhotoWorldSelection) {
         let subscription = Task {
             guard let url = await root.itemController.loadableUrl(for: ItemRowModel(itemId: photoSelection.id, typeId: .photo)) else { return }
             guard let texture = try? await TextureResource(contentsOf: url) else { return }

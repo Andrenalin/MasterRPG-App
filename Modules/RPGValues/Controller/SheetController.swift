@@ -4,11 +4,11 @@ import AndrenalinKit
 import Foundation
 
 struct SheetController {
-    init(root: ValueRoot) {
+    init(root: CharacterRootModel) {
         self.root = root
     }
     
-    weak var root: ValueRoot!
+    weak var root: CharacterRootModel!
     
     @MainActor
     func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {

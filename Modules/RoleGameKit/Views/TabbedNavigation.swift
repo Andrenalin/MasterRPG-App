@@ -10,7 +10,7 @@ public struct TabbedNavigation: View {
 
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
 
-    @Environment(AppStore.self) private var appModel
+    @Environment(AppModel.self) private var appModel
     @Environment(\.appSizeMode) private var appSizeMode
     
     

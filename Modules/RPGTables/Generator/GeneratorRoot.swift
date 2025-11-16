@@ -107,6 +107,6 @@ struct GeneratorRoot: View {
 
 #Preview {
     GeneratorRoot(generatorController: .previewWithData, item: .constant(nil))
-        .environment(TableRoot.previewWithData)
+        .environment(TableRootModel.previewWithData)
 }
 

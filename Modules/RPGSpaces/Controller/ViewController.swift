@@ -13,12 +13,12 @@ extension ViewController: ViewControllable {}
 // MARK: - New Views
 
 public extension ViewController {
-    @MainActor func linkWindow(root: SpaceRoot, isInspector: Bool = false) -> some View {
+    @MainActor func linkWindow(root: SpaceRootModel, isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
             .environment(root)
     }
     
-    @MainActor func windowViewer(root: SpaceRoot, selection: WindowItemSelection) -> some View {
+    @MainActor func windowViewer(root: SpaceRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return NavigationStack {
             SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
@@ -28,13 +28,13 @@ public extension ViewController {
         .environment(root)
     }
 
-    @MainActor func inlineViewer(root: SpaceRoot, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+    @MainActor func inlineViewer(root: SpaceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
             .environment(root)
     }
     
-    @MainActor func selectionView(root: SpaceRoot, model: ItemSelectionModel) -> some View {
+    @MainActor func selectionView(root: SpaceRootModel, model: ItemSelectionModel) -> some View {
         LinkRootView(type: .selection)
             .environment(root)
     }
@@ -44,7 +44,7 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func detailEditor(root: SpaceRoot, for item: ItemRowTreeModel, module: NetworkModules) -> some View {
+    func detailEditor(root: SpaceRootModel, for item: ItemRowTreeModel, module: NetworkModules) -> some View {
         SpaceDetailViewer(item: item)
             .environment(root)
     }
@@ -53,7 +53,7 @@ public extension ViewController {
 // MARK: - Game
 public extension ViewController {
     @MainActor @ViewBuilder
-    func gameSpaceView(root: SpaceRoot) -> some View {
+    func gameSpaceView(root: SpaceRootModel) -> some View {
 #if os(tvOS)
         SpaceQuickLook(root: root, item: ItemSelection(itemId: root.gameController.gameModel.currentItemId ?? UUID(), entryId: nil), startLoading: true, gameMode: true, dismiss: nil)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -72,7 +72,7 @@ public extension ViewController {
     private static let gameTabId = UUID()
     
     @MainActor
-    func gameView(root: SpaceRoot, select: Bool = false) -> some View {
+    func gameView(root: SpaceRootModel, select: Bool = false) -> some View {
         if select == true, let id = root.gameController.gameModel.currentItemId {
             let item = root.gameController.gameItem(for: id)
             if item.displayState == 0 {
@@ -94,7 +94,7 @@ public extension ViewController {
     private static let selectionTabId = UUID()
     
     @MainActor
-    func viewSelect(root: SpaceRoot, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
+    func viewSelect(root: SpaceRootModel, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
         let listController = root.listController(tabId: ViewController.selectionTabId)
         listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: true, focus: nil, mode: SelectionMode(selected: selection, toggle: toggleSelection))
         
@@ -118,13 +118,13 @@ public extension ViewController {
     
 #if os(visionOS)
     @MainActor @ViewBuilder
-    func spaceImmersionWindow(root: SpaceRoot, id: UUID, defaultSize: Size3D) -> some View {
+    func spaceImmersionWindow(root: SpaceRootModel, id: UUID, defaultSize: Size3D) -> some View {
         SpaceViewer(root: root, id: id, isModal: false)
     }
 #endif
     
     @MainActor
-    func spaceWindow(root: SpaceRoot, selection: ItemSelection) -> some View {
+    func spaceWindow(root: SpaceRootModel, selection: ItemSelection) -> some View {
         SpaceQuickLook(root: root, item: selection, startLoading: true, gameMode: false, dismiss: nil)
     }
 }
@@ -132,7 +132,7 @@ public extension ViewController {
 // MARK: - Viewer
 
 public extension ViewController {
-    func rowView(root: SpaceRoot, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
+    func rowView(root: SpaceRootModel, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
         SpaceRow(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
             .environment(root)
     }

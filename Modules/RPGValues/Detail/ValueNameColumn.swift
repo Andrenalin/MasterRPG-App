@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 
 struct ValueNameColumn<Menu: View>: View {
-    let root: ValueRoot
+    let root: CharacterRootModel
     let editController: EditController
     let entryId: UUID
     let menuView: () -> Menu
@@ -35,5 +35,5 @@ struct ValueNameColumn<Menu: View>: View {
             Text("Menu")
         }
     }
-    .environment(ValueRoot.preview)
+    .environment(CharacterRootModel.preview)
 }

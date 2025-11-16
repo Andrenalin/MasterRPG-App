@@ -9,7 +9,7 @@ struct MapSheet: View {
     let showTopImage: Bool
     let dismissAction: (() -> Void)?
 
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
 
     @State private var sheetModel: SheetModel = SheetModel(id: UUID(), name: "", description: "", groups: [])
 

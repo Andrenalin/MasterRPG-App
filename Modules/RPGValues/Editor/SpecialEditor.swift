@@ -9,7 +9,7 @@ import RPGTables
 struct SpecialEditor: View {
     let editController: EditController
     
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
     @Environment(\.navigator) private var navigator
     
     var body: some View {
@@ -67,7 +67,7 @@ struct SpecialEditor: View {
 struct RootQuickLinkEditor: View {
     let editController: EditController
     
-    @Environment(ValueRoot.self) private var root
+    @Environment(CharacterRootModel.self) private var root
 
     var body: some View {
         @Bindable var model = editController.model
@@ -100,6 +100,6 @@ struct RootQuickLinkEditor: View {
     SpecialEditor(editController: .preview)
         .tint(Color.accentColor)
         .accentColor(.teal)
-        .environment(ValueRoot.preview)
+        .environment(CharacterRootModel.preview)
         .environment(\.locale, .init(identifier: "de"))
 }

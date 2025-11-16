@@ -9,7 +9,7 @@ struct AnimatedHeaderMap: View {
 
     private let constTime = Date.now
 
-    @Environment(MapRoot.self) private var root
+    @Environment(MapRootModel.self) private var root
     @Environment(DetailHeaderModel.self) private var headerModel
 
     @State private var isAnimating = false

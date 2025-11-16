@@ -12,7 +12,7 @@ final class DropPinModel {
 }
 
 struct RootCanvasMap: View {
-    init(root: MapRoot, itemId: UUID, mode: MapDisplayMode, toolBarModel: GameToolBarModel, playerPinId: UUID? = nil) {
+    init(root: MapRootModel, itemId: UUID, mode: MapDisplayMode, toolBarModel: GameToolBarModel, playerPinId: UUID? = nil) {
         self.root = root
         self.itemId = itemId
         self.mode = mode
@@ -23,7 +23,7 @@ struct RootCanvasMap: View {
         self.playerPinId = playerPinId
     }
 
-    let root: MapRoot
+    let root: MapRootModel
     let itemId: UUID
     let mode: MapDisplayMode
     let toolBarModel: GameToolBarModel
@@ -85,12 +85,12 @@ private extension RootCanvasMap {
 
 #Preview {
     RootCanvasMap(root: .previewWithData, itemId: MapModel.previewId, mode: .master, toolBarModel: GameToolBarModel(), playerPinId: nil)
-        .environment(MapRoot.previewWithData)
+        .environment(MapRootModel.previewWithData)
 }
 
 
 struct RootGameMapViewer: View {
-    init(root: MapRoot, itemId: UUID, mode: MapDisplayMode, toolBarModel: GameToolBarModel, playerPinId: UUID?, image: AKImage, degrees: Double, containerSize: CGSize) {
+    init(root: MapRootModel, itemId: UUID, mode: MapDisplayMode, toolBarModel: GameToolBarModel, playerPinId: UUID?, image: AKImage, degrees: Double, containerSize: CGSize) {
         self.root = root
         self.itemId = itemId
         self.mode = mode
@@ -101,7 +101,7 @@ struct RootGameMapViewer: View {
         self.containerSize = containerSize
     }
 
-    let root: MapRoot
+    let root: MapRootModel
     let itemId: UUID
     let mode: MapDisplayMode
     let toolBarModel: GameToolBarModel
