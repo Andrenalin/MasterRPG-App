@@ -155,6 +155,8 @@
 		8E52F6752EC994DC005E6838 /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; platformFilters = (ios, macos, xros, ); };
 		8E52F6762EC994F5005E6838 /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; };
 		8E52F6772EC994FF005E6838 /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; };
+		8E52F68A2EC9DE87005E6838 /* GeneratorRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E52F68B2EC9DE9A005E6838 /* GeneratorRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E54807F2E27E3D900435AB5 /* CoreRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; };
 		8E5480882E27E3F100435AB5 /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
 		8E5B8C712E3235ED00321B4A /* AudioRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 593D0D2C2E31F2D000410232 /* AudioRPG.framework */; };
@@ -2049,6 +2051,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E52F68A2EC9DE87005E6838 /* GeneratorRPG.framework in Embed Frameworks */,
 				8E47A0002CF20CAE0041F283 /* RPGMaps.framework in Embed Frameworks */,
 				8E1CF92C2BD14CB800891478 /* RoleGameKit.framework in Embed Frameworks */,
 				8E479FF42CF20CAE0041F283 /* RPGAudios.framework in Embed Frameworks */,
@@ -2125,6 +2128,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8E52F68B2EC9DE9A005E6838 /* GeneratorRPG.framework in Embed Frameworks */,
 				8EF250072CF0AE8E005D1170 /* AndrenalinKit.framework in Embed Frameworks */,
 				8EF2500A2CF0AE8F005D1170 /* RoleGameKit.framework in Embed Frameworks */,
 				8EF2500C2CF0AE91005D1170 /* RPGAdventures.framework in Embed Frameworks */,

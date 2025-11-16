@@ -24,6 +24,8 @@ final class GeneratorSessionModel {
     }
     
     var campaign: CampaignGenModel.PartiallyGenerated?
+    
+    var extracted: BlockGenModel.PartiallyGenerated?
 }
 
 struct GeneratorController: Sendable {
@@ -39,9 +41,9 @@ struct GeneratorController: Sendable {
     @MainActor func generate(from model: GeneratorModel) {
         let reference: CharacterGenModel = CharacterGenModel(name: "He-Man", information: "He-Man is a legendary hero from the Marvel Universe.", tags: ["Warrior", "Weapon Master", "Swordsman"], entries: [
             CharacterEntryGenModel(name: "Attributes", content: "", valueType: .text, groupedValues: CharacterGenModel(name: "Attributes", information: "The attributes of the character", tags: ["Values"], entries: [
-            CharacterEntryGenModel(name: "BODY", content: "10", valueType: .number, groupedValues: nil),
-            CharacterEntryGenModel(name: "MOBILITY", content: "8", valueType: .number, groupedValues: nil),
-            CharacterEntryGenModel(name: "MIND", content: "4", valueType: .number, groupedValues: nil)
+                CharacterEntryGenModel(name: "BODY", content: "10", valueType: .number, groupedValues: nil),
+                CharacterEntryGenModel(name: "MOBILITY", content: "8", valueType: .number, groupedValues: nil),
+                CharacterEntryGenModel(name: "MIND", content: "4", valueType: .number, groupedValues: nil)
             ]))
         ])
         
@@ -58,9 +60,9 @@ struct GeneratorController: Sendable {
         let instructions = """
                 Your are an assistent to create new adventures for a RPG game.
                 """
-//        let instructions = """
-//                Helfe dabei ein Abenteuer zu erstellen fuer ein Fantasy RPG.
-//                """
+        //        let instructions = """
+        //                Helfe dabei ein Abenteuer zu erstellen fuer ein Fantasy RPG.
+        //                """
         let session = LanguageModelSession(instructions: instructions)
         
         self.model.set(session: session)
@@ -93,11 +95,11 @@ struct GeneratorController: Sendable {
     @MainActor func requestAdventure(message: String) async {
         do {
             let prompt = Prompt {
-                            "\(message)"
-                        }
-
+                "\(message)"
+            }
+            
             let stream = model.session.streamResponse(to: prompt, generating: CampaignGenModel.self)
-
+            
             for try await partialResponse in stream {
                 self.model.campaign = partialResponse.content
             }
@@ -109,6 +111,38 @@ struct GeneratorController: Sendable {
             print(error.localizedDescription)
         }
     }
+    
+    
+    @MainActor func generateExtractor(from model: GeneratorModel) {
+        let instructions = """
+                Your job is to identify the the type of text, and split into Adventure, Map, Character or Table related text blocks. 
+                """
+        let session = LanguageModelSession(instructions: instructions)
+        
+        self.model.set(session: session)
+        session.prewarm()
+    }
+    
+    @MainActor func requestExtraction(message: String) async {
+        do {
+            let prompt = Prompt {
+                            "\(message)"
+                        }
+
+            let stream = model.session.streamResponse(to: prompt, generating: BlockGenModel.self)
+
+            for try await partialResponse in stream {
+                self.model.extracted = partialResponse.content
+            }
+        } catch let error as LanguageModelSession.GenerationError {
+            print(error.localizedDescription)
+        } catch let error as LanguageModelSession.ToolCallError {
+            print(error.tool)
+        } catch {
+            print(error.localizedDescription)
+        }
+    }
+
 }
 
 #endif

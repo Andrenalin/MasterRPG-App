@@ -11,7 +11,7 @@ public extension WeatherRootModel {
     static let preview: WeatherRootModel = {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let root = WeatherRootModel(container: modelContainer, photoRoot: PhotoFactory.root(container: modelContainer))
-        root.photoRoot.setUp(context: nil, rootControllable: root)
+        root.photoRoot.setUp(context: nil, rootControllable: root.photoRoot)
         root.setUp(context: nil, rootControllable: root)
         root.editController.setCurrentItem(to: .preview)
         return root

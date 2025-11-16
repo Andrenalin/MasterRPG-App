@@ -25,7 +25,7 @@ struct MockData: PreviewModifier {
 
     func body(content: Content, context: ModelContainer) -> some View {
         content
-//            .modifier(MockRootViewModifier(modelContext: context.mainContext))
+            .modifier(MockRootViewModifier(modelContext: context.mainContext))
             .modelContainer(context)
     }
     static func makeSharedContext() async throws -> ModelContainer {
@@ -40,60 +40,38 @@ struct MockData: PreviewModifier {
             return container
         }
 
-//        let root = GeneratorRootModel.preview
-//        let task = root.importController.importUrl(from: url)
-//        let _ = try await task.value
+        let root = GeneratorRootModel.preview
+        let task = root.importController.importUrl(from: url)
+        let _ = try await task.value
 
         return container
     }
 }
 
-//struct MockRootViewModifier: ViewModifier {
-//    init(modelContext: ModelContext) {
-//        let audioRoot = AudioRootFactory.rootModel(modelContext: modelContext)
-//        let diceRoot = DiceRootFactory.rootModel(modelContext: modelContext)
-//        let pdfRoot = PdfRootFactory.rootModel(modelContext: modelContext)
-//        let photoRoot = PhotoRootFactory.rootModel(modelContext: modelContext)
-//        let spaceRoot = SpaceRootFactory.rootModel(modelContext: modelContext)
-//        let tableRoot = TableRootFactory.rootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: pdfRoot)
-//        let weatherRoot = WeatherRootFactory.rootModel(modelContext: modelContext, photoRoot: photoRoot)
-//        let characterRoot = CharacterRootFactory.rootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-//        let mapRoot = MapRootFactory.rootModel(modelContext: modelContext, characterRoot: characterRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-//        let adventureRoot = AdventureRootFactory.rootModel(modelContext: modelContext, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
-//        self._root = State(
-//            wrappedValue: GeneratorRootModel(
-//                modelContext: modelContext,
-//                adventureRoot: adventureRoot,
-//                audioRoot: audioRoot,
-//                characterRoot: characterRoot,
-//                diceRoot: diceRoot,
-//                mapRoot: mapRoot,
-//                pdfRoot: pdfRoot,
-//                photoRoot: photoRoot,
-//                spaceRoot: spaceRoot,
-//                tableRoot: tableRoot,
-//                weatherRoot: weatherRoot
-//            )
-//        )
-//    }
-//    
-//    @State private var root: GeneratorRootModel
-//    
-//    func body(content: Content) -> some View {
-//        content.environment(root)
-//            .environment(root.searchModel)
-//            .environment(root.listController.listModel)
-//            .environment(root.listDisplayModel)
-//            .environment(root.rootController)
-//            .environment(CacheItemListModel())
-//            .environment(DeviceRotationModel())
-//            .environment(TabTitleModel())
-//            .environment(LinkRootController(container: root.itemController.container, root: RootManager(adventureRoot: root.adventureRoot, audioRoot: root.audioRoot, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root.mapRoot, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root.spaceRoot, tableRoot: root.tableRoot, weatherRoot: root.weatherRoot)))
-//#if os(macOS)
-//            .frame(width: 800, height: 600)
-//#endif
-//    }
-//}
+struct MockRootViewModifier: ViewModifier {
+    init(modelContext: ModelContext) {
+        self._root = State(wrappedValue: GeneratorRootModel.preview)
+    }
+    
+    @State private var root: GeneratorRootModel
+    
+    func body(content: Content) -> some View {
+        content
+            .environment(root)
+            .environment(root.searchModel)
+            .environment(root.listDisplayModel)
+            .environment(root.rootController)
+            //.environment(ListModel.preview)
+            .environment(CacheItemListModel())
+            .environment(DeviceRotationModel())
+#if os(macOS)
+            .frame(width: 800, height: 600)
+#endif
+            .tint(root.module.tint)
+            .accentColor(root.module.tint)
+
+    }
+}
 
 extension PreviewTrait where T == Preview.ViewTraits {
     static var mockData: Self = .modifier(MockData())

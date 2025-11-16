@@ -125,5 +125,8 @@ struct RootExtendedList: View {
 }
 
 #Preview {
-    RootList(root: .preview, tabId: UUID())
+    @Previewable @State var root: TableRootModel = .preview
+    RootList(root: root, tabId: UUID())
+        .environment(root)
+        .environment(SelectionSheetLinkModel())
 }

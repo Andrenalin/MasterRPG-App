@@ -96,11 +96,13 @@ extension GeneratorModel {
         
         case adventure = 0
         case character = 1
+        case extractor = 2
         
         var title: LocalizedStringKey {
             switch self {
             case .adventure: "Adventure"
             case .character: "Character"
+            case .extractor: "Extractor"
             }
         }
     }
