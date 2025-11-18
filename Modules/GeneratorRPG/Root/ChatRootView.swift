@@ -13,7 +13,7 @@ struct ChatRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     
-    @State private var prompt: String = "Create a new Character for a fantasy role play world."
+    @State private var prompt: String = "Give me some dwarven names"
     
     var body: some View {
         checkView
@@ -85,12 +85,11 @@ private extension ChatRootView {
                 case .prompt(let prompt):
                 SegmentsView(segments: prompt.segments, isUser: true)
                     .listRowSeparator(.hidden)
-                case .response(let response):
-                SegmentsView(segments: response.segments, isUser: false)
-                    .listRowSeparator(.hidden)
-                case .instructions, .toolCalls, .toolOutput:
+            case .response(let answer):
+                SegmentsView(segments: answer.segments, isUser: false)
+            case .instructions, .toolCalls, .toolOutput:
                     EmptyView()
-                @unknown default:
+            @unknown default:
                     EmptyView()
             }
         }

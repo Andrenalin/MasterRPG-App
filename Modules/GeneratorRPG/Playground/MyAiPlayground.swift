@@ -11,7 +11,7 @@ import Foundation
 //            Your job is to create new role play adventure. The game master will ask you question about character, quest and backgrounds. 
 //            """
     let instructions = """
-            You are an assitent to support the game master for a pen&paper fanatasy role play. 
+            You are an assitent to support the game master for a fanatasy game. 
             """
 
     let session = LanguageModelSession(instructions: instructions)
@@ -21,11 +21,12 @@ import Foundation
 //    }
 
     let prompt = Prompt {
-        "I need few dwarven names"
+        "Give my some dwarven names and then names for pub where these drwaves could be."
     }
 
     do {
         let response = try await session.respond(to: prompt)
+        print(response.content)
         
     } catch {
         if let error = error as? LanguageModelSession.GenerationError {

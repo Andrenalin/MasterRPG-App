@@ -17,6 +17,7 @@ final class GeneratorSessionModel {
     var responses: [LanguageModelSession.ResponseStream<CharacterGenModel>.Snapshot] = []
     
     var result: CharacterGenModel?
+    var characterChat: String?
     
     func append(_ content: LanguageModelSession.ResponseStream<CharacterGenModel>.Snapshot) {
         result = try? CharacterGenModel(content.rawContent)
@@ -39,17 +40,17 @@ struct GeneratorController: Sendable {
     let llm = SystemLanguageModel.default
     
     @MainActor func generate(from model: GeneratorModel) {
-        let reference: CharacterGenModel = CharacterGenModel(name: "He-Man", information: "He-Man is a legendary hero from the Marvel Universe.", tags: ["Warrior", "Weapon Master", "Swordsman"], entries: [
-            CharacterEntryGenModel(name: "Attributes", content: "", valueType: .text, groupedValues: CharacterGenModel(name: "Attributes", information: "The attributes of the character", tags: ["Values"], entries: [
-                CharacterEntryGenModel(name: "BODY", content: "10", valueType: .number, groupedValues: nil),
-                CharacterEntryGenModel(name: "MOBILITY", content: "8", valueType: .number, groupedValues: nil),
-                CharacterEntryGenModel(name: "MIND", content: "4", valueType: .number, groupedValues: nil)
-            ]))
-        ])
+//        let reference: CharacterGenModel = CharacterGenModel(name: "He-Man", information: "He-Man is a legendary hero from the Marvel Universe.", tags: ["Warrior", "Weapon Master", "Swordsman"], entries: [
+//            CharacterEntryGenModel(name: "Attributes", content: "", valueType: .text, groupedValues: CharacterGenModel(name: "Attributes", information: "The attributes of the character", tags: ["Values"], entries: [
+//                CharacterEntryGenModel(name: "BODY", content: "10", valueType: .number, groupedValues: nil),
+//                CharacterEntryGenModel(name: "MOBILITY", content: "8", valueType: .number, groupedValues: nil),
+//                CharacterEntryGenModel(name: "MIND", content: "4", valueType: .number, groupedValues: nil)
+//            ]))
+//        ])
         
         let session = LanguageModelSession {
         """
-        You are a character generator assistant for a role play game. Use the reference character \(reference) to understand the sturcture of the response. 
+        You are an assistent to support a game master for a role play game. 
         """
         }
         self.model.set(session: session)
@@ -73,14 +74,12 @@ struct GeneratorController: Sendable {
         Task {
             do {
                 let stream = model.session.streamResponse(
-                    generating: CharacterGenModel.self,
-                    includeSchemaInPrompt: false,
                     options: GenerationOptions()) {
                         "\(message)"
                     }
                 
-                for try await response in stream {
-                    model.append(response)
+                for try await partialResponse in stream {
+                    self.model.characterChat = partialResponse.content
                 }
             } catch let error as LanguageModelSession.GenerationError {
                 print(error.localizedDescription)

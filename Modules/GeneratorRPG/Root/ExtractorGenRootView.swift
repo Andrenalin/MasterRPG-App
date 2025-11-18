@@ -17,11 +17,13 @@ struct ExtractorGenRootView: View {
             """
             After meeting several obstacles in the
             marsh the PCs find the ruins of a tower atop
-            a rocky hill. Only the foundations remain of
+            a rocky hill. Only the foun-
+            dations remain of
             the ruined tower. Inside the remains of the
             tower, footprints can clearly be seen (MIN
             + RE + 6) in the vicinity of several recently
-            used fire pits and some food leftovers.
+            used fire pits and some food left-
+            overs.
             A secret trapdoor, camouflaged by moss
             and netting, opens to a stairway (MIN + RE
             + 2) leading downwards.
