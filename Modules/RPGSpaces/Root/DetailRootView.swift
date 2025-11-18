@@ -37,7 +37,6 @@ struct DetailRootView: View {
         ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: true) {
         } editor: {
             SpaceDetailObjectViewer(editController: editController, model: model)
-        } inspector: {
         }
         .overlay {
             if openFileWindowModel.showItem {

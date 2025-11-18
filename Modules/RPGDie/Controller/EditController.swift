@@ -40,8 +40,7 @@ extension EditController {
         save(with: String(localized: "Remove \(die.name)").localizedString)
     }
 
-    @MainActor
-    func add(coup: Int, isDiceValueCoup: Bool) async {
+    @MainActor func add(coup: Int, isDiceValueCoup: Bool) {
         let newCoupOption: DiceModel.CoupFumbleOption
         if isDiceValueCoup {
             newCoupOption = .diceValue(coup)
@@ -55,8 +54,7 @@ extension EditController {
         save(with: String(localized: "Set coup options").localizedString)
     }
 
-    @MainActor
-    func remove(coup: DiceModel.CoupFumbleOption) async {
+    @MainActor func remove(coup: DiceModel.CoupFumbleOption) {
         guard let index = model.coupValues.firstIndex(where: { $0 == coup }) else { return }
         model.coupValues.remove(at: index)
         save(with: String(localized: "Remove coup options").localizedString)

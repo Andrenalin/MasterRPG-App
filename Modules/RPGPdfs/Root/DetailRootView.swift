@@ -39,7 +39,6 @@ struct DetailRootView: View {
             if let cacheController = root.cacheController {
                 CachePhotoView(cacheController: cacheController, model: model, highResolution: false)
             }
-        } inspector: {
         }
         .overlay {
             if openFileWindowModel.showItem {

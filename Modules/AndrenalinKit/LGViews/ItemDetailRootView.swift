@@ -5,27 +5,55 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Overlay: View, EntryEditor: View>: View {
-    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
+    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
         self.detailListController = detailListController
         self.selectedId = selectedId
         self.editorAsBackground = editorAsBackground
         self.header = header()
         self.editor = editor()
         self.inspector = inspector()
+        self.hasInspector = true
         self.overlay = { EmptyView() }()
         self.hasOverlay = false
         self.entryEditor = entryEditor()
     }
 
-    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
+    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
         self.detailListController = detailListController
         self.selectedId = selectedId
         self.editorAsBackground = editorAsBackground
         self.header = header()
         self.editor = editor()
         self.inspector = inspector()
+        self.hasInspector = true
         self.overlay = overlay()
         self.hasOverlay = true
+        self.entryEditor = entryEditor()
+    }
+
+    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView {
+        self.detailListController = detailListController
+        self.selectedId = selectedId
+        self.editorAsBackground = editorAsBackground
+        self.header = header()
+        self.editor = editor()
+        self.inspector = { EmptyView() }()
+        self.hasInspector = false
+        self.overlay = overlay()
+        self.hasOverlay = true
+        self.entryEditor = entryEditor()
+    }
+
+    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView, Overlay == EmptyView {
+        self.detailListController = detailListController
+        self.selectedId = selectedId
+        self.editorAsBackground = editorAsBackground
+        self.header = header()
+        self.editor = editor()
+        self.inspector = { EmptyView() }()
+        self.hasInspector = false
+        self.overlay = { EmptyView() }()
+        self.hasOverlay = false
         self.entryEditor = entryEditor()
     }
 
@@ -36,6 +64,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     let inspector: Inspector?
     let overlay: Overlay
     let hasOverlay: Bool
+    let hasInspector: Bool
     let entryEditor: EntryEditor
     
     @Environment(\.modelContext) private var modelContext
@@ -167,11 +196,13 @@ private extension ItemDetailRootView {
                     }
                 }
             }
-            #if !os(visionOS)
             ToolbarItemGroup(placement: .secondaryActionAll) {
-                inspectorButton
+                if (hasInspector || model.specialCategory) && canShowInspector && openFileWindowModel.showItem == false {
+                    inspectorButton
+                    Divider()
+                }
+                MenuUndoRedoButton(root: root)
             }
-            #endif
         }
         .environment(selection)
     }

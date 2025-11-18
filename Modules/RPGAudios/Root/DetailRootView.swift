@@ -37,7 +37,6 @@ struct DetailRootView: View {
         ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: false) {
         } editor: {
             fileAndPlayerView(model: model)
-        } inspector: {
         } overlay: {
             playerView
         }

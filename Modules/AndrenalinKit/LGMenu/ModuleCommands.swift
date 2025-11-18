@@ -34,7 +34,7 @@ public struct ModuleCommands: Commands {
                 Divider()
             }
         }
-        CommandGroup(after: .undoRedo) {
+        CommandGroup(replacing: .undoRedo) {
             if selectedModule == root.module {
                 UndoButton(root: root)
                 RedoButton(root: root)
@@ -102,42 +102,6 @@ struct DuplicateItemButton: View {
     var item: (any ItemDataAccessable)? {
         guard let selectedItemId = root.currentSelectedItemId else { return nil }
         return root.itemControllable.itemOrEmpty(for: selectedItemId)
-    }
-}
-
-struct UndoButton: View {
-    let root: any ItemRootControllable
-    
-    var body: some View {
-        Button {
-            withAnimation { root.editControllable.undo() }
-        } label: {
-            Label {
-                Text("Undo \(root.editControllable.undoTitle)", bundle: .module)
-            } icon: {
-                Image(systemName: "arrow.uturn.backward")
-            }
-        }
-        .keyboardShortcut("Z", modifiers: [.command])
-        .disabled(!root.editControllable.canUndo)
-    }
-}
-
-struct RedoButton: View {
-    let root: any ItemRootControllable
-
-    var body: some View {
-        Button {
-            withAnimation { root.editControllable.redo() }
-        } label: {
-            Label {
-                Text("Redo \(root.editControllable.redoTitle)", bundle: .module)
-            } icon: {
-                Image(systemName: "arrow.uturn.forward")
-            }
-        }
-        .keyboardShortcut("Z", modifiers: [.command, .shift])
-        .disabled(!root.editControllable.canRedo)
     }
 }
 

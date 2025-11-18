@@ -39,10 +39,6 @@ struct DetailRootView: View {
             if let cacheController = root.cacheController {
                 CachePhotoView(cacheController: cacheController, model: model, highResolution: true)
             }
-        } inspector: {
-            if !isSubFolder {
-                LinkRootView(type: .inspector)
-            }
         }
         .overlay {
             if openFileWindowModel.showItem {

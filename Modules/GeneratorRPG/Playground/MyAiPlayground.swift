@@ -6,16 +6,33 @@ import FoundationModels
 import Playgrounds
 import Foundation
 
-#Playground {
+#Playground("Chat with out structure") {
+//    let instructions = """
+//            Your job is to create new role play adventure. The game master will ask you question about character, quest and backgrounds. 
+//            """
     let instructions = """
-            Your job is to create new role play adventure. The game master will ask you question about character, quest and backgrounds. 
+            You are an assitent to support the game master for a pen&paper fanatasy role play. 
             """
+
     let session = LanguageModelSession(instructions: instructions)
 
+//    let prompt = Prompt {
+//        "I need 7 dwarven brother. The first one is named Baergurn. All brother names should start with Baer-. Baergurn is the oldest and a fighter with a great Dwarven battleaxe. The yougest one called Baergunni and he is a healer and famous cook. Can you create the other brothers with their special abilities and background?"
+//    }
+
     let prompt = Prompt {
-        "I need 7 dwarven brother. The first one is named Baergurn. All brother names should start with Baer-. Baergurn is the oldest and a fighter with a great Dwarven battleaxe. The yougest one called Baergunni and he is a healer and famous cook. Can you create the other brothers with their special abilities and background?"
+        "I need few dwarven names"
     }
-    let response = try await session.respond(to: prompt)
+
+    do {
+        let response = try await session.respond(to: prompt)
+        
+    } catch {
+        if let error = error as? LanguageModelSession.GenerationError {
+            print(error.localizedDescription)
+        }
+        print(error.localizedDescription)
+    }
 }
 
 
