@@ -16,23 +16,22 @@ struct ViewerRootView: View {
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
         
+    @State private var isAnimating: Bool = false
+    
     var body: some View {
         let _ = Self._printChanges()
         NavigationStack {
             VStack {
                 GeometryReader { proxy in
-                    WeatherViewer(model: model, size: proxy.size, useGame: false)
+                    WeatherViewer(model: model, size: proxy.size, useGame: false, isAnimating: $isAnimating)
                         .id(model.id)
                 }
             }
             .ignoresSafeArea(.container, edges: [.top, .bottom])
 #if !os(macOS)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    closeButton
-                }
+                toolbarContent
             }
 #endif
 #if !os(visionOS)
@@ -48,6 +47,26 @@ struct ViewerRootView: View {
 }
 
 private extension ViewerRootView {
+    @ToolbarContentBuilder
+    var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            closeButton
+        }
+        
+        ToolbarItem(placement: .primaryAction) {
+            animateButton
+        }
+    }
+    
+    var animateButton: some View {
+        Button {
+            withAnimation { isAnimating.toggle() }
+        } label: {
+            Image(systemName: "film\(isAnimating ? ".fill" : "")")
+        }
+        .contentTransition(.symbolEffect(.replace.wholeSymbol))
+    }
+
     var closeButton: some View {
         Button {
             if let dismissAction {

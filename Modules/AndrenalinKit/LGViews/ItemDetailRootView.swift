@@ -187,22 +187,7 @@ private extension ItemDetailRootView {
         }
         .modifier(OpenFileViewerViewModifier(model: selectedModel(model: model), module: root.module))
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                if openFileWindowModel.showItem == false && (hasFile(model: selectedModel(model: model)) || selectedModel(model: model).specialCategory) {
-                    Button {
-                        withAnimation { isEditing = true }
-                    } label: {
-                        Image(systemName: "pencil")
-                    }
-                }
-            }
-            ToolbarItemGroup(placement: .secondaryActionAll) {
-                if (hasInspector || model.specialCategory) && canShowInspector && openFileWindowModel.showItem == false {
-                    inspectorButton
-                    Divider()
-                }
-                MenuUndoRedoButton(root: root)
-            }
+            toolbarContent(model: model)
         }
         .environment(selection)
     }
@@ -394,6 +379,26 @@ private extension ItemDetailRootView {
                     }
                 }
             }
+        }
+    }
+    
+    @ToolbarContentBuilder
+    private func toolbarContent(model: any ItemDataAccessable) -> some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            if openFileWindowModel.showItem == false && (hasFile(model: selectedModel(model: model)) || selectedModel(model: model).specialCategory) {
+                Button {
+                    withAnimation { isEditing = true }
+                } label: {
+                    Image(systemName: "pencil")
+                }
+            }
+        }
+        ToolbarItemGroup(placement: .secondaryActionAll) {
+            if (hasInspector || model.specialCategory) && canShowInspector && openFileWindowModel.showItem == false {
+                inspectorButton
+                Divider()
+            }
+            MenuUndoRedoButton(root: root)
         }
     }
 }

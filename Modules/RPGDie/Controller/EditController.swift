@@ -60,8 +60,7 @@ extension EditController {
         save(with: String(localized: "Remove coup options").localizedString)
     }
 
-    @MainActor
-    func add(fumble: Int, isDiceValueFumble: Bool) async {
+    @MainActor func add(fumble: Int, isDiceValueFumble: Bool) {
         let newFumbleOption: DiceModel.CoupFumbleOption
         if isDiceValueFumble {
             newFumbleOption = .diceValue(fumble)
@@ -75,22 +74,19 @@ extension EditController {
         save(with: String(localized: "Set fumble options").localizedString)
     }
 
-    @MainActor
-    func remove(fumble: DiceModel.CoupFumbleOption) async {
+    @MainActor func remove(fumble: DiceModel.CoupFumbleOption) {
         guard let index = model.fumbleValues.firstIndex(where: { $0 == fumble }) else { return }
         model.fumbleValues.remove(at: index)
         save(with: String(localized: "Remove fumble options").localizedString)
     }
 
-    @MainActor
-    func add(reroll: Int, value: Int, isMaxDiceValue: Bool) async {
+    @MainActor func add(reroll: Int, value: Int, isMaxDiceValue: Bool) {
         let rerole = DiceModel.RerollOption(number: reroll, value: value, maxDiceValue: isMaxDiceValue)
         model.rerollOptions.append(rerole)
         save(with: String(localized: "Add reroll options").localizedString)
     }
 
-    @MainActor
-    func remove(reroll: DiceModel.RerollOption) async {
+    @MainActor func remove(reroll: DiceModel.RerollOption) {
         guard let index = model.rerollOptions.firstIndex(where: { $0 == reroll }) else { return }
         model.rerollOptions.remove(at: index)
         save(with: String(localized: "Remove reroll options").localizedString)

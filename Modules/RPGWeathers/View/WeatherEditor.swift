@@ -82,8 +82,20 @@ private extension WeatherEditor {
 #if os(tvOS)
             Text(formattedTime)
 #else
-            Slider(value: $model.time)
+            HStack {
+                Slider(value: $model.time)
+                Text(formattedTime)
+            }
 #endif
+        } label: {
+            Text("Time", bundle: .module)
+        }
+    }
+
+    @ViewBuilder
+    var timeDisplayView: some View {
+        LabeledContent {
+            Text(formattedTime)
         } label: {
             Text("Time", bundle: .module)
         }

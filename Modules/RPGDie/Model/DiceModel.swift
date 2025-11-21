@@ -313,6 +313,20 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
 }
 
 extension DiceModel {
+    var addDiceActivate: Bool {
+        get { addDiceEvery > 0 }
+        set { reset(addDice: newValue) }
+    }
+    
+    func reset(addDice: Bool) {
+        if addDice {
+            let newMax = dice.first?.die.max ?? 0
+            addDiceEvery = newMax
+        } else {
+            addDiceEvery = 0
+        }
+    }
+
     var canFumbleOnFirstDiceOnly: Bool {
         guard !fumbleValues.contains(where: { $0.isResult }) else { return false }
         return fumbleOnlyOnFirstDie
@@ -363,6 +377,14 @@ extension DiceModel {
     
     var maxValue: Int {
         dice.reduce(0) { $0 + $1.die.max }
+    }
+    
+    var minFirstValue: Int {
+        dice.first?.die.min ?? 1
+    }
+
+    var maxFirstValue: Int {
+        dice.first?.die.max ?? 20
     }
 }
 

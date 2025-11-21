@@ -51,12 +51,12 @@ struct DetailRootView: View {
     
     @ViewBuilder
     func detailEditorView() -> some View {
-        DiceEditor(model: model)
-        DiceOptionEditor(model: model)
-        CoupEditor(model: model)
-        OldFumbleEditor(editController: editController)
-        OLdRerollEditor(editController: editController)
-        OLdSpecialOptionEditor(editController: editController)
+        DiceEditor(model: editController.model)
+        DiceOptionEditor(model: editController.model)
+        CoupEditor(model: editController.model)
+        FumbleEditor(model: editController.model)
+        RerollEditor(model: editController.model)
+        SpecialOptionEditor(model: editController.model)
     }
 
     @ViewBuilder

@@ -8,7 +8,7 @@ struct RootGame: View {
     
     var body: some View {
         GeometryReader { proxy in
-            WeatherViewer(model: root.gameController.currentItem(), size: proxy.size, useGame: true)
+            WeatherViewer(model: root.gameController.currentItem(), size: proxy.size, useGame: true, isAnimating: .constant(false))
         }
         .ignoresSafeArea()
     }
@@ -23,7 +23,7 @@ struct WeatherWindow: View {
     
     var body: some View {
         GeometryReader { proxy in
-            WeatherViewer(model: root.itemController.itemOrEmpty(for: selection.itemId), size: proxy.size, useGame: true)
+            WeatherViewer(model: root.itemController.itemOrEmpty(for: selection.itemId), size: proxy.size, useGame: true, isAnimating: .constant(false))
         }
         .ignoresSafeArea()
 #if os(iOS)

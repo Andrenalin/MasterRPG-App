@@ -41,17 +41,19 @@ struct CoupEditor: View {
     var coupValueView: some View {
         LabeledContent {
             ScrollView(.horizontal) {
-                HStack(spacing: 4) {
+                HStack(spacing: 8) {
                     ForEach(model.coupValues) { coup in
                         Button {
                             withAnimation { root.editController.remove(coup: coup) }
                         } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 4) {
                                 Label(coup.text, systemImage: coup.icon)
                                 Image(systemName: "x.circle.fill")
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(Color.red)
+                                    .offset(y: -8)
                             }
                         }
+                        .borderLessTVBottonStyle()
                         .padding(4)
                     }
                 }

@@ -11,7 +11,7 @@ struct WeatherDetailViewer: View {
 
     var body: some View {
         GeometryReader { proxy in
-            WeatherViewer(model: model,  size: proxy.size, useGame: true)
+            WeatherViewer(model: model,  size: proxy.size, useGame: true, isAnimating: .constant(false))
         }
         .ignoresSafeArea()
         .environment(\.showGame, true)

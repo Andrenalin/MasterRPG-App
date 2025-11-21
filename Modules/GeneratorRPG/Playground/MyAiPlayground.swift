@@ -82,12 +82,28 @@ import Foundation
 """
     }
     
+    
+    let contentTaggingModel = SystemLanguageModel(useCase: .contentTagging)
+
+
     do {
         let stream = session.streamResponse(to: prompt, generating: BlockGenModel.self)
 
         for try await partialResponse in stream {
             print(partialResponse.content)
         }
+
+        if !contentTaggingModel.isAvailable { return }
+        do {
+            let session = LanguageModelSession(model: contentTaggingModel)
+            let stream = session.streamResponse(to: prompt, generating: BlockGenModel.self)
+            for try await newTags in stream {
+                print(newTags.content)
+            }
+        } catch {
+            print(error.localizedDescription)
+        }
+
         
     } catch let error as LanguageModelSession.GenerationError {
         print(error.localizedDescription)

@@ -15,7 +15,7 @@ struct WeatherEditHeader: View {
     @State private var isReading = false
 
     var body: some View {
-        WeatherViewer(model: editController.model, size: headerModel.size, useGame: headerModel.isInline)
+        WeatherViewer(model: editController.model, size: headerModel.size, useGame: headerModel.isInline, isAnimating: .constant(false))
 #if os(iOS)
             .toolbar {
                 ToolbarItem {

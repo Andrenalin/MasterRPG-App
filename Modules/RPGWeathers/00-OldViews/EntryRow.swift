@@ -31,7 +31,7 @@ struct EntryRow: View {
             }
 
             GeometryReader { geometry in
-                WeatherViewer(model: root.itemController.itemOrEmpty(for: item.model.itemId), size: geometry.size, useGame: false)
+                WeatherViewer(model: root.itemController.itemOrEmpty(for: item.model.itemId), size: geometry.size, useGame: false, isAnimating: .constant(true))
             }
             .frame(height: 250)
         }

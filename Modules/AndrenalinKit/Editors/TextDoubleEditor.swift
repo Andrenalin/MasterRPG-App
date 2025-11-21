@@ -74,9 +74,13 @@ private extension TextDoubleEditor{
 #endif
     }
 
+    func format(number: Double) -> String {
+        number.formatted(.number.precision(.fractionLength(1)))
+    }
+    
     var text: Binding<String> {
         Binding {
-            "\(model.wrappedValue)"
+            format(number: model.wrappedValue)
         } set: {
             if let number = Double($0), number != model.wrappedValue {
                 model.wrappedValue = number

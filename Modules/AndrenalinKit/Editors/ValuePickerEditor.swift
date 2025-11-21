@@ -38,7 +38,6 @@ public struct ValuePickerEditor<Value: Hashable, Content: View>: View where Valu
         }
         .labelsHidden()
         .pickerStyle(.automatic)
-        .tint(Color.accentColor)
     }
 
     private var selection: Binding<Value> {

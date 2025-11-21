@@ -7,10 +7,9 @@ struct WeatherViewer: View {
     let model: WeatherModel
     let size: CGSize
     let useGame: Bool
+    @Binding var isAnimating: Bool
 
     @Environment(WeatherRootModel.self) private var root
-
-    @State private var isAnimating = false
 
     let backgroundTopStops: [Gradient.Stop] = [
         .init(color: .midnightStart, location: 0),
@@ -109,21 +108,6 @@ struct WeatherViewer: View {
         .onDisappear {
             isAnimating = false
         }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                animateButton
-            }
-        }
-    }
-
-    var animateButton: some View {
-        Button {
-            withAnimation { isAnimating.toggle() }
-        } label: {
-            Image(systemName: "film\(isAnimating ? ".fill" : "")")
-        }
-        .contentTransition(.symbolEffect(.replace.wholeSymbol))
-        .opacity(useGame ? 0 : 1)
     }
 
     var containerSize: CGSize {
@@ -132,6 +116,7 @@ struct WeatherViewer: View {
 }
 
 #Preview {
-    WeatherViewer(model: .heavy, size: CGSize(width: 375, height: 375), useGame: false)
+    @Previewable @State var isAnimating = false
+    WeatherViewer(model: .heavy, size: CGSize(width: 375, height: 375), useGame: false, isAnimating: $isAnimating)
         .environment(WeatherRootModel.preview)
 }
