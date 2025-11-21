@@ -22,10 +22,20 @@ public struct TabbedNavigation: View {
         TabView(selection: $appModel.selectedModule) {
             ForEach(RootRoute.fiveTabs) { tab in
                 Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
-                    ManagedNavigationStack(name: tab.title) { _ in
+                    ManagedNavigationStack(name: tab.title) { navigator in
                         tab
+                            .environment(appModel.itemRootController(for: selectedModule))
+                            .tint(tab.module.tint)
+                            .accentColor(tab.module.tint)
+//                            .navigationModifier { destination in
+//                                destination()
+//                                    .tint(tab.module.tint)
+//                                    .accentColor(tab.module.tint)
+//                            }
                     }
                     .environment(appModel.itemRootController(for: selectedModule))
+                    .tint(tab.module.tint)
+                    .accentColor(tab.module.tint)
                 }
             }
         }

@@ -2,27 +2,33 @@
 
 import SwiftUI
 
-public struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, Background: View>: View {
-    public init(@ViewBuilder header: () -> Header, @ViewBuilder content: () -> Content, @ViewBuilder footer: () -> Footer, @ViewBuilder background: () -> Background) {
+@Observable
+final class HeaderFooterScrollModel {
+    var headerOffset: CGFloat = 0
+    var footerOffset: CGFloat = 0
+    var headerSize: CGFloat = 0
+    var footerSize: CGFloat = 0
+    
+    var scrollUp: Bool = false
+}
+
+struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, Background: View>: View {
+    init(model: HeaderFooterScrollModel, @ViewBuilder header: () -> Header, @ViewBuilder content: () -> Content, @ViewBuilder footer: () -> Footer, @ViewBuilder background: () -> Background) {
+        self.model = model
         self.header = header()
         self.content = content()
         self.footer = footer()
         self.background = background()
     }
     
+    let model: HeaderFooterScrollModel
+    
     @ViewBuilder var header: Header
     @ViewBuilder var content: Content
     @ViewBuilder var footer: Footer
     @ViewBuilder var background: Background
     
-    @State private var headerOffset: CGFloat = 0
-    @State private var footerOffset: CGFloat = 0
-    @State private var headerSize: CGFloat = 0
-    @State private var footerSize: CGFloat = 0
-    
-    @State private var scrollUp: Bool = false
-    
-    public var body: some View {
+    var body: some View {
         //let _ = Self._printChanges()
         
         content
@@ -32,15 +38,15 @@ public struct HeaderFooterContentScrollView<Header: View, Content: View, Footer:
                 max($0.contentOffset.y + $0.contentInsets.top, 0)
             } action: { oldValue, newValue in
                 let direction = (newValue - oldValue) > 0 ? true : false
-                if abs(newValue - oldValue) > 20 && scrollUp != direction {
-                    scrollUp = direction
+                if abs(newValue - oldValue) > 20 && model.scrollUp != direction {
+                    model.scrollUp = direction
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        if scrollUp {
-                            headerOffset = headerSize
-                            footerOffset = footerSize
+                        if model.scrollUp {
+                            model.headerOffset = model.headerSize
+                            model.footerOffset = model.footerSize
                         } else {
-                            headerOffset = 0
-                            footerOffset = 0
+                            model.headerOffset = 0
+                            model.footerOffset = 0
                         }
                     }
                 }
@@ -48,7 +54,7 @@ public struct HeaderFooterContentScrollView<Header: View, Content: View, Footer:
             .safeAreaInset(edge: .top, spacing: 0) {
                 headerView
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            .safeAreaInset(edge: .bottom, spacing: -model.footerOffset) {
                 footerView
             }
     }
@@ -60,15 +66,15 @@ public struct HeaderFooterContentScrollView<Header: View, Content: View, Footer:
                 .onGeometryChange(for: CGFloat.self) {
                     $0.size.height
                 } action: { newValue in
-                    headerSize = newValue
+                    model.headerSize = newValue
                 }
         }
-        .offset(y: -headerOffset)
+        .offset(y: -model.headerOffset)
         .clipped()
         .background {
             background
                 .ignoresSafeArea()
-                .offset(y: -headerOffset)
+                .offset(y: -model.headerOffset)
         }
     }
     
@@ -79,22 +85,24 @@ public struct HeaderFooterContentScrollView<Header: View, Content: View, Footer:
                 .onGeometryChange(for: CGFloat.self) {
                     $0.size.height
                 } action: { newValue in
-                    footerSize = newValue
+                    model.footerSize = newValue
                 }
         }
-        .offset(y: +footerOffset)
+        .offset(y: +model.footerOffset)
         .clipped()
         .background {
             background
                 .rotationEffect(Angle(degrees: 180))
                 .ignoresSafeArea()
-                .offset(y: +footerOffset)
+                .offset(y: +model.footerOffset)
         }
     }
 }
 
 #Preview {
-    HeaderFooterContentScrollView {
+    @Previewable @State var model = HeaderFooterScrollModel()
+    
+    HeaderFooterContentScrollView(model: model) {
         HStack(spacing: 15) {
             Button {
                 
@@ -110,8 +118,22 @@ public struct HeaderFooterContentScrollView<Header: View, Content: View, Footer:
         }
         .padding(15)
     } content: {
+        Group {
 #if os(macOS)
-        ScrollView {
+            ScrollView {
+                Form {
+                    VStack(spacing: 15) {
+                        ForEach(1...100, id: \.self) { _ in
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(.gray.opacity(0.35))
+                                .frame(height: 50)
+                        }
+                    }
+                    .padding(15)
+                }
+                
+            }
+#else
             Form {
                 VStack(spacing: 15) {
                     ForEach(1...100, id: \.self) { _ in
@@ -122,20 +144,13 @@ public struct HeaderFooterContentScrollView<Header: View, Content: View, Footer:
                 }
                 .padding(15)
             }
-
-        }
-#else
-        Form {
-            VStack(spacing: 15) {
-                ForEach(1...100, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: 15)
-                        .fill(.gray.opacity(0.35))
-                        .frame(height: 50)
-                }
-            }
-            .padding(15)
-        }
 #endif
+        }.overlay(alignment: .bottom) {
+            Text("Bottom")
+                .padding()
+                .glassEffect(.regular.interactive())
+                .padding(120)
+        }
     } footer: {
         VStack {
             Label {
@@ -148,7 +163,26 @@ public struct HeaderFooterContentScrollView<Header: View, Content: View, Footer:
         }
         .frame(maxWidth: .infinity)
         .frame(height: 128)
-    } background: {
+} background: {
         Rectangle().fill(Color.orange.gradient)
+    }
+    .overlay(alignment: .bottom) {
+        Text("Bottom")
+            .padding()
+            .glassEffect(.regular.interactive())
+            .safeAreaInset(edge: .bottom) {
+                VStack {
+                    Label {
+                        Text("Mage")
+                            .font(.largeTitle)
+                    } icon: {
+                        Image(systemName: "gear")
+                            .font(.largeTitle)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 128)
+                .opacity(0)
+            }
     }
 }

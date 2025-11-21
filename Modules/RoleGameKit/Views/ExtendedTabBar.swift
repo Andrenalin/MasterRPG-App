@@ -56,21 +56,14 @@ struct ExtendedTabBar: View {
 }
 
 private extension ExtendedTabBar {
-    func changeNavigation(selected: UUID?, navigator: Navigator, route: any NavigationDestination) {
-        if selected != nil {
-            navigator.push(route)
-        } else {
-            if navigator.count > 1 {
-                navigator.pop(to: 1)
-            }
-        }
-    }
-
     func gridButtonView(for route: ExtendedTabRoute, in navigator: Navigator) -> some View {
-        NavigationLink(to: route) {
+        Button {
+            currentModule = route
+            appModel.selectedExtendedModule = route
+            navigator.navigate(to: route)
+        } label: {
             GridLabelView(value: route.module, color: route.module.tint)
         }
-        .buttonStyle(.borderless)
         .modifier(ZoomDestinationViewModifier(sourceID: route.module.token, namespace: zoomNamespace))
     }
 

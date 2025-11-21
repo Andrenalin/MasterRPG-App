@@ -85,11 +85,12 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @State private var showInspector = false
     
     @State private var detailListController: FolderListControllable
-
+    @State private var headerFooterModel = HeaderFooterScrollModel()
+    
     public var body: some View {
         let _ = Self._printChanges()
         if let detailModel {
-            let _ = print("\(selectedId?.uuidString ?? "Not set") --> \(detailModel.name)")
+            //let _ = print("\(selectedId?.uuidString ?? "Not set") --> \(detailModel.name)")
 
             contentScrollView(model: detailModel)
                 .tint(root.module.tint)
@@ -122,7 +123,7 @@ private extension ItemDetailRootView {
     }
     
     @ViewBuilder func contentScrollView(model: any ItemDataAccessable) -> some View {
-        HeaderFooterContentScrollView {
+        HeaderFooterContentScrollView(model: headerFooterModel) {
             headerView(model: model)
         } content: {
             contentView(model: model)
@@ -138,7 +139,7 @@ private extension ItemDetailRootView {
         .overlay(alignment: .bottom) {
             if hasOverlay {
                 overlay
-                    .safeAreaInset(edge: .bottom) {
+                    .safeAreaInset(edge: .bottom, spacing: -headerFooterModel.footerOffset) {
                         bottomView(model: model).opacity(0)
                     }
             }
