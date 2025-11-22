@@ -86,7 +86,7 @@ private extension AdventureGenRootView {
                 case .prompt(let prompt):
                 SegmentsView(segments: prompt.segments, isUser: true)
                     .listRowSeparator(.hidden)
-                case .response(let _):
+                case .response(_):
                 if let campaign = root.generatorController.model.campaign {
                     CampaignGenView(campaign: campaign)
                         .listRowSeparator(.hidden)

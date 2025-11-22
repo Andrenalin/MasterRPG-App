@@ -33,7 +33,7 @@ public class DiceHandTrackingGestureModel: ObservableObject, @unchecked Sendable
             if PlaneDetectionProvider.isSupported {
                 try await session.run([planeData])
                 for await update in planeData.anchorUpdates {
-                    guard update.anchor.classification == .table else { continue }
+                    guard update.anchor.surfaceClassification == .table else { continue }
                     print(update.description)
                     switch update.event {
                     case .added, .updated:

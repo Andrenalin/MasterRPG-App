@@ -145,7 +145,7 @@ final class DiceSpaceModel: @unchecked Sendable {
             print("**** Have plane")
             // Add a new entity to represent this plane.
             let entity = ModelEntity(
-                mesh: .generateText(anchor.classification.description)
+                mesh: .generateText(anchor.surfaceClassification.description)
             )
             entityMap[anchor.id] = entity
             rootEntity?.addChild(entity)

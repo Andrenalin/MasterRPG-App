@@ -148,7 +148,7 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
         }.overlay(alignment: .bottom) {
             Text("Bottom")
                 .padding()
-                .glassEffect(.regular.interactive())
+                //.glassEffect(.regular.interactive())
                 .padding(120)
         }
     } footer: {
@@ -169,7 +169,7 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
     .overlay(alignment: .bottom) {
         Text("Bottom")
             .padding()
-            .glassEffect(.regular.interactive())
+            //.glassEffect(.regular.interactive())
             .safeAreaInset(edge: .bottom) {
                 VStack {
                     Label {

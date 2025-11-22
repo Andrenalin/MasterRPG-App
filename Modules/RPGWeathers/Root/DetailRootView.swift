@@ -99,7 +99,9 @@ struct OverlayViewer: View {
     var body: some View {
         GeometryReader { geometry in
             WeatherViewer(model: root.editController.model, size: geometry.size, useGame: false, isAnimating: $animate)
+#if !os(visionOS)
                 .glassEffect(.clear)
+#endif
                 .clipShape(.capsule)
         }
         .padding(.horizontal, 16)
