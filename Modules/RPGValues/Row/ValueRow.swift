@@ -3,7 +3,7 @@
 import AndrenalinKit
 import SwiftUI
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGTables
 
 struct ValueRow: View {

@@ -3,7 +3,7 @@
 import CoreExternalRPG
 import AndrenalinKit
 import SwiftUI
-import RPGPhotos
+import PhotoRPG
 import RPGTables
 
 struct RootExtendedDetail: View {

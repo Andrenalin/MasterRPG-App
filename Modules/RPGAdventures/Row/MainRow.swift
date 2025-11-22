@@ -2,8 +2,8 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGPhotos
-import RPGPhotos
+import PhotoRPG
+import PhotoRPG
 
 struct MainRow: View {
     let model: AdventureModel

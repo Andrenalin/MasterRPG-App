@@ -8,7 +8,7 @@ import Testing
 
 @testable import AndrenalinKit
 @testable import RPGGame
-import RPGPhotos
+import PhotoRPG
 
 final class PlayerControllerTests {
     private var sut: PlayerController!

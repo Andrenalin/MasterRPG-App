@@ -1,24 +1,13 @@
 // @copyright André Trettin
 
-import RPGAdventures
-import RPGAudios
-import RPGValues
-import RPGDie
-import RPGMaps
-import RPGPdfs
-import RPGPhotos
-import SpaceRPG
-import RPGTables
-import RPGWeathers
-
 import AndrenalinKit
 import Foundation
 import CoreData
 import SwiftData
 
-@MainActor @Observable
-public final class GeneratorRootModel {
-    init(container: ModelContainer, adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, characterRoot: CharacterRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, weatherRoot: WeatherRootModel) {
+@Observable
+public final class GeneratorRootModel: @unchecked Sendable {
+    @MainActor init(container: ModelContainer) {
         let module: NetworkModules = .generator
         self.module = module
         
@@ -29,17 +18,6 @@ public final class GeneratorRootModel {
         
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
-        
-        self.adventureRoot = adventureRoot
-        self.audioRoot = audioRoot
-        self.characterRoot = characterRoot
-        self.diceRoot = diceRoot
-        self.mapRoot = mapRoot
-        self.pdfRoot = pdfRoot
-        self.photoRoot = photoRoot
-        self.spaceRoot = spaceRoot
-        self.tableRoot = tableRoot
-        self.weatherRoot = weatherRoot
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -68,17 +46,6 @@ public final class GeneratorRootModel {
     public var itemSelectionModel: ItemSelectionModel
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
-
-    let adventureRoot: AdventureRootModel
-    let audioRoot: AudioRootModel
-    let characterRoot: CharacterRootModel
-    let diceRoot: DiceRootModel
-    let mapRoot: MapRootModel
-    let pdfRoot: PdfRootModel
-    let photoRoot: PhotoRootModel
-    let spaceRoot: SpaceRootModel
-    let tableRoot: TableRootModel
-    let weatherRoot: WeatherRootModel
 
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }
@@ -109,11 +76,9 @@ public final class GeneratorRootModel {
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
     }()
-
     
     @ObservationIgnored private(set) var _rootControllable: RootControllable?
-    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
-    
+    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }    
     
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
@@ -134,8 +99,8 @@ public final class GeneratorRootModel {
         )
     }()
     
-    @ObservationIgnored lazy var generatorController: GeneratorController = {
-        GeneratorController(characterRoot: characterRoot)
+    @MainActor @ObservationIgnored lazy var generatorController: GeneratorController = {
+        GeneratorController()
     }()
 }
 

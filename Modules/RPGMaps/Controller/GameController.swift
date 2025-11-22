@@ -6,7 +6,7 @@ import Observation
 import RPGTables
 import SwiftUI
 import RPGValues
-import RPGPhotos
+import PhotoRPG
 
 @MainActor @Observable
 final class MapGameModel: Sendable {

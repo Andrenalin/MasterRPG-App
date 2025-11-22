@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGPhotos
+import PhotoRPG
 
 @MainActor
 struct AdventureDetailHeader: View {

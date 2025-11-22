@@ -5,7 +5,7 @@ import RPGDie
 import Foundation
 import RPGAudios
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGResources
 import RPGTables
 import RPGValues

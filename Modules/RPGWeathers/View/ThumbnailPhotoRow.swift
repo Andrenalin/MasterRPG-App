@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGPhotos
+import PhotoRPG
 
 struct ThumbnailPhotoRow: View {
     let itemId: UUID

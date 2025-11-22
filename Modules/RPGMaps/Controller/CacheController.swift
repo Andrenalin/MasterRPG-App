@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-import RPGPhotos
+import PhotoRPG
 import os.log
 
 #if !os(tvOS)

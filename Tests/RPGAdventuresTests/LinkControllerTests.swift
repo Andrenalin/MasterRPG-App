@@ -9,7 +9,7 @@ import RPGResourcesDebug
 import Testing
 
 @testable import RPGAdventures
-@testable import RPGPhotos
+@testable import PhotoRPG
 @testable import RPGMaps
 @testable import RPGTables
 @testable import RPGValues

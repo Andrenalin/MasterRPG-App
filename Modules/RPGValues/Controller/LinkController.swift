@@ -6,7 +6,7 @@ import SwiftUI
 import os.log
 import RPGTables
 import RPGDie
-import RPGPhotos
+import PhotoRPG
 
 public struct LinkController: Sendable {
     weak var root: CharacterRootModel!

@@ -5,7 +5,7 @@ import RPGDie
 import RPGAudios
 import RPGMaps
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import SpaceRPG
 import RPGTables
 import RPGValues

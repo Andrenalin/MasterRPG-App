@@ -8,9 +8,9 @@ import RPGAdventures
 import RPGMaps
 import RPGMaps
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGValues
-import RPGPhotos
+import PhotoRPG
 import RPGWeathers
 import RPGTables
 

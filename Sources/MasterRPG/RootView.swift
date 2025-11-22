@@ -10,7 +10,7 @@ import RPGMaps
 import RPGValues
 import RPGAudios
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import SpaceRPG
 
 @MainActor

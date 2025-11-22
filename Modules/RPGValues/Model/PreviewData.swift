@@ -4,7 +4,7 @@ import AndrenalinKit
 import RPGDie
 import Foundation
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGResources
 import RPGTables
 import SwiftData

@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if !os(tvOS)
-import CoreRPG
+import AndrenalinKit
 
 #if canImport(UIKit)
 import UIKit
@@ -24,7 +24,7 @@ extension PhotoEntity {
 
     private func loadAssetData(isThumbnail: Bool) async throws -> Data {
         struct ImageCreationError: Error {}
-        guard let image = await root.loadImage(for: self.id, isThumbnail: isThumbnail) else {
+        guard let image = isThumbnail ? await root.cacheController?.thumbnail(for: self.id) : await root.cacheController?.photo(for: self.id) else {
             throw ImageCreationError()
         }
         #if canImport(UIKit)

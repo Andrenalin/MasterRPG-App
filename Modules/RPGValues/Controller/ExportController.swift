@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import RPGTables
-import RPGPhotos
+import PhotoRPG
 import RPGDie
 
 struct ExportController: Sendable {

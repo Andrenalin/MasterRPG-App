@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import CoreExternalRPG
 import SwiftData
 import SwiftUI
@@ -18,8 +18,8 @@ struct PhotoDropChooseView: View {
     var body: some View {
         DropItemModuleArea(module: root.module, contentView: {
             Group {
-                if let itemId = model.itemId, let item = root.itemController.item(for: itemId) {
-                    GroupedPhotoView(cacheController: root.cacheController, model: item)
+                if let itemId = model.itemId, let item = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
+                    GroupedPhotoView(cacheController: cacheController, itemControllable: root.itemController, model: item)
                 } else {
                     emptyDrop
                 }
@@ -55,7 +55,7 @@ struct PhotoDropChooseView: View {
     private var emptyDrop: some View {
         Button {
             root.itemSelectionModel = model
-            navigator.navigate(to: SelectionPhotoRoute.selection, method: .managedSheet)
+            //navigator.navigate(to: SelectionPhotoRoute.selection, method: .managedSheet)
         } label: {
             VStack {
                 if showDrop {

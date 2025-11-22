@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import RPGPhotos
+import PhotoRPG
 import SwiftUI
 
 @Observable

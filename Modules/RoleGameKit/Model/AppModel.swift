@@ -14,7 +14,7 @@ import RPGAudios
 import RPGGame
 import RPGMaps
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGResources
 import SpaceRPG
 import RPGTables
@@ -138,7 +138,7 @@ public final class AppModel: Sendable {
         
 #else
         
-        let generatorRoot = GeneratorRootFactory.rootModel(container: modelContainer, adventureRoot: adventureRoot, audioRoot: audioRoot, characterRoot: valueRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot)
+        let generatorRoot = GeneratorRootFactory.rootModel(container: modelContainer)
         self.generatorRoot = generatorRoot
         
         root = RootManager(

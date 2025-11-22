@@ -7,7 +7,7 @@ import os.log
 import RPGAudios
 import RPGDie
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGMaps
 import SpaceRPG
 import RPGTables

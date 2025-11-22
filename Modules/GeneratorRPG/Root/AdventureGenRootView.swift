@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import RPGValues
 import FoundationModels
 import SwiftUI
 

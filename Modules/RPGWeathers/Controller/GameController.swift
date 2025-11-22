@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import Observation
-import RPGPhotos
+import PhotoRPG
 
 public protocol WeatherGameStorable {}
 

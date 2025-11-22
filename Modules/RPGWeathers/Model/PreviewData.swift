@@ -4,7 +4,7 @@ import AndrenalinKit
 import Foundation
 import SwiftData
 import RPGResources
-import RPGPhotos
+import PhotoRPG
 
 public extension WeatherRootModel {
     @MainActor

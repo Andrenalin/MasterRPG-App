@@ -5,7 +5,7 @@ import AndrenalinKit
 import Foundation
 import Testing
 
-@testable import RPGPhotos
+@testable import PhotoRPG
 
 struct PhotoModelTests {
     func setUp() async throws -> PhotoModel {

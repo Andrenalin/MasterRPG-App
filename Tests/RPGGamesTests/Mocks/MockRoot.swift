@@ -9,7 +9,7 @@ import RPGAudios
 @testable import RPGGame
 import RPGMaps
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGResources
 import RPGResourcesDebug
 import SpaceRPG

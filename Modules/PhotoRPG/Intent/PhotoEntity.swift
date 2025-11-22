@@ -2,12 +2,12 @@
 
 #if !os(tvOS)
 
+import AndrenalinKit
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
 import PDFKit
-import CoreRPG
 
 struct PhotoEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -19,9 +19,8 @@ struct PhotoEntity: IndexedEntity {
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "\(name)"
-            //,
-            //image: .init(data: try! self.thumbnailRepresentationData)
+            title: "\(name)",
+            image: .init(systemName: icon)
         )
     }
 
@@ -30,16 +29,19 @@ struct PhotoEntity: IndexedEntity {
     var id: UUID { model.id }
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name.wrappedValue }
+    var name: String { model.name }
 
-    // Maps the description variable to the Spotlight indexing key `contentDescription`.
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.information.wrappedValue }
+    var description: String { model.description }
 
-    var root: PhotoRootModel
-    var model: ItemDataCodableModel
+    var icon: String {
+        model.specialCategory ? model.category.icon : root.module.icon
+    }
     
-    init(root: PhotoRootModel, model: ItemDataCodableModel) {
+    var root: PhotoRootModel
+    var model: PhotoModel
+    
+    init(root: PhotoRootModel, model: PhotoModel) {
         self.root = root
         self.model = model
     }
@@ -79,7 +81,7 @@ extension PhotoEntity: Transferable {
 
         DataRepresentation(exportedContentType: .plainText) {
             """
-            Photo: \($0.name)
+            Name: \($0.name)
             Description: \($0.description)
             """.data(using: .utf8)!
         }
@@ -91,10 +93,10 @@ struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: PhotoRootModel
 
     func suggestedEntities() async throws -> [PhotoEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [PhotoEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = PhotoEntity(root: root, model: model)
             results.append(entity)
         }
@@ -104,7 +106,7 @@ struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     func entities(for identifiers: [PhotoEntity.ID]) async throws -> [PhotoEntity] {
         var results: [PhotoEntity] = []
         for id in identifiers {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = PhotoEntity(root: root, model: model)
             results.append(entity)
         }
@@ -112,11 +114,11 @@ struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [PhotoEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [PhotoEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
-            guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
             let entity = PhotoEntity(root: root, model: model)
             results.append(entity)
         }
@@ -130,7 +132,7 @@ struct PhotoEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
 
 extension PhotoEntity {
     var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "photo.on.rectangle.angled"))
+        SharePreview(name, icon: Image(systemName: NetworkModules.photo.icon))
     }
 }
 

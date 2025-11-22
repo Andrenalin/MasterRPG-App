@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 import RPGAudios
 import SpaceRPG
-import RPGPhotos
+import PhotoRPG
 import RPGPdfs
 
 public struct UserSettingsViewModifier: ViewModifier {

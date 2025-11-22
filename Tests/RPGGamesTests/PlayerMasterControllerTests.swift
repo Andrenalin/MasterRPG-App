@@ -11,7 +11,7 @@ import Testing
 @testable import RPGDie
 @testable import RPGAudios
 @testable import RPGMaps
-@testable import RPGPhotos
+@testable import PhotoRPG
 @testable import SpaceRPG
 @testable import RPGTables
 @testable import RPGValues

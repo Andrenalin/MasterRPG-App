@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGPhotos
+import PhotoRPG
 
 struct MainRow: View {
     let model: WeatherModel

@@ -9,7 +9,7 @@ import RPGAudios
 import RPGDie
 import RPGDie
 import RPGMaps
-import RPGPhotos
+import PhotoRPG
 import RPGAudios
 import RPGPdfs
 import RPGTables
@@ -17,7 +17,7 @@ import RPGTables
 import SpaceRPG
 import SpaceRPG
 import RPGMaps
-import RPGPhotos
+import PhotoRPG
 import RPGPdfs
 
 struct RootNaviList: View {

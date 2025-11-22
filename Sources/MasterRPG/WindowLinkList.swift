@@ -10,7 +10,7 @@ import RPGValues
 import RPGPdfs
 import RPGTables
 import RPGAudios
-import RPGPhotos
+import PhotoRPG
 import RPGDie
 import RPGMaps
 import SpaceRPG

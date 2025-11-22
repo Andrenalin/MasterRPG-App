@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
 import os.log
 
@@ -53,4 +53,3 @@ extension CacheController: ImageCacheControllable {
         }
     }
 }
-

@@ -6,7 +6,7 @@ import Foundation
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGPhotos
+@testable import PhotoRPG
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {

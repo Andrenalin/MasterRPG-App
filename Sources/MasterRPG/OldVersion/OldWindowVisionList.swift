@@ -4,7 +4,7 @@
 import AndrenalinKit
 import RPGDie
 import RoleGameKit
-import RPGPhotos
+import PhotoRPG
 import SpaceRPG
 import SwiftUI
 

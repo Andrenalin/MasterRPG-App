@@ -6,7 +6,7 @@ import SwiftUI
 import os.log
 import RPGAudios
 import RPGDie
-import RPGPhotos
+import PhotoRPG
 import RPGTables
 import RPGValues
 

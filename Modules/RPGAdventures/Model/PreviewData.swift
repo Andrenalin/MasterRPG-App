@@ -6,7 +6,7 @@ import Foundation
 import RPGAudios
 import RPGMaps
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGResources
 import SpaceRPG
 import RPGTables

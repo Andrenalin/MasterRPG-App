@@ -5,7 +5,7 @@ import SwiftUI
 import RPGAdventures
 import RPGAudios
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import SpaceRPG
 
 public struct SettingsView: View {

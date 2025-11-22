@@ -3,7 +3,7 @@
 import AndrenalinKit
 import CoreExternalRPG
 import SwiftUI
-import RPGPhotos
+import PhotoRPG
 
 struct DetailRootView: View {
     init(root: WeatherRootModel, editController: EditController, model: WeatherModel, isSubFolder: Bool) {

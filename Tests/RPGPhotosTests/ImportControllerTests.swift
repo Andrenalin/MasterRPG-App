@@ -5,7 +5,7 @@ import Foundation
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGPhotos
+@testable import PhotoRPG
 
 struct ImportControllerTests {
     @Test func importing() async throws {

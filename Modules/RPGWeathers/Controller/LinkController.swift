@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-import RPGPhotos
+import PhotoRPG
 import SwiftUI
 import os.log
 

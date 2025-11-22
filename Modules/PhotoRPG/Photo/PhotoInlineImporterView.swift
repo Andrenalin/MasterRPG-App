@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
@@ -76,13 +76,11 @@ enum PhotoImporterButtonType: String {
 }
 
 struct PhotoInlineImporterView: View {
-    init(model: ItemDataModel) {
+    init(model: PhotoModel) {
         self.model = model
-        self.modelActor = model.modelActor()
     }
 
-    let model: ItemDataModel
-    let modelActor: DataModelActor?
+    let model: PhotoModel
 
     @Environment(PhotoRootModel.self) private var root
 #if !os(tvOS)
@@ -122,12 +120,12 @@ struct PhotoInlineImporterView: View {
                 }
             }.padding(32)
 #if !os(tvOS)
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: FileController.fileTypes) { result in
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: ItemController.fileTypes) { result in
             guard let url = try? result.get() else { return }
-            root.editController.resetFile(url: url, in: model)
+            root.editController.resetPhoto(url: url)
         }
         .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
-            root.editController.resetFile(url: url, in: model)
+            root.editController.resetPhoto(url: url)
         }
 #endif
 #if os(iOS)
@@ -141,8 +139,7 @@ struct PhotoInlineImporterView: View {
     }
 
     private func update(id: UUID, image: AKImage?) async {
-        guard let modelActor else { return }
-        await root.editController.resetFile(image: image, id: id, actor: modelActor)
+        await root.editController.resetPhoto(image: image)
     }
 
     private func button(type: PhotoImporterButtonType) -> some View {
@@ -173,11 +170,11 @@ struct PhotoInlineImporterView: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
+    @Previewable @Environment(PhotoRootModel.self) var root
     ZStack {
         Color
             .blue
 
-        PhotoInlineImporterView(model: models[0])
+        PhotoInlineImporterView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
     }
 }

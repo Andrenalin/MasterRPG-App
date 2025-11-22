@@ -14,7 +14,7 @@ import Testing
 import RPGWeathers
 
 @testable import RPGAdventures
-@testable import RPGPhotos
+@testable import PhotoRPG
 @testable import RPGTables
 
 struct ItemControllerTests {

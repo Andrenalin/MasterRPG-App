@@ -3,7 +3,7 @@
 import AndrenalinKit
 import CoreData
 import Foundation
-import RPGPhotos
+import PhotoRPG
 import SwiftData
 import SwiftUI
 

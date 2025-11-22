@@ -5,7 +5,7 @@ import CoreData
 import RPGDie
 import RPGAudios
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGTables
 import RPGValues
 import CoreData

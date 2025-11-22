@@ -6,7 +6,7 @@ import RPGMaps
 import RPGWeathers
 import RPGTables
 import SpaceRPG
-import RPGPhotos
+import PhotoRPG
 import RPGPdfs
 
 struct GameRootViewer<MapContent: View>: View {

@@ -1,9 +1,7 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
-import SwiftData
-import os.log
 
 @MainActor @Observable
 final class PhotoGameModel: Sendable {
@@ -22,62 +20,70 @@ final class PhotoGameModel: Sendable {
     }
 }
 
-public protocol PhotoGameControllable: GameControllable {
+public protocol PhotoGameControllable {
     @MainActor func resetPhotoSpace()
 }
 
-public struct GameController: Sendable {
+struct GameController: Sendable {
     @MainActor
-    init(itemController: ItemController, fileUrlDataController: FileUrlDataController) {
+    init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
-        self.fileUrlDataController = fileUrlDataController
-        self.exportController = ExportController(module: itemController.module, itemController: itemController, fileUrlDataController: fileUrlDataController, gameExporter: false)
-        self.gameModel = ItemGameModel()
+        self.exportController = ExportController(itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
+        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
         self.photoGameModel = PhotoGameModel()
     }
 
     let itemController: ItemController
-    let fileUrlDataController: FileUrlDataController
     let exportController: ExportController
-    
-    public let gameModel: ItemGameModel
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
+
+    let gameModel: ItemGameModel
     let photoGameModel: PhotoGameModel
+
+    @MainActor
+    func gameItem(for itemId: UUID) -> PhotoModel {
+        (gameModel.itemData[itemId] as? PhotoModel) ?? itemController.itemOrEmpty(for: itemId)
+    }
+    
+    @MainActor
+    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
+            gameModel.itemData[itemId] = item
+        } else {
+            gameModel.items.insert(itemId, at: 0)
+            gameModel.itemData[itemId] = item
+        }
+    }
+    
+    @MainActor
+    func currentItem() -> PhotoModel {
+        gameItem(for: gameModel.currentItemId ?? UUID())
+    }
 }
 
 extension GameController: GameControllable {
-    public var itemControllable: any ItemControllable {
+    var itemControllable: any ItemControllable {
         itemController as (any ItemControllable)
     }
-    public var exportControllable: any ExportControllable {
+    var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    @MainActor public var importControllable: any ImportControllable {
-        ImportController(itemController: self, fileUrlDataController: fileUrlDataController, module: itemController.module)
+    var importControllable: any ImportControllable {
+        importController as ImportControllable
     }
-    
-    public func resetGameState() {
+    func resetGameState() {
         photoGameModel.reset()
     }
 }
 
-extension GameController: ImportDataControllable {
-    public var container: ModelContainer {
-        itemController.container
-    }
-    
-    public func item(for id: UUID) -> ItemDataModel? {
-        guard let codableModel = gameItem(for: id) else { return nil }
-        return ItemDataModel(codableModel: codableModel)
-    }
-}
-
-extension GameController: PhotoGameControllable {
-    @MainActor
-    public func resetPhotoSpace() {
-        photoGameModel.openPhotoSpace <=> false
-    }
-
-    public func updateGame(data: NetworkCodableDataType, subtype: RPGMessageActionType) async throws {
+extension GameController {
+    func updateGame(data: NetworkCodableDataType, subtype: RPGMessageActionType) async throws {
         guard subtype == .photoSpace else { return }
 #if os(visionOS)
         Task { @MainActor in
@@ -85,5 +91,12 @@ extension GameController: PhotoGameControllable {
             photoGameModel.openPhotoSpace <=> true
         }
 #endif
+    }
+}
+
+extension GameController: PhotoGameControllable {
+    @MainActor
+    func resetPhotoSpace() {
+        photoGameModel.openPhotoSpace <=> false
     }
 }

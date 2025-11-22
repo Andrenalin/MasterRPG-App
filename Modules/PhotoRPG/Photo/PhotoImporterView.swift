@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -10,7 +9,7 @@ import ImagePlayground
 #endif
 
 struct PhotoImporterView: View {
-    let model: ItemDataModel
+    let model: PhotoModel
     let prominent: Bool
 
     var body: some View {
@@ -33,7 +32,7 @@ struct PhotoImporterView: View {
 
 #if !os(tvOS)
 struct ImagePlaygroundImportView: View {
-    let model: ItemDataModel
+    let model: PhotoModel
     let prominent: Bool
 
     @Environment(\.supportsImagePlayground) private var supportsImagePlayground
@@ -49,7 +48,7 @@ struct ImagePlaygroundImportView: View {
                     .imageScale(prominent ? .large : .medium)
             }
             .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
-                root.editController.resetFile(url: url, in: model)
+                root.editController.resetPhoto(url: url)
             }
         }
     }
@@ -57,15 +56,13 @@ struct ImagePlaygroundImportView: View {
 #endif
 
 struct CameraImporterView: View {
-    init(model: ItemDataModel, prominent: Bool) {
+    init(model: PhotoModel, prominent: Bool) {
         self.model = model
         self.prominent = prominent
-        self.modelActor = model.modelActor()
     }
 
-    let model: ItemDataModel
+    let model: PhotoModel
     let prominent: Bool
-    let modelActor: DataModelActor?
 
     @Environment(PhotoRootModel.self) private var root
     @Namespace private var transition
@@ -97,13 +94,12 @@ struct CameraImporterView: View {
     }
     
     private func update(id: UUID, image: AKImage?) async {
-        guard let modelActor else { return }
-        await root.editController.resetFile(image: image, id: id, actor: modelActor)
+        await root.editController.resetPhoto(image: image)
     }
 }
 
 struct FileImporterView: View {
-    let model: ItemDataModel
+    let model: PhotoModel
     let prominent: Bool
 
     @Environment(PhotoRootModel.self) private var root
@@ -118,9 +114,9 @@ struct FileImporterView: View {
                 .imageScale(prominent ? .large : .medium)
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
         }
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: FileController.fileTypes) { result in
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: ItemController.fileTypes) { result in
             guard let url = try? result.get() else { return }
-            root.editController.resetFile(url: url, in: model)
+            root.editController.resetPhoto(url: url)
         }
 #endif
     }
@@ -128,15 +124,13 @@ struct FileImporterView: View {
 
 #if !os(tvOS)
 struct LibraryImporterView: View {
-    init(model: ItemDataModel, prominent: Bool) {
+    init(model: PhotoModel, prominent: Bool) {
         self.model = model
         self.prominent = prominent
-        self.modelActor = model.modelActor()
     }
 
-    let model: ItemDataModel
+    let model: PhotoModel
     let prominent: Bool
-    let modelActor: DataModelActor?
 
     @Environment(PhotoRootModel.self) private var root
     
@@ -147,25 +141,25 @@ struct LibraryImporterView: View {
     }
     
     private func update(id: UUID, image: AKImage?) async {
-        guard let modelActor else { return }
-        await root.editController.resetFile(image: image, id: id, actor: modelActor)
+        await root.editController.resetPhoto(image: image)
     }
 }
 #endif
 
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
+    @Previewable @Environment(PhotoRootModel.self) var root
+    
     VStack {
         Color
             .teal
             .frame(width: 256, height: 256)
-            .overlay(CameraImporterView(model: models[0], prominent: false), alignment: .bottom)
-            .overlay(FileImporterView(model: models[0], prominent: false), alignment: .top)
+            .overlay(CameraImporterView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), prominent: false), alignment: .bottom)
+            .overlay(FileImporterView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), prominent: false), alignment: .top)
 #if !os(tvOS)
-            .overlay(LibraryImporterView(model: models[0], prominent: false), alignment: .center)
+            .overlay(LibraryImporterView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), prominent: false), alignment: .center)
 #endif
 
-        PhotoImporterView(model: models[0], prominent: true)
+        PhotoImporterView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), prominent: true)
     }
 }

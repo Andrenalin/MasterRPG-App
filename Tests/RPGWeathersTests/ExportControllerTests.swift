@@ -3,7 +3,7 @@
 #if canImport(Testing)
 import AndrenalinKit
 import Foundation
-import RPGPhotos
+import PhotoRPG
 import RPGResourcesDebug
 import Testing
 

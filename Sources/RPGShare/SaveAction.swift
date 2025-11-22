@@ -7,7 +7,7 @@ import RPGValues
 import RPGWeathers
 import RPGMaps
 import RPGAdventures
-import RPGPhotos
+import PhotoRPG
 
 struct SaveAction: View {
     let appModel: AppModel

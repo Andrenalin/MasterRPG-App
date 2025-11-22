@@ -1,91 +1,179 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
-import SwiftData
-import UniformTypeIdentifiers
-
+import Observation
 #if os(macOS)
 import AppKit
 #else
 import UIKit
 #endif
 
-public struct EditController {
-    @MainActor
-    init(itemController: ItemController, fileUrlDataController: FileUrlDataController) {
+struct EditController: Sendable {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+        self.linkRegisterControllable = linkRegisterControllable
         self.itemController = itemController
-        self.fileUrlDataController = fileUrlDataController
+        self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
     }
-    
-    let itemController: ItemController
-    public let fileUrlDataController: FileUrlDataController?
-}
 
-// MARK: - EditControllable
+    let itemController: ItemController
+    let linkRegisterControllable: any LinkRegisterControllable
+    let editorModel: ItemEditorModel
+}
 
 extension EditController: EditControllable {
-    public var itemControllable: any ItemControllable {
+    typealias Model = PhotoModel
+
+    var itemControllable: any ItemControllable {
         itemController
+    }
+    
+    var cacheController: CacheController? {
+        itemController.cacheController
+    }
+    
+    var fileUrlDataController: FileUrlDataController? {
+        itemControllable.fileUrlDataController
     }
 }
 
-// MARK: - File Editor
+extension EditController {
+    func reset(fileUrl: FileUrl, for itemId: UUID) async {
+        let item = await itemId == model.id ? model : itemController.itemOrEmpty(for: itemId).copy()
+        item.fileUrl = fileUrl
+        if await itemId == model.id {
+            await save(with: "")
+        } else {
+            await itemController.replace(model: item, isInsert: false, shouldRepairLinks: false)
+        }
+    }
+}
 
 extension EditController {
-    func resetFile(image: AKImage?, id: UUID, actor: DataModelActor) async {
-        guard let image else { return }
-        let data = image.jpegData(compressionQuality: 0.9)
-        await actor.setup(id: id)
-        await resetFile(data: data, id: id, actor: actor)
-        await actor.save()
-    }
+    func convert() async throws {
+        await cacheController?.photoId(for: model.id, with: model.fileUrl, shouldDownload: true)
+        guard let image = await cacheController?.photo(for: model.id), let data = image.jpegData(compressionQuality: 0.9), let fileUrl = await model.fileUrl else { return }
 
-    func resetFile(data: Data, model: ItemDataModel) {
-        guard let actor = model.modelActor() else { return }
-        let id = model.id
-        Task.detached {
-            await actor.setup(id: id)
-            await resetFile(data: data, id: id, actor: actor)
-            await actor.save()
+        await resetFileUrl()
+        var dataUrl = fileUrl
+        dataUrl.convertFile(data, fileExtension: "jpg")
+
+        let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataUrl, pathExtension: "jpg")
+
+        Task { @MainActor in
+            model.fileUrl = newFileUrl
+            save(with: String(localized: "New Photo").localizedString)
         }
     }
     
-    private func resetFile(data: Data?, id: UUID, actor: DataModelActor) async {
-        guard let fileUrlDataController else { return }
-        await fileUrlDataController.delete(await actor.fileUrl)
-        await actor.update(url: nil)
+    func loadImage(cacheType: CacheItemListModel.CacheType, itemId: UUID, fileUrl: FileUrl?, reset: Bool = false) async -> AKImage? {
+        guard let fileUrl else { return nil }
+        if reset {
+            await cacheItemListModel.setImageCache(cacheType: .image, itemId: itemId, image: nil)
+            await cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: itemId, image: nil)
+        }
+        if let newImage = await cacheItemListModel.imageCache(cacheType: cacheType, itemId: itemId) {
+            return newImage
+        }
+        var result: AKImage? = nil
+        if cacheType == .image {
+            await cacheController?.photoId(for: itemId, with: fileUrl, shouldDownload: true)
+            result = await cacheController?.photo(for: itemId)
+            
+            await cacheItemListModel.setImageCache(cacheType: .image, itemId: itemId, image: result)
+        }
+        await cacheController?.thumbnailId(for: itemId, with: fileUrl)
+        let newThumbnail = await cacheController?.thumbnail(for: itemId)
+        await cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: itemId, image: newThumbnail)
+        return cacheType == .image ? result : newThumbnail
+    }
+    
+    private func resetFileUrl() async {
+        await itemController.didDelete(fileUrl: model.fileUrl)
+        await model.fileUrl = nil
+    }
+    
+    func resetPhoto(image: AKImage?) async {
+        let data = image?.jpegData(compressionQuality: 0.9)
+        await resetPhoto(data: data)
+    }
+
+    func resetPhoto(data: Data?) async {
+        try? await resetPhotoJob(data: data)
+    }
+    
+    func resetPhotoJob(data: Data?) async throws {
+        await resetFileUrl()
         guard let data else { return }
         
-        let module = NetworkModules.photo.token
-        let filePath = await actor.name.isEmpty ? "\(await actor.category.title)/Image-\(id.uuidString).\(FileController.filenameExtension)" : "\(await actor.category.title)/\(await actor.name).\(FileController.filenameExtension)"
-        var dataFileUrl = FileUrl(fileId: id, url: URL(string: filePath)!, location: .cloud, module: module)
+        let module = await itemController.itemDataModel.networkModule.token
+        let filePath = await model.name.isEmpty ? "\(await model.category.title)/Image-\(model.id.uuidString).jpg" : "\(await model.category.title)/\(await model.name).jpg"
+        var dataFileUrl = await FileUrl(fileId: model.id, url: URL(string: filePath)!, location: .newCloud, module: module, relativeUrl: nil)
         dataFileUrl.resetData(data)
         
-        let updatedFileUrl = try? await fileUrlDataController.createNewFileUrl(fileId: id, unconvertedFileUrl: dataFileUrl, pathExtension: FileController.filenameExtension)
-        await actor.update(url: updatedFileUrl?.rawUrl)
-    }
-}
+        let fileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
 
-extension EditController {
-#if os(macOS)
-    static let importImageTypes = AKImage.imageTypes.compactMap { UTType($0) }
-
-    nonisolated
-    static func importImageFromProviders(_ itemProviders: [NSItemProvider], completion: @Sendable @escaping (Data?) -> Void) -> Bool {
-        guard let provider = itemProviders.first else { return false }
-        for type in importImageTypes {
-            let typeIdentifier = type.identifier
-            if provider.hasItemConformingToTypeIdentifier(typeIdentifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, _ in
-                    DispatchQueue.main.async {
-                        completion(data)
-                    }
-                }
-                return true
-            }
+        let saveTask = Task { @MainActor in
+            model.fileUrl = fileUrl
+            save(with: String(localized: "New Photo").localizedString)
         }
-        return false
+        _ = await saveTask.result
     }
-#endif
+
+    func resetPhoto(url: URL?) {
+        Task { @MainActor in
+            await resetPhoto(url: url, for: model, undoSave: true)
+        }
+    }
+
+    func resetPhoto(url: URL?, into itemId: UUID) async {
+        let item = await model.id == itemId ? model : itemController.item(for: itemId)?.copy()
+        guard let item else { return }
+        await resetPhoto(url: url, for: item, undoSave: model.id == itemId)
+    }
+
+    private func resetPhoto(url: URL?, for item: PhotoModel, undoSave: Bool) async {
+        guard let fileUrlDataController else { return }
+        await itemController.didDelete(fileUrl: item.fileUrl)
+        await resetURL(url: nil, on: item)
+        guard let url else {
+            if undoSave {
+                await save(with: String(localized: "Remove Photo").localizedString)
+            } else {
+                await itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
+            }
+            return
+        }
+        _ = url.startAccessingSecurityScopedResource()
+        defer { url.stopAccessingSecurityScopedResource() }
+
+        if item.name.isEmpty {
+            let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"
+            let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
+            let saveName = Task { @MainActor in
+                item.name = name
+            }
+            _ = await saveName.value
+        }
+        let fileUrl = try? await fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: itemController.itemDataModel.networkModule.token, category: item.category.title)
+        await resetURL(url: fileUrl, on: item)
+        if undoSave {
+            await save(with: String(localized: "New Photo").localizedString)
+        } else {
+            await itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
+        }
+    }
+    
+    private func resetURL(url: FileUrl?, on item: PhotoModel) async {
+        let saveTask = Task { @MainActor in
+            item.fileUrl = url
+        }
+        await saveTask.value
+    }
+
+    @MainActor
+    func isNotJpegPhoto() -> Bool {
+        guard let fileUrl = model.fileUrl else { return false }
+        return !(fileUrl.fileExtension == "jpg" || fileUrl.fileExtension == "jpeg")
+    }
 }

@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Observation
 import SwiftUI
-import RPGPhotos
+import PhotoRPG
 
 public struct ViewController: Sendable {
     public let goupViewType: GroupViewType = .photo

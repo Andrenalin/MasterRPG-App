@@ -1,8 +1,5 @@
 // @copyright André Trettin
 
-import RPGValues
-import RPGTables
-
 import AndrenalinKit
 import CoreExternalRPG
 import SwiftUI

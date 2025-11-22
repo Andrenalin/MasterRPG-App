@@ -7,7 +7,7 @@ import Foundation
 import os.log
 import RPGAudios
 import RPGMaps
-import RPGPhotos
+import PhotoRPG
 import RPGTables
 import RPGValues
 import RPGWeathers

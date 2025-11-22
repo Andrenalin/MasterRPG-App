@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-import RPGPhotos
+import PhotoRPG
 
 struct ExportController: Sendable {
     @MainActor init(photoRoot: PhotoRootModel, itemController: ItemController, gameExporter: Bool) {

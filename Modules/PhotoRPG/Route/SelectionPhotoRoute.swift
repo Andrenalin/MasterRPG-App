@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
+import AndrenalinKit
 import CoreExternalRPG
-import CoreRPG
 import SwiftUI
 
 public enum SelectionPhotoRoute: Equatable, Hashable, Codable {
@@ -12,13 +12,7 @@ extension SelectionPhotoRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .selection:
-            SelectionDestinationView()
+            LinkRootView(type: .selection)
         }
-    }
-}
-
-struct SelectionDestinationView: View {
-    var body: some View {
-        SelectionRootView()
     }
 }

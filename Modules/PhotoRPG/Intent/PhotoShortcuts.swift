@@ -1,7 +1,8 @@
 // @copyright André Trettin
 
 #if !os(tvOS)
-import CoreRPG
+
+import AndrenalinKit
 import AppIntents
 import Foundation
 

@@ -5,7 +5,7 @@ import AndrenalinKit
 import RPGDie
 import Foundation
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGTables
 import RPGResourcesDebug
 import Testing

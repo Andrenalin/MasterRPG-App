@@ -2,7 +2,6 @@
 
 #if !os(tvOS)
 
-import RPGValues
 import FoundationModels
 import Foundation
 
@@ -30,12 +29,10 @@ final class GeneratorSessionModel {
 }
 
 struct GeneratorController: Sendable {
-    @MainActor init(characterRoot: CharacterRootModel) {
-        self.characterRoot = characterRoot
+    @MainActor init() {
         self.model = GeneratorSessionModel()
     }
     
-    let characterRoot: CharacterRootModel
     let model: GeneratorSessionModel
     let llm = SystemLanguageModel.default
     

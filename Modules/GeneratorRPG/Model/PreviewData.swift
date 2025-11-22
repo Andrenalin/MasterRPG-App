@@ -1,18 +1,8 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import RPGDie
 import Foundation
-import RPGAdventures
-import RPGAudios
-import RPGMaps
-import RPGPdfs
-import RPGPhotos
 import RPGResources
-import SpaceRPG
-import RPGTables
-import RPGValues
-import RPGWeathers
 import SwiftData
 
 public extension GeneratorRootModel {
@@ -20,21 +10,8 @@ public extension GeneratorRootModel {
     static let preview: GeneratorRootModel = {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
 
-        let root = GeneratorRootModel(
-            container: modelContainer,
-            adventureRoot: AdventureRootModel.preview,
-            audioRoot: AudioRootModel.preview,
-            characterRoot: CharacterRootModel.preview,
-            diceRoot: DiceRootModel.preview,
-            mapRoot: MapRootModel.preview,
-            pdfRoot: PdfRootModel.preview,
-            photoRoot: PhotoRootModel.preview,
-            spaceRoot: SpaceRootModel.preview,
-            tableRoot: TableRootModel.preview,
-            weatherRoot: WeatherRootModel.preview
-        )
-        root.adventureRoot.setUp(context: nil)
-        root.setUp(context: nil, rootControllable: root.adventureRoot)
+        let root = GeneratorRootModel(container: modelContainer)
+        root.setUp(context: nil, rootControllable: root)
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -64,27 +41,30 @@ public extension GeneratorRootModel {
     
 #if DEBUG
     @MainActor
-    static func testRoot(audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, adventureRoot: AdventureRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) -> GeneratorRootModel {
+    static func testRoot() -> GeneratorRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = GeneratorRootModel(
-            container: modelContainer,
-            adventureRoot: adventureRoot,
-            audioRoot: audioRoot,
-            characterRoot: characterRoot,
-            diceRoot: diceRoot,
-            mapRoot: mapRoot,
-            pdfRoot: pdfRoot,
-            photoRoot: photoRoot,
-            spaceRoot: spaceRoot,
-            tableRoot: tableRoot,
-            weatherRoot: weatherRoot
-        )
-        root.adventureRoot.setUp(context: nil)
-        root.setUp(context: nil, rootControllable: root.adventureRoot)
+        let root = GeneratorRootModel(container: modelContainer)
+        //root.setUp(context: nil, rootControllable: root)
         root.editController.setCurrentItem(to: .preview)
         return root
     }
 #endif
+    
+    @MainActor static let linkRegisterController = FakeLinkRegisterController()
+}
+
+extension GeneratorRootModel: @preconcurrency RootControllable {
+    @MainActor
+    public var linkRegisterControllable: LinkRegisterControllable {
+        GeneratorRootModel.linkRegisterController
+    }
+    
+    public var gameExportControllable: any ExportControllable {
+        exportController
+    }
+    public var gameImportControllable: any ImportControllable {
+        importController
+    }
 }
 
 // MARK: Preview - Test
@@ -130,16 +110,6 @@ extension ExportController {
     @MainActor
     static let preview = GeneratorRootModel.preview.exportController
 }
-
-//extension ListController {
-//    @MainActor
-//    static let preview = GeneratorRootModel.preview.listController
-//}
-//
-//extension ListModel {
-//    @MainActor
-//    static var preview = ListController.preview.model
-//}
 
 extension ViewController {
     @MainActor

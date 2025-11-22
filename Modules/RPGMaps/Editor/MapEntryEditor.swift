@@ -8,7 +8,7 @@ import RPGValues
 import RPGAudios
 import RPGDie
 import RPGPdfs
-import RPGPhotos
+import PhotoRPG
 import RPGTables
 
 struct MapEntryEditor: View {

@@ -1,25 +1,20 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
 
 struct ImportController: Sendable {
-    @MainActor
-    init(itemController: ImportDataControllable, fileUrlDataController: FileUrlDataController, module: NetworkModules) {
+    @MainActor init(itemController: ItemController) {
         self.itemController = itemController
-        self.fileUrlDataController = fileUrlDataController
-        self.module = module
         self.importModel = ItemDataImportModel()
     }
     
-    let itemController: ImportDataControllable
-    let fileUrlDataController: FileUrlDataController?
-    let module: NetworkModules
-    let importModel: ItemDataImportModel
+    let itemController: ItemController
+    public let importModel: ItemDataImportModel
 }
 
 extension ImportController: ImportControllable {
-    var itemControllable: any ImportDataControllable {
+    var itemControllable: any ItemControllable {
         itemController
     }
 }
