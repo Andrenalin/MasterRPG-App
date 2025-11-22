@@ -7,7 +7,7 @@ import RoleGameKit
 import SwiftUI
 import RPGGame
 import RPGValues
-import RPGPdfs
+import PdfRPG
 import RPGTables
 import AudioRPG
 import PhotoRPG

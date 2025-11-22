@@ -7,7 +7,7 @@ import RPGWeathers
 import RPGTables
 import SpaceRPG
 import PhotoRPG
-import RPGPdfs
+import PdfRPG
 
 struct GameRootViewer<MapContent: View>: View {
     let root: GameRoot

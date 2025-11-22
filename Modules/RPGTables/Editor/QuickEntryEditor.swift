@@ -2,7 +2,7 @@
 
 import CoreExternalRPG
 import AndrenalinKit
-import RPGPdfs
+import PdfRPG
 import SwiftUI
 
 struct QuickEntryEditor: View {

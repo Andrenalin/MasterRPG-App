@@ -1,16 +1,15 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 
 #if !os(tvOS)
 @preconcurrency import PDFKit
 #endif
-import SwiftData
 import SwiftUI
 
 struct SelectionBar: View {
     let editController: EditController
-    let model: ItemDataModel
+    let model: PdfModel
     let searchModel: PdfSearchModel
     let withoutBookmark: Bool
     
@@ -62,7 +61,7 @@ private extension SelectionBar {
     var bookmarkButton: some View {
         Button {
             if let selectedEntry = searchModel.selectedEntry {
-                editController.addBookmark(model: model, bookmark: selectedEntry)
+                editController.addBookmark(itemId: model.id, entry: selectedEntry)
             }
             withAnimation { searchModel.selectedEntry = nil }
         } label: {
@@ -77,8 +76,6 @@ private extension SelectionBar {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
     @Previewable @Environment(PdfRootModel.self) var root
     @Previewable @State var searchModel = PdfSearchModel()
     
@@ -90,7 +87,7 @@ private extension SelectionBar {
             VStack {
                 Color.clear
                 Button {
-                    let entry = PdfEntryDataModel(itemId: UUID(), entryId: UUID(), content: "This is the selection", pageLabel: "2")
+                    let entry = PdfEntryModel(id: UUID(), name: "Hello", content: "This is the selection", pageNumber: "2", bounds: .zero, displayState: 0)
                     searchModel.selectedEntry = entry
                 } label: {
                     Text("Create")
@@ -98,11 +95,11 @@ private extension SelectionBar {
                 Color.clear
             }
                 .overlay(alignment: .top) {
-                    SelectionBar(editController: root.editController, model: models[0], searchModel: PdfSearchModel(), withoutBookmark: true)
+                    SelectionBar(editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: PdfModel.previewId), searchModel: PdfSearchModel(), withoutBookmark: true)
                         .padding(.top, 64)
                 }
                 .overlay(alignment: .bottom) {
-                    SelectionBar(editController: root.editController, model: models[0], searchModel: searchModel, withoutBookmark: false)
+                    SelectionBar(editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: PdfModel.previewId), searchModel: searchModel, withoutBookmark: false)
                 }
         }
     }

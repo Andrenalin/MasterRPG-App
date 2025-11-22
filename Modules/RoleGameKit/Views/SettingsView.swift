@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 import RPGAdventures
 import AudioRPG
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 

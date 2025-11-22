@@ -6,7 +6,7 @@ import SwiftUI
 import os.log
 import AudioRPG
 import RPGDie
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import RPGMaps
 import SpaceRPG

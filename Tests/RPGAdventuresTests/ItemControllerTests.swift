@@ -6,7 +6,7 @@ import RPGDie
 import Foundation
 import AudioRPG
 import RPGMaps
-import RPGPdfs
+import PdfRPG
 import SpaceRPG
 import RPGValues
 import RPGResourcesDebug

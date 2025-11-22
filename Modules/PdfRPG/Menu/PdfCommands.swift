@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 import CoreExternalRPG
 
@@ -14,7 +13,7 @@ public struct PdfCommands: Commands {
     
     let root: PdfRootModel
     let navigator: Navigator
-    
+
     public var body: some Commands {
         ModuleCommands(root: root, navigator: navigator, key: "3")
     }

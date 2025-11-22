@@ -8,7 +8,7 @@ import AudioRPG
 import PhotoRPG
 import RPGMaps
 import RPGValues
-import RPGPdfs
+import PdfRPG
 import SpaceRPG
 import RPGWeathers
 

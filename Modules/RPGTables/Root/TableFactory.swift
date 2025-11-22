@@ -3,7 +3,7 @@
 import CoreExternalRPG
 import AndrenalinKit
 import RPGDie
-import RPGPdfs
+import PdfRPG
 import SwiftData
 import SwiftUI
 

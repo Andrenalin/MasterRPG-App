@@ -7,7 +7,7 @@ import SwiftUI
 import RPGAdventures
 import RPGMaps
 import RPGMaps
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import RPGValues
 import PhotoRPG

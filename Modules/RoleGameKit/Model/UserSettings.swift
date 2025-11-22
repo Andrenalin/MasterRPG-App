@@ -5,7 +5,7 @@ import SwiftUI
 import AudioRPG
 import SpaceRPG
 import PhotoRPG
-import RPGPdfs
+import PdfRPG
 
 public struct UserSettingsViewModifier: ViewModifier {
     public init(appModel: AppModel) {

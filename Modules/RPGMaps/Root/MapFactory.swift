@@ -4,7 +4,7 @@ import CoreExternalRPG
 import AndrenalinKit
 import AudioRPG
 import RPGDie
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import RPGTables
 import RPGValues

@@ -5,7 +5,7 @@ import AndrenalinKit
 import Foundation
 import Testing
 
-@testable import RPGPdfs
+@testable import PdfRPG
 
 struct PdfModelTests {
     func setUp() async throws -> PdfModel {

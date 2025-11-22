@@ -11,7 +11,7 @@ import PhotoRPG
 import RPGTables
 import RPGValues
 import RPGWeathers
-import RPGPdfs
+import PdfRPG
 import SpaceRPG
 
 @MainActor @Observable

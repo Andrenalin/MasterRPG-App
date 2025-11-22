@@ -6,7 +6,7 @@ import Observation
 import RegexBuilder
 import SwiftUI
 import RPGDie
-import RPGPdfs
+import PdfRPG
 import RPGTables
 
 @MainActor @Observable

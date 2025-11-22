@@ -7,7 +7,7 @@ import AudioRPG
 import RPGDie
 import RPGGame
 import RPGMaps
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import RPGTables

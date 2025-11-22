@@ -9,7 +9,7 @@ import SwiftUI
 import RPGMaps
 import RPGValues
 import AudioRPG
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 

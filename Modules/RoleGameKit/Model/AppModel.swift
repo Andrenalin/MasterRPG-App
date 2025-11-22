@@ -13,7 +13,7 @@ import RPGDie
 import AudioRPG
 import RPGGame
 import RPGMaps
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import RPGResources
 import SpaceRPG

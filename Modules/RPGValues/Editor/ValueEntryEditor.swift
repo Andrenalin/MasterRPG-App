@@ -5,7 +5,7 @@
 import AndrenalinKit
 import SwiftUI
 import RPGDie
-import RPGPdfs
+import PdfRPG
 import RPGTables
 
 struct ValueEntryEditor: View {

@@ -6,7 +6,7 @@ import AndrenalinKit
 import Foundation
 @testable import AudioRPG
 @testable import RPGMaps
-@testable import RPGPdfs
+@testable import PdfRPG
 @testable import PhotoRPG
 import RPGResources
 import RPGResourcesDebug

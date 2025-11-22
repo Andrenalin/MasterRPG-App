@@ -7,7 +7,7 @@ import RPGMaps
 import PhotoRPG
 import RPGTables
 import SpaceRPG
-import RPGPdfs
+import PdfRPG
 import RPGWeathers
 import RPGValues
 

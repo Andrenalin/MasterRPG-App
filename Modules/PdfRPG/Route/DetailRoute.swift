@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
+import AndrenalinKit
 import CoreExternalRPG
-import CoreRPG
-import SwiftData
 import SwiftUI
 
 enum DetailRoute: Equatable, Hashable, Codable {
@@ -45,6 +44,6 @@ struct ViewerRouteDestinationView: View {
     @Environment(PdfRootModel.self) private var root
     
     var body: some View {
-        root.viewController.inlineViewer(root: root, with: itemId, withoutBookmark: false)
+        root.viewController.inlineViewer(root: root, with: itemId, withoutBookmark: true)
     }
 }

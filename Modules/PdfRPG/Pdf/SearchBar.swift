@@ -1,11 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 
 #if !os(tvOS)
 @preconcurrency import PDFKit
 #endif
-import SwiftData
 import SwiftUI
 
 struct SearchBar: View {
@@ -73,8 +72,6 @@ private extension SearchBar {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
-    @Previewable @Environment(\.modelContext) var modelContext
     @Previewable @Environment(PdfRootModel.self) var root
     @Previewable @State var searchModel = PdfSearchModel()
     
@@ -85,7 +82,7 @@ private extension SearchBar {
             
             VStack {
                 Button {
-                    let entry = PdfEntryDataModel(itemId: UUID(), entryId: UUID(), content: "This is the selection", pageLabel: "2")
+                    let entry = PdfEntryModel(id: UUID(), name: "Hello", content: "This is the selection", pageNumber: "2", bounds: .zero, displayState: 0)
                     searchModel.selectedEntry = entry
                     #if !os(tvOS)
                     searchModel.matches = [PDFSelection()]

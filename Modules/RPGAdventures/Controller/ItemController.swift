@@ -6,7 +6,7 @@ import CoreData
 import AudioRPG
 import RPGDie
 import RPGMaps
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import RPGValues

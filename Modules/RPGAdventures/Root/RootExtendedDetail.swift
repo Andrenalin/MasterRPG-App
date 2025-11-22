@@ -9,7 +9,7 @@ import RPGValues
 import RPGTables
 import SpaceRPG
 import PhotoRPG
-import RPGPdfs
+import PdfRPG
 import RPGMaps
 
 struct RootExtendedDetail: View {

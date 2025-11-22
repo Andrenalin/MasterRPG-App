@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
 import os.log
 
@@ -8,7 +8,7 @@ import os.log
 import PDFKit
 #endif
 
-#if canImport(QuickLookThumbnailing)
+#if !os(tvOS)
 import QuickLookThumbnailing
 #endif
 

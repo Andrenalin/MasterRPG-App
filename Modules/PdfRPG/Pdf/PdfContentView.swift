@@ -1,14 +1,14 @@
 // @copyright André Trettin
 
 #if !os(tvOS)
-import CoreRPG
+import AndrenalinKit
 import PDFKit
 import SwiftUI
 
 struct PdfContentView: View {
     let searchModel: PdfSearchModel
     let horizontal: Bool
-    let entry: PdfEntryDataModel?
+    let entry: PdfEntryModel?
     
     @Environment(PdfRootModel.self) private var root
     @State private var showThumbnail = false
@@ -41,7 +41,7 @@ struct PdfContentView: View {
                     let content = String(selection.string?.prefix(300) ?? "")
                     let pageNumber = page.label ?? "-"
                     let bounds = selection.bounds(for: page)
-                    searchModel.selectedEntry = root.editController.createBookmark(itemId: UUID(), content: content, page: pageNumber, bounds: bounds)
+                    searchModel.selectedEntry = root.editController(type: .main).createBookmark(itemId: UUID(), content: content, page: pageNumber, bounds: bounds)
                 } else {
                     searchModel.selectedEntry = nil
                 }

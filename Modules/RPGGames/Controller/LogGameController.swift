@@ -9,7 +9,7 @@ import RPGAdventures
 import RPGDie
 import RPGWeathers
 import AudioRPG
-import RPGPdfs
+import PdfRPG
 import SpaceRPG
 
 struct LogGameController: Sendable {

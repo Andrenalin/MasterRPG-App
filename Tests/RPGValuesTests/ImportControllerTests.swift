@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import RPGDie
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import RPGTables
 import RPGResourcesDebug

@@ -3,7 +3,7 @@
 import CoreExternalRPG
 import AndrenalinKit
 import SwiftUI
-import RPGPdfs
+import PdfRPG
 
 enum InternalRoute: Hashable, Codable {
     case editDetail(UUID)

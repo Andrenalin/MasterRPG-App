@@ -5,7 +5,7 @@ import AndrenalinKit
 import RoleGameKit
 import SwiftUI
 
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import RPGWeathers

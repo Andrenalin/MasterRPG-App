@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 #if !os(tvOS)
@@ -9,15 +8,14 @@ import SwiftUI
 #endif
 
 struct PdfViewerView: View {
-    init(model: ItemDataModel, entryId: UUID? = nil, withoutBookmark: Bool = false, dismissAction: (() -> Void)? = nil) {
+    init(model: PdfModel, entryId: UUID? = nil, withoutBookmark: Bool = false, dismissAction: (() -> Void)? = nil) {
         self.model = model
         self.entryId = entryId
         self.withoutBookmark = withoutBookmark
         self.dismissAction = dismissAction
-        self._dataModelActor = State(wrappedValue: model.modelActor())
     }
     
-    let model: ItemDataModel
+    let model: PdfModel
     let entryId: UUID?
     let withoutBookmark: Bool
     let dismissAction: (() -> Void)?
@@ -26,9 +24,7 @@ struct PdfViewerView: View {
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
     
-    @State private var dataModelActor: DataModelActor?
     @State private var searchModel = PdfSearchModel()
     
     var body: some View {
@@ -52,7 +48,7 @@ struct PdfViewerView: View {
             .ignoresSafeArea(.container, edges: [.top, .bottom])
             .overlay(alignment: .topTrailing) {
                 GlassEffectContainerView {
-                    SelectionBar(editController: root.editController, model: model, searchModel: searchModel, withoutBookmark: withoutBookmark)
+                    SelectionBar(editController: root.editController(type: .main), model: model, searchModel: searchModel, withoutBookmark: withoutBookmark)
                 }
             }
             .overlay(alignment: .bottomTrailing) {
@@ -81,14 +77,14 @@ struct PdfViewerView: View {
 #endif
         .onChange(of: model, initial: true) {
             let id = model.id
-            guard model.url != nil, let actor = model.modelActor() else {
+            guard model.url != nil else {
                 searchModel.pdfId = model.id
                 return
             }
 #if !os(tvOS)
             Task { @MainActor in
                 let pdfTask = Task.detached {
-                    await root.fileController.pdfDocument(itemId: id, actor: actor)
+                    await root.itemController.pdfDocument(for: id)
                 }
                 let doc = await pdfTask.value
                 searchModel.pdfDoc = doc
@@ -102,9 +98,9 @@ struct PdfViewerView: View {
 }
 
 private extension PdfViewerView {
-    var entry: PdfEntryDataModel? {
+    var entry: PdfEntryModel? {
         guard entryId == nil else { return nil }
-        return PdfEntryDataModel(itemId: model.id)
+        return PdfEntryModel.empty(UUID())
     }
     
     var closeButton: some View {
@@ -123,10 +119,10 @@ private extension PdfViewerView {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
         
-    PdfViewerView(model: models[0])
+    PdfViewerView(model: PdfModel.preview)
 #if os(macOS)
         .frame(width: 800, height: 600)
 #endif
 }
+

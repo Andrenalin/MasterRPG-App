@@ -8,7 +8,7 @@ import Foundation
 import AudioRPG
 @testable import RPGGame
 import RPGMaps
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import RPGResources
 import RPGResourcesDebug

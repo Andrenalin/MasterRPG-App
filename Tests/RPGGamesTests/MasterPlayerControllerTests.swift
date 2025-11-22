@@ -12,7 +12,7 @@ import Testing
 @testable import RPGDie
 @testable import AudioRPG
 @testable import RPGMaps
-@testable import RPGPdfs
+@testable import PdfRPG
 @testable import PhotoRPG
 @testable import SpaceRPG
 @testable import RPGTables

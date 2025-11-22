@@ -11,14 +11,14 @@ import RPGDie
 import RPGMaps
 import PhotoRPG
 import AudioRPG
-import RPGPdfs
+import PdfRPG
 import RPGTables
 import RPGTables
 import SpaceRPG
 import SpaceRPG
 import RPGMaps
 import PhotoRPG
-import RPGPdfs
+import PdfRPG
 
 struct RootNaviList: View {
     let root: AdventureRootModel

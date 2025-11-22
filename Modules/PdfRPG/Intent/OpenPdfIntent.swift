@@ -1,10 +1,10 @@
 // @copyright André Trettin
 
 #if !os(tvOS)
+import AndrenalinKit
 import AppIntents
 import Foundation
 import SwiftUI
-import CoreRPG
 import CoreExternalRPG
 
 struct OpenPdfIntent: OpenIntent {

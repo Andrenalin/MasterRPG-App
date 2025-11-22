@@ -5,7 +5,7 @@ import Foundation
 import AudioRPG
 import RPGDie
 import RPGMaps
-import RPGPdfs
+import PdfRPG
 import RPGWeathers
 import PhotoRPG
 import SpaceRPG

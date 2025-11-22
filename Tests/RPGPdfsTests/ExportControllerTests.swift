@@ -6,7 +6,7 @@ import Foundation
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGPdfs
+@testable import PdfRPG
 import CoreGraphics
 
 struct ExportControllerTests {

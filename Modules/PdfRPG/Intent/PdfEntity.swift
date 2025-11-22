@@ -2,12 +2,12 @@
 
 #if !os(tvOS)
 
+import AndrenalinKit
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
 import PDFKit
-import CoreRPG
 
 struct PdfEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -19,9 +19,8 @@ struct PdfEntity: IndexedEntity {
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "\(name)"
-            //,
-            //image: .init(data: try! self.thumbnailRepresentationData)
+            title: "\(name)",
+            image: .init(systemName: icon)
         )
     }
 
@@ -30,16 +29,19 @@ struct PdfEntity: IndexedEntity {
     var id: UUID { model.id }
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name.wrappedValue }
+    var name: String { model.name }
 
-    // Maps the description variable to the Spotlight indexing key `contentDescription`.
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.information.wrappedValue }
+    var description: String { model.description }
+
+    var icon: String {
+        model.specialCategory ? model.category.icon : root.module.icon
+    }
 
     var root: PdfRootModel
-    var model: ItemDataCodableModel
+    var model: PdfModel
     
-    init(root: PdfRootModel, model: ItemDataCodableModel) {
+    init(root: PdfRootModel, model: PdfModel) {
         self.root = root
         self.model = model
     }
@@ -47,15 +49,15 @@ struct PdfEntity: IndexedEntity {
 
 extension PdfEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
-            let url = URL.documentsDirectory.appending(path: "\(landmark.name).pdf")
+        FileRepresentation(exportedContentType: .pdf) { @MainActor item in
+            let url = URL.documentsDirectory.appending(path: "\(item.name).pdf")
 
             let renderer = ImageRenderer(content: VStack {
 //                Image(landmark.landmark.backgroundImageName)
 //                    .resizable()
 //                    .aspectRatio(contentMode: .fit)
-                Text(landmark.name)
-                Text(landmark.description)
+                Text(item.name)
+                Text(item.description)
             }.frame(width: 600))
 
             renderer.render { size, renderer in
@@ -79,7 +81,7 @@ extension PdfEntity: Transferable {
 
         DataRepresentation(exportedContentType: .plainText) {
             """
-            Pdf: \($0.name)
+            Name: \($0.name)
             Description: \($0.description)
             """.data(using: .utf8)!
         }
@@ -91,10 +93,10 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: PdfRootModel
 
     func suggestedEntities() async throws -> [PdfEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [PdfEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = PdfEntity(root: root, model: model)
             results.append(entity)
         }
@@ -104,7 +106,7 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     func entities(for identifiers: [PdfEntity.ID]) async throws -> [PdfEntity] {
         var results: [PdfEntity] = []
         for id in identifiers {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = PdfEntity(root: root, model: model)
             results.append(entity)
         }
@@ -112,11 +114,11 @@ struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [PdfEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [PdfEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
-            guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
             let entity = PdfEntity(root: root, model: model)
             results.append(entity)
         }

@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import RPGDie
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import RPGTables
 import CoreData

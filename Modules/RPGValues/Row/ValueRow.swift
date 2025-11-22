@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGPdfs
+import PdfRPG
 import PhotoRPG
 import RPGTables
 
