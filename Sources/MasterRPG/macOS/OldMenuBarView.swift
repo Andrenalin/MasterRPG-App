@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import RPGAudios
+import AudioRPG
 import SwiftUI
 
 struct OldMenuBarView: View {

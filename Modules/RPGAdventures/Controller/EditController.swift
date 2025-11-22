@@ -5,7 +5,7 @@ import Foundation
 import Observation
 import RegexBuilder
 import SwiftUI
-import RPGAudios
+import AudioRPG
 import RPGDie
 import RPGMaps
 import RPGPdfs

@@ -5,7 +5,7 @@ import AndrenalinKit
 @testable import RPGAdventures
 import RPGDie
 import Foundation
-import RPGAudios
+import AudioRPG
 @testable import RPGGame
 import RPGMaps
 import RPGPdfs

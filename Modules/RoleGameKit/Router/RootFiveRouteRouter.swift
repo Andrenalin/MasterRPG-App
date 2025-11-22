@@ -3,7 +3,7 @@
 import CoreExternalRPG
 import AndrenalinKit
 import RPGAdventures
-import RPGAudios
+import AudioRPG
 import SwiftUI
 import RPGDie
 import RPGMaps

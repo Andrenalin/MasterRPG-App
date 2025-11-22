@@ -6,7 +6,7 @@ import Combine
 import RPGDie
 import Foundation
 import GroupActivities
-import RPGAudios
+import AudioRPG
 import RPGMaps
 import RPGPdfs
 import PhotoRPG

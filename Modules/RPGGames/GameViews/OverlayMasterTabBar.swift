@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 import RPGAdventures
 import RPGTables
-import RPGAudios
+import AudioRPG
 import PhotoRPG
 import RPGMaps
 import RPGValues

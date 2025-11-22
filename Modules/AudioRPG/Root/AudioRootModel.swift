@@ -1,114 +1,230 @@
 // @copyright André Trettin
 
-import CoreRPG
-import Foundation
+import AndrenalinKit
+import AVFoundation
+import CoreData
 import SwiftData
+import SwiftUI
 
 @MainActor @Observable
-public final class AudioRootModel {
-    init(modelContext: ModelContext) {
-        self.modelContext = modelContext
-        
+public final class RootModel: Sendable {
+    
+    @MainActor
+    public var selectedItem: ItemRowModel?
+    @MainActor
+    public var gameItemSelection: ItemRowModel?
+    
+    @ObservationIgnored
+    var listModels: [UUID: ListModel] = [:]
+}
+
+@Observable
+public final class AudioRootModel: @unchecked Sendable {
+    @MainActor init(container: ModelContainer) {
+        rootModel = RootModel()
         let module: NetworkModules = .audio
         self.module = module
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContext: modelContext, module: module, categoryTags: [.music, .sound])
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.music, .playlist, .sound])
         self.searchModel = searchModel
         
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
-
+        
         let audioPlayerModel = AudioPlayerModel()
         self.audioPlayerModel = audioPlayerModel
-        
-        itemController.cleanDeleted()
     }
     
-    public let modelContext: ModelContext
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
+        self._rootControllable = rootControllable
+
+        let dataController = context.map { DataController(context: $0, token: module.token) }
+        _dataController = dataController
+
+        let itemController = ItemController(dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        _itemController = itemController
+        _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
+        _exportController = ExportController(itemController: itemController, gameExporter: false)
+        _importController = ImportController(itemController: itemController)
+
+        let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
+        _audioController = audioController
+
+        let gameController = GameController(itemController: itemController, audioController: audioController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+        _gameController = gameController
+
+        _linkController = LinkController(itemController: itemController, audioController: audioController, gameController: gameController)
+
+        if let dataController, let context {
+            _syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
+            Task {
+                syncDataController?.start()
+            }
+        }
+    }
+    
+    public let rootModel: RootModel
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
-    
     public var itemSelectionModel: ItemSelectionModel
-    public var currentSelectedItemId: UUID? {
-        listController.listModel.selectedItemId
-    }
+    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     
-    @ObservationIgnored lazy var audioController: AudioController = {
-        AudioController(fileController: fileController, model: audioPlayerModel)
+    public let audioPlayerModel: AudioPlayerModel
+    
+    @ObservationIgnored private(set) var _audioController: AudioController?
+    var audioController: AudioController { _audioController.unsafelyUnwrapped }
+    
+    @ObservationIgnored private(set) var _dataController: DataController?
+    var dataController: DataController? { _dataController }
+    public var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
+    @ObservationIgnored private(set) var _syncDataController: SyncDataController?
+    var syncDataController: SyncDataController? { _syncDataController }
+    
+    @ObservationIgnored private(set) var _itemController: ItemController?
+    var itemController: ItemController { _itemController.unsafelyUnwrapped }
+    
+    @ObservationIgnored private(set) var _editController: EditController?
+    @ObservationIgnored private(set) var _exportController: ExportController?
+    var exportController: ExportController { _exportController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _importController: ImportController?
+    var importController: ImportController { _importController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _gameController: GameController?
+    var gameController: GameController { _gameController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _linkController: LinkController?
+    public var linkController: LinkController { _linkController.unsafelyUnwrapped }
+    
+    @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
+        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
     }()
-    @ObservationIgnored lazy var editController: EditController = {
-        EditController(itemControllable: itemController, fileUrlDataController: fileController.fileUrlDataController)
-    }()
-    @ObservationIgnored lazy var exportController: ExportController = {
-        ExportController(module: module, itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, gameExporter: false)
-    }()
-    @ObservationIgnored lazy var fileController: FileController = {
-        FileController()
-    }()
-    @ObservationIgnored public lazy var gameController: AudioGameStoreable = {
-        GameController(itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, audioController: audioController)
-    }()
-    @ObservationIgnored lazy var importController: ImportController = {
-        ImportController(itemController: itemController, fileUrlDataController: fileController.fileUrlDataController, module: module)
-    }()
-    @ObservationIgnored lazy var itemController: ItemController = {
-        ItemController(container: modelContext.container, module: module)
-    }()
-    @ObservationIgnored lazy var linkController: LinkController = {
-        LinkController(module: module, itemController: itemController)
-    }()
-    @ObservationIgnored lazy var listController: ListController = {
-        ListController.listController(for: .main, listDisplayModel: listDisplayModel, searchModel: searchModel)
-    }()
-    @ObservationIgnored lazy var listLinkController: ListController = {
-        ListController.listController(for: .link, listDisplayModel: listDisplayModel, searchModel: searchModel)
+    @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
+        folderListController.copy(parentModel: nil)
     }()
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
     }()
-    @ObservationIgnored lazy public var rootController: ItemRootController = {
+
+    @ObservationIgnored private(set) var _rootControllable: RootControllable?
+    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
+    
+    @ObservationIgnored private(set) var mainListController: ListController?
+    
+    @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: itemSelectionModel,
-            removeEntryListModel: removeEntryListModel,
+            itemSelectionModel: ItemSelectionModel(),
+            removeEntryListModel: RemoveEntryListModel(),
             cacheControllable: nil,
-            editControllable: editController,
+            editControllable: editController(type: .main),
             exportControllable: exportControllable,
-            gameControllable: gameController,
-            itemControllable: itemController,
-            linkControllable: linkController,
+            gameControllable: gameControllable,
+            itemControllable: itemControllable,
+            linkControllable: linkControllable,
             listControllable: listController,
-            listLinkControllable: listLinkController,
+            folderListControllable: folderListController,
             viewControllable: viewController
         )
     }()
-    
-    public let audioPlayerModel: AudioPlayerModel
 }
 
 extension AudioRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
-    public var editControllable: any EditControllable { editController }
-    public var importControllable: any ImportControllable { importController }
-    public var exportControllable: any ExportControllable { exportController }
-    public var gameControllable: any GameControllable { gameController }
-    public var itemControllable: any ItemControllable { itemController }
-    public var linkControllable: any LinkControllable { linkController }
+    public var editControllable: any EditControllable { editController(type: .main) }
     public var listControllable: any ListControllable { listController }
-    public var listLinkControllable: any ListControllable { listLinkController }
+    public var folderListControllable: any FolderListControllable { folderListController }
+    public var folderLinkControllable: any FolderListControllable { folderLinkController }
     public var viewControllable: any ViewControllable { viewController }
 }
 
 extension AudioRootModel {
-    func loadableUrl(for itemId: UUID) async -> URL? {
-        guard let fileUrl = itemController.item(for: itemId)?.fileUrl else { return nil }
-        return await fileController.fileUrlDataController.url(for: fileUrl, action: { $0 })
+    public var exportControllable: any ExportControllable {
+        exportController as ExportControllable
     }
+    public var importControllable: any ImportControllable {
+        importController as ImportControllable
+    }
+    public var gameControllable: any GameControllable {
+        gameController
+    }
+    public var audioGameControllable: any (GameControllable & AudioGameStoreable) {
+        gameController
+    }
+
+    @MainActor public var itemControllable: any ItemControllable {
+        itemController
+    }
+    
+    @MainActor
+    func editController(for item: ItemRowTreeModel? = nil, type: EditTypes) -> EditController {
+        _editController.unsafelyUnwrapped
+    }
+    
+    @MainActor
+    private var listController: ListController {
+        ListController(itemController: itemController, listStoreName: "Audio", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
+    }
+    func listController(model: ListModel) -> ListController {
+        ListController(itemController: itemController, itemListModel: model)
+    }
+    @MainActor
+    func listController(tabId: UUID, focus: ItemRowModel? = nil) -> ListController {
+        guard let listModel = rootModel.listModels[tabId] else {
+            let newController = listController
+            newController.update(models: itemController.itemDataModel.items.map { ItemRowModel(itemId: $0, typeId: itemController.itemDataModel.networkModule) })
+            if let focus {
+                newController.setFocusItem(model: focus)
+            }
+            setMainListController(newController)
+            rootModel.listModels[tabId] = newController.model
+            return newController
+        }
+        return listController(model: listModel)
+    }
+        
+    @MainActor
+    private func setMainListController(_ listController: ListController) {
+        guard mainListController == nil else { return }
+        mainListController = listController
+    }
+}
+
+// MARK: - AudioPlayer
+
+extension AudioRootModel {
+    @MainActor
+    public var audioCoordinatorPlayback: AudioListenerCoordinator? {
+        audioController.model.coordinator
+    }
+
+    @MainActor
+    public func listItems() -> [AudioModel] {
+        itemController.itemDataModel.items.map {
+            itemController.itemOrEmpty(for: $0)
+        }
+    }
+
+    public func moveFiles() async throws {
+        //try await fileController.moveFiles()
+    }
+    
+    public func itemDataCleanup() async throws {
+        for itemId in await itemController.itemDataModel.items {
+            guard let model = await itemController.item(for: itemId) else { continue }
+            if model.displayState == 2 {
+                await itemController.delete(itemId: model.id)
+            }
+        }
+    }
+    
+    public func checkFolders() async {
+        let cc = await ConvertController(itemController: itemController, editController: editController(type: .main))
+        await cc.checkFolders()
+    }
+    
 }

@@ -1,16 +1,15 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct LinkRootView: View {
     let type: LinkRootType
 
     @Environment(AudioRootModel.self) private var root
-
+    
     var body: some View {
-        CoreRPG.LinkRootView(root: root, type: type)
+        LinkItemRootView(root: root.rootController, type: type)
     }
 }
 

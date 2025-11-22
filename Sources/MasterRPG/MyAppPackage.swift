@@ -4,7 +4,7 @@
 import AppIntents
 import RoleGameKit
 import RPGAdventures
-import RPGAudios
+import AudioRPG
 import RPGValues
 import RPGDie
 import RPGMaps

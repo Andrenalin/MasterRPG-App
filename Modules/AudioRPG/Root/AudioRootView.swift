@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
 import CoreExternalRPG
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct AudioRootView: View {
@@ -10,7 +9,6 @@ struct AudioRootView: View {
 
     var body: some View {
         let _ = Self._printChanges()
-        
         ItemRootView(root: root.rootController)
             .overlay {
                 SaveView(root: root)
@@ -21,7 +19,7 @@ struct AudioRootView: View {
 struct SaveView: View {
     let root: AudioRootModel
     
-    @SceneStorage("AudioRoute") private var route: ItemRootRoute?
+    @SceneStorage("AudioRoute") private var route: AudioRoute?
     @SceneStorage("AudioDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
     @SceneStorage("AudioListModel") private var listMode: ListDisplayModel.ListMode = .list
 
@@ -29,8 +27,8 @@ struct SaveView: View {
         let _ = Self._printChanges()
 
         Color.clear
-            .applyItemRootRoute(listControllable: root.listControllable, route: $route)
-            .syncListDisplay(listControllable: root.listControllable, displayMode: $displayMode, listMode: $listMode)
+            .applyItemRootRoute(listControllable: root.folderListController, route: $route)
+            .syncListDisplay(listControllable: root.folderListController, displayMode: $displayMode, listMode: $listMode)
     }
 }
 

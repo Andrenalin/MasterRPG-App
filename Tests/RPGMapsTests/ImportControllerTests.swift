@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import RPGDie
-import RPGAudios
+import AudioRPG
 import RPGPdfs
 import PhotoRPG
 import RPGTables

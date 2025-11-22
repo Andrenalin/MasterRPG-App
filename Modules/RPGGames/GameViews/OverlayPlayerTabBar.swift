@@ -5,7 +5,7 @@ import SwiftUI
 import RPGValues
 import RPGTables
 import RPGPdfs
-import RPGAudios
+import AudioRPG
 import PhotoRPG
 import SpaceRPG
 import RPGDie

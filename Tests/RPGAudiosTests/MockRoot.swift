@@ -6,7 +6,7 @@ import RPGResources
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGAudios
+@testable import AudioRPG
 
 struct MockRoot {
     static func importTestData(_ name: String = ResourcesDebug.audioTestData, itemCounter: Int = 2) async throws -> AudioRootModel {

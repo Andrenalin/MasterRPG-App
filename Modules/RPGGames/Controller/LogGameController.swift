@@ -8,7 +8,7 @@ import RPGTables
 import RPGAdventures
 import RPGDie
 import RPGWeathers
-import RPGAudios
+import AudioRPG
 import RPGPdfs
 import SpaceRPG
 

@@ -5,12 +5,12 @@ import AndrenalinKit
 import SwiftUI
 import RPGWeathers
 import RPGValues
-import RPGAudios
+import AudioRPG
 import RPGDie
 import RPGDie
 import RPGMaps
 import PhotoRPG
-import RPGAudios
+import AudioRPG
 import RPGPdfs
 import RPGTables
 import RPGTables

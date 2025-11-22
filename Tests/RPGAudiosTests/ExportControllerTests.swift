@@ -5,7 +5,7 @@ import AndrenalinKit
 import Foundation
 import Testing
 
-@testable import RPGAudios
+@testable import AudioRPG
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {

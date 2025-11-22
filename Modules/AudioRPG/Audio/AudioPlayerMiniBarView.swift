@@ -69,9 +69,12 @@ private extension AudioPlayerMiniBarView {
             VStack(alignment: .leading, spacing: 2) {
                 Text(currentItem?.title ?? "")
                     .font(.headline).bold()
+                    .lineLimit(1)
+                
                 Text(currentItem?.artist ?? "")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -82,12 +85,12 @@ private extension AudioPlayerMiniBarView {
     }
 }
 
-#Preview(traits: .mockData) {
-    ZStack {
-        // Simulate window background
-        LinearGradient(gradient: Gradient(colors: [.blue.opacity(0.13), .purple.opacity(0.13)]), startPoint: .topLeading, endPoint: .bottomTrailing)
-            .ignoresSafeArea()
-        AudioPlayerMiniBarView()
-            .padding()
-    }
-}
+//#Preview(traits: .mockData) {
+//    ZStack {
+//        // Simulate window background
+//        LinearGradient(gradient: Gradient(colors: [.blue.opacity(0.13), .purple.opacity(0.13)]), startPoint: .topLeading, endPoint: .bottomTrailing)
+//            .ignoresSafeArea()
+//        AudioPlayerMiniBarView()
+//            .padding()
+//    }
+//}

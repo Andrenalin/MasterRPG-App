@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import RPGDie
-import RPGAudios
+import AudioRPG
 import RPGMaps
 import RPGPdfs
 import PhotoRPG

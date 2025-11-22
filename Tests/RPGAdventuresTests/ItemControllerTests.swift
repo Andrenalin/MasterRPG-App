@@ -4,7 +4,7 @@
 import AndrenalinKit
 import RPGDie
 import Foundation
-import RPGAudios
+import AudioRPG
 import RPGMaps
 import RPGPdfs
 import SpaceRPG

@@ -9,7 +9,7 @@ import RPGGame
 import RPGValues
 import RPGPdfs
 import RPGTables
-import RPGAudios
+import AudioRPG
 import PhotoRPG
 import RPGDie
 import RPGMaps

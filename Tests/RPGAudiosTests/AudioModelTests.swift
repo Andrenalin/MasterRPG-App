@@ -4,7 +4,7 @@ import AndrenalinKit
 import Foundation
 import Testing
 
-@testable import RPGAudios
+@testable import AudioRPG
 
 struct AudioModelTests {
     func setUp() async throws -> AudioModel {

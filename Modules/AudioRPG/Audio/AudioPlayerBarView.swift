@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 
 struct AudioPlayerBarView: View {
@@ -107,9 +107,11 @@ private extension AudioPlayerBarView {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(currentItem?.title ?? "")
                         .font(.headline).bold()
+                        .lineLimit(1)
                     Text(currentItem?.artist ?? "")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }.overlay {
@@ -153,12 +155,12 @@ private extension AudioPlayerBarView {
 }
 
 
-#Preview(traits: .mockData) {
-    ZStack {
-        // Simulate window background
-        LinearGradient(gradient: Gradient(colors: [.blue.opacity(0.13), .purple.opacity(0.13)]), startPoint: .topLeading, endPoint: .bottomTrailing)
-            .ignoresSafeArea()
-        AudioPlayerBarView()
-            .padding()
-    }
-}
+//#Preview(traits: .mockData) {
+//    ZStack {
+//        // Simulate window background
+//        LinearGradient(gradient: Gradient(colors: [.blue.opacity(0.13), .purple.opacity(0.13)]), startPoint: .topLeading, endPoint: .bottomTrailing)
+//            .ignoresSafeArea()
+//        AudioPlayerBarView()
+//            .padding()
+//    }
+//}

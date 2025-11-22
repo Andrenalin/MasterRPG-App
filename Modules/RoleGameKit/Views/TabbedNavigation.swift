@@ -2,7 +2,7 @@
 
 import CoreExternalRPG
 import AndrenalinKit
-import RPGAudios
+import AudioRPG
 import SwiftUI
 
 public struct TabbedNavigation: View {

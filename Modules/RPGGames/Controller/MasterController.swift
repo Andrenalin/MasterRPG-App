@@ -5,7 +5,7 @@ import AndrenalinKit
 import RPGDie
 import Foundation
 import os.log
-import RPGAudios
+import AudioRPG
 import RPGMaps
 import PhotoRPG
 import RPGTables

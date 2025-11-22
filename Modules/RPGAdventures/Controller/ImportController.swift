@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-import RPGAudios
+import AudioRPG
 import RPGWeathers
 import RPGTables
 import RPGValues

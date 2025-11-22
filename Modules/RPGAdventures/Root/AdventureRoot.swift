@@ -3,7 +3,7 @@
 import AndrenalinKit
 import CoreData
 import RPGDie
-import RPGAudios
+import AudioRPG
 import RPGMaps
 import RPGPdfs
 import PhotoRPG

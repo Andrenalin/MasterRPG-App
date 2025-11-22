@@ -10,7 +10,7 @@ import os.log
 
 import RPGAdventures
 import RPGDie
-import RPGAudios
+import AudioRPG
 import RPGGame
 import RPGMaps
 import RPGPdfs

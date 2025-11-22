@@ -12,7 +12,7 @@ import PhotoRPG
 import RPGPdfs
 import RPGMaps
 import RPGDie
-import RPGAudios
+import AudioRPG
 
 struct AdventureEntryEditor: View {
     let root: AdventureRootModel

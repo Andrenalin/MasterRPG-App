@@ -1,16 +1,14 @@
 // @copyright André Trettin
 
+import AndrenalinKit
 import AVFoundation
-import CoreRPG
 import Foundation
 import Observation
 import os.log
 
-public protocol AudioGameStoreable: GameControllable {
+public protocol AudioGameStoreable {
     func play(id: UUID?, shouldPlay: Bool) -> Task<Void, Error>
 
-    @MainActor var audioCoordinatorPlayback: AudioListenerCoordinator? { get }
-        
     @MainActor func audioList(allPlayers: Bool, with masterId: UUID) -> NetworkCodableDataType
     @MainActor func applyAudio(id: UUID, for players: [UUID])
     @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID)
@@ -19,22 +17,45 @@ public protocol AudioGameStoreable: GameControllable {
 }
 
 struct GameController: Sendable {
-    @MainActor
-    init(itemController: ItemController, fileUrlDataController: FileUrlDataController, audioController: AudioController) {
+    @MainActor init(itemController: ItemController, audioController: AudioController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
-        self.exportController = ExportController(module: itemController.module, itemController: itemController, fileUrlDataController: fileUrlDataController, gameExporter: false)
-        let internItemController = ItemController(container: itemController.container, module: itemController.module)
-        self.importController = ImportController(itemController: internItemController, fileUrlDataController: fileUrlDataController, module: itemController.module)
-        self.gameModel = ItemGameModel()
         self.audioController = audioController
+        self.exportController = ExportController(itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
+        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
 
     let itemController: ItemController
+    let audioController: AudioController
     let importController: ImportController
     let exportController: ExportController
-    let audioController: AudioController
-    
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
+
     let gameModel: ItemGameModel
+
+    @MainActor
+    func gameItem(for itemId: UUID) -> AudioModel {
+        (gameModel.itemData[itemId] as? AudioModel) ?? itemController.itemOrEmpty(for: itemId)
+    }
+    
+    @MainActor
+    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
+            gameModel.itemData[itemId] = item
+        } else {
+            gameModel.items.insert(itemId, at: 0)
+            gameModel.itemData[itemId] = item
+        }
+    }
+    
+    @MainActor
+    func currentItem() -> AudioModel {
+        gameItem(for: gameModel.currentItemId ?? UUID())
+    }
 }
 
 extension GameController: GameControllable {
@@ -44,17 +65,17 @@ extension GameController: GameControllable {
     var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    @MainActor var importControllable: any ImportControllable {
+    var importControllable: any ImportControllable {
         importController as ImportControllable
     }
     
     @MainActor
-    func allPlayersReported(for id: UUID, deep: Int) -> Bool {
+    func allPlayersReported(for id: UUID, deep: Int = 0) -> Bool {
         guard deep < 10 else { return false }
-        guard gameModel.reports[id] == gameModel.currentPlayers else { return false }
-        guard let entries = gameItem(for: id)?.entries else { return true }
-        for entry in entries {
-            if !allPlayersReported(for: entry.childId, deep: deep + 1) {
+        let item = gameItem(for: id)
+        guard gameModel.currentPlayers.filter({ !item.players.contains($0) }).isEmpty else { return false }
+        for entry in item.entries {
+            if !allPlayersReported(for: entry.audioId, deep: deep + 1) {
                 return false
             }
         }
@@ -63,30 +84,25 @@ extension GameController: GameControllable {
     
     @MainActor
     func report(itemId: UUID, for player: UUID) {
-        var reports = gameModel.reports[itemId, default: []]
-        if !reports.contains(player) {
-            reports.append(player)
-            reports.sort()
-            let entries = gameItem(for: itemId)?.entries ?? []
-            for entry in entries {
-                report(itemId: entry.childId, for: player)
+        let item = gameItem(for: itemId)
+        if !item.players.contains(player) {
+            item.players.append(player)
+            for entry in item.entries {
+                report(itemId: entry.audioId, for: player)
             }
         }
     }
 }
 
 extension GameController {
-    @MainActor public var audioCoordinatorPlayback: AudioListenerCoordinator? {
-        audioController.model.coordinator
-    }
-
     func audioAsset(for itemId: UUID) async -> PlaylistItem? {
-        guard let item = await gameItem(for: itemId), let fileUrl = item.fileUrl else { return nil }
+        let item = await gameItem(for: itemId)
+        guard let fileUrl = item.fileUrl, let fileUrlDataController = itemController.fileUrlDataController else { return nil }
 
         var audioAsset: PlaylistItem? = nil
         do {
-            _ = await exportControllable.fileUrlDataController?.fileDownloaded(for: fileUrl)
-            audioAsset = try await exportControllable.fileUrlDataController?.url(for: fileUrl) { url -> PlaylistItem? in
+            _ = await fileUrlDataController.fileDownloaded(for: fileUrl)
+            audioAsset = try await fileUrlDataController.url(for: fileUrl) { url -> PlaylistItem? in
                 guard let url else { return nil }
                 let data = try Data(contentsOf: url)
                 let fileExtension = url.pathExtension
@@ -94,7 +110,7 @@ extension GameController {
                 try data.write(to: tempUrl)
                 let asset = AVURLAsset(url: tempUrl)
                 let duration = try await asset.load(.duration)
-                return PlaylistItem(id: itemId, url: asset.url, title: item.name.wrappedValue, artist: "MasterRPG", duration: duration)
+                return PlaylistItem(id: itemId, url: asset.url, title: item.name, artist: "MasterRPG", duration: duration)
             }
         } catch {
             Logger.gameController.error("Cannot read audio from file url: \(error.localizedDescription, privacy: .public)")
@@ -106,7 +122,7 @@ extension GameController {
                 try data.write(to: tempUrl)
                 let asset = AVURLAsset(url: tempUrl)
                 let duration = try await asset.load(.duration)
-                return PlaylistItem(id: itemId, url: asset.url, title: item.name.wrappedValue, artist: "MasterRPG", duration: duration)
+                return PlaylistItem(id: itemId, url: asset.url, title: item.name, artist: "MasterRPG", duration: duration)
             }
         } catch {
             Logger.gameController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")
@@ -122,24 +138,23 @@ extension GameController {
     }
 
     @MainActor
-    func fetchPlaylist(id: UUID) -> [ItemDataCodableModel] {
+    func fetchPlaylist(id: UUID) -> [AudioModel] {
         var seenIds = Set<UUID>()
         return fetchPlaylist(id: id, seenIds: &seenIds)
     }
 
     @MainActor
-    private func fetchPlaylist(id: UUID, seenIds: inout Set<UUID>) -> [ItemDataCodableModel] {
+    private func fetchPlaylist(id: UUID, seenIds: inout Set<UUID>) -> [AudioModel] {
         guard !seenIds.contains(id) else { return [] }
 
-        var list: [ItemDataCodableModel] = []
+        var list: [AudioModel] = []
         seenIds.insert(id)
-        if let item = gameItem(for: id) {
-            if item.fileUrl != nil {
-                list.append(item)
-            }
-            item.entries.forEach {
-                list.append(contentsOf: fetchPlaylist(id: $0.childId, seenIds: &seenIds))
-            }
+        let item = gameItem(for: id)
+        if item.fileUrl != nil {
+            list.append(item)
+        }
+        item.entries.forEach {
+            list.append(contentsOf: fetchPlaylist(id: $0.audioId, seenIds: &seenIds))
         }
         return list
     }
@@ -148,11 +163,11 @@ extension GameController {
 extension GameController: AudioGameStoreable {
     @discardableResult
     func play(id: UUID?, shouldPlay: Bool) -> Task<Void, Error> {
-        Task {
+        Task { @MainActor in
             guard let id else { return }
+            let list = fetchPlaylist(id: id)
             await audioController.add(audio: fetchPlaylist(id: id), replace: true)
-            guard shouldPlay else { return }
-            await audioController.preparePlay(id: id)
+            audioController.togglePlay(id: list.first?.id)
         }
     }
     
@@ -161,16 +176,16 @@ extension GameController: AudioGameStoreable {
         let request: AudioListRequest
         if allPlayers {
             var players: [UUID: [UUID]] = [:]
-            itemController.allItemIds().forEach {
+            itemController.itemDataModel.items.forEach {
                 applyAudio(id: $0, for: [masterId])
-                players[$0] = gameModel.reports[$0, default: []]
+                players[$0] = gameItem(for: $0).players
             }
             request = AudioListRequest(list: [], players: players)
         } else {
-            itemController.allItemIds().forEach {
+            itemController.itemDataModel.items.forEach {
                 applyAudio(id: $0, for: [masterId])
             }
-            request = AudioListRequest(list: itemController.allItemIds(), players: [:])
+            request = AudioListRequest(list: itemController.itemDataModel.items, players: [:])
         }
         let data = request.encodeData()
         return NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: data)
@@ -178,8 +193,9 @@ extension GameController: AudioGameStoreable {
     
     @MainActor
     func applyAudio(id: UUID, for players: [UUID]) {
+        let item = gameItem(for: id)
         players.forEach {
-            report(itemId: id, for: $0)
+            resetAudio(item: item, playerId: $0)
         }
     }
 
@@ -198,6 +214,13 @@ extension GameController: AudioGameStoreable {
             applyAudio(id: $0, for: [playerId])
         }
     }
+    
+    private func resetAudio(item: AudioModel, playerId: UUID) {
+        if !item.players.contains(playerId) {
+            item.players.append(playerId)
+        }
+    }
+    
     
     func play(with data: NetworkCodableDataType) -> Task<Void, Error> {
         let request = AudioPlayRequest.decodeData(of: data.data)

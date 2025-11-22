@@ -6,7 +6,7 @@ import Combine
 import Foundation
 @preconcurrency import GroupActivities
 import os.log
-import RPGAudios
+import AudioRPG
 import SwiftUI
 
 protocol SharePlayControllerDelegate: AnyObject {

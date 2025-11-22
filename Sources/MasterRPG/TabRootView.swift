@@ -4,7 +4,7 @@ import RPGAdventures
 import AndrenalinKit
 import RPGDie
 import RoleGameKit
-import RPGAudios
+import AudioRPG
 import RPGGame
 import RPGMaps
 import RPGPdfs

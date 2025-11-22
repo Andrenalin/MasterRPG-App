@@ -6,7 +6,7 @@ import Observation
 import RPGTables
 import SwiftUI
 import RPGMaps
-import RPGAudios
+import AudioRPG
 import RPGDie
 import RPGPdfs
 import PhotoRPG
