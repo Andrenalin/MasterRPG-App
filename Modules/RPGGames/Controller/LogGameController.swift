@@ -10,7 +10,7 @@ import RPGDie
 import RPGWeathers
 import RPGAudios
 import RPGPdfs
-import RPGSpaces
+import SpaceRPG
 
 struct LogGameController: Sendable {
     weak var root: GameRoot?

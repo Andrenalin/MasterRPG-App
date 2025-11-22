@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
-import os.log
 
 @MainActor @Observable
 final class SpaceGameModel: Sendable {
@@ -16,22 +15,45 @@ final class SpaceGameModel: Sendable {
 }
 
 struct GameController: Sendable {
-    @MainActor
-    init(itemController: ItemController, fileUrlDataController: FileUrlDataController) {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
-        self.exportController = ExportController(module: itemController.module, itemController: itemController, fileUrlDataController: fileUrlDataController, gameExporter: false)
-        let internItemController = ItemController(container: itemController.container, module: itemController.module)
-        self.importController = ImportController(itemController: internItemController, fileUrlDataController: fileUrlDataController, module: itemController.module)
-        self.gameModel = ItemGameModel()
+        self.exportController = ExportController(itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
+        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
         self.spaceGameModel = SpaceGameModel()
     }
 
     let itemController: ItemController
-    let importController: ImportController
     let exportController: ExportController
-    
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
+
     let gameModel: ItemGameModel
     let spaceGameModel: SpaceGameModel
+
+    @MainActor
+    func gameItem(for itemId: UUID) -> SpaceModel {
+        (gameModel.itemData[itemId] as? SpaceModel) ?? itemController.itemOrEmpty(for: itemId)
+    }
+    
+    @MainActor
+    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
+            gameModel.itemData[itemId] = item
+        } else {
+            gameModel.items.insert(itemId, at: 0)
+            gameModel.itemData[itemId] = item
+        }
+    }
+    
+    @MainActor
+    func currentItem() -> SpaceModel {
+        gameItem(for: gameModel.currentItemId ?? UUID())
+    }
 }
 
 extension GameController: GameControllable {
@@ -41,10 +63,9 @@ extension GameController: GameControllable {
     var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    @MainActor var importControllable: any ImportControllable {
+    var importControllable: any ImportControllable {
         importController as ImportControllable
-    }
-    
+    }    
     func resetGameState() {
         spaceGameModel.reset()
     }

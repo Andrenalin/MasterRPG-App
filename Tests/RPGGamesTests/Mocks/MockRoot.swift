@@ -12,7 +12,7 @@ import RPGPdfs
 import RPGPhotos
 import RPGResources
 import RPGResourcesDebug
-import RPGSpaces
+import SpaceRPG
 import RPGTables
 import RPGValues
 import RPGWeathers

@@ -6,7 +6,7 @@ import RPGAudios
 import RPGMaps
 import RPGPhotos
 import RPGTables
-import RPGSpaces
+import SpaceRPG
 import RPGPdfs
 import RPGWeathers
 import RPGValues

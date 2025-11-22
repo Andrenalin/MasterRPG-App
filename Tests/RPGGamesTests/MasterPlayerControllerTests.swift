@@ -14,7 +14,7 @@ import Testing
 @testable import RPGMaps
 @testable import RPGPdfs
 @testable import RPGPhotos
-@testable import RPGSpaces
+@testable import SpaceRPG
 @testable import RPGTables
 @testable import RPGValues
 @testable import RPGWeathers

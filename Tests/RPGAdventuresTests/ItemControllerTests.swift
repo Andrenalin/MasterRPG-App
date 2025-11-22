@@ -7,7 +7,7 @@ import Foundation
 import RPGAudios
 import RPGMaps
 import RPGPdfs
-import RPGSpaces
+import SpaceRPG
 import RPGValues
 import RPGResourcesDebug
 import Testing

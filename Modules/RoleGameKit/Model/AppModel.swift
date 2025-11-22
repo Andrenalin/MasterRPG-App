@@ -16,7 +16,7 @@ import RPGMaps
 import RPGPdfs
 import RPGPhotos
 import RPGResources
-import RPGSpaces
+import SpaceRPG
 import RPGTables
 import RPGValues
 import RPGWeathers
@@ -85,7 +85,7 @@ public final class AppModel: Sendable {
         
         self.navigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "1.0.12",
+                restorationKey: "1.0.13",
                 executionDelay: 0.4,
                 verbosity: .info,
                 autoDestinationMode: true

@@ -5,7 +5,7 @@ import AndrenalinKit
 import Foundation
 import Testing
 
-@testable import RPGSpaces
+@testable import SpaceRPG
 
 struct SpaceModelTests {
     func setUp() async throws -> SpaceModel {

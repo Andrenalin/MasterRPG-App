@@ -6,7 +6,7 @@ import RPGAdventures
 import RPGAudios
 import RPGPdfs
 import RPGPhotos
-import RPGSpaces
+import SpaceRPG
 
 public struct SettingsView: View {
     public init(store: AppModel) {

@@ -7,7 +7,7 @@ import RPGTables
 import RPGPdfs
 import RPGAudios
 import RPGPhotos
-import RPGSpaces
+import SpaceRPG
 import RPGDie
 
 struct OverlayPlayerTabBar: View {

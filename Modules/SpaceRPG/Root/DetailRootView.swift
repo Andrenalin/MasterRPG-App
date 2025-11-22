@@ -1,38 +1,93 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
+import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
-    let selectedId: UUID?
-    
-    @Environment(\.modelContext) private var modelContext
-    @Environment(SpaceRootModel.self) private var root
-    
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerkWindowId, route: { DetailRoute.viewer($0) })
-
-    var body: some View {
-        ItemDetailRootView(selectedId: selectedId) {
-        } editor: {
-#if !os(tvOS)
-            if let model = selectedModel {
-                SpaceViewer(root: root, model: model)
-                    .id(model.id)
-                    .frame(minHeight: 800)
-            }
-#endif
-        }
-        .environment(openFileWindowModel)
-        .environment(root.listController.cacheListItemModel)
+    init(root: SpaceRootModel, editController: EditController, model: SpaceModel, isSubFolder: Bool) {
+        self.root = root
+        self.editController = editController
+        self.model = model
+        self.isSubFolder = isSubFolder
+        let listController = root.folderListController.copy(parentModel: model) as! FolderListController
+        self._detailFolderListController = State(wrappedValue: listController)
     }
     
-    var selectedModel: ItemDataModel? {
-        root.listControllable.selectedModel(for: selectedId, modelContext: modelContext)
+    let root: SpaceRootModel
+    let editController: EditController
+    let model: SpaceModel
+    let isSubFolder: Bool
+    
+    @Environment(\.navigator) private var navigator
+    
+    @State private var detailFolderListController: FolderListController
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
+
+    var body: some View {
+        content(listController: detailFolderListController)
+            .onChange(of: detailFolderListController.listModel.subFolderRoute) {
+                guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
+                navigator.navigate(to: SpaceDetailRoute.folder(subItemId), method: .push)
+                detailFolderListController.listModel.subFolderRoute = nil
+            }
+    }
+    
+    func content(listController: any FolderListControllable) -> some View {
+        ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: true) {
+        } editor: {
+            SpaceDetailObjectViewer(editController: editController, model: model)
+        }
+        .overlay {
+            if openFileWindowModel.showItem {
+                root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId) {
+                    openFileWindowModel.showItem = false
+                }
+            }
+        }
+        .environment(openFileWindowModel)
+        .environment(root.folderListController.cacheListItemModel)
+        .environment(root.listDisplayModel)
+        .environment(root.searchModel)
+        .environment(root.rootController)
+        .tint(root.module.tint)
+        .accentColor(root.module.tint)
+    }
+}
+
+struct SpaceDetailObjectViewer: View {
+    let editController: EditController
+    let model: SpaceModel
+    
+    @Environment(SpaceRootModel.self) private var root
+    @Environment(GroupItemSelectionModel.self) private var selection
+    
+    var body: some View {
+        SpaceExternalHeader(editController: editController, model: selectedModel, isModal: false)
+            .id(selectedModel.id)
+    }
+    
+    private var selectedModel: SpaceModel {
+        guard let itemId = selection.selectedItem else { return model }
+        return root.itemController.itemOrEmpty(for: itemId)
     }
 }
 
 #Preview(traits: .mockData) {
-    DetailRootView(selectedId: MockData.previewId)
-        .preferredColorScheme(.dark)
+    @Previewable @Environment(SpaceRootModel.self) var root
+    @Previewable @Environment(ListModel.self) var listModel
+    
+    if listModel.selectedItem == nil {
+        Text("Hello")
+            .onAppear {
+                let id = root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId
+                root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId)
+                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
+            }
+    } else {
+        ManagedNavigationStack {
+            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId), isSubFolder: false)
+                .preferredColorScheme(.dark)
+        }
+    }
 }

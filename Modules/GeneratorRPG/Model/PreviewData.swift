@@ -9,7 +9,7 @@ import RPGMaps
 import RPGPdfs
 import RPGPhotos
 import RPGResources
-import RPGSpaces
+import SpaceRPG
 import RPGTables
 import RPGValues
 import RPGWeathers

@@ -11,7 +11,7 @@ import RPGValues
 import RPGAudios
 import RPGPdfs
 import RPGPhotos
-import RPGSpaces
+import SpaceRPG
 
 @MainActor
 struct RootView: View {

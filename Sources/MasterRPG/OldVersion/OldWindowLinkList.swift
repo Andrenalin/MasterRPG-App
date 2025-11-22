@@ -12,7 +12,7 @@ import RPGAudios
 import RPGPhotos
 import RPGDie
 import RPGMaps
-import RPGSpaces
+import SpaceRPG
 import RPGWeathers
 
 #if os(macOS)

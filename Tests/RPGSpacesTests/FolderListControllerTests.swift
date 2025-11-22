@@ -5,7 +5,7 @@ import Foundation
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGSpaces
+@testable import SpaceRPG
 
 struct FolderListControllerTests {
 

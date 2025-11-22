@@ -10,7 +10,7 @@ import RPGPhotos
 import RPGPdfs
 import RPGDie
 import RPGMaps
-import RPGSpaces
+import SpaceRPG
 
 struct ImportController: Sendable {
     @MainActor

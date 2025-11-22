@@ -28,11 +28,22 @@ struct DetailRootView: View {
         content(listController: detailFolderListController)
             .onChange(of: detailFolderListController.listModel.subFolderRoute) {
                 guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
+                //resetNavigationStack()
                 navigator.navigate(to: PdfDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
             }
     }
     
+    func resetNavigationStack() {
+        #if os(macOS)
+        if navigator.count > 0 {
+            let counter = navigator.count
+            navigator.popAll()
+            print("*** Module: PDF \(counter) --> \(navigator.count)")
+        }
+        #endif
+    }
+
     func content(listController: any FolderListControllable) -> some View {
         ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: true) {
         } editor: {

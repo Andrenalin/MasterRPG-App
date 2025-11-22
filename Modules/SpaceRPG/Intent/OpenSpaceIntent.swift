@@ -1,11 +1,12 @@
 // @copyright André Trettin
 
 #if !os(tvOS)
+
+import AndrenalinKit
 import AppIntents
+import CoreExternalRPG
 import Foundation
 import SwiftUI
-import CoreRPG
-import CoreExternalRPG
 
 struct OpenSpaceIntent: OpenIntent {
     static let title: LocalizedStringResource = "Open 3D Object"

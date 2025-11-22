@@ -6,7 +6,7 @@ import RPGResources
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGSpaces
+@testable import SpaceRPG
 
 struct MockRoot {
     static func importTestData(_ name: String = ResourcesDebug.spaceTestData, itemCounter: Int = 1) async throws -> SpaceRootModel {

@@ -9,7 +9,7 @@ import RPGGame
 import RPGMaps
 import RPGPdfs
 import RPGPhotos
-import RPGSpaces
+import SpaceRPG
 import RPGTables
 import RPGValues
 import RPGWeathers
@@ -30,34 +30,34 @@ public enum ExtendedTabRoute: String, Hashable, Codable {
     case tables
     case weathers
     case settings
-
+    
     public init(networkModule: NetworkModules) {
         switch networkModule {
-            case .audio: self = .audios
-            case .dice: self = .dice
-            case .generator: self = .generator
-            case .map: self = .maps
-            case .pdf: self = .pdfs
-            case .photo: self = .photos
-            case .space: self = .space
-            case .table: self = .tables
-            case .weather: self = .weathers
-            default: self = .settings
+        case .audio: self = .audios
+        case .dice: self = .dice
+        case .generator: self = .generator
+        case .map: self = .maps
+        case .pdf: self = .pdfs
+        case .photo: self = .photos
+        case .space: self = .space
+        case .table: self = .tables
+        case .weather: self = .weathers
+        default: self = .settings
         }
     }
     
     public var module: NetworkModules {
         switch self {
-            case .audios: .audio
-            case .dice: .dice
-            case .maps: .map
-            case .generator: .generator
-            case .pdfs: .pdf
-            case .photos: .photo
-            case .space: .space
-            case .tables: .table
-            case .weathers: .weather
-            case .settings: .setting
+        case .audios: .audio
+        case .dice: .dice
+        case .maps: .map
+        case .generator: .generator
+        case .pdfs: .pdf
+        case .photos: .photo
+        case .space: .space
+        case .tables: .table
+        case .weathers: .weather
+        case .settings: .setting
         }
     }
 }
@@ -66,7 +66,7 @@ extension ExtendedTabRoute: AppRouter {
     public var title: String {
         String(module.title)
     }
-
+    
     public var icon: String {
         module.icon
     }
@@ -76,7 +76,7 @@ extension ExtendedTabRoute: NavigationDestination {
     public var body: some View {
         ExtendedTabRouteDestionationView(route: self)
     }
-
+    
     static var allTabs: [ExtendedTabRoute] {
         [.pdfs, .tables, .maps, .generator, .photos, .audios, .space, .weathers, .dice, .settings]
     }
@@ -85,33 +85,33 @@ extension ExtendedTabRoute: NavigationDestination {
 struct ExtendedTabRouteDestionationView: View {
     let route: ExtendedTabRoute
     let tabId = KnownRoutes.mainTabId
-
+    
     @Environment(AppModel.self) private var appModel
-
+    
     var body: some View {
         switch route {
-            case .audios:
-                AudioFactory.rootView()
-            case .dice:
-                DiceFactory.rootView()
-            case .generator:
+        case .audios:
+            AudioFactory.rootView()
+        case .dice:
+            DiceFactory.rootView()
+        case .generator:
 #if os(tvOS)
             EmptyView()
 #else
             GeneratorRootFactory.rootView()
 #endif
-            case .maps:
-                NewMapRoute(appModel: appModel, tabId: tabId, isExtended: true)
-            case .pdfs:
-                PdfFactory.rootView()
-            case .photos:
-                PhotoFactory.rootView()
-            case .space:
-                SpaceFactory.rootView()
-            case .tables:
-                NewTableRoute(appModel: appModel, tabId: tabId, isExtended: true)
-            case .weathers:
-                WeatherRootFactory.rootView()
+        case .maps:
+            NewMapRoute(appModel: appModel, tabId: tabId, isExtended: true)
+        case .pdfs:
+            PdfFactory.rootView()
+        case .photos:
+            PhotoFactory.rootView()
+        case .space:
+            SpaceFactory.rootView()
+        case .tables:
+            NewTableRoute(appModel: appModel, tabId: tabId, isExtended: true)
+        case .weathers:
+            WeatherRootFactory.rootView()
         case .settings:
             SettingsView(store: appModel)
         }

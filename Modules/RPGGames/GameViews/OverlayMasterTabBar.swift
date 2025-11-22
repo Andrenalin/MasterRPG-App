@@ -9,7 +9,7 @@ import RPGPhotos
 import RPGMaps
 import RPGValues
 import RPGPdfs
-import RPGSpaces
+import SpaceRPG
 import RPGWeathers
 
 struct OverlayMasterTabBar: View {

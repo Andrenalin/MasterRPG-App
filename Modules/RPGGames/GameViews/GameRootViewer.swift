@@ -5,7 +5,7 @@ import SwiftUI
 import RPGMaps
 import RPGWeathers
 import RPGTables
-import RPGSpaces
+import SpaceRPG
 import RPGPhotos
 import RPGPdfs
 

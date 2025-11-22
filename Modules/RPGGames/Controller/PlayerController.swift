@@ -12,7 +12,7 @@ import RPGTables
 import RPGValues
 import RPGWeathers
 import RPGPdfs
-import RPGSpaces
+import SpaceRPG
 #if os(macOS)
 import AppKit
 #else

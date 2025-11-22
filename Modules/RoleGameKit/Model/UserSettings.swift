@@ -3,7 +3,7 @@
 import AndrenalinKit
 import SwiftUI
 import RPGAudios
-import RPGSpaces
+import SpaceRPG
 import RPGPhotos
 import RPGPdfs
 

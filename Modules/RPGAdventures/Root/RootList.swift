@@ -14,8 +14,8 @@ import RPGAudios
 import RPGPdfs
 import RPGTables
 import RPGTables
-import RPGSpaces
-import RPGSpaces
+import SpaceRPG
+import SpaceRPG
 import RPGMaps
 import RPGPhotos
 import RPGPdfs

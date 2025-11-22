@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
+import AndrenalinKit
 import CoreExternalRPG
-import CoreRPG
-import SwiftData
 import SwiftUI
 
 enum DetailRoute: Equatable, Hashable, Codable {

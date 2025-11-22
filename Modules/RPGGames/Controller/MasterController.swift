@@ -12,7 +12,7 @@ import RPGTables
 import RPGValues
 import RPGWeathers
 import RPGPdfs
-import RPGSpaces
+import SpaceRPG
 
 @MainActor @Observable
 final class MasterControllerModel: Sendable {
