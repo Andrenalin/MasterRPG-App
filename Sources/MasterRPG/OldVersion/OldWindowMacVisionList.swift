@@ -11,7 +11,7 @@ import PdfRPG
 import PhotoRPG
 import RPGValues
 import PhotoRPG
-import RPGWeathers
+import WeatherRPG
 import RPGTables
 
 struct OldWindowMacVisionList: Scene {

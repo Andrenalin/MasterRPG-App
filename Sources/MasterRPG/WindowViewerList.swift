@@ -8,7 +8,7 @@ import SwiftUI
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
-import RPGWeathers
+import WeatherRPG
 
 import GeneratorRPG
 

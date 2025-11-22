@@ -10,7 +10,7 @@ import RPGMaps
 import RPGValues
 import PdfRPG
 import SpaceRPG
-import RPGWeathers
+import WeatherRPG
 
 struct OverlayMasterTabBar: View {
     let root: GameRoot

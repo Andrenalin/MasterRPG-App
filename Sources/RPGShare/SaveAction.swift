@@ -4,7 +4,7 @@ import AndrenalinKit
 import RoleGameKit
 import SwiftUI
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 import RPGMaps
 import RPGAdventures
 import PhotoRPG

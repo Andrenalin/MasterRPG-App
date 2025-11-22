@@ -2,12 +2,12 @@
 
 #if !os(tvOS)
 
+import AndrenalinKit
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
 import PDFKit
-import CoreRPG
 
 struct WeatherEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -19,9 +19,8 @@ struct WeatherEntity: IndexedEntity {
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "\(name)"
-            //,
-            //image: .init(data: try! self.thumbnailRepresentationData)
+            title: "\(name)",
+            image: .init(systemName: icon)
         )
     }
 
@@ -30,16 +29,19 @@ struct WeatherEntity: IndexedEntity {
     var id: UUID { model.id }
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name.wrappedValue }
+    var name: String { model.name }
 
-    // Maps the description variable to the Spotlight indexing key `contentDescription`.
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.information.wrappedValue }
+    var description: String { model.description }
 
-    var root: WeatherRootModel
-    var model: ItemDataCodableModel
+    var icon: String {
+        model.specialCategory ? model.category.icon : root.module.icon
+    }
     
-    init(root: WeatherRootModel, model: ItemDataCodableModel) {
+    var root: WeatherRootModel
+    var model: WeatherModel
+    
+    init(root: WeatherRootModel, model: WeatherModel) {
         self.root = root
         self.model = model
     }
@@ -75,7 +77,7 @@ extension WeatherEntity: Transferable {
 
         DataRepresentation(exportedContentType: .plainText) {
             """
-            Pdf: \($0.name)
+            Name: \($0.name)
             Description: \($0.description)
             """.data(using: .utf8)!
         }
@@ -87,10 +89,10 @@ struct WeatherEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery
     @Dependency var root: WeatherRootModel
 
     func suggestedEntities() async throws -> [WeatherEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [WeatherEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = WeatherEntity(root: root, model: model)
             results.append(entity)
         }
@@ -100,7 +102,7 @@ struct WeatherEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery
     func entities(for identifiers: [WeatherEntity.ID]) async throws -> [WeatherEntity] {
         var results: [WeatherEntity] = []
         for id in identifiers {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = WeatherEntity(root: root, model: model)
             results.append(entity)
         }
@@ -108,11 +110,11 @@ struct WeatherEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery
     }
 
     func entities(matching: String) async throws -> [WeatherEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [WeatherEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
-            guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
             let entity = WeatherEntity(root: root, model: model)
             results.append(entity)
         }

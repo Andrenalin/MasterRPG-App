@@ -7,7 +7,7 @@ import PhotoRPG
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGWeathers
+@testable import WeatherRPG
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {

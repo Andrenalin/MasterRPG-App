@@ -1,51 +1,37 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct ViewerRootView: View {
-    init(model: ItemDataModel, dismissAction: (() -> Void)? = nil) {
+    init(model: WeatherModel, dismissAction: (() -> Void)? = nil) {
         self.model = model
         self.dismissAction = dismissAction
     }
     
-    let model: ItemDataModel
+    let model: WeatherModel
     let dismissAction: (() -> Void)?
     
     @Environment(WeatherRootModel.self) private var root
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
         
+    @State private var isAnimating: Bool = false
+    
     var body: some View {
         let _ = Self._printChanges()
         NavigationStack {
             VStack {
                 GeometryReader { proxy in
-                    if let weatherModel {
-                        WeatherViewer(model: weatherModel, size: proxy.size, useGame: false)
-                            .id(model.id)
-                    }
+                    WeatherViewer(model: model, size: proxy.size, useGame: false, isAnimating: $isAnimating)
+                        .id(model.id)
                 }
             }
             .ignoresSafeArea(.container, edges: [.top, .bottom])
-            .overlay(alignment: .topTrailing) {
-                //                GlassEffectContainerView {
-                //                    SelectionBar(editController: root.editController, model: model, searchModel: searchModel, withoutBookmark: withoutBookmark)
-                //                }
-            }
-            .overlay(alignment: .bottomTrailing) {
-                //                GlassEffectContainerView {
-                //                    SearchBar(searchModel: searchModel)
-                //                }
-            }
 #if !os(macOS)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    closeButton
-                }
+                toolbarContent
             }
 #endif
 #if !os(visionOS)
@@ -61,10 +47,26 @@ struct ViewerRootView: View {
 }
 
 private extension ViewerRootView {
-    var weatherModel: WeatherDataModel? {
-        root.itemController.model(for: model.id)
+    @ToolbarContentBuilder
+    var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            closeButton
+        }
+        
+        ToolbarItem(placement: .primaryAction) {
+            animateButton
+        }
     }
     
+    var animateButton: some View {
+        Button {
+            withAnimation { isAnimating.toggle() }
+        } label: {
+            Image(systemName: "film\(isAnimating ? ".fill" : "")")
+        }
+        .contentTransition(.symbolEffect(.replace.wholeSymbol))
+    }
+
     var closeButton: some View {
         Button {
             if let dismissAction {
@@ -80,9 +82,9 @@ private extension ViewerRootView {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
+    @Previewable @Environment(WeatherRootModel.self) var root
         
-    ViewerRootView(model: models[0])
+    ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 #if os(macOS)
         .frame(width: 800, height: 600)
 #endif

@@ -13,7 +13,7 @@ import PhotoRPG
 import SpaceRPG
 import RPGTables
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 
 @MainActor @Observable
 final class AdventureEditModel: Sendable {

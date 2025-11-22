@@ -12,7 +12,7 @@ import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import RPGTables
-import RPGWeathers
+import WeatherRPG
 
 struct MyAppPackage: AppIntentsPackage {
    static var includedPackages: [any AppIntentsPackage.Type] {

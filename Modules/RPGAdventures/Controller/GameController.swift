@@ -12,7 +12,7 @@ import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 
 public protocol AdventureStoreGameable {
     @MainActor func startGame(with id: UUID)

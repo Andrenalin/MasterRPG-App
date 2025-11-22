@@ -13,7 +13,7 @@ import RPGTables
 import RPGValues
 import RPGResourcesDebug
 import Testing
-import RPGWeathers
+import WeatherRPG
 
 @testable import RPGAdventures
 

@@ -11,7 +11,7 @@ import SpaceRPG
 import RPGValues
 import RPGResourcesDebug
 import Testing
-import RPGWeathers
+import WeatherRPG
 
 @testable import RPGAdventures
 @testable import PhotoRPG

@@ -11,7 +11,7 @@ import AudioRPG
 import PdfRPG
 import SpaceRPG
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 
 extension GameRoot {
     @MainActor

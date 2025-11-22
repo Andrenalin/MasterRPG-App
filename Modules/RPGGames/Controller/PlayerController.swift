@@ -10,7 +10,7 @@ import RPGMaps
 import PhotoRPG
 import RPGTables
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 import PdfRPG
 import SpaceRPG
 #if os(macOS)

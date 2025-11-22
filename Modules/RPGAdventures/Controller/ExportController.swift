@@ -6,7 +6,7 @@ import AudioRPG
 import RPGDie
 import RPGMaps
 import PdfRPG
-import RPGWeathers
+import WeatherRPG
 import PhotoRPG
 import SpaceRPG
 import RPGTables

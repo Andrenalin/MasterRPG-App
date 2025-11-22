@@ -12,7 +12,7 @@ import RPGTables
 import RPGValues
 import SwiftData
 import SwiftUI
-import RPGWeathers
+import WeatherRPG
 
 @MainActor @Observable
 public final class RootModel: Sendable {

@@ -4,7 +4,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGWeathers
+import WeatherRPG
 import RPGValues
 import RPGTables
 import SpaceRPG

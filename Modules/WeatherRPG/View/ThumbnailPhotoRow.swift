@@ -1,9 +1,8 @@
 // @copyright André Trettin
 
-import CoreRPG
-import PhotoRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
+import PhotoRPG
 
 struct ThumbnailPhotoRow: View {
     let itemId: UUID
@@ -17,8 +16,8 @@ struct ThumbnailPhotoRow: View {
         }
     }
     
-    private var model: WeatherDataModel? {
-        root.itemController.model(for: itemId)
+    private var model: WeatherModel? {
+        root.itemController.itemSync(for: itemId)
     }
 }
 

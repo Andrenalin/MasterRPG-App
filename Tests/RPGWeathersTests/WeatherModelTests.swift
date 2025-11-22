@@ -4,7 +4,7 @@
 import AndrenalinKit
 import Foundation
 import Testing
-@testable import RPGWeathers
+@testable import WeatherRPG
 
 struct WeatherModelTests {
     func setUp() async throws -> WeatherModel {

@@ -7,7 +7,7 @@ import RPGMaps
 import RPGTables
 import RPGAdventures
 import RPGDie
-import RPGWeathers
+import WeatherRPG
 import AudioRPG
 import PdfRPG
 import SpaceRPG

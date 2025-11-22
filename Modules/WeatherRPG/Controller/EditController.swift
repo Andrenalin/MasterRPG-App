@@ -1,46 +1,71 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
-import SwiftData
+import Observation
+import SwiftUI
 
-struct EditController {
-    @MainActor
-    init(itemController: ItemController) {
-        self.itemController = itemController
-        self.fileUrlDataController = nil
-        self.selectionPhoto = ItemSelectionModel()
-    }
-    
-    let itemController: ItemController
-    let fileUrlDataController: FileUrlDataController?
-
-    let selectionPhoto: ItemSelectionModel
+@MainActor @Observable
+final class WeatherEditModel: Sendable {
+    let photoSelectionModel = SelectionModel(id: UUID(), filter: .weather)
+    let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
 }
 
-// MARK: - EditControllable
+struct EditController: Sendable {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+        self.linkRegisterControllable = linkRegisterControllable
+        self.itemController = itemController
+        self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
+        self.weatherEditModel = WeatherEditModel()
+    }
+
+    let itemController: ItemController
+    let linkRegisterControllable: any LinkRegisterControllable
+    let editorModel: ItemEditorModel
+    let weatherEditModel: WeatherEditModel
+}
 
 extension EditController: EditControllable {
+    typealias Model = WeatherModel
+    
     var itemControllable: any ItemControllable {
         itemController
     }
     
-    func duplicate(item: ItemDataModel) {
-        guard let model = itemController.model(for: item.id) else { return }
-        let newItemId = UUID()
-        let duplicat = model.duplicate(newItemId: newItemId)
-        let modelContext = itemController.container.mainContext
-        modelContext.insert(duplicat)
-        try? modelContext.save()
-        duplicateDataModel(item: item, newItemId: newItemId)
+    var fileUrlDataController: FileUrlDataController? {
+        itemControllable.fileUrlDataController
+    }
+
+    @MainActor func didSetModel() {
+        guard let id = editorModel.currentItemId, weatherEditModel.photoSelectionModel.id != id else { return }
+        weatherEditModel.photoSelectionModel.id = id
+        if weatherEditModel.photoSelectionModel.currentValue != model.photoId {
+            weatherEditModel.photoSelectionModel.currentValue = model.photoId
+        }
     }
 }
 
 // MARK: - Module Editor
 
 extension EditController {
-    func add(photoId: UUID?, model: WeatherDataModel) {
+    @MainActor func add(photoId: UUID?) {
         model.photoId = photoId
-        try? model.modelContext?.save()
+        save(with: String(localized: "Change Photo").localizedString)
+    }
+}
+
+extension EditController {
+    @MainActor func selection(for module: NetworkModules) -> [ItemRowModel] {
+        guard module == .photo else { return [] }
+        if let id = model.photoId {
+            return [ItemRowModel(itemId: id, typeId: .photo)]
+        }
+        return []
+    }
+    
+    @MainActor func toggle(for module: NetworkModules, itemRowModel: ItemRowModel) async {
+        guard module == .photo else { return }
+        model.photoId = itemRowModel.itemId
+        save(with: String(localized: "Change Photo").localizedString)
     }
 }

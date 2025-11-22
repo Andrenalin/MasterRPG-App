@@ -10,7 +10,7 @@ import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 import RPGTables
 
 struct ItemController: Sendable {

@@ -3,7 +3,7 @@
 import AndrenalinKit
 import SwiftUI
 import RPGMaps
-import RPGWeathers
+import WeatherRPG
 import RPGTables
 import SpaceRPG
 import PhotoRPG

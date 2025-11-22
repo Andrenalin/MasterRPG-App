@@ -12,7 +12,7 @@ import RPGMaps
 import SpaceRPG
 import RPGTables
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 
 public struct LinkController: Sendable {
     weak var root: AdventureRootModel!

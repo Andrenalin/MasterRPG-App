@@ -1,22 +1,22 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct WeatherEditor: View {
-    let model: WeatherDataModel
+    let model: WeatherModel
 
     @Environment(WeatherRootModel.self) private var root
     
     var body: some View {
         Section {
-            root.viewController.photoSelection(root: root, selectionModel: root.editController.selectionPhoto)
-                .onChange(of: root.editController.selectionPhoto.selection) {
-                    withAnimation { root.editController.add(photoId: root.editController.selectionPhoto.itemId, model: model) }
+            root.viewController.photoSelection(root: root, selectionModel: root.editController.weatherEditModel.selectionPhoto)
+                .onChange(of: root.editController.weatherEditModel.selectionPhoto.selection) {
+                    withAnimation { root.editController
+                        .add(photoId: root.editController.weatherEditModel.selectionPhoto.itemId) }
                 }
                 .onChange(of: model.photoId, initial: true) {
-                    withAnimation { root.editController.selectionPhoto.resetSelection(itemId: model.photoId) }
+                    withAnimation { root.editController.weatherEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
                 }
         } header: {
 #if os(macOS)
@@ -82,8 +82,20 @@ private extension WeatherEditor {
 #if os(tvOS)
             Text(formattedTime)
 #else
-            Slider(value: $model.time)
+            HStack {
+                Slider(value: $model.time)
+                Text(formattedTime)
+            }
 #endif
+        } label: {
+            Text("Time", bundle: .module)
+        }
+    }
+
+    @ViewBuilder
+    var timeDisplayView: some View {
+        LabeledContent {
+            Text(formattedTime)
         } label: {
             Text("Time", bundle: .module)
         }
@@ -220,7 +232,7 @@ private extension WeatherEditor {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [WeatherDataModel]
+    @Previewable @Environment(WeatherRootModel.self) var root
 
-    WeatherEditor(model: models.first(where: { $0.itemId == MockData.previewId })!)
+    WeatherEditor(model: root.itemController.itemOrEmpty(for: MockData.previewId))
 }

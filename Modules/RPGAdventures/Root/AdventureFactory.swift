@@ -11,7 +11,7 @@ import RPGTables
 import RPGValues
 import SwiftData
 import SwiftUI
-import RPGWeathers
+import WeatherRPG
 import CoreExternalRPG
 
 public enum AdventureFactory {

@@ -11,7 +11,7 @@ import RPGResources
 import SpaceRPG
 import RPGTables
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 import SwiftData
 
 public extension AdventureRootModel {

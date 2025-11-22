@@ -1,17 +1,15 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
-import PhotoRPG
 
 struct WeatherViewer: View {
-    let model: WeatherDataModel
+    let model: WeatherModel
     let size: CGSize
     let useGame: Bool
+    @Binding var isAnimating: Bool
 
     @Environment(WeatherRootModel.self) private var root
-
-    @State private var isAnimating = false
 
     let backgroundTopStops: [Gradient.Stop] = [
         .init(color: .midnightStart, location: 0),
@@ -76,8 +74,7 @@ struct WeatherViewer: View {
     var body: some View {
         ZStack {
             if let photoId = model.photoId {
-                root.photoRoot.viewController.inlineViewer(root: root.photoRoot, for: photoId)
-                    .environment(GroupItemSelectionModel())
+                root.viewController.photo(root: root, for: photoId, useGame: useGame, size: containerSize)
             }
 
             if isAnimating || useGame {
@@ -98,17 +95,6 @@ struct WeatherViewer: View {
             }
         }
         .frame(width: containerSize.width, height: containerSize.height)
-        .overlay(alignment: .bottomTrailing) {
-            GlassButton {
-                withAnimation { isAnimating.toggle() }
-            } label: {
-                Image(systemName: "film\(isAnimating ? ".fill" : "")")
-            }
-            .contentTransition(.symbolEffect(.replace.wholeSymbol))
-            .padding(.trailing, valueFor(iOS: 12, macOS: 12, tvOS: 12, visionOS: 24))
-            .padding(.bottom)
-            .opacity(useGame ? 0 : 1)
-        }
         .background {
             LinearGradient(colors: [
                 backgroundTopStops.interpolated(amount: model.time),
@@ -129,8 +115,8 @@ struct WeatherViewer: View {
     }
 }
 
-#Preview(traits: .mockData) {
-    @Previewable @Environment(WeatherRootModel.self) var root
-        
-    WeatherViewer(model: root.itemController.model(for: MockData.previewId)!, size: CGSize(width: 375, height: 375), useGame: false)
+#Preview {
+    @Previewable @State var isAnimating = false
+    WeatherViewer(model: .heavy, size: CGSize(width: 375, height: 375), useGame: false, isAnimating: $isAnimating)
+        .environment(WeatherRootModel.preview)
 }

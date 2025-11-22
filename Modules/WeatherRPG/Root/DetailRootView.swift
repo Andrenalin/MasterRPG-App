@@ -1,30 +1,50 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
+import CoreExternalRPG
 import SwiftUI
 import PhotoRPG
 
 struct DetailRootView: View {
-    let selectedId: UUID?
+    init(root: WeatherRootModel, editController: EditController, model: WeatherModel, isSubFolder: Bool) {
+        self.root = root
+        self.editController = editController
+        self.model = model
+        self.isSubFolder = isSubFolder
+        let listController = root.folderListController.copy(parentModel: model) as! FolderListController
+        self._detailFolderListController = State(wrappedValue: listController)
+    }
     
-    @Environment(\.modelContext) private var modelContext
-    @Environment(WeatherRootModel.self) private var root
+    let root: WeatherRootModel
+    let editController: EditController
+    let model: WeatherModel
+    let isSubFolder: Bool
     
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.weather.viewerkWindowId, canShow: true, route: { DetailRoute.viewer($0) })
+    @Environment(\.navigator) private var navigator
+    
+    @State private var detailFolderListController: FolderListController
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.weather.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
+    @State private var animate: Bool = false
     
     var body: some View {
-        ItemDetailRootView(selectedId: selectedId) {
-        } editor: {
-            if let weatherModel {
-                detailEditorView(model: weatherModel)
+        content(listController: detailFolderListController)
+            .onChange(of: detailFolderListController.listModel.subFolderRoute) {
+                guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
+                navigator.navigate(to: WeatherDetailRoute.folder(subItemId), method: .push)
+                detailFolderListController.listModel.subFolderRoute = nil
             }
+    }
+    
+    func content(listController: any FolderListControllable) -> some View {
+        ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: false) {
+        } editor: {
+            WeatherEditor(model: model)
         } inspector: {
-            root.photoRoot.viewController.linkWindow(root: root.photoRoot, isInspector: true)
-        }
-        .navigationDestination(for: SelectionPhotoRoute.self) { route in
-            route
-                .environment(root.editController.selectionPhoto)
+            if !isSubFolder {
+                root.photoRoot.viewController.linkWindow(root: root.photoRoot, isInspector: true)
+            }
+        } overlay: {
+            OverlayViewer(animate: $animate)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -33,32 +53,77 @@ struct DetailRootView: View {
                 }
             }
         }
+        .toolbar {
+            toolbarContent
+        }
         .environment(openFileWindowModel)
-        .environment(root.listController.cacheListItemModel)
+        .environment(root.folderListController.cacheListItemModel)
+        .environment(root.listDisplayModel)
+        .environment(root.searchModel)
+        .environment(root.rootController)
+        .tint(root.module.tint)
+        .accentColor(root.module.tint)
     }
     
-    var selectedModel: ItemDataModel? {
-        root.listControllable.selectedModel(for: selectedId, modelContext: modelContext)
+    @ToolbarContentBuilder
+    var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .secondaryActionAll) {
+            animateButton
+        }
     }
-
-    var weatherModel: WeatherDataModel? {
-        root.itemController.model(for: selectedId ?? root.listControllable.listModel.selectedItemId)
+    
+    var animateButton: some View {
+        ControlGroup {
+            Button {
+                withAnimation { animate.toggle() }
+            } label: {
+                Label {
+                    Text("Animate", bundle: .module)
+                } icon: {
+                    Image(systemName: "film\(animate ? ".fill" : "")")
+                }
+            }
+            .contentTransition(.symbolEffect(.replace.wholeSymbol))
+            
+            Divider()
+        }
     }
+}
 
-    func detailEditorView(model: WeatherDataModel) -> some View {
-        WeatherEditor(model: model)
+
+struct OverlayViewer: View {
+    @Binding var animate: Bool
+
+    @Environment(WeatherRootModel.self) private var root
+        
+    var body: some View {
+        GeometryReader { geometry in
+            WeatherViewer(model: root.editController.model, size: geometry.size, useGame: false, isAnimating: $animate)
+#if !os(visionOS)
+                .glassEffect(.clear)
+#endif
+                .clipShape(.capsule)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 128)
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
     @Previewable @Environment(WeatherRootModel.self) var root
+    @Previewable @Environment(ListModel.self) var listModel
     
-    NavigationStack {
-        DetailRootView(selectedId: MockData.previewId)
-    }
-    .onAppear {
-        root.listControllable.update(items: models, parentModel: nil)
-        root.listControllable.listModel.set(selectedItemId: models.first!.id)
+    if listModel.selectedItem == nil {
+        Text("Hello")
+            .onAppear {
+                let id = root.itemController.itemDataModel.items.first ?? WeatherModel.previewId
+                root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? WeatherModel.previewId)
+                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
+            }
+    } else {
+        ManagedNavigationStack {
+            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? WeatherModel.previewId), isSubFolder: false)
+                .preferredColorScheme(.dark)
+        }
     }
 }

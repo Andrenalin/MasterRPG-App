@@ -11,7 +11,7 @@ import PhotoRPG
 import SpaceRPG
 import RPGTables
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 import SwiftUI
 
 struct NewAdventureRoute: View {

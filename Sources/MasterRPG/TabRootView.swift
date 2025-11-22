@@ -13,7 +13,7 @@ import SpaceRPG
 import RPGTables
 import RPGValues
 import SwiftUI
-import RPGWeathers
+import WeatherRPG
 
 struct TabRootView: View {
     let appModel: AppModel

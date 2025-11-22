@@ -12,7 +12,7 @@ import SpaceRPG
 import RPGTables
 import RPGValues
 import Testing
-import RPGWeathers
+import WeatherRPG
 
 @testable import RPGAdventures
 

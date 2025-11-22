@@ -14,7 +14,7 @@ import SpaceRPG
 import RPGTables
 import RPGValues
 import SwiftUI
-import RPGWeathers
+import WeatherRPG
 
 
 @MainActor @Observable

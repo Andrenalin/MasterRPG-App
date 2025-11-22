@@ -5,7 +5,7 @@ import Foundation
 import RPGMaps
 import RPGValues
 import RPGTables
-import RPGWeathers
+import WeatherRPG
 
 @MainActor
 struct LinkRegisterController: Sendable {

@@ -13,7 +13,7 @@ import PhotoRPG
 import RPGDie
 import RPGMaps
 import SpaceRPG
-import RPGWeathers
+import WeatherRPG
 
 #if os(macOS)
 typealias BaseWindow = Window

@@ -8,7 +8,7 @@ import PhotoRPG
 import RPGTables
 import SpaceRPG
 import PdfRPG
-import RPGWeathers
+import WeatherRPG
 import RPGValues
 
 struct AdventureRow: View {

@@ -14,7 +14,7 @@ import RPGResourcesDebug
 import SpaceRPG
 import RPGTables
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 
 import Testing
 

@@ -19,7 +19,7 @@ import RPGResources
 import SpaceRPG
 import RPGTables
 import RPGValues
-import RPGWeathers
+import WeatherRPG
 
 #if !os(tvOS)
 import GeneratorRPG

@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import AudioRPG
-import RPGWeathers
+import WeatherRPG
 import RPGTables
 import RPGValues
 import PhotoRPG

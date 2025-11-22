@@ -17,7 +17,7 @@ import Testing
 @testable import SpaceRPG
 @testable import RPGTables
 @testable import RPGValues
-@testable import RPGWeathers
+@testable import WeatherRPG
 
 final class MasterPlayerControllerTests {
     private var sut: MasterController!

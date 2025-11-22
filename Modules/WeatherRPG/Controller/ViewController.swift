@@ -1,8 +1,9 @@
 // @copyright André Trettin
 
-import CoreRPG
-import PhotoRPG
+import AndrenalinKit
+import Observation
 import SwiftUI
+import PhotoRPG
 
 public struct ViewController: Sendable {
     public let goupViewType: GroupViewType = .photo
@@ -15,36 +16,108 @@ extension ViewController: ViewControllable {
     }
 }
 
-// MARK: External Views
+// MARK: - External Views
 
 extension ViewController {
     @MainActor
     func photoSelection(root: WeatherRootModel, selectionModel: ItemSelectionModel) -> some View {
-        root.photoRoot.viewController.selectionView(root: root.photoRoot, model: selectionModel)
+        root.photoRoot.viewController.dropSelectionView(root: root.photoRoot, model: selectionModel)
+    }
+}
+
+// MARK: - Viewer
+
+public extension ViewController {
+    @MainActor func linkWindow(root: WeatherRootModel, isInspector: Bool = false) -> some View {
+        LinkRootView(type: isInspector ? .inspector : .window)
+            .environment(root)
+    }
+    
+    @MainActor func windowViewer(root: WeatherRootModel, selection: WindowItemSelection) -> some View {
+        let model = root.itemController.itemOrEmpty(for: selection.itemId)
+        return ViewerRootView(model: model)
+            .environment(root)
+    }
+
+    @MainActor func inlineViewer(root: WeatherRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: id)
+        return ViewerRootView(model: model, dismissAction: dismissAction)
+            .environment(root)
+    }
+    
+    @MainActor func selectionView(root: WeatherRootModel, model: ItemSelectionModel) -> some View {
+        LinkRootView(type: .selection)
+            .environment(root)
+    }
+}
+
+// MARK: - old
+
+public extension ViewController {
+    @MainActor
+    func detailEditor(root: WeatherRootModel, for item: ItemRowTreeModel, module: NetworkModules) -> some View {
+        WeatherDetailViewer(item: item)
+            .environment(root)
+    }
+
+    func gameWeatherView(root: WeatherRootModel) -> some View {
+        RootGame()
+            .environment(root)
+    }
+    
+    @MainActor
+    func weatherWindow(root: WeatherRootModel, selection: ItemSelection) -> some View {
+        WeatherWindow(selection: selection)
+            .environment(root)
+    }
+
+    @MainActor
+    private static let gameTabId = UUID()
+
+    @MainActor
+    func gameView(root: WeatherRootModel, select: Bool = false) -> some View {
+        if select == true, let id = root.gameController.gameModel.currentItemId {
+            let item = root.gameController.gameItem(for: id)
+            if item.displayState == 0 {
+                let model = ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)
+                let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
+            }
+        }
+        return RootNaviList(root: root, tabId: ViewController.gameTabId)
+            .itemSplitViewSizeMode(.small)
+            .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
+            .environment(root)
+    }
+}
+
+// MARK: Selection
+
+extension ViewController {
+    @MainActor @ViewBuilder
+    func photo(root: WeatherRootModel, for itemId: UUID, useGame: Bool, size: CGSize) -> some View {
+        root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: itemId, useGame: useGame, size: size, contentMode: .fill)
     }
 }
 
 // MARK: Viewer
 
 public extension ViewController {
-    @MainActor
-    func linkWindow(root: WeatherRootModel, isInspector: Bool = false) -> some View {
-        LinkRootView(type: isInspector ? .inspector : .window)
+    func rowView(root: WeatherRootModel, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
+        WeatherRow(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
             .environment(root)
-            .environment(root.photoRoot)
     }
     
     @MainActor
-    func windowViewer(root: WeatherRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.item(for: selection.itemId) ?? .newItem
-        return ViewerRootView(model: model)
-            .environment(root)
-    }
+    private static let selectionTabId = UUID()
 
     @MainActor
-    func inlineViewer(root: WeatherRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.item(for: id) ?? .newItem
-        return ViewerRootView(model: model, dismissAction: dismissAction)
+    func viewSelect(root: WeatherRootModel, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, isGroupHidden: Bool = true, focus: UUID? = nil, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
+        let listController = root.listController(tabId: ViewController.selectionTabId)
+        listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: isGroupHidden, focus: focus, mode: SelectionMode(selected: selection, toggle: toggleSelection))
+        return RootNaviList(root: root, tabId: ViewController.selectionTabId)
+            .itemSplitViewSizeMode(.small)
+            .itemListChildrenConfiguration(canNavigate: false)
+            .itemListConfiguration(modalOk: true, modalDismissAction: dismissAction)
             .environment(root)
     }
 }

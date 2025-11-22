@@ -14,7 +14,7 @@ import PhotoRPG
 import RPGDie
 import RPGMaps
 import SpaceRPG
-import RPGWeathers
+import WeatherRPG
 
 struct WindowLinkList: Scene {
     let appModel: AppModel

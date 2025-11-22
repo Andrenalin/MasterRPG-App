@@ -6,7 +6,7 @@ import PhotoRPG
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGWeathers
+@testable import WeatherRPG
 
 struct ImportControllerTests{
     @Test func importing() async throws {
