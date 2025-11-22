@@ -4,7 +4,7 @@ import Foundation
 
 import RPGAdventures
 import AudioRPG
-import RPGDie
+import DiceRPG
 import RPGMaps
 import PdfRPG
 import PhotoRPG

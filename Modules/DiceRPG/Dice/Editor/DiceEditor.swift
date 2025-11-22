@@ -1,11 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct DiceEditor: View {
-    let model: DiceDataModel
+    let model: DiceModel
     
     @Environment(DiceRootModel.self) private var root
     
@@ -34,17 +33,13 @@ struct DiceEditor: View {
             Divider()
                 .padding(.top)
 #endif
-//            Text("Dice Editor", bundle: .module)
-//                .font(.headline)
-//                .frame(maxWidth: .infinity, alignment: .center)
         }
     }
     
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Environment(DiceRootModel.self) var root
     
-    DiceEditor(model: models.first!)
-
+    DiceEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }

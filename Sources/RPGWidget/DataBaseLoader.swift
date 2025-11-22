@@ -4,7 +4,7 @@ import AndrenalinKit
 import CoreData
 import Foundation
 import RoleGameKit
-import RPGDie
+import DiceRPG
 import WidgetKit
 
 @Observable @MainActor

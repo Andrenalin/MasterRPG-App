@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-import RPGDie
+import DiceRPG
 
 public protocol TableGameStorable {
     @MainActor func addResult(_ result: ResultCategory, value: String)

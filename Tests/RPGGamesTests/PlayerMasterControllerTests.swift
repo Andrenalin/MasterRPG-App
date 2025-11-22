@@ -8,7 +8,7 @@ import Testing
 
 @testable import RPGGame
 
-@testable import RPGDie
+@testable import DiceRPG
 @testable import AudioRPG
 @testable import RPGMaps
 @testable import PhotoRPG

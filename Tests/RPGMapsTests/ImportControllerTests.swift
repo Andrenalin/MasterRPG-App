@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-import RPGDie
+import DiceRPG
 import AudioRPG
 import PdfRPG
 import PhotoRPG

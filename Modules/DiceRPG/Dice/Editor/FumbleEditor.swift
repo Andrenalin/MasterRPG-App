@@ -1,11 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct FumbleEditor: View {
-    let model: DiceDataModel
+    let model: DiceModel
     
     @Environment(DiceRootModel.self) private var root
 
@@ -17,12 +16,12 @@ struct FumbleEditor: View {
         Section {
             fumbleValueView
             
-            ToggleEditor(model: $model.fumbleOnlyOnFirstDie, title: "Only first die can fumble", bundle: .module, icon: "dice")
+            ToggleEditor(editController: root.editController, model: $model.fumbleOnlyOnFirstDie, title: "Only first die can fumble", bundle: .module, icon: "dice")
                 .disabled(model.fumbleValues.contains(where: { $0.isResult }))
             
             fumbleEditorView
             
-            ToggleEditor(model: $isDiceValueFumble, title: isFumbleMatchTitle, bundle: .module, icon: "123.rectangle")
+            ToggleEditor(editController: root.editController, model: $isDiceValueFumble, title: isFumbleMatchTitle, bundle: .module, icon: "123.rectangle")
         } header: {
 #if os(macOS)
             Divider()
@@ -44,17 +43,19 @@ private extension FumbleEditor {
     var fumbleValueView: some View {
         LabeledContent {
             ScrollView(.horizontal) {
-                HStack(spacing: 4) {
+                HStack(spacing: 8) {
                     ForEach(model.fumbleValues) { fumble in
                         Button {
-                            withAnimation { root.editController.remove(fumble: fumble, from: model) }
+                            withAnimation { root.editController.remove(fumble: fumble) }
                         } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 4) {
                                 Label(fumble.text, systemImage: fumble.icon)
                                 Image(systemName: "x.circle.fill")
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(Color.red)
+                                    .offset(y: -8)
                             }
                         }
+                        .borderLessTVBottonStyle()
                         .padding(4)
                     }
                 }
@@ -97,7 +98,7 @@ private extension FumbleEditor {
                 .padding(.horizontal, 16)
                 .disabled(currentFumble == 0)
 
-                TextIntEditor(model: $currentFumble, title: "Fumble Dice Value", icon: "plus", prompt: "fumble", bundle: .module, range: model.minValue...model.maxValue)
+                TextIntEditor(editController: root.editController, model: $currentFumble, title: "Fumble Dice Value", icon: "plus", prompt: "fumble", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
@@ -107,14 +108,14 @@ private extension FumbleEditor {
 
     func addCurrentFumble() async {
         withAnimation {
-            root.editController.add(fumble: currentFumble, isDiceValueFumble: isDiceValueFumble, to: model)
+            root.editController.add(fumble: currentFumble, isDiceValueFumble: isDiceValueFumble)
             currentFumble = 0
         }
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
-
-    FumbleEditor(model: models.first!)
+    @Previewable @Environment(DiceRootModel.self) var root
+    
+    FumbleEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }

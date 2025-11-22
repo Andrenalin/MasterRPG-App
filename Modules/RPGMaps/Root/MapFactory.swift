@@ -3,7 +3,7 @@
 import CoreExternalRPG
 import AndrenalinKit
 import AudioRPG
-import RPGDie
+import DiceRPG
 import PdfRPG
 import PhotoRPG
 import RPGTables

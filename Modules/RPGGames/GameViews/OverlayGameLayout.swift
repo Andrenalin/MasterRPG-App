@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import RPGDie
+import DiceRPG
 import SwiftUI
 
 struct OverlayGameLayout<MenuTab: View, Side: View, ToolBar: View>: View {

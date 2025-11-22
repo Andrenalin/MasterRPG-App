@@ -6,7 +6,7 @@ import RoleGameKit
 import RPGAdventures
 import AudioRPG
 import RPGValues
-import RPGDie
+import DiceRPG
 import RPGMaps
 import PdfRPG
 import PhotoRPG

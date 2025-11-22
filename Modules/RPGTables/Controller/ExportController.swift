@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import os.log
-import RPGDie
+import DiceRPG
 
 struct ExportController: Sendable {
     @MainActor

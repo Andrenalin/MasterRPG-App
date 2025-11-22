@@ -1,20 +1,19 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct SpecialOptionEditor: View {
-    let model: DiceDataModel
+    let model: DiceModel
     
     @Environment(DiceRootModel.self) private var root
 
     var body: some View {
         @Bindable var model = model
         Section {
-            ToggleEditor(model: $model.reorderDice, title: "Reorder dice by value", bundle: .module, icon: "textformat.123")
+            ToggleEditor(editController: root.editController, model: $model.reorderDice, title: "Reorder dice by value", bundle: .module, icon: "textformat.123")
 
-            ToggleEditor(model: $model.addDiceActivate, title: "Add dice", bundle: .module, icon: "dice")
+            ToggleEditor(editController: root.editController, model: $model.addDiceActivate, title: "Add dice", bundle: .module, icon: "dice")
 
             if model.addDiceActivate {
                 addDiceEditorView
@@ -37,7 +36,7 @@ private extension SpecialOptionEditor {
     var addDiceEditorView: some View {
         @Bindable var model = model
         LabeledContent {
-            TextIntEditor(model: $model.addDiceEvery, title: "Add Dice each Value", icon: "plus", prompt: "value", bundle: .module, range: model.minValue...model.maxValue)
+            TextIntEditor(editController: root.editController, model: $model.addDiceEvery, title: "Add Dice each Value", icon: "plus", prompt: "value", bundle: .module, range: model.minFirstValue...model.maxFirstValue)
         } label: {
             Text("Add", bundle: .module)
         }
@@ -45,7 +44,7 @@ private extension SpecialOptionEditor {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
-
-    SpecialOptionEditor(model: models.first!)
+    @Previewable @Environment(DiceRootModel.self) var root
+    
+    SpecialOptionEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }

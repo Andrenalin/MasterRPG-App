@@ -3,7 +3,7 @@
 import CoreExternalRPG
 import AndrenalinKit
 import SwiftUI
-import RPGDie
+import DiceRPG
 import RPGTables
 import RPGValues
 

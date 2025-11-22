@@ -2,7 +2,7 @@
 
 #if canImport(Testing)
 import AndrenalinKit
-import RPGDie
+import DiceRPG
 import Foundation
 import RPGResourcesDebug
 import Testing

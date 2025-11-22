@@ -4,7 +4,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGDie
+import DiceRPG
 
 struct TableEntryEditor: View {
     let root: TableRootModel

@@ -1,11 +1,11 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
 import os.log
 
 struct DiceResultModel: Equatable, Hashable, Codable {
-    let diceModel: DiceDataModel.DiceDataModelCodable
+    let diceModel: DiceModel
     var result: DiceResult
     var values: String
     var sum: Int
@@ -27,7 +27,7 @@ struct DiceResultModel: Equatable, Hashable, Codable {
         }
     }
     
-    init(diceModel: DiceDataModel.DiceDataModelCodable) {
+    init(diceModel: DiceModel) {
         self.diceModel = diceModel
         self.result = .notRolled
         self.values = ""
@@ -35,7 +35,7 @@ struct DiceResultModel: Equatable, Hashable, Codable {
         self.checked = false
     }
     
-    init(diceModel: DiceDataModel.DiceDataModelCodable, result: DiceResult, values: String, sum: Int, checked: Bool) {
+    init(diceModel: DiceModel, result: DiceResult, values: String, sum: Int, checked: Bool) {
         self.diceModel = diceModel
         self.result = result
         self.values = values

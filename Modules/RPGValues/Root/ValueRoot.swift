@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import RPGDie
+import DiceRPG
 import PdfRPG
 import PhotoRPG
 import RPGTables

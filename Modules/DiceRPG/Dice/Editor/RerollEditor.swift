@@ -1,11 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct RerollEditor: View {
-    let model: DiceDataModel
+    let model: DiceModel
     
     @Environment(DiceRootModel.self) private var root
 
@@ -19,7 +18,7 @@ struct RerollEditor: View {
 
             rerollEditorView
 
-            ToggleEditor(model: $isMaxDiceValue, title: isMaxDiceTitle, bundle: .module, icon: "123.rectangle")
+            ToggleEditor(editController: root.editController, model: $isMaxDiceValue, title: isMaxDiceTitle, bundle: .module, icon: "123.rectangle")
 
             if !isMaxDiceValue {
                 rerollReplaceEditorView
@@ -46,22 +45,23 @@ private extension RerollEditor {
         @Bindable var model = model
         LabeledContent {
             ScrollView(.horizontal) {
-                HStack(spacing: 4) {
+                HStack(spacing: 8) {
                     ForEach(model.rerollOptions) { reroll in
                         Button {
-                            root.editController.remove(reroll: reroll, from: model)
+                            withAnimation { root.editController.remove(reroll: reroll) }
                         } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 4) {
                                 Label {
                                     Text(labelText(for: reroll), bundle: .module)
                                 } icon: {
                                     Image(systemName: NetworkModules.dice.icon)
                                 }
                                 Image(systemName: "x.circle.fill")
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(Color.red)
+                                    .offset(y: -8)
                             }
                         }
-                        //.borderLessTVBottonStyle()
+                        .borderLessTVBottonStyle()
                         .padding(4)
                     }
                 }
@@ -71,11 +71,11 @@ private extension RerollEditor {
         }
     }
     
-    func labelText(for reroll: DiceDataModel.RerollOption) -> LocalizedStringKey {
+    func labelText(for reroll: DiceModel.RerollOption) -> LocalizedStringKey {
         if reroll.maxDiceValue {
-            return "\(reroll.number) --> Max Value"
+            return "\(reroll.number) → Max Value"
         }
-        return "\(reroll.number) --> \(reroll.value)"
+        return "\(reroll.number) → \(reroll.value)"
     }
 
     var rerollText: Binding<String> {
@@ -112,7 +112,7 @@ private extension RerollEditor {
                 .padding(.horizontal, 16)
                 .disabled(!isMaxDiceValue && currentReroll == 0)
 
-                TextIntEditor(model: $currentReroll, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: model.minValue...model.maxValue)
+                TextIntEditor(editController: root.editController, model: $currentReroll, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
@@ -122,7 +122,7 @@ private extension RerollEditor {
 
     func addCurrentReroll() async {
         withAnimation {
-            root.editController.add(reroll: currentReroll, value: currentValue, isMaxDiceValue: isMaxDiceValue, to: model)
+            root.editController.add(reroll: currentReroll, value: currentValue, isMaxDiceValue: isMaxDiceValue)
             currentReroll = 0
             currentValue = 0
         }
@@ -162,7 +162,7 @@ private extension RerollEditor {
                 .padding(.horizontal, 16)
                 .disabled(currentReroll == 0 && currentValue == 0)
 
-                TextIntEditor(model: $currentValue, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: model.minValue...model.maxValue)
+                TextIntEditor(editController: root.editController, model: $currentValue, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
@@ -172,7 +172,7 @@ private extension RerollEditor {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
-
-    RerollEditor(model: models.first!)
+    @Previewable @Environment(DiceRootModel.self) var root
+    
+    RerollEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }

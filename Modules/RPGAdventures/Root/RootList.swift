@@ -6,8 +6,8 @@ import SwiftUI
 import WeatherRPG
 import RPGValues
 import AudioRPG
-import RPGDie
-import RPGDie
+import DiceRPG
+import DiceRPG
 import RPGMaps
 import PhotoRPG
 import AudioRPG

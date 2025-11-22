@@ -28,7 +28,9 @@ struct UndoButton: View {
                 Image(systemName: "arrow.uturn.backward")
             }
         }
+#if !os(tvOS)
         .keyboardShortcut("Z", modifiers: [.command])
+#endif
         .disabled(!root.editControllable.canUndo)
     }
 }
@@ -46,7 +48,9 @@ struct RedoButton: View {
                 Image(systemName: "arrow.uturn.forward")
             }
         }
+#if !os(tvOS)
         .keyboardShortcut("Z", modifiers: [.command, .shift])
+#endif
         .disabled(!root.editControllable.canRedo)
     }
 }

@@ -9,7 +9,7 @@ import SwiftUI
 import os.log
 
 import RPGAdventures
-import RPGDie
+import DiceRPG
 import AudioRPG
 import RPGGame
 import RPGMaps
@@ -243,7 +243,9 @@ extension AppModel {
 extension AppModel {
     @MainActor public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
         adventureRoot.setUp(context: context)
+        #if !os(tvOS)
         generatorRoot.setUp(context: context, rootControllable: adventureRoot)
+        #endif
         
         self.rpgSpotlightIndexer = spotlightIndexer
         spotlightIndexer?.observeIndexing()

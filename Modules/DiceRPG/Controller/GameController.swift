@@ -1,20 +1,18 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import AVFoundation
 import Foundation
+import Observation
 import RPGResources
-import os.log
 
 @MainActor @Observable
 final class DiceGameModel: Sendable {
     init() {}
     
-    var itemData: [UUID: DiceDataModel] = [:]
-    
     let audioPlayer: AVPlayer = AVPlayer()
     var hiddenPlayers: [String] = []
-    var playerDice: [DiceDataModel] = []
+    var playerDice: [DiceModel] = []
     var masterDiceName: String?
     
     func reset() {
@@ -24,7 +22,7 @@ final class DiceGameModel: Sendable {
     }
 }
 
-public protocol DiceGameStorable: GameControllable {
+public protocol DiceGameStorable {
     @MainActor func addGameDiceResult(data: NetworkCodableDataType, name: String, isGameMaster: Bool) -> (String?, ResultCategory?)
     func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType
     @MainActor func createGameDice(for diceId: UUID, gameDiceId: UUID?) -> UUID
@@ -33,160 +31,142 @@ public protocol DiceGameStorable: GameControllable {
     @MainActor func number(for diceId: UUID, result: String) -> Int
     @MainActor func validateForValue(diceId: UUID, compareValue: Int?)
     @MainActor func resetPlayerDice(to playerIds: [String])
-    
-    @MainActor func isPlayerDice(itemId: UUID) -> Bool
-    @MainActor func canEditDice(itemId: UUID, isGameMode: Bool) -> Bool
-    @MainActor func hasResults(itemId: UUID) -> Bool
-    @MainActor func resetCompareValue(of itemId: UUID, value: Int) async
 }
 
-public struct GameController: Sendable {
-    @MainActor
-    init(itemController: ItemController) {
+struct GameController: Sendable {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
-        self.exportController = ExportController(module: itemController.module, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(container: itemController.container, module: itemController.module)
-        self.importController = ImportController(itemController: internItemController, module: itemController.module)
-        self.gameModel = ItemGameModel()
+        self.exportController = ExportController(itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
+        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
         self.diceGameModel = DiceGameModel()
     }
 
     let itemController: ItemController
-    let importController: ImportController
     let exportController: ExportController
-    
-    public let gameModel: ItemGameModel
-    let diceGameModel: DiceGameModel
-}
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
 
-extension GameController: GameControllable {
-    public var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
-    }
-    public var exportControllable: any ExportControllable {
-        exportController as ExportControllable
-    }
-    @MainActor public var importControllable: any ImportControllable {
-        importController as ImportControllable
+    let gameModel: ItemGameModel
+    let diceGameModel: DiceGameModel
+    
+    @MainActor
+    func gameItem(for itemId: UUID) -> DiceModel {
+        (gameModel.itemData[itemId] as? DiceModel) ?? itemController.itemOrEmpty(for: itemId)
     }
     
     @MainActor
-    public func resetGameState() {
-        diceGameModel.reset()
+    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
+            gameModel.itemData[itemId] = item
+        } else {
+            gameModel.items.insert(itemId, at: 0)
+            gameModel.itemData[itemId] = item
+        }
     }
 }
 
-extension GameController {
-    @MainActor func diceModel(itemId: UUID) -> DiceModel? {
-        guard let model = model(itemId: itemId) else { return nil }
-        // here converter?
-        return DiceModel.empty(itemId)
+extension GameController: GameControllable {    
+    var itemControllable: any ItemControllable {
+        itemController as (any ItemControllable)
     }
-    
-    @MainActor func model(itemId: UUID) -> DiceDataModel? {
-        if let model = diceGameModel.itemData[itemId] {
-            return model
-        }
-        guard let item = gameItem(for: itemId), let model = try? itemController.decodedModel(codableModel: item) else { return nil }
-        diceGameModel.itemData[itemId] = model
-        return model
+    var exportControllable: any ExportControllable {
+        exportController as ExportControllable
     }
-
-    @MainActor func models(itemId: UUID) -> (ItemDataCodableModel, DiceDataModel)? {
-        guard let item = gameItem(for: itemId), let model = model(itemId: itemId) else { return nil }
-        return (item, model)
+    var importControllable: any ImportControllable {
+        importController as ImportControllable
     }
-
-    @MainActor func setGame(item: ItemDataCodableModel, model: DiceDataModel, itemId: UUID) {
-        setGame(item: item, itemId: itemId)
-        diceGameModel.itemData[itemId] = model
+    @MainActor func resetGameState() {
+        diceGameModel.reset()
     }
 }
 
 extension GameController: DiceGameStorable {
     @discardableResult @MainActor
-    public func addGameDiceResult(data: NetworkCodableDataType, name: String, isGameMaster: Bool) -> (String?, ResultCategory?) {
+    func addGameDiceResult(data: NetworkCodableDataType, name: String, isGameMaster: Bool) -> (String?, ResultCategory?) {
         guard let diceResult = DiceResultModel.decodeData(of: data.data) else { return (nil, nil) }
-        var dice = diceResult.diceModel
-//        dice.id = UUID()
-//        dice.name = name
-//        dice.applyResult(text: diceResult.values)
-//        
-//        if let index = diceGameModel.playerDice.firstIndex(where: { $0.id == dice.id || $0.name == name }) {
-//            diceGameModel.playerDice[index] = dice
-//        } else {
-//            diceGameModel.playerDice.insert(dice, at: 0)
-//        }
-//        if let index = gameModel.items.firstIndex(where: { $0 == dice.id || (gameModel.itemData[$0] as? DiceModel)?.name == name }) {
-//            gameModel.items.remove(at: index)
-//        }
-//        gameModel.items.insert(dice.id, at: 0)
-//        gameModel.itemData[dice.id] = dice
-//        if isGameMaster {
-//            diceGameModel.masterDiceName = name
-//        }
+        let dice = diceResult.diceModel
+        dice.id = UUID()
+        dice.name = name
+        dice.applyResult(text: diceResult.values)
+        
+        if let index = diceGameModel.playerDice.firstIndex(where: { $0.id == dice.id || $0.name == name }) {
+            diceGameModel.playerDice[index] = dice
+        } else {
+            diceGameModel.playerDice.insert(dice, at: 0)
+        }
+        if let index = gameModel.items.firstIndex(where: { $0 == dice.id || (gameModel.itemData[$0] as? DiceModel)?.name == name }) {
+            gameModel.items.remove(at: index)
+        }
+        gameModel.items.insert(dice.id, at: 0)
+        gameModel.itemData[dice.id] = dice
+        if isGameMaster {
+            diceGameModel.masterDiceName = name
+        }
         return (diceResult.values, dice.resultCategory)
     }
     
     @MainActor
     func createDiceResult(for itemId: UUID, resultCategory: ResultCategory? = nil) async -> NetworkCodableDataType {
-        if gameModel.itemData[itemId] == nil, let model = itemControllable.itemDataCodableModel(id: itemId) {
+        if gameModel.itemData[itemId] == nil, let model = await itemControllable.item(for: itemId) {
             gameModel.itemData[model.id] = model
             gameModel.items.insert(model.id, at: 0)
         }
         let item = gameItem(for: itemId)
-        //item?.resultCategory = resultCategory
-        //let diceResult = result(itemId: itemId)
-        //return NetworkCodableDataType(id: itemId, type: .dice, version: 0, data: diceResult.encodeData())
-        return NetworkCodableDataType(id: itemId, type: .dice, version: 0, data: nil)
+        item.resultCategory = resultCategory
+        let diceResult = result(itemId: itemId)
+        return NetworkCodableDataType(id: itemId, type: .dice, version: 0, data: diceResult.encodeData())
     }
     
-    public func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType {
+    func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType {
         let saveTask = Task { @MainActor in
             let nilResult: ResultCategory? = nil
             guard let model = await itemControllable.item(for: itemId) as? DiceModel else { return nilResult }
             let oldResultCategory = model.resultCategory
-            //model.resultCategory = resultCategory
+            model.resultCategory = resultCategory
             return oldResultCategory
         }
         let oldResultCategory = await saveTask.value
         let result = try await createGameData(for: itemId)
         let restoreTask = Task { @MainActor in
             guard let model = await itemControllable.item(for: itemId) as? DiceModel else { return }
-            //model.resultCategory = oldResultCategory
+            model.resultCategory = oldResultCategory
         }
         let _ = await restoreTask.result
         return result
     }
     
     @MainActor
-    public func createGameDice(for diceId: UUID, gameDiceId: UUID?) -> UUID {
+    func createGameDice(for diceId: UUID, gameDiceId: UUID?) -> UUID {
         if let gameDiceId, gameModel.itemData[gameDiceId] != nil {
             return gameDiceId
         }
-        guard var item = itemController.itemDataCodableModel(id: diceId), let model = itemController.model(for: diceId) else { return diceId }
-        item.id = gameDiceId ?? UUID()
-        item.category = .value
-        model.itemId = item.id
-        setGame(item: item, model: model, itemId: item.id)
-        return item.id
+        let dice = itemController.itemOrEmpty(for: diceId).copy()
+        dice.category = .value
+        dice.id = gameDiceId ?? UUID()
+        setGame(item: dice, itemId: dice.id)
+        return dice.id
     }
     
     @MainActor
-    public func setFocusDice(on diceId: UUID?) {
+    func setFocusDice(on diceId: UUID?) {
         Task {
             if let diceId {
                 await focus(on: diceId)
             } else {
-                let model = DiceDataModel.twenty
-                let item = model.itemDataCodableModel
-                setGame(item: item, model: model, itemId: model.itemId)
-                await focus(on: model.itemId)
+                let gameDice = DiceModel.empty(UUID())
+                gameDice.dice.append(DieModel.die20)
+                setGame(item: gameDice, itemId: gameDice.id)
+                await focus(on: gameDice.id)
             }
         }
     }
     
-    public func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws {
+    func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws {
         try await updateGame(data: data, hide: hide, deep: false)
         if focus {
             let saveTask = Task { @MainActor in
@@ -201,26 +181,27 @@ extension GameController: DiceGameStorable {
     }
     
     @MainActor
-    public func number(for diceId: UUID, result: String) -> Int {
-        guard let (item, dice) = models(itemId: diceId) else { return 0 }
+    func number(for diceId: UUID, result: String) -> Int {
+        let dice = gameItem(for: diceId)
         dice.applyResult(text: result)
-        setGame(item: item, model: dice, itemId: dice.itemId)
+        setGame(item: dice, itemId: dice.id)
         return sumResult(itemId: diceId)
     }
     
     @MainActor
-    public func validateForValue(diceId: UUID, compareValue: Int?) {
-        guard let compareValue, compareValue > 0, let (item, model) = models(itemId: diceId) else { return }
+    func validateForValue(diceId: UUID, compareValue: Int?) {
+        guard let compareValue, compareValue > 0 else { return }
         let validatedCompareValue = Double(compareValue)
-        guard item.category == .value, model.compareValue != validatedCompareValue else { return }
+        let model = gameItem(for: diceId)
+        guard model.category == .value, model.compareValue != validatedCompareValue else { return }
         model.compareValue = validatedCompareValue
     }
     
     @MainActor
-    public func resetPlayerDice(to playerNames: [String]) {
-//        diceGameModel.playerDice = playerNames.compactMap { name in
-//            diceGameModel.playerDice.first { $0.name == name }
-//        }
+    func resetPlayerDice(to playerNames: [String]) {
+        diceGameModel.playerDice = playerNames.compactMap { name in
+            diceGameModel.playerDice.first { $0.name == name }
+        }
     }
 }
 
@@ -228,13 +209,13 @@ extension GameController: DiceGameStorable {
 
 extension GameController {
     @MainActor
-    public func canEditDice(itemId: UUID, isGameMode: Bool) -> Bool {
-        !isGameMode || gameItem(for: itemId)?.category != .table
+    func canEditDice(itemId: UUID, isGameMode: Bool) -> Bool {
+        !isGameMode || gameItem(for: itemId).category != .table
     }
     
-    @MainActor public func hasResults(itemId: UUID) -> Bool {
-        guard let model = model(itemId: itemId) else { return false }
-        return !model.dice.flatMap { $0.result }.isEmpty
+    @MainActor
+    func hasResults(itemId: UUID) -> Bool {
+        !gameItem(for: itemId).dice.flatMap { $0.result }.isEmpty
     }
     
     @MainActor
@@ -243,19 +224,19 @@ extension GameController {
     }
     
     @MainActor
-    public func isPlayerDice(itemId: UUID) -> Bool {
+    func isPlayerDice(itemId: UUID) -> Bool {
         gameModel.focusItemIds.isEmpty && gameModel.items.contains(where: { $0 == itemId })
     }
     
     @MainActor
     func isPlayerHidden(playerId: UUID) -> Bool {
-        guard let name = gameItem(for: playerId)?.name.wrappedValue else { return false }
+        let name = gameItem(for: playerId).name
         return diceGameModel.hiddenPlayers.contains { $0 == name }
     }
     
     @MainActor
     func toggleHidden(playerId: UUID) async {
-        guard let name = gameItem(for: playerId)?.name.wrappedValue else { return }
+        let name = gameItem(for: playerId).name
         if let hiddenIndex = diceGameModel.hiddenPlayers.firstIndex(where: { $0 == name }) {
             diceGameModel.hiddenPlayers.remove(at: hiddenIndex)
         } else {
@@ -265,20 +246,21 @@ extension GameController {
 }
 
 extension GameController {
-    @MainActor public func resetCompareValue(of itemId: UUID, value: Int) async {
-        guard var (item, model) = models(itemId: itemId) else { return }
-        guard model.compareValue != Double(value) else { return }
-        model.compareValue = Double(value)
-        model.itemId = UUID()
-        item.id = model.itemId
-        setGame(item: item, model: model, itemId: item.id)
+    @MainActor
+    func resetCompareValue(of itemId: UUID, value: Int) async {
+        let item = gameItem(for: itemId).copy()
+        guard item.compareValue != Double(value) else { return }
+        item.compareValue = Double(value)
+        item.id = UUID()
+        setGame(item: item, itemId: item.id)
         await focus(on: [item.id])
     }
     
     @MainActor
     func remove(die: DieModel, from itemId: UUID) {
-        guard let model = model(itemId: itemId), let index = model.dice.firstIndex(where: { $0.id == die.id }) else { return }
-        model.dice.remove(at: index)
+        let item = gameItem(for: itemId)
+        guard let index = item.entries.firstIndex(where: { $0.id == die.id }) else { return }
+        item.entries.remove(at: index)
     }
     
     @MainActor
@@ -290,9 +272,9 @@ extension GameController {
             
             if let networkActions {
                 Task {
-//                    let sendedResult = resultCategopry ?? gameItem(for: itemId).resultCategory ?? ResultCategory(id: itemId, module: itemController.module)
-//                    let result = await createDiceResult(for: itemId, resultCategory: sendedResult)
-//                    networkActions.game(result, .generic)
+                    let sendedResult = resultCategopry ?? gameItem(for: itemId).resultCategory ?? ResultCategory(id: itemId, module: itemController.itemDataModel.networkModule)
+                    let result = await createDiceResult(for: itemId, resultCategory: sendedResult)
+                    networkActions.game(result, .generic)
                 }
             }
         }
@@ -309,7 +291,7 @@ extension GameController {
     
     @MainActor
     private func diceName(for itemId: UUID, isOne: Bool) -> String {
-        if isOne || gameItem(for: itemId)?.entries.count == 1 {
+        if isOne || gameItem(for: itemId).entries.count == 1 {
             let result = RawDie.role(.number(9))
             switch result {
             case 1:
@@ -354,13 +336,13 @@ extension GameController {
 
 extension GameController {
     @MainActor
-    func calculate(itemId: UUID) -> DiceResultModel? {
-        guard let model = model(itemId: itemId) else { return nil }
-        var result = DiceResultModel(diceModel: model.codableModel)
-        guard model.dice.reduce(0, { $0 + $1.result.count }) > 0 else { return result }
+    func calculate(itemId: UUID) -> DiceResultModel {
+        let item = gameItem(for: itemId)
+        var result = DiceResultModel(diceModel: item)
+        guard item.dice.reduce(0, { $0 + $1.result.count }) > 0 else { return result }
         
         result.result = .rolled
-        let text = model.dice.compactMap {
+        let text = item.dice.compactMap {
             guard !$0.result.isEmpty else { return nil }
             return $0.result.map { "\($0)" }.joined(separator: ",")
         }.joined(separator: "|")
@@ -385,11 +367,11 @@ extension GameController {
     
     @MainActor
     func sumResult(itemId: UUID) -> Int {
-        guard let model = model(itemId: itemId) else { return 0 }
+        guard let item = gameModel.itemData[itemId] as? DiceModel else { return 0 }
         let orderedDice = reorder(for: itemId)
         var result = 0
-        if model.sumUp {
-            if model.canPercentDice, model.percentDice {
+        if item.sumUp {
+            if item.canPercentDice, item.percentDice {
                 var ten = orderedDice[0].result.last ?? 0
                 var one = orderedDice[1].result.last ?? 0
                 ten = ten == 10 ? 0 : ten
@@ -403,7 +385,7 @@ extension GameController {
                     let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
                     die.result.forEach { diceValue in
                         var value: Int
-                        if let rerole = model.rerollOptions.first(where: { $0.number == diceValue }) {
+                        if let rerole = item.rerollOptions.first(where: { $0.number == diceValue }) {
                             value = rerole.maxDiceValue ? maxValue : rerole.value
                         } else {
                             if diceValue <= maxValue {
@@ -415,7 +397,7 @@ extension GameController {
                         result += value
                     }
                 }
-                result += Int(model.modifier)
+                result += Int(item.modifier)
             }
         }
         return result
@@ -423,28 +405,29 @@ extension GameController {
     
     @MainActor
     func coup(for itemId: UUID) -> Bool {
-        guard let model = model(itemId: itemId) else { return false }
-        let allResults = model.coupOnlyOnFirstDie ? [model.dice.first?.result.first ?? 0] : model.dice.compactMap { $0.result.first }
-        let coup = allResults.contains(where: { value in model.coupValues.contains(where: { $0.isDiceValue(value) }) })
+        let item = gameItem(for: itemId)
+        let allResults = item.coupOnlyOnFirstDie ? [item.dice.first?.result.first ?? 0] : item.dice.compactMap { $0.result.first }
+        let coup = allResults.contains(where: { value in item.coupValues.contains(where: { $0.isDiceValue(value) }) })
         if coup { return true }
         let result = allResults.reduce(0) { $0 + $1 }
-        return model.coupValues.contains(where: { $0.isResultValue(result) })
+        return item.coupValues.contains(where: { $0.isResultValue(result) })
     }
     
     @MainActor
     func diceSuccess(for itemId: UUID) -> [(UUID, [Bool])] {
-        guard let model = model(itemId: itemId), model.dice.reduce(0, { $0 + $1.result.count }) > 0,
+        let item = gameItem(for: itemId)
+        guard item.dice.reduce(0, { $0 + $1.result.count }) > 0,
               !fumble(for: itemId),
-              model.sumUp else { return [] }
+              item.sumUp else { return [] }
         let orderedDice = reorder(for: itemId)
-        if model.canPercentDice, model.percentDice {
+        if item.canPercentDice, item.percentDice {
             return orderedDice.map { ($0.id, [true]) }
         }
         return orderedDice.enumerated().map { index, die in
             let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
             let dieResult = die.result.map { diceValue in
                 var value: Int
-                if let rerole = model.rerollOptions.first(where: { $0.number == diceValue }) {
+                if let rerole = item.rerollOptions.first(where: { $0.number == diceValue }) {
                     value = rerole.maxDiceValue ? maxValue : rerole.value
                 } else {
                     if diceValue <= maxValue {
@@ -461,34 +444,36 @@ extension GameController {
     
     @MainActor
     func fumble(for itemId: UUID) -> Bool {
-        guard let model = model(itemId: itemId) else { return false }
-        let allResults = model.fumbleOnlyOnFirstDie ? [model.dice.first?.result.first ?? 0] : model.dice.compactMap { $0.result.first }
-        let fumble = allResults.contains(where: { value in model.fumbleValues.contains(where: { $0.isDiceValue(value) }) })
+        let item = gameItem(for: itemId)
+        let allResults = item.fumbleOnlyOnFirstDie ? [item.dice.first?.result.first ?? 0] : item.dice.compactMap { $0.result.first }
+        let fumble = allResults.contains(where: { value in item.fumbleValues.contains(where: { $0.isDiceValue(value) }) })
         if fumble { return true }
         let result = allResults.reduce(0) { $0 + $1 }
-        return model.fumbleValues.contains(where: { $0.isResultValue(result) })
+        return item.fumbleValues.contains(where: { $0.isResultValue(result) })
     }
     
     @MainActor
     func maxValuePerDice(for index: Int, itemId: UUID) -> Int {
-        guard let model = model(itemId: itemId) else { return 0 }
-        let maxDieValue = model.dice.first?.die.max ?? 1
-        guard model.addDiceEvery > 0 else { return maxDieValue }
-        let maxValue = Int(model.compareValue)
-        return max(0, min((maxValue + maxDieValue) - model.addDiceEvery * index, maxDieValue))
+        let item = gameItem(for: itemId)
+        let maxDieValue = item.dice.first?.die.max ?? 1
+        guard item.addDiceEvery > 0 else { return maxDieValue }
+        let maxValue = Int(item.compareValue)
+        return max(0, min((maxValue + maxDieValue) - item.addDiceEvery * index, maxDieValue))
     }
     
     @MainActor
-    func result(itemId: UUID) -> DiceResultModel? {
+    func result(itemId: UUID) -> DiceResultModel {
         calculate(itemId: itemId)
     }
     
     @MainActor
     func resultText(itemId: UUID) -> String {
-        guard let model = model(itemId: itemId), let diceResult = result(itemId: itemId), diceResult.result != .notRolled else { return String(localized: DiceResultModel.DiceResult.notRolled.localizedTitle).localizedString }
+        let diceResult = result(itemId: itemId)
+        guard diceResult.result != .notRolled else { return String(localized: diceResult.result.localizedTitle).localizedString }
+        let item = gameItem(for: itemId)
         var compareText = ""
-        if model.compareOption != .off {
-            compareText = "\(model.compareOption.rawText)\(Int(model.compareValue))"
+        if item.compareOption != .off {
+            compareText = "\(item.compareOption.rawText)\(Int(item.compareValue))"
         }
         var text = "\(diceResult.values)\(compareText)"
         var specialText = ""
@@ -500,27 +485,27 @@ extension GameController {
         } else {
             text += " ∑\(diceResult.sum)\(specialText)"
         }
-        if model.compareOption != .off {
+        if item.compareOption != .off {
             text.append("\(diceResult.checked ? "✅" : "❌")")
         }
         return text
     }
     
     @MainActor
-    func reorder(for itemId: UUID) -> [DieDataModel] {
-        guard let model = model(itemId: itemId) else { return [] }
-        guard model.reorderDice else { return model.dice }
-        let dice = model.dice.sorted {
+    func reorder(for itemId: UUID) -> [DieModel] {
+        let item = gameItem(for: itemId)
+        guard item.reorderDice else { return item.dice }
+        let dice = item.dice.sorted {
             var first = $0.result.first ?? 0
             var second = $1.result.first ?? 0
-            if let firstRerole = model.rerollOptions.first(where: { $0.number == first }) {
+            if let firstRerole = item.rerollOptions.first(where: { $0.number == first }) {
                 if firstRerole.maxDiceValue {
                     first = $0.die.max + 1
                 } else {
                     first = firstRerole.value
                 }
             }
-            if let secondRerole = model.rerollOptions.first(where: { $0.number == second }) {
+            if let secondRerole = item.rerollOptions.first(where: { $0.number == second }) {
                 if secondRerole.maxDiceValue {
                     second = $0.die.max + 1
                 } else {
@@ -534,15 +519,13 @@ extension GameController {
     
     @MainActor
     func reset(for itemId: UUID) {
-        guard let model = model(itemId: itemId) else { return }
-        model.dice.forEach { die in
+        gameItem(for: itemId).dice = gameItem(for: itemId).dice.map { die in
             die.resetResults()
         }
     }
     
     @MainActor
-    func role(die: DieDataModel?, for itemId: UUID) {
-        guard let item = model(itemId: itemId) else { return }
+    func role(die: DieModel?, for itemId: UUID) {
         if let dicePath = Resources.bundle.path(forResource: diceName(for: itemId, isOne: die != nil), ofType: "m4a", inDirectory: "Dice") {
             let diceUrl = URL(fileURLWithPath: dicePath)
             let item = AVPlayerItem(url: diceUrl)
@@ -551,13 +534,13 @@ extension GameController {
             diceGameModel.audioPlayer.volume = 0.33
         }
         
-        if let die {
-            die.role(reroleOptions: item.rerollOptions)
+        let item = gameItem(for: itemId)
+        if let die, let index = item.dice.firstIndex(where: { $0.id == die.id }) {
+            gameItem(for: itemId).dice[index] = die.role(reroleOptions: item.rerollOptions)
         } else {
-            item.dice.forEach { die in
+            gameItem(for: itemId).dice = gameItem(for: itemId).dice.map { die in
                 die.role(reroleOptions: item.rerollOptions)
             }
         }
     }
 }
-

@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct LinkRootView: View {
@@ -10,7 +9,7 @@ struct LinkRootView: View {
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        CoreRPG.LinkRootView(root: root, type: type)
+        LinkItemRootView(root: root.rootController, type: type)
     }
 }
 

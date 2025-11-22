@@ -5,7 +5,7 @@ import AndrenalinKit
 import RPGAdventures
 import AudioRPG
 import SwiftUI
-import RPGDie
+import DiceRPG
 import RPGMaps
 import PdfRPG
 import PhotoRPG

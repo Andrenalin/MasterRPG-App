@@ -2,7 +2,7 @@
 
 #if os(visionOS)
 import AndrenalinKit
-import RPGDie
+import DiceRPG
 import RoleGameKit
 import PhotoRPG
 import SpaceRPG

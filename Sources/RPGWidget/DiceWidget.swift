@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import RoleGameKit
-import RPGDie
+import DiceRPG
 import SwiftUI
 import WidgetKit
 import _AppIntents_SwiftUI

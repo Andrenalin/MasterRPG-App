@@ -10,7 +10,7 @@ import PdfRPG
 import RPGTables
 import AudioRPG
 import PhotoRPG
-import RPGDie
+import DiceRPG
 import RPGMaps
 import SpaceRPG
 import WeatherRPG

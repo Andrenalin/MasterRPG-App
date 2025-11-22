@@ -3,7 +3,7 @@
 import RPGAdventures
 import AndrenalinKit
 import Combine
-import RPGDie
+import DiceRPG
 import Foundation
 import GroupActivities
 import AudioRPG

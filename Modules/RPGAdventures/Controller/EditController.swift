@@ -6,7 +6,7 @@ import Observation
 import RegexBuilder
 import SwiftUI
 import AudioRPG
-import RPGDie
+import DiceRPG
 import RPGMaps
 import PdfRPG
 import PhotoRPG

@@ -4,7 +4,7 @@ import AndrenalinKit
 import Foundation
 import Observation
 import RPGTables
-import RPGDie
+import DiceRPG
 
 @MainActor @Observable
 final class ValueGameModel: Sendable {

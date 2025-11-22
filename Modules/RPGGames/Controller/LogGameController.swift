@@ -6,7 +6,7 @@ import PhotoRPG
 import RPGMaps
 import RPGTables
 import RPGAdventures
-import RPGDie
+import DiceRPG
 import WeatherRPG
 import AudioRPG
 import PdfRPG

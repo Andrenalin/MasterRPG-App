@@ -4,7 +4,7 @@ import CoreExternalRPG
 import AndrenalinKit
 import RPGAdventures
 import AudioRPG
-import RPGDie
+import DiceRPG
 import RPGGame
 import RPGMaps
 import PdfRPG

@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AppIntents
-import RPGDie
+import DiceRPG
 import WidgetKit
 import AndrenalinKit
 

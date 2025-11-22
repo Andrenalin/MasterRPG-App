@@ -5,7 +5,7 @@ import Foundation
 import SwiftUI
 import os.log
 import AudioRPG
-import RPGDie
+import DiceRPG
 import PhotoRPG
 import RPGTables
 import RPGValues

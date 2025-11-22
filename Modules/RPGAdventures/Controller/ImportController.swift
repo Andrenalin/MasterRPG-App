@@ -8,7 +8,7 @@ import RPGTables
 import RPGValues
 import PhotoRPG
 import PdfRPG
-import RPGDie
+import DiceRPG
 import RPGMaps
 import SpaceRPG
 

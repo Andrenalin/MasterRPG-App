@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGDie
+import DiceRPG
 
 public struct ViewController {
     weak var root: TableRootModel!

@@ -3,7 +3,7 @@
 #if !os(tvOS)
 
 import RPGAdventures
-import RPGDie
+import DiceRPG
 import RoleGameKit
 import AudioRPG
 import RPGGame

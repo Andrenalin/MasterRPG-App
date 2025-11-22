@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import CoreData
-import RPGDie
+import DiceRPG
 import AudioRPG
 import PdfRPG
 import PhotoRPG

@@ -5,7 +5,7 @@ import Foundation
 import SwiftUI
 import os.log
 import RPGTables
-import RPGDie
+import DiceRPG
 import PhotoRPG
 
 public struct LinkController: Sendable {

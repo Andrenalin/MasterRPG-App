@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
+import AndrenalinKit
 import CoreExternalRPG
-import CoreRPG
 import SwiftData
 import SwiftUI
 
@@ -10,17 +10,16 @@ struct DiceRootView: View {
     
     var body: some View {
         ItemRootView(root: root.rootController)
-            .navigationAutoReceive(DiceRoute.self)
-        .overlay {
-            SaveView(root: root)
-        }
+            .overlay {
+                SaveView(root: root)
+            }
     }
 }
 
 struct SaveView: View {
     let root: DiceRootModel
     
-    @SceneStorage("DiceRoute") private var route: ItemRootRoute?
+    @SceneStorage("DiceRoute") private var route: DiceRoute?
     @SceneStorage("DiceDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
     @SceneStorage("DiceListModel") private var listMode: ListDisplayModel.ListMode = .list
 
@@ -28,8 +27,8 @@ struct SaveView: View {
         let _ = Self._printChanges()
 
         Color.clear
-            .applyItemRootRoute(listControllable: root.listControllable, route: $route)
-            .syncListDisplay(listControllable: root.listControllable, displayMode: $displayMode, listMode: $listMode)
+            .applyItemRootRoute(listControllable: root.folderListController, route: $route)
+            .syncListDisplay(listControllable: root.folderListController, displayMode: $displayMode, listMode: $listMode)
     }
 }
 

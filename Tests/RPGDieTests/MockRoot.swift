@@ -6,7 +6,7 @@ import RPGResources
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGDie
+@testable import DiceRPG
 
 struct MockRoot {
     static func importTestData(_ name: String = ResourcesDebug.diceTestData, itemCounter: Int = 5) async throws -> DiceRootModel {

@@ -1,14 +1,13 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct DiceBag: View {
-    let model: DiceDataModel
+    let model: DiceModel
 
-    let diceBagA: [DieDataModel] = [.die4(color: .A), .die20(color: .A)]
-    let diceBagG: [DieDataModel] = [.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
+    let diceBagA: [DieModel] = [.die4(color: .A), .die20(color: .A)]
+    let diceBagG: [DieModel] = [.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
 
     @Environment(DiceRootModel.self) private var root
 
@@ -25,10 +24,10 @@ struct DiceBag: View {
         }
     }
 
-    func diceBagView(for diceBag: [DieDataModel]) -> some View {
+    func diceBagView(for diceBag: [DieModel]) -> some View {
         ForEach(diceBag) { die in
             Button {
-                withAnimation { root.editController.add(die: die, to: model) }
+                withAnimation { root.editController.add(die: die) }
             } label: {
                 ThumbnailDice(die: die)
                     .padding(4)
@@ -39,7 +38,7 @@ struct DiceBag: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Environment(DiceRootModel.self) var root
     
-    DiceBag(model: models.first!)
+    DiceEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }

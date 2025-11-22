@@ -4,7 +4,7 @@ import AndrenalinKit
 import Foundation
 import RPGTables
 import PhotoRPG
-import RPGDie
+import DiceRPG
 
 struct ExportController: Sendable {
     @MainActor

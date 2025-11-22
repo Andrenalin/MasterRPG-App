@@ -8,7 +8,7 @@ import PdfRPG
 import AudioRPG
 import PhotoRPG
 import SpaceRPG
-import RPGDie
+import DiceRPG
 
 struct OverlayPlayerTabBar: View {
     let root: GameRoot

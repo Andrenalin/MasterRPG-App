@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-@testable import RPGDie
+@testable import DiceRPG
 import Foundation
 @testable import PdfRPG
 import RPGResources

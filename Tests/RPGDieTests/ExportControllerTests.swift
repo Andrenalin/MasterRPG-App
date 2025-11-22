@@ -4,7 +4,7 @@
 import AndrenalinKit
 import Testing
 
-@testable import RPGDie
+@testable import DiceRPG
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {

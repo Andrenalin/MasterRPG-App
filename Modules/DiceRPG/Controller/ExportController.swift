@@ -1,22 +1,28 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
 
 struct ExportController: Sendable {
-    @MainActor
-    init(module: NetworkModules, itemController: any ItemControllable, gameExporter: Bool) {
-        self.module = module
-        self.itemControllable = itemController
+    @MainActor init(itemController: ItemController, gameExporter: Bool) {
+        self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
     
+    let itemController: ItemController
     public let exportModel: ItemDataExportModel
-    var fileUrlDataController: FileUrlDataController?
-    var itemControllable: any ItemControllable
-    
-    var module: NetworkModules
-    var version: Int { ItemDataExportModel.Version.version_2025.rawValue }
 }
 
-extension ExportController: ExportControllable {}
+extension ExportController: ExportControllable {
+    var itemControllable: any ItemControllable {
+        itemController
+    }
+
+    @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+        let checkIds = itemIds.ids[itemController.itemDataModel.networkModule, default: []]
+        let results = checkIds.compactMap { itemController.itemSync(for: $0)?.id }
+        var allIds = itemIds
+        allIds.ids[itemController.itemDataModel.networkModule] = results
+        return allIds
+    }
+}

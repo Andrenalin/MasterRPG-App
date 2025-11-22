@@ -1,11 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct ThumbnailDice: View {
-    let die: DieDataModel
+    let die: DieModel
     var withoutResult: Bool = false
     
     @Environment(ListDisplayModel.self) private var listDisplayModel
@@ -30,9 +29,9 @@ struct ThumbnailDice: View {
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Environment(DiceRootModel.self) var root
 
-    ThumbnailDice(die: models[0].dice.first!, withoutResult: false)
+    ThumbnailDice(die: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]).dice[0], withoutResult: false)
     
-    ThumbnailDice(die: models[1].dice.first!, withoutResult: false)
+    ThumbnailDice(die: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[1]).dice[0], withoutResult: false)
 }

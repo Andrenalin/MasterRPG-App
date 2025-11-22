@@ -252,6 +252,9 @@
         }
       }
     },
+    "Choose %@" : {
+
+    },
     "Compare Value" : {
       "localizations" : {
         "de" : {
@@ -322,6 +325,9 @@
           }
         }
       }
+    },
+    "Drop %@" : {
+
     },
     "Duplicate %@" : {
       "extractionState" : "stale",

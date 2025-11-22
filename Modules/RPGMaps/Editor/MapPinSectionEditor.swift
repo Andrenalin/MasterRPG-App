@@ -223,7 +223,7 @@ struct PinSectionEditor<EditContent: View, Content: View, ShowLink: View, SwipeA
         .onDeleteCommand {
             guard let selection else { return }
             Task {
-                await checkDeleteEntries(ids: [selection], alwaysDeleteCheck: true)
+                checkDeleteEntries(ids: [selection], alwaysDeleteCheck: true)
             }
         }
 #endif

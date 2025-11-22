@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGDie
+import DiceRPG
 
 struct EntryListDiceRow: View {
     let itemId: UUID

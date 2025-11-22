@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-import RPGDie
+import DiceRPG
 import RPGResourcesDebug
 import Testing
 

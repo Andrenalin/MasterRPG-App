@@ -5,7 +5,7 @@ import AndrenalinKit
 import Foundation
 import Testing
 
-@testable import RPGDie
+@testable import DiceRPG
 
 struct GameControllerTests {
     @Test func setGameDice() async throws {

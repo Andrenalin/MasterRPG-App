@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import CoreExternalRPG
 import SwiftData
 import SwiftUI
@@ -52,14 +52,14 @@ struct DiceDropChooseView: View {
         }
     }
     
-    private var diceModel: DiceDataModel? {
-        root.itemController.model(for: model.itemId)
+    private var diceModel: DiceModel? {
+        root.itemController.itemSync(for: model.itemId ?? UUID())
     }
     
     private var emptyDrop: some View {
         Button {
             root.itemSelectionModel = model
-            navigator.navigate(to: SelectionDiceRoute.selection, method: .managedSheet)
+            //navigator.navigate(to: SelectionDiceRoute.selection, method: .managedSheet)
         } label: {
             VStack {
                 if showDrop {

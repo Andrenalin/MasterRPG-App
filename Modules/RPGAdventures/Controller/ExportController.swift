@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import AudioRPG
-import RPGDie
+import DiceRPG
 import RPGMaps
 import PdfRPG
 import WeatherRPG

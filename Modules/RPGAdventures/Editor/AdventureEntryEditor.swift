@@ -11,7 +11,7 @@ import SpaceRPG
 import PhotoRPG
 import PdfRPG
 import RPGMaps
-import RPGDie
+import DiceRPG
 import AudioRPG
 
 struct AdventureEntryEditor: View {

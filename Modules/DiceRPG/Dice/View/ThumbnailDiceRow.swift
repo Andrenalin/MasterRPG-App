@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftData
 import SwiftUI
 
@@ -16,15 +16,14 @@ struct ThumbnailDiceRow: View {
         }
     }
     
-    private var model: DiceDataModel? {
-        root.itemController.model(for: itemId)
+    private var model: DiceModel? {
+        root.itemController.itemSync(for: itemId)
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
+    @Previewable @Environment(DiceRootModel.self) var root
 
-    ThumbnailDice(die: models[0].dice.first!, withoutResult: false)
-    
-    ThumbnailDice(die: models[1].dice.first!, withoutResult: false)
+    ThumbnailDiceRow(itemId: root.itemController.itemDataModel.items[0])
+    ThumbnailDiceRow(itemId: root.itemController.itemDataModel.items[1])
 }

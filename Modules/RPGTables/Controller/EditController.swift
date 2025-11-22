@@ -4,7 +4,7 @@ import AndrenalinKit
 import Foundation
 import Observation
 import SwiftUI
-import RPGDie
+import DiceRPG
 
 @MainActor @Observable
 final class TableEditModel: Sendable {

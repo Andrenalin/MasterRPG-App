@@ -2,7 +2,7 @@
 
 #if !os(tvOS)
 
-import CoreRPG
+import AndrenalinKit
 import AppIntents
 import Foundation
 
@@ -15,7 +15,7 @@ struct DiceShortcuts: AppShortcutsProvider {
                 "Show \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Open Dice",
-            systemImageName: "apple.books.pages"
+            systemImageName: "dice"
         )
     }
 }

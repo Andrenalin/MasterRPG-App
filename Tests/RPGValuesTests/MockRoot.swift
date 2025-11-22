@@ -2,7 +2,7 @@
 
 #if canImport(Testing)
 import AndrenalinKit
-@testable import RPGDie
+@testable import DiceRPG
 import Foundation
 @testable import PdfRPG
 @testable import PhotoRPG

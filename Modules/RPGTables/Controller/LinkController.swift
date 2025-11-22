@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import RPGDie
+import DiceRPG
 import Foundation
 import SwiftUI
 import os.log

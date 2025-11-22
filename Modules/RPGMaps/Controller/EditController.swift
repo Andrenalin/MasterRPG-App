@@ -7,7 +7,7 @@ import RegexBuilder
 import SwiftUI
 import PhotoRPG
 import AudioRPG
-import RPGDie
+import DiceRPG
 import PdfRPG
 import RPGTables
 import RPGValues

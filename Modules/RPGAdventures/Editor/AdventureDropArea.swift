@@ -10,7 +10,7 @@ import SpaceRPG
 import PhotoRPG
 import PdfRPG
 import RPGMaps
-import RPGDie
+import DiceRPG
 
 struct AdventureDropArea: View {
     let root: AdventureRootModel

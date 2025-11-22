@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import RPGResources
 import SwiftUI
 import SwiftData
@@ -9,9 +9,9 @@ struct MockData: PreviewModifier {
     static let previewId = UUID()
     static let previewId2 = UUID()
     static let previewId3 = UUID()
-
-    static var previewRoot: DiceRootModel?
     
+    static var previewRoot: DiceRootModel?
+
     func body(content: Content, context: ModelContainer) -> some View {
         content
             .modifier(MockRootViewModifier(modelContext: context.mainContext))
@@ -19,13 +19,9 @@ struct MockData: PreviewModifier {
     }
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try! ModelContainer(
-            for: DiceDataModel.self, ItemDataModel.self, TagDataModel.self,
+            for: TagDataModel.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
-        
-        guard try! container.mainContext.fetch(FetchDescriptor<ItemDataModel>()).isEmpty else {
-            return container
-        }
         
         let bundle = Resources.bundle
         guard let url = bundle.url(forResource: Resources.exampleFirstData, withExtension: "gmz") else {
@@ -33,51 +29,9 @@ struct MockData: PreviewModifier {
             return container
         }
 
-        let root = DiceRootModel(modelContext: container.mainContext)
+        let root = DiceRootModel.preview
         let task = root.importController.importUrl(from: url)
         let _ = try await task.value
-        
-        let die1 = DieDataModel(id: UUID(), index: 0, die: .ten)
-        let die2 = DieDataModel(id: UUID(), index: 1, die: .ten)
-        let config = DiceDataModel(itemId: previewId, sumUp: false, modifier: 0, percentDice: true, compareOption: .lowerEqual, compareValue: 60, coupValues: [.result(1)], coupOnlyOnFirstDie: false, fumbleValues: [.result(100)], fumbleOnlyOnFirstDie: false, rerollOptions: [], reorderDice: false, addDiceEvery: 0, dice: [die1, die2])
-        let model1 = ItemDataModel(
-            id: previewId,
-            module: .dice,
-            name: "Mega Nice Photo",
-            information: "A lot of information about this photo",
-            category: .adventure,
-            tags: ["Example", "Title", "Ouside"],
-        )
-        container.mainContext.insert(model1)
-        container.mainContext.insert(config)
-
-
-        let die3 = DieDataModel(id: UUID(), index: 0, die: .six)
-        let die4 = DieDataModel(id: UUID(), index: 1, die: .six)
-        let config2 = DiceDataModel(itemId: previewId2, sumUp: true, modifier: 0, percentDice: false, compareOption: .equalHigher, compareValue: 6, coupValues: [.diceValue(6)], coupOnlyOnFirstDie: false, fumbleValues: [.diceValue(1)], fumbleOnlyOnFirstDie: false, rerollOptions: [], reorderDice: false, addDiceEvery: 0, dice: [die3, die4])
-        let model2 = ItemDataModel(
-            id: previewId2,
-            module: .dice,
-            name: "Albert",
-            information: "The is an example photo and the information is also set here",
-            category: .character,
-            tags: ["Player", "Mega", "Gnome"]
-        )
-        container.mainContext.insert(model2)
-        container.mainContext.insert(config2)
-
-        let die5 = DieDataModel(id: UUID(), index: 0, die: .twenty, color: "A")
-        let config3 = DiceDataModel(itemId: previewId3, sumUp: true, modifier: 0, percentDice: false, compareOption: .lowerEqual, compareValue: 32, coupValues: [.diceValue(1)], coupOnlyOnFirstDie: false, fumbleValues: [.diceValue(20)], fumbleOnlyOnFirstDie: true, rerollOptions: [.init(number: 1, value: 1, maxDiceValue: true)], reorderDice: true, addDiceEvery: 20, dice: [die5])
-        let model3 = ItemDataModel(
-            id: previewId3,
-            module: .dice,
-            name: "Zauberer",
-            information: "A photo of a wizard.",
-            category: .adventure,
-            tags: ["NPC", "Wizward", "Schwarzmagier"]
-        )
-        container.mainContext.insert(model3)
-        container.mainContext.insert(config3)
 
         return container
     }
@@ -85,10 +39,8 @@ struct MockData: PreviewModifier {
 
 struct MockRootViewModifier: ViewModifier {
     init(modelContext: ModelContext) {
-        self._root = State(wrappedValue: DiceRootModel(modelContext: modelContext))
+        self._root = State(wrappedValue: DiceRootModel.preview)
     }
-    
-    @Query(filter: #Predicate<ItemDataModel>{ $0.displayState == 0 }, sort: \ItemDataModel.name, animation: .smooth) private var items: [ItemDataModel]
 
     @State private var root: DiceRootModel
 
@@ -96,35 +48,21 @@ struct MockRootViewModifier: ViewModifier {
         content
             .environment(root)
             .environment(root.searchModel)
-            .environment(root.listController.listModel)
             .environment(root.listDisplayModel)
             .environment(root.rootController)
+            .environment(ListModel.preview)
             .environment(CacheItemListModel())
             .environment(DeviceRotationModel())
-            .environment(TabTitleModel())
-            .environment(LinkRootController(container: root.itemController.container, root: RootManager.preview(fake: root)))
+            .environment(SelectionSheetLinkModel())
+            .environment(ExternalHeaderModel())
 #if os(macOS)
-        .frame(width: 800, height: 600)
+            .frame(width: 800, height: 600)
 #endif
-        .onChange(of: items, initial: true) {
-            Task {
-                await root.itemController.update(items: items)
-            }
-        }
+            .tint(root.module.tint)
+            .accentColor(root.module.tint)
     }
 }
 
 extension PreviewTrait where T == Preview.ViewTraits {
     static var mockData: Self = .modifier(MockData())
-}
-
-extension DiceRootModel {
-    @MainActor public static func preview(container: ModelContainer) -> DiceRootModel {
-        if let root = MockData.previewRoot {
-            return root
-        }
-        let newRoot = DiceRootModel(modelContext: container.mainContext)
-        MockData.previewRoot = newRoot
-        return newRoot
-    }
 }

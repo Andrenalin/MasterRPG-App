@@ -2,7 +2,7 @@
 
 import RPGAdventures
 import AndrenalinKit
-import RPGDie
+import DiceRPG
 import RoleGameKit
 import AudioRPG
 import RPGGame

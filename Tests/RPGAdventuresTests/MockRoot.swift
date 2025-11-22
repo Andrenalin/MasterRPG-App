@@ -3,7 +3,7 @@
 #if canImport(Testing)
 import AndrenalinKit
 @testable import RPGAdventures
-import RPGDie
+import DiceRPG
 import Foundation
 import AudioRPG
 import RPGMaps

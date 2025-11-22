@@ -1,11 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 struct CoupEditor: View {
-    let model: DiceDataModel
+    let model: DiceModel
     
     @Environment(DiceRootModel.self) private var root
 
@@ -17,12 +16,12 @@ struct CoupEditor: View {
         Section {
             coupValueView
 
-            ToggleEditor(model: $model.coupOnlyOnFirstDie, title: "Only first die can coup", bundle: .module, icon: "dice")
+            ToggleEditor(editController: root.editController, model: $model.coupOnlyOnFirstDie, title: "Only first die can coup", bundle: .module, icon: "dice")
                 .disabled(model.coupValues.contains(where: { $0.isResult }))
 
             coupEditorView
 
-            ToggleEditor(model: $isDiceValueCoup, title: isCoupMatchTitle, bundle: .module, icon: "123.rectangle")
+            ToggleEditor(editController: root.editController, model: $isDiceValueCoup, title: isCoupMatchTitle, bundle: .module, icon: "123.rectangle")
         } header: {
 #if os(macOS)
             Divider()
@@ -42,17 +41,19 @@ struct CoupEditor: View {
     var coupValueView: some View {
         LabeledContent {
             ScrollView(.horizontal) {
-                HStack(spacing: 4) {
+                HStack(spacing: 8) {
                     ForEach(model.coupValues) { coup in
                         Button {
-                            withAnimation { root.editController.remove(coup: coup, from: model) }
+                            withAnimation { root.editController.remove(coup: coup) }
                         } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 4) {
                                 Label(coup.text, systemImage: coup.icon)
                                 Image(systemName: "x.circle.fill")
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(Color.red)
+                                    .offset(y: -8)
                             }
                         }
+                        .borderLessTVBottonStyle()
                         .padding(4)
                     }
                 }
@@ -103,19 +104,19 @@ struct CoupEditor: View {
         .padding(.horizontal, 16)
         .disabled(currentCoup == 0)
 
-        TextIntEditor(model: $currentCoup, title: "Coup Dice Value", icon: "plus", prompt: "coup", bundle: .module, range: model.minValue...model.maxValue)
+        TextIntEditor(editController: root.editController,  model: $currentCoup, title: "Coup Dice Value", icon: "plus", prompt: "coup", bundle: .module, range: model.minValue...model.maxValue)
     }
 
     func addCurrentCoup() {
         withAnimation {
-            root.editController.add(coup: currentCoup, isDiceValueCoup: isDiceValueCoup, to: model)
+            root.editController.add(coup: currentCoup, isDiceValueCoup: isDiceValueCoup)
             currentCoup = 0
         }
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [DiceDataModel]
-
-    CoupEditor(model: models.first!)
+    @Previewable @Environment(DiceRootModel.self) var root
+    
+    CoupEditor(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }
