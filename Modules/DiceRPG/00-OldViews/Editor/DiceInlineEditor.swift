@@ -22,6 +22,7 @@ struct DiceInlineEditor: View {
 
                                 Image(systemName: "x.circle.fill")
                                     .offset(x: -8, y: 4)
+                                    .foregroundStyle(.red)
                             }
                         }
                         .borderLessTVBottonStyle()
@@ -43,5 +44,14 @@ struct DiceInlineEditor: View {
                 withAnimation { root.gameController.gameItem(for: itemId).dice.append(die) }
             }
         }
+    }
+}
+
+
+#Preview(traits: .mockData) {
+    ZStack(alignment: .topLeading) {
+        DiceInlineEditor(itemId: DiceModel.previewId)
+            .environment(\.gameModus, .master)
+            .environment(DiceDisplayModel(isEditing: true, showPlayerDice: false, showDiceValueEditor: false))
     }
 }

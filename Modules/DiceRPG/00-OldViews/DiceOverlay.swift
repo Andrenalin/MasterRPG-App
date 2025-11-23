@@ -84,11 +84,10 @@ struct DiceOverlay: View {
     }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     ZStack(alignment: .topLeading) {
         DiceOverlay(item: .preview)
-            .environment(DiceRootModel.preview)
             .environment(\.gameModus, .master)
-            .environment(DiceDisplayModel())
+            .environment(DiceDisplayModel(isEditing: true, showPlayerDice: false, showDiceValueEditor: false))
     }
 }

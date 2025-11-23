@@ -26,7 +26,7 @@ struct ListRootView: View {
             }
 #endif
             .applyIf(parentModel == nil) {
-                $0.navigationTitle(root.module.title)
+                $0.navigationTitle("\(root.module.title) - \(displayItems.count)")
             }
             .scrollIndicatorsFlash(onAppear: true)
             .scrollIndicatorsFlash(trigger: displayItems.count)

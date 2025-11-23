@@ -259,8 +259,8 @@ extension GameController {
     @MainActor
     func remove(die: DieModel, from itemId: UUID) {
         let item = gameItem(for: itemId)
-        guard let index = item.entries.firstIndex(where: { $0.id == die.id }) else { return }
-        item.entries.remove(at: index)
+        guard let index = item.dice.firstIndex(where: { $0.id == die.id }) else { return }
+        item.dice.remove(at: index)
     }
     
     @MainActor
@@ -291,7 +291,7 @@ extension GameController {
     
     @MainActor
     private func diceName(for itemId: UUID, isOne: Bool) -> String {
-        if isOne || gameItem(for: itemId).entries.count == 1 {
+        if isOne || gameItem(for: itemId).dice.count == 1 {
             let result = RawDie.role(.number(9))
             switch result {
             case 1:
