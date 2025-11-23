@@ -9,12 +9,15 @@ public struct TabbedSplitNavigation: View {
     
     @Environment(AppModel.self) private var appModel
     
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
+    
     public var body: some View {
         let _ = Self._printChanges()
         let _ = print("Tab: \(selectedModule.title)")
         @Bindable var appModel = appModel
         
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $preferredCompactColumn) {
             TabSidebar()
                 .navigationSplitViewColumnWidth(min: 100, ideal: 150, max: 200)
         } content: {
@@ -22,6 +25,7 @@ public struct TabbedSplitNavigation: View {
                 appModel.selectedModule
             }
             .environment(appModel.itemRootController(for: selectedModule))
+            .navigationSplitViewColumnWidth(min: 250, ideal: 350, max: 600)
         } detail: {
             SplitDetailView()
                 .environment(appModel.itemRootController(for: selectedModule))

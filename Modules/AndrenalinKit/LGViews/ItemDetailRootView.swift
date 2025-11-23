@@ -218,12 +218,16 @@ private extension ItemDetailRootView {
     
     @ViewBuilder func initialFileImporterView(model: any ItemDataAccessable) -> some View {
         HStack {
-            FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
-                .padding(32)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(.tint, lineWidth: 2)
-                }
+            if root.viewControllable.fileImporterViewType == .file {
+                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
+                    .padding(32)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(.tint, lineWidth: 2)
+                    }
+            } else {
+                root.viewControllable.fileImporterView(for: model.id, preopen: true, layoutDown: false)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .opacity(hasFile(model: selectedModel(model: model)) || selectedModel(model: model).specialCategory ? 0 : 1)
@@ -347,7 +351,11 @@ private extension ItemDetailRootView {
             Text(model.url?.absoluteString ?? "No file is set")
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
+            if root.viewControllable.fileImporterViewType == .file {
+                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
+            } else {
+                root.viewControllable.fileImporterView(for: model.id, preopen: false, layoutDown: true)
+            }
         }
         .padding()
         #if !os(visionOS)

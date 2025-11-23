@@ -1,15 +1,19 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import Observation
 import SwiftUI
 
-public struct ViewController: Sendable {
+public struct ViewController {
     public let goupViewType: GroupViewType = .photo
     public let thumbnailRowViewType: ThumbnailRowViewType = .photo
+    public let fileImporterViewType: FileImporterViewType = .custom
 }
 
-extension ViewController: ViewControllable {}
+extension ViewController: ViewControllable {
+    @MainActor public func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView {
+        AnyView(PhotoInlineImporterView(itemId: itemId, preopen: preopen, layoutDown: layoutDown))
+    }
+}
 
 // MARK: - Viewer
 
@@ -34,9 +38,8 @@ public extension ViewController {
         PhotoDropChooseView(model: model)
             .environment(root)
     }
-        
-    @ViewBuilder @MainActor
-    func thumbnailRow(root: PhotoRootModel, for itemId: UUID) -> some View {
+
+    @ViewBuilder @MainActor func thumbnailRow(root: PhotoRootModel, for itemId: UUID) -> some View {
         if let model = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
             ThumbnailRowPhotoView(cacheController: cacheController, model: model)
         }
@@ -52,6 +55,8 @@ public extension ViewController {
         .environment(root)
     }
 }
+
+// MARK: - old
 
 extension ViewController {
     @MainActor

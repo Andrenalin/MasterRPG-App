@@ -1,7 +1,9 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import SwiftData
+#if !os(tvOS)
+import PhotosUI
+#endif
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -43,24 +45,24 @@ enum PhotoImporterButtonType: String {
         }
     }
     
-    func offset(expanded: Bool) -> CGSize {
+    func offset(expanded: Bool, layoutDown: Bool) -> CGSize {
         guard expanded else {
             return .zero
         }
         
         switch self {
         case .file:
-            return offset(atIndex: 0, expanded: expanded)
+            return offset(atIndex: 0, layoutDown: layoutDown)
         case .library:
-            return offset(atIndex: 1, expanded: expanded)
+            return offset(atIndex: 1, layoutDown: layoutDown)
         case .camera:
-            return offset(atIndex: 2, expanded: expanded)
+            return offset(atIndex: 2, layoutDown: layoutDown)
         case .playground:
-            return offset(atIndex: 3, expanded: expanded)
+            return offset(atIndex: 3, layoutDown: layoutDown)
         }
     }
     
-    private func offset(atIndex index: Int, expanded: Bool) -> CGSize {
+    private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
         let radius: CGFloat = 120
         let startAngleDeg = -180.0
         let step = 90.0 / Double(4 - 1)
@@ -69,56 +71,72 @@ enum PhotoImporterButtonType: String {
         let angleRad = angleDeg * .pi / 180
         
         let x = cos(angleRad) * radius
-        let y = sin(angleRad) * radius
+        let y = sin(angleRad) * radius * (layoutDown ? -1 : 1)
         
         return CGSize(width: x, height: y)
     }
 }
 
 struct PhotoInlineImporterView: View {
-    init(model: PhotoModel) {
-        self.model = model
+    internal init(itemId: UUID, preopen: Bool, layoutDown: Bool) {
+        self.itemId = itemId
+        self.preopen = preopen
+        self.layoutDown = layoutDown
+        self._isExpanded = State(wrappedValue: preopen)
     }
-
-    let model: PhotoModel
-
+    
+    let itemId: UUID
+    let preopen: Bool
+    let layoutDown: Bool
+    
     @Environment(PhotoRootModel.self) private var root
 #if !os(tvOS)
     @Environment(\.supportsImagePlayground) private var supportsImagePlayground
+    @State private var selectedItem: PhotosPickerItem? = nil
+    @State private var selectedImage: Image? = nil
 #endif
+    
     @Namespace var glassNamespace
-
-    @State private var isExpanded = false
-
+    
+    @State private var isExpanded: Bool
+    
     @State private var showImporter = false
     @State private var showCamera = false
+    @State private var showLibrary = false
     @State private var showImagePlayground = false
-
+    
     var body: some View {
-#if !os(visionOS)
-            GlassEffectContainer {
-                ZStack {
-                    button(type: .file)
-                    button(type: .library)
-                    button(type: .camera)
-                    button(type: .playground)
-                    
-                    Button {
-                        withAnimation {
-                            isExpanded.toggle()
-                        }
-                    } label: {
-                        Label("Importer", systemImage: "photo.badge.plus")
-                            .labelStyle(.iconOnly)
-                            .frame(width: 50, height: 50)
-                            .foregroundColor(.white)
-                    }
-#if !os(visionOS)
-                    .glassEffect(.regular.tint(Color.accentColor.opacity(0.8)).interactive())
-                    .glassEffectID("menu", in: glassNamespace)
+#if os(visionOS)
+        content
+#else
+        GlassEffectContainer {
+            content
+        }
 #endif
+    }
+    
+    var content: some View {
+        ZStack {
+            button(type: .file)
+            button(type: .library)
+            button(type: .camera)
+            button(type: .playground)
+            
+            Button {
+                withAnimation {
+                    isExpanded.toggle()
                 }
-            }.padding(32)
+            } label: {
+                Label("Importer", systemImage: "photo.badge.plus")
+                    .labelStyle(.iconOnly)
+                    .frame(width: 50, height: 50)
+            }
+            .borderLessTVBottonStyle()
+#if !os(visionOS)
+            .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
+            .glassEffectID("menu", in: glassNamespace)
+#endif
+        }
 #if !os(tvOS)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: ItemController.fileTypes) { result in
             guard let url = try? result.get() else { return }
@@ -127,44 +145,54 @@ struct PhotoInlineImporterView: View {
         .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
             root.editController.resetPhoto(url: url)
         }
+        .photosPicker(isPresented: $showLibrary, selection: $selectedItem, matching: .images, photoLibrary: .shared())
+        .onChange(of: selectedItem) {
+            guard let localItem = selectedItem else { return }
+            let id = itemId
+            Task.detached {
+                if let data = try? await localItem.loadTransferable(type: Data.self) {
+                    await update(id: id, image: AKImage(data: data))
+                }
+            }
+        }
 #endif
 #if os(iOS)
         .sheet(isPresented: $showCamera) {
-            CaptureImagePicker(shown: $showCamera) { [id = model.id] image in
+            CaptureImagePicker(shown: $showCamera) { [id = itemId] image in
                 await update(id: id, image: image)
             }
         }
 #endif
-#endif
     }
-
+    
     private func update(id: UUID, image: AKImage?) async {
         await root.editController.resetPhoto(image: image)
     }
-
+    
     private func button(type: PhotoImporterButtonType) -> some View {
         return Button {
             switch type {
-                case .file:
-                    showImporter.toggle()
-                case .library:
-                    showImporter.toggle()
-                case .camera:
-                    showCamera.toggle()
-                case .playground:
-                    showImagePlayground.toggle()
+            case .file:
+                showImporter.toggle()
+            case .library:
+                showLibrary.toggle()
+            case .camera:
+                showCamera.toggle()
+            case .playground:
+                showImagePlayground.toggle()
             }
         } label: {
             Label(type.label, systemImage: type.systemImage)
                 .labelStyle(.iconOnly)
-                .frame(width: 50, height:50)
+                .frame(width: 50, height: 50)
                 .opacity(isExpanded ? 1 : 0)
         }
+        .borderLessTVBottonStyle()
 #if !os(visionOS)
         .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
         .glassEffectID(type.label, in: glassNamespace)
 #endif
-        .offset(type.offset(expanded: isExpanded))
+        .offset(type.offset(expanded: isExpanded, layoutDown: layoutDown))
         .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: isExpanded)
     }
 }
@@ -174,7 +202,7 @@ struct PhotoInlineImporterView: View {
     ZStack {
         Color
             .blue
-
-        PhotoInlineImporterView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
+        
+        PhotoInlineImporterView(itemId: root.itemController.itemDataModel.items[0], preopen: true, layoutDown: true)
     }
 }
