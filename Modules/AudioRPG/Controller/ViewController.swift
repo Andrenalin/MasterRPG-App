@@ -6,10 +6,15 @@ import SwiftUI
 
 public struct ViewController: Sendable {
     public let goupViewType: GroupViewType = .photo
+    public let sharingViewType: SharingViewType = .custom
     public let thumbnailRowViewType: ThumbnailRowViewType = .photo
 }
 
-extension ViewController: ViewControllable {}
+extension ViewController: ViewControllable {
+    @MainActor public func sharingView(for itemId: UUID) -> AnyView {
+        AnyView(SharingActionView(itemId: itemId))
+    }
+}
 
 // MARK: - New Views
 

@@ -24,6 +24,11 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
     
+    @Environment(\.gameModus) private var gameModus
+    @Environment(\.networkActions) private var networkActions
+    @Environment(\.showGame) private var showGame
+    @Environment(\.sharingFeatureActions) private var sharingFeatureActions
+    
     public var body: some View {
         //let _ = Self._printChanges()
         HStack(alignment: .center, spacing: 4) {
@@ -39,9 +44,9 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
                     } else {
                         allTagsView
                     }
-                    
-                    actionBar
                 }
+                actionBarWSithSharing
+
                 if listDisplayModel.displayMode != .compact {
                     DescriptionItemNewRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
                         .foregroundStyle(.secondary)
@@ -145,6 +150,49 @@ private extension ItemRowView {
             
             HStack(spacing: 4) {
                 TagItemRow(tags: tagSecondContent)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    var actionBarWSithSharing: some View {
+        switch root.viewControllable.sharingViewType {
+        case .none:
+            actionBar
+        case .share:
+            actionBar
+                .shareListItem(isActive: canShare, feedBackEnabled: true, action: shareAction)
+        case .custom:
+            root.viewControllable.sharingView(for: model.id)
+        }
+    }
+    
+    var canShare: Bool {
+        if gameModus == .player {
+            let features = sharingFeatureActions.features()
+            switch root.module {
+            case .photo:
+                return features.photoSharing && showGame
+            case .audio:
+                return features.audioSharing && showGame
+            case .space:
+                return features.spaceSharing && showGame
+            default:
+                return false
+            }
+        } else {
+            return showGame
+        }
+    }
+    
+    func shareAction() {
+        Task {
+            if gameModus == .master {
+                await networkActions?.shareId(root.gameControllable.share(id: model.id))
+            } else {
+                if let result = try? await root.gameControllable.createGameData(for: model.id) {
+                    networkActions?.game(result, .generic)
+                }
             }
         }
     }

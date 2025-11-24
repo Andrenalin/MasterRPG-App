@@ -73,8 +73,8 @@ struct MasterRPGApp: App {
         Window("Editor", id: WindowIdentifier.editor.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 RootView(appModel: appModel, editorOnly: true)
-                    .environment(appModel.optionKeyDownModel)
-                    .environment(appModel.settingsModel)
+                    .setAppSizeMode()
+                    .environmentSetUp(appModel)
                     .frame(minWidth: 600, minHeight: 400)
             }
         }

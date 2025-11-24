@@ -14,6 +14,12 @@ public enum GroupViewType: Hashable, Sendable {
     case photo
 }
 
+public enum SharingViewType: Hashable, Sendable {
+    case none
+    case share
+    case custom
+}
+
 public enum ThumbnailRowViewType: Hashable, Sendable {
     case none
     case photo
@@ -23,15 +29,20 @@ public enum ThumbnailRowViewType: Hashable, Sendable {
 public protocol ViewControllable: Sendable {
     var fileImporterViewType: FileImporterViewType { get }
     var goupViewType: GroupViewType { get }
+    var sharingViewType: SharingViewType { get }
     var thumbnailRowViewType: ThumbnailRowViewType { get }
-    
+        
     @MainActor func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView
+    @MainActor func sharingView(for itemId: UUID) -> AnyView
     func thumbnailRowView(for itemId: UUID) -> AnyView
 }
 
 public extension ViewControllable {
     var fileImporterViewType: FileImporterViewType { .file }
-    
     @MainActor func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView { AnyView(EmptyView()) }
+    
+    var sharingViewType: SharingViewType { .none }
+    @MainActor func sharingView(for itemId: UUID) -> AnyView { AnyView(EmptyView()) }
+
     func thumbnailRowView(for itemId: UUID) -> AnyView { AnyView(EmptyView()) }
 }

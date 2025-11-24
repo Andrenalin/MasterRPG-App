@@ -175,13 +175,16 @@ private extension ItemSelectionNaviEditor {
             RoundedRectangle(cornerRadius: 8).fill(dropBackgroundColor)
         }
 #if !os(tvOS)
-        .dropDestination(for: LinkData.self) { items, _ in
-            guard let draggedLinkData = items.first else { return false }
-            return drop(link: draggedLinkData)
-        } isTargeted: { inDropArea in
-            dropBackgroundColor = inDropArea ? .accentColor : .clear
-            dropForegroundColor = inDropArea ? .white : .primary
-        }
+        .dropDestination(for: value, handler: { name, itenId, entryId in
+            let _ = drop(itemId: itenId)
+        })
+//        .dropDestination(for: LinkData.self) { items, _ in
+//            guard let draggedLinkData = items.first else { return false }
+//            return drop(link: draggedLinkData)
+//        } isTargeted: { inDropArea in
+//            dropBackgroundColor = inDropArea ? .accentColor : .clear
+//            dropForegroundColor = inDropArea ? .white : .primary
+//        }
 #endif
     }
 
@@ -189,10 +192,9 @@ private extension ItemSelectionNaviEditor {
         (selectionModel.currentValue == nil ? Text("Add ", bundle: .module) : Text("Change ", bundle: .module)) + Text(title, bundle: bundle)
     }
 
-    func drop(link: LinkData) -> Bool {
-        guard link.module == value else { return false }
+    func drop(itemId: UUID) -> Bool {
         withAnimation {
-            selectionModel.currentValue = link.itemId
+            selectionModel.currentValue = itemId
         }
         editController.save(with: String(localized: "Change item").localizedString)
         return true
