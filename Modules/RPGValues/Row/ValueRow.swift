@@ -22,7 +22,7 @@ struct ValueRow: View {
         case .photo:
             root.photoRoot.viewController.rowView(root: root.photoRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .table:
-            root.tableRoot.viewController.rowView(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
+            root.tableRoot.viewController.rowView(root: root.tableRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .value:
             rowValueView
         case .editor:

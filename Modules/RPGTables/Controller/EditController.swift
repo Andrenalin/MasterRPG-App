@@ -11,6 +11,9 @@ final class TableEditModel: Sendable {
     var contentLinks: [UUID: LinkReplaceController] = [:]
     
     let pdfSelectionModel = SelectionModel(id: UUID(), filter: .all)
+    
+    let selectionPdf: ItemSelectionModel = ItemSelectionModel()
+    let selectionDice: ItemSelectionModel = ItemSelectionModel()
 
     func resetLinks() {
         contentLinks = [:]
@@ -18,29 +21,31 @@ final class TableEditModel: Sendable {
 }
 
 struct EditController: Sendable {
-    @MainActor
-    init(root: TableRootModel, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
-        self.root = root
+    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+        self.diceRoot = diceRoot
+        
+        self.itemController = itemController
+        self.linkRegisterControllable = linkRegisterControllable
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
         self.tableEditModel = TableEditModel()
     }
 
-    weak var root: TableRootModel!
-    var fileUrlDataController: FileUrlDataController? = nil
+    let itemController: ItemController
+    let linkRegisterControllable: any LinkRegisterControllable
     let editorModel: ItemEditorModel
     let tableEditModel: TableEditModel
+    let diceRoot: DiceRootModel
 }
 
 extension EditController: EntryDataEditable {
-    
     typealias Model = TableModel
 
     var itemControllable: any ItemControllable {
-        root.itemController as (any ItemControllable)
+        itemController
     }
-
-    var linkRegisterControllable: any LinkRegisterControllable {
-        root.linkRegisterControllable
+    
+    var fileUrlDataController: FileUrlDataController? {
+        itemControllable.fileUrlDataController
     }
 
     @MainActor func didSetModel() {
@@ -66,11 +71,11 @@ extension EditController: EntryDataEditable {
 extension EditController {
     @MainActor @ViewBuilder
     func selectDice(for entryId: UUID, linkKeyPath: WritableKeyPath<TableModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.diceRoot.viewController.viewSelect(root: root.diceRoot, filter: .table) {
+        diceRoot.viewController.viewSelect(root: diceRoot, filter: .table) {
             let text = self.model[keyPath: linkKeyPath]
             return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .dice) }
         } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.diceRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
+            self.model[keyPath: linkKeyPath] = diceRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
             self.save(with: String(localized: "Change dice links").localizedString)
         } dismissAction: {
             dismissAction()
@@ -79,7 +84,7 @@ extension EditController {
 
     @MainActor 
     func selectDice(dismissAction: @escaping () -> Void) -> some View {
-        root.diceRoot.viewController.viewSelect(root: root.diceRoot, filter: .table) {
+        diceRoot.viewController.viewSelect(root: diceRoot, filter: .table) {
             if let diceId = self.model.diceId {
                 return [ItemRowModel(itemId: diceId, typeId: .dice)]
             } else {
@@ -97,18 +102,18 @@ extension EditController {
         }
     }
 
-    @MainActor @ViewBuilder
-    func selectTable(for entryId: UUID, linkKeyPath: WritableKeyPath<TableModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.viewController.viewSelect(filter: .all) {
-            let text = self.model[keyPath: linkKeyPath]
-            return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .table) }
-        } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-            self.save(with: String(localized: "Change table links").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
+//    @MainActor @ViewBuilder
+//    func selectTable(for entryId: UUID, linkKeyPath: WritableKeyPath<TableModel, String>, dismissAction: @escaping () -> Void) -> some View {
+//        root.viewController.viewSelect(filter: .all) {
+//            let text = self.model[keyPath: linkKeyPath]
+//            return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .table) }
+//        } toggleSelection: { sel, _ in
+//            self.model[keyPath: linkKeyPath] = self.root.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
+//            self.save(with: String(localized: "Change table links").localizedString)
+//        } dismissAction: {
+//            dismissAction()
+//        }
+//    }
 }
 
 // MARK: - Link Editor
@@ -154,12 +159,12 @@ extension EditController {
             return TableEntryModel(id: foundEntry?.id ?? entry.id, name: entry.name, content: entry.content, displayState: entry.displayState, diceResult: entry.diceResult)
         }
         let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
-        let module = root.itemController.itemDataModel.networkModule
+        let module = itemController.itemDataModel.networkModule
         let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
 
         var effectedLinks = true
         for itemRowModel in itemRowModels {
-            if !root.itemController.usedLinks(for: itemRowModel).isEmpty {
+            if !itemController.usedLinks(for: itemRowModel).isEmpty {
                 effectedLinks = false
                 break;
             }
@@ -175,32 +180,32 @@ extension EditController {
         return itemRowModels
     }
 
-    @MainActor
-    func scan(itemId: UUID, with anotherIds: [UUID]?, module: NetworkModules, caseInsensitive: Bool, words: Bool) -> [TableEntryModel] {
-        guard let anotherIds else {
-            if module == .dice {
-                let otherEntries = root.diceRoot.linkController.link(for: .table)
-                return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
-            }
-            let otherEntries = root.linkController.link(for: .table)
-            return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
-        }
-        let otherEntries: [LinkEntryModel] = anotherIds.flatMap { anotherId in
-            switch module {
-            case .dice:
-                return root.diceRoot.linkController.linkEntries(for: anotherId)
-            case .table:
-                return root.linkController.linkEntries(for: anotherId)
-            default:
-                return []
-            }
-        }
-        return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
-    }
+//    @MainActor
+//    func scan(itemId: UUID, with anotherIds: [UUID]?, module: NetworkModules, caseInsensitive: Bool, words: Bool) -> [TableEntryModel] {
+//        guard let anotherIds else {
+//            if module == .dice {
+//                let otherEntries = diceRoot.linkController.link(for: .table)
+//                return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
+//            }
+//            let otherEntries = root.linkController.link(for: .table)
+//            return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
+//        }
+//        let otherEntries: [LinkEntryModel] = anotherIds.flatMap { anotherId in
+//            switch module {
+//            case .dice:
+//                return diceRoot.linkController.linkEntries(for: anotherId)
+//            case .table:
+//                return root.linkController.linkEntries(for: anotherId)
+//            default:
+//                return []
+//            }
+//        }
+//        return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
+//    }
 
     @MainActor
     func scan(itemId: UUID, with linkEntries: [LinkEntryModel], caseInsensitive: Bool, words: Bool) -> [TableEntryModel] {
-        guard let entries = root.itemController.itemSync(for: itemId)?.entries else { return [] }
+        guard let entries = itemController.itemSync(for: itemId)?.entries else { return [] }
         return entries.map { entry in
             var replacedEntry = entry
             linkEntries.forEach { linkEntry in

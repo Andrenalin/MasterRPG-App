@@ -13,8 +13,8 @@ final class WeatherEditModel: Sendable {
 
 struct EditController: Sendable {
     @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
-        self.linkRegisterControllable = linkRegisterControllable
         self.itemController = itemController
+        self.linkRegisterControllable = linkRegisterControllable
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
         self.weatherEditModel = WeatherEditModel()
     }

@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
-import CoreExternalRPG
 import AndrenalinKit
+import CoreExternalRPG
 import SwiftUI
 
 public enum TableRoute: Equatable, Hashable, Codable {
@@ -29,20 +29,34 @@ extension TableRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DetailRouteDestinationView(itemId: itemId)
+            DetailRouteDestinationView(itemId: itemId, isSubFolder: false)
+                .navigationDestination(TableDetailRoute.self)
+                .navigationAutoReceive(TableDetailRoute.self)
+        }
+    }
+}
+
+extension TableRoute: ItemDetailRoute {
+    public func reset(detail: UUID) -> Self {
+        TableRoute.detail(detail)
+    }
+    
+    public func detail() -> UUID? {
+        switch self {
+            case .detail(let id): return id
         }
     }
 }
 
 struct DetailRouteDestinationView: View {
     let itemId: UUID
+    let isSubFolder: Bool
     @Environment(TableRootModel.self) private var root
     
     var body: some View {
-        RootExtendedDetail(itemRowTreeModel: ItemRowTreeModel(itemId: itemId, typeId: .table), tabId: KnownRoutes.mainTabId)
-        //DetailRootView(selectedId: itemId)
+        DetailRootView(root: root, editController: root.editController, model: root.itemController.itemOrEmpty(for: itemId), isSubFolder: isSubFolder)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
-//            .environment(root.rootController)
+            .environment(root.rootController)
     }
 }

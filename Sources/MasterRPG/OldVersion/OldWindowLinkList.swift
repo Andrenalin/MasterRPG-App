@@ -69,22 +69,6 @@ struct OldWindowLinkList: Scene {
             .keyboardShortcut("2", modifiers: [.command, .option])
 #endif
 
-            BaseWindow("\(NetworkModules.table.title) Link", id: NetworkModules.table.linkWindowId) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.tableRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
-                        .environment(\.valueActions, appModel.valueRoot.valueActions)
-                }
-                .onDisappear {
-                    appModel.windowStateModel.openWindowState[.table] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .table))
-#if os(macOS)
-            .keyboardShortcut("4", modifiers: [.command, .option])
-#endif
-
             BaseWindow("\(NetworkModules.map.title) Link", id: NetworkModules.map.linkWindowId) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.mapRoot.viewController.linkWindow()
@@ -130,15 +114,6 @@ struct OldWindowLinkAltList: Scene {
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
             
-            WindowGroup("\(NetworkModules.table.title) Link", id: NetworkModules.table.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.tableRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
-                        .environment(\.valueActions, appModel.valueRoot.valueActions)
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-
             WindowGroup("\(NetworkModules.map.title) Link", id: NetworkModules.map.linkAltWindowId) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.mapRoot.viewController.linkWindow()

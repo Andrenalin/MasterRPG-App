@@ -39,9 +39,10 @@ struct TableEntrySectionEditor: View {
                         selectionSheetLinkModel.selection = false
                     }
                 default:
-                    editController.selectTable(for: linkValue.entryId, linkKeyPath: linkValue.keyPath ?? \.[linkValue.entryId].content) {
-                        selectionSheetLinkModel.selection = false
-                    }
+                EmptyView()
+//                    editController.selectTable(for: linkValue.entryId, linkKeyPath: linkValue.keyPath ?? \.[linkValue.entryId].content) {
+//                        selectionSheetLinkModel.selection = false
+//                    }
             }
         }
     }

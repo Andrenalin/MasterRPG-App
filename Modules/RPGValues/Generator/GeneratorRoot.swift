@@ -41,7 +41,7 @@ struct GeneratorRoot: View {
 
             ItemList(listController: generatorController.listController) { item, isSelected in
                 if item.model.typeId == .table {
-                    root.tableRoot.viewController.generatorRow(controllable: generatorController.tableGeneratorControllable(for: ItemRowModel(itemId: item.model.itemId, typeId: item.model.typeId)), item: item)
+                    root.tableRoot.viewController.generatorRow(root: root.tableRoot, controllable: generatorController.tableGeneratorControllable(for: ItemRowModel(itemId: item.model.itemId, typeId: item.model.typeId)), item: item)
                 } else {
                     ValueRowModel(item: item, model: model(item: item), isSelected: isSelected, hasQuickEditor: false, cacheItemListModel: CacheItemListModel())
                         .environment(\.showGame, false)

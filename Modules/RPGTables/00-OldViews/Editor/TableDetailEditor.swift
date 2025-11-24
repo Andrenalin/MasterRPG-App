@@ -36,7 +36,6 @@ struct TableDetailEditor: View {
             TableEntryEditor(root: root, editController: editController)
 #endif
         }
-        .focusedSceneValue(\.selectedTable, $model.id)
         .environment(detailHeaderModel)
         .environment(externalHeaderModel)
         .onChange(of: model.entries, initial: true) {

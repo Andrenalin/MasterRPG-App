@@ -16,7 +16,7 @@ public extension TableRootModel {
         let root = TableRootModel(container: modelContainer, diceRoot: DiceFactory.root(container: modelContainer), pdfRoot: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.diceRoot.setUp(context: nil, rootControllable: root)
-        root.editController(type: .main).setCurrentItem(to: .preview)
+        root.editController.setCurrentItem(to: .preview)
         return root
     }()
     
@@ -25,7 +25,7 @@ public extension TableRootModel {
         let root = TableRootModel.preview
         let itemController = root.itemController
         let importController = root.importController
-        let editController = root.editController(type: .main)
+        let editController = root.editController
         let gameController = root.gameController
 #if DEBUG
         Task { @MainActor in
@@ -74,10 +74,10 @@ extension TableRootModel: RootControllable {
     }
     
     public var gameExportControllable: any ExportControllable {
-        gameController.exportController
+        exportController
     }
     public var gameImportControllable: any ImportControllable {
-        gameController.importController
+        importController
     }
 }
 
@@ -97,7 +97,7 @@ extension ItemController {
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = TableRootModel.preview.editController(type: .main)
+        let controller = TableRootModel.preview.editController
         controller.setCurrentItem(to: .preview)
         return controller
     }()

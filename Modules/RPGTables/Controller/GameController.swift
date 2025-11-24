@@ -10,20 +10,23 @@ public protocol TableGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor
-    init(root: TableRootModel, itemController: ItemController) {
-        self.root = root
+    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+        self.diceRoot = diceRoot
         self.itemController = itemController
-        self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(root: root, dataController: nil)
-        self.importController = ImportController(root: root, itemController: internItemController, gameImporter: true)
+        self.exportController = ExportController(diceRoot: diceRoot, itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
 
-    weak var root: TableRootModel!
+    let diceRoot: DiceRootModel
     let itemController: ItemController
-    let importController: ImportController
     let exportController: ExportController
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
 
     let gameModel: ItemGameModel
 
@@ -58,12 +61,6 @@ extension GameController: GameControllable {
     var importControllable: any ImportControllable {
         importController as ImportControllable
     }
-    var rootExportControllable: any ExportControllable {
-        root.rootControllable.gameExportControllable
-    }
-    var rootImportControllable: any ImportControllable {
-        root.rootControllable.gameImportControllable
-    }
 }
 
 extension GameController: TableGameStorable {
@@ -81,7 +78,7 @@ extension GameController: TableGameStorable {
     func requestTableResult(for itemId: UUID, diceId: UUID, diceResult: String, networkActions: NetworkActions?, valueActions: ValueActions) async {
         guard let networkActions else { return }
         _ = await setCurrent(itemId: itemId)
-        let diceNum = await root.diceRoot.diceGameControllable.number(for: diceId, result: diceResult)
+        let diceNum = await diceRoot.diceGameControllable.number(for: diceId, result: diceResult)
         guard let entryId = await entry(for: itemId, with: diceNum) else { return }
 
         let model = await gameItem(for: itemId)

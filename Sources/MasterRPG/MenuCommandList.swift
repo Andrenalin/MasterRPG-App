@@ -26,7 +26,7 @@ struct MenuCommandList: Commands {
                     AdventureCommands(root: appModel.adventureRoot)
                     ValueCommands(root: appModel.valueRoot)
                     PdfCommands(root: appModel.pdfRoot, navigator: appModel.navigator)
-                    TableCommands(root: appModel.tableRoot)
+                    TableCommands(root: appModel.tableRoot, navigator: appModel.navigator)
                     MapCommands(root: appModel.mapRoot)
                 }
                 Group {

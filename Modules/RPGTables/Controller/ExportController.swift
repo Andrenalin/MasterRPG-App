@@ -7,13 +7,13 @@ import DiceRPG
 
 struct ExportController: Sendable {
     @MainActor
-    init(root: TableRootModel, itemController: ItemController, gameExporter: Bool) {
-        self.root = root
+    init(diceRoot: DiceRootModel, itemController: ItemController, gameExporter: Bool) {
+        self.diceRoot = diceRoot
         self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
 
-    weak var root: TableRootModel!
+    let diceRoot: DiceRootModel
     let itemController: ItemController
 
     public let exportModel: ItemDataExportModel
@@ -25,7 +25,7 @@ extension ExportController: ExportControllable {
     }
 
     public func exportingAll() -> ItemModuleIds {
-        var allIds = root.diceRoot.exportControllable.exportingAll()
+        var allIds = diceRoot.exportControllable.exportingAll()
         allIds.merge(other: ItemModuleIds(dictionary: [itemController.itemDataModel.networkModule: itemController.itemDataModel.items.map { $0 }]))
         return allIds
     }
@@ -45,7 +45,7 @@ extension ExportController: ExportControllable {
             }
             results.insert(id)
     
-            if let diceId = item.diceId, root.diceRoot.linkController.validateLink(itemId: diceId) {
+            if let diceId = item.diceId, diceRoot.linkController.validateLink(itemId: diceId) {
                 diceIds.insert(diceId)
             }
     
@@ -56,7 +56,7 @@ extension ExportController: ExportControllable {
             links.forEach {
                 switch $0.module {
                 case .dice:
-                    if root.diceRoot.linkController.validateLink(itemId: $0.itemId) {
+                    if diceRoot.linkController.validateLink(itemId: $0.itemId) {
                         diceIds.insert($0.itemId)
                     }
                 case .table:
@@ -71,7 +71,7 @@ extension ExportController: ExportControllable {
         var allIds = itemIds
         allIds.ids[itemController.itemDataModel.networkModule] = Array(results)
 
-        let newDiceIds = root.diceRoot.exportControllable.exporting(ids: diceIds)
+        let newDiceIds = diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)
         return allIds
     }

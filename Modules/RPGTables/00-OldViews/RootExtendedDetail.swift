@@ -11,7 +11,7 @@ struct RootExtendedDetail: View {
     @Environment(TableRootModel.self) private var root
     
     var body: some View {
-        RootDetail(editController: root.editController(for: itemRowTreeModel, type: .main))
+        RootDetail(editController: root.editController)
             .environment(root.listController(tabId: tabId).model)
     }
 }
@@ -47,7 +47,7 @@ struct RootEditDetail: View {
     @State private var tabId = UUID()
     
     var editController: EditController {
-        root.editController(for: ItemRowTreeModel(itemId: itemId, typeId: .table), type: .module(.table))
+        root.editController
     }
 
     private var listController: ListController {

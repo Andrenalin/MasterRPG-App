@@ -263,7 +263,7 @@ extension MasterController {
         case .update:
             let (diceResult, resultCategory) = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
             if let diceResult, let resultCategory {
-                await root.tableRoot.gameControllable.addResult(resultCategory, value: diceResult)
+                await root.tableRoot.tableGameControllable.addResult(resultCategory, value: diceResult)
             }
         }
         return nil

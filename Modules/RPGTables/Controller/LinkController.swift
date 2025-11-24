@@ -7,11 +7,17 @@ import SwiftUI
 import os.log
 
 public struct LinkController: Sendable {
-    weak var root: TableRootModel!
+    init(diceRoot: DiceRootModel, itemController: ItemController, gameController: GameController) {
+        self.diceRoot = diceRoot
+        self.itemController = itemController
+        self.gameController = gameController
+    }
+    let diceRoot: DiceRootModel
     let itemController: ItemController
+    let gameController: GameController
     
     public var itemControllable: any ItemControllable {
-        itemController as ItemController
+        itemController
     }
 }
 
@@ -28,7 +34,7 @@ extension LinkController: LinkControllable {
                     await toggler?(itemId, itemControllable.itemDataModel.networkModule)
                 } else {
                     // command share
-                    await shareResult?.networkActions?.shareId(root.gameController.share(id: itemId))
+                    await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
                 }
             }
             return text
@@ -58,7 +64,7 @@ extension LinkController: LinkControllable {
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
         var result = content
         for link in links {
-            result = root.diceRoot.linkController.repairLink(link, for: result, for: [.table])
+            result = diceRoot.linkController.repairLink(link, for: result, for: [.table])
             result = repairLink(link, for: result, for: [.all])
         }
         return result
@@ -68,7 +74,7 @@ extension LinkController: LinkControllable {
         guard let inspectedItem = itemController.itemSync(for: itemId), let replacedItem = itemController.copy(of: itemId) else { return }
         
         if let diceId = replacedItem.diceId {
-            if !root.diceRoot.linkController.validateLink(itemId: diceId) {
+            if !diceRoot.linkController.validateLink(itemId: diceId) {
                 Logger.linkController.warning("Table: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
                 replacedItem.diceId = nil
             }
@@ -90,11 +96,11 @@ extension LinkController: LinkControllable {
         }
     }
     
-    @MainActor
-    public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
-        guard module == .table else { return nil }
-        return SheetController(root: root).sheet(for: itemId, level: level)
-    }
+//    @MainActor
+//    public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
+//        guard module == .table else { return nil }
+//        return SheetController(root: root).sheet(for: itemId, level: level)
+//    }
 }
 
 public extension LinkController {
@@ -143,11 +149,11 @@ public extension LinkController {
         return item.entries.map { ItemRowModel(itemId: rootId, entryId: $0.id, typeId: itemController.itemDataModel.networkModule) }
     }
     
-    @MainActor 
-    func generateItems(for rootId: UUID) -> ([ItemRowModel], String) {
-        let generatorStore = root.generatorController(rootItem: ItemRowModel(itemId: rootId, typeId: itemController.itemDataModel.networkModule))
-        return (generatorStore.roleResults(), generatorStore.entryValue)
-    }
+//    @MainActor 
+//    func generateItems(for rootId: UUID) -> ([ItemRowModel], String) {
+//        let generatorStore = root.generatorController(rootItem: ItemRowModel(itemId: rootId, typeId: itemController.itemDataModel.networkModule))
+//        return (generatorStore.roleResults(), generatorStore.entryValue)
+//    }
     
     @MainActor
     func generateItem(for tableId: UUID, entryId: UUID) -> (String, String) {

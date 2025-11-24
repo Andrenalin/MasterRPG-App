@@ -36,17 +36,6 @@ struct NewMapRoute: View {
     }
 }
 
-struct NewTableRoute: View {
-    let appModel: AppModel
-    let tabId: UUID
-    let isExtended: Bool
-    
-    var body: some View {
-            TableFactory.rootExtendedView(for: appModel.tableRoot, tabId: tabId)
-                .environment(appModel.tableRoot)
-    }
-}
-
 struct NewValueRoute: View {
     let appModel: AppModel
     let tabId: UUID

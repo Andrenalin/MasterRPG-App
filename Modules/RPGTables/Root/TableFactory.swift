@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import CoreExternalRPG
 import AndrenalinKit
 import DiceRPG
 import PdfRPG
@@ -8,40 +7,15 @@ import SwiftData
 import SwiftUI
 
 public enum TableFactory {
-    @MainActor
-    public static func root(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
+    @MainActor public static func root(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
         TableRootModel(container: container, diceRoot: diceRoot, pdfRoot: pdfRoot)
     }
 
-    @MainActor
-    public static func rootView(for root: TableRootModel, tabId: UUID) -> some View {
-        RootList(root: root, tabId: tabId, selection: true)
-            .itemSplitViewSizeMode(.wide)
+    @MainActor public static func rootView() -> some View {
+        TableRootView()
     }
 
-    @MainActor
-    public static func rootExtendedView(for root: TableRootModel, tabId: UUID) -> some View {
-        RootExtendedList(editController: root.editController(type: .main), tabId: tabId, selection: true)
-            .itemSplitViewSizeMode(.wide)
-            .navigationDestinationAutoReceive(InternalRoute.self)
-            .navigationAutoReceive(TableRoute.self)
-    }
-
-    @MainActor @ViewBuilder public static func detailView(root: TableRootModel) -> some View {
-        ExternalDetailView()
+    @MainActor public static func detailView(root: TableRootModel) -> some View {
+        ItemSplitDetailRootView(root: root.rootController)
     }
 }
-
-struct ExternalDetailView: View {
-    @Environment(TableRootModel.self) private var root
-    
-    var body: some View {
-        if let itemId = root.listController(tabId: KnownRoutes.mainTabId).model.selectedItem?.model.itemId {
-            TableRoute.detail(itemId)
-                .environment(root.listController(tabId: KnownRoutes.mainTabId).model)
-        } else {
-            SplitContentUnavailable(module: .table)
-        }
-    }
-}
-

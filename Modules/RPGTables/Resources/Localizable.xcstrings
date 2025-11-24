@@ -108,6 +108,7 @@
       }
     },
     "Change table links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -168,6 +169,7 @@
       }
     },
     "Duplicate %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -278,6 +280,7 @@
       }
     },
     "New Table" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -318,6 +321,7 @@
       }
     },
     "Redo %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -358,6 +362,7 @@
       }
     },
     "Show Tables" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -438,6 +443,7 @@
       }
     },
     "Undo %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

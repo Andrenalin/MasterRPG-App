@@ -30,7 +30,7 @@ struct ListTypeEditor: View {
 
             if editController.model.tableType == .dice {
                 ItemSelectionEditor(editController: editController, model: $model.diceId, title: "Dice", bundle: .module, value: .dice, inline: false) { diceId in
-                    root.viewController.rowDiceView(for: model.diceId, cacheItemListModel: editController.cacheItemListModel)
+                    root.viewController.rowDiceView(root: root, for: model.diceId, cacheItemListModel: editController.cacheItemListModel)
                 } selectorView: {
                     root.diceRoot.viewController.viewSelect(root: root.diceRoot, filter: .table, selection: {
                         guard let diceId = model.diceId else { return [] }

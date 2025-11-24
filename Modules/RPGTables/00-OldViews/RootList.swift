@@ -10,7 +10,7 @@ struct RootNaviList: View {
     
     var body: some View {
         ManagedNavigationStack {
-            RootExtendedList(editController: root.editController(type: .link), tabId: tabId, selection: false)
+            RootExtendedList(editController: root.editController, tabId: tabId, selection: false)
         }
     }
 }
@@ -32,7 +32,7 @@ struct RootList: View {
     
     var body: some View {
         NavigationSplitView(columnVisibility: $column) {
-            RootExtendedList(editController: root.editController(type: .main), tabId: tabId, selection: selection)
+            RootExtendedList(editController: root.editController, tabId: tabId, selection: selection)
                 .frame(minWidth: 250)
         } detail: {
             ManagedNavigationStack {

@@ -64,7 +64,7 @@ struct RootDetail: View {
         case .space:
             root.spaceRoot.viewController.detailEditor(root: root.spaceRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .table:
-            root.tableRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
+            root.tableRoot.viewController.detailEditor(root: root.tableRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .value:
             root.valueRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .weather:

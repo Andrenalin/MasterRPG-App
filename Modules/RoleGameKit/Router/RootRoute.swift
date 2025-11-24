@@ -177,7 +177,7 @@ struct RouteRouteDestionationView: View {
             case .settings:
                 SettingsView(store: appModel)
             case .tables:
-                NewTableRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                TableFactory.rootView()
             case .values:
                 NewValueRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
             case .weathers:

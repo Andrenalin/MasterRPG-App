@@ -69,17 +69,17 @@ struct RootQuickLinkEditor: View {
 
     var body: some View {
         @Bindable var model = editController.model
-        return QuickLinkEditor(editController: editController, linkController: root.rootControllable.linkControllable, model: $model.entries, title: model.name) {
-            QuickEditorAction(configs: configs, bundle: .module, afterEntries: $0) {
-                editController.scan(itemId: model.id, with: $0, module: $1, caseInsensitive: $2, words: $3)
-            } selectionView: { selectedIds, module, action in
-                switch module {
-                    case .dice:
-                        root.diceRoot.viewController.selectForScan(root: root.diceRoot, ids: selectedIds, dismissAction: action)
-                    default:
-                        root.viewController.selectForScan(ids: selectedIds, dismissAction: action)
-                }
-            }
+        return QuickLinkEditor(editController: editController, linkController: root.rootControllable.linkControllable, model: $model.entries, title: model.name) { _ in
+//            QuickEditorAction(configs: configs, bundle: .module, afterEntries: $0) { _,_,_,_ in
+//                //editController.scan(itemId: model.id, with: $0, module: $1, caseInsensitive: $2, words: $3)
+//            } selectionView: { selectedIds, module, action in
+//                switch module {
+//                    case .dice:
+//                        root.diceRoot.viewController.selectForScan(root: root.diceRoot, ids: selectedIds, dismissAction: action)
+//                    default:
+//                    root.viewController.selectForScan(root: root, ids: selectedIds, dismissAction: action)
+//                }
+//            }
         }
     }
     

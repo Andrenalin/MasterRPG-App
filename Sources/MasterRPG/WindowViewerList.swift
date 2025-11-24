@@ -8,6 +8,7 @@ import SwiftUI
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import RPGTables
 import WeatherRPG
 
 import GeneratorRPG
@@ -33,11 +34,10 @@ struct WindowViewerList: Scene {
                 appModel.spaceRoot.viewController.windowViewer(root: appModel.spaceRoot, selection: selection)
             }
             
+            windowGroup(model: appModel, module: .table) { selection in
+                appModel.tableRoot.viewController.windowViewer(root: appModel.tableRoot, selection: selection)
+            }
 
-//            windowGroup(model: appModel, module: .table) { selection in
-//                appModel.tableRoot.viewController.windowViewer(root: appModel.tableRoot, selection: selection)
-//            }
-//
             windowGroup(model: appModel, module: .weather) { selection in
                 appModel.weatherRoot.viewController.windowViewer(root: appModel.weatherRoot, selection: selection)
             }

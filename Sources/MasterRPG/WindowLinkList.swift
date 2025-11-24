@@ -27,8 +27,8 @@ struct WindowLinkList: Scene {
 //
             windowGroup(model: appModel, module: .pdf, key: "3", content: appModel.pdfRoot.viewController.linkWindow(root: appModel.pdfRoot))
 
-//            windowGroup(model: appModel, module: .table, key: "4", content: appModel.tableRoot.viewController.linkWindow(root: appModel.tableRoot))
-//
+            windowGroup(model: appModel, module: .table, key: "4", content: appModel.tableRoot.viewController.linkWindow(root: appModel.tableRoot))
+
 //            windowGroup(model: appModel, module: .map, key: "5", content: appModel.mapRoot.viewController.linkWindow(root: appModel.mapRoot))
 //
             windowGroup(model: appModel, module: .audio, key: "6", content: appModel.audioRoot.viewController.linkWindow(root: appModel.audioRoot))
@@ -46,8 +46,10 @@ struct WindowLinkList: Scene {
     
     private func windowGroup<Content: View>(model: AppModel, module: NetworkModules, key: KeyEquivalent, content: Content) -> some Scene {
         WindowGroup("\(module.title) Link", id: module.linkWindowId) {
-            content
-                .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
+            DataBaseAppStoreAvailable(appModel: model) { model in
+                content
+                    .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
+            }
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(model.windowPlacement(for: module))

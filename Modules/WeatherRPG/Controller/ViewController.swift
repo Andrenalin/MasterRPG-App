@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import Observation
 import SwiftUI
 import PhotoRPG
 

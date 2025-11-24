@@ -2,7 +2,6 @@
 
 import AndrenalinKit
 import CoreExternalRPG
-import SwiftData
 import SwiftUI
 
 @MainActor

@@ -14,7 +14,7 @@ public enum WeatherRootFactory {
         WeatherRootView()
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: WeatherRootModel) -> some View {
+    @MainActor public static func detailView(root: WeatherRootModel) -> some View {
         ItemSplitDetailRootView(root: root.rootController)
     }
 }

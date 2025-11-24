@@ -47,7 +47,7 @@ struct RootDetail: View {
         case .photo:
             root.photoRoot.viewController.detailEditor(root: root.photoRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .table:
-            root.tableRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
+            root.tableRoot.viewController.detailEditor(root: root.tableRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         default:
             ValueDetailEditor(editController: editController, model: editController.model)
         }

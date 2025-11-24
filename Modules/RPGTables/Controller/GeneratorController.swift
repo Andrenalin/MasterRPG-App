@@ -73,7 +73,7 @@ struct GeneratorController: Sendable {
     @MainActor
     init(root: TableRootModel, rootItemId: UUID, parentItem: ItemRowModel, listControllable: ListControllable) {
         self.root = root
-        let itemController = ItemController(root: root, dataController: nil)
+        let itemController = ItemController(dataController: nil, linkRegisterControllable: root.linkRegisterControllable)
         self.itemController = itemController
         self.listController = listControllable
         self.genDataModel = GeneratorDataModel(itemDataModel: itemController.itemDataModel, rootItemId: rootItemId)
@@ -85,7 +85,7 @@ struct GeneratorController: Sendable {
     @MainActor
     init(root: TableRootModel, rootItemId: UUID) {
         self.root = root
-        let itemController = ItemController(root: root, dataController: nil)
+        let itemController = ItemController(dataController: nil, linkRegisterControllable: root.linkRegisterControllable)
         self.itemController = itemController
         self.listController = ListController(itemController: itemController, listStoreName: "Table Generator", hasChildren: true, searchToken: .all, categoryTags: [], selectedItems: [])
         self.genDataModel = GeneratorDataModel(itemDataModel: itemController.itemDataModel, rootItemId: rootItemId)

@@ -45,7 +45,7 @@ struct MainRow: View {
             }
 
             HStack {
-                root.viewController.diceView(for: model.diceId, from: model.id)
+                root.viewController.diceView(root: root, for: model.diceId, from: model.id)
 
                 if let diceResult = model.diceResult, let diceId = model.diceId {
                     Button {

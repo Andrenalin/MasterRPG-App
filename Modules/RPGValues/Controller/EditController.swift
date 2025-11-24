@@ -523,7 +523,7 @@ extension EditController {
     @MainActor @ViewBuilder
     func selectTable(for entryId: UUID, linkKeyPath: WritableKeyPath<ValueModel, String>?, dismissAction: @escaping () -> Void) -> some View {
         if let linkKeyPath {
-            root.tableRoot.viewController.viewSelect(filter: .all, isGroupHidden: false) {
+            root.tableRoot.viewController.viewSelect(root: root.tableRoot, filter: .all, isGroupHidden: false) {
                 let text = self.model[keyPath: linkKeyPath]
                 return self.model.links(for: text).compactMap {
                     guard $0.module == .table else { return nil }
