@@ -75,7 +75,7 @@ public struct LinkHighlightTextView: View {
             .buttonBorderShape(.roundedRectangle(radius: 4))
 #endif
         } else {
-            RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Color.blue.opacity(0.35))
+            RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Color.accentColor.secondary)
         }
     }
 }

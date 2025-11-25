@@ -42,7 +42,7 @@ struct OldWindowMacList: Scene {
             
             Window("Table Generator", id: WindowIdentifier.generatorTableEditor.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.tableRoot.viewController.generatorEditorWindow()
+                    appModel.tableRoot.viewController.generatorEditorWindow(root: appModel.tableRoot)
                         .accentColor(NetworkModules.table.tint)
                         .tint(NetworkModules.table.tint)
                         .frame(minWidth: 600, minHeight: 400)

@@ -278,6 +278,7 @@
       }
     },
     "Table Viewer" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

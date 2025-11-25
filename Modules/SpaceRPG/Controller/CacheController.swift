@@ -32,6 +32,7 @@ extension CacheController: ImageCacheControllable {
             return await CacheController.generateThumbnail(for: url)
         }
         if let thumbnail {
+            await thumbnailCacheController.saveToDisk(thumbnail, for: itemId)
             await thumbnailCacheController.setObject(thumbnail, for: itemId)
         }
     }

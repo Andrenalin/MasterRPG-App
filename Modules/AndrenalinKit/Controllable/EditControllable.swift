@@ -244,9 +244,9 @@ public extension EditControllable {
     
     @MainActor func delete(itemId: UUID) {
         guard var item = editModel(for: itemId) else { return }
-//        if let fileUrl = item.fileUrl, let fileUrlDataController = fileUrlDataController {
-//            fileUrlDataController.delete(fileUrl)
-//        } - file needs to be deleted if real delete comes
+        //        if let fileUrl = item.fileUrl, let fileUrlDataController = fileUrlDataController {
+        //            fileUrlDataController.delete(fileUrl)
+        //        } - file needs to be deleted if real delete comes
         for entry in item.entries {
             if var entryItem = editModel(for: entry.childId) {
                 if item.category == .folder {
@@ -269,7 +269,7 @@ public extension EditControllable {
         item.displayState = 2
         save(updated: item, message: String(localized: "Delete").localizedString)
     }
-
+    
     @MainActor func restore(itemId: UUID) {
         guard var item = editModel(for: itemId) else { return }
         for entry in item.entries {
@@ -284,14 +284,14 @@ public extension EditControllable {
         item.displayState = 0
         save(updated: item, message: String(localized: "Restore item").localizedString)
     }
-
+    
     @MainActor func removeItem(offsets: IndexSet, item: any ItemDataAccessable) {
         guard var updatedModel = editModel(for: item.id) else { return }
         let removedEntries = updatedModel.entries.enumerated().filter { offsets.contains($0.offset) }
         var entries = updatedModel.entries
         entries.remove(atOffsets: offsets)
         updatedModel.entries = entries
-
+        
         if updatedModel.category == .folder {
             for (_, entry) in removedEntries {
                 delete(itemId: entry.childId)
@@ -299,13 +299,42 @@ public extension EditControllable {
         }
         save(updated: updatedModel, message: String(localized: "Delete item").localizedString)
     }
-
+    
     @MainActor func moveItems(source: IndexSet, destination: Int, item: any ItemDataAccessable) {
         guard var updatedModel = editModel(for: item.id) else { return }
         var entries = updatedModel.entries
         entries.move(fromOffsets: source, toOffset: destination)
         updatedModel.entries = entries
         save(updated: updatedModel, message: String(localized: "Move entries").localizedString)
+    }
+}
+
+public extension EditControllable {
+    @MainActor func insert(entry: any EntryDataAccessable, item: any ItemDataAccessable) {
+        guard var updatedModel = editModel(for: item.id) else { return }
+        guard let entry = entry as? Model.Entry else { return }
+        var entries = updatedModel.entries
+        entries.append(entry)
+        updatedModel.entries = entries
+        save(updated: updatedModel, message: String(localized: "Append Entry").localizedString)
+    }
+    
+    @MainActor func remove(entry indexSet: IndexSet, item: any ItemDataAccessable) {
+        guard var updatedModel = editModel(for: item.id) else { return }
+        var entries = updatedModel.entries
+        entries.remove(atOffsets: indexSet)
+        updatedModel.entries = entries
+        
+        save(updated: updatedModel, message: String(localized: "Delete Entries").localizedString)
+    }
+    
+    @MainActor func remove(entryId: UUID, item: any ItemDataAccessable) {
+        guard var updatedModel = editModel(for: item.id) else { return }
+        var entries = updatedModel.entries
+        entries.removeAll(where: { $0.id == entryId})
+        updatedModel.entries = entries
+        
+        save(updated: updatedModel, message: String(localized: "Delete Entry").localizedString)
     }
 }
 

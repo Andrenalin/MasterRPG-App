@@ -62,18 +62,6 @@ struct OldWindowMacVisionList: Scene {
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
             .defaultWindowPlacementAll( .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue))
-            
-            WindowGroup("Table Viewer", id: WindowIdentifier.tableViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.tableRoot.viewController.tableSheetWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
-                        .accentColor(.teal)
-                        .tint(.teal)
-                        .frame(minWidth: 600, minHeight: 400)
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll( .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue))
-            
         }
         .defaultSize(CGSize(width: 600, height: 800))
     }

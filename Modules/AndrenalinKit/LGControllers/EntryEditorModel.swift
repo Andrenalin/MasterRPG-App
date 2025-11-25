@@ -22,7 +22,7 @@ public protocol EntryPersistentModel: Identifiable {
 }
 
 public protocol EntryEditModel {
-    associatedtype DataModel: EntryPersistentModel
+    associatedtype DataModel: (EntryDataAccessable & EntryPersistentModel)
     var id: UUID { get }
     var entries: [DataModel] { get nonmutating set }
     
@@ -30,7 +30,7 @@ public protocol EntryEditModel {
 }
 
 public protocol EntryEditControllable: Sendable {
-    associatedtype EditDataModel: EntryEditModel
+    associatedtype EditDataModel: (ItemDataAccessable & EntryEditModel)
     
     var editControllable: any EditControllable { get }
     var editorModel: EntryEditorModel { get }
@@ -44,29 +44,22 @@ public extension EntryEditControllable {
     }
     
     @MainActor func remove(_ indexSet: IndexSet, from model: EditDataModel) {
-        model.entries.remove(atOffsets: indexSet)
+        editControllable.remove(entry: indexSet, item: model)
     }
     
     @MainActor func move(_ indexSet: IndexSet, index: Int, from model: EditDataModel) {
-        var changedEntries = model.entries
-        changedEntries.move(fromOffsets: indexSet, toOffset: index)
-        model.entries = changedEntries
+        editControllable.moveItems(source: indexSet, destination: index, item: model)
     }
             
     @MainActor func duplicate(entry: EditDataModel.DataModel, in model: EditDataModel) -> UUID {
         //ItemDataModel.duplicateName(from: entry.name)
         let duplicat = entry.duplicate(name: entry.name + " Copy", index: model.entries.count)
-        var entries = model.entries
-        entries.append(duplicat)
-        model.entries = entries
+        editControllable.insert(entry: duplicat, item: model)
         return duplicat.id
     }
     
     @MainActor func remove(entry: EditDataModel.DataModel, in model: EditDataModel) {
-        var entries = model.entries
-        guard let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
-        entries.remove(at: index)
-        model.entries = entries
+        editControllable.remove(entryId: entry.id, item: model)
     }
     
     func rowText(entry: EditDataModel.DataModel) -> String {
