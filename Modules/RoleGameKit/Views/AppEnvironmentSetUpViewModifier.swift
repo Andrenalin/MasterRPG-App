@@ -32,7 +32,7 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.spaceRoot)
             .environment(appModel.tableRoot)
             .environment(appModel.weatherRoot)
-//            .environment(appModel.linkRootController)
+            .environment(appModel.linkRootController)
             .environment(appModel)
             .observeRotate(with: appModel.deviceRotationModel)
     }

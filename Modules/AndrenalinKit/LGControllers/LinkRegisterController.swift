@@ -5,7 +5,7 @@ import SwiftData
 
 @MainActor
 public struct LinkRegisterController {
-    public  init(container: ModelContainer, itemControllable: any ItemControllable) {
+    public init(container: ModelContainer, itemControllable: any ItemControllable) {
         self.container = container
         self.itemControllable = itemControllable
     }

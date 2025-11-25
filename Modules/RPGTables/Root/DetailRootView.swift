@@ -21,6 +21,7 @@ struct DetailRootView: View {
     let isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
+    @Environment(LinkRootController.self) private var linkRootController
     
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.table.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
@@ -38,11 +39,13 @@ struct DetailRootView: View {
     func content(listController: any FolderListControllable) -> some View {
         ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: false) {
         } editor: {
-            //WeatherEditor(model: model)
+            detailEditorView
         } inspector: {
             if !isSubFolder {
                 root.diceRoot.viewController.linkWindow(root: root.diceRoot, isInspector: true)
             }
+        } entryEditor: {
+            EntryEditorView(entryEditController: root.entryEditController, linkRootController: linkRootController, model: model)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -58,6 +61,19 @@ struct DetailRootView: View {
         .environment(root.rootController)
         .tint(root.module.tint)
         .accentColor(root.module.tint)
+    }
+    
+    @ViewBuilder
+    var detailEditorView: some View {
+        root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.tableEditModel.selectionDice)
+            .onChange(of: root.editController.tableEditModel.selectionDice.selection) {
+                withAnimation { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, model: model) }
+            }
+            .onChange(of: model.diceId, initial: true) {
+                withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId) }
+            }
+        
+        EntryListView(entryEditController: root.entryEditController, model: model)
     }
 }
 

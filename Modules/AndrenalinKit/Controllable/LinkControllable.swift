@@ -50,7 +50,7 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
 }
 
 public protocol LinkControllable: Sendable {
-    var itemControllable: any ItemControllable { get }
+    @MainActor var itemControllable: any ItemControllable { get }
 
     // MARK: - Handle Link
     @MainActor

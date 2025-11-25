@@ -22,11 +22,12 @@ struct MyAppPackage: AppIntentsPackage {
         AudioFrameworkPackage.self,
 //        CharacterFrameworkPackage.self,
         DiceFrameworkPackage.self,
+//        GeneratorFrameworkPackage.self,
 //        MapFrameworkPackage.self,
         PdfFrameworkPackage.self,
         PhotoFrameworkPackage.self,
         SpaceFrameworkPackage.self,
-//        TableFrameworkPackage.self,
+        TableFrameworkPackage.self,
         WeatherFrameworkPackage.self,
        ]
    }

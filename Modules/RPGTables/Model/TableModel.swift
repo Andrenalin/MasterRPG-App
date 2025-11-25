@@ -113,6 +113,8 @@ extension TableModel: Comparable {
     }
 }
 
+extension TableModel: EntryEditModel {}
+
 extension TableModel: ItemLinkRegistable {
     @MainActor
     public var linkRegisterModels: [LinkRegisterModel] {

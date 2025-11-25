@@ -1,0 +1,84 @@
+// @copyright André Trettin
+
+import Foundation
+import SwiftUI
+
+public struct EntryListView<Controller: EntryEditControllable>: View {
+    public init(entryEditController: Controller, model: Controller.EditDataModel) {
+        self.entryEditController = entryEditController
+        self.model = model
+    }
+    
+    let entryEditController: Controller
+    let model: Controller.EditDataModel
+        
+    @Namespace private var zoomNamespace
+    
+    public var body: some View {
+        ForEach(model.entries) { entry in
+            EntryEditRow(entryEditController: entryEditController, entry: entry, cacheItemListModel: entryEditController.cacheItemListModel)
+                .modifier(ZoomDestinationViewModifier(sourceID: entry.id.uuidString, namespace: zoomNamespace))
+                .contextMenu {
+                    duplicateButton(entry: entry)
+                    Divider()
+                    removeButton(entry: entry)
+                }
+#if !os(tvOS)
+                .swipeActions(edge: .leading) {
+                    editButton(id: entry.id)
+                }
+#endif
+        }
+        .onDelete { indexSet in
+            entryEditController.remove(indexSet, from: model)
+        }
+        .onMove { indexSet, index in
+            entryEditController.move(indexSet, index: index, from: model)
+        }
+        .onAppear {
+            entryEditController.editorModel.zoomNamespaceId = zoomNamespace
+        }
+    }
+}
+
+private extension EntryListView {
+    func editButton(id: UUID) -> some View {
+        Button {
+            withAnimation { entryEditController.editorModel.currentEntryId = id }
+        } label: {
+            Image(systemName: "pencil")
+        }
+    }
+    
+    func duplicateButton(entry: Controller.EditDataModel.DataModel) -> some View {
+        Button {
+            withAnimation {
+                let newId = entryEditController.duplicate(entry: entry, in: model)
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(0.25))
+                    entryEditController.editorModel.currentEntryId = newId
+                }
+            }
+        } label: {
+            Label {
+                Text("Duplicate \(entry.name)", bundle: .module)
+            } icon: {
+                Image(systemName: "doc.on.doc")
+            }
+        }
+    }
+
+    func removeButton(entry: Controller.EditDataModel.DataModel) -> some View {
+        Button(role: .destructive) {
+            withAnimation {
+                entryEditController.remove(entry: entry, in: model)
+            }
+        } label: {
+            Label {
+                Text("Delete \(entry.name)", bundle: .module)
+            } icon: {
+                Image(systemName: "trash")
+            }
+        }
+    }
+}

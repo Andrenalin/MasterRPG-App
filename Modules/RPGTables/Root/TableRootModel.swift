@@ -93,6 +93,9 @@ public final class TableRootModel: @unchecked Sendable {
     
     @ObservationIgnored private(set) var _editController: EditController?
     var editController: EditController { _editController.unsafelyUnwrapped }
+    @MainActor @ObservationIgnored lazy var entryEditController: EntryEditController = {
+        EntryEditController(editController: editController)
+    }()
     @ObservationIgnored private(set) var _exportController: ExportController?
     var exportController: ExportController { _exportController.unsafelyUnwrapped }
     @ObservationIgnored private(set) var _importController: ImportController?
@@ -210,7 +213,7 @@ extension TableRootModel {
 
     @MainActor
     public func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
-        SheetController(root: self).sheet(for: itemId, level: level)
+        SheetController(itemController: itemController).sheet(for: itemId, level: level)
     }
     
     @MainActor

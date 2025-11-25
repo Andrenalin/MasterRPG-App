@@ -23,10 +23,10 @@ public extension ViewController {
             .environment(root)
     }
     
-//    func selectionView(root: DiceRootModel, model: ItemSelectionModel) -> some View {
-//        DiceDropChooseView(model: model)
-//            .environment(root)
-//    }
+    func selectionView(root: DiceRootModel, model: ItemSelectionModel) -> some View {
+        DiceDropChooseView(model: model)
+            .environment(root)
+    }
 }
 
 

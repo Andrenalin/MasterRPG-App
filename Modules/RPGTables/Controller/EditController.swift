@@ -34,7 +34,7 @@ struct EditController: Sendable {
     let linkRegisterControllable: any LinkRegisterControllable
     let editorModel: ItemEditorModel
     let tableEditModel: TableEditModel
-    let diceRoot: DiceRootModel
+    let diceRoot: DiceRootModel    
 }
 
 extension EditController: EntryDataEditable {
@@ -65,6 +65,18 @@ extension EditController: EntryDataEditable {
         tableEditModel.resetLinks()
     }
 }
+
+// MARK: - Module Editor
+
+extension EditController {
+    @MainActor func add(diceId: UUID?, model: TableModel) {
+        model.diceId = diceId
+        save(with: "Add Dice")
+    }
+}
+
+// MARK: Quick Editor
+
 
 // MARK: - Selection
 

@@ -21,7 +21,7 @@ struct TableSheet: View {
 
     func resetModels() {
         withAnimation {
-            sheetModel = SheetController(root: root).sheet(for: model.id)
+            sheetModel = SheetController(itemController: root.itemController).sheet(for: model.id)
         }
     }
 }

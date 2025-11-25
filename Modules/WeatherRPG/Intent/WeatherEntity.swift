@@ -49,15 +49,12 @@ struct WeatherEntity: IndexedEntity {
 
 extension WeatherEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
-            let url = URL.documentsDirectory.appending(path: "\(landmark.name).pdf")
+        FileRepresentation(exportedContentType: .pdf) { @MainActor item in
+            let url = URL.documentsDirectory.appending(path: "\(item.name).pdf")
 
             let renderer = ImageRenderer(content: VStack {
-//                Image(landmark.landmark.backgroundImageName)
-//                    .resizable()
-//                    .aspectRatio(contentMode: .fit)
-                Text(landmark.name)
-                Text(landmark.description)
+                Text(item.name)
+                Text(item.description)
             }.frame(width: 600))
 
             renderer.render { size, renderer in

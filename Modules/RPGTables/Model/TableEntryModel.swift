@@ -99,3 +99,9 @@ extension TableEntryModel {
         return "\(content)\(otherValue)"
     }
 }
+
+extension TableEntryModel: EntryPersistentModel {
+    public func duplicate(name: String, index: Int) -> TableEntryModel {
+        TableEntryModel(id: id, name: name, content: content, displayState: 0, diceResult: nil)
+    }
+}

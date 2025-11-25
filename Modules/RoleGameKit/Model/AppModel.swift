@@ -74,6 +74,9 @@ public final class AppModel: Sendable {
 
     private let root: RootManager
     
+    // Root Controllers
+    public let linkRootController: LinkRootController
+
     @MainActor public init() {
         self.deviceRotationModel = DeviceRotationModel()
         self.optionKeyDownModel = OptionKeyDownModel()
@@ -155,7 +158,8 @@ public final class AppModel: Sendable {
             weatherRoot: spaceRoot
         )
 #endif
-
+        
+        self.linkRootController = LinkRootController(container: modelContainer, root: root)
     }
 }
  

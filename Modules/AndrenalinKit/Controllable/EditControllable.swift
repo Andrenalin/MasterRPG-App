@@ -18,7 +18,6 @@ public protocol EditControllable: Sendable {
 
     var editorModel: ItemEditorModel { get }
 
-
     @MainActor
     var model: Model { get set }
 
