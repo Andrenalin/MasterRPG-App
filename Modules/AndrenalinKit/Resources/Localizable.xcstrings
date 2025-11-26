@@ -910,6 +910,12 @@
         }
       }
     },
+    "Edit %@" : {
+
+    },
+    "Edit entry" : {
+
+    },
     "Edit Group %@" : {
       "localizations" : {
         "de" : {

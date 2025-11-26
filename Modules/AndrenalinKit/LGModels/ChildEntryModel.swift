@@ -17,7 +17,8 @@ public struct ChildEntryModel: Identifiable, Equatable, Hashable, Codable {
 
 extension ChildEntryModel: EntryDataAccessable {
     public var name: String {
-        "Photo"
+        get { "Photo" }
+        set {}
     }
         
     public static var empty: ChildEntryModel { empty(UUID()) }

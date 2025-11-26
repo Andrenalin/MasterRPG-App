@@ -8,7 +8,7 @@ import SwiftUI
 struct QuickEntryEditor: View {
     init(editController: EditController) {
         self.editController = editController
-        self.textEditModel = TextEditModel(linkRegisterController: editController.linkRegisterControllable, source: ItemRowModel(itemId: editController.model.id, typeId: .table), text: "")
+        self.textEditModel = TextEditModel(linkRegisterController: editController.linkRegisterControllable)
     }
     
     let editController: EditController
@@ -25,7 +25,9 @@ struct QuickEntryEditor: View {
         case editor
     }
     @FocusState private var focusedField: Field?
-    
+
+    @State private var textEditModel: TextEditModel
+
     @State private var referenceText = DebouncerModel(initialValue: "", delay: 2)
     @State private var model: TableModel = .empty
     @State private var entries: [TableEntryModel] = []
@@ -36,8 +38,6 @@ struct QuickEntryEditor: View {
     
     @State private var showEffectedLinksAlert: Bool = false
     @State private var editorModel = RemoveEntryListModel()
-
-    @State private var textEditModel: TextEditModel
     
     var body: some View {
             contentView
@@ -105,9 +105,11 @@ private extension QuickEntryEditor {
     private var entryListView: some View {
         List {
             ForEach(model.entries) { entry in
-                EntryRow(model: model, item: ItemRowTreeModel(itemId: model.id, entryId: entry.id, typeId: root.itemController.itemDataModel.networkModule), isEditing: false, cacheItemListModel: CacheItemListModel())
-                    .foregroundStyle(.primary)
-                    .environment(ListModel.preview)
+                EntryEditRow(editController: editController, entry: entry, cacheItemListModel: editController.cacheItemListModel)
+
+//                EntryRow(model: model, item: ItemRowTreeModel(itemId: model.id, entryId: entry.id, typeId: root.itemController.itemDataModel.networkModule), isEditing: false, cacheItemListModel: CacheItemListModel())
+//                    .foregroundStyle(.primary)
+//                    .environment(ListModel.preview)
             }
         }
 #if !os(tvOS)

@@ -18,8 +18,9 @@ public struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable {
 
 extension AudioEntryModel: EntryDataAccessable {
     public var name: String {
-        "Track"
-    }
+        get { "Track" }
+        set {}
+    }    
     public var childId: UUID { audioId }
     
     public static var empty: AudioEntryModel { empty(UUID()) }

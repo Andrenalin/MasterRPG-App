@@ -3,15 +3,15 @@
 import Foundation
 import SwiftUI
 
-public struct EntryEditRow<Controller: EntryEditControllable>: View {
-    public init(entryEditController: Controller, entry: Controller.EditDataModel.DataModel, cacheItemListModel: CacheItemListModel) {
-        self.entryEditController = entryEditController
+public struct EntryEditRow: View {
+    public init(editController: any EntryDataEditable, entry: any EntryDataAccessable , cacheItemListModel: CacheItemListModel) {
+        self.editController = editController
         self.entry = entry
         self.cacheItemListModel = cacheItemListModel
     }
 
-    let entryEditController: Controller
-    let entry: Controller.EditDataModel.DataModel
+    let editController: any EntryDataEditable
+    let entry: any EntryDataAccessable
     let cacheItemListModel: CacheItemListModel
     
     @Environment(LinkRootController.self) private var linkController
@@ -23,7 +23,6 @@ public struct EntryEditRow<Controller: EntryEditControllable>: View {
     }
 
     private var linkTextModel: LinkHighlightTextModel {
-        entryEditController.linkTextModel(for: entry, linkController: linkController, searchModel: searchModel)
+        editController.linkTextModel(for: entry, linkController: linkController, searchModel: searchModel)
     }
 }
-

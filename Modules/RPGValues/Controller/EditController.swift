@@ -57,10 +57,9 @@ extension EditController: EntryDataEditable {
         add(entry: entry, into: itemId)
     }
 
-    @MainActor
-    func copy(entryId: UUID, shouldSave: Bool) {
-        Task { @MainActor in
-            var duplicate = model[entryId].duplicate()
+    @discardableResult @MainActor func copy(entryId: UUID, shouldSave: Bool) -> UUID {
+        var duplicate = model[entryId].duplicate()
+        Task {
             if let subValueId = duplicate.valueId {
                 let newId = await root.itemController.duplicate(itemId: subValueId)
                 duplicate.valueId = newId
@@ -71,6 +70,7 @@ extension EditController: EntryDataEditable {
                 save(with: String(localized: "Copy entry \(name)").localizedString)
             }
         }
+        return duplicate.id
     }
 
     @MainActor func didSetModel() {

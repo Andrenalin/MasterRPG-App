@@ -63,7 +63,8 @@ extension DieModel {
     }
     
     public var name: String {
-        name(for: 1)
+        get { name(for: 1) }
+        set {}
     }
 
     func name(for number: Int) -> String {

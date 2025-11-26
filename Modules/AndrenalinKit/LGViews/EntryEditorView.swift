@@ -3,30 +3,22 @@
 import Foundation
 import SwiftUI
 
-public struct EntryEditorView<Controller: EntryEditControllable>: View {
-    public init(entryEditController: Controller, model: Controller.EditDataModel) {
-        self.entryEditController = entryEditController
-        self.model = model
-        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: entryEditController.editControllable.linkRegisterControllable, source: ItemRowModel(itemId: model.id, typeId: entryEditController.module), text: ""))
-        self._name = State(wrappedValue: "")
+public struct EntryEditorView: View {
+    public init(editController: any EntryDataEditable) {
+        self.editController = editController
+        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: editController.linkRegisterControllable))
     }
     
-    let entryEditController: Controller
-    let model: Controller.EditDataModel
-    
+    let editController: any EntryDataEditable
     @FocusState private var currentFocus: EntryEditorFocusField?
-    
     @State private var editModel: TextEditModel
-    @State private var name: String
-
+    
     public var body: some View {
         Group {
             if isActive {
                 content(entry: entry)
                     .onAppear {
-                        editModel.text = entry.content
-                        editModel.resetAttributedText()
-                        name = entry.name
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.model.id, typeId: editController.itemControllable.itemDataModel.networkModule))
                     }
             }
         }
@@ -34,13 +26,13 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
         .animation(.bouncy, value: isActive)
     }
     
-    func content(entry: Controller.EditDataModel.DataModel) -> some View {
+    func content(entry: any EntryDataAccessable) -> some View {
         VStack {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Button {
-                            withAnimation { entryEditController.editorModel.currentEntryId = nil }
+                            withAnimation { editController.editorModel.currentEntryId = nil }
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.headline)
@@ -64,9 +56,9 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
                     }
                     .buttonStyle(.borderless)
 
-                    EntryNameEditor(entryEditController: entryEditController, model: model, entryId: entry.id, currentFocus: $currentFocus)
+                    EntryNameEditor(editModel: editModel, currentFocus: $currentFocus)
                     
-                    EntryContentEditor(entryEditController: entryEditController, model: model, entryId: entry.id, currentFocus: $currentFocus, editModel: $editModel)
+                    EntryContentEditor(editModel: editModel, currentFocus: $currentFocus)
                 }
                 .padding()
                 .background {
@@ -82,22 +74,22 @@ public struct EntryEditorView<Controller: EntryEditControllable>: View {
     }
     
     var backGroundColor: Color {
-        entryEditController.module.color
+        editController.itemControllable.itemDataModel.networkModule.color
     }
     
     var isActive: Bool {
-        entry.id == entryEditController.editorModel.currentEntryId
+        entry.id == editController.editorModel.currentEntryId
     }
         
-    var entry: Controller.EditDataModel.DataModel {
-        model[entryEditController.editorModel.currentEntryId ?? UUID()]
+    var entry: any EntryDataAccessable {
+        editController.model[editController.editorModel.currentEntryId ?? UUID()]
     }
     
     func save() {
         editModel.resetText()
         withAnimation {
-//            entryEditController.update(entry: entry, name: name, content: editModel.text)
-            entryEditController.editorModel.currentEntryId = nil
+            editController.update(entryId: entry.id, name: editModel.name, content: editModel.text)
+            editController.editorModel.currentEntryId = nil
         }
     }
 }
@@ -108,21 +100,20 @@ enum EntryEditorFocusField {
 }
 
 
-struct EntryNameEditor<Controller: EntryEditControllable>: View {
-    let entryEditController: Controller
-    let model: Controller.EditDataModel
-    let entryId: UUID
+struct EntryNameEditor: View {
+    let editModel: TextEditModel
     @FocusState.Binding var currentFocus: EntryEditorFocusField?
     
     var body: some View {
-                
+        @Bindable var editModel = editModel
+        
         Text("Name", bundle: .module)
             .font(.caption)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
         
         HStack {
-            TextField(text: entryName, prompt: Text("Enter a name", bundle: .module)) {
+            TextField(text: $editModel.name, prompt: Text("Enter a name", bundle: .module)) {
                 Text("Name", bundle: .module)
             }
             .focused($currentFocus, equals: .name)
@@ -130,12 +121,12 @@ struct EntryNameEditor<Controller: EntryEditControllable>: View {
             .textFieldStyle(.plain)
             
             Button {
-                withAnimation { entryName.wrappedValue = "" }
+                withAnimation { editModel.name = "" }
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundColor(.secondary)
             }
-            .opacity(entryName.wrappedValue.isEmpty ? 0: 1)
+            .opacity(editModel.name.isEmpty ? 0: 1)
             .contentTransition(.symbolEffect(.automatic))
         }
         .padding(6)
@@ -144,22 +135,11 @@ struct EntryNameEditor<Controller: EntryEditControllable>: View {
                 .stroke(.secondary, lineWidth: 1)
         }
     }
-    
-    var entryName: Binding<String> {
-        Binding {
-            model[entryId].name
-        } set: {
-            model[entryId].name = $0
-        }
-    }
 }
 
-struct EntryContentEditor<Controller: EntryEditControllable>: View {
-    let entryEditController: Controller
-    let model: Controller.EditDataModel
-    let entryId: UUID
+struct EntryContentEditor: View {
+    let editModel: TextEditModel
     @FocusState.Binding var currentFocus: EntryEditorFocusField?
-    @Binding var editModel: TextEditModel
 
     var body: some View {
         Text("Description", bundle: .module)
@@ -179,13 +159,5 @@ struct EntryContentEditor<Controller: EntryEditControllable>: View {
             .focused($currentFocus, equals: .information)
         
 #endif
-    }
-    
-    var entryContent: Binding<String> {
-        Binding {
-            model[entryId].content
-        } set: {
-            model[entryId].content = $0
-        }
     }
 }

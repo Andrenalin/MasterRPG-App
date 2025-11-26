@@ -18,7 +18,8 @@ public struct SpaceEntryModel: Identifiable, Equatable, Hashable, Codable {
 
 extension SpaceEntryModel: EntryDataAccessable {
     public var name: String {
-        "Space Model"
+        get { "Space Model" }
+        set {}
     }
     public var childId: UUID { spaceId }
     

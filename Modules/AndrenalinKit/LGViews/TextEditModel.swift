@@ -5,23 +5,28 @@ import SwiftData
 import SwiftUI
 
 @Observable public final class TextEditModel {
-    @MainActor public init(linkRegisterController: LinkRegisterControllable, source: ItemRowModel, text: String = "") {
+    @MainActor public init(linkRegisterController: LinkRegisterControllable) {
         self.linkRegisterController = linkRegisterController
-        self.source = source
-        self.text = text
-        self.attributedText = AttributedString("")
-        
-        resetAttributedText()
     }
     
     let linkRegisterController: LinkRegisterControllable
-    let source: ItemRowModel
+    var source: ItemRowModel = ItemRowModel(itemId: UUID(), typeId: .none)
     
-    public var text: String
-    public var attributedText: AttributedString
+    public var name: String = ""
+    public var text: String = ""
+    
+    public var attributedText: AttributedString = AttributedString("")
 
     var links: [LinkRegisterModel] = []
-    
+
+    @MainActor func reset(entry: any EntryDataAccessable, source: ItemRowModel) {
+        self.source = source
+        name = entry.name
+        text = entry.content
+        
+        resetAttributedText()
+    }
+
     @MainActor public func resetAttributedText() {
         var att = AttributedString(text)
         links = linkRegisterController.linkRegisterModel(in: text, for: source)

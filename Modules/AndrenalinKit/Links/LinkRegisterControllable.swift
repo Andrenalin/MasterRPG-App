@@ -14,6 +14,10 @@ public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
     public let name: String
     public let source: ItemRowModel
     public let destination: ItemRowModel
+    
+    public func duplicate() -> LinkRegisterModel {
+        LinkRegisterModel(name: name, source: source, destination: destination)
+    }
 }
 
 public protocol ItemLinkRegistable {

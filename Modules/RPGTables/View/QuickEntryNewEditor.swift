@@ -11,7 +11,7 @@ struct QuickEntryNewEditor: View {
         self.entryEditController = entryEditController
         self.currentModel = currentModel
         self._model = State(wrappedValue: currentModel)
-        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: entryEditController.editController.linkRegisterControllable, source: ItemRowModel(itemId: currentModel.id, typeId: entryEditController.module), text: ""))
+        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: entryEditController.editController.linkRegisterControllable))
     }
     
     let entryEditController: EntryEditController
@@ -161,7 +161,7 @@ private extension QuickEntryNewEditor {
     private var entryListView: some View {
         List {
             ForEach(model.entries, id: \.id) { entry in
-                EntryEditRow(entryEditController: entryEditController, entry: entry, cacheItemListModel: entryEditController.cacheItemListModel)
+                EntryEditRow(editController: entryEditController.editController, entry: entry, cacheItemListModel: entryEditController.cacheItemListModel)
             }
         }
 #if !os(tvOS)

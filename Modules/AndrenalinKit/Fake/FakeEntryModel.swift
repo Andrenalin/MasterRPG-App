@@ -13,7 +13,7 @@ public struct FakeEntryModel: Identifiable, Equatable, Hashable, Codable, @unche
     public var id: UUID
     public var childId: UUID
     public var name: String
-    var content: String
+    public var content: String
     public var displayState: Int
 }
 

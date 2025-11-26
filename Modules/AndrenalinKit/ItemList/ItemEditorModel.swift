@@ -22,6 +22,8 @@ public final class ItemEditorModel: Sendable {
     public var currentEntryId: UUID?
     public var currentSecondaryId: UUID?
 
+    public var zoomNamespaceId: Namespace.ID?
+    
     public var activateFocus: Bool = false
     public var activateDetailEditMode: Bool = false
 

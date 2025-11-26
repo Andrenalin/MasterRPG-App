@@ -18,7 +18,8 @@ public struct PhotoEntryModel: Identifiable, Equatable, Hashable, Codable {
 
 extension PhotoEntryModel: EntryDataAccessable {
     public var name: String {
-        "Photo"
+        get { "Photo" }
+        set {}
     }
     
     public var childId: UUID { photoId }

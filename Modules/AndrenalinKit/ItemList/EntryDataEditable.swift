@@ -6,7 +6,7 @@ import SwiftUI
 public protocol EntryDataEditable: EditControllable {
     func editEntries(for item: Model) -> [Model.Entry]
 
-    @MainActor func copy(entryId: UUID, shouldSave: Bool)
+    @discardableResult @MainActor func copy(entryId: UUID, shouldSave: Bool) -> UUID
     @MainActor func remove(entryId: UUID)
     @MainActor func remove(entryId: UUID, shouldSave: Bool)
 }
@@ -20,7 +20,7 @@ public extension EntryDataEditable {
     func editEntries(for item: Model) -> [Model.Entry] {
         item.entries
     }
-
+    
     @MainActor
     func validateEntries() {
         var seenIds: Set<UUID> = []
@@ -29,7 +29,7 @@ public extension EntryDataEditable {
             seenIds.insert($0.id)
             return result
         }) else { return }
-
+        
         var entries: [Model.Entry] = []
         seenIds = []
         model.entries.forEach { entry in
@@ -39,7 +39,7 @@ public extension EntryDataEditable {
         }
         model.entries = entries
     }
-
+    
     @MainActor
     func addNewEntry() -> UUID {
         let entry = Model.Entry.empty
@@ -47,19 +47,19 @@ public extension EntryDataEditable {
         editorModel.activateDetailEditMode = false
         return entry.id
     }
-
+    
     @MainActor
     func add(entry: Model.Entry) {
         add(entry: entry, into: model)
     }
-
+    
     @MainActor
     func add(entry: Model.Entry, into itemId: UUID, index: Int? = nil) {
         let item = model.id == itemId ? model : itemControllable.itemOrEmpty(for: itemId).copy() as? Model
         guard let item else { return }
         add(entry: entry, into: item, index: index)
     }
-
+    
     @MainActor
     private func add(entry: Model.Entry, into item: Model, index: Int? = nil) {
         var item = item
@@ -80,14 +80,14 @@ public extension EntryDataEditable {
         save(with: String(localized: "Copy entries").localizedString)
     }
     
-    @MainActor
-    func copy(entryId: UUID, shouldSave: Bool) {
+    @discardableResult @MainActor func copy(entryId: UUID, shouldSave: Bool) -> UUID {
         let duplicate = model[entryId].duplicate()
         model.entries.append(duplicate)
         if shouldSave {
             let name = String(duplicate.name.prefix(16))
             save(with: String(localized: "Copy entry \(name)").localizedString)
         }
+        return duplicate.id
     }
     
     @MainActor
@@ -103,12 +103,12 @@ public extension EntryDataEditable {
         }
         save(with: String(localized: "Remove entries").localizedString)
     }
-
+    
     @MainActor
     func remove(entryId: UUID) {
         remove(entryId: entryId, shouldSave: true)
     }
-
+    
     @MainActor
     func remove(entryId: UUID, shouldSave: Bool) {
         guard let index = model.entries.firstIndex(where: { $0.id == entryId }) else { return }
@@ -116,6 +116,32 @@ public extension EntryDataEditable {
         if shouldSave {
             save(with: String(localized: "Remove entry").localizedString)
         }
+    }
+    
+    @MainActor func update(entryId: UUID, name: String, content: String) {
+        var changed = model[entryId].name != name.withoutLink()
+        model[entryId].name <=> name.withoutLink()
+
+        let links = linkRegisterControllable.linkRegisterModel(in: content, for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.itemDataModel.networkModule))
+        var seenIds: Set<UUID> = []
+        var newContent = content
+        for link in links {
+            guard seenIds.contains(link.id) else {
+                seenIds.insert(link.id)
+                continue
+            }
+            let newLink = link.duplicate()
+            let oldLinkText = linkRegisterControllable.markDown(for: link)
+            guard let range = content.firstRange(of: oldLinkText) else { continue }
+            newContent = newContent.replacingOccurrences(of: oldLinkText, with: linkRegisterControllable.markDown(for: newLink), range: range)
+            linkRegisterControllable.register(links: [newLink])
+        }
+        changed = changed || model[entryId].content != newContent
+        model[entryId].content <=> newContent
+        if changed {
+            cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: rowText(entry: model[entryId]))
+        }
+        save(with: String(localized: "Edit entry").localizedString)
     }
     
     @MainActor
@@ -137,7 +163,26 @@ public extension EntryDataEditable {
         let title: LocalizedStringResource = up ? "Move entry up" : "Move entry down"
         save(with: String(localized: title).localizedString)
     }
+}
+
+public extension EntryDataEditable {
+    @MainActor func linkTextModel(for entry: any EntryDataAccessable, linkController: LinkRootController, searchModel: SearchModel) -> LinkHighlightTextModel {
+        let nameText = rowText(entry: entry)
+        guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entry.id) else {
+            let model = LinkHighlightTextModel(linkControllable: linkController, text: nameText, highlightedText: searchModel.searchText)
+            cacheItemListModel.setItemLink(cacheType: .row, itemId: entry.id, linkModel: model)
+            return model
+        }
+        if nameText != linkModel.text {
+            linkModel.reset(text: nameText)
+        }
+        return linkModel
+    }
     
+    func rowText(entry: any EntryDataAccessable) -> String {
+        entry.name.isEmpty ? entry.content : "\(entry.name.markDownText()): \(entry.content)"
+    }
+
     @MainActor
     func isUsed(rowModels: [ItemRowModel]) -> Bool {
         for rowModel in rowModels {

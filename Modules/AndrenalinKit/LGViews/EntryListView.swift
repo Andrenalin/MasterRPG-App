@@ -1,62 +1,72 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import Foundation
 import SwiftUI
 
-public struct EntryListView<Controller: EntryEditControllable>: View {
-    public init(entryEditController: Controller, model: Controller.EditDataModel) {
-        self.entryEditController = entryEditController
-        self.model = model
+public struct EntryListView: View {
+    public init(editController: any EntryDataEditable) {
+        self.editController = editController
     }
     
-    let entryEditController: Controller
-    let model: Controller.EditDataModel
+    let editController: any EntryDataEditable
         
     @Namespace private var zoomNamespace
     
     public var body: some View {
-        ForEach(model.entries) { entry in
-            EntryEditRow(entryEditController: entryEditController, entry: entry, cacheItemListModel: entryEditController.cacheItemListModel)
+        ForEach(editController.model.entries, id: \.id) { entry in
+            EntryEditRow(editController: editController, entry: entry, cacheItemListModel: editController.cacheItemListModel)
                 .modifier(ZoomDestinationViewModifier(sourceID: entry.id.uuidString, namespace: zoomNamespace))
                 .contextMenu {
+                    editButton(entry: entry)
+                    Divider()
                     duplicateButton(entry: entry)
                     Divider()
                     removeButton(entry: entry)
                 }
 #if !os(tvOS)
                 .swipeActions(edge: .leading) {
-                    editButton(id: entry.id)
+                    editButton(entry: entry, onlyIcon: true)
                 }
 #endif
         }
         .onDelete { indexSet in
-            entryEditController.remove(indexSet, from: model)
+            editController.remove(entryIndexSet: indexSet)
         }
         .onMove { indexSet, index in
-            entryEditController.move(indexSet, index: index, from: model)
+            editController.move(entryFrom: indexSet, to: index)
         }
         .onAppear {
-            entryEditController.editorModel.zoomNamespaceId = zoomNamespace
+            editController.editorModel.zoomNamespaceId = zoomNamespace
         }
     }
 }
 
 private extension EntryListView {
-    func editButton(id: UUID) -> some View {
+    func editButton(entry: any EntryDataAccessable, onlyIcon: Bool = false) -> some View {
         Button {
-            withAnimation { entryEditController.editorModel.currentEntryId = id }
+            withAnimation { editController.editorModel.currentEntryId = entry.id }
         } label: {
-            Image(systemName: "pencil")
+            if onlyIcon {
+                Image(systemName: "pencil")
+            } else {
+                Label {
+                    
+                    Text("Edit \(entry.name)", bundle: .module)
+                } icon: {
+                    Image(systemName: "pencil")
+                }
+            }
         }
     }
     
-    func duplicateButton(entry: Controller.EditDataModel.DataModel) -> some View {
+    func duplicateButton(entry: any EntryDataAccessable) -> some View {
         Button {
             withAnimation {
-                let newId = entryEditController.duplicate(entry: entry, in: model)
+                let newId = editController.copy(entryId: entry.id, shouldSave: true)
                 Task { @MainActor in
                     try? await Task.sleep(for: .seconds(0.25))
-                    entryEditController.editorModel.currentEntryId = newId
+                    editController.editorModel.currentEntryId = newId
                 }
             }
         } label: {
@@ -68,10 +78,10 @@ private extension EntryListView {
         }
     }
 
-    func removeButton(entry: Controller.EditDataModel.DataModel) -> some View {
+    func removeButton(entry: any EntryDataAccessable) -> some View {
         Button(role: .destructive) {
             withAnimation {
-                entryEditController.remove(entry: entry, in: model)
+                editController.remove(entryId: entry.id)
             }
         } label: {
             Label {

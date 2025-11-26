@@ -9,7 +9,8 @@ public protocol EntryDataAccessable {
 
     var id: UUID { get }
     var childId: UUID { get }
-    var name: String { get }
+    var name: String { get set }
+    var content: String { get set }
     var displayState: Int { get }
 
     func duplicate() -> Self
@@ -28,6 +29,11 @@ public extension EntryDataAccessable {
         filter(with: text) || !(selectedTags.map { $0.tag }.filter { filter(with: $0) }.isEmpty)
     }
 
+    var content: String {
+        get { "" }
+        set {}
+    }
+    
     func linkContent() -> String { name }
     
     var isGroupHidden: Bool {

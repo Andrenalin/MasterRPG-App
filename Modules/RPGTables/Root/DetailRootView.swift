@@ -45,7 +45,7 @@ struct DetailRootView: View {
                 LinkRootView(type: .inspector)
             }
         } entryEditor: {
-            EntryEditorView(entryEditController: root.entryEditController, model: model)
+            EntryEditorView(editController: root.editController)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -86,7 +86,7 @@ struct DetailRootView: View {
                 withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId) }
             }
         
-        EntryListView(entryEditController: root.entryEditController, model: model)
+        EntryListView(editController: root.editController)
     }
 }
 
