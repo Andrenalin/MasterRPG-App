@@ -42,15 +42,28 @@ struct DetailRootView: View {
             detailEditorView
         } inspector: {
             if !isSubFolder {
-                root.diceRoot.viewController.linkWindow(root: root.diceRoot, isInspector: true)
+                LinkRootView(type: .inspector)
             }
         } entryEditor: {
-            EntryEditorView(entryEditController: root.entryEditController, linkRootController: linkRootController, model: model)
+            EntryEditorView(entryEditController: root.entryEditController, model: model)
         }
         .overlay {
             if openFileWindowModel.showItem {
                 root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId) {
                     openFileWindowModel.showItem = false
+                }
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .secondaryActionAll) {
+                Button {
+                    navigator.navigate(to: TableEditorRoute.quickEditor, method: .managedCover)
+                } label: {
+                    Label {
+                        Text("Quick Editor", bundle: .module)
+                    } icon: {
+                        Image(systemName: "table.badge.more")
+                    }
                 }
             }
         }

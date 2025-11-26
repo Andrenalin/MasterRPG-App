@@ -4,10 +4,10 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditorView<Controller: EntryEditControllable>: View {
-    public init(entryEditController: Controller, linkRootController: LinkRootController, model: Controller.EditDataModel) {
+    public init(entryEditController: Controller, model: Controller.EditDataModel) {
         self.entryEditController = entryEditController
         self.model = model
-        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: linkRootController.linkRegisterController, text: ""))
+        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: entryEditController.editControllable.linkRegisterControllable, source: ItemRowModel(itemId: model.id, typeId: entryEditController.module), text: ""))
         self._name = State(wrappedValue: "")
     }
     

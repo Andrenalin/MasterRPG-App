@@ -55,6 +55,7 @@ struct MockRootViewModifier: ViewModifier {
             .environment(DeviceRotationModel())
             .environment(SelectionSheetLinkModel())
             .environment(ExternalHeaderModel())
+            .environment(LinkRootController.fake)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

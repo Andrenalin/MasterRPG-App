@@ -96,11 +96,11 @@ extension LinkController: LinkControllable {
         }
     }
     
-//    @MainActor
-//    public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
-//        guard module == .table else { return nil }
-//        return SheetController(root: root).sheet(for: itemId, level: level)
-//    }
+    @MainActor
+    public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
+        guard module == .table else { return nil }
+        return SheetController(itemController: itemController).sheet(for: itemId, level: level)
+    }
 }
 
 public extension LinkController {

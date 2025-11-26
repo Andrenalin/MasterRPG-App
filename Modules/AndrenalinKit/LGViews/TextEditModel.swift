@@ -5,23 +5,26 @@ import SwiftData
 import SwiftUI
 
 @Observable public final class TextEditModel {
-    @MainActor public init(linkRegisterController: LinkRegisterController, text: String = "") {
+    @MainActor public init(linkRegisterController: LinkRegisterControllable, source: ItemRowModel, text: String = "") {
         self.linkRegisterController = linkRegisterController
+        self.source = source
         self.text = text
         self.attributedText = AttributedString("")
         
         resetAttributedText()
     }
     
-    let linkRegisterController: LinkRegisterController
+    let linkRegisterController: LinkRegisterControllable
+    let source: ItemRowModel
+    
     public var text: String
     public var attributedText: AttributedString
 
-    var links: [LinkDataModel] = []
+    var links: [LinkRegisterModel] = []
     
     @MainActor public func resetAttributedText() {
         var att = AttributedString(text)
-        links = linkRegisterController.linkDataModel(in: text)
+        links = linkRegisterController.linkRegisterModel(in: text, for: source)
         links.forEach {
             let markDown = linkRegisterController.markDown(for: $0)
             if let range = att.range(of: markDown) {
@@ -48,7 +51,7 @@ import SwiftUI
             print(substring)
             
             if let linkId = run.linkContent {
-                if let link = linkRegisterController.linkDataModel(linkId: linkId) {
+                if let link = linkRegisterController.linkRegisterModel(linkId: linkId) {
                     let markdown = linkRegisterController.markDown(for: link)
                     result.append(markdown)
                 } else {
@@ -65,24 +68,24 @@ import SwiftUI
     
     @MainActor public func updateLinks() {
         resetText()
-        let newLinks = linkRegisterController.linksLong(in: text)
-        for newLink in newLinks {
-            let updatedLink = linkRegisterController.register(name: newLink.name, sourceId: newLink.itemId, sourceModule: newLink.module, destinationId: UUID(), destinationModule: .adventure)
-            links.append(updatedLink)
-            let newMark = linkRegisterController.markDown(for: updatedLink)
-            text = text.replacingOccurrences(of: newLink.markDown, with: newMark)
-        }
-        guard !newLinks.isEmpty else { return }
+//        let newLinks = linkRegisterController.linksLong(in: text)
+//        for newLink in newLinks {
+//            let updatedLink = linkRegisterController.register(name: newLink.name, sourceId: newLink.itemId, sourceModule: newLink.module, destinationId: UUID(), destinationModule: .adventure)
+//            links.append(updatedLink)
+//            let newMark = linkRegisterController.markDown(for: updatedLink)
+//            text = text.replacingOccurrences(of: newLink.markDown, with: newMark)
+//        }
+//        guard !newLinks.isEmpty else { return }
         resetAttributedText()
     }
     
-    @MainActor static var preview: TextEditModel = {
-        let modelContainer = try! ModelContainer(for: LinkDataModel.self, configurations: .init(isStoredInMemoryOnly: true))
-        let controller = LinkRegisterController(container: modelContainer, itemControllable: FakeItemController.fake)
-        let link = controller.register(name: "Name", sourceId: UUID(), sourceModule: .audio, destinationId: UUID(), destinationModule: .table)
-        let text = "Hello World\n In the [Name](RPG://\(link.id.uuidString)) we will find peace."
-        return TextEditModel(linkRegisterController: controller, text: text)
-    }()
+//    @MainActor static var preview: TextEditModel = {
+//        let modelContainer = try! ModelContainer(for: LinkDataModel.self, configurations: .init(isStoredInMemoryOnly: true))
+//        let controller = LinkRegisterController(container: modelContainer, itemControllable: FakeItemController.fake)
+//        let link = controller.register(name: "Name", sourceId: UUID(), sourceModule: .audio, destinationId: UUID(), destinationModule: .table)
+//        let text = "Hello World\n In the [Name](RPG://\(link.id.uuidString)) we will find peace."
+//        return TextEditModel(linkRegisterController: controller, text: text)
+//    }()
 }
 
 public struct TextEditorLinkView: View {
@@ -121,22 +124,22 @@ public struct TextEditorLinkView: View {
     }
 }
 
-#Preview {
-    @Previewable @State var model: TextEditModel = .preview
-    
-    NavigationStack {
-        VStack(alignment: .leading) {
-            Text("Description")
-            
-            TextEditorLinkView(model: model)
- 
-            Button("Save") {
-                model.resetText()
-            }
-            
-            Text(model.text)
-        }
-        .padding()
-    }
-}
-
+//#Preview {
+//    @Previewable @State var model: TextEditModel = .preview
+//    
+//    NavigationStack {
+//        VStack(alignment: .leading) {
+//            Text("Description")
+//            
+//            TextEditorLinkView(model: model)
+// 
+//            Button("Save") {
+//                model.resetText()
+//            }
+//            
+//            Text(model.text)
+//        }
+//        .padding()
+//    }
+//}
+//

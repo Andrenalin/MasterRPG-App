@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import SwiftData
 import SwiftUI
 
 @MainActor
@@ -21,4 +22,13 @@ public struct FakeLinkRegisterController: LinkRegisterControllable {
     @MainActor public func repairLinks(for items: [ItemRowModel]) {}
     
     static let fake = FakeLinkRegisterController()
+}
+
+public extension LinkRegisterController {
+    static let fake = LinkRegisterController(container: try! ModelContainer(for: LinkDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true)), itemControllable: FakeItemController.fake)
+}
+
+
+public extension LinkRootController {
+    static let fake = LinkRootController(container: try! ModelContainer(for: LinkDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true)), root: .preview(fake: ItemRootController.fake))
 }

@@ -261,16 +261,16 @@ extension MapModel: ItemLinkRegistable {
         let modelSource = ItemRowModel(itemId: id, typeId: .map)
         var linkModels = mapPins.compactMap { pin -> LinkRegisterModel? in
             guard let photoId = pin.photoId else { return nil }
-            return LinkRegisterModel(source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo))
+            return LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo))
         }
         if let photoId {
-            linkModels.append(LinkRegisterModel(source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo)))
+            linkModels.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo)))
 
         }
         let entryModels = entries.reduce([]) { total, entry -> [LinkRegisterModel] in
             let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .map)
             let models = entry.links(for: entry.content).map {
-                LinkRegisterModel(source: source, destination: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module))
+                LinkRegisterModel(name: $0.name, source: source, destination: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module))
             }
             var newTotal = total
             newTotal.append(contentsOf: models)

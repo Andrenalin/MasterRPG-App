@@ -1,0 +1,24 @@
+// @copyright André Trettin
+
+import CoreExternalRPG
+import SwiftUI
+
+@MainActor
+struct FakeFolderListController: FolderListControllable {
+    func copy(parentModel: (any ItemDataAccessable)?) -> FakeFolderListController {
+        FakeFolderListController()
+    }
+    
+    func detailDestination(for itemId: UUID) -> any NavigationDestination {
+        InternalRoute.export(ids: [itemId])
+    }
+    
+    let itemControllable: any ItemControllable = FakeItemController.fake
+    let listModel: FolderListModel = FolderListModel()
+    let listDisplayModel: ListDisplayModel = ListDisplayModel()
+    let searchModel: SearchModel = .preview()
+    
+    var cacheListItemModel = CacheItemListModel()
+    
+    static let fake = FakeFolderListController()
+}

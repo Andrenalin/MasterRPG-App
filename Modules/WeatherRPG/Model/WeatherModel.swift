@@ -145,7 +145,7 @@ extension WeatherModel: ItemLinkRegistable {
     public var linkRegisterModels: [LinkRegisterModel] {
         let source = ItemRowModel(itemId: id, typeId: .weather)
         if let photoId {
-            return [LinkRegisterModel(source: source, destination: ItemRowModel(itemId: photoId, typeId: .photo))]
+            return [LinkRegisterModel(name: "", source: source, destination: ItemRowModel(itemId: photoId, typeId: .photo))]
         }
         return []
     }
