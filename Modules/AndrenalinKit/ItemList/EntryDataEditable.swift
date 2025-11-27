@@ -131,9 +131,9 @@ public extension EntryDataEditable {
                 continue
             }
             let newLink = link.duplicate()
-            let oldLinkText = linkRegisterControllable.markDown(for: link)
-            guard let range = content.firstRange(of: oldLinkText) else { continue }
-            newContent = newContent.replacingOccurrences(of: oldLinkText, with: linkRegisterControllable.markDown(for: newLink), range: range)
+             // linkRegisterControllable.markDown(for: link)
+            guard let oldLinkText = link.markDown, let range = content.firstRange(of: oldLinkText) else { continue }
+            newContent = newContent.replacingOccurrences(of: oldLinkText, with: newLink.markDown ?? oldLinkText, range: range)
             linkRegisterControllable.register(links: [newLink])
         }
         changed = changed || model[entryId].content != newContent
@@ -169,7 +169,7 @@ public extension EntryDataEditable {
     @MainActor func linkTextModel(for entry: any EntryDataAccessable, linkController: LinkRootController, searchModel: SearchModel) -> LinkHighlightTextModel {
         let nameText = rowText(entry: entry)
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entry.id) else {
-            let model = LinkHighlightTextModel(linkControllable: linkController, text: nameText, highlightedText: searchModel.searchText)
+            let model = LinkHighlightTextModel(linkControllable: linkController.linkControllable, text: nameText, highlightedText: searchModel.searchText)
             cacheItemListModel.setItemLink(cacheType: .row, itemId: entry.id, linkModel: model)
             return model
         }

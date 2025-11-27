@@ -38,8 +38,7 @@ import SwiftUI
         var att = AttributedString(text)
         links = linkRegisterController.linkRegisterModel(in: text, for: source)
         links.forEach {
-            let markDown = linkRegisterController.markDown(for: $0)
-            if let range = att.range(of: markDown) {
+            if let markDown = $0.markDown, let range = att.range(of: markDown) {
                 var linkAtt = AttributedString($0.name)
                 linkAtt[keyPath: \.linkContent] = $0.id
                 att.replaceSubrange(range, with: linkAtt)
@@ -63,8 +62,7 @@ import SwiftUI
             print(substring)
             
             if let linkId = run.linkContent {
-                if let link = linkRegisterController.linkRegisterModel(linkId: linkId) {
-                    let markdown = linkRegisterController.markDown(for: link)
+                if let link = linkRegisterController.linkRegisterModel(linkId: linkId), let markdown = link.markDown {
                     result.append(markdown)
                 } else {
                     result.append(substring)

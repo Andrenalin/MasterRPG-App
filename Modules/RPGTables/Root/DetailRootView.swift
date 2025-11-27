@@ -21,7 +21,6 @@ struct DetailRootView: View {
     let isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
-    @Environment(LinkRootController.self) private var linkRootController
     
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.table.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })

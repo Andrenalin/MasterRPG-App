@@ -40,7 +40,11 @@ extension LinkRootController: LinkControllable {
     @MainActor public var itemControllable: any ItemControllable {
         root[.adventure]!.itemControllable
     }
-    
+
+    @MainActor public var linkControllable: any LinkControllable {
+        root[.adventure]!.linkControllable
+    }
+
     @MainActor public func remove(linkModel: LinkDataModel) {
 //        linkController(for: linkModel.destinationModule).remove(linkModel: linkModel)
         linkRegisterController.remove(linkId: linkModel.id)

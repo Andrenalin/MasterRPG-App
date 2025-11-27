@@ -3,7 +3,7 @@
 import Foundation
 
 public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
-    public init(name: String, source: ItemRowModel, destination: ItemRowModel) {
+    public init(name: String, source: ItemRowModel, destination: ItemRowModel, markDown: String? = nil) {
         self.id = UUID()
         self.name = name
         self.source = source
@@ -14,9 +14,10 @@ public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
     public let name: String
     public let source: ItemRowModel
     public let destination: ItemRowModel
+    public var markDown: String? = nil
     
     public func duplicate() -> LinkRegisterModel {
-        LinkRegisterModel(name: name, source: source, destination: destination)
+        LinkRegisterModel(name: name, source: source, destination: destination, markDown: markDown)
     }
 }
 
@@ -151,23 +152,25 @@ public extension LinkRegisterControllable {
         return links.map { rawLink -> LinkRegisterModel in
             if let destinationEntryId = rawLink.entryId {
                 let entryLinks = model.entries[destinationEntryId, default: []]
-                if let linkRegisterModel = entryLinks.first(where: { $0.source.itemId == source.itemId && $0.source.entryId == source.entryId  }) {
+                if var linkRegisterModel = entryLinks.first(where: { $0.source.itemId == source.itemId && $0.source.entryId == source.entryId  }) {
+                    linkRegisterModel.markDown = rawLink.markDown
                     return linkRegisterModel
                 }
             } else {
                 let itemLinks = model.items[rawLink.itemId, default: []]
-                if let linkRegisterModel = itemLinks.first(where: { $0.source.itemId == source.itemId }) {
+                if var linkRegisterModel = itemLinks.first(where: { $0.source.itemId == source.itemId }) {
+                    linkRegisterModel.markDown = rawLink.markDown
                     return linkRegisterModel
                 }
             }
-            let newModel = LinkRegisterModel(name: rawLink.name, source: source, destination: ItemRowModel(itemId: rawLink.itemId, entryId: rawLink.entryId, typeId: rawLink.module))
+            var newModel = LinkRegisterModel(name: rawLink.name, source: source, destination: ItemRowModel(itemId: rawLink.itemId, entryId: rawLink.entryId, typeId: rawLink.module))
             register(links: [newModel])
+            newModel.markDown = rawLink.markDown
             return newModel
         }
     }
     
-    func markDown(for link: LinkRegisterModel) -> String {
+    func markDownLinkDataModel(for link: LinkRegisterModel) -> String {
         "[\(link.name)](\(URL.appScheme)://\(link.id))"
     }
-
 }
