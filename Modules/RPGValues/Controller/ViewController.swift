@@ -6,7 +6,13 @@ import RPGTables
 import SwiftUI
 
 public struct ViewController {
+    public let goupViewType: GroupViewType = .item
+    public let thumbnailRowViewType: ThumbnailRowViewType = .photo
+
     weak var root: CharacterRootModel!
+}
+
+extension ViewController: ViewControllable {
 }
 
 public extension ViewController {

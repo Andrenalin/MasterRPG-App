@@ -4,7 +4,13 @@ import AndrenalinKit
 import SwiftUI
 
 public struct ViewController {
+    public let goupViewType: GroupViewType = .item
+    public let thumbnailRowViewType: ThumbnailRowViewType = .photo
+
     weak var root: MapRootModel!
+}
+
+extension ViewController: ViewControllable {
 }
 
 public extension ViewController {

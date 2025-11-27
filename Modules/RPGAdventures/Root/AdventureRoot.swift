@@ -89,7 +89,8 @@ public final class AdventureRootModel: @unchecked Sendable {
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
     @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
-
+    public let removeEntryListModel = RemoveEntryListModel()
+    
     let audioRoot: AudioRootModel
     let diceRoot: DiceRootModel
     let mapRoot: MapRootModel
@@ -142,6 +143,13 @@ public final class AdventureRootModel: @unchecked Sendable {
         _linkRegisterController.unsafelyUnwrapped
     }
     
+    @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
+        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
+    }()
+    @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
+        folderListController.copy(parentModel: nil)
+    }()
+    
     @ObservationIgnored
     private(set) var _viewController: ViewController?
     public var viewController: ViewController {
@@ -150,10 +158,42 @@ public final class AdventureRootModel: @unchecked Sendable {
     
     @ObservationIgnored
     private(set) var mainListController: ListController?
+    
+    @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
+        ItemRootController(
+            module: module,
+            listDisplayModel: listDisplayModel,
+            searchModel: searchModel,
+            itemSelectionModel: ItemSelectionModel(),
+            removeEntryListModel: RemoveEntryListModel(),
+            cacheControllable: nil,
+            editControllable: editController(type: .main),
+            exportControllable: exportControllable,
+            gameControllable: gameControllable,
+            itemControllable: itemControllable,
+            linkControllable: linkControllable,
+            listControllable: listController,
+            folderListControllable: folderListController,
+            viewControllable: viewController
+        )
+    }()
 }
 
+extension AdventureRootModel: ItemRootControllable {
+    public var cacheControllable: (any ImageCacheControllable)? { nil }
+    public var editControllable: any EditControllable { editController(type: .main) }
+    public var listControllable: any ListControllable { listController }
+    public var folderListControllable: any FolderListControllable { folderListController }
+    public var folderLinkControllable: any FolderListControllable { folderLinkController }
+    public var viewControllable: any ViewControllable { viewController }
+}
+
+
 extension AdventureRootModel {
-    public var gameControllable: any (GameControllable & AdventureStoreGameable) {
+    public var gameControllable: any GameControllable {
+        gameController
+    }
+    public var adventureGameControllable: any (GameControllable & AdventureStoreGameable) {
         gameController
     }
     public var itemControllable: any ItemControllable {

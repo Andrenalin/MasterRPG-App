@@ -4,7 +4,13 @@ import AndrenalinKit
 import SwiftUI
 
 public struct ViewController: Sendable {
+    public let goupViewType: GroupViewType = .item
+    public let thumbnailRowViewType: ThumbnailRowViewType = .photo
+
     weak var root: AdventureRootModel!
+}
+
+extension ViewController: ViewControllable {
 }
 
 // MARK: - Viewer

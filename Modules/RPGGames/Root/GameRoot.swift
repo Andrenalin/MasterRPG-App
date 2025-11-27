@@ -218,15 +218,15 @@ extension GameRoot {
         networkProxyStore.resetName(name: gameMasterName)
         networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
 
-        adventureRoot.gameControllable.startGame(with: id)
+        adventureRoot.adventureGameControllable.startGame(with: id)
         gameModel.playerController = PlayerController(root: self, asGameMaster: true)
         gameModel.masterController = MasterController(root: self, asProxy: false)
 
         gameModel.gameConfig.state = .started
 
         await gameModel.masterController?.start()
-        valueRoot.gameControllable.startGame(for: gameModel.selectedGameMaster!)
-        diceRoot.diceGameControllable.setFocusDice(on: valueRoot.gameControllable.focusDice(for: gameModel.selectedGameMaster!))
+        valueRoot.valueGameControllable.startGame(for: gameModel.selectedGameMaster!)
+        diceRoot.diceGameControllable.setFocusDice(on: valueRoot.valueGameControllable.focusDice(for: gameModel.selectedGameMaster!))
         
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = true
@@ -264,7 +264,7 @@ extension GameRoot {
             networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
         }
 
-        adventureRoot.gameControllable.resetGame()
+        adventureRoot.adventureGameControllable.resetGame()
         let player = PlayerController(root: self, asGameMaster: mode == .demo)
         gameModel.playerController = player
 
@@ -293,8 +293,8 @@ extension GameRoot {
         gameModel.gameConfig.players[0].name = name(for: type)
         gameModel.gameConfig.state = .started
         if type != .observer {
-            valueRoot.gameControllable.startGame(for: gameModel.selectedCharacter)
-            diceRoot.diceGameControllable.setFocusDice(on: valueRoot.gameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
+            valueRoot.valueGameControllable.startGame(for: gameModel.selectedCharacter)
+            diceRoot.diceGameControllable.setFocusDice(on: valueRoot.valueGameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
         }
     }
 
@@ -308,7 +308,7 @@ extension GameRoot {
         gameModel.masterController = nil
         await gameModel.playerController?.stop()
         gameModel.playerController = nil
-        adventureRoot.gameControllable.resetGame()
+        adventureRoot.adventureGameControllable.resetGame()
 
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = false
@@ -317,7 +317,7 @@ extension GameRoot {
 
     @MainActor
     func saveGame() -> (Task<Void, any Error>, URL) {
-        adventureRoot.gameControllable.saveGame()
+        adventureRoot.adventureGameControllable.saveGame()
     }
 }
 
@@ -357,9 +357,9 @@ extension GameRoot {
                         var showMap = true
                         
                         while showMap {
-                            var data = mapRoot.gameControllable.demoNextMap(itemId: map, restart: false)
+                            var data = mapRoot.mapGameControllable.demoNextMap(itemId: map, restart: false)
                             if data == nil {
-                                data = mapRoot.gameControllable.demoNextMap(itemId: map, restart: true)
+                                data = mapRoot.mapGameControllable.demoNextMap(itemId: map, restart: true)
                                 showMap = false
                             }
                             guard let data else { break }

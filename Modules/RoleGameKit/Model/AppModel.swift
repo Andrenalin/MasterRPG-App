@@ -126,36 +126,36 @@ public final class AppModel: Sendable {
         
 #if os(tvOS)
         root = RootManager(
-            adventureRoot: spaceRoot,
-            audioRoot: spaceRoot,
-            characterRoot: spaceRoot,
-            diceRoot: spaceRoot,
-            generatorRoot: spaceRoot,
-            mapRoot: spaceRoot,
-            pdfRoot: spaceRoot,
-            photoRoot: spaceRoot,
+            adventureRoot: adventureRoot,
+            audioRoot: audioRoot,
+            characterRoot: valueRoot,
+            diceRoot: diceRoot,
+            generatorRoot: adventureRoot,
+            mapRoot: mapRoot,
+            pdfRoot: pdfRoot,
+            photoRoot: photoRoot,
             spaceRoot: spaceRoot,
-            tableRoot: spaceRoot,
-            weatherRoot: spaceRoot
+            tableRoot: tableRoot,
+            weatherRoot: weatherRoot
         )
         
 #else
         
         let generatorRoot = GeneratorRootFactory.rootModel(container: modelContainer)
         self.generatorRoot = generatorRoot
-        
+
         root = RootManager(
-            adventureRoot: spaceRoot,
-            audioRoot: spaceRoot,
-            characterRoot: spaceRoot,
-            diceRoot: spaceRoot,
-            generatorRoot: spaceRoot,
-            mapRoot: spaceRoot,
-            pdfRoot: spaceRoot,
-            photoRoot: spaceRoot,
+            adventureRoot: adventureRoot,
+            audioRoot: audioRoot,
+            characterRoot: valueRoot,
+            diceRoot: diceRoot,
+            generatorRoot: generatorRoot,
+            mapRoot: mapRoot,
+            pdfRoot: pdfRoot,
+            photoRoot: photoRoot,
             spaceRoot: spaceRoot,
-            tableRoot: spaceRoot,
-            weatherRoot: spaceRoot
+            tableRoot: tableRoot,
+            weatherRoot: weatherRoot
         )
 #endif
         

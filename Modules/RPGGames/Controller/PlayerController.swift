@@ -116,7 +116,7 @@ extension PlayerController {
         Logger.networking.debug("PlayerController: Stop")
         await root.networkProxyStore.stopGame()
         await root.networkStore.stopGame()
-        root.adventureRoot.gameControllable.resetGame()
+        root.adventureRoot.adventureGameControllable.resetGame()
         gameModel.hasSendPlayer = false
     }
     
@@ -374,8 +374,8 @@ extension PlayerController {
             switch model.subType {
             case .mapState:
                 if await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: model.data.version) {
-                    await root.mapRoot.gameControllable.updateMap(for: model.data.id, with: model.data)
-                    let missingImages = await root.mapRoot.gameControllable.missingPlayerImages(itemId: model.data.id)
+                    await root.mapRoot.mapGameControllable.updateMap(for: model.data.id, with: model.data)
+                    let missingImages = await root.mapRoot.mapGameControllable.missingPlayerImages(itemId: model.data.id)
                     for idType in missingImages {
                         await send(counter: 0, type: .store, subType: .store, updated: idType)
                     }
@@ -491,13 +491,13 @@ extension PlayerController {
             case .generic:
                 if let characterId = await root.gameModel.gameConfig.player.characterId {
                     Task { @MainActor in
-                        await root.valueRoot.gameControllable.addItem(id: model.data.id, data: model.data, for: characterId)
+                        await root.valueRoot.valueGameControllable.addItem(id: model.data.id, data: model.data, for: characterId)
                     }
                 }
             case .valueResult:
                 if let characterId = await root.gameModel.gameConfig.player.characterId {
                     Task { @MainActor in
-                        await root.valueRoot.gameControllable.add(result: model.data, for: characterId)
+                        await root.valueRoot.valueGameControllable.add(result: model.data, for: characterId)
                     }
                 }
             default:

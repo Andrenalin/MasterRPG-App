@@ -74,7 +74,7 @@ extension MasterController {
         Logger.networking.debug("MasterController: Stop")
         await root.networkStore.stopGame()
         await root.networkProxyStore.stopGame()
-        root.adventureRoot.gameControllable.resetGame()
+        root.adventureRoot.adventureGameControllable.resetGame()
         root.gameModel.gameConfig.players = []
         root.gameModel.gameConfig.controls = []
     }
@@ -93,7 +93,7 @@ extension MasterController {
         }
         await root.diceRoot.diceGameControllable.resetPlayerDice(to: playerNames)
         if await !gameModel.asProxy {
-            await root.mapRoot.gameControllable.resetPlayerPins(for: root.gameModel.gameConfig.players.filter { $0.type != .observer })
+            await root.mapRoot.mapGameControllable.resetPlayerPins(for: root.gameModel.gameConfig.players.filter { $0.type != .observer })
         }
     }
 }
@@ -298,8 +298,8 @@ extension MasterController {
                 // never get from players mapState updates, only as resend from SharePlay?
                 break
             case .mapPin:
-                await root.mapRoot.gameControllable.updatePin(itemId: model.data.id, data: model.data.data, playerId: model.gameConfig.id)
-                await send(type: .update, subtype: .mapState, updated: root.mapRoot.gameControllable.networkMapUpdate(for: model.data.id))
+                await root.mapRoot.mapGameControllable.updatePin(itemId: model.data.id, data: model.data.data, playerId: model.gameConfig.id)
+                await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id))
             default:
                 break
             }
@@ -365,9 +365,9 @@ extension MasterController {
             return try await root.valueRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
             guard model.gameConfig.type != .observer else { return nil }
-            try await root.valueRoot.gameControllable.updatePlayer(data: model.data)
+            try await root.valueRoot.valueGameControllable.updatePlayer(data: model.data)
             if let characterId = model.gameConfig.player.characterId {
-                await root.mapRoot.gameControllable.setPlayerPin(for: model.gameConfig.id, name: model.gameConfig.name, characterId: characterId)
+                await root.mapRoot.mapGameControllable.setPlayerPin(for: model.gameConfig.id, name: model.gameConfig.name, characterId: characterId)
             }
         }
         return nil

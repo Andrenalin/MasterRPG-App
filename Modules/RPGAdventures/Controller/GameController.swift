@@ -85,7 +85,7 @@ extension GameController: AdventureStoreGameable {
         Task {
             await focus(on: id)
         }
-        root.mapRoot.gameControllable.startGameAsMaster()
+        root.mapRoot.mapGameControllable.startGameAsMaster()
     }
 
     @MainActor
@@ -107,7 +107,7 @@ extension GameController: AdventureStoreGameable {
     @MainActor
     func saveGame() -> (Task<Void, any Error>, URL) {
         // save only the map state, later we could save more states
-        let ids = root.mapRoot.gameControllable.saveAll()
+        let ids = root.mapRoot.mapGameControllable.saveAll()
         let url = rootExportControllable.exportUrl(isSaveGame: true)
         return (rootExportControllable.createExport(itemIds: ids, into: url), url)
     }
