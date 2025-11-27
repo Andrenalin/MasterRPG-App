@@ -41,8 +41,9 @@ public extension ViewController {
         return TableSheet(model: model, showTopImage: false, dismissAction: dismissAction)
     }
     
-    @MainActor func selectionView(root: TableRootModel, model: ItemSelectionModel) -> some View {
+    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
         LinkRootView(type: .selection)
+            .environment(model)
     }
 }
 

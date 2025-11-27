@@ -15,7 +15,6 @@ extension ViewController: ViewControllable {}
 public extension ViewController {
     @MainActor func linkWindow(root: PdfRootModel, isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(root)
     }
 
     @MainActor func windowViewer(root: PdfRootModel, selection: WindowItemSelection) -> some View {
@@ -25,18 +24,16 @@ public extension ViewController {
         }
         .ignoresSafeArea()
         .navigationTitle(model.name)
-        .environment(root)
     }
 
     @MainActor func inlineViewer(root: PdfRootModel, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return PdfViewerView(model: model, entryId: nil, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
-            .environment(root)
     }
     
-    @MainActor func selectionView(root: PdfRootModel, model: ItemSelectionModel) -> some View {
+    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
         LinkRootView(type: .selection)
-            .environment(root)
+            .environment(model)
     }
 }
 

@@ -57,7 +57,7 @@ struct DetailRootView: View {
         .toolbar {
             ToolbarItem(placement: .secondaryActionAll) {
                 Button {
-                    navigator.navigate(to: TableEditorRoute.quickEditor, method: .managedCover)
+                    navigator.navigate(to: TableEditorRoute.quickEditor, method: .cover)
                 } label: {
                     Label {
                         Text("Quick Editor", bundle: .module)

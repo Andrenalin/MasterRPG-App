@@ -16,7 +16,8 @@ struct QuickEntryEditor: View {
     @Environment(TableRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
     @Environment(\.navigator) private var navigator
-
+    @Environment(\.appSizeMode) private var appSizeMode
+    
 #if os(macOS) || os(visionOS)
     @Environment(\.openWindow) private var openWindow
 #endif
@@ -40,6 +41,7 @@ struct QuickEntryEditor: View {
     @State private var editorModel = RemoveEntryListModel()
     
     var body: some View {
+        ManagedNavigationStack(name: "TableQuickEditor") {
             contentView
                 .overlay(alignment: .top) {
                     VStack {
@@ -63,12 +65,13 @@ struct QuickEntryEditor: View {
                     }
                 }
                 .navigationTitle(editController.model.name)
+                .navigationBarBackButtonHidden(true)
 #if os(iOS) || os(visionOS)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarBackgroundVisibility(.visible, for: .navigationBar)
 #endif
                 .toolbar {
-                    toolbarContet
+                    toolbarContent
                 }
 #if !os(tvOS)
                 .toolbarRole(.editor)
@@ -76,9 +79,13 @@ struct QuickEntryEditor: View {
                 .onChange(of: editController.model, initial: true) {
                     model = editController.model.copy()
                 }
+        }
 #if os(macOS)
         .frame(minWidth: 800, minHeight: 600)
 #endif
+        .inspectorAll(isPresented: $showInspector) {
+            LinkRootView(type: .inspector)
+        }
     }
 }
 
@@ -95,6 +102,7 @@ private extension QuickEntryEditor {
         .onAppear {
             referenceText.input = initialText
             focusedField = .editor
+            textEditModel.reset(text: referenceText.input, source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.itemDataModel.networkModule))
         }
         .onChange(of: referenceText.output) {
             entries = createMultiLineEntries(referenceText.output)
@@ -106,10 +114,6 @@ private extension QuickEntryEditor {
         List {
             ForEach(model.entries) { entry in
                 EntryEditRow(editController: editController, entry: entry, cacheItemListModel: editController.cacheItemListModel)
-
-//                EntryRow(model: model, item: ItemRowTreeModel(itemId: model.id, entryId: entry.id, typeId: root.itemController.itemDataModel.networkModule), isEditing: false, cacheItemListModel: CacheItemListModel())
-//                    .foregroundStyle(.primary)
-//                    .environment(ListModel.preview)
             }
         }
 #if !os(tvOS)
@@ -134,13 +138,6 @@ private extension QuickEntryEditor {
         withAnimation { referenceText.input.append(selection.string) }
     }
     
-    private var textBinding: Binding<String> {
-        Binding<String>(
-            get: { referenceText.input },
-            set: { referenceText.input = $0 }
-        )
-    }
-
     private var editorView: some View {
         VStack(alignment: .leading, spacing: 8) {
 #if !os(tvOS)
@@ -149,17 +146,11 @@ private extension QuickEntryEditor {
                 .onChange(of: textEditModel.attributedText) {
                     textEditModel.updateLinks()
                 }
+                .onChange(of: textEditModel.text) {
+                    referenceText.input = textEditModel.text
+                }
 #endif
-
-//#if !os(tvOS)
-//            TextEditor(text: textBinding)
-//                .foregroundStyle(.primary)
-//                .focused($focusedField, equals: .editor)
-//#endif
         }
-//#if !os(visionOS)
-//        .rowColorBackground(isSelected: false)
-//#endif
     }
     
     private var initialText: String {
@@ -256,7 +247,7 @@ private extension QuickEntryEditor {
 }
 
 private extension QuickEntryEditor {
-    @ToolbarContentBuilder var toolbarContet: some ToolbarContent {
+    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
             Button {
                 dismiss()
@@ -265,7 +256,7 @@ private extension QuickEntryEditor {
             }
         }
         
-        ToolbarItem(placement: .primaryAction) {
+        ToolbarItem(placement: .secondaryActionAll) {
             secondaryActionMenu
         }
         
@@ -299,17 +290,23 @@ private extension QuickEntryEditor {
         
         ControlGroup {
             pdfButton
-            showInspectorButton
+            if canShowInspector {
+                showInspectorButton
+            }
         }
     }
     
+    var canShowInspector: Bool {
+        valueFor(iOS: appSizeMode == .regular, macOS: true, tvOS: true, visionOS: false)
+    }
+        
     var pdfButton: some View {
         Button {
 #if os(macOS) || os(visionOS)
             openWindow(id: NetworkModules.pdf.linkWindowId)
 #else
             withAnimation { showResult <=> true }
-            //navigator.navigate(to: SelectionPdfRoute.selection, method: .sheet)
+            navigator.navigate(to: TableEditorRoute.selectionPdf, method: .sheet)
 #endif
         } label: {
             Label { Text("Extract PDF", bundle: .module) } icon: { Image(systemName: "book") }

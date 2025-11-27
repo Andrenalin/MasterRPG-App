@@ -19,6 +19,9 @@ public struct LinkItemRootView: View {
         
     public var body: some View {
         LinkItemListView(root: root, type: type, parentModel: nil)
+            .applyIf(type != .selection) {
+                $0.environment(root.itemSelectionModel)
+            }
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
             .environment(CacheItemListModel())

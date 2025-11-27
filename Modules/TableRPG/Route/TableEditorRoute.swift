@@ -5,7 +5,7 @@ import CoreRPG
 import SwiftUI
 
 public enum TableEditorRoute: Equatable, Hashable, Codable {
-    case quickEditor
+    case quickEditor    
 }
 
 extension TableEditorRoute: NavigationDestination {

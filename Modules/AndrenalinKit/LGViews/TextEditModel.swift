@@ -19,6 +19,13 @@ import SwiftUI
 
     var links: [LinkRegisterModel] = []
 
+    @MainActor public func reset(text: String, source: ItemRowModel) {
+        self.source = source
+        self.text = text
+        
+        resetAttributedText()
+    }
+
     @MainActor func reset(entry: any EntryDataAccessable, source: ItemRowModel) {
         self.source = source
         name = entry.name

@@ -16,6 +16,7 @@ public struct LinkItemListView: View {
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
+    @Environment(ItemSelectionModel.self) private var selectionModel
     
     public var body: some View {
         NavigationStack {
@@ -138,10 +139,10 @@ private extension LinkItemListView {
 
                 specialCategoryFolderIndicator(item: item)
             }
-            .selectListItem(isActive: type == .selection && root.itemSelectionModel.canSelect(isCollection: item.model.specialCategory)) {
-                root.itemSelectionModel.toggleSelection(itemId: item.model.id, isCollection: item.model.specialCategory)
+            .selectListItem(isActive: type == .selection && selectionModel.canSelect(isCollection: item.model.specialCategory)) {
+                selectionModel.toggleSelection(itemId: item.model.id, isCollection: item.model.specialCategory)
             } isSelected: {
-                root.itemSelectionModel.itemId == item.model.id
+                selectionModel.itemId == item.model.id
             }
             .padding(.leading, CGFloat(item.level * 16))
             .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
