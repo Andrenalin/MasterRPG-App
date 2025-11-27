@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import SwiftUI
 
 struct TableSheetView<ImageContent: View>: View {
@@ -11,22 +12,28 @@ struct TableSheetView<ImageContent: View>: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.showGame) private var showGame
 
-    @State private var searchText: String = ""
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            closeButton()
-            searchBarView
-
-            if showImage {
-                imageContent(CGSize(width: 360, height: 256))
-                    .frame(maxWidth: .infinity, alignment: .center)
+        ManagedNavigationStack {
+            @Bindable var model = model
+            
+            VStack(alignment: .leading, spacing: 0) {
+                if showImage {
+                    imageContent(CGSize(width: 360, height: 256))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                
+                listContentView
             }
-
-            listContentView
+            .toolbar {
+                toolbarContent
+            }
+            .searchable(text: $model.searchText, placement: .toolbar, prompt: "Find in")
+            .navigationTitle(Text(model.sheetModel.name))
         }
     }
+}
 
+private extension TableSheetView {
     var listContentView: some View {
         List {
             SheetView(model: model)
@@ -35,9 +42,28 @@ struct TableSheetView<ImageContent: View>: View {
         .listStyle(.plain)
         .contentMargins(.horizontal, 12, for: .scrollContent)
     }
-}
+    
+    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
+        if showCloseButton {
+            ToolbarItem(placement: .cancellationAction) {
+                closeActionButton
+            }
+        }        
+    }
 
-private extension TableSheetView {
+    var closeActionButton: some View {
+        Button {
+            if let dismissAction {
+                dismissAction()
+            } else {
+                dismiss()
+            }
+        } label: {
+            //Image(systemName: showImage ? "xmark.circle" : "chevron.down.circle")
+            Image(systemName: "xmark.circle")
+        }
+    }
+
     func closeButton() -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text(model.sheetModel.name)
@@ -62,8 +88,7 @@ private extension TableSheetView {
     }
 
     var showCloseButton: Bool {
-        guard showImage else { return false }
-        return !showGame
+        !showGame
     }
 
     @ViewBuilder
@@ -114,4 +139,5 @@ private extension TableSheetView {
         imageContent: { _ in Text("Empty")
         }
     )
+    .environment(DeviceRotationModel())
 }

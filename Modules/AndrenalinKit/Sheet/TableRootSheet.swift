@@ -4,7 +4,6 @@ import SwiftUI
 
 public struct TableRootSheet<ImageContent: View>: View {
     public init(linkControllable: any LinkControllable, model: SheetModel, showImage: Bool, dismissAction: (() -> Void)? = nil, @ViewBuilder imageContent: @escaping (CGSize) -> ImageContent) {
-        self.linkControllable = linkControllable
         self.model = model
         self.showImage = showImage
         self.dismissAction = dismissAction
@@ -13,7 +12,6 @@ public struct TableRootSheet<ImageContent: View>: View {
     }
     
     public init(linkControllable: any LinkControllable, model: SheetModel, showImage: Bool, dismissAction: (() -> Void)? = nil) where ImageContent == EmptyView {
-        self.linkControllable = linkControllable
         self.model = model
         self.showImage = showImage
         self.dismissAction = dismissAction
@@ -21,7 +19,6 @@ public struct TableRootSheet<ImageContent: View>: View {
         self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: linkControllable, sheetModel: model))
     }
     
-    let linkControllable: any LinkControllable
     let model: SheetModel
     let showImage: Bool
     let dismissAction: (() -> Void)?
@@ -29,10 +26,8 @@ public struct TableRootSheet<ImageContent: View>: View {
     
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.showGame) private var showGame
     
     @State private var tableSheetModel: TableSheetModel
-    @State private var searchText: String = ""
     
     public var body: some View {
         TableSheetView(model: tableSheetModel, showImage: showImage, dismissAction: dismissAction, imageContent: imageContent)
