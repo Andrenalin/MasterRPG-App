@@ -45,24 +45,23 @@ import SwiftUI
             }
         }
         
-        self.attributedText = att
+        self.attributedText <=> att
     }
     
     @MainActor public func resetText() {
-        // Build plain text from attributedText by converting link attributed runs back to Markdown
+        // Build plain text from attributedText by convertind ng link attributed runs back to Markdown
         // We expect the custom attribute key path `\.linkContent` to contain the UUID of the link (LinkDataModel.id)
         var result = ""
         let att = attributedText
 
         // Iterate over runs, preserving non-link text and converting link runs
         for run in att.runs {
-            print(run)
             let range = run.range
             let substring = String(att[range].characters)
-            print(substring)
             
             if let linkId = run.linkContent {
-                if let link = linkRegisterController.linkRegisterModel(linkId: linkId), let markdown = link.markDown {
+                if let link = linkRegisterController.linkRegisterModel(linkId: linkId) {
+                    let markdown = link.markDown ?? link.urlMarkDown
                     result.append(markdown)
                 } else {
                     result.append(substring)
@@ -73,19 +72,11 @@ import SwiftUI
         }
 
         // Update model state
-        text = result
+        text <=> result
     }
     
     @MainActor public func updateLinks() {
         resetText()
-//        let newLinks = linkRegisterController.linksLong(in: text)
-//        for newLink in newLinks {
-//            let updatedLink = linkRegisterController.register(name: newLink.name, sourceId: newLink.itemId, sourceModule: newLink.module, destinationId: UUID(), destinationModule: .adventure)
-//            links.append(updatedLink)
-//            let newMark = linkRegisterController.markDown(for: updatedLink)
-//            text = text.replacingOccurrences(of: newLink.markDown, with: newMark)
-//        }
-//        guard !newLinks.isEmpty else { return }
         resetAttributedText()
     }
     
@@ -125,7 +116,6 @@ public struct TextEditorLinkView: View {
         TextEditor(text: $model.attributedText, selection: $selection)
             .attributedTextFormattingDefinition(ContentFormattingDefinition(links: Set(model.links.map(\.id))))
             .frame(minHeight: 120, maxHeight: maxHeight)
-//            .scrollContentBackground(.hidden)
             .background {
                 RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
             }

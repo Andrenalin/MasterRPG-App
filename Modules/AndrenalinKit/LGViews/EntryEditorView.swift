@@ -157,7 +157,9 @@ struct EntryContentEditor: View {
 #else
         TextEditorLinkView(model: editModel)
             .focused($currentFocus, equals: .information)
-        
+            .onChange(of: editModel.attributedText) {
+                editModel.updateLinks()
+            }
 #endif
     }
 }

@@ -96,7 +96,7 @@ extension AdventureModel: ItemLinkRegistable {
         let entryModels = entries.reduce([]) { total, entry -> [LinkRegisterModel] in
             let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .adventure)
             let models = entry.links(for: entry.content).map {
-                LinkRegisterModel(name: $0.name, source: source, destination: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module))
+                LinkRegisterModel(name: $0.name, source: source, destination: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), markDown: $0.markDown)
             }
             var newTotal = total
             newTotal.append(contentsOf: models)

@@ -8,6 +8,7 @@ public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
         self.name = name
         self.source = source
         self.destination = destination
+        self.markDown = markDown
     }
     
     public let id: UUID
@@ -19,6 +20,11 @@ public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
     public func duplicate() -> LinkRegisterModel {
         LinkRegisterModel(name: name, source: source, destination: destination, markDown: markDown)
     }
+    
+    public var urlMarkDown: String {
+        let entry = destination.entryId == nil ? "" : "/\(destination.entryId!.uuidString)"
+        return "[\(name)](\(URL.appScheme)://\(destination.typeId.token)/0/\(destination.itemId.uuidString)\(entry))"
+    }
 }
 
 public protocol ItemLinkRegistable {
@@ -26,8 +32,7 @@ public protocol ItemLinkRegistable {
 }
 
 public extension ItemLinkRegistable {
-    @MainActor
-    var linkRegisterModels: [LinkRegisterModel] { [] }
+    @MainActor var linkRegisterModels: [LinkRegisterModel] { [] }
 }
 
 @MainActor
