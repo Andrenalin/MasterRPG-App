@@ -23,7 +23,7 @@ struct CharacterSheet: View {
 
     func resetModels() {
         withAnimation {
-            sheetModel = SheetController(root: root).sheet(for: model.id)
+            sheetModel = SheetController(itemController: root.itemController, linkController: root.linkController).sheet(for: model.id)
         }
     }
 }

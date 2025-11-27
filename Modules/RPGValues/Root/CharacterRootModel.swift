@@ -39,15 +39,14 @@ public final class RootModel: Sendable {
 
 @Observable
 public final class CharacterRootModel: @unchecked Sendable {
-
-    @MainActor
-    init(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
-        rootModel = RootModel()
+    @MainActor init(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
 
+        rootModel = RootModel()
+        
         let module: NetworkModules = .value
         self.module = module
         
@@ -63,21 +62,28 @@ public final class CharacterRootModel: @unchecked Sendable {
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
         self._rootControllable = rootControllable
         
-        if let context {
-            dataController = DataController(root: self, context: context, token: NetworkModules.value.token)
-        }
-        _itemController = ItemController(root: self, dataController: dataController)
-        _editControllers = [EditTypes.main: EditController(root: self, currentListItem: nil, currentModel: nil)]
-        _exportController = ExportController(root: self, itemController: self.itemController, gameExporter: false)
-        _importController = ImportController(root: self, itemController: self.itemController, gameImporter: false)
-        _gameController = GameController(root: self, itemController: self.itemController)
-        _linkController = LinkController(root: self, itemController: self.itemController)
-        _viewController = ViewController(root: self)
-        
-        Task {
-            dataController?.start()
+        let dataController = context.map { DataController(context: $0, token: module.token) }
+        _dataController = dataController
+        let itemController = ItemController(tableRoot: tableRoot, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        _itemController = itemController
+        _editController = EditController(root: self, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
+        _exportController = ExportController(diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, gameExporter: false)
+        _importController = ImportController(itemController: itemController)
+        _gameController = GameController(root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+        _linkController = LinkController(root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, gameController: gameController)
+
+        if let dataController, let context {
+            _syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
+            Task {
+                syncDataController?.start()
+            }
         }
     }
+
+    let diceRoot: DiceRootModel
+    let pdfRoot: PdfRootModel
+    let photoRoot: PhotoRootModel
+    let tableRoot: TableRootModel
 
     public let rootModel: RootModel
     public let module: NetworkModules
@@ -85,49 +91,27 @@ public final class CharacterRootModel: @unchecked Sendable {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
+    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     
-    let diceRoot: DiceRootModel
-    let pdfRoot: PdfRootModel
-    let photoRoot: PhotoRootModel
-    let tableRoot: TableRootModel
-
-    @ObservationIgnored
-    private(set) var dataController: DataController?
-
-    @ObservationIgnored
-    private(set) var _itemController: ItemController?
-    var itemController: ItemController {
-        _itemController.unsafelyUnwrapped
-    }
+    @ObservationIgnored private(set) var _dataController: DataController?
+    var dataController: DataController? { _dataController }
+    @ObservationIgnored private(set) var _syncDataController: SyncDataController?
+    var syncDataController: SyncDataController? { _syncDataController }
     
-    @ObservationIgnored
-    private var _editControllers: [EditTypes: EditController] = [:]
-
-    @ObservationIgnored
-    private(set) var _exportController: ExportController?
-    var exportController: ExportController {
-        _exportController.unsafelyUnwrapped
-    }
+    @ObservationIgnored private(set) var _itemController: ItemController?
+    var itemController: ItemController { _itemController.unsafelyUnwrapped }
     
-    @ObservationIgnored
-    private(set) var _importController: ImportController?
-    var importController: ImportController {
-        _importController.unsafelyUnwrapped
-    }
-    
-    @ObservationIgnored
-    private(set) var _gameController: GameController?
-    var gameController: GameController {
-        _gameController.unsafelyUnwrapped
-    }
-    
-    @ObservationIgnored
-    private(set) var _linkController: LinkController?
-    public var linkController: LinkController {
-        _linkController.unsafelyUnwrapped
-    }
+    @ObservationIgnored private(set) var _editController: EditController?
+    var editController: EditController { _editController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _exportController: ExportController?
+    var exportController: ExportController { _exportController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _importController: ImportController?
+    var importController: ImportController { _importController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _gameController: GameController?
+    var gameController: GameController { _gameController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _linkController: LinkController?
+    public var linkController: LinkController { _linkController.unsafelyUnwrapped }
     
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
@@ -135,18 +119,12 @@ public final class CharacterRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
         folderListController.copy(parentModel: nil)
     }()
-    
-    @ObservationIgnored
-    private(set) var _viewController: ViewController?
-    public var viewController: ViewController {
-        _viewController.unsafelyUnwrapped
-    }
-    
-    @ObservationIgnored
-    private(set) var _rootControllable: RootControllable?
-    var rootControllable: RootControllable {
-        _rootControllable.unsafelyUnwrapped
-    }
+    @ObservationIgnored public lazy var viewController: ViewController = {
+        ViewController()
+    }()
+
+    @ObservationIgnored private(set) var _rootControllable: RootControllable?
+    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
     
     @ObservationIgnored
     private(set) var mainListController: ListController?
@@ -159,7 +137,7 @@ public final class CharacterRootModel: @unchecked Sendable {
             itemSelectionModel: ItemSelectionModel(),
             removeEntryListModel: RemoveEntryListModel(),
             cacheControllable: nil,
-            editControllable: editController(type: .main),
+            editControllable: editController,
             exportControllable: exportControllable,
             gameControllable: gameControllable,
             itemControllable: itemControllable,
@@ -173,7 +151,7 @@ public final class CharacterRootModel: @unchecked Sendable {
 
 extension CharacterRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
-    public var editControllable: any EditControllable { editController(type: .main) }
+    public var editControllable: any EditControllable { editController }
     public var listControllable: any ListControllable { listController }
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
@@ -187,41 +165,22 @@ extension CharacterRootModel {
     public var importControllable: any ImportControllable {
         importController as ImportControllable
     }
-    
     public var gameControllable: any GameControllable {
         gameController
     }
     public var valueGameControllable: any (GameControllable & ValueGameStorable) {
         gameController
     }
-
     public var itemControllable: any ItemControllable {
         itemController
     }
     
-    func applyToAllEditController(handler: @escaping @Sendable (EditController) async -> Void) async {
-        for editController in _editControllers.values {
-            await handler(editController)
-        }
-    }
-
-    @MainActor
-    func editController(for item: ItemRowTreeModel? = nil, type: EditTypes) -> EditController {
-        guard let oldEditController = _editControllers[type] else {
-            let model = item.map { itemController.itemOrEmpty(for: $0.model.itemId) }
-            let newEditController = EditController(root: self, currentListItem: item, currentModel: model)
-            _editControllers[type] = newEditController
-            return newEditController
-        }
-        return oldEditController
-    }
-
     @MainActor
     private var listController: ListController {
-        ListController(itemController: itemController, listStoreName: "Characters", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
+        ListController(itemController: itemController, editController: editController, listStoreName: "Characters", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
     }
     func listController(model: ListModel) -> ListController {
-        ListController(itemController: itemController, itemListModel: model)
+        ListController(itemController: itemController, editController: editController, itemListModel: model)
     }
     @MainActor
     func listController(tabId: UUID, config: Bool = false, focus: ItemRowModel? = nil) -> ListController {
@@ -273,13 +232,22 @@ extension CharacterRootModel {
             itemController.itemOrEmpty(for: $0)
         }
     }
+    
+    func itemDataCleanup() async throws {
+        for itemId in await itemController.itemDataModel.items {
+            guard let model = await itemController.item(for: itemId) else { continue }
+            if model.displayState == 2 {
+                await itemController.delete(itemId: model.id)
+            }
+        }
+    }
 }
 
 public extension CharacterRootModel {
     @MainActor
     func addNewValue(name: String, text: String, photoIds: [UUID]) async {
         let itemRowModel = await itemController.addNew(type: nil)
-        let editController = editController(type: .main)
+        let editController = editController
         editController.setCurrentItem(to: ItemRowTreeModel(id: UUID(), model: itemRowModel))
         editController.model.name = name
         editController.model.description = text
@@ -290,6 +258,6 @@ public extension CharacterRootModel {
 
     @MainActor
     func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
-        SheetController(root: self).sheet(for: itemId, level: level)
+        SheetController(itemController: itemController, linkController: linkController).sheet(for: itemId, level: level)
     }
 }

@@ -9,11 +9,26 @@ import DiceRPG
 import PhotoRPG
 
 public struct LinkController: Sendable {
-    weak var root: CharacterRootModel!
+    init(root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, gameController: GameController) {
+        self.root = root
+        self.diceRoot = diceRoot
+        self.photoRoot = photoRoot
+        self.tableRoot = tableRoot
+        
+        self.itemController = itemController
+        self.gameController = gameController
+    }
+
+    let root: CharacterRootModel
+    let diceRoot: DiceRootModel
+    let photoRoot: PhotoRootModel
+    let tableRoot: TableRootModel
+    
     let itemController: ItemController
+    let gameController: GameController
     
     public var itemControllable: any ItemControllable {
-        itemController as ItemController
+        itemController
     }
 }
 
@@ -245,7 +260,7 @@ extension LinkController {
         
         if let parentId, let parentItem = itemController.itemSync(for: parentId), !parentItem.entries.contains(where: { $0.valueId == item.id }) {
             let valueEntry = ValueEntryModel(id: UUID(), name: "Group", type: .text, value: "", valueId: item.id)
-            root.editController(type: .main).add(entry: valueEntry, into: parentId)
+            root.editController.add(entry: valueEntry, into: parentId)
             itemController.replace(model: parentItem, isInsert: false, shouldRepairLinks: true)
         }
         
@@ -355,7 +370,7 @@ public extension LinkController {
         case .table:
             return root.tableRoot.sheet(for: itemId, level: level)
         case .value:
-            return SheetController(root: root).sheet(for: itemId, level: level)
+            return SheetController(itemController: itemController, linkController: self).sheet(for: itemId, level: level)
         default:
             return nil
         }

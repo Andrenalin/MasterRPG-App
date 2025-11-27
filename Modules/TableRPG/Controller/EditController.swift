@@ -26,15 +26,18 @@ struct EditController: Sendable {
         
         self.itemController = itemController
         self.linkRegisterControllable = linkRegisterControllable
+        
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
         self.tableEditModel = TableEditModel()
     }
 
+    let diceRoot: DiceRootModel
+
     let itemController: ItemController
     let linkRegisterControllable: any LinkRegisterControllable
+    
     let editorModel: ItemEditorModel
     let tableEditModel: TableEditModel
-    let diceRoot: DiceRootModel    
 }
 
 extension EditController: EntryDataEditable {

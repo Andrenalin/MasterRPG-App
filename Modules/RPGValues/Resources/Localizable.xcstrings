@@ -11,6 +11,12 @@
         }
       }
     },
+    "%@" : {
+
+    },
+    "%lld Character" : {
+
+    },
     "Add" : {
       "localizations" : {
         "de" : {
@@ -201,6 +207,9 @@
         }
       }
     },
+    "Character" : {
+
+    },
     "Character Generator" : {
       "localizations" : {
         "de" : {
@@ -362,6 +371,7 @@
       }
     },
     "Duplicate %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -541,6 +551,9 @@
         }
       }
     },
+    "Module selection" : {
+
+    },
     "Name" : {
       "localizations" : {
         "de" : {
@@ -552,6 +565,7 @@
       }
     },
     "New Character" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -611,6 +625,9 @@
         }
       }
     },
+    "Open Character" : {
+
+    },
     "Pdf" : {
       "localizations" : {
         "de" : {
@@ -642,6 +659,7 @@
       }
     },
     "Redo %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -762,6 +780,7 @@
       }
     },
     "Show Charactere" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -848,6 +867,7 @@
       }
     },
     "Undo %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -986,6 +1006,9 @@
           }
         }
       }
+    },
+    "Which Character?" : {
+
     }
   },
   "version" : "1.0"

@@ -87,7 +87,7 @@ struct OverlayMasterTabBar: View {
         @Bindable var gameScreenModel = gameScreenModel
         TabView(selection: $gameScreenModel.showSettingsType) {
             Group {
-                root.valueRoot.viewController.gameView()
+                root.valueRoot.viewController.gameView(root: root.valueRoot)
                     .gameOverlayTabBarView(value: NetworkModules.value)
                 root.pdfRoot.viewController.gameView(root: root.pdfRoot)
                     .gameOverlayTabBarView(value: NetworkModules.pdf)

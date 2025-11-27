@@ -5,19 +5,19 @@ import CoreExternalRPG
 import PdfRPG
 import SwiftUI
 
-public enum TableEditorRoute: Equatable, Hashable, Codable {
+public enum EditorRoute: Equatable, Hashable, Codable {
     case quickEditor
     case selectionPdf
 }
 
-extension TableEditorRoute: NavigationDestination {
+extension EditorRoute: NavigationDestination {
     public var body: some View {
         DestinationTableEditorRoute(route: self)
     }
 }
 
 struct DestinationTableEditorRoute: View {
-    let route: TableEditorRoute
+    let route: EditorRoute
     
     @Environment(TableRootModel.self) private var root
     

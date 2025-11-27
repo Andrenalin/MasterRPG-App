@@ -6,17 +6,17 @@ import CoreData
 
 struct DataController: DataPersistenceControllable {
     @MainActor init(context: NSManagedObjectContext, token: String) {
-            self.dataController = CoreDataController<TableModel, RPGTable>(context: context)
-            self.token = token
-        }
-        
-        let dataController: CoreDataController<TableModel, RPGTable>
-        let token: String
+        self.dataController = CoreDataController<TableModel, RPGTable>(context: context)
+        self.token = token
+    }
+    
+    let dataController: CoreDataController<TableModel, RPGTable>
+    let token: String
 }
 
 extension DataController: CoreDataPersistable {
     // MARK: model -> viewlmodel
-
+    
     func mapViewModel(_ model: RPGTable, token: String) -> TableModel {
         TableModel(
             id: model.uuid ?? UUID(),
@@ -30,9 +30,9 @@ extension DataController: CoreDataPersistable {
             entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID()))
         )
     }
-
+    
     // MARK: viewmodel -> model
-
+    
     func mapModel(_ viewModel: TableModel, into model: RPGTable) {
         model.uuid <=> viewModel.id
         model.name <=> viewModel.name_.rawValue
@@ -50,9 +50,9 @@ extension DataController: CoreDataPersistable {
             }
         }
     }
-
+    
     // MARK: - TableEntryViewModel
-
+    
     private func map(_ model: RPGTableEntry) -> TableEntryModel {
         TableEntryModel(
             id: model.uuid ?? UUID(),
@@ -60,7 +60,7 @@ extension DataController: CoreDataPersistable {
             content: model.content ?? ""
         )
     }
-
+    
     private func map(_ viewModel: TableEntryModel, into entry: RPGTableEntry, index: Int) {
         entry.uuid = viewModel.id
         entry.content = viewModel.content

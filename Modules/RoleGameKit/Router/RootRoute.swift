@@ -179,7 +179,7 @@ struct RouteRouteDestionationView: View {
             case .tables:
                 TableFactory.rootView()
             case .values:
-                NewValueRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                CharacterRootFactory.rootView()
             case .weathers:
                 WeatherRootFactory.rootView()
             case .search:

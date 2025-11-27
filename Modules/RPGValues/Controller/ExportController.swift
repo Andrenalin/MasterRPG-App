@@ -8,13 +8,19 @@ import DiceRPG
 
 struct ExportController: Sendable {
     @MainActor
-    init(root: CharacterRootModel, itemController: ItemController, gameExporter: Bool) {
-        self.root = root
+    init(diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, gameExporter: Bool) {
+        self.diceRoot = diceRoot
+        self.photoRoot = photoRoot
+        self.tableRoot = tableRoot
+        
         self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
 
-    weak var root: CharacterRootModel!
+    let diceRoot: DiceRootModel
+    let photoRoot: PhotoRootModel
+    let tableRoot: TableRootModel
+    
     let itemController: ItemController
 
     public let exportModel: ItemDataExportModel
@@ -22,12 +28,12 @@ struct ExportController: Sendable {
 
 extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
+        itemController
     }
 
     public func exportingAll() -> ItemModuleIds {
-        var allIds = root.photoRoot.exportControllable.exportingAll()
-        allIds.merge(other: root.tableRoot.exportControllable.exportingAll())
+        var allIds = photoRoot.exportControllable.exportingAll()
+        allIds.merge(other: tableRoot.exportControllable.exportingAll())
         allIds.merge(other: ItemModuleIds(dictionary: [itemController.itemDataModel.networkModule: itemController.itemDataModel.items.map { $0 }]))
         return allIds
     }
@@ -49,10 +55,10 @@ extension ExportController: ExportControllable {
             }
             results.insert(id)
 
-            if let photoId = item.photoId, root.photoRoot.linkController.validateLink(itemId: photoId) {
+            if let photoId = item.photoId, photoRoot.linkController.validateLink(itemId: photoId) {
                 photoIds.insert(photoId)
             }
-            photoIds.formUnion(item.photos.filter { root.photoRoot.linkController.validateLink(itemId: $0) })
+            photoIds.formUnion(item.photos.filter { photoRoot.linkController.validateLink(itemId: $0) })
 
             var links: [LinkReplaceModel] = []
             item.entries.forEach { entry in
@@ -69,19 +75,19 @@ extension ExportController: ExportControllable {
             links.forEach {
                 switch $0.module {
                 case .dice:
-                    if root.diceRoot.linkController.validateLink(itemId: $0.itemId) {
+                    if diceRoot.linkController.validateLink(itemId: $0.itemId) {
                         diceIds.insert($0.itemId)
                     }
                 case .photo:
-                    if root.photoRoot.linkController.validateLink(itemId: $0.itemId) {
+                    if photoRoot.linkController.validateLink(itemId: $0.itemId) {
                         photoIds.insert($0.itemId)
                     }
                 case .table:
-                    if root.tableRoot.linkController.validateLink(itemId: $0.itemId, entryId: nil) {
+                    if tableRoot.linkController.validateLink(itemId: $0.itemId, entryId: nil) {
                         tableIds.insert($0.itemId)
                     }
                 case .value:
-                    if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && root.linkController.validateLink(itemId: $0.itemId) {
+                    if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && itemController.itemSync(for: $0.itemId) != nil {
                         checkIds.append($0.itemId)
                     }
                 default:
@@ -92,13 +98,13 @@ extension ExportController: ExportControllable {
         var allIds = itemIds
         allIds.ids[itemController.itemDataModel.networkModule] = Array(results)
 
-        let newDiceIds = root.diceRoot.exportControllable.exporting(ids: diceIds)
+        let newDiceIds = diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)
 
-        let newPhotoIds = root.photoRoot.exportControllable.exporting(ids: photoIds)
+        let newPhotoIds = photoRoot.exportControllable.exporting(ids: photoIds)
         allIds.merge(other: newPhotoIds)
 
-        let newTableIds = root.tableRoot.exportControllable.exporting(ids: tableIds)
+        let newTableIds =  tableRoot.exportControllable.exporting(ids: tableIds)
         allIds.merge(other: newTableIds)
 
         return allIds

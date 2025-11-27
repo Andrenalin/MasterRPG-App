@@ -20,7 +20,7 @@ struct MyAppPackage: AppIntentsPackage {
         RPGFrameworkPackage.self,
 //        AdventureFrameworkPackage.self,
         AudioFrameworkPackage.self,
-//        CharacterFrameworkPackage.self,
+        CharacterFrameworkPackage.self,
         DiceFrameworkPackage.self,
 //        GeneratorFrameworkPackage.self,
 //        MapFrameworkPackage.self,

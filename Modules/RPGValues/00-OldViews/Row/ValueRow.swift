@@ -52,7 +52,7 @@ struct ValueRow: View {
     private var editValueView: some View {
         @Bindable var model = root.itemController.itemOrEmpty(for: item.model.itemId)
         if let entryId = item.model.entryId {
-            QuickEditValueRow(root: root, editController: root.editController(type: .main), itemId: item.model.itemId, entryId: entryId)
+            QuickEditValueRow(root: root, editController: root.editController, itemId: item.model.itemId, entryId: entryId)
         }
     }
 }

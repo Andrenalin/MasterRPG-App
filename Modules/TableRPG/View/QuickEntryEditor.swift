@@ -306,7 +306,7 @@ private extension QuickEntryEditor {
             openWindow(id: NetworkModules.pdf.linkWindowId)
 #else
             withAnimation { showResult <=> true }
-            navigator.navigate(to: TableEditorRoute.selectionPdf, method: .sheet)
+            navigator.navigate(to: EditorRoute.selectionPdf, method: .sheet)
 #endif
         } label: {
             Label { Text("Extract PDF", bundle: .module) } icon: { Image(systemName: "book") }

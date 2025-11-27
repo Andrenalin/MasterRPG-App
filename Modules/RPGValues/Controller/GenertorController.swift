@@ -59,7 +59,7 @@ struct GeneratorController {
         self.root = root
         let genDataModel = GeneratorDataModel(rootItemId: rootItemId)
         genDataModel.saveId = saveId
-        let itemController = ItemController(root: root, dataController: nil) {
+        let itemController = ItemController(tableRoot: root.tableRoot, dataController: nil, linkRegisterControllable: root.linkRegisterControllable) {
             guard let controller = genDataModel.tableGenerators[$0] else {
                 return genDataModel.tableGenerators.reduce([ItemRowModel]()) {
                     $0 + $1.value.children(for: $1.key)
@@ -70,7 +70,7 @@ struct GeneratorController {
         genDataModel.itemDataModel = itemController.itemDataModel
         
         self.itemController = itemController
-        self.listController = ListController(itemController: itemController, listStoreName: "Character Generator", hasChildren: true, searchToken: .all, categoryTags: [], selectedItems: [])
+        self.listController = ListController(itemController: itemController, editController: root.editController, listStoreName: "Character Generator", hasChildren: true, searchToken: .all, categoryTags: [], selectedItems: [])
         self.genDataModel = genDataModel
 
         _ = addValue(with: rootItemId, after: nil)
@@ -592,16 +592,16 @@ extension GeneratorController {
     }
 
     @MainActor func loadGeneratedModel(modelId: UUID) -> ValueModel {
-        if root.editController(type: .main).model.id == modelId {
-            return root.editController(type: .main).model
+        if root.editController.model.id == modelId {
+            return root.editController.model
         }
         return root.itemController.itemOrEmpty(for: modelId).copy()
     }
 
     @MainActor
     func saveGeneratedModel(model: ValueModel) async {
-        if model.id == root.editController(type: .main).model.id {
-            root.editController(type: .main).save(with: String(localized: "Generator change").localizedString)
+        if model.id == root.editController.model.id {
+            root.editController.save(with: String(localized: "Generator change").localizedString)
         } else {
             root.itemController.replace(model: model, isInsert: false, shouldRepairLinks: false)
         }

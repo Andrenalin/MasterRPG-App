@@ -54,21 +54,6 @@ struct OldWindowLinkList: Scene {
             .keyboardShortcut("1", modifiers: [.command, .option])
 #endif
 
-            BaseWindow("\(NetworkModules.value.title) Link", id: NetworkModules.value.linkWindowId) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.valueRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
-                }
-                .onDisappear {
-                    appModel.windowStateModel.openWindowState[.value] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .value))
-#if os(macOS)
-            .keyboardShortcut("2", modifiers: [.command, .option])
-#endif
-
             BaseWindow("\(NetworkModules.map.title) Link", id: NetworkModules.map.linkWindowId) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.mapRoot.viewController.linkWindow()
@@ -106,14 +91,6 @@ struct OldWindowLinkAltList: Scene {
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
 
-            WindowGroup("\(NetworkModules.value.title) Link", id: NetworkModules.value.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.valueRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            
             WindowGroup("\(NetworkModules.map.title) Link", id: NetworkModules.map.linkAltWindowId) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.mapRoot.viewController.linkWindow()

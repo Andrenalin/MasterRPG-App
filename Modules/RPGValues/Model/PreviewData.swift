@@ -18,7 +18,7 @@ public extension CharacterRootModel {
         let root = CharacterRootModel(container: modelContainer, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.itemController.replace(model: ValueModel.preview, isInsert: true, shouldRepairLinks: false)
-        root.editController(type: .main).setCurrentItem(to: .preview)
+        root.editController.setCurrentItem(to: .preview)
         return root
     }()
     
@@ -65,10 +65,10 @@ extension CharacterRootModel: RootControllable {
     }
     
     public var gameExportControllable: any ExportControllable {
-        gameController.exportController
+        exportController
     }
     public var gameImportControllable: any ImportControllable {
-        gameController.importController
+        importController
     }
 }
 
@@ -85,7 +85,7 @@ extension ItemController {
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = CharacterRootModel.preview.editController(type: .main)
+        let controller = CharacterRootModel.preview.editController
         controller.setCurrentItem(to: .preview)
         return controller
     }()

@@ -106,7 +106,7 @@ public final class AppModel: Sendable {
         let tableRoot = TableFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot)
         let weatherRoot = WeatherRootFactory.root(container: modelContainer, photoRoot: photoRoot)
         
-        let valueRoot = ValueFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+        let valueRoot = CharacterRootFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         
         let mapRoot = MapFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
         let adventureRoot = AdventureFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)

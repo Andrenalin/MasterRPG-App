@@ -37,7 +37,7 @@ struct SplitDetailView: View {
         case .photo: PhotoFactory.detailView(root: appModel.photoRoot)
         case .space: SpaceFactory.detailView(root: appModel.spaceRoot)
         case .table: TableFactory.detailView(root: appModel.tableRoot)
-        case .value: ValueFactory.detailView(root: appModel.valueRoot)
+        case .value: CharacterRootFactory.detailView(root: appModel.valueRoot)
         case .weather: WeatherRootFactory.detailView(root: appModel.weatherRoot)
         case .setting: EmptyView()
         default:

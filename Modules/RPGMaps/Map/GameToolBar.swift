@@ -163,7 +163,7 @@ struct GameToolBar: View {
         }
 #if !os(macOS)
         .sizedSheet(isPresented: $showPinSelection) {
-            root.valueRoot.viewController.viewSelect(filter: .monster, isGroupHidden: true) {
+            root.valueRoot.viewController.viewSelect(root: root.valueRoot, filter: .monster, isGroupHidden: true) {
                 return pinSelection.map { ItemRowModel(itemId: $0, typeId: .value) }
             } toggleSelection: { selection, _ in
                 if pinSelection.contains(selection.itemId) {

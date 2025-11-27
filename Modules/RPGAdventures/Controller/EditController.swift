@@ -198,7 +198,7 @@ extension EditController {
     
     @MainActor @ViewBuilder
     func selectValue(for entryId: UUID, linkKeyPath: WritableKeyPath<AdventureModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.valueRoot.viewController.viewSelect(filter: .all) {
+        root.valueRoot.viewController.viewSelect(root: root.valueRoot, filter: .all) {
             let text = self.model[keyPath: linkKeyPath]
             return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .value) }
         } toggleSelection: { sel, _ in

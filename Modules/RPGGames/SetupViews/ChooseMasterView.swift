@@ -41,7 +41,7 @@ struct ChooseMasterView: View {
     }
 
     private var selectionView: some View {
-        root.valueRoot.viewController.viewSelectMasters {
+        root.valueRoot.viewController.viewSelectMasters(root: root.valueRoot) {
             if let id = root.gameModel.selectedGameMaster, let gameMasterId = root.valueRoot.linkController.validate(id: id, isGameMaster: true) {
                 return [ItemRowModel(itemId: gameMasterId, typeId: .value)]
             }

@@ -41,7 +41,7 @@ struct ChangeGeneratorEditorViewModifier: ViewModifier {
         @Bindable var model = model
         content
             .sizedSheet(isPresented: $model.showGenerator) {
-                GeneratorInline(root: root, item: itemBinding, saveId: root.editController(type: .main).model.id)
+                GeneratorInline(root: root, item: itemBinding, saveId: root.editController.model.id)
             }
     }
 }

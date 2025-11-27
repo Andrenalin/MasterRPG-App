@@ -1,8 +1,8 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import Foundation
 import DiceRPG
+import Foundation
 
 public protocol TableGameStorable {
     @MainActor func addResult(_ result: ResultCategory, value: String)

@@ -1,8 +1,8 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import SwiftUI
 import PhotoRPG
+import SwiftUI
 
 struct ThumbnailPhotoRow: View {
     let itemId: UUID

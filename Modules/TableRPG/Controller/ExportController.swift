@@ -21,7 +21,7 @@ struct ExportController: Sendable {
 
 extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
+        itemController
     }
 
     public func exportingAll() -> ItemModuleIds {

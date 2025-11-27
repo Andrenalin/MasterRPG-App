@@ -1,10 +1,11 @@
 // @copyright André Trettin
 
 import AndrenalinKit
+import DiceRPG
 import Foundation
 import Observation
+import PhotoRPG
 import TableRPG
-import DiceRPG
 
 @MainActor @Observable
 final class ValueGameModel: Sendable {
@@ -32,21 +33,33 @@ public protocol ValueGameStorable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: CharacterRootModel, itemController: ItemController) {
+    init(root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.root = root
+        self.diceRoot = diceRoot
+        self.photoRoot = photoRoot
+        self.tableRoot = tableRoot
+        
         self.itemController = itemController
-        self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(root: root, dataController: nil)
-        self.importController = ImportController(root: root, itemController: internItemController, gameImporter: true)
+        self.exportController = ExportController(diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(tableRoot: tableRoot, dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
         self.gameDiceModel = ValueGameModel()
     }
     
-    weak var root: CharacterRootModel!
-    let itemController: ItemController
-    let importController: ImportController
-    let exportController: ExportController
+    let root: CharacterRootModel
+    let diceRoot: DiceRootModel
+    let photoRoot: PhotoRootModel
+    let tableRoot: TableRootModel
     
+    let itemController: ItemController
+    let exportController: ExportController
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
+
     let gameModel: ItemGameModel
     let gameDiceModel: ValueGameModel
     
@@ -76,7 +89,7 @@ struct GameController: Sendable {
 extension GameController {
     @MainActor
     func gameDiceId(itemId: UUID, entryId: UUID) -> UUID? {
-        let entry = root.itemController.itemOrEmpty(for: itemId)[entryId]
+        let entry = itemController.itemOrEmpty(for: itemId)[entryId]
         guard let diceId = entry.diceId else { return nil }
         guard entry.type == .number else { return diceId }
         let gameEntryDiceId = gameDiceModel.gameEntryDiceId[entryId]
@@ -88,7 +101,7 @@ extension GameController {
         } else {
             gameDiceId = gameDiceModel.gameDiceId[entryId]
         }
-        let newDiceId = root.diceRoot.diceGameControllable.createGameDice(for: diceId, gameDiceId: gameDiceId)
+        let newDiceId = diceRoot.diceGameControllable.createGameDice(for: diceId, gameDiceId: gameDiceId)
         if gameDiceId != nil {
             return gameDiceId
         }
@@ -112,12 +125,6 @@ extension GameController: GameControllable {
     var importControllable: any ImportControllable {
         importController as ImportControllable
     }
-    var rootExportControllable: any ExportControllable {
-        root.rootControllable.gameExportControllable
-    }
-    var rootImportControllable: any ImportControllable {
-        root.rootControllable.gameImportControllable
-    }
 }
 
 extension GameController: ValueGameStorable {
@@ -134,12 +141,12 @@ extension GameController: ValueGameStorable {
         
         let hasItem = await itemController.itemDataModel.items.contains { $0.id == id }
         try? await updateGame(data: data, hide: false, deep: true)
-        let valueId = await root.itemController.duplicate(itemId: id, withCopy: false)
+        let valueId = await itemController.duplicate(itemId: id, withCopy: false)
         if !hasItem {
             await itemController.delete(itemId: id)
         }
         let entry = ValueEntryModel(id: UUID(), name: "", type: .text, value: "", valueId: valueId)
-        await root.editController(type: .main).add(entry: entry, into: adventureValue.id)
+        await root.editController.add(entry: entry, into: adventureValue.id)
     }
 
     @MainActor
@@ -213,12 +220,12 @@ extension GameController: ValueGameStorable {
         for valueModel in valueResult.valueModels {
             let model = valueModel.duplicateWithoutCopy()
             await root.itemController.replace(model: model, isInsert: true, shouldRepairLinks: false)
-            await root.editController(type: .main).add(model: model, into: adventureValue?.id)
+            await root.editController.add(model: model, into: adventureValue?.id)
         }
         guard let adventureValue else { return }
         for entryModel in valueResult.valueEntryModels {
             let entry = entryModel.duplicate()
-            await root.editController(type: .main).add(entry: entry, into: adventureValue.id)
+            await root.editController.add(entry: entry, into: adventureValue.id)
         }
     }
 
@@ -235,7 +242,7 @@ extension GameController: ValueGameStorable {
         
         await itemController.replace(model: adventureValue, isInsert: true, shouldRepairLinks: true)
         let entry = ValueEntryModel(id: UUID(), name: name, type: .text, isGenerator: false, value: description, diceId: nil, valueId: adventureValue.id)
-        await root.editController(type: .main).add(entry: entry, into: character.id)
+        await root.editController.add(entry: entry, into: character.id)
         return adventureValue
     }
 }
@@ -245,6 +252,6 @@ private extension GameController {
         let stream = InputStream(data: data)
         stream.open()
         defer { stream.close() }
-        try await root.rootControllable.importControllable.importStream(from: stream, counterUpdater: {})
+        try await rootImportControllable.importStream(from: stream, counterUpdater: {})
     }
 }

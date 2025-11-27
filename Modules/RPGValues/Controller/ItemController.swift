@@ -6,29 +6,31 @@ import CoreData
 import TableRPG
 
 struct ItemController: Sendable {
-    @MainActor
-    init(root: CharacterRootModel, dataController: DataController?, tableChildren: (@MainActor @Sendable (ItemRowModel) -> [ItemRowModel])? = nil) {
-        self.root = root
+    @MainActor init(tableRoot: TableRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable, tableChildren: (@MainActor @Sendable (ItemRowModel) -> [ItemRowModel])? = nil) {
+        self.tableRoot = tableRoot
         self.dataControllable = dataController
-        itemDataModel = ItemDataModel(categoryTags: [.character, .gameMaster, .item, .monster], networkModule: .value)
+        self.linkRegisterController = linkRegisterControllable
+        
+        self.itemDataModel = ItemDataModel(categoryTags: [.character, .gameMaster, .item, .monster], networkModule: .value)
         self.tableChildren = tableChildren
     }
 
-    weak var root: CharacterRootModel!
     let collectionCategory: ItemListCategory = .collection
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
+    let linkRegisterController: LinkRegisterControllable
     let tableChildren: (@MainActor @Sendable (ItemRowModel) -> [ItemRowModel])?
+    
+    let tableRoot: TableRootModel
 }
 
 extension ItemController: ItemControllable {
     typealias Model = ValueModel
     
-    @MainActor
-    var linkRegisterControllable: LinkRegisterControllable {
-        root.rootControllable.linkRegisterControllable
+    @MainActor var linkRegisterControllable: LinkRegisterControllable {
+        linkRegisterController
     }
-    
+
     @MainActor
     func children(for model: ItemRowModel) -> [ItemRowModel] {
         switch model.typeId {
@@ -36,7 +38,7 @@ extension ItemController: ItemControllable {
             if let tableChildren {
                 return tableChildren(model)
             }
-            return root.tableRoot.itemControllable.children(for: model)
+            return tableRoot.itemControllable.children(for: model)
         default:
             let item = itemOrEmpty(for: model.itemId)
             return item.entries.flatMap {
@@ -58,19 +60,12 @@ extension ItemController: ItemControllable {
 
     func didDelete(model: ModelType) async {
         guard let model = model as? ValueModel else { return }
-        await root.applyToAllEditController {
-            await $0.didDelete(itemId: model.id)
-        }
-        for entry in model.entries {
-            await root.editController(type: .main).remove(entryId: entry.id, from: model, isDeepRemove: true)
-        }
+//        for entry in model.entries {
+//            await root.editController.remove(entryId: entry.id, from: model, isDeepRemove: true)
+//        }
     }
     
     func didUpdate(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didUpdate(item: model)
-        }
     }
 
     func duplicate(itemId: UUID) async -> UUID {
@@ -79,7 +74,7 @@ extension ItemController: ItemControllable {
 
     func duplicate(itemId: UUID, withCopy: Bool) async -> UUID {
         let (duplicates, copyId, mapper) = await duplicateSubValue(id: itemId, withCopy: withCopy)
-        await root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)
+        //await root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)
         for duplicate in duplicates {
             await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
         }

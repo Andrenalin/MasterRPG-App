@@ -35,14 +35,3 @@ struct NewMapRoute: View {
                 .environment(appModel.mapRoot)
     }
 }
-
-struct NewValueRoute: View {
-    let appModel: AppModel
-    let tabId: UUID
-    let isExtended: Bool
-    
-    var body: some View {
-            ValueFactory.rootExtendedView(for: appModel.valueRoot, tabId: tabId)
-                .environment(appModel.valueRoot)
-    }
-}

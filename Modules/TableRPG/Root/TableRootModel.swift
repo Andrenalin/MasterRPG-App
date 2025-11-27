@@ -34,6 +34,9 @@ public final class RootModel: Sendable {
 @Observable
 public final class TableRootModel: @unchecked Sendable {
     @MainActor init(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) {
+        self.diceRoot = diceRoot
+        self.pdfRoot = pdfRoot
+
         rootModel = RootModel()
         let module: NetworkModules = .table
         self.module = module
@@ -45,9 +48,6 @@ public final class TableRootModel: @unchecked Sendable {
         
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
-
-        self.diceRoot = diceRoot
-        self.pdfRoot = pdfRoot
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -93,9 +93,6 @@ public final class TableRootModel: @unchecked Sendable {
     
     @ObservationIgnored private(set) var _editController: EditController?
     var editController: EditController { _editController.unsafelyUnwrapped }
-    @MainActor @ObservationIgnored lazy var entryEditController: EntryEditController = {
-        EntryEditController(editController: editController)
-    }()
     @ObservationIgnored private(set) var _exportController: ExportController?
     var exportController: ExportController { _exportController.unsafelyUnwrapped }
     @ObservationIgnored private(set) var _importController: ImportController?

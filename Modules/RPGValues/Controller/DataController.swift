@@ -4,33 +4,19 @@ import AndrenalinKit
 import Foundation
 import CoreData
 
-struct DataController: Sendable {
-    @MainActor
-    init(root: CharacterRootModel, context: NSManagedObjectContext, token: String) {
-        self.root = root
-        self.changeObserver = CoreDataChangeObserver()
+struct DataController: DataPersistenceControllable {
+    @MainActor init(context: NSManagedObjectContext, token: String) {
         self.dataController = CoreDataController<ValueModel, RPGValue>(context: context)
         self.token = token
-
-        changeObserver.observeCoreDataChanges(from: context, entity: RPGValue.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
     }
     
-    weak var root: CharacterRootModel!
     let dataController: CoreDataController<ValueModel, RPGValue>
-    var itemControllable: any ItemControllable {
-        root.itemController
-    }
-    let changeObserver: CoreDataChangeObserver
     let token: String
 }
 
-extension DataController: CoreDataPersistable, DataPersistenceControllable, SyncDataControllable {
-    var dataControllable: any CoreDataPersistable {
-        self
-    }
-    
+extension DataController: CoreDataPersistable {
     // MARK: model -> viewlmodel
-
+    
     func mapViewModel(_ model: RPGValue, token: String) -> ValueModel {
         ValueModel(
             id: model.uuid ?? UUID(),
@@ -45,9 +31,9 @@ extension DataController: CoreDataPersistable, DataPersistenceControllable, Sync
             parentId: model.parentUUID
         )
     }
-
+    
     // MARK: viewmodel -> model
-
+    
     func mapModel(_ viewModel: ValueModel, into model: RPGValue) {
         model.uuid <=> viewModel.id
         model.name <=> viewModel.name_.rawValue
@@ -73,13 +59,13 @@ extension DataController: CoreDataPersistable, DataPersistenceControllable, Sync
         }
         model.parentUUID <=> viewModel.parentId
     }
-
+    
     // MARK: - ValueEntryModel
-
+    
     private func map(_ model: [RPGValueEntry]) -> [ValueEntryModel] {
         model.sorted { $0.index < $1.index }.map { map($0) }
     }
-
+    
     private func map(_ model: RPGValueEntry) -> ValueEntryModel {
         ValueEntryModel(
             id: model.uuid ?? UUID(),
@@ -91,7 +77,7 @@ extension DataController: CoreDataPersistable, DataPersistenceControllable, Sync
             valueId: CRDT(string: model.valueUUID ?? "", defaultValue: nil)
         )
     }
-
+    
     private func map(_ viewModel: ValueEntryModel, into valueEntry: RPGValueEntry, index: Int) {
         valueEntry.uuid <=> viewModel.id
         valueEntry.name <=> viewModel.$name.rawValue

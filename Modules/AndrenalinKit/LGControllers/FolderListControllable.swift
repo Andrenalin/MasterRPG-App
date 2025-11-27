@@ -131,6 +131,7 @@ private extension FolderListControllable {
                 return nil
             }
         } else {
+            guard item.model.displayState == 0 else { return nil }
             if listDisplayModel.listMode == .list {
                 if item.model.specialCategory {
                     return nil

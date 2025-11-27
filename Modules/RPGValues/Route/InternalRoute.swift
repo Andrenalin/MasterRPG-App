@@ -38,6 +38,6 @@ struct InternalRouteView: View {
     }
     
     var editController: EditController {
-        root.editController(type: .main)
+        root.editController
     }
 }

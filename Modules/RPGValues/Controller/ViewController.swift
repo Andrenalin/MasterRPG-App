@@ -1,32 +1,67 @@
 // @copyright André Trettin
 
 import AndrenalinKit
+import DiceRPG
 import PhotoRPG
 import TableRPG
 import SwiftUI
 
 public struct ViewController {
     public let goupViewType: GroupViewType = .item
-    public let thumbnailRowViewType: ThumbnailRowViewType = .photo
-
-    weak var root: CharacterRootModel!
+    public let thumbnailRowViewType: ThumbnailRowViewType = .custom
 }
 
 extension ViewController: ViewControllable {
+    public func thumbnailRowView(for itemId: UUID) -> AnyView {
+        AnyView(ThumbnailPhotoRow(itemId: itemId))
+    }
 }
+
+// MARK: External Views
+
+extension ViewController {
+    @MainActor
+    func diceSelection(root: CharacterRootModel, selectionModel: ItemSelectionModel) -> some View {
+        root.diceRoot.viewController.selectionView(root: root.diceRoot, model: selectionModel)
+    }
+}
+
+// MARK: - Viewer
+
+public extension ViewController {
+    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
+        LinkRootView(type: isInspector ? .inspector : .window)
+    }
+    
+    @MainActor func windowViewer(root: CharacterRootModel, selection: WindowItemSelection) -> some View {
+        let model = root.itemController.itemOrEmpty(for: selection.itemId)
+        return CharacterSheet(model: model, showTopImage: false, dismissAction: nil)
+    }
+
+    @MainActor func inlineViewer(root: CharacterRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: id)
+        return CharacterSheet(model: model, showTopImage: false, dismissAction: dismissAction)
+    }
+    
+    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
+        LinkRootView(type: .selection)
+            .environment(model)
+    }
+}
+
+// MARK: - OLd Views
 
 public extension ViewController {
     @MainActor
     func detailEditor(for item: ItemRowTreeModel, module: NetworkModules) -> some View {
         CharacterDetailSheet(item: item)
-            .environment(root)
     }
 
     @MainActor
     private static let gameTabId = UUID()
 
     @MainActor
-    func gameView(select: UUID? = nil) -> some View {
+    func gameView(root: CharacterRootModel, select: UUID? = nil) -> some View {
         if let id = select {
             let item = root.itemController.itemOrEmpty(for: id)
             if item.displayState == 0 {
@@ -37,11 +72,10 @@ public extension ViewController {
         return RootNaviList(root: root, tabId: ViewController.gameTabId)
             .itemSplitViewSizeMode(.small)
             .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
-            .environment(root)
     }
     
     @MainActor
-    func generatorEditorWindow() -> some View {
+    func generatorEditorWindow(root: CharacterRootModel) -> some View {
         GeneratorWindow(root: root)
             .environment(root)
     }
@@ -50,7 +84,7 @@ public extension ViewController {
     private static let linkTabId = UUID()
 
     @MainActor
-    func linkWindow() -> some View {
+    func linkWindow(root: CharacterRootModel) -> some View {
         RootNaviList(root: root, tabId: ViewController.linkTabId)
             .itemSplitViewSizeMode(.small)
             .itemListConfiguration(canAdd: false)
@@ -61,13 +95,13 @@ public extension ViewController {
     }
 
     @MainActor
-    func characterWindow(selection: ItemSelection) -> some View {
+    func characterWindow(root: CharacterRootModel, selection: ItemSelection) -> some View {
         CharacterSheet(model: root.itemController.itemOrEmpty(for: selection.itemId), showTopImage: true, dismissAction: nil)
             .navigationTitle(root.itemController.itemOrEmpty(for: selection.itemId).name)
             .environment(root)
     }
 
-    func rowView(item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
+    func rowView(root: CharacterRootModel, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
         ValueRow(item: item, isSelected: isSelected, hasQuickEditor: true, cacheItemListModel: cacheItemListModel)
             .environment(root)
     }
@@ -76,7 +110,7 @@ public extension ViewController {
     private static let selectionTabId = UUID()
 
     @MainActor
-    func viewSelect(filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, isGroupHidden: Bool = true, focus: UUID? = nil, searchText: String? = nil, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
+    func viewSelect(root: CharacterRootModel, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, isGroupHidden: Bool = true, focus: UUID? = nil, searchText: String? = nil, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
         let listController = root.listController(tabId: ViewController.selectionTabId)
         listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: isGroupHidden, focus: focus, mode: SelectionMode(selected: selection, toggle: toggleSelection))
         if let searchText {
@@ -90,17 +124,17 @@ public extension ViewController {
     }
 
     @MainActor
-    func viewSelectCharacters(selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
-        viewSelect(filter: .character, onlyItems: true, selection: selection, toggleSelection: toggleSelection, dismissAction: dismissAction)
+    func viewSelectCharacters(root: CharacterRootModel, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
+        viewSelect(root: root, filter: .character, onlyItems: true, selection: selection, toggleSelection: toggleSelection, dismissAction: dismissAction)
     }
 
     @MainActor 
-    func viewSelectMasters(selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
-        viewSelect(filter: .gameMaster, onlyItems: true, selection: selection, toggleSelection: toggleSelection, dismissAction: dismissAction)
+    func viewSelectMasters(root: CharacterRootModel, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
+        viewSelect(root: root, filter: .gameMaster, onlyItems: true, selection: selection, toggleSelection: toggleSelection, dismissAction: dismissAction)
     }
 
     @MainActor
-    func viewMinimum(with id: UUID?) -> some View {
+    func viewMinimum(root: CharacterRootModel, with id: UUID?) -> some View {
         MinimumRow(itemId: id ?? UUID())
             .environment(root)
     }
@@ -108,8 +142,8 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor 
-    func selectForScan(ids: Binding<[UUID]?>, dismissAction: @escaping () -> Void) -> some View {
-        viewSelect {
+    func selectForScan(root: CharacterRootModel, ids: Binding<[UUID]?>, dismissAction: @escaping () -> Void) -> some View {
+        viewSelect(root: root) {
             if let links = ids.wrappedValue {
                 return links.map { ItemRowModel(itemId: $0, typeId: root.itemController.itemDataModel.networkModule) }
             } else {

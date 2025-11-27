@@ -39,7 +39,6 @@ struct ValueDetailEditor: View {
         }
         .modifier(ChangeChildEditorViewModifier(editController: editController, model: changeChildModel))
         .modifier(ChangeGeneratorEditorViewModifier(model: changeGeneratorModel))
-        .focusedSceneValue(\.selectedValue, $model.id)
         .environment(detailHeaderModel)
         .environment(externalHeaderModel)
         .onChange(of: model.entries, initial: true) {

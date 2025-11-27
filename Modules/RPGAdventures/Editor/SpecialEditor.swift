@@ -83,7 +83,7 @@ struct RootQuickLinkEditor: View {
                 case .table:
                     root.tableRoot.viewController.selectForScan(root: root.tableRoot, ids: selectedIds, dismissAction: action)
                 case .value:
-                    root.valueRoot.viewController.selectForScan(ids: selectedIds, dismissAction: action)
+                    root.valueRoot.viewController.selectForScan(root: root.valueRoot, ids: selectedIds, dismissAction: action)
                 case .map:
                     root.mapRoot.viewController.selectForScan(ids: selectedIds, dismissAction: action)
                 default:

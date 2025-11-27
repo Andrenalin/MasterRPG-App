@@ -41,7 +41,7 @@ struct ChoosePlayerView: View {
     }
 
     private var selectionView: some View {
-        root.valueRoot.viewController.viewSelectCharacters {
+        root.valueRoot.viewController.viewSelectCharacters(root: root.valueRoot) {
             if let id = root.gameModel.selectedCharacter, let characterId = root.valueRoot.linkController.validate(id: id, isCharacter: true) {
                 return [ItemRowModel(itemId: characterId, typeId: .value)]
             }
