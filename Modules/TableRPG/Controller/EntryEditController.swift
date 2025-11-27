@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
-import SwiftData
 import SwiftUI
 
 struct EntryEditController {
@@ -18,8 +17,7 @@ struct EntryEditController {
 }
 
 extension EntryEditController: EntryEditControllable {
-    
-    typealias EditDataModel = TableDataModel
+    typealias EditDataModel = TableModel
     
     var editControllable: any EditControllable {
         editController

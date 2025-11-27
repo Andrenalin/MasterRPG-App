@@ -1,9 +1,8 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftData
-import SwiftUI
+import AndrenalinKit
 import DiceRPG
+import SwiftUI
 
 struct LinkRootView: View {
     let type: LinkRootType
@@ -11,10 +10,10 @@ struct LinkRootView: View {
     @Environment(TableRootModel.self) private var root
     
     @State private var selection: NetworkModules = .table
-    
+
     var body: some View {
         if type == .selection {
-            CoreRPG.LinkRootView(root: root, type: type)
+            LinkItemRootView(root: root.rootController, type: type)
         } else {
             allModuleLinks
         }
@@ -27,7 +26,7 @@ struct LinkRootView: View {
                 
                 buttonPicker(module: .dice)
             } label: {
-                Text("Module selection")
+                Text("Module selection", bundle: .module)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
@@ -37,7 +36,7 @@ struct LinkRootView: View {
                 case .dice:
                     root.diceRoot.viewController.linkWindow(root: root.diceRoot, isInspector: type == .inspector)
                 default:
-                    CoreRPG.LinkRootView(root: root, type: type)
+                    LinkItemRootView(root: root.rootController, type: type)
                 }
             }
         }

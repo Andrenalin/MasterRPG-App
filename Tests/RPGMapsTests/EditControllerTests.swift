@@ -7,7 +7,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import RPGResourcesDebug
-import RPGTables
+import TableRPG
 import RPGValues
 import Testing
 

@@ -7,7 +7,7 @@ import os.log
 import AudioRPG
 import DiceRPG
 import PhotoRPG
-import RPGTables
+import TableRPG
 import RPGValues
 
 public struct LinkController: Sendable {

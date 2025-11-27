@@ -11,7 +11,7 @@ import PhotoRPG
 import SpaceRPG
 import RPGValues
 import WeatherRPG
-import RPGTables
+import TableRPG
 
 struct ItemController: Sendable {
     @MainActor

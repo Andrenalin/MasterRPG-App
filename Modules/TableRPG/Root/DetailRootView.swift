@@ -1,48 +1,50 @@
 // @copyright André Trettin
 
-import CoreRPG
-import DiceRPG
-import PdfRPG
-import SwiftData
-import SwiftUI
+import AndrenalinKit
 import CoreExternalRPG
+import SwiftUI
+import DiceRPG
 
 struct DetailRootView: View {
-    let selectedId: UUID?
+    init(root: TableRootModel, editController: EditController, model: TableModel, isSubFolder: Bool) {
+        self.root = root
+        self.editController = editController
+        self.model = model
+        self.isSubFolder = isSubFolder
+        let listController = root.folderListController.copy(parentModel: model) as! FolderListController
+        self._detailFolderListController = State(wrappedValue: listController)
+    }
     
-    @Environment(\.modelContext) private var modelContext
+    let root: TableRootModel
+    let editController: EditController
+    let model: TableModel
+    let isSubFolder: Bool
+    
     @Environment(\.navigator) private var navigator
     
-    @Environment(LinkRootController.self) private var linkController
-    @Environment(TableRootModel.self) private var root
-    
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.table.viewerkWindowId, canShow: true, route: { DetailRoute.viewer($0) })
-    @State private var tableSheetModel: TableSheetModel?
-    @State private var showQuickEditor: Bool = false
+    @State private var detailFolderListController: FolderListController
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.table.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
+    @State private var animate: Bool = false
     
     var body: some View {
-        ItemDetailRootView(selectedId: selectedId) {
+        content(listController: detailFolderListController)
+            .onChange(of: detailFolderListController.listModel.subFolderRoute) {
+                guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
+                navigator.navigate(to: TableDetailRoute.folder(subItemId), method: .push)
+                detailFolderListController.listModel.subFolderRoute = nil
+            }
+    }
+    
+    func content(listController: any FolderListControllable) -> some View {
+        ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: false) {
         } editor: {
-            if let tableModel {
-                detailEditorView(model: tableModel)
-            }
+            detailEditorView
         } inspector: {
-            LinkRootView(type: .inspector)
-        } entryEditor: {
-            if let tableModel {
-                EntryEditorView(entryEditController: root.entryEditController, model: tableModel)
+            if !isSubFolder {
+                LinkRootView(type: .inspector)
             }
-        }
-        .navigationDestination(for: SelectionDiceRoute.self) { route in
-            route
-                .environment(root.editController.selectionDice)
-        }
-        .navigationDestination(for: SelectionPdfRoute.self) { route in
-            route
-                .environment(root.editController.selectionPdf)
-        }
-        .navigationDestination(for: TableEditorRoute.self) { route in
-            route
+        } entryEditor: {
+            EntryEditorView(editController: root.editController)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -52,49 +54,56 @@ struct DetailRootView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .secondaryActionAll) {
                 Button {
-                    navigator.navigate(to: TableEditorRoute.quickEditor, method: .managedCover)
+                    navigator.navigate(to: TableEditorRoute.quickEditor, method: .cover)
                 } label: {
-                    Image(systemName: "table.badge.more")
+                    Label {
+                        Text("Quick Editor", bundle: .module)
+                    } icon: {
+                        Image(systemName: "table.badge.more")
+                    }
                 }
             }
         }
         .environment(openFileWindowModel)
-        .environment(root.listController.cacheListItemModel)
+        .environment(root.folderListController.cacheListItemModel)
+        .environment(root.listDisplayModel)
+        .environment(root.searchModel)
+        .environment(root.rootController)
+        .tint(root.module.tint)
+        .accentColor(root.module.tint)
     }
     
-    var selectedModel: ItemDataModel? {
-        root.listControllable.selectedModel(for: selectedId, modelContext: modelContext)
-    }
-
-    var tableModel: TableDataModel? {
-        root.itemController.model(for: selectedId ?? root.listControllable.listModel.selectedItemId)
-    }
-
     @ViewBuilder
-    func detailEditorView(model: TableDataModel) -> some View {
-        root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.selectionDice)
-            .onChange(of: root.editController.selectionDice.selection) {
-                withAnimation { root.editController.add(diceId: root.editController.selectionDice.itemId, model: model) }
+    var detailEditorView: some View {
+        root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.tableEditModel.selectionDice)
+            .onChange(of: root.editController.tableEditModel.selectionDice.selection) {
+                withAnimation { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, model: model) }
             }
             .onChange(of: model.diceId, initial: true) {
-                withAnimation { root.editController.selectionDice.resetSelection(itemId: model.diceId) }
+                withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId) }
             }
         
-        EntryListView(entryEditController: root.entryEditController, model: model)
+        EntryListView(editController: root.editController)
     }
 }
 
 #Preview(traits: .mockData) {
-    @Previewable @Query var models: [ItemDataModel]
     @Previewable @Environment(TableRootModel.self) var root
+    @Previewable @Environment(ListModel.self) var listModel
     
-    NavigationStack {
-        DetailRootView(selectedId: MockData.previewId)
-    }
-    .onAppear {
-        root.listControllable.update(items: models, parentModel: nil)
-        root.listControllable.listModel.set(selectedItemId: MockData.previewId)
+    if listModel.selectedItem == nil {
+        Text("Hello")
+            .onAppear {
+                let id = root.itemController.itemDataModel.items.first ?? TableModel.previewId
+                root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId)
+                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
+            }
+    } else {
+        ManagedNavigationStack {
+            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId), isSubFolder: false)
+                .preferredColorScheme(.dark)
+        }
     }
 }

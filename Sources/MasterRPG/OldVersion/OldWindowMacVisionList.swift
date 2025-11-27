@@ -12,7 +12,7 @@ import PhotoRPG
 import RPGValues
 import PhotoRPG
 import WeatherRPG
-import RPGTables
+import TableRPG
 
 struct OldWindowMacVisionList: Scene {
     let appModel: AppModel

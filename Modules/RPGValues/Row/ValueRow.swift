@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 import PdfRPG
 import PhotoRPG
-import RPGTables
+import TableRPG
 
 struct ValueRow: View {
     let item: ItemRowTreeModel

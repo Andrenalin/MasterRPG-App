@@ -6,7 +6,7 @@ import SwiftUI
 import AudioRPG
 import WeatherRPG
 import RPGValues
-import RPGTables
+import TableRPG
 import SpaceRPG
 import PhotoRPG
 import PdfRPG

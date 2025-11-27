@@ -4,7 +4,7 @@ import AndrenalinKit
 import DiceRPG
 import Foundation
 import Observation
-import RPGTables
+import TableRPG
 
 @MainActor @Observable
 final class GeneratorDataModel: Sendable {

@@ -4,7 +4,7 @@ import CoreExternalRPG
 import AndrenalinKit
 import SwiftUI
 import DiceRPG
-import RPGTables
+import TableRPG
 import RPGValues
 import RPGMaps
 

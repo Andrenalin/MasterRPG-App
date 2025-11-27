@@ -4,7 +4,7 @@ import AndrenalinKit
 import Foundation
 import PhotoRPG
 import RPGMaps
-import RPGTables
+import TableRPG
 import RPGAdventures
 import DiceRPG
 import WeatherRPG

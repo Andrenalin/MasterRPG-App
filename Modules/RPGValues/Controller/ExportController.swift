@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-import RPGTables
+import TableRPG
 import PhotoRPG
 import DiceRPG
 

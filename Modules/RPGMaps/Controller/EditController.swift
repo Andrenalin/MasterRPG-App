@@ -9,7 +9,7 @@ import PhotoRPG
 import AudioRPG
 import DiceRPG
 import PdfRPG
-import RPGTables
+import TableRPG
 import RPGValues
 
 @MainActor @Observable

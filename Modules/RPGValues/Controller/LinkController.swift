@@ -4,7 +4,7 @@ import AndrenalinKit
 import Foundation
 import SwiftUI
 import os.log
-import RPGTables
+import TableRPG
 import DiceRPG
 import PhotoRPG
 

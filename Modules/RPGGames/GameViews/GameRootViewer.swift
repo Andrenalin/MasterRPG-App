@@ -4,7 +4,7 @@ import AndrenalinKit
 import SwiftUI
 import RPGMaps
 import WeatherRPG
-import RPGTables
+import TableRPG
 import SpaceRPG
 import PhotoRPG
 import PdfRPG

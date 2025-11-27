@@ -147,7 +147,9 @@ struct EntryContentEditor: View {
             .foregroundStyle(.secondary)
         
 #if os(tvOS)
-        TextField(text: $entry.content, prompt: Text("Add content", bundle: .module), axis: .vertical) {
+        @Bindable var editModel = editModel
+        
+        TextField(text: $editModel.text, prompt: Text("Add content", bundle: .module), axis: .vertical) {
             Text("Description", bundle: .module)
         }
         .frame(minHeight: 120, maxHeight: 200)

@@ -13,7 +13,7 @@ import PhotoRPG
 import RPGResources
 import RPGResourcesDebug
 import SpaceRPG
-import RPGTables
+import TableRPG
 import RPGValues
 import WeatherRPG
 

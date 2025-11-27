@@ -5,7 +5,7 @@ import Foundation
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGTables
+@testable import TableRPG
 
 struct LinkControllerTests {
     @Test func toggleTextLink() async throws {

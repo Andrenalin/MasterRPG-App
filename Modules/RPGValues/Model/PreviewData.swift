@@ -6,7 +6,7 @@ import Foundation
 import PdfRPG
 import PhotoRPG
 import RPGResources
-import RPGTables
+import TableRPG
 import SwiftData
 
 public extension CharacterRootModel {

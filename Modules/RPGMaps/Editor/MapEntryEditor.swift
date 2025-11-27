@@ -9,7 +9,7 @@ import AudioRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
-import RPGTables
+import TableRPG
 
 struct MapEntryEditor: View {
     let root: MapRootModel

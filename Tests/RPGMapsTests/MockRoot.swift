@@ -10,7 +10,7 @@ import Foundation
 @testable import PhotoRPG
 import RPGResources
 import RPGResourcesDebug
-@testable import RPGTables
+@testable import TableRPG
 @testable import RPGValues
 
 import Testing

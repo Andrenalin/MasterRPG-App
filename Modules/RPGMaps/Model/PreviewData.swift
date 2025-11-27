@@ -7,7 +7,7 @@ import AudioRPG
 import PdfRPG
 import PhotoRPG
 import RPGResources
-import RPGTables
+import TableRPG
 import RPGValues
 import SwiftUI
 import SwiftData

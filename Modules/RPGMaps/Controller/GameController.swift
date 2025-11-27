@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import Observation
-import RPGTables
+import TableRPG
 import SwiftUI
 import RPGValues
 import PhotoRPG

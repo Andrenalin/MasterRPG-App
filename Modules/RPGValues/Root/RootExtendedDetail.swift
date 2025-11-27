@@ -4,7 +4,7 @@ import CoreExternalRPG
 import AndrenalinKit
 import SwiftUI
 import PhotoRPG
-import RPGTables
+import TableRPG
 
 struct RootExtendedDetail: View {
     let itemRowTreeModel: ItemRowTreeModel

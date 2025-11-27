@@ -7,7 +7,7 @@ import AudioRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
-import RPGTables
+import TableRPG
 import RPGValues
 
 struct ItemController: Sendable {

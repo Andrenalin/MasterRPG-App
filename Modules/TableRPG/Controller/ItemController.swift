@@ -1,78 +1,71 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
-import SwiftData
+import Observation
+import CoreData
 
 struct ItemController: Sendable {
-    @MainActor init(container: ModelContainer, module: NetworkModules) {
-        self.itemCacheModel = ItemCacheModel()
-        self.container = container
-        self.module = module
-        self.modelCacheModel = ModelCacheModel()
+    @MainActor init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.dataControllable = dataController
+        self.linkRegisterController = linkRegisterControllable
+
+        self.itemDataModel = ItemDataModel(categoryTags: [.rules, .loot, .supplement, .generator], networkModule: .table)
     }
-    
-    let itemCacheModel: ItemCacheModel
-    let container: ModelContainer
-    let collectionCategory: ItemListCategory = .collection
-    let module: NetworkModules
-    let modelCacheModel: ModelCacheModel<TableDataModel>
+
+    let collectionCategory: ItemListCategory = .bookshelf
+    let dataControllable: (any DataPersistenceControllable)?
+    let itemDataModel: ItemDataModel
+    let linkRegisterController: LinkRegisterControllable
 }
-
-extension ItemController: ModelCacheControllable {}
-
-// MARK: - Import Controller
 
 extension ItemController: ItemControllable {
-    @MainActor func itemDataCodableModel(id: UUID) -> ItemDataCodableModel? {
-        let encoder = JSONEncoder()
-        var externalData: Data? = nil
-        if let ownModel = model(for: id)?.codableModel {
-            externalData = try? encoder.encode(ownModel)
+    typealias Model = TableModel
+    
+    @MainActor var linkRegisterControllable: LinkRegisterControllable {
+        linkRegisterController
+    }
+
+    @MainActor
+    func children(for model: ItemRowModel) -> [ItemRowModel] {
+        itemOrEmpty(for: model.itemId).entries.map {
+            ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: itemDataModel.networkModule)
         }
-        return itemDataCodableModel(for: id, externalData: externalData)
     }
     
-    @MainActor func encodedItemData(for id: UUID) throws -> Data? {
-        guard let model = itemDataCodableModel(id: id) else { return nil }
-        let encoder = JSONEncoder()
-        return try encoder.encode(model)
+    func didDelete(model: ModelType) async {
     }
     
-    @MainActor func replaceLinks(model: TableDataModel) {
-        let controller = LinkRegisterController(container: container)
-        model.entries.forEach { entry in
-            let updatedContent = controller.verifyLinks(in: entry.content, destinationItemId: entry.itemId, destinationEntryId: entry.entryId, destinationModule: .table)
-            entry.content = updatedContent
+    func didUpdate(model: ModelType) async {
+    }
+    
+    @MainActor
+    func itemTree(from rootModel: ItemRowModel?, to childModel: ItemRowModel) -> [ItemRowModel] {
+        guard let rootModel else {
+            for itemId in itemDataModel.items {
+                let model = ItemRowModel(itemId: itemId, typeId: itemDataModel.networkModule)
+                let result = itemTree(from: model, to: childModel)
+                if !result.isEmpty {
+                    return result
+                }
+            }
+            return []
         }
+        
+        if rootModel.itemId == childModel.itemId {
+            return []
+        }
+        return itemTree(from: rootModel, to: childModel)
     }
 }
 
-extension ItemController: ImportDataControllable {
-    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
-        let decoder = JSONDecoder()
-        if version == ItemDataExportModel.Version.version_2025.rawValue {
-            return try decoder.decode(ItemDataCodableModel.self, from: data)
-        } else {
-            do {
-                let oldModel = try decoder.decode(TableModel.self, from: data)
-                return ConverterController.convert(old: oldModel, itemController: self)
-            } catch {
-                print(error)
-                fatalError()
-            }
+extension ItemController {
+    @MainActor
+    private func itemTree(from rootModel: ItemRowModel, to childModel: ItemRowModel) -> [ItemRowModel] {
+        let item = itemOrEmpty(for: rootModel.itemId)
+        if item.entries.first(where: { $0.id == childModel.entryId }) != nil {
+            return [childModel]
         }
-    }
-    
-    @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool) {
-        guard let data else { return }
-        let decoder = JSONDecoder()
-        guard let newTable = try? decoder.decode(TableDataModel.TableDataModelCodable.self, from: data) else { return }
-        if let oldTable = model(for: id) {
-            oldTable.replace(newTable)
-        } else {
-            let newModel = TableDataModel(newTable)
-            container.mainContext.insert(newModel)
-        }
+        return []
     }
 }

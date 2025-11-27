@@ -8,7 +8,7 @@ import os.log
 import AudioRPG
 import RPGMaps
 import PhotoRPG
-import RPGTables
+import TableRPG
 import RPGValues
 import WeatherRPG
 import PdfRPG

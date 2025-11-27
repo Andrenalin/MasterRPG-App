@@ -5,7 +5,7 @@ import SwiftUI
 import AudioRPG
 import PdfRPG
 import PhotoRPG
-import RPGTables
+import TableRPG
 import RPGValues
 
 struct MapRow: View {

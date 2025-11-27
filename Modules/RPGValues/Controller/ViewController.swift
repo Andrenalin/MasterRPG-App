@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import PhotoRPG
-import RPGTables
+import TableRPG
 import SwiftUI
 
 public struct ViewController {

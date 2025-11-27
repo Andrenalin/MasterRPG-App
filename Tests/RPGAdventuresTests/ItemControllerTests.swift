@@ -15,7 +15,7 @@ import WeatherRPG
 
 @testable import RPGAdventures
 @testable import PhotoRPG
-@testable import RPGTables
+@testable import TableRPG
 
 struct ItemControllerTests {
     @Test func itemRegisterLinks() async throws {

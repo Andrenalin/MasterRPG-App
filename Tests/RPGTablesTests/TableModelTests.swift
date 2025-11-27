@@ -5,7 +5,7 @@ import AndrenalinKit
 import Foundation
 import Testing
 
-@testable import RPGTables
+@testable import TableRPG
 
 struct TableModelTests {
     func setUp() async throws -> TableModel {

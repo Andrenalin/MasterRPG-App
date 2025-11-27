@@ -9,7 +9,7 @@ import PdfRPG
 import WeatherRPG
 import PhotoRPG
 import SpaceRPG
-import RPGTables
+import TableRPG
 import RPGValues
 
 struct ExportController: Sendable {

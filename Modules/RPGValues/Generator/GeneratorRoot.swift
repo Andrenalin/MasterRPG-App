@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGTables
+import TableRPG
 
 struct GeneratorRoot: View {
     let generatorController: GeneratorController

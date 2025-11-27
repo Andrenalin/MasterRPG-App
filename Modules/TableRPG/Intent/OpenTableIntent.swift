@@ -2,22 +2,22 @@
 
 #if !os(tvOS)
 
+import AndrenalinKit
 import AppIntents
+import CoreExternalRPG
 import Foundation
 import SwiftUI
-import CoreRPG
-import CoreExternalRPG
 
 struct OpenTableIntent: OpenIntent {
-    static let title: LocalizedStringResource = "Open Weather"
+    static let title: LocalizedStringResource = "Open Table"
 
-    @Parameter(title: "Weather", requestValueDialog: "Which Weather?")
+    @Parameter(title: "Table", requestValueDialog: "Which Table?")
     var target: TableEntity
 
     @Dependency var navigator: Navigator
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.weathers(target.id, nil))
+        await navigator.perform(route: KnownRoutes.tables(target.id, nil))
         return .result()
     }
 }

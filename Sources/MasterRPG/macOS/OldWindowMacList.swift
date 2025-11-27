@@ -5,7 +5,7 @@ import AndrenalinKit
 import RoleGameKit
 import SwiftUI
 import RPGValues
-import RPGTables
+import TableRPG
 import RPGGame
 
 

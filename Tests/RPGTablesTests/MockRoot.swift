@@ -6,7 +6,7 @@ import Foundation
 @testable import PdfRPG
 import RPGResources
 import RPGResourcesDebug
-@testable import RPGTables
+@testable import TableRPG
 
 import Testing
 

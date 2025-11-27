@@ -13,7 +13,7 @@ import Testing
 @testable import RPGMaps
 @testable import PhotoRPG
 @testable import SpaceRPG
-@testable import RPGTables
+@testable import TableRPG
 @testable import RPGValues
 
 final class PlayerMasterControllerTests {

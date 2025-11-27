@@ -4,7 +4,7 @@ import AndrenalinKit
 import DiceRPG
 import PdfRPG
 import PhotoRPG
-import RPGTables
+import TableRPG
 import CoreData
 import SwiftData
 import SwiftUI

@@ -1,32 +1,32 @@
 // @copyright André Trettin
 
+import AndrenalinKit
 import CoreExternalRPG
-import CoreRPG
+import PdfRPG
 import SwiftUI
 
 public enum TableEditorRoute: Equatable, Hashable, Codable {
-    case quickEditor    
+    case quickEditor
+    case selectionPdf
 }
 
 extension TableEditorRoute: NavigationDestination {
     public var body: some View {
-        switch self {
-        case .quickEditor:
-            DestinationTableEditorRoute()
-        }
+        DestinationTableEditorRoute(route: self)
     }
 }
 
 struct DestinationTableEditorRoute: View {
+    let route: TableEditorRoute
+    
     @Environment(TableRootModel.self) private var root
     
     var body: some View {
-        if let tableModel {
-            QuickEntryEditor(entryEditController: root.entryEditController, currentModel: tableModel)
+        switch route {
+        case .quickEditor:
+            QuickEntryEditor(editController: root.editController)
+        case .selectionPdf:
+            root.pdfRoot.viewController.selectionView( model: root.editController.tableEditModel.selectionPdf)
         }
-    }
-    
-    var tableModel: TableDataModel? {
-        root.itemController.model(for: root.listControllable.listModel.selectedItemId)
     }
 }

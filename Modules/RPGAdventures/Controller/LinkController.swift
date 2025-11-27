@@ -10,7 +10,7 @@ import PdfRPG
 import PhotoRPG
 import RPGMaps
 import SpaceRPG
-import RPGTables
+import TableRPG
 import RPGValues
 import WeatherRPG
 

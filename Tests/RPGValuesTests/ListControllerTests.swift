@@ -6,7 +6,7 @@ import DiceRPG
 import Foundation
 import PdfRPG
 import PhotoRPG
-import RPGTables
+import TableRPG
 import RPGResourcesDebug
 import Testing
 

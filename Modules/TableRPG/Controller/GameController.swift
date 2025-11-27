@@ -1,32 +1,54 @@
 // @copyright André Trettin
 
-import CoreRPG
-import DiceRPG
+import AndrenalinKit
 import Foundation
-import os.log
+import DiceRPG
 
-public protocol TableGameStorable: GameControllable {
+public protocol TableGameStorable {
     @MainActor func addResult(_ result: ResultCategory, value: String)
     func requestTableResult(for itemId: UUID, diceId: UUID, diceResult: String, networkActions: NetworkActions?, valueActions: ValueActions) async
 }
 
 struct GameController: Sendable {
-    @MainActor
-    init(itemController: ItemController, diceRoot: DiceRootModel) {
-        self.itemController = itemController
-        self.exportController = ExportController(module: itemController.module, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(container: itemController.container, module: itemController.module)
-        self.importController = ImportController(itemController: internItemController, module: itemController.module)
-        self.gameModel = ItemGameModel()
+    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.diceRoot = diceRoot
+        self.itemController = itemController
+        self.exportController = ExportController(diceRoot: diceRoot, itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
+        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
 
-    let itemController: ItemController
-    let importController: ImportController
-    let exportController: ExportController
-    
-    let gameModel: ItemGameModel
     let diceRoot: DiceRootModel
+    let itemController: ItemController
+    let exportController: ExportController
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
+
+    let gameModel: ItemGameModel
+
+    @MainActor
+    func gameItem(for itemId: UUID) -> TableModel {
+        (gameModel.itemData[itemId] as? TableModel) ?? itemController.itemOrEmpty(for: itemId)
+    }
+    
+    @MainActor
+    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
+            gameModel.itemData[itemId] = item
+        } else {
+            gameModel.items.insert(itemId, at: 0)
+            gameModel.itemData[itemId] = item
+        }
+    }
+    
+    @MainActor
+    func currentItem() -> TableModel {
+        gameItem(for: gameModel.currentItemId ?? UUID())
+    }
 }
 
 extension GameController: GameControllable {
@@ -36,7 +58,7 @@ extension GameController: GameControllable {
     var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    @MainActor var importControllable: any ImportControllable {
+    var importControllable: any ImportControllable {
         importController as ImportControllable
     }
 }
@@ -46,51 +68,49 @@ extension GameController: TableGameStorable {
     public func addResult(_ result: ResultCategory, value: String) {
         guard result.module == .table else { return }
         let model = gameItem(for: result.id)
-//        if let childId = result.childId {
-//             model[childId].diceResult = value
-//        } else {
-//            model.diceResult = value
-//        }
+        if let childId = result.childId {
+             model[childId].diceResult = value
+        } else {
+            model.diceResult = value
+        }
     }
     
     func requestTableResult(for itemId: UUID, diceId: UUID, diceResult: String, networkActions: NetworkActions?, valueActions: ValueActions) async {
         guard let networkActions else { return }
         _ = await setCurrent(itemId: itemId)
-        //let diceNum = await diceRoot.gameControllable.number(for: diceId, result: diceResult)
-        let diceNum = 1
+        let diceNum = await diceRoot.diceGameControllable.number(for: diceId, result: diceResult)
         guard let entryId = await entry(for: itemId, with: diceNum) else { return }
 
-        guard let model = await gameItem(for: itemId) else { return }
-        let value = "" // \(model[entryId].content) 🎲 \(diceResult)"
-        let result = await valueActions.createEntryResult(model.name.wrappedValue, value, ResultCategory(id: itemId, childId: entryId, module: itemController.module))
+        let model = await gameItem(for: itemId)
+        let value = "\(model[entryId].content) 🎲 \(diceResult)"
+        let result = await valueActions.createEntryResult(model.name, value, ResultCategory(id: itemId, childId: entryId, module: itemController.itemDataModel.networkModule))
         await networkActions.game(result, .valueResult)
     }
 
     @MainActor
     func entry(for id: UUID, with result: Int) -> UUID? {
-        guard let item = gameItem(for: id) else { return nil }
-        return nil
-//        switch item.tableType {
-//        case .dice:
-//            if let _ = item.diceId {
-//                let entry = item.entries.first {
-//                    let numbers = $0.name.split(separator: "-").compactMap { Int($0) }
-//                    if let last = numbers.last {
-//                        return result <= last
-//                    }
-//                    return false
-//                }
-//                if let uuid = entry?.id {
-//                    return uuid
-//                }
-//            }
-//            return nil
-//        case .list, .all:
-//            let index = result - 1
-//            if index >= 0 && index < item.entries.count {
-//                return item.entries[index].id
-//            }
-//            return nil
-//        }
+        let item = gameItem(for: id)
+        switch item.tableType {
+        case .dice:
+            if let _ = item.diceId {
+                let entry = item.entries.first {
+                    let numbers = $0.name.split(separator: "-").compactMap { Int($0) }
+                    if let last = numbers.last {
+                        return result <= last
+                    }
+                    return false
+                }
+                if let uuid = entry?.id {
+                    return uuid
+                }
+            }
+            return nil
+        case .list, .all:
+            let index = result - 1
+            if index >= 0 && index < item.entries.count {
+                return item.entries[index].id
+            }
+            return nil
+        }
     }
 }

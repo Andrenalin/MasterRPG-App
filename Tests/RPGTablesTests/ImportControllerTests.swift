@@ -6,7 +6,7 @@ import DiceRPG
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGTables
+@testable import TableRPG
 
 struct ImportControllerTests {
     @Test func importing() async throws {

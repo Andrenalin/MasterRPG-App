@@ -11,7 +11,7 @@ import Testing
 @testable import RPGAdventures
 @testable import PhotoRPG
 @testable import RPGMaps
-@testable import RPGTables
+@testable import TableRPG
 @testable import RPGValues
 
 struct LinkControllerTests {
@@ -76,8 +76,8 @@ struct LinkControllerTests {
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry2.id] == entry2)
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry3.id].content == "\(entry2.content)Value")
 
-        await root.tableRoot.editController(type: .main).setCurrentItem(to: ItemRowTreeModel(itemId: tableId, typeId: .table))
-        await root.tableRoot.editController(type: .main).remove(entryId: tableEntryId)
+        await root.tableRoot.editController.setCurrentItem(to: ItemRowTreeModel(itemId: tableId, typeId: .table))
+        await root.tableRoot.editController.remove(entryId: tableEntryId)
         
         await #expect(root.tableRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: tableId, typeId: .table)).count == 0)
         await #expect(root.tableRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: tableId, entryId: tableEntryId, typeId: .table)).count == 0)

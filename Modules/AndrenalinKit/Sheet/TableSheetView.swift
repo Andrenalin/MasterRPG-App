@@ -27,7 +27,7 @@ struct TableSheetView<ImageContent: View>: View {
             .toolbar {
                 toolbarContent
             }
-            .searchable(text: $model.searchText, placement: .toolbar, prompt: "Find in")
+            .searchable(text: $model.searchText, placement: .toolbarAll, prompt: "Find in")
             .navigationTitle(Text(model.sheetModel.name))
         }
     }

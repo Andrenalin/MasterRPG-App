@@ -12,8 +12,8 @@ import RPGMaps
 import PhotoRPG
 import AudioRPG
 import PdfRPG
-import RPGTables
-import RPGTables
+import TableRPG
+import TableRPG
 import SpaceRPG
 import SpaceRPG
 import RPGMaps

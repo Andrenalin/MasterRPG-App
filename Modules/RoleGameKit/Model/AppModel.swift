@@ -17,7 +17,7 @@ import PdfRPG
 import PhotoRPG
 import RPGResources
 import SpaceRPG
-import RPGTables
+import TableRPG
 import RPGValues
 import WeatherRPG
 

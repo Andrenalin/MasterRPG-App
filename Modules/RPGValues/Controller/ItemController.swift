@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import CoreData
-import RPGTables
+import TableRPG
 
 struct ItemController: Sendable {
     @MainActor

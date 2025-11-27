@@ -11,3 +11,13 @@ extension ToolbarItemPlacement {
 #endif
     }
 }
+
+extension SearchFieldPlacement {
+    public static var toolbarAll: SearchFieldPlacement {
+#if os(tvOS)
+        .automatic
+#else
+        .toolbar
+#endif
+    }
+}

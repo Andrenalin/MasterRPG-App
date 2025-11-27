@@ -6,7 +6,7 @@ import AndrenalinKit
 import SwiftUI
 import DiceRPG
 import PdfRPG
-import RPGTables
+import TableRPG
 
 struct ValueEntryEditor: View {
     let root: CharacterRootModel

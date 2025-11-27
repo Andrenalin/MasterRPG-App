@@ -7,7 +7,7 @@ import RegexBuilder
 import SwiftUI
 import DiceRPG
 import PdfRPG
-import RPGTables
+import TableRPG
 
 @MainActor @Observable
 final class ValueEditModel: Sendable {

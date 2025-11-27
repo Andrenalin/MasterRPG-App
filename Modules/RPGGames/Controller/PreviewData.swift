@@ -6,7 +6,7 @@ import DiceRPG
 import Foundation
 import RPGMaps
 import PhotoRPG
-import RPGTables
+import TableRPG
 import AudioRPG
 import PdfRPG
 import SpaceRPG

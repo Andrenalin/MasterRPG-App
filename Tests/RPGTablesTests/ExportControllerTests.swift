@@ -6,7 +6,7 @@ import Foundation
 import DiceRPG
 import Testing
 
-@testable import RPGTables
+@testable import TableRPG
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {

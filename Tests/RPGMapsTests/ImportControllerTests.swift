@@ -6,7 +6,7 @@ import DiceRPG
 import AudioRPG
 import PdfRPG
 import PhotoRPG
-import RPGTables
+import TableRPG
 import RPGValues
 import RPGResourcesDebug
 import Testing

@@ -7,7 +7,7 @@ import Foundation
 import AudioRPG
 import PdfRPG
 import PhotoRPG
-import RPGTables
+import TableRPG
 import RPGValues
 import Testing
 
