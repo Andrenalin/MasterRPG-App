@@ -5,7 +5,7 @@ import AndrenalinKit
 import Foundation
 import Testing
 
-@testable import RPGValues
+@testable import CharacterRPG
 
 struct ValueModelTests {
     func setUp() -> ValueModel {

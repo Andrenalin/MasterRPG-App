@@ -5,7 +5,7 @@ import Foundation
 import Observation
 import TableRPG
 import SwiftUI
-import RPGValues
+import CharacterRPG
 import PhotoRPG
 
 @MainActor @Observable

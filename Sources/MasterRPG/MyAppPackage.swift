@@ -5,7 +5,7 @@ import AppIntents
 import RoleGameKit
 import RPGAdventures
 import AudioRPG
-import RPGValues
+import CharacterRPG
 import DiceRPG
 import RPGMaps
 import PdfRPG

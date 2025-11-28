@@ -8,7 +8,7 @@ import AudioRPG
 import DiceRPG
 import PhotoRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 
 public struct LinkController: Sendable {
     weak var root: MapRootModel!

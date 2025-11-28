@@ -10,7 +10,7 @@ import TableRPG
 import AudioRPG
 import PdfRPG
 import SpaceRPG
-import RPGValues
+import CharacterRPG
 import WeatherRPG
 
 extension GameRoot {

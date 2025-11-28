@@ -10,7 +10,7 @@ import TableRPG
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGValues
+@testable import CharacterRPG
 
 struct GeneratorControllerTests {
     let rootItemId = UUID(uuidString: "C85EF4A9-910D-4989-83C9-44ED00677751")!

@@ -8,7 +8,7 @@ import PdfRPG
 import PhotoRPG
 import RPGResources
 import TableRPG
-import RPGValues
+import CharacterRPG
 import SwiftUI
 import SwiftData
 

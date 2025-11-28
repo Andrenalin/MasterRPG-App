@@ -5,7 +5,7 @@ import AndrenalinKit
 import SwiftUI
 import AudioRPG
 import WeatherRPG
-import RPGValues
+import CharacterRPG
 import TableRPG
 import SpaceRPG
 import PhotoRPG

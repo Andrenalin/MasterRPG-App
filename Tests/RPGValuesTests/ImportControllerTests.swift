@@ -9,7 +9,7 @@ import TableRPG
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGValues
+@testable import CharacterRPG
 
 struct ImportControllerTests {
     @Test func importing() async throws {

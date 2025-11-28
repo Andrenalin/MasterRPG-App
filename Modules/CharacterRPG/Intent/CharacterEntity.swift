@@ -2,12 +2,12 @@
 
 #if !os(tvOS)
 
+import AndrenalinKit
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
 import PDFKit
-import CoreRPG
 
 struct CharacterEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -19,7 +19,8 @@ struct CharacterEntity: IndexedEntity {
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "\(name)"
+            title: "\(name)",
+            image: .init(systemName: icon)
         )
     }
 
@@ -28,16 +29,19 @@ struct CharacterEntity: IndexedEntity {
     var id: UUID { model.id }
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name.wrappedValue }
+    var name: String { model.name }
 
-    // Maps the description variable to the Spotlight indexing key `contentDescription`.
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.information.wrappedValue }
+    var description: String { model.description }
+
+    var icon: String {
+        model.specialCategory ? model.category.icon : root.module.icon
+    }
 
     var root: CharacterRootModel
-    var model: ItemDataCodableModel
+    var model: ValueModel
     
-    init(root: CharacterRootModel, model: ItemDataCodableModel) {
+    init(root: CharacterRootModel, model: ValueModel) {
         self.root = root
         self.model = model
     }
@@ -45,15 +49,15 @@ struct CharacterEntity: IndexedEntity {
 
 extension CharacterEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
-            let url = URL.documentsDirectory.appending(path: "\(landmark.name).pdf")
+        FileRepresentation(exportedContentType: .pdf) { @MainActor item in
+            let url = URL.documentsDirectory.appending(path: "\(item.name).pdf")
 
             let renderer = ImageRenderer(content: VStack {
 //                Image(landmark.landmark.backgroundImageName)
 //                    .resizable()
 //                    .aspectRatio(contentMode: .fit)
-                Text(landmark.name)
-                Text(landmark.description)
+                Text(item.name)
+                Text(item.description)
             }.frame(width: 600))
 
             renderer.render { size, renderer in
@@ -73,7 +77,7 @@ extension CharacterEntity: Transferable {
 
         DataRepresentation(exportedContentType: .plainText) {
             """
-            Character: \($0.name)
+            Name: \($0.name)
             Description: \($0.description)
             """.data(using: .utf8)!
         }
@@ -85,10 +89,10 @@ struct CharacterEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     @Dependency var root: CharacterRootModel
 
     func suggestedEntities() async throws -> [CharacterEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [CharacterEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = CharacterEntity(root: root, model: model)
             results.append(entity)
         }
@@ -98,7 +102,7 @@ struct CharacterEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     func entities(for identifiers: [CharacterEntity.ID]) async throws -> [CharacterEntity] {
         var results: [CharacterEntity] = []
         for id in identifiers {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = CharacterEntity(root: root, model: model)
             results.append(entity)
         }
@@ -106,11 +110,11 @@ struct CharacterEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     }
 
     func entities(matching: String) async throws -> [CharacterEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [CharacterEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
-            guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
             let entity = CharacterEntity(root: root, model: model)
             results.append(entity)
         }

@@ -5,7 +5,7 @@ import RPGAdventures
 import RoleGameKit
 import SwiftUI
 import RPGGame
-import RPGValues
+import CharacterRPG
 import PdfRPG
 import TableRPG
 import AudioRPG

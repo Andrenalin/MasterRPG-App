@@ -6,7 +6,7 @@ import AudioRPG
 import PdfRPG
 import PhotoRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 
 struct MapRow: View {
     let item: ItemRowTreeModel

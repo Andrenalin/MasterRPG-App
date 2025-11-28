@@ -4,7 +4,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGValues
+import CharacterRPG
 import AudioRPG
 import DiceRPG
 import PdfRPG

@@ -5,7 +5,7 @@ import AndrenalinKit
 import SwiftUI
 import DiceRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 import RPGMaps
 
 struct SpecialEditor: View {

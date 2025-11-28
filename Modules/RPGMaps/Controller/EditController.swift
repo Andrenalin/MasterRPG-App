@@ -10,7 +10,7 @@ import AudioRPG
 import DiceRPG
 import PdfRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 
 @MainActor @Observable
 final class MapEditModel: Sendable {

@@ -11,7 +11,7 @@ import PhotoRPG
 import RPGMaps
 import SpaceRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 import WeatherRPG
 
 public struct LinkController: Sendable {

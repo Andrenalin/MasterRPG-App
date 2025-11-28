@@ -10,7 +10,7 @@ import PhotoRPG
 import RPGResources
 import SpaceRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 import WeatherRPG
 import SwiftData
 

@@ -9,7 +9,7 @@ import RPGMaps
 import RPGMaps
 import PdfRPG
 import PhotoRPG
-import RPGValues
+import CharacterRPG
 import PhotoRPG
 import WeatherRPG
 import TableRPG
@@ -50,18 +50,7 @@ struct OldWindowMacVisionList: Scene {
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])
             }
-            .defaultWindowPlacementAll( .below(WindowIdentifier.game.rawValue))
-                        
-            WindowGroup("Character Viewer", id: WindowIdentifier.valueViewer.rawValue, for: ItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.valueRoot.viewController.characterWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
-                        .accentColor(.teal)
-                        .tint(.teal)
-                        .frame(minWidth: 600, minHeight: 400)
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll( .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue))
+            .defaultWindowPlacementAll( .below(WindowIdentifier.game.rawValue))                        
         }
         .defaultSize(CGSize(width: 600, height: 800))
     }

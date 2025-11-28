@@ -10,12 +10,12 @@ import TableRPG
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGValues
+@testable import CharacterRPG
 
 struct EditControllerTests {
     @Test func createGroup() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = await root.editController(type: .main)
+        let sut = root.editController
         
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         #expect(item.entries.count == 11)
@@ -83,7 +83,7 @@ struct EditControllerTests {
     
     @Test func ungroup() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = await root.editController(type: .main)
+        let sut = root.editController
 
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         #expect(item.entries.count == 11)
@@ -107,7 +107,7 @@ struct EditControllerTests {
     
     @Test func scanDice() async throws {
         let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 13)
-        let sut = await root.editController(type: .main)
+        let sut = root.editController
 
         let itemRowModel = await root.itemController.addNew(type: nil)
         
@@ -136,7 +136,7 @@ struct EditControllerTests {
     
     @Test func scanTable() async throws {
         let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 13)
-        let sut = await root.editController(type: .main)
+        let sut = root.editController
 
         let itemRowModel = await root.itemController.addNew(type: nil)
         
@@ -165,7 +165,7 @@ struct EditControllerTests {
     
     @Test func scanValue() async throws {
         let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 13)
-        let sut = await root.editController(type: .main)
+        let sut = root.editController
 
         let itemRowModel = await root.itemController.addNew(type: nil)
         
@@ -194,7 +194,7 @@ struct EditControllerTests {
     
     @Test func scanAll() async throws {
         let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 13)
-        let sut = await root.editController(type: .main)
+        let sut = root.editController
 
         let itemRowModel = await root.itemController.addNew(type: nil)
         let item = await root.itemController.itemOrEmpty(for: itemRowModel.itemId).copy()
@@ -239,7 +239,7 @@ struct EditControllerTests {
     
     @Test func scanValueEntries() async throws {
         let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 13)
-        let sut = await root.editController(type: .main)
+        let sut = root.editController
 
         let itemRowModel = await root.itemController.addNew(type: nil)
         
@@ -278,7 +278,7 @@ struct EditControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.editController(type: .main)
+        let sut = root.editController
 
         let itemEntry = ValueEntryModel(id: UUID(), name: "Hansi", type: .text, value: "Hansi")
         let otherItemEntry = ValueEntryModel(id: UUID(), name: "Other Entry", type: .text, value: "Somthing")
@@ -332,7 +332,7 @@ struct EditControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = await root.editController(type: .main)
+        let sut = root.editController
 
         let itemEntry = ValueEntryModel(id: UUID(), name: "Hansi", type: .text, value: "Hansi")
         let otherItemEntry = ValueEntryModel(id: UUID(), name: "Other Entry", type: .text, value: "Somthing")

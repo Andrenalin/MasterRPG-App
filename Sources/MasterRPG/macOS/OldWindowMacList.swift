@@ -4,7 +4,7 @@
 import AndrenalinKit
 import RoleGameKit
 import SwiftUI
-import RPGValues
+import CharacterRPG
 import TableRPG
 import RPGGame
 
@@ -28,7 +28,7 @@ struct OldWindowMacList: Scene {
         Group {
             Window("Character Generator", id: WindowIdentifier.generatorValueEditor.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.valueRoot.viewController.generatorEditorWindow()
+                    appModel.valueRoot.viewController.generatorEditorWindow(root: appModel.valueRoot)
                         .accentColor(NetworkModules.value.tint)
                         .tint(NetworkModules.value.tint)
                         .frame(minWidth: 600, minHeight: 400)

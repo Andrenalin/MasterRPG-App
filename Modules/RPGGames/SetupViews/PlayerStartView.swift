@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import RPGValues
+import CharacterRPG
 import SwiftUI
 
 struct PlayerStartView: View {

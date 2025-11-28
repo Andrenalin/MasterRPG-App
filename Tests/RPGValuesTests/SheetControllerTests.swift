@@ -5,13 +5,13 @@ import AndrenalinKit
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGValues
+@testable import CharacterRPG
 
 struct SheetControllerTests {
     @Test func characterSheet() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = SheetController(root: root)
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
         let itemId = await root.itemController.itemDataModel.items.first
         try #require(itemId != nil)
         let model = await sut.sheet(for: itemId!)

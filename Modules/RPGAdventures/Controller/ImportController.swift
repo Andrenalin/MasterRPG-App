@@ -5,7 +5,7 @@ import Foundation
 import AudioRPG
 import WeatherRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 import PhotoRPG
 import PdfRPG
 import DiceRPG

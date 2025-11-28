@@ -7,7 +7,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 
 struct ExportController: Sendable {
     @MainActor

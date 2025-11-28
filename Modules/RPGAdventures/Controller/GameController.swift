@@ -11,7 +11,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
-import RPGValues
+import CharacterRPG
 import WeatherRPG
 
 public protocol AdventureStoreGameable {

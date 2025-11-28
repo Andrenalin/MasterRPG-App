@@ -10,7 +10,7 @@ import RPGResourcesDebug
 import TableRPG
 import Testing
 
-@testable import RPGValues
+@testable import CharacterRPG
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {

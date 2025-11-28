@@ -8,7 +8,7 @@ import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 import SwiftData
 import SwiftUI
 import WeatherRPG

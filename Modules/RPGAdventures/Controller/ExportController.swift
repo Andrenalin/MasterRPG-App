@@ -10,7 +10,7 @@ import WeatherRPG
 import PhotoRPG
 import SpaceRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 
 struct ExportController: Sendable {
     @MainActor

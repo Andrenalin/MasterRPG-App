@@ -1,32 +1,40 @@
 // @copyright André Trettin
 
-import CoreRPG
-import CoreExternalRPG
-import SwiftData
+import AndrenalinKit
+import Foundation
 import SwiftUI
 
-@MainActor
-struct ListController: ListControllable {
-    let listModel: ListModel
-    let listDisplayModel: ListDisplayModel
-    let searchModel: SearchModel
-    let cacheListItemModel = CacheItemListModel()
-
-    func detailDestination(for itemId: UUID) -> any NavigationDestination {
-        CharacterRoute.detail(itemId)
+struct ListController: Sendable {
+    init(itemController: ItemController, editController: EditController, itemListModel: ListModel) {
+        self.itemController = itemController
+        self.editController = editController
+        self.model = itemListModel
     }
 
-    enum ListType {
-        case main
-        case link
+    @MainActor
+    init(itemController: ItemController, editController: EditController, listStoreName: LocalizedStringResource, hasChildren: Bool, searchToken: ItemListCategory, categoryTags: [ItemListCategory], selectedItems: [ItemRowTreeModel] = []) {
+        self.itemController = itemController
+        self.editController = editController
+        self.model = ListModel(searchToken: searchToken, categoryTags: [ItemListCategory.all] + categoryTags, listStoreName: String(localized: listStoreName).localizedString, hasChildren: hasChildren)
+        self.model.hideChildrenHeader = true
     }
-    
-    @MainActor static func listController(for type: ListType, listDisplayModel: ListDisplayModel, searchModel: SearchModel) -> ListController {
-        switch type {
-        case .main:
-            ListController(listModel: ListModel(), listDisplayModel: listDisplayModel, searchModel: searchModel)
-        case .link:
-            ListController(listModel: ListModel(), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel)
-        }
+
+    let itemController: ItemController
+    let editController: EditController
+    let model: ListModel
+}
+
+extension ListController: ListControllable {
+    var itemControllable: any ItemControllable {
+        itemController as ItemController
+    }
+
+    var canGroup: Bool { true }
+
+    func groupItems(for selection: Set<ItemRowTreeModel>) async {
+        let (models, rootModel) = await self.selection(for: selection)
+        guard let rootModel else { return }
+
+        await editController.toggleGroup(for: rootModel, models: models)
     }
 }

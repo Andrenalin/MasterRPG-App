@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGValues
+import CharacterRPG
 
 struct ChoosePlayerView: View {
     let root: GameRoot

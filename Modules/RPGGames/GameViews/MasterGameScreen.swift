@@ -4,7 +4,7 @@ import AndrenalinKit
 import DiceRPG
 import SwiftUI
 import RPGMaps
-import RPGValues
+import CharacterRPG
 import RPGAdventures
 
 struct MasterGameScreen: View {

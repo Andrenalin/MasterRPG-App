@@ -13,7 +13,7 @@ import RPGResources
 import RPGResourcesDebug
 import SpaceRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 import WeatherRPG
 
 import Testing

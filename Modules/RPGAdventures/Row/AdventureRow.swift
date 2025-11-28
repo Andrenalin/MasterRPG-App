@@ -9,7 +9,7 @@ import TableRPG
 import SpaceRPG
 import PdfRPG
 import WeatherRPG
-import RPGValues
+import CharacterRPG
 
 struct AdventureRow: View {
     let item: ItemRowTreeModel

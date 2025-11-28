@@ -9,7 +9,7 @@ import Foundation
 import RPGResources
 import RPGResourcesDebug
 @testable import TableRPG
-@testable import RPGValues
+@testable import CharacterRPG
 
 import Testing
 

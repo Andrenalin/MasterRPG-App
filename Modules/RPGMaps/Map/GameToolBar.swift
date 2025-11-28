@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGValues
+import CharacterRPG
 
 @Observable
 final class GameToolBarModel {

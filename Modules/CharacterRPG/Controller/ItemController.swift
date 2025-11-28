@@ -1,91 +1,152 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
-import SwiftData
+import CoreData
+import TableRPG
 
 struct ItemController: Sendable {
-    @MainActor init(container: ModelContainer, module: NetworkModules) {
-        self.itemCacheModel = ItemCacheModel()
-        self.container = container
-        self.module = module
-        self.modelCacheModel = ModelCacheModel()
+    @MainActor init(tableRoot: TableRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable, tableChildren: (@MainActor @Sendable (ItemRowModel) -> [ItemRowModel])? = nil) {
+        self.tableRoot = tableRoot
+        self.dataControllable = dataController
+        self.linkRegisterController = linkRegisterControllable
+        
+        self.itemDataModel = ItemDataModel(categoryTags: [.character, .gameMaster, .item, .monster], networkModule: .value)
+        self.tableChildren = tableChildren
     }
-    
-    let itemCacheModel: ItemCacheModel
-    let container: ModelContainer
-    let collectionCategory: ItemListCategory = .collection
-    let module: NetworkModules
-    let modelCacheModel: ModelCacheModel<CharacterDataModel>
-}
 
-extension ItemController: ModelCacheControllable {}
+    let collectionCategory: ItemListCategory = .collection
+    let dataControllable: (any DataPersistenceControllable)?
+    let itemDataModel: ItemDataModel
+    let linkRegisterController: LinkRegisterControllable
+    let tableChildren: (@MainActor @Sendable (ItemRowModel) -> [ItemRowModel])?
+    
+    let tableRoot: TableRootModel
+}
 
 extension ItemController: ItemControllable {
-    @MainActor func itemDataCodableModel(id: UUID) -> ItemDataCodableModel? {
-        let encoder = JSONEncoder()
-        var externalData: Data? = nil
-        if let ownModel = model(for: id)?.codableModel {
-            externalData = try? encoder.encode(ownModel)
+    typealias Model = ValueModel
+    
+    @MainActor var linkRegisterControllable: LinkRegisterControllable {
+        linkRegisterController
+    }
+
+    @MainActor
+    func children(for model: ItemRowModel) -> [ItemRowModel] {
+        switch model.typeId {
+        case .table:
+            if let tableChildren {
+                return tableChildren(model)
+            }
+            return tableRoot.itemControllable.children(for: model)
+        default:
+            let item = itemOrEmpty(for: model.itemId)
+            return item.entries.flatMap {
+                var entries = [ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: itemDataModel.networkModule)]
+                if item.quickEditEntries.contains($0.id) {
+                    let edit = ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: NetworkModules.editor)
+                    entries.append(edit)
+                }
+                return entries
+            }
         }
-        return itemDataCodableModel(for: id, externalData: externalData)
+    }
+
+    @MainActor
+    func childrenTree(for model: ItemRowModel) -> ItemRowModel? {
+        guard model.typeId == itemDataModel.networkModule, let entryId = model.entryId, let valueId = itemOrEmpty(for: model.itemId)[entryId].valueId else { return nil }
+        return ItemRowModel(itemId: valueId, typeId : itemDataModel.networkModule)
+    }
+
+    func didDelete(model: ModelType) async {
+        guard let model = model as? ValueModel else { return }
+//        for entry in model.entries {
+//            await root.editController.remove(entryId: entry.id, from: model, isDeepRemove: true)
+//        }
     }
     
-    @MainActor func encodedItemData(for id: UUID) throws -> Data? {
-        guard let model = itemDataCodableModel(id: id) else { return nil }
-        let encoder = JSONEncoder()
-        return try encoder.encode(model)
+    func didUpdate(model: ModelType) async {
+    }
+
+    func duplicate(itemId: UUID) async -> UUID {
+        await duplicate(itemId: itemId, withCopy: true)
+    }
+
+    func duplicate(itemId: UUID, withCopy: Bool) async -> UUID {
+        let (duplicates, copyId, mapper) = await duplicateSubValue(id: itemId, withCopy: withCopy)
+        //await root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)
+        for duplicate in duplicates {
+            await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
+        }
+        return copyId
+    }
+    
+    @MainActor
+    func itemTree(from rootModel: ItemRowModel?, to childModel: ItemRowModel) -> [ItemRowModel] {
+        guard let rootModel else {
+            for itemId in itemDataModel.items {
+                let model = ItemRowModel(itemId: itemId, typeId: itemDataModel.networkModule)
+                let result = itemTree(from: model, to: childModel)
+                if !result.isEmpty {
+                    return result
+                }
+            }
+            return []
+        }
+        
+        if rootModel.itemId == childModel.itemId {
+            return []
+        }
+        return itemTree(from: rootModel, to: childModel)
+    }
+    
+    @MainActor
+    func filterChildren(model: ItemRowModel, search: String, isHidden: Bool, filterTags: [TagFilterSelection], deep: Int) -> ListFilterOptions {
+        guard deep < 10, let entryId = model.entryId, let valueId = itemOrEmpty(for: model.itemId)[entryId].valueId else { return .notMatch }
+        return filter(model: ItemRowModel(itemId: valueId, typeId: itemDataModel.networkModule), search: search, isHidden: isHidden, filterTags: filterTags, deep: deep + 1)
     }
 }
-
-#if !os(tvOS)
-// MARK: - Generable
 
 extension ItemController {
-    @MainActor func generable(id: UUID, level: Int = 0) -> CharacterDataModel.GenValue? {
-        guard level < 10, let item = item(for: id), let cmodel = model(for: id) else { return nil }
-        let entries = cmodel.entries.map {
-            let groupdedValue: CharacterDataModel.GenValue?
-            if let groupId = $0.valueId {
-                groupdedValue = generable(id: groupId, level: level + 1)
-            } else {
-                groupdedValue = nil
-            }
-            return CharacterEntryDataModel.GenValue(name: $0.name, content: $0.content, valueType: $0.valueType, groupedValues: groupdedValue)
-        }
-        return CharacterDataModel.GenValue(name: item.name, information: item.information, tags: item.tags, entries: entries)
+    func duplicate(model: ItemRowModel) async {
+        _ = await duplicate(itemId: model.itemId)
     }
-}
 
-#endif
-
-// MARK: - Import Controller
-
-extension ItemController: ImportDataControllable {
-    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
-        let decoder = JSONDecoder()
-        if version == ItemDataExportModel.Version.version_2025.rawValue {
-            return try decoder.decode(ItemDataCodableModel.self, from: data)
-        } else {
-            do {
-                let oldModel = try decoder.decode(ValueModel.self, from: data)
-                return ConverterController.convert(old: oldModel, itemController: self)
-            } catch {
-                print(error)
-                fatalError()
+    @MainActor
+    private func duplicateSubValue(id: UUID, withCopy: Bool) -> ([ValueModel], UUID, [UUID: UUID]) {
+        guard let item = itemSync(for: id) else { return ([], id, [:]) }
+        
+        var duplicates: [ValueModel] = []
+        let copyItem: ValueModel = withCopy ? item.duplicate() : item.duplicateWithoutCopy()
+        duplicates.append(copyItem)
+        
+        var mapper: [UUID: UUID] = [id: copyItem.id]
+        let subValueIds = item.duplicateSubValueIds()
+        subValueIds.forEach {
+            let (newDuplicates, newCopyId, newMapper) = duplicateSubValue(id: $0, withCopy: false)
+            mapper[$0] = newCopyId
+            mapper.merge(newMapper) { first, _ in return first }
+            duplicates.append(contentsOf: newDuplicates)
+        }
+        for (index, entry) in copyItem.entries.enumerated() {
+            guard let valueId = entry.valueId else { continue }
+            if let copyId = mapper[valueId] {
+                copyItem.entries[index].valueId = copyId
+                duplicates.first(where: { $0.id == copyId })?.parentId = copyItem.id
             }
         }
+        return (duplicates, copyItem.id, mapper)
     }
-    
-    @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool) {
-        guard let data else { return }
-        let decoder = JSONDecoder()
-        guard let newCharacter = try? decoder.decode(CharacterDataModel.Value.self, from: data) else { return }
-        if let oldCharacter = model(for: id) {
-            oldCharacter.replace(newCharacter)
-        } else {
-            let newModel = CharacterDataModel(newCharacter)
-            container.mainContext.insert(newModel)
+
+    @MainActor
+    private func itemTree(from rootModel: ItemRowModel, to childModel: ItemRowModel) -> [ItemRowModel] {
+        let item = itemOrEmpty(for: rootModel.itemId)
+        return item.entries.flatMap { entry -> [ItemRowModel] in
+            guard let valueId = entry.valueId else { return [] }
+            if valueId == childModel.itemId {
+                return [ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemDataModel.networkModule)]
+            }
+            return itemTree(from: ItemRowModel(itemId: valueId, typeId: itemDataModel.networkModule), to: childModel)
         }
     }
 }

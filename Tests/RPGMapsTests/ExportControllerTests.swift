@@ -8,7 +8,7 @@ import AudioRPG
 import PdfRPG
 import PhotoRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 import Testing
 
 @testable import RPGMaps

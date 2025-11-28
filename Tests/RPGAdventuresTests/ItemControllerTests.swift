@@ -8,7 +8,7 @@ import AudioRPG
 import RPGMaps
 import PdfRPG
 import SpaceRPG
-import RPGValues
+import CharacterRPG
 import RPGResourcesDebug
 import Testing
 import WeatherRPG

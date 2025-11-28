@@ -10,7 +10,7 @@ import TableRPG
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGValues
+@testable import CharacterRPG
 
 struct LinkControllerTests {
     @Test func createGroup() async throws {

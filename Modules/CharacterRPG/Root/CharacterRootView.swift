@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
+import AndrenalinKit
 import CoreExternalRPG
-import CoreRPG
-import SwiftData
 import SwiftUI
 
 struct CharacterRootView: View {
@@ -12,7 +11,6 @@ struct CharacterRootView: View {
         let _ = Self._printChanges()
         
         ItemRootView(root: root.rootController)
-            .navigationAutoReceive(CharacterRoute.self)
             .overlay {
                 SaveView(root: root)
             }
@@ -22,7 +20,7 @@ struct CharacterRootView: View {
 struct SaveView: View {
     let root: CharacterRootModel
     
-    @SceneStorage("CharacterRoute") private var route: ItemRootRoute?
+    @SceneStorage("CharacterRoute") private var route: CharacterRoute?
     @SceneStorage("CharacterDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
     @SceneStorage("CharacterListModel") private var listMode: ListDisplayModel.ListMode = .list
 
@@ -30,8 +28,8 @@ struct SaveView: View {
         let _ = Self._printChanges()
 
         Color.clear
-            .applyItemRootRoute(listControllable: root.listControllable, route: $route)
-            .syncListDisplay(listControllable: root.listControllable, displayMode: $displayMode, listMode: $listMode)
+            .applyItemRootRoute(listControllable: root.folderListController, route: $route)
+            .syncListDisplay(listControllable: root.folderListController, displayMode: $displayMode, listMode: $listMode)
     }
 }
 

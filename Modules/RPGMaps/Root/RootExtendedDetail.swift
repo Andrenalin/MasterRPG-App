@@ -7,7 +7,7 @@ import AudioRPG
 import PdfRPG
 import PhotoRPG
 import TableRPG
-import RPGValues
+import CharacterRPG
 
 struct RootExtendedDetail: View {
     let itemRowTreeModel: ItemRowTreeModel

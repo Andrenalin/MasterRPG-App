@@ -12,7 +12,7 @@ import Testing
 @testable import PhotoRPG
 @testable import RPGMaps
 @testable import TableRPG
-@testable import RPGValues
+@testable import CharacterRPG
 
 struct LinkControllerTests {
     @Test func validateLinksWithLinkReplace() async throws {

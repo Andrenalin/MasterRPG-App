@@ -14,7 +14,7 @@ import Testing
 @testable import PhotoRPG
 @testable import SpaceRPG
 @testable import TableRPG
-@testable import RPGValues
+@testable import CharacterRPG
 
 final class MultiConntectionTests {
     private var sut: MasterController!

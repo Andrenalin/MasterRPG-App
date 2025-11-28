@@ -3,7 +3,7 @@
 import AndrenalinKit
 import PhotoRPG
 import SwiftUI
-import RPGValues
+import CharacterRPG
 
 @Observable
 final class EditToolBarModel {

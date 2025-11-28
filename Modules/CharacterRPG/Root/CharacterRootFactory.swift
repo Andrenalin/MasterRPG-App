@@ -1,26 +1,23 @@
 // @copyright André Trettin
 
+import AndrenalinKit
 import DiceRPG
 import PdfRPG
 import PhotoRPG
 import TableRPG
-
-import CoreRPG
 import SwiftData
 import SwiftUI
 
-@MainActor
-public struct CharacterRootFactory {
-    public static func rootModel(modelContext: ModelContext, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) -> CharacterRootModel {
-        CharacterRootModel(modelContext: modelContext, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+public enum CharacterRootFactory {
+    @MainActor public static func root(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) -> CharacterRootModel {
+        CharacterRootModel(container: container, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
     }
-
-    public static func rootView() -> some View {
+    
+    @MainActor public static func rootView() -> some View {
         CharacterRootView()
     }
     
-    @ViewBuilder
-    public static func detailView(root: CharacterRootModel) -> some View {
+    @MainActor @ViewBuilder public static func detailView(root: CharacterRootModel) -> some View {
         ItemSplitDetailRootView(root: root.rootController)
     }
 }

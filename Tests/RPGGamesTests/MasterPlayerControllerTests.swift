@@ -16,7 +16,7 @@ import Testing
 @testable import PhotoRPG
 @testable import SpaceRPG
 @testable import TableRPG
-@testable import RPGValues
+@testable import CharacterRPG
 @testable import WeatherRPG
 
 final class MasterPlayerControllerTests {
