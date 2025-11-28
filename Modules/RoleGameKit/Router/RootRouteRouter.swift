@@ -2,7 +2,7 @@
 
 import CoreExternalRPG
 import AndrenalinKit
-import RPGAdventures
+import AdventureRPG
 import AudioRPG
 import SwiftUI
 import DiceRPG

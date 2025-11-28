@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import CoreExternalRPG
 import SwiftData
 import SwiftUI
@@ -15,9 +15,9 @@ struct DropChooseView: View {
     var body: some View {
         DropItemModuleArea(module: root.module, contentView: {
             Group {
-                if let item {
-                    Text(item.name)
-                    if let photoId = model?.photoId {
+                if let model {
+                    Text(model.name)
+                    if let photoId = model.photoId {
                         root.viewController.thumbnailRowView(for: photoId)
                     }
                 } else {
@@ -52,13 +52,9 @@ struct DropChooseView: View {
         }
     }
     
-    private var model: AdventureDataModel? {
-        root.itemController.model(for: selectionModel.itemId)
-    }
-
-    private var item: ItemDataModel? {
+    private var model: AdventureModel? {
         guard let itemId = selectionModel.itemId else { return nil }
-        return root.itemController.item(for: itemId)
+        return root.itemController.itemSync(for: itemId)
     }
 
     private var emptyDrop: some View {

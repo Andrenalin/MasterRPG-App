@@ -14,7 +14,7 @@ import CharacterRPG
 import Testing
 import WeatherRPG
 
-@testable import RPGAdventures
+@testable import AdventureRPG
 
 struct ExportControllerTests {
     @Test func exportingAll() async throws {

@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGAdventures
+import AdventureRPG
 import TableRPG
 import AudioRPG
 import PhotoRPG

@@ -2,7 +2,7 @@
 
 #if !os(tvOS)
 import AndrenalinKit
-import RPGAdventures
+import AdventureRPG
 import RoleGameKit
 import SwiftUI
 import RPGGame

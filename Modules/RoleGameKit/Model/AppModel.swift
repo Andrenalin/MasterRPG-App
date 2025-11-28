@@ -8,7 +8,7 @@ import SwiftData
 import SwiftUI
 import os.log
 
-import RPGAdventures
+import AdventureRPG
 import DiceRPG
 import AudioRPG
 import RPGGame

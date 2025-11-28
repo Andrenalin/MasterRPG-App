@@ -5,7 +5,7 @@ import AndrenalinKit
 import Foundation
 import Testing
 
-@testable import RPGAdventures
+@testable import AdventureRPG
 
 struct AdventureModelTests{
     func setUp() async throws -> AdventureModel {

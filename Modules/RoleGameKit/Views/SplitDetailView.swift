@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import RPGAdventures
+import AdventureRPG
 import AudioRPG
 import DiceRPG
 import MapRPG

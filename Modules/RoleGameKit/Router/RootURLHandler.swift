@@ -3,7 +3,7 @@
 import CoreExternalRPG
 import AndrenalinKit
 import SwiftUI
-import RPGAdventures
+import AdventureRPG
 
 public struct RootURLHandler: NavigationURLHandler {
     public init(appModel: AppModel) {

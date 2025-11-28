@@ -8,7 +8,7 @@ import PdfRPG
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGAdventures
+@testable import AdventureRPG
 @testable import PhotoRPG
 @testable import MapRPG
 @testable import TableRPG

@@ -1,12 +1,20 @@
 // @copyright André Trettin
 
-import CoreRPG
-import DiceRPG
-import MapRPG
+import AndrenalinKit
 import Foundation
-import os.log
+import Observation
+import TableRPG
+import SwiftUI
+import MapRPG
+import AudioRPG
+import DiceRPG
+import PdfRPG
+import PhotoRPG
+import SpaceRPG
+import CharacterRPG
+import WeatherRPG
 
-public protocol AdventureStoreGameable: GameControllable {
+public protocol AdventureStoreGameable {
     @MainActor func startGame(with id: UUID)
     @MainActor func resetGame()
     @MainActor func saveGame() -> (Task<Void, any Error>, URL)
@@ -14,22 +22,43 @@ public protocol AdventureStoreGameable: GameControllable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: RootManager, itemController: ItemController) {
-        self.itemController = itemController
-        
-        self.exportController = ExportController(module: itemController.module, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(container: itemController.container, module: itemController.module)
-        self.importController = ImportController(itemController: internItemController, module: itemController.module)
-        self.gameModel = ItemGameModel()
+    init(root: AdventureRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
         self.root = root
+        self.itemController = itemController
+        self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
+        let internItemController = ItemController(root: root, dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(root: root, itemController: internItemController, gameImporter: true)
+        self.gameExportController = ExportController(root: root, itemController: internItemController, gameExporter: true)
+        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
-
+    
+    let root: AdventureRootModel
     let itemController: ItemController
     let importController: ImportController
     let exportController: ExportController
+    let gameExportController: ExportController
     
     let gameModel: ItemGameModel
-    let root: RootManager
+    
+    @MainActor
+    func gameItem(for itemId: UUID) -> AdventureModel {
+        (gameModel.itemData[itemId] as? AdventureModel) ?? itemController.itemOrEmpty(for: itemId)
+    }
+    
+    @MainActor
+    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
+            gameModel.itemData[itemId] = item
+        } else {
+            gameModel.items.insert(itemId, at: 0)
+            gameModel.itemData[itemId] = item
+        }
+    }
+    
+    @MainActor
+    func currentItem() -> AdventureModel {
+        gameItem(for: gameModel.currentItemId ?? UUID())
+    }
 }
 
 extension GameController: GameControllable {
@@ -39,34 +68,47 @@ extension GameController: GameControllable {
     var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    @MainActor var importControllable: any ImportControllable {
+    var importControllable: any ImportControllable {
+        importController as ImportControllable
+    }
+    var rootExportControllable: any ExportControllable {
+        gameExportController as ExportControllable
+    }
+    var rootImportControllable: any ImportControllable {
         importController as ImportControllable
     }
 }
 
 extension GameController: AdventureStoreGameable {
-    @MainActor func startGame(with id: UUID) {
+    @MainActor
+    func startGame(with id: UUID) {
         Task {
             await focus(on: id)
         }
-        root[.map]?.gameControllable.startGame(with: id)
+        root.mapRoot.mapGameControllable.startGameAsMaster()
     }
 
     @MainActor
     func resetGame() {
         Task {
             await reset()
-            for module in [NetworkModules.audio, .dice, .map, .pdf, .photo, .space, .table, .value, .weather] {
-                await root[module]?.gameControllable.reset()
-            }
+            await root.audioRoot.gameControllable.reset()
+            await root.diceRoot.gameControllable.reset()
+            await root.mapRoot.gameControllable.reset()
+            await root.pdfRoot.gameControllable.reset()
+            await root.photoRoot.gameControllable.reset()
+            await root.spaceRoot.gameControllable.reset()
+            await root.tableRoot.gameControllable.reset()
+            await root.valueRoot.gameControllable.reset()
+            await root.weatherRoot.gameControllable.reset()
         }
     }
 
     @MainActor
     func saveGame() -> (Task<Void, any Error>, URL) {
         // save only the map state, later we could save more states
-        let ids = root[.map]?.gameControllable.saveAll() ?? ItemModuleIds()
-        let url = exportControllable.exportUrl(isSaveGame: true)
-        return (exportControllable.createExport(itemIds: ids, into: url), url)
+        let ids = root.mapRoot.mapGameControllable.saveAll()
+        let url = rootExportControllable.exportUrl(isSaveGame: true)
+        return (rootExportControllable.createExport(itemIds: ids, into: url), url)
     }
 }

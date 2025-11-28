@@ -5,7 +5,7 @@ import Foundation
 import PhotoRPG
 import MapRPG
 import TableRPG
-import RPGAdventures
+import AdventureRPG
 import DiceRPG
 import WeatherRPG
 import AudioRPG

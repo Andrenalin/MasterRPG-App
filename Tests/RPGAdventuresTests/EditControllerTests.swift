@@ -13,7 +13,7 @@ import TableRPG
 import CharacterRPG
 import Testing
 
-@testable import RPGAdventures
+@testable import AdventureRPG
 
 struct EditControllerTests {
     @Test func scanMapEntries() async throws {

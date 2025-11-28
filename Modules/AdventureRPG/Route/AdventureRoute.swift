@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
 import CoreExternalRPG
-import CoreRPG
-import SwiftData
+import AndrenalinKit
 import SwiftUI
 
 public enum AdventureRoute: Equatable, Hashable, Codable {
@@ -30,17 +29,32 @@ extension AdventureRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DetailRouteDestinationView(itemId: itemId)
+            DetailRouteDestinationView(itemId: itemId, isSubFolder: false)
+                .navigationDestination(AdventureDetailRoute.self)
+                .navigationAutoReceive(AdventureDetailRoute.self)
+        }
+    }
+}
+
+extension AdventureRoute: ItemDetailRoute {
+    public func reset(detail: UUID) -> Self {
+        AdventureRoute.detail(detail)
+    }
+    
+    public func detail() -> UUID? {
+        switch self {
+            case .detail(let id): return id
         }
     }
 }
 
 struct DetailRouteDestinationView: View {
     let itemId: UUID
+    let isSubFolder: Bool
     @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
-        DetailRootView(selectedId: itemId)
+        DetailRootView(root: root, editController: root.editController, model: root.itemController.itemOrEmpty(for: itemId), isSubFolder: isSubFolder)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
             .environment(root.rootController)

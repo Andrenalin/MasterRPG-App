@@ -2,12 +2,12 @@
 
 #if !os(tvOS)
 
+import AndrenalinKit
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
 import PDFKit
-import CoreRPG
 
 struct AdventureEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -19,7 +19,8 @@ struct AdventureEntity: IndexedEntity {
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "\(name)"
+            title: "\(name)",
+            image: .init(systemName: icon)
         )
     }
 
@@ -27,17 +28,21 @@ struct AdventureEntity: IndexedEntity {
 
     var id: UUID { model.id }
 
-    @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name.wrappedValue }
 
-    // Maps the description variable to the Spotlight indexing key `contentDescription`.
+    @ComputedProperty(indexingKey: \.displayName)
+    var name: String { model.name }
+
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.information.wrappedValue }
+    var description: String { model.description }
+
+    var icon: String {
+        model.specialCategory ? model.category.icon : root.module.icon
+    }
 
     var root: AdventureRootModel
-    var model: ItemDataCodableModel
+    var model: AdventureModel
     
-    init(root: AdventureRootModel, model: ItemDataCodableModel) {
+    init(root: AdventureRootModel, model: AdventureModel) {
         self.root = root
         self.model = model
     }
@@ -73,7 +78,7 @@ extension AdventureEntity: Transferable {
 
         DataRepresentation(exportedContentType: .plainText) {
             """
-            Adventure: \($0.name)
+            Name: \($0.name)
             Description: \($0.description)
             """.data(using: .utf8)!
         }
@@ -85,10 +90,10 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     @Dependency var root: AdventureRootModel
 
     func suggestedEntities() async throws -> [AdventureEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [AdventureEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = AdventureEntity(root: root, model: model)
             results.append(entity)
         }
@@ -98,7 +103,7 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     func entities(for identifiers: [AdventureEntity.ID]) async throws -> [AdventureEntity] {
         var results: [AdventureEntity] = []
         for id in identifiers {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = AdventureEntity(root: root, model: model)
             results.append(entity)
         }
@@ -106,11 +111,11 @@ struct AdventureEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQue
     }
 
     func entities(matching: String) async throws -> [AdventureEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [AdventureEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
-            guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
             let entity = AdventureEntity(root: root, model: model)
             results.append(entity)
         }

@@ -2,11 +2,11 @@
 
 #if !os(tvOS)
 
+import AndrenalinKit
 import AppIntents
+import CoreExternalRPG
 import Foundation
 import SwiftUI
-import CoreRPG
-import CoreExternalRPG
 
 struct OpenAdventureIntent: OpenIntent {
     static let title: LocalizedStringResource = "Open Adventure"

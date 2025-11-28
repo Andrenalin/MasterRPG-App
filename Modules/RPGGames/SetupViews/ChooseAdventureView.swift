@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGAdventures
+import AdventureRPG
 
 struct ChooseAdventureView: View {
     let root: GameRoot

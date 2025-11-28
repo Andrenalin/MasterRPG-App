@@ -5,7 +5,7 @@ import DiceRPG
 import SwiftUI
 import MapRPG
 import CharacterRPG
-import RPGAdventures
+import AdventureRPG
 
 struct MasterGameScreen: View {
     let root: GameRoot
