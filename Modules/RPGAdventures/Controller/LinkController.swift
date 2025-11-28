@@ -15,7 +15,7 @@ import CharacterRPG
 import WeatherRPG
 
 public struct LinkController: Sendable {
-    weak var root: AdventureRootModel!
+    let root: AdventureRootModel
     let itemController: ItemController
 
     public var itemControllable: any ItemControllable {
@@ -200,7 +200,7 @@ public extension LinkController {
         case .weather:
             return root.weatherRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
         default:
-            return SheetController(root: root).sheet(for: itemId, level: level)
+            return SheetController(itemController: itemController).sheet(for: itemId, level: level)
         }
     }
 }

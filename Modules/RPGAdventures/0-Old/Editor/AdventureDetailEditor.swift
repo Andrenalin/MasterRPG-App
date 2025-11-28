@@ -40,7 +40,6 @@ struct AdventureDetailEditor: View {
             AdventureEntryEditor(root: root, editController: editController)
 #endif
         }
-        .focusedSceneValue(\.selectedAdventure, $model.id)
         .environment(detailHeaderModel)
         .environment(externalHeaderModel)
         .onChange(of: model.entries, initial: true) {
@@ -55,7 +54,7 @@ struct AdventureExternalHeader: View {
     @Environment(ExternalHeaderModel.self) private var externalHeaderModel
 
     var body: some View {
-        AdventureSheet(model: editController.model, showImage: false) {
+        AdventureSheet(model: editController.model) {
             externalHeaderModel.showExtHeader = false
         }
     }

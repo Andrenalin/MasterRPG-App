@@ -6,7 +6,6 @@ import PhotoRPG
 
 struct AdventureSheet: View {
     let model: AdventureModel
-    let showImage: Bool
     let dismissAction: (() -> Void)?
 
     @Environment(AdventureRootModel.self) private var root
@@ -14,7 +13,7 @@ struct AdventureSheet: View {
     @State private var sheetModel: SheetModel = SheetModel(id: UUID(), name: "", description: "", groups: [])
 
     var body: some View {
-        TableRootSheet(linkControllable: root.linkControllable, model: sheetModel, showImage: showImage, dismissAction: dismissAction, imageContent: imageView(size:))
+        TableRootSheet(linkControllable: root.linkControllable, model: sheetModel, showImage: true, dismissAction: dismissAction, imageContent: imageView(size:))
             .onChange(of: model, initial: true) {
                 resetModels()
             }
@@ -22,7 +21,7 @@ struct AdventureSheet: View {
 
     func resetModels() {
         withAnimation {
-            sheetModel = SheetController(root: root).sheet(for: model.id)
+            sheetModel = SheetController(itemController: root.itemController).sheet(for: model.id)
         }
     }
 
@@ -37,7 +36,7 @@ struct TableGameSheet: View {
     @State private var model: AdventureModel = .empty
 
     var body: some View {
-        AdventureSheet(model: model, showImage: true, dismissAction: nil)
+        AdventureSheet(model: model, dismissAction: nil)
             .padding(32)
             .onChange(of: root.gameController.gameModel.currentItemId) {
                 model = root.gameController.currentItem()

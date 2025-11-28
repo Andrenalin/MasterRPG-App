@@ -20,9 +20,9 @@ struct MasterRPGApp: App {
         AppDependencyManager.shared.add(dependency: data)
         let navigator = appModel.navigator
         AppDependencyManager.shared.add(dependency: navigator)
-//        
-//        let adventureRootModel = appModel.adventureRoot
-//        AppDependencyManager.shared.add(dependency: adventureRootModel)
+        
+        let adventureRootModel = appModel.adventureRoot
+        AppDependencyManager.shared.add(dependency: adventureRootModel)
         let audioRootModel = appModel.audioRoot
         AppDependencyManager.shared.add(dependency: audioRootModel)
         let characterRootModel = appModel.valueRoot
@@ -90,7 +90,6 @@ struct MasterRPGApp: App {
 #if !os(tvOS)
         OldWindowLinkList(appModel: appModel)
         
-        OldWindowLinkAltList(appModel: appModel)
         
         WindowViewerList(appModel: appModel)
         WindowLinkList(appModel: appModel)

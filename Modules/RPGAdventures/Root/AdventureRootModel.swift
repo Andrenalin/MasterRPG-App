@@ -47,7 +47,7 @@ public final class AdventureRootModel: @unchecked Sendable {
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.adventure, .campaign, .scenario, .rules, .supplement])
         self.searchModel = searchModel
         
         let itemSelectionModel = ItemSelectionModel()
@@ -55,17 +55,19 @@ public final class AdventureRootModel: @unchecked Sendable {
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?) {
-        if let context {
-            dataController = DataController(root: self, context: context, token: NetworkModules.adventure.token)
-        }
-        _itemController = ItemController(root: self, dataController: dataController)
-        _editController = EditController(root: self, currentListItem: nil, currentModel: nil)
-        _exportController = ExportController(root: self, itemController: self.itemController, gameExporter: false)
-        _importController = ImportController(root: self, itemController: self.itemController, gameImporter: false)
-        _gameController = GameController(root: self, itemController: self.itemController)
-        _linkController = LinkController(root: self, itemController: self.itemController)
-        _linkRegisterController = LinkRegisterController(root: self)
-        _viewController = ViewController(root: self)
+        let dataController = context.map { DataController(context: $0, token: module.token) }
+        _dataController = dataController
+        let linkRegisterController = LinkRegisterController(root: self)
+
+        let itemController = ItemController(root: self, dataController: dataController, linkRegisterControllable: linkRegisterController)
+        _itemController = itemController
+        _editController = EditController(root: self, itemController: itemController, linkRegisterControllable: linkRegisterController, currentListItem: nil, currentModel: nil)
+        _exportController = ExportController(root: self, itemController: itemController, gameExporter: false)
+        _importController = ImportController(root: self, itemController: itemController, gameImporter: false)
+        _gameController = GameController(root: self, itemController: itemController, linkRegisterControllable: linkRegisterController)
+        _linkController = LinkController(root: self, itemController: itemController)
+
+        _linkRegisterController = linkRegisterController
         
         audioRoot.setUp(context: context, rootControllable: self)
         diceRoot.setUp(context: context, rootControllable: self)
@@ -76,21 +78,15 @@ public final class AdventureRootModel: @unchecked Sendable {
         tableRoot.setUp(context: context, rootControllable: self)
         valueRoot.setUp(context: context, rootControllable: self)
         mapRoot.setUp(context: context, rootControllable: self)
-        
-        Task {
-            dataController?.start()
+
+        if let dataController, let context {
+            _syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
+            Task {
+                syncDataController?.start()
+            }
         }
     }
 
-    public let rootModel: RootModel
-    public let module: NetworkModules
-    
-    public let listDisplayModel: ListDisplayModel
-    public let searchModel: SearchModel
-    public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var currentSelectedItemId: UUID? { rootModel.selectedItem?.itemId }
-    public let removeEntryListModel = RemoveEntryListModel()
-    
     let audioRoot: AudioRootModel
     let diceRoot: DiceRootModel
     let mapRoot: MapRootModel
@@ -101,47 +97,36 @@ public final class AdventureRootModel: @unchecked Sendable {
     let valueRoot: CharacterRootModel
     let weatherRoot: WeatherRootModel
 
-    @ObservationIgnored
-    private(set) var dataController: DataController?
-
-    @ObservationIgnored
-    private(set) var _itemController: ItemController?
-    var itemController: ItemController {
-        _itemController.unsafelyUnwrapped
-    }
+    public let rootModel: RootModel
+    public let module: NetworkModules
+    
+    public let listDisplayModel: ListDisplayModel
+    public let searchModel: SearchModel
+    public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
+    public let removeEntryListModel = RemoveEntryListModel()
+    
+    @ObservationIgnored private(set) var _dataController: DataController?
+    var dataController: DataController? { _dataController }
+    @ObservationIgnored private(set) var _syncDataController: SyncDataController?
+    var syncDataController: SyncDataController? { _syncDataController }
+    
+    @ObservationIgnored private(set) var _itemController: ItemController?
+    var itemController: ItemController { _itemController.unsafelyUnwrapped }
     
     @ObservationIgnored private(set) var _editController: EditController?
     var editController: EditController { _editController.unsafelyUnwrapped }
-
-    @ObservationIgnored
-    private(set) var _exportController: ExportController?
-    var exportController: ExportController {
-        _exportController.unsafelyUnwrapped
-    }
+    @ObservationIgnored private(set) var _exportController: ExportController?
+    var exportController: ExportController { _exportController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _importController: ImportController?
+    var importController: ImportController { _importController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _gameController: GameController?
+    var gameController: GameController { _gameController.unsafelyUnwrapped }
+    @ObservationIgnored private(set) var _linkController: LinkController?
+    public var linkController: LinkController { _linkController.unsafelyUnwrapped }
     
-    @ObservationIgnored
-    private(set) var _importController: ImportController?
-    var importController: ImportController {
-        _importController.unsafelyUnwrapped
-    }
-    
-    @ObservationIgnored
-    private(set) var _gameController: GameController?
-    var gameController: GameController {
-        _gameController.unsafelyUnwrapped
-    }
-    
-    @ObservationIgnored
-    private(set) var _linkController: LinkController?
-    public var linkController: LinkController {
-        _linkController.unsafelyUnwrapped
-    }
-    
-    @ObservationIgnored
-    private(set) var _linkRegisterController: LinkRegisterController?
-    var linkRegisterController: LinkRegisterController {
-        _linkRegisterController.unsafelyUnwrapped
-    }
+    @ObservationIgnored private(set) var _linkRegisterController: LinkRegisterController?
+    var linkRegisterController: LinkRegisterController { _linkRegisterController.unsafelyUnwrapped }
     
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
@@ -149,12 +134,12 @@ public final class AdventureRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
         folderListController.copy(parentModel: nil)
     }()
-    
-    @ObservationIgnored
-    private(set) var _viewController: ViewController?
-    public var viewController: ViewController {
-        _viewController.unsafelyUnwrapped
-    }
+    @ObservationIgnored public lazy var viewController: ViewController = {
+        ViewController()
+    }()
+
+    @ObservationIgnored private(set) var _rootControllable: RootControllable?
+    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
     
     @ObservationIgnored
     private(set) var mainListController: ListController?
@@ -317,6 +302,15 @@ public extension AdventureRootModel {
     func listItems() -> [AdventureModel] {
         itemController.itemDataModel.items.map {
             itemController.itemOrEmpty(for: $0)
+        }
+    }
+    
+    func itemDataCleanup() async throws {
+        for itemId in await itemController.itemDataModel.items {
+            guard let model = await itemController.item(for: itemId) else { continue }
+            if model.displayState == 2 {
+                await itemController.delete(itemId: model.id)
+            }
         }
     }
 }

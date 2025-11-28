@@ -41,7 +41,7 @@ struct ChooseAdventureView: View {
     }
 
     private var selectionView: some View {
-        root.adventureRoot.viewController.viewSelect {
+        root.adventureRoot.viewController.viewSelect(root: root.adventureRoot) {
             if let id = root.gameModel.selectedAdventure, root.adventureRoot.linkController.validateLink(itemId: id) == true {
                 return [ItemRowModel(itemId: id, typeId: .adventure)]
             }

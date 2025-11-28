@@ -45,7 +45,7 @@ public final class MapRootModel: @unchecked Sendable {
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .dungeon, .map])
         self.searchModel = searchModel
         
         let itemSelectionModel = ItemSelectionModel()

@@ -37,7 +37,7 @@ public extension ViewController {
     @MainActor @ViewBuilder
     func selectedAdventureView(with id: UUID?) -> some View {
         if let id, root.adventureRoot.linkController.validateLink(itemId: id) == true {
-            root.adventureRoot.viewController.viewMinimum(with: id)
+            root.adventureRoot.viewController.viewMinimum(root: root.adventureRoot, with: id)
         } else {
             ProgressView().progressViewStyle(.circular)
         }

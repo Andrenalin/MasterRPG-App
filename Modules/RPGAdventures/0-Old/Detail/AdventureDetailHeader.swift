@@ -35,7 +35,7 @@ struct AdventureDetailHeader: View {
             }
 #endif
             .sheetFullScreen(isPresented: $isReading) {
-                AdventureSheet(model: editController.model, showImage: true, dismissAction: nil)
+                AdventureSheet(model: editController.model, dismissAction: nil)
                     .environment(\.showGame, false)
             }
     }

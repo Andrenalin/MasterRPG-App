@@ -15,16 +15,19 @@ import TableRPG
 
 struct ItemController: Sendable {
     @MainActor
-    init(root: AdventureRootModel, dataController: DataController?) {
+    init(root: AdventureRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.root = root
         self.dataControllable = dataController
+        self.linkRegisterController = linkRegisterControllable
+        
         itemDataModel = ItemDataModel(categoryTags: [.adventure, .campaign, .scenario, .rules, .supplement], networkModule: .adventure)
     }
 
-    weak var root: AdventureRootModel!
+    let root: AdventureRootModel
     let collectionCategory: ItemListCategory = .collection
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
+    let linkRegisterController: LinkRegisterControllable
 }
 
 extension ItemController: ItemControllable {
@@ -32,9 +35,9 @@ extension ItemController: ItemControllable {
     
     @MainActor
     var linkRegisterControllable: LinkRegisterControllable {
-        root.linkRegisterController
+        linkRegisterController
     }
-    
+
     @MainActor
     func children(for model: ItemRowModel) -> [ItemRowModel] {
         switch model.typeId {

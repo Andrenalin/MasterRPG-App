@@ -5,6 +5,7 @@ import AndrenalinKit
 import RoleGameKit
 import SwiftUI
 
+import RPGAdventures
 import CharacterRPG
 import MapRPG
 import PdfRPG
@@ -20,6 +21,10 @@ struct WindowViewerList: Scene {
     
     var body: some Scene {
         Group {
+            windowGroup(model: appModel, module: .adventure) { selection in
+                appModel.adventureRoot.viewController.windowViewer(root: appModel.adventureRoot, selection: selection)
+            }
+
             windowGroup(model: appModel, module: .value) { selection in
                 appModel.valueRoot.viewController.windowViewer(root: appModel.valueRoot, selection: selection)
             }

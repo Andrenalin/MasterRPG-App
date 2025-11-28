@@ -4,31 +4,17 @@ import AndrenalinKit
 import Foundation
 import CoreData
 
-struct DataController: Sendable {
-    @MainActor
-    init(root: AdventureRootModel, context: NSManagedObjectContext, token: String) {
-        self.root = root
-        self.changeObserver = CoreDataChangeObserver()
+struct DataController: DataPersistenceControllable {
+    @MainActor init(context: NSManagedObjectContext, token: String) {
         self.dataController = CoreDataController<AdventureModel, RPGAdventure>(context: context)
         self.token = token
-
-        changeObserver.observeCoreDataChanges(from: context, entity: RPGAdventure.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
     }
     
-    weak var root: AdventureRootModel!
     let dataController: CoreDataController<AdventureModel, RPGAdventure>
-    var itemControllable: any ItemControllable {
-        root.itemController
-    }
-    let changeObserver: CoreDataChangeObserver
     let token: String
 }
 
-extension DataController: CoreDataPersistable, DataPersistenceControllable, SyncDataControllable {
-    var dataControllable: any CoreDataPersistable {
-        self
-    }
-    
+extension DataController: CoreDataPersistable {
     // MARK: model -> viewlmodel
 
     func mapViewModel(_ model: RPGAdventure, token: String) -> AdventureModel {

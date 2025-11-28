@@ -147,7 +147,7 @@ struct RouteRouteDestionationView: View {
         Group {
             switch route {
             case .adventures:
-                NewAdventureRoute(appModel: appModel, tabId: KnownRoutes.mainTabId, isExtended: false)
+                AdventureFactory.rootView()
             case .audios:
                 AudioFactory.rootView()
             case .dice:

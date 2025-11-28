@@ -20,7 +20,7 @@ struct ExportController: Sendable {
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
 
-    weak var root: AdventureRootModel!
+    let root: AdventureRootModel
     let itemController: ItemController
 
     public let exportModel: ItemDataExportModel

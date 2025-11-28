@@ -2,22 +2,56 @@
 
 import AndrenalinKit
 import SwiftUI
+import DiceRPG
 
 public struct ViewController: Sendable {
     public let goupViewType: GroupViewType = .item
-    public let thumbnailRowViewType: ThumbnailRowViewType = .photo
-
-    weak var root: AdventureRootModel!
+    public let thumbnailRowViewType: ThumbnailRowViewType = .custom
 }
 
 extension ViewController: ViewControllable {
+    public func thumbnailRowView(for itemId: UUID) -> AnyView {
+        AnyView(ThumbnailPhotoRow(itemId: itemId))
+    }
+}
+
+// MARK: External Views
+
+extension ViewController {
+    @MainActor
+    func diceSelection(root: AdventureRootModel, selectionModel: ItemSelectionModel) -> some View {
+        root.diceRoot.viewController.selectionView(root: root.diceRoot, model: selectionModel)
+    }
+}
+
+// MARK: - Viewer
+
+public extension ViewController {
+    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
+        LinkRootView(type: isInspector ? .inspector : .window)
+    }
+    
+    @MainActor func windowViewer(root: AdventureRootModel, selection: WindowItemSelection) -> some View {
+        let model = root.itemController.itemOrEmpty(for: selection.itemId)
+        return AdventureSheet(model: model, dismissAction: nil)
+    }
+
+    @MainActor func inlineViewer(root: AdventureRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: id)
+        return AdventureSheet(model: model, dismissAction: dismissAction)
+    }
+    
+    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
+        LinkRootView(type: .selection)
+            .environment(model)
+    }
 }
 
 // MARK: - Viewer
 
 public extension ViewController {
     //@MainActor
-    func viewMinimum(with id: UUID?) -> some View {
+    func viewMinimum(root: AdventureRootModel, with id: UUID?) -> some View {
         MinimumRow(itemId: id ?? UUID())
             .environment(root)
     }
@@ -30,7 +64,7 @@ public extension ViewController {
     private static let gameTabId = UUID()
     
     @MainActor
-    func gameView(focusedIds: [UUID], openAction: ((NetworkModules) -> Void)? = nil) -> some View {
+    func gameView(root: AdventureRootModel, focusedIds: [UUID], openAction: ((NetworkModules) -> Void)? = nil) -> some View {
         if let id = focusedIds.first {
             let model = ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)
             let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
@@ -42,33 +76,8 @@ public extension ViewController {
     }
 
     @MainActor
-    func overlayRootView(adventureId: UUID) -> some View {
-        gameView(focusedIds: [adventureId], openAction: nil)
-    }
-}
-
-// MARK: Links
-
-public extension ViewController {
-    @MainActor
-    private static let linkTabId = UUID()
-
-    @MainActor
-    func linkWindow() -> some View {
-        RootNaviList(root: root, tabId: ViewController.linkTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListConfiguration(canAdd: false)
-            .itemListChildrenConfiguration(canNavigate: false)
-            .focusedSceneValue(\.selectedModule, .constant(root.itemController.itemDataModel.networkModule))
-            .environment(root)
-            .environment(SelectionSheetLinkModel())
-    }
-    
-    @MainActor
-    func adventureWindow(selection: ItemSelection) -> some View {
-        AdventureSheet(model: root.itemController.itemOrEmpty(for: selection.itemId), showImage: true, dismissAction: nil)
-            .navigationTitle(root.itemController.itemOrEmpty(for: selection.itemId).name)
-            .environment(root)
+    func overlayRootView(root: AdventureRootModel, adventureId: UUID) -> some View {
+        gameView(root: root, focusedIds: [adventureId], openAction: nil)
     }
 }
 
@@ -79,7 +88,7 @@ public extension ViewController {
     private static let selectionTabId = UUID()
 
     @MainActor
-    func viewSelect(filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, isGroupHidden: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
+    func viewSelect(root: AdventureRootModel, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, isGroupHidden: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
         let listController = root.listController(tabId: ViewController.selectionTabId)
         listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: isGroupHidden, focus: nil, mode: SelectionMode(selected: selection, toggle: toggleSelection))
         return RootNaviList(root: root, tabId: ViewController.selectionTabId)
@@ -95,8 +104,8 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor 
-    func selectForScan(ids: Binding<[UUID]?>, entryId: Binding<UUID?>? = nil, entryOnly: Bool = false, dismissAction: @escaping () -> Void) -> some View {
-        viewSelect {
+    func selectForScan(root: AdventureRootModel, ids: Binding<[UUID]?>, entryId: Binding<UUID?>? = nil, entryOnly: Bool = false, dismissAction: @escaping () -> Void) -> some View {
+        viewSelect(root: root) {
             if let links = ids.wrappedValue {
                 return links.map { ItemRowModel(itemId: $0, entryId: entryId?.wrappedValue, typeId: root.itemController.itemDataModel.networkModule) }
             } else {

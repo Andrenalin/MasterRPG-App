@@ -24,7 +24,7 @@ struct DetailRootView: View {
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.map.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
     @State private var animate: Bool = false
     
     var body: some View {

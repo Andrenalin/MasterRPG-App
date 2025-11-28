@@ -21,8 +21,8 @@ struct WindowLinkList: Scene {
     
     var body: some Scene {
         Group {
-//            windowGroup(model: appModel, module: .adventure, key: "1", content: appModel.adventureRoot.viewController.linkWindow(root: appModel.adventureRoot))
-//
+            windowGroup(model: appModel, module: .adventure, key: "1", content: appModel.adventureRoot.viewController.linkWindow())
+
             windowGroup(model: appModel, module: .value, key: "2", content: appModel.valueRoot.viewController.linkWindow())
 
             windowGroup(model: appModel, module: .pdf, key: "3", content: appModel.pdfRoot.viewController.linkWindow(root: appModel.pdfRoot))

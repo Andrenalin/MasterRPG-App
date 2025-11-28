@@ -20,7 +20,7 @@ struct ImportController: Sendable {
         self.importModel = ItemDataImportModel(gameImporter: gameImporter)
     }
     
-    weak var root: AdventureRootModel!
+    let root: AdventureRootModel
     let itemController: ItemController
     public let importModel: ItemDataImportModel
 }

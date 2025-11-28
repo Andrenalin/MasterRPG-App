@@ -36,7 +36,7 @@ struct OverlayMasterTabBar: View {
     }
     
     var onlyGameView: some View {
-        root.adventureRoot.viewController.gameView(focusedIds: [adventureId], openAction: openAction)
+        root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId], openAction: openAction)
             .environment(\.gameModus, .master)
             .environment(\.showGame, true)
             .gameOverlayTabBarView(value: NetworkModules.game)
@@ -54,7 +54,7 @@ struct OverlayMasterTabBar: View {
         @Bindable var gameScreenModel = gameScreenModel
         TabView(selection: $gameScreenModel.showGameType) {
             Group {
-                root.adventureRoot.viewController.gameView(focusedIds: [adventureId])
+                root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
                     .gameOverlayTabBarView(value: NetworkModules.game)
                 root.tableRoot.viewController.gameView(root: root.tableRoot)
                     .gameOverlayTabBarView(value: NetworkModules.table)

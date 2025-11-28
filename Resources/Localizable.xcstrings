@@ -25,6 +25,7 @@
 
     },
     "Adventure Viewer" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

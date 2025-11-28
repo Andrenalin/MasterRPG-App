@@ -22,6 +22,16 @@ final class AdventureEditModel: Sendable {
     let photoSelectionModel = SelectionModel(id: UUID(), filter: .adventure)
     let pdfSelectionModel = SelectionModel(id: UUID(), filter: .all)
     
+    let selectionAudio: ItemSelectionModel = ItemSelectionModel()
+    let selectionCharacter: ItemSelectionModel = ItemSelectionModel()
+    let selectionDice: ItemSelectionModel = ItemSelectionModel()
+    let selectionMap: ItemSelectionModel = ItemSelectionModel()
+    let selectionPdf: ItemSelectionModel = ItemSelectionModel()
+    let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
+    let selectionTable: ItemSelectionModel = ItemSelectionModel()
+    let selectionSpace: ItemSelectionModel = ItemSelectionModel()
+    let selectionWeather: ItemSelectionModel = ItemSelectionModel()
+    
     func resetCurrentModel() {
         contentLinks = [:]
     }
@@ -29,14 +39,20 @@ final class AdventureEditModel: Sendable {
 
 struct EditController: Sendable {
     @MainActor
-    init(root: AdventureRootModel, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    init(root: AdventureRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
+        self.itemController = itemController
+        self.linkRegisterControllable = linkRegisterControllable
+        
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
         self.adventureEditModel = AdventureEditModel()
     }
 
-    weak var root: AdventureRootModel!
-    var fileUrlDataController: FileUrlDataController? = nil
+    let root: AdventureRootModel
+
+    let itemController: ItemController
+    let linkRegisterControllable: any LinkRegisterControllable
+
     let editorModel: ItemEditorModel
     let adventureEditModel: AdventureEditModel
 }
@@ -45,11 +61,11 @@ extension EditController: EntryDataEditable {
     typealias Model = AdventureModel
 
     var itemControllable: any ItemControllable {
-        root.itemController as (any ItemControllable)
+        itemController
     }
-
-    var linkRegisterControllable: any LinkRegisterControllable {
-        root.linkRegisterControllable
+    
+    var fileUrlDataController: FileUrlDataController? {
+        itemControllable.fileUrlDataController
     }
 
     @MainActor func didSetModel() {
@@ -94,7 +110,7 @@ extension EditController {
     
     @MainActor @ViewBuilder
     func selectAdventure(for entryId: UUID, linkKeyPath: WritableKeyPath<AdventureModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.viewController.viewSelect(filter: .all) {
+        root.viewController.viewSelect(root: root, filter: .all) {
             let text = self.model[keyPath: linkKeyPath]
             return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .adventure) }
         } toggleSelection: { sel, _ in

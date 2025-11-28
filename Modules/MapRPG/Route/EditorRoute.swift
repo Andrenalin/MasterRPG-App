@@ -12,11 +12,11 @@ enum EditorRoute: Equatable, Hashable, Codable {
 
 extension EditorRoute: NavigationDestination {
     public var body: some View {
-        DestinationTableEditorRoute(route: self)
+        DestinationEditorRoute(route: self)
     }
 }
 
-struct DestinationTableEditorRoute: View {
+struct DestinationEditorRoute: View {
     let route: EditorRoute
     
     @Environment(MapRootModel.self) private var root
