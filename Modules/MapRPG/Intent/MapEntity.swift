@@ -2,12 +2,12 @@
 
 #if !os(tvOS)
 
+import AndrenalinKit
 import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
 import PDFKit
-import CoreRPG
 
 struct MapEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -19,7 +19,8 @@ struct MapEntity: IndexedEntity {
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "\(name)"
+            title: "\(name)",
+            image: .init(systemName: icon)
         )
     }
 
@@ -28,16 +29,19 @@ struct MapEntity: IndexedEntity {
     var id: UUID { model.id }
 
     @ComputedProperty(indexingKey: \.displayName)
-    var name: String { model.name.wrappedValue }
+    var name: String { model.name }
 
-    // Maps the description variable to the Spotlight indexing key `contentDescription`.
     @ComputedProperty(indexingKey: \.contentDescription)
-    var description: String { model.information.wrappedValue }
+    var description: String { model.description }
+
+    var icon: String {
+        model.specialCategory ? model.category.icon : root.module.icon
+    }
 
     var root: MapRootModel
-    var model: ItemDataCodableModel
+    var model: MapModel
     
-    init(root: MapRootModel, model: ItemDataCodableModel) {
+    init(root: MapRootModel, model: MapModel) {
         self.root = root
         self.model = model
     }
@@ -45,15 +49,15 @@ struct MapEntity: IndexedEntity {
 
 extension MapEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
-            let url = URL.documentsDirectory.appending(path: "\(landmark.name).pdf")
+        FileRepresentation(exportedContentType: .pdf) { @MainActor item in
+            let url = URL.documentsDirectory.appending(path: "\(item.name).pdf")
 
             let renderer = ImageRenderer(content: VStack {
 //                Image(landmark.landmark.backgroundImageName)
 //                    .resizable()
 //                    .aspectRatio(contentMode: .fit)
-                Text(landmark.name)
-                Text(landmark.description)
+                Text(item.name)
+                Text(item.description)
             }.frame(width: 600))
 
             renderer.render { size, renderer in
@@ -73,7 +77,7 @@ extension MapEntity: Transferable {
 
         DataRepresentation(exportedContentType: .plainText) {
             """
-            Character: \($0.name)
+            Name: \($0.name)
             Description: \($0.description)
             """.data(using: .utf8)!
         }
@@ -85,10 +89,10 @@ struct MapEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     @Dependency var root: MapRootModel
 
     func suggestedEntities() async throws -> [MapEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [MapEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = MapEntity(root: root, model: model)
             results.append(entity)
         }
@@ -98,7 +102,7 @@ struct MapEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     func entities(for identifiers: [MapEntity.ID]) async throws -> [MapEntity] {
         var results: [MapEntity] = []
         for id in identifiers {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
             let entity = MapEntity(root: root, model: model)
             results.append(entity)
         }
@@ -106,11 +110,11 @@ struct MapEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
     }
 
     func entities(matching: String) async throws -> [MapEntity] {
-        let ids = root.itemController.allItemIds()
+        let ids = root.itemController.itemDataModel.items
         var results: [MapEntity] = []
         for id in ids {
-            guard let model = root.itemController.itemDataCodableModel(for: id) else { continue }
-            guard model.name.wrappedValue.contains(matching) || model.information.wrappedValue.contains(matching) else { continue }
+            guard let model = root.itemController.itemSync(for: id) else { continue }
+            guard model.name.contains(matching) || model.description.contains(matching) else { continue }
             let entity = MapEntity(root: root, model: model)
             results.append(entity)
         }

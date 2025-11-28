@@ -21,7 +21,7 @@ public extension ViewController {
     @MainActor func windowViewer(root: SpaceRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return NavigationStack {
-            SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
+            SpaceExternalHeader(editController: root.editController, model: model, isModal: true)
         }
         .ignoresSafeArea()
         .navigationTitle(model.name)
@@ -30,7 +30,7 @@ public extension ViewController {
 
     @MainActor func inlineViewer(root: SpaceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
-        return SpaceExternalHeader(editController: root.editController(type: .main), model: model, isModal: true)
+        return SpaceExternalHeader(editController: root.editController, model: model, isModal: true)
             .environment(root)
     }
     

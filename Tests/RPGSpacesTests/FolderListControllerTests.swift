@@ -11,7 +11,7 @@ struct FolderListControllerTests {
 
     @Test @MainActor func addFoldersAndItems() async throws {
         let root = try await MockRoot.importTestData()
-        let convertController = ConvertController(itemController: root.itemController, editController: root.editController(type: .main))
+        let convertController = ConvertController(itemController: root.itemController, editController: root.editController)
 
         #expect(root.itemController.itemDataModel.items.count == 1)
         let model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])

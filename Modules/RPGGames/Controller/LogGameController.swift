@@ -3,7 +3,7 @@
 import AndrenalinKit
 import Foundation
 import PhotoRPG
-import RPGMaps
+import MapRPG
 import TableRPG
 import RPGAdventures
 import DiceRPG

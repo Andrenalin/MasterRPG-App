@@ -11,7 +11,7 @@ import TableRPG
 import AudioRPG
 import PhotoRPG
 import DiceRPG
-import RPGMaps
+import MapRPG
 import SpaceRPG
 import WeatherRPG
 

@@ -44,7 +44,7 @@ struct EntryRow: View {
     }
 
     private var cacheItemListModel: CacheItemListModel {
-        root.editController(type: .main).cacheItemListModel
+        root.editController.cacheItemListModel
     }
     
     private func loadImage() {

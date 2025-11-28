@@ -11,7 +11,7 @@ struct ConverterControllerTests {
 
     @Test func checkFolders_generate_entries_and_links() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = ConvertController(itemController: root.itemController, editController: await root.editController(type: .main))
+        let sut = ConvertController(itemController: root.itemController, editController: await root.editController)
 
         #expect(await root.itemController.itemDataModel.items.count == 1)
         let model = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])

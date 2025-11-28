@@ -5,7 +5,7 @@ import AndrenalinKit
 import DiceRPG
 import Foundation
 import AudioRPG
-import RPGMaps
+import MapRPG
 import PdfRPG
 import SpaceRPG
 import CharacterRPG

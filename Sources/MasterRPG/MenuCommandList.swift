@@ -7,7 +7,7 @@ import DiceRPG
 import RoleGameKit
 import AudioRPG
 import RPGGame
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG

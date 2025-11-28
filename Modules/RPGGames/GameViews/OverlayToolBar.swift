@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
-import RPGMaps
+import MapRPG
 import AndrenalinKit
 
 struct OverlayToolBar: View {

@@ -7,7 +7,7 @@ import DiceRPG
 import Foundation
 import AudioRPG
 @testable import RPGGame
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import RPGResources

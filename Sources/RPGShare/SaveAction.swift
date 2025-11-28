@@ -5,7 +5,7 @@ import RoleGameKit
 import SwiftUI
 import CharacterRPG
 import WeatherRPG
-import RPGMaps
+import MapRPG
 import RPGAdventures
 import PhotoRPG
 

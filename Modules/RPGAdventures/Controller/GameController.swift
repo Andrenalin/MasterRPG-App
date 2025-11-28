@@ -5,7 +5,7 @@ import Foundation
 import Observation
 import TableRPG
 import SwiftUI
-import RPGMaps
+import MapRPG
 import AudioRPG
 import DiceRPG
 import PdfRPG

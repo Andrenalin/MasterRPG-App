@@ -89,6 +89,7 @@ public final class AudioRootModel: @unchecked Sendable {
     var itemController: ItemController { _itemController.unsafelyUnwrapped }
     
     @ObservationIgnored private(set) var _editController: EditController?
+    var editController: EditController { _editController.unsafelyUnwrapped }
     @ObservationIgnored private(set) var _exportController: ExportController?
     var exportController: ExportController { _exportController.unsafelyUnwrapped }
     @ObservationIgnored private(set) var _importController: ImportController?
@@ -121,7 +122,7 @@ public final class AudioRootModel: @unchecked Sendable {
             itemSelectionModel: ItemSelectionModel(),
             removeEntryListModel: RemoveEntryListModel(),
             cacheControllable: nil,
-            editControllable: editController(type: .main),
+            editControllable: editController,
             exportControllable: exportControllable,
             gameControllable: gameControllable,
             itemControllable: itemControllable,
@@ -135,7 +136,7 @@ public final class AudioRootModel: @unchecked Sendable {
 
 extension AudioRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
-    public var editControllable: any EditControllable { editController(type: .main) }
+    public var editControllable: any EditControllable { editController }
     public var listControllable: any ListControllable { listController }
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
@@ -158,11 +159,6 @@ extension AudioRootModel {
 
     @MainActor public var itemControllable: any ItemControllable {
         itemController
-    }
-    
-    @MainActor
-    func editController(for item: ItemRowTreeModel? = nil, type: EditTypes) -> EditController {
-        _editController.unsafelyUnwrapped
     }
     
     @MainActor
@@ -223,7 +219,7 @@ extension AudioRootModel {
     }
     
     public func checkFolders() async {
-        let cc = await ConvertController(itemController: itemController, editController: editController(type: .main))
+        let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.checkFolders()
     }
     

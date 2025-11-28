@@ -11,7 +11,7 @@ struct RootExtendedDetail: View {
     @Environment(SpaceRootModel.self) private var root
     
     var body: some View {
-        RootDetail(editController: root.editController(for: itemRowTreeModel, type: .main))
+        RootDetail(editController: root.editController)
             .environment(root.listController(tabId: tabId).model)
     }
 }

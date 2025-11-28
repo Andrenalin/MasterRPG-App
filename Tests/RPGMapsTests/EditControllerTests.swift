@@ -11,12 +11,12 @@ import TableRPG
 import CharacterRPG
 import Testing
 
-@testable import RPGMaps
+@testable import MapRPG
 
 struct EditControllerTests {
     @Test func scanMapEntries() async throws {
         let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 3)
-        let sut = await root.editController(type: .main)
+        let sut = await root.editController
 
         let itemRowModel = await root.itemController.addNew(type: nil)
         
@@ -53,7 +53,7 @@ struct EditControllerTests {
 
     @Test func addEntry() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = await root.editController(type: .main)
+        let sut = await root.editController
 
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], typeId: .map))
         let entries = await sut.model.entries

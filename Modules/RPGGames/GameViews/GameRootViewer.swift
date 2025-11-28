@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import SwiftUI
-import RPGMaps
+import MapRPG
 import WeatherRPG
 import TableRPG
 import SpaceRPG

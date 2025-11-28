@@ -74,6 +74,7 @@ public final class SpaceRootModel: @unchecked Sendable {
     var itemController: ItemController { _itemController.unsafelyUnwrapped }
     
     @ObservationIgnored private(set) var _editController: EditController?
+    var editController: EditController { _editController.unsafelyUnwrapped }
     @ObservationIgnored private(set) var _exportController: ExportController?
     var exportController: ExportController { _exportController.unsafelyUnwrapped }
     @ObservationIgnored private(set) var _importController: ImportController?
@@ -107,7 +108,7 @@ public final class SpaceRootModel: @unchecked Sendable {
             itemSelectionModel: ItemSelectionModel(),
             removeEntryListModel: RemoveEntryListModel(),
             cacheControllable: cacheController,
-            editControllable: editController(type: .main),
+            editControllable: editController,
             exportControllable: exportControllable,
             gameControllable: gameControllable,
             itemControllable: itemControllable,
@@ -121,7 +122,7 @@ public final class SpaceRootModel: @unchecked Sendable {
 
 extension SpaceRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { cacheController }
-    public var editControllable: any EditControllable { editController(type: .main) }
+    public var editControllable: any EditControllable { editController }
     public var listControllable: any ListControllable { listController }
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
@@ -142,11 +143,6 @@ extension SpaceRootModel {
         itemController
     }
     
-    @MainActor
-    func editController(for item: ItemRowTreeModel? = nil, type: EditTypes) -> EditController {
-        _editController.unsafelyUnwrapped
-    }
-
     @MainActor
     private var listController: ListController {
         ListController(itemController: itemController, listStoreName: "Space", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
@@ -183,7 +179,6 @@ extension SpaceRootModel {
             let item = await itemController.itemOrEmpty(for: itemId)
             guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
             if let newFileUrl = try? await fileUrlDataController?.move(fileUrl: fileUrl, name: item.name, category: item.category.title) {
-                let editController = await editController(type: .main)
                 await editController.reset(fileUrl: newFileUrl, for: itemId)
             }
         }
@@ -206,7 +201,7 @@ extension SpaceRootModel {
     }
     
     public func checkFolders() async {
-        let cc = await ConvertController(itemController: itemController, editController: editController(type: .main))
+        let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.checkFolders()
     }
 }

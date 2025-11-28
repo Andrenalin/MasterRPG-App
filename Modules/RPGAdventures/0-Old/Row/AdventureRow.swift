@@ -3,7 +3,7 @@
 import AndrenalinKit
 import SwiftUI
 import AudioRPG
-import RPGMaps
+import MapRPG
 import PhotoRPG
 import TableRPG
 import SpaceRPG

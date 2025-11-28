@@ -3,7 +3,7 @@
 import AndrenalinKit
 import DiceRPG
 import SwiftUI
-import RPGMaps
+import MapRPG
 import CharacterRPG
 import RPGAdventures
 

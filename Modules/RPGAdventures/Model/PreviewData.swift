@@ -4,7 +4,7 @@ import AndrenalinKit
 import DiceRPG
 import Foundation
 import AudioRPG
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import RPGResources
@@ -30,7 +30,7 @@ public extension AdventureRootModel {
 //        root.valueRoot.setUp(context: nil, rootControllable: root)
 //        root.weatherRoot.setUp(context: nil, rootControllable: root)
         root.setUp(context: nil)
-        root.editController(type: .main).setCurrentItem(to: .preview)
+        root.editController.setCurrentItem(to: .preview)
         return root
     }()
     
@@ -38,7 +38,7 @@ public extension AdventureRootModel {
     static let previewWithData: AdventureRootModel = {
         let root = AdventureRootModel.preview
         let importController = root.importController
-        let editController = root.editController(type: .main)
+        let editController = root.editController
 #if DEBUG
         Task.detached(priority: .userInitiated) {
             let bundle = Resources.bundle
@@ -63,7 +63,7 @@ public extension AdventureRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let root = AdventureRootModel(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
         root.setUp(context: nil)
-        root.editController(type: .main).setCurrentItem(to: .preview)
+        root.editController.setCurrentItem(to: .preview)
         return root
     }
 #endif
@@ -92,7 +92,7 @@ extension ItemController {
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = AdventureRootModel.preview.editController(type: .main)
+        let controller = AdventureRootModel.preview.editController
         controller.setCurrentItem(to: .preview)
         return controller
     }()

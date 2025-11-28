@@ -13,7 +13,7 @@ struct RootExtendedDetail: View {
     var body: some View {
         let _ = Self._printChanges()
         
-        RootDetail(editController: root.editController(for: itemRowTreeModel, type: .main))
+        RootDetail(editController: root.editController)
             .environment(root.listController(tabId: tabId).model)
     }
 }

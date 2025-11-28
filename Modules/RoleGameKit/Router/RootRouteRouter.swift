@@ -6,7 +6,7 @@ import RPGAdventures
 import AudioRPG
 import SwiftUI
 import DiceRPG
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG

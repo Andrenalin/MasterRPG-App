@@ -13,7 +13,7 @@ public extension SpaceRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let root = SpaceRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
-        root.editController(type: .main).setCurrentItem(to: .preview)
+        root.editController.setCurrentItem(to: .preview)
         return root
     }()
     
@@ -84,7 +84,7 @@ extension ItemController {
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = SpaceRootModel.preview.editController(type: .main)
+        let controller = SpaceRootModel.preview.editController
         controller.setCurrentItem(to: .preview)
         return controller
     }()

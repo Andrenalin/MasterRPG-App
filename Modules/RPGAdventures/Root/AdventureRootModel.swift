@@ -4,7 +4,7 @@ import AndrenalinKit
 import CoreData
 import DiceRPG
 import AudioRPG
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -59,7 +59,7 @@ public final class AdventureRootModel: @unchecked Sendable {
             dataController = DataController(root: self, context: context, token: NetworkModules.adventure.token)
         }
         _itemController = ItemController(root: self, dataController: dataController)
-        _editControllers = [EditTypes.main: EditController(root: self, currentListItem: nil, currentModel: nil)]
+        _editController = EditController(root: self, currentListItem: nil, currentModel: nil)
         _exportController = ExportController(root: self, itemController: self.itemController, gameExporter: false)
         _importController = ImportController(root: self, itemController: self.itemController, gameImporter: false)
         _gameController = GameController(root: self, itemController: self.itemController)
@@ -110,8 +110,8 @@ public final class AdventureRootModel: @unchecked Sendable {
         _itemController.unsafelyUnwrapped
     }
     
-    @ObservationIgnored
-    private var _editControllers: [EditTypes: EditController] = [:]
+    @ObservationIgnored private(set) var _editController: EditController?
+    var editController: EditController { _editController.unsafelyUnwrapped }
 
     @ObservationIgnored
     private(set) var _exportController: ExportController?
@@ -167,7 +167,7 @@ public final class AdventureRootModel: @unchecked Sendable {
             itemSelectionModel: ItemSelectionModel(),
             removeEntryListModel: RemoveEntryListModel(),
             cacheControllable: nil,
-            editControllable: editController(type: .main),
+            editControllable: editController,
             exportControllable: exportControllable,
             gameControllable: gameControllable,
             itemControllable: itemControllable,
@@ -181,7 +181,7 @@ public final class AdventureRootModel: @unchecked Sendable {
 
 extension AdventureRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
-    public var editControllable: any EditControllable { editController(type: .main) }
+    public var editControllable: any EditControllable { editController }
     public var listControllable: any ListControllable { listController }
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
@@ -200,23 +200,6 @@ extension AdventureRootModel {
         itemController
     }
     
-    func applyToAllEditController(handler: @escaping @Sendable (EditController) async -> Void) async {
-        for editController in _editControllers.values {
-            await handler(editController)
-        }
-    }
-
-    @MainActor
-    func editController(for item: ItemRowTreeModel? = nil, type: EditTypes) -> EditController {
-        guard let oldEditController = _editControllers[type] else {
-            let model = item.map { itemController.itemOrEmpty(for: $0.model.itemId) }
-            let newEditController = EditController(root: self, currentListItem: item, currentModel: model)
-            _editControllers[type] = newEditController
-            return newEditController
-        }
-        return oldEditController
-    }
-
     @MainActor
     private var listController: ListController {
         ListController(itemController: itemController, listStoreName: "Adventures", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
@@ -320,7 +303,7 @@ public extension AdventureRootModel {
     @MainActor
     func addNewAdventure(name: String, text: String, photoIds: [UUID], photoLinks: [String]) async {
         let itemRowModel = await itemController.addNew(type: nil)
-        let editController = editController(type: .main)
+        let editController = editController
         editController.setCurrentItem(to: ItemRowTreeModel(id: UUID(), model: itemRowModel))
         editController.model.name = name
         editController.model.description = text

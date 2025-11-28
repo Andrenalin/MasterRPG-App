@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import PhotoRPG
-import SwiftData
 import SwiftUI
 
 struct ThumbnailPhotoRow: View {
@@ -17,8 +16,8 @@ struct ThumbnailPhotoRow: View {
         }
     }
     
-    private var model: MapDataModel? {
-        root.itemController.model(for: itemId)
+    private var model: MapModel? {
+        root.itemController.itemSync(for: itemId)
     }
 }
 

@@ -6,7 +6,7 @@ import RoleGameKit
 import SwiftUI
 
 import CharacterRPG
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG

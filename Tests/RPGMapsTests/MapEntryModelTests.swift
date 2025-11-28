@@ -5,7 +5,7 @@ import AndrenalinKit
 import Foundation
 import Testing
 
-@testable import RPGMaps
+@testable import MapRPG
 
 struct MapEntryModelTests {
     func setUp() async throws -> MapEntryModel {

@@ -1,70 +1,72 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Foundation
-import SwiftData
+import CoreData
+import AudioRPG
+import DiceRPG
+import PdfRPG
+import PhotoRPG
+import TableRPG
+import CharacterRPG
 
 struct ItemController: Sendable {
-    @MainActor init(container: ModelContainer, module: NetworkModules) {
-        self.itemCacheModel = ItemCacheModel()
-        self.container = container
-        self.module = module
-        self.modelCacheModel = ModelCacheModel()
+    @MainActor
+    init(root: MapRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.root = root
+        self.dataControllable = dataController
+        self.linkRegisterController = linkRegisterControllable
+        
+        itemDataModel = ItemDataModel(categoryTags: [.building, .dungeon, .map], networkModule: .map)
+        self.cacheController = CacheController(photoRoot: root.photoRoot)
     }
-    
-    let itemCacheModel: ItemCacheModel
-    let container: ModelContainer
-    let collectionCategory: ItemListCategory = .collection
-    let module: NetworkModules
-    let modelCacheModel: ModelCacheModel<MapDataModel>
-}
 
-extension ItemController: ModelCacheControllable {}
+    let root: MapRootModel
+    var cacheController: CacheController?
+    let collectionCategory: ItemListCategory = .collection
+    let dataControllable: (any DataPersistenceControllable)?
+    let itemDataModel: ItemDataModel
+    let linkRegisterController: LinkRegisterControllable
+}
 
 extension ItemController: ItemControllable {
-    @MainActor func itemDataCodableModel(id: UUID) -> ItemDataCodableModel? {
-        let encoder = JSONEncoder()
-        var externalData: Data? = nil
-        if let ownModel = model(for: id)?.codableModel {
-            externalData = try? encoder.encode(ownModel)
-        }
-        return itemDataCodableModel(for: id, externalData: externalData)
+    typealias Model = MapModel
+    
+    @MainActor
+    var linkRegisterControllable: LinkRegisterControllable {
+        linkRegisterController
     }
     
-    @MainActor func encodedItemData(for id: UUID) throws -> Data? {
-        guard let model = itemDataCodableModel(id: id) else { return nil }
-        let encoder = JSONEncoder()
-        return try encoder.encode(model)
-    }
-}
-
-// MARK: - Import Controller
-
-extension ItemController: ImportDataControllable {
-    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel {
-        let decoder = JSONDecoder()
-        if version == ItemDataExportModel.Version.version_2025.rawValue {
-            return try decoder.decode(ItemDataCodableModel.self, from: data)
-        } else {
-            do {
-                let oldModel = try decoder.decode(MapModel.self, from: data)
-                return ConverterController.convert(old: oldModel, itemController: self)
-            } catch {
-                print(error)
-                fatalError()
+    @MainActor
+    func children(for model: ItemRowModel) -> [ItemRowModel] {
+        switch model.typeId {
+        case .audio:
+            return root.audioRoot.itemControllable.children(for: model)
+        case .dice:
+            return root.diceRoot.itemControllable.children(for: model)
+        case .pdf:
+            return root.pdfRoot.itemControllable.children(for: model)
+        case .photo:
+            return root.photoRoot.itemControllable.children(for: model)
+        case .table:
+            return root.tableRoot.itemControllable.children(for: model)
+        case .value:
+            return root.valueRoot.itemControllable.children(for: model)
+        default:
+            return itemOrEmpty(for: model.itemId).entries.map {
+                ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: itemDataModel.networkModule)
             }
         }
     }
     
-    @MainActor func replace(id: UUID, data: Data?, isInsert: Bool, shouldRepairLinks: Bool) {
-        guard let data else { return }
-        let decoder = JSONDecoder()
-        guard let newCharacter = try? decoder.decode(MapDataModel.MapDataModelCodable.self, from: data) else { return }
-        if let oldCharacter = model(for: id) {
-            oldCharacter.replace(newCharacter)
-        } else {
-            let newModel = MapDataModel(newCharacter)
-            container.mainContext.insert(newModel)
+    func didDelete(model: ModelType) async {
+        guard let model = model as? Model else { return }
+        for entry in model.entries {
+            await cacheController?.remove(itemId: entry.id)
         }
     }
+    
+    func didUpdate(model: ModelType) async {
+    }
 }
+

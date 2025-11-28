@@ -5,8 +5,8 @@ import AndrenalinKit
 import RoleGameKit
 import SwiftUI
 import RPGAdventures
-import RPGMaps
-import RPGMaps
+import MapRPG
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import CharacterRPG

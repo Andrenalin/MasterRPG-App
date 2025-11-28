@@ -10,7 +10,7 @@ import Testing
 
 @testable import RPGAdventures
 @testable import PhotoRPG
-@testable import RPGMaps
+@testable import MapRPG
 @testable import TableRPG
 @testable import CharacterRPG
 

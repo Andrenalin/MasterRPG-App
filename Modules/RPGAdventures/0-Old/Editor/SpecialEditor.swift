@@ -6,7 +6,7 @@ import SwiftUI
 import DiceRPG
 import TableRPG
 import CharacterRPG
-import RPGMaps
+import MapRPG
 
 struct SpecialEditor: View {
     let editController: EditController

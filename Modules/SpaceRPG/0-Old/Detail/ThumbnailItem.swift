@@ -44,7 +44,7 @@ struct ThumbnailItem: View {
     
     private var cacheItemListModel: CacheItemListModel {
         // here we want always the image cache - that should be only 1
-        root.editController(type: .main).cacheItemListModel
+        root.editController.cacheItemListModel
     }
 
     func loadImage() {

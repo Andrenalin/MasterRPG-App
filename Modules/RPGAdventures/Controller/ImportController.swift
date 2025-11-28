@@ -9,7 +9,7 @@ import CharacterRPG
 import PhotoRPG
 import PdfRPG
 import DiceRPG
-import RPGMaps
+import MapRPG
 import SpaceRPG
 
 struct ImportController: Sendable {

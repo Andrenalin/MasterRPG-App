@@ -10,7 +10,7 @@ import Testing
 
 @testable import DiceRPG
 @testable import AudioRPG
-@testable import RPGMaps
+@testable import MapRPG
 @testable import PhotoRPG
 @testable import SpaceRPG
 @testable import TableRPG

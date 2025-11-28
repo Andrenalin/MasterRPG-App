@@ -10,7 +10,7 @@ import TableRPG
 import SpaceRPG
 import PhotoRPG
 import PdfRPG
-import RPGMaps
+import MapRPG
 import DiceRPG
 import AudioRPG
 

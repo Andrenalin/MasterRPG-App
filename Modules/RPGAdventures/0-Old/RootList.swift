@@ -8,7 +8,7 @@ import CharacterRPG
 import AudioRPG
 import DiceRPG
 import DiceRPG
-import RPGMaps
+import MapRPG
 import PhotoRPG
 import AudioRPG
 import PdfRPG
@@ -16,7 +16,7 @@ import TableRPG
 import TableRPG
 import SpaceRPG
 import SpaceRPG
-import RPGMaps
+import MapRPG
 import PhotoRPG
 import PdfRPG
 
@@ -29,7 +29,7 @@ struct RootNaviList: View {
         let _ = Self._printChanges()
         
         ManagedNavigationStack {
-            RootExtendedList(editController: root.editController(type: .link), tabId: tabId, selection: false, openAction: openAction)
+            RootExtendedList(editController: root.editController, tabId: tabId, selection: false, openAction: openAction)
         }
     }
 }
@@ -53,7 +53,7 @@ struct RootList: View {
         let _ = Self._printChanges()
         
         NavigationSplitView(columnVisibility: $column) {
-            RootExtendedList(editController: root.editController(type: .main), tabId: tabId, selection: selection)
+            RootExtendedList(editController: root.editController, tabId: tabId, selection: selection)
                 .frame(minWidth: 250)
         } detail: {
             ManagedNavigationStack {

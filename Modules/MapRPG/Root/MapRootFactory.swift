@@ -1,27 +1,26 @@
 // @copyright André Trettin
 
-import CharacterRPG
+import CoreExternalRPG
+import AndrenalinKit
+import AudioRPG
 import DiceRPG
 import PdfRPG
 import PhotoRPG
 import TableRPG
-
-import CoreRPG
+import CharacterRPG
 import SwiftData
 import SwiftUI
 
-@MainActor
-public struct MapRootFactory {
-    public static func rootModel(modelContext: ModelContext, characterRoot: CharacterRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) -> MapRootModel {
-        MapRootModel(modelContext: modelContext, characterRoot: characterRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-    }
-
-    public static func rootView() -> some View {
-        MapRootView()
+public enum MapRootFactory {
+    @MainActor public static func root(container: ModelContainer, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, valueRoot: CharacterRootModel) -> MapRootModel {
+        MapRootModel(container: container, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
     }
     
-    @ViewBuilder
-    public static func detailView(root: MapRootModel) -> some View {
+    @MainActor public static func rootView() -> some View {
+        MapRootView()
+    }
+        
+    @MainActor @ViewBuilder public static func detailView(root: MapRootModel) -> some View {
         ItemSplitDetailRootView(root: root.rootController)
     }
 }

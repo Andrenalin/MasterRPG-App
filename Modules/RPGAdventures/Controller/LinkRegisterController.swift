@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import Foundation
-import RPGMaps
+import MapRPG
 import CharacterRPG
 import TableRPG
 import WeatherRPG

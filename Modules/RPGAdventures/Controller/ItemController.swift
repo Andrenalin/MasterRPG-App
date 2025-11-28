@@ -5,7 +5,7 @@ import Foundation
 import CoreData
 import AudioRPG
 import DiceRPG
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -64,16 +64,8 @@ extension ItemController: ItemControllable {
     }
     
     func didDelete(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didDelete(itemId: model.id)
-        }
     }
     
     func didUpdate(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didUpdate(item: model)
-        }
     }
 }

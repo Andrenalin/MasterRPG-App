@@ -11,7 +11,7 @@ public extension AudioRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let root = AudioRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
-        root.editController(type: .main).setCurrentItem(to: .preview)
+        root.editController.setCurrentItem(to: .preview)
         return root
     }()
     
@@ -19,7 +19,7 @@ public extension AudioRootModel {
     static let previewWithData: AudioRootModel = {
         let root = AudioRootModel.preview
         let importController = root.importController
-        let editController = root.editController(type: .main)
+        let editController = root.editController
 #if DEBUG
         Task.detached(priority: .userInitiated) {
             let bundle = Resources.bundle
@@ -92,7 +92,7 @@ extension ItemController {
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = AudioRootModel.preview.editController(type: .main)
+        let controller = AudioRootModel.preview.editController
         controller.setCurrentItem(to: .preview)
         return controller
     }()

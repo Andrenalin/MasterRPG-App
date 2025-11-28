@@ -81,7 +81,7 @@ struct SpaceDetailObjectViewer: View {
         Text("Hello")
             .onAppear {
                 let id = root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId
-                root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId)
+                root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId)
                 listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
             }
     } else {

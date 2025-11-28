@@ -6,7 +6,7 @@ import DiceRPG
 import Foundation
 import os.log
 import AudioRPG
-import RPGMaps
+import MapRPG
 import PhotoRPG
 import TableRPG
 import CharacterRPG

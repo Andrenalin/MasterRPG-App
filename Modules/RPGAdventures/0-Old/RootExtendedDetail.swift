@@ -10,7 +10,7 @@ import TableRPG
 import SpaceRPG
 import PhotoRPG
 import PdfRPG
-import RPGMaps
+import MapRPG
 
 struct RootExtendedDetail: View {
     let itemRowTreeModel: ItemRowTreeModel
@@ -22,7 +22,7 @@ struct RootExtendedDetail: View {
         let _ = Self._printChanges()
         let _ = print(root.listController(tabId: tabId).model.listTitleName)
         
-        RootDetail(editController: root.editController(for: itemRowTreeModel, type: .main))
+        RootDetail(editController: root.editController)
             .environment(root.listController(tabId: tabId).model)
     }
 }
@@ -85,7 +85,7 @@ struct RootEditDetail: View {
     @State private var tabId = UUID()
     
     var editController: EditController {
-        root.editController(for: ItemRowTreeModel(itemId: itemId, typeId: .adventure), type: .module(.adventure))
+        root.editController
     }
 
     private var listController: ListController {

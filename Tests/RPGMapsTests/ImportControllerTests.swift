@@ -11,7 +11,7 @@ import CharacterRPG
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGMaps
+@testable import MapRPG
 
 struct ImportControllerTests {
     @Test func importing() async throws {

@@ -7,7 +7,7 @@ import RPGAdventures
 import AudioRPG
 import CharacterRPG
 import DiceRPG
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG

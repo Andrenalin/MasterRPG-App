@@ -144,12 +144,12 @@ struct UndoButton: View {
     
     var body: some View {
         Button {
-            withAnimation { root.editController(type: .main).undo() }
+            withAnimation { root.editController.undo() }
         } label: {
-            Text("Undo \(root.editController(type: .main).undoTitle)", bundle: .module)
+            Text("Undo \(root.editController.undoTitle)", bundle: .module)
         }
         .keyboardShortcut("Z", modifiers: [.command])
-        .disabled(!root.editController(type: .main).canUndo)
+        .disabled(!root.editController.canUndo)
     }
 }
 
@@ -158,12 +158,12 @@ struct RedoButton: View {
 
     var body: some View {
         Button {
-            withAnimation { root.editController(type: .main).redo() }
+            withAnimation { root.editController.redo() }
         } label: {
-            Text("Redo \(root.editController(type: .main).redoTitle)", bundle: .module)
+            Text("Redo \(root.editController.redoTitle)", bundle: .module)
         }
         .keyboardShortcut("Z", modifiers: [.command, .shift])
-        .disabled(!root.editController(type: .main).canRedo)
+        .disabled(!root.editController.canRedo)
     }
 }
 

@@ -4,7 +4,7 @@ import AndrenalinKit
 import RPGAdventures
 import AudioRPG
 import DiceRPG
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG

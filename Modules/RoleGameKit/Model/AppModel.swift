@@ -12,7 +12,7 @@ import RPGAdventures
 import DiceRPG
 import AudioRPG
 import RPGGame
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import RPGResources

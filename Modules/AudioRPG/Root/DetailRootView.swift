@@ -117,7 +117,7 @@ struct DetailRootView: View {
         Text("Hello")
             .onAppear {
                 let id = root.itemController.itemDataModel.items.first ?? AudioModel.previewId
-                root.editController(type: .main).model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId)
+                root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId)
                 listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: root.module)
             }
     } else {

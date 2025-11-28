@@ -3,7 +3,7 @@
 import AndrenalinKit
 import DiceRPG
 import AudioRPG
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -49,7 +49,7 @@ public enum AdventureFactory {
     
     @MainActor
     public static func rootExtendedView(for root: AdventureRootModel, tabId: UUID) -> some View {
-        RootExtendedList(editController: root.editController(type: .main), tabId: tabId, selection: true)
+        RootExtendedList(editController: root.editController, tabId: tabId, selection: true)
             .itemSplitViewSizeMode(.wide)
             .navigationAutoReceive(AdventureRoute.self)
     }

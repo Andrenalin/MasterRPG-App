@@ -2,11 +2,11 @@
 
 #if !os(tvOS)
 
+import AndrenalinKit
 import AppIntents
+import CoreExternalRPG
 import Foundation
 import SwiftUI
-import CoreRPG
-import CoreExternalRPG
 
 struct OpenMapIntent: OpenIntent {
     static let title: LocalizedStringResource = "Open Map"

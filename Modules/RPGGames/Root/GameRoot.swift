@@ -7,7 +7,7 @@ import DiceRPG
 import Foundation
 import GroupActivities
 import AudioRPG
-import RPGMaps
+import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG

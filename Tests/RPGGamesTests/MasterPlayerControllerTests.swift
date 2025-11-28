@@ -11,7 +11,7 @@ import Testing
 @testable import RPGAdventures
 @testable import DiceRPG
 @testable import AudioRPG
-@testable import RPGMaps
+@testable import MapRPG
 @testable import PdfRPG
 @testable import PhotoRPG
 @testable import SpaceRPG
