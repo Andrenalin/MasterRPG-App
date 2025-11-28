@@ -101,7 +101,7 @@ struct ExtendedTabRouteDestionationView: View {
             GeneratorRootFactory.rootView()
 #endif
         case .maps:
-            NewMapRoute(appModel: appModel, tabId: tabId, isExtended: true)
+            MapRootFactory.rootView()
         case .pdfs:
             PdfFactory.rootView()
         case .photos:

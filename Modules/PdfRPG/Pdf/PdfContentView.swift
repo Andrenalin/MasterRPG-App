@@ -41,7 +41,7 @@ struct PdfContentView: View {
                     let content = String(selection.string?.prefix(300) ?? "")
                     let pageNumber = page.label ?? "-"
                     let bounds = selection.bounds(for: page)
-                    searchModel.selectedEntry = root.editController(type: .main).createBookmark(itemId: UUID(), content: content, page: pageNumber, bounds: bounds)
+                    searchModel.selectedEntry = root.editController.createBookmark(itemId: UUID(), content: content, page: pageNumber, bounds: bounds)
                 } else {
                     searchModel.selectedEntry = nil
                 }

@@ -6,6 +6,7 @@ import RoleGameKit
 import SwiftUI
 
 import CharacterRPG
+import RPGMaps
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -25,6 +26,10 @@ struct WindowViewerList: Scene {
             
             windowGroup(model: appModel, module: .generator) { selection in
                 appModel.generatorRoot.viewController.windowViewer(root: appModel.generatorRoot, selection: selection)
+            }
+
+            windowGroup(model: appModel, module: .map) { selection in
+                appModel.mapRoot.viewController.windowViewer(root: appModel.mapRoot, selection: selection)
             }
 
             windowGroup(model: appModel, module: .pdf) { selection in

@@ -30,8 +30,8 @@ struct MasterRPGApp: App {
         let diceRootModel = appModel.diceRoot
         AppDependencyManager.shared.add(dependency: diceRootModel)
         
-//        let mapRootModel = appModel.mapRoot
-//        AppDependencyManager.shared.add(dependency: mapRootModel)
+        let mapRootModel = appModel.mapRoot
+        AppDependencyManager.shared.add(dependency: mapRootModel)
         let pdfRootModel = appModel.pdfRoot
         AppDependencyManager.shared.add(dependency: pdfRootModel)
         let photoRootModel = appModel.photoRoot

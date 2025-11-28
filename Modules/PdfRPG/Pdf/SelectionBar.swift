@@ -95,11 +95,11 @@ private extension SelectionBar {
                 Color.clear
             }
                 .overlay(alignment: .top) {
-                    SelectionBar(editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: PdfModel.previewId), searchModel: PdfSearchModel(), withoutBookmark: true)
+                    SelectionBar(editController: root.editController, model: root.itemController.itemOrEmpty(for: PdfModel.previewId), searchModel: PdfSearchModel(), withoutBookmark: true)
                         .padding(.top, 64)
                 }
                 .overlay(alignment: .bottom) {
-                    SelectionBar(editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: PdfModel.previewId), searchModel: searchModel, withoutBookmark: false)
+                    SelectionBar(editController: root.editController, model: root.itemController.itemOrEmpty(for: PdfModel.previewId), searchModel: searchModel, withoutBookmark: false)
                 }
         }
     }

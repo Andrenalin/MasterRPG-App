@@ -23,7 +23,7 @@ struct MyAppPackage: AppIntentsPackage {
         CharacterFrameworkPackage.self,
         DiceFrameworkPackage.self,
 //        GeneratorFrameworkPackage.self,
-//        MapFrameworkPackage.self,
+        MapFrameworkPackage.self,
         PdfFrameworkPackage.self,
         PhotoFrameworkPackage.self,
         SpaceFrameworkPackage.self,

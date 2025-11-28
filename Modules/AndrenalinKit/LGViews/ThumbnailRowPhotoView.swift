@@ -117,9 +117,8 @@ private extension ThumbnailRowPhotoView {
     func loadImage() {
         Task { @MainActor in
             let fileId = model.id
-            let fileUrl = model.fileUrl
             let loaderTask = Task.detached(priority: .userInitiated) {
-                await cacheController.thumbnailId(for: fileId, with: fileUrl)
+                await cacheController.thumbnailId(for: fileId, item: model)
             }
             _ = await loaderTask.result
             let newImage = await cacheController.thumbnail(for: fileId)

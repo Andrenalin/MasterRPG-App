@@ -14,7 +14,7 @@ public extension PdfRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let root = PdfRootModel(container: modelContainer)
         root.setUp(context: nil, rootControllable: root)
-        root.editController(type: .main).setCurrentItem(to: .preview)
+        root.editController.setCurrentItem(to: .preview)
         return root
     }()
     
@@ -23,7 +23,7 @@ public extension PdfRootModel {
         let root = PdfRootModel.preview
         let itemController = root.itemController
         let importController = root.importController
-        let editController = root.editController(type: .main)
+        let editController = root.editController
 #if DEBUG
         Task.detached(priority: .userInitiated) {
             let bundle = Resources.bundle
@@ -90,7 +90,7 @@ extension ItemController {
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = PdfRootModel.preview.editController(type: .main)
+        let controller = PdfRootModel.preview.editController
         controller.setCurrentItem(to: .preview)
         return controller
     }()

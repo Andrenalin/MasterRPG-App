@@ -19,12 +19,12 @@ struct CacheController: Sendable {
     
     let imageCacheController: ImageCacheController
     let thumbnailCacheController: ImageCacheController
-    let fileUrlDataController: FileUrlDataController
+    let fileUrlDataController: FileUrlDataController?
 }
 
 extension CacheController: ImageCacheControllable {
-    func createImage(for itemId: UUID, fileUrl: FileUrl?) async {
-        guard let fileUrl else { return }
+    func createImage(for itemId: UUID, item: any ItemDataAccessable) async {
+        guard let fileUrlDataController, let fileUrl = item.fileUrl  else { return }
         let image: AKImage?
         if let data = fileUrl.data {
             image = AKImage(data: data)
@@ -41,10 +41,10 @@ extension CacheController: ImageCacheControllable {
         }
     }
 
-    func createThumbnail(for itemId: UUID, fileUrl: FileUrl?) async {
+    func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
         let cachedImage = await imageCacheController.object(for: itemId)
         if cachedImage == nil {
-            await createImage(for: itemId, fileUrl: fileUrl)
+            await createImage(for: itemId, item: item)
         }
         guard let image = await imageCacheController.object(for: itemId) else { return }
         let thumbnail = await image.resize(to: CGSize(width: 64, height: 64), topAligned: true)

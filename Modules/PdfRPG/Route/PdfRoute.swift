@@ -54,7 +54,7 @@ struct DetailRouteDestinationView: View {
     @Environment(PdfRootModel.self) private var root
     
     var body: some View {
-        DetailRootView(root: root, editController: root.editController(type: .main), model: root.itemController.itemOrEmpty(for: itemId), isSubFolder: isSubFolder)
+        DetailRootView(root: root, editController: root.editController, model: root.itemController.itemOrEmpty(for: itemId), isSubFolder: isSubFolder)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
             .environment(root.rootController)

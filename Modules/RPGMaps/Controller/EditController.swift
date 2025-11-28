@@ -19,21 +19,34 @@ final class MapEditModel: Sendable {
     let photoSelectionModel = SelectionModel(id: UUID(), filter: .map)
     let pdfSelectionModel = SelectionModel(id: UUID(), filter: .all)
     
+    let selectionAudio: ItemSelectionModel = ItemSelectionModel()
+    let selectionCharacter: ItemSelectionModel = ItemSelectionModel()
+    let selectionDice: ItemSelectionModel = ItemSelectionModel()
+    let selectionPdf: ItemSelectionModel = ItemSelectionModel()
+    let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
+    let selectionTable: ItemSelectionModel = ItemSelectionModel()
+
     func resetCurrentModel() {
         contentLinks = [:]
     }
 }
 
 struct EditController: Sendable {
-    @MainActor
-    init(root: MapRootModel, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    @MainActor init(root: MapRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.root = root
+        
+        self.itemController = itemController
+        self.linkRegisterControllable = linkRegisterControllable
+
         self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
         self.mapEditModel = MapEditModel()
     }
 
-    weak var root: MapRootModel!
-    var fileUrlDataController: FileUrlDataController? = nil
+    let root: MapRootModel
+
+    let itemController: ItemController
+    let linkRegisterControllable: any LinkRegisterControllable
+
     let editorModel: ItemEditorModel
     let mapEditModel: MapEditModel
 }
@@ -41,16 +54,12 @@ struct EditController: Sendable {
 extension EditController: EntryDataEditable {
     typealias Model = MapModel
 
-    var itemController: ItemController {
-        root.itemController
-    }
-
     var itemControllable: any ItemControllable {
-        root.itemController as (any ItemControllable)
+        itemController
     }
-
-    var linkRegisterControllable: any LinkRegisterControllable {
-        root.linkRegisterControllable
+    
+    var fileUrlDataController: FileUrlDataController? {
+        itemControllable.fileUrlDataController
     }
 
     @MainActor
@@ -131,7 +140,7 @@ extension EditController {
         Task {
             for entry in validateModel.entries {
                 if itemController.itemSync(for: validateModel.id)?[entry.id].coordinates != entry.coordinates {
-                    await root.cacheController.resetThumbnailEntry(item: validateModel, entryId: entry.id)
+                    await root.cacheController?.remove(itemId: entry.id)
                 }
             }
         }
@@ -169,7 +178,7 @@ extension EditController {
 
     @MainActor @ViewBuilder
     func selectMap(for entryId: UUID, linkKeyPath: WritableKeyPath<MapModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.viewController.viewSelect(filter: .all) {
+        root.viewController.viewSelect(root: root, filter: .all) {
             let text = self.model[keyPath: linkKeyPath]
             return LinkReplaceController.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .map) }
         } toggleSelection: { sel, _ in

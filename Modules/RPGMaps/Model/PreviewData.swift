@@ -20,7 +20,7 @@ public extension MapRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         var root = MapRootModel(container: modelContainer, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, valueRoot: .preview)
         root.setUp(context: nil, rootControllable: root)
-        //root.editController(type: .main).setCurrentItem(to: .preview)
+        //root.editController.setCurrentItem(to: .preview)
         return root
     }()
     
@@ -29,7 +29,7 @@ public extension MapRootModel {
         let root = MapRootModel.preview
         let itemController = root.itemController
         let importController = root.importController
-        let editController = root.editController(type: .main)
+        let editController = root.editController
         let photoCon = root.photoRoot.itemControllable
 #if DEBUG
         Task.detached(priority: .userInitiated) {
@@ -72,10 +72,10 @@ extension MapRootModel: RootControllable {
     }
     
     public var gameExportControllable: any ExportControllable {
-        gameController.exportController
+        exportController
     }
     public var gameImportControllable: any ImportControllable {
-        gameController.importController
+        importController
     }
 }
 
@@ -103,7 +103,7 @@ extension ItemController {
 extension EditController {
     @MainActor
     static var preview: EditController = {
-        let controller = MapRootModel.preview.editController(type: .main)
+        let controller = MapRootModel.preview.editController
         controller.setCurrentItem(to: .preview)
         return controller
     }()

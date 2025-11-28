@@ -10,13 +10,15 @@ import UIKit
 public protocol ImageCacheControllable: Sendable {
     var imageCacheController: ImageCacheController { get }
     var thumbnailCacheController: ImageCacheController { get }
-    var fileUrlDataController: FileUrlDataController { get }
+    var fileUrlDataController: FileUrlDataController? { get }
 
-    func createImage(for itemId: UUID, fileUrl: FileUrl?) async
-    func createThumbnail(for itemId: UUID, fileUrl: FileUrl?) async
+    func createImage(for itemId: UUID, item: any ItemDataAccessable) async
+    func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async
 }
 
 extension ImageCacheControllable {
+    public func createImage(for itemId: UUID, item: any ItemDataAccessable) async {}
+    
     public func photo(for itemId: UUID) async -> AKImage? {
         let image = await imageCacheController.object(for: itemId)
         image?.resetSize()
@@ -40,8 +42,8 @@ extension ImageCacheControllable {
     }
     
     @discardableResult
-    public func photoId(for itemId: UUID, with fileUrl: FileUrl?, shouldDownload: Bool = false) async -> UUID? {
-        guard let fileUrl else { return nil }
+    public func photoId(for itemId: UUID, item: any ItemDataAccessable, shouldDownload: Bool = false) async -> UUID? {
+        guard let fileUrlDataController, let fileUrl = item.fileUrl else { return nil }
         guard await !imageCacheController.hasObject(for: itemId) else { return itemId }
         let imageTask = Task.detached(priority: .userInitiated) {
             if shouldDownload {
@@ -50,20 +52,19 @@ extension ImageCacheControllable {
                     await thumbnailCacheController.removeObject(for: itemId)
                 }
             }
-            await self.createImage(for: itemId, fileUrl: fileUrl)
+            await self.createImage(for: itemId, item: item)
         }
         _ = await imageTask.value
         return await imageCacheController.hasObject(for: itemId) ? itemId : nil
     }
-    
+        
     @discardableResult
-    public func thumbnailId(for itemId: UUID, with fileUrl: FileUrl?) async -> UUID? {
-        guard let fileUrl else { return nil }
+    public func thumbnailId(for itemId: UUID, item: any ItemDataAccessable) async -> UUID? {
         guard await !thumbnailCacheController.hasObject(for: itemId) else { return itemId }
         let _ = await thumbnail(for: itemId) // load from disk
         guard await !thumbnailCacheController.hasObject(for: itemId) else { return itemId }
         let imageTask = Task.detached(priority: .userInitiated) {
-            await self.createThumbnail(for: itemId, fileUrl: fileUrl)
+            await self.createThumbnail(for: itemId, item: item)
         }
         _ = await imageTask.value
         return await thumbnailCacheController.hasObject(for: itemId) ? itemId : nil

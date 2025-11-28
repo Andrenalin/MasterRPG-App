@@ -36,20 +36,24 @@ public protocol MapGameStorable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: MapRootModel, itemController: ItemController) {
+    init(root: MapRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.root = root
         self.itemController = itemController
         self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(root: root, dataController: nil)
-        self.importController = ImportController(root: root, itemController: internItemController, gameImporter: true)
+        let internItemController = ItemController(root: root, dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        self.importController = ImportController(itemController: internItemController, gameImporter: true)
+        self.rootExportControllable = rootExportControllable
+        self.rootImportControllable = rootImportControllable
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
         self.mapGameModel = MapGameModel()
     }
 
-    weak var root: MapRootModel!
+    let root: MapRootModel
     let itemController: ItemController
-    let importController: ImportController
     let exportController: ExportController
+    let importController: ImportController
+    let rootExportControllable: any ExportControllable
+    let rootImportControllable: any ImportControllable
 
     let gameModel: ItemGameModel
     let mapGameModel: MapGameModel
@@ -84,12 +88,6 @@ extension GameController: GameControllable {
     }
     var importControllable: any ImportControllable {
         importController as ImportControllable
-    }
-    var rootExportControllable: any ExportControllable {
-        root.rootControllable.gameExportControllable
-    }
-    var rootImportControllable: any ImportControllable {
-        root.rootControllable.gameImportControllable
     }
     
     func resetGameState() {

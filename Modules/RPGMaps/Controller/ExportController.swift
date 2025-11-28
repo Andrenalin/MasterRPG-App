@@ -17,7 +17,7 @@ struct ExportController: Sendable {
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
 
-    weak var root: MapRootModel!
+    let root: MapRootModel
     let itemController: ItemController
 
     public let exportModel: ItemDataExportModel

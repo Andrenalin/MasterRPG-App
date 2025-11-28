@@ -3,7 +3,7 @@
 import Foundation
 import SwiftUI
 
-public protocol ItemDataAccessable {
+public protocol ItemDataAccessable: Sendable {
     associatedtype Entry: EntryDataAccessable, Identifiable, Equatable
 
     static var empty: Self { get }

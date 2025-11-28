@@ -133,7 +133,7 @@ extension EditController {
     
     @MainActor @ViewBuilder
     func selectMap(for entryId: UUID, linkKeyPath: WritableKeyPath<AdventureModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.mapRoot.viewController.viewSelect(filter: .all) {
+        root.mapRoot.viewController.viewSelect(root: root.mapRoot, filter: .all) {
             let text = self.model[keyPath: linkKeyPath]
             return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .map) }
         } toggleSelection: { sel, _ in

@@ -109,7 +109,7 @@ struct MapViewer: View {
         }
         .onChange(of: toolBarModel.hexScale) {
             guard toolBarModel.hexScale != 0 && toolBarModel.hexScale != map.hexMapScale else { return }
-            root.editController(type: .main).createHexMap(model: map, hexMapScale: toolBarModel.hexScale)
+            root.editController.createHexMap(model: map, hexMapScale: toolBarModel.hexScale)
         }
         .onChange(of: toolBarModel.pinScale) {
             map.pinScale = toolBarModel.pinScale
@@ -206,7 +206,7 @@ extension MapViewer {
         let entry = entry(for: location)
         
         withAnimation(.bouncy) {
-            root.editController(type: .main).addMonsters(map: map, entryId: entry?.id, location: location, monsters: dropPinModel.items, number: 1)
+            root.editController.addMonsters(map: map, entryId: entry?.id, location: location, monsters: dropPinModel.items, number: 1)
         }
         dropPinModel.items = []
         dropPinModel.isTarget = false

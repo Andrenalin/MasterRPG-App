@@ -32,7 +32,7 @@ struct SplitDetailView: View {
 #else
             GeneratorRootFactory.detailView(root: appModel.generatorRoot)
 #endif
-        case .map: MapFactory.detailView(root: appModel.mapRoot)
+        case .map: MapRootFactory.detailView(root: appModel.mapRoot)
         case .pdf: PdfFactory.detailView(root: appModel.pdfRoot)
         case .photo: PhotoFactory.detailView(root: appModel.photoRoot)
         case .space: SpaceFactory.detailView(root: appModel.spaceRoot)

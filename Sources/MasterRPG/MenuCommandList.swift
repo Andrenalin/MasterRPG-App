@@ -27,15 +27,13 @@ struct MenuCommandList: Commands {
                     CharacterCommands(root: appModel.valueRoot, navigator: appModel.navigator)
                     PdfCommands(root: appModel.pdfRoot, navigator: appModel.navigator)
                     TableCommands(root: appModel.tableRoot, navigator: appModel.navigator)
-                    MapCommands(root: appModel.mapRoot)
+                    MapCommands(root: appModel.mapRoot, navigator: appModel.navigator)
                 }
                 Group {
                     AudioCommands(root: appModel.audioRoot, navigator: appModel.navigator)
                     DiceCommands(root: appModel.diceRoot, navigator: appModel.navigator)
                     PhotoCommands(root: appModel.photoRoot, navigator: appModel.navigator)
-
                     SpaceCommands(root: appModel.spaceRoot, navigator: appModel.navigator)
-
                     WeatherCommands(root: appModel.weatherRoot, navigator: appModel.navigator)
                 }
             }

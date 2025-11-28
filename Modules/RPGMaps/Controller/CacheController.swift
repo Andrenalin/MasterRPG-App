@@ -9,46 +9,40 @@ import os.log
 import QuickLookThumbnailing
 #endif
 
+
+actor MapEntryCacheImageMapper {
+    var entryToItem: [UUID: UUID] = [:]
+}
+
 struct CacheController: Sendable {
-    weak var root: MapRootModel!
-    
-    private let thumbnailCacheController: ImageCacheController = ImageCacheController()
-    
-    func thumbnail(for itemId: UUID) async -> AKImage? {
-        await thumbnailCacheController.object(for: itemId)
+    init(photoRoot: PhotoRootModel) {
+        self.photoRoot = photoRoot
+        
+        self.imageCacheController = ImageCacheController()
+        self.thumbnailCacheController = ImageCacheController()
+        self.fileUrlDataController = nil
     }
     
-    func remove(itemId: UUID) async {
-        await thumbnailCacheController.removeObject(for: itemId)
-    }
+    let photoRoot: PhotoRootModel
     
-    func resetThumbnailEntry(item: MapModel, entryId: UUID) async {
-        await remove(itemId: entryId)
-        await thumbnailId(for: item, entryId: entryId)
-    }
-    
-    @discardableResult
-    func thumbnailId(for item: MapModel, entryId: MapEntryModel.ID) async -> MapEntryModel.ID? {
-        guard item.photoId != nil, item[entryId].coordinates.count > 2 else { return nil }
-        guard await !thumbnailCacheController.hasObject(for: entryId) else { return entryId }
-        let imageTask = Task.detached(priority: .userInitiated) {
-            await self.createThumbnail(for: item, entryId: entryId)
+    let imageCacheController: ImageCacheController
+    let thumbnailCacheController: ImageCacheController
+    let fileUrlDataController: FileUrlDataController?
+}
+
+extension CacheController: ImageCacheControllable {
+    func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
+        guard let item = item as? MapModel, await photoRoot.requestImageCache(for: item.photoId) else { return }
+        guard !Task.isCancelled else { return }
+        guard let result = await photoRoot.fetchPhotoImage(for: item.photoId, useGame: false) else { return }
+        guard !Task.isCancelled else { return }
+        let entry = item[itemId]
+        let thumbnail = result.0.cropping(to: entry.rect)
+        if let thumbnail {
+            await thumbnailCacheController.saveToDisk(thumbnail, for: itemId)
+
+            await thumbnailCacheController.setObject(thumbnail, for: itemId)
         }
-        _ = await imageTask.value
-        return await thumbnailCacheController.hasObject(for: entryId) ? entryId : nil
     }
 }
 
-private extension CacheController {
-    func createThumbnail(for item: MapModel, entryId: MapEntryModel.ID) async {
-        guard await root.photoRoot.requestImageCache(for: item.photoId) else { return }
-        guard !Task.isCancelled else { return }
-        guard let result = await root.photoRoot.fetchPhotoImage(for: item.photoId, useGame: false) else { return }
-        guard !Task.isCancelled else { return }
-        let entry = item[entryId]
-        let thumbnail = result.0.cropping(to: entry.rect)
-        if let thumbnail {
-            await thumbnailCacheController.setObject(thumbnail, for: entryId)
-        }
-    }
-}

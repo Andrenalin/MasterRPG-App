@@ -12,16 +12,21 @@ import CharacterRPG
 
 struct ItemController: Sendable {
     @MainActor
-    init(root: MapRootModel, dataController: DataController?) {
+    init(root: MapRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.root = root
         self.dataControllable = dataController
+        self.linkRegisterController = linkRegisterControllable
+        
         itemDataModel = ItemDataModel(categoryTags: [.building, .dungeon, .map], networkModule: .map)
+        self.cacheController = CacheController(photoRoot: root.photoRoot)
     }
 
-    weak var root: MapRootModel!
+    let root: MapRootModel
+    var cacheController: CacheController?
     let collectionCategory: ItemListCategory = .collection
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
+    let linkRegisterController: LinkRegisterControllable
 }
 
 extension ItemController: ItemControllable {
@@ -29,7 +34,7 @@ extension ItemController: ItemControllable {
     
     @MainActor
     var linkRegisterControllable: LinkRegisterControllable {
-        root.rootControllable.linkRegisterControllable
+        linkRegisterController
     }
     
     @MainActor
@@ -56,19 +61,12 @@ extension ItemController: ItemControllable {
     
     func didDelete(model: ModelType) async {
         guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didDelete(itemId: model.id)
-        }
         for entry in model.entries {
-            await root.cacheController.remove(itemId: entry.id)
+            await cacheController?.remove(itemId: entry.id)
         }
     }
     
     func didUpdate(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        await root.applyToAllEditController {
-            await $0.didUpdate(item: model)
-        }
     }
 }
 

@@ -76,9 +76,9 @@ private extension CachePhotoView {
             let fileUrl = model.fileUrl
             let loaderTask = Task.detached(priority: .userInitiated) {
                 if highResolution {
-                    await cacheController.photoId(for: fileId, with: fileUrl, shouldDownload: false)
+                    await cacheController.photoId(for: fileId, item: model, shouldDownload: false)
                 } else {
-                    await cacheController.thumbnailId(for: fileId, with: fileUrl)
+                    await cacheController.thumbnailId(for: fileId, item: model)
                 }
             }
             _ = await loaderTask.result

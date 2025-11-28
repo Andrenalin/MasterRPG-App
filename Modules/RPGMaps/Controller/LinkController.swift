@@ -11,7 +11,7 @@ import TableRPG
 import CharacterRPG
 
 public struct LinkController: Sendable {
-    weak var root: MapRootModel!
+    let root: MapRootModel
     let itemController: ItemController
     
     public var itemControllable: any ItemControllable {
@@ -94,7 +94,7 @@ extension LinkController: LinkControllable {
         guard let photoId = inspectedItem.photoId, let replacedItem = itemController.copy(of: itemId) else { return }
         if root.photoRoot.linkController.validateLink(itemId: photoId) {
             Task {
-                await root.editController(type: .main).resetImageSize(photoId: photoId, updateModel: replacedItem, save: true)
+                await root.editController.resetImageSize(photoId: photoId, updateModel: replacedItem, save: true)
             }
         } else {
                 Logger.linkController.warning("Map: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
@@ -122,7 +122,7 @@ public extension LinkController {
 
 public extension LinkController {
     @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
-        SheetController(root: root).sheet(for: itemId, level: level)
+        SheetController(itemController: itemController).sheet(for: itemId, level: level)
     }
 }
 

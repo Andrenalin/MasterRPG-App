@@ -54,21 +54,6 @@ struct OldWindowLinkList: Scene {
             .keyboardShortcut("1", modifiers: [.command, .option])
 #endif
 
-            BaseWindow("\(NetworkModules.map.title) Link", id: NetworkModules.map.linkWindowId) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.mapRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
-                }
-                .onDisappear {
-                    appModel.windowStateModel.openWindowState[.map] = false
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll(appModel.windowPlacement(for: .map))
-#if os(macOS)
-            .keyboardShortcut("5", modifiers: [.command, .option])
-#endif
-
         }
         .defaultSizeAll(CGSize(width: 400, height: 800))
 #if os(macOS)
@@ -86,14 +71,6 @@ struct OldWindowLinkAltList: Scene {
             WindowGroup("\(NetworkModules.adventure.title) Link", id: NetworkModules.adventure.linkAltWindowId) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.adventureRoot.viewController.linkWindow()
-                        .modifier(WindowListSetUpViewModifier(appModel: appModel))
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-
-            WindowGroup("\(NetworkModules.map.title) Link", id: NetworkModules.map.linkAltWindowId) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.mapRoot.viewController.linkWindow()
                         .modifier(WindowListSetUpViewModifier(appModel: appModel))
                 }
                 .handlesExternalEvents(preferring: [], allowing: [])

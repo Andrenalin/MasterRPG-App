@@ -32,7 +32,7 @@ struct OldWindowMacVisionList: Scene {
             
             WindowGroup("Map Book Viewer", id: WindowIdentifier.mapBookViewer.rawValue, for: ItemSelection.self) { $selection in
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.mapRoot.viewController.mapBookWindow(selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
+                    appModel.mapRoot.viewController.mapBookWindow(root: appModel.mapRoot, selection: selection ?? ItemSelection(itemId: UUID(), entryId: nil))
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)
@@ -43,7 +43,7 @@ struct OldWindowMacVisionList: Scene {
             
             BaseWindow("Map Edit Viewer", id: WindowIdentifier.mapEditor.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.mapRoot.viewController.mapEditWindow()
+                    appModel.mapRoot.viewController.mapEditWindow(root: appModel.mapRoot)
                         .accentColor(.teal)
                         .tint(.teal)
                         .frame(minWidth: 600, minHeight: 400)

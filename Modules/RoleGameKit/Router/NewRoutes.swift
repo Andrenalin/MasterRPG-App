@@ -24,14 +24,3 @@ struct NewAdventureRoute: View {
             .environment(appModel.adventureRoot)
     }
 }
-
-struct NewMapRoute: View {
-    let appModel: AppModel
-    let tabId: UUID
-    let isExtended: Bool
-    
-    var body: some View {
-            MapFactory.rootExtendedView(for: appModel.mapRoot, tabId: tabId)
-                .environment(appModel.mapRoot)
-    }
-}

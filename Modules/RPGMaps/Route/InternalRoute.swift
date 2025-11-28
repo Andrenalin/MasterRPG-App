@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
-import CoreExternalRPG
 import AndrenalinKit
+import CoreExternalRPG
 import SwiftUI
 import PdfRPG
 
@@ -39,6 +39,6 @@ struct InternalRouteView: View {
     }
     
     var editController: EditController {
-        root.editController(type: .main)
+        root.editController
     }
 }

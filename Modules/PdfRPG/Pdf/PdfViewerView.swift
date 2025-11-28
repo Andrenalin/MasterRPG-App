@@ -48,7 +48,7 @@ struct PdfViewerView: View {
             .ignoresSafeArea(.container, edges: [.top, .bottom])
             .overlay(alignment: .topTrailing) {
                 GlassEffectContainerView {
-                    SelectionBar(editController: root.editController(type: .main), model: model, searchModel: searchModel, withoutBookmark: withoutBookmark)
+                    SelectionBar(editController: root.editController, model: model, searchModel: searchModel, withoutBookmark: withoutBookmark)
                 }
             }
             .overlay(alignment: .bottomTrailing) {

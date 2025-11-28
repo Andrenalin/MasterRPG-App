@@ -84,17 +84,6 @@ public extension ViewController {
     private static let linkTabId = UUID()
 
     @MainActor
-    func linkWindow(root: CharacterRootModel) -> some View {
-        RootNaviList(root: root, tabId: ViewController.linkTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListConfiguration(canAdd: false)
-            .itemListChildrenConfiguration(canNavigate: false)
-            .focusedSceneValue(\.selectedModule, .constant(root.itemController.itemDataModel.networkModule))
-            .environment(root)
-            .environment(SelectionSheetLinkModel())
-    }
-
-    @MainActor
     func characterWindow(root: CharacterRootModel, selection: ItemSelection) -> some View {
         CharacterSheet(model: root.itemController.itemOrEmpty(for: selection.itemId), showTopImage: true, dismissAction: nil)
             .navigationTitle(root.itemController.itemOrEmpty(for: selection.itemId).name)

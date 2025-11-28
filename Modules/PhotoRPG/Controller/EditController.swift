@@ -51,7 +51,7 @@ extension EditController {
 
 extension EditController {
     func convert() async throws {
-        await cacheController?.photoId(for: model.id, with: model.fileUrl, shouldDownload: true)
+        await cacheController?.photoId(for: model.id, item: model, shouldDownload: true)
         guard let image = await cacheController?.photo(for: model.id), let data = image.jpegData(compressionQuality: 0.9), let fileUrl = await model.fileUrl else { return }
 
         await resetFileUrl()
@@ -67,7 +67,7 @@ extension EditController {
     }
     
     func loadImage(cacheType: CacheItemListModel.CacheType, itemId: UUID, fileUrl: FileUrl?, reset: Bool = false) async -> AKImage? {
-        guard let fileUrl else { return nil }
+        guard fileUrl != nil, let item = await itemController.itemSync(for: itemId) else { return nil }
         if reset {
             await cacheItemListModel.setImageCache(cacheType: .image, itemId: itemId, image: nil)
             await cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: itemId, image: nil)
@@ -77,12 +77,12 @@ extension EditController {
         }
         var result: AKImage? = nil
         if cacheType == .image {
-            await cacheController?.photoId(for: itemId, with: fileUrl, shouldDownload: true)
+            await cacheController?.photoId(for: itemId, item: item, shouldDownload: true)
             result = await cacheController?.photo(for: itemId)
             
             await cacheItemListModel.setImageCache(cacheType: .image, itemId: itemId, image: result)
         }
-        await cacheController?.thumbnailId(for: itemId, with: fileUrl)
+        await cacheController?.thumbnailId(for: itemId, item: item)
         let newThumbnail = await cacheController?.thumbnail(for: itemId)
         await cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: itemId, image: newThumbnail)
         return cacheType == .image ? result : newThumbnail

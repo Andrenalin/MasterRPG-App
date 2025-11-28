@@ -190,7 +190,7 @@ public extension PhotoRootModel {
     @MainActor
     func requestImageCache(for id: UUID?) async -> Bool {
         guard let id, let item = await itemController.item(for: id), item.fileUrl != nil else { return false }
-        let result = await itemController.cacheController?.photoId(for: id, with: item.fileUrl)
+        let result = await itemController.cacheController?.photoId(for: id, item: item)
         return result != nil
     }
     

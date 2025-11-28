@@ -5,31 +5,17 @@ import Foundation
 import CoreData
 import SwiftUI
 
-struct DataController: Sendable {
-    @MainActor
-    init(root: MapRootModel, context: NSManagedObjectContext, token: String) {
-        self.root = root
-        self.changeObserver = CoreDataChangeObserver()
+struct DataController: DataPersistenceControllable {
+    @MainActor init(context: NSManagedObjectContext, token: String) {
         self.dataController = CoreDataController<MapModel, RPGMap>(context: context)
         self.token = token
-
-        changeObserver.observeCoreDataChanges(from: context, entity: RPGMap.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
     }
     
-    weak var root: MapRootModel!
     let dataController: CoreDataController<MapModel, RPGMap>
-    var itemControllable: any ItemControllable {
-        root.itemController
-    }
-    let changeObserver: CoreDataChangeObserver
     let token: String
 }
 
-extension DataController: CoreDataPersistable, DataPersistenceControllable, SyncDataControllable {
-    var dataControllable: any CoreDataPersistable {
-        self
-    }
-    
+extension DataController: CoreDataPersistable {
     // MARK: model -> viewlmodel
 
     func mapViewModel(_ model: RPGMap, token: String) -> MapModel {

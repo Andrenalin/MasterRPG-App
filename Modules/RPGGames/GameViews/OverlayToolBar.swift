@@ -12,7 +12,7 @@ struct OverlayToolBar: View {
     var body: some View {
         switch playerController.gameModel.gameUpdateType {
         case .map:
-            root.mapRoot.viewController.gameToolBarView(isMaster: isMaster)
+            root.mapRoot.viewController.gameToolBarView(root: root.mapRoot, isMaster: isMaster)
         case .photo:
             //root.photoRoot.viewController.gameToolBarView()
             EmptyView()
