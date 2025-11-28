@@ -3,7 +3,7 @@
 import Foundation
 import Network
 
-@testable import RPGGame
+@testable import GameRPG
 
 final class GameListnerAbstractionMock: ListenerControllable, @unchecked Sendable {
     var calledStopListening = 0

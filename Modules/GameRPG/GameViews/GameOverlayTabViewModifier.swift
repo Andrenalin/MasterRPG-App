@@ -1,14 +1,9 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 
-public protocol AppRouter {
-    var title: String { get }
-    var icon: String { get }
-}
-
-extension NetworkModules: AppRouter {}
+extension NetworkModules: @retroactive AppRouter {}
 
 extension View {
     func gameOverlayTabBarView<Tag: Hashable>(value: Tag) -> some View where Tag: Codable, Tag: AppRouter {

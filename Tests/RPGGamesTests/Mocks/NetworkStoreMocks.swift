@@ -3,7 +3,7 @@
 import Foundation
 import Network
 
-@testable import RPGGame
+@testable import GameRPG
 
 final class MasterNetworkStoreDelegateMock: MasterNetworkStoreDelegate, @unchecked Sendable {
     var calledLostPlayer = 0

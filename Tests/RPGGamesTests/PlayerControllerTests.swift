@@ -7,7 +7,7 @@ import RPGResourcesDebug
 import Testing
 
 @testable import AndrenalinKit
-@testable import RPGGame
+@testable import GameRPG
 import PhotoRPG
 
 final class PlayerControllerTests {

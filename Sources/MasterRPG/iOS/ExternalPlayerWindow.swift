@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import RoleGameKit
-import RPGGame
+import GameRPG
 import SwiftUI
 
 struct ExternalPlayerWindow: View {

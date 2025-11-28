@@ -42,7 +42,7 @@ public extension ViewController {
     }
     
     @MainActor func selectionView(model: ItemSelectionModel) -> some View {
-        LinkRootView(type: .selection)
+        DropChooseView(selectionModel: model)
             .environment(model)
     }
 }

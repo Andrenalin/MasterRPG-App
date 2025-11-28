@@ -6,7 +6,7 @@ import Foundation
 import Network
 import Testing
 
-@testable import RPGGame
+@testable import GameRPG
 
 final class NetworkStoreTests {
     private var masterDeleagteMock: MasterNetworkStoreDelegateMock!

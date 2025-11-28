@@ -1,23 +1,21 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
-import AudioRPG
-import AdventureRPG
 import CharacterRPG
-import DiceRPG
-import MapRPG
+import TableRPG
 import PdfRPG
+import AudioRPG
 import PhotoRPG
 import SpaceRPG
-import TableRPG
-import WeatherRPG
+import DiceRPG
 
 struct OverlayPlayerTabBar: View {
-    let root: GameRootController
+    let root: GameRoot
 
     @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(\.wideMode) private var wideMode
+    @Environment(SelectionSheetLinkModel.self) private var selectionSheetLinkModel
 
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -37,17 +35,17 @@ struct OverlayPlayerTabBar: View {
     @ViewBuilder
     var onlyGameView: some View {
         if root.gameModel.gameConfig.type != .observer {
-//            root.valueRoot.viewController.gameView(select: root.gameModel.selectedCharacter)
-//                .environment(\.gameModus, .player)
-//                .environment(\.showGame, true)
-//                .gameOverlayTabBarView(value: NetworkModules.game)
-//                .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
-//                .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
-//                .cornerRadius(14)
-//                .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)
-//                .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
-//                .shadow(radius: 8)
-//                .animation(.bouncy, value: gameScreenModel.showMainTab)
+            root.valueRoot.viewController.gameView(root: root.valueRoot, select: root.gameModel.selectedCharacter)
+                .environment(\.gameModus, .player)
+                .environment(\.showGame, true)
+                .gameOverlayTabBarView(value: NetworkModules.game)
+                .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
+                .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+                .cornerRadius(14)
+                .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)
+                .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
+                .shadow(radius: 8)
+                .animation(.bouncy, value: gameScreenModel.showMainTab)
         }
     }
 
@@ -55,28 +53,28 @@ struct OverlayPlayerTabBar: View {
     var tabGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
         TabView(selection: $gameScreenModel.showGameType) {
-//            Group {
-//                if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
-//                    root.valueRoot.viewController.gameView(select: characterId)
-//                        .gameOverlayTabBarView(value: NetworkModules.value)
-//                }
-//
-//                root.tableRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.table)
-//
-//                root.pdfRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.pdf)
-//
-//                root.audioRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.audio)
-//
-//                root.photoRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.photo)
-//
-//            }
-//            .environment(\.gameModus, .player)
-//            .environment(\.showGame, true)
-//            .environment(selectionSheetLinkModel)
+            Group {
+                if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
+                    root.valueRoot.viewController.gameView(root: root.valueRoot, select: characterId)
+                        .gameOverlayTabBarView(value: NetworkModules.value)
+                }
+
+                root.tableRoot.viewController.gameView(root: root.tableRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.table)
+
+                root.pdfRoot.viewController.gameView(root: root.pdfRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.pdf)
+
+                root.audioRoot.viewController.gameView(root: root.audioRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.audio)
+
+                root.photoRoot.viewController.gameView(root: root.photoRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.photo)
+
+            }
+            .environment(\.gameModus, .player)
+            .environment(\.showGame, true)
+            .environment(selectionSheetLinkModel)
         }
 #if os(iOS)
         .environment(\.horizontalSizeClass, .compact)
@@ -96,28 +94,28 @@ struct OverlayPlayerTabBar: View {
     var tabSecondGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
         TabView(selection: $gameScreenModel.showSettingsType) {
-//            Group {
-//                if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
-//                    root.valueRoot.viewController.gameView(select: characterId)
-//                        .gameOverlayTabBarView(value: NetworkModules.value)
-//                }
-//
-//                root.audioRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.audio)
-//
-//                root.photoRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.photo)
-//
-//                root.spaceRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.space)
-//
-//                if root.gameModel.gameConfig.type != .observer {
-//                    root.diceRoot.viewController.gameView()
-//                        .gameOverlayTabBarView(value: NetworkModules.dice)
-//                }
-//            }
-//            .environment(\.gameModus, .player)
-//            .environment(\.showGame, true)
+            Group {
+                if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
+                    root.valueRoot.viewController.gameView(root: root.valueRoot, select: characterId)
+                        .gameOverlayTabBarView(value: NetworkModules.value)
+                }
+
+                root.audioRoot.viewController.gameView(root: root.audioRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.audio)
+
+                root.photoRoot.viewController.gameView(root: root.photoRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.photo)
+
+                root.spaceRoot.viewController.gameView(root: root.spaceRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.space)
+
+                if root.gameModel.gameConfig.type != .observer {
+                    root.diceRoot.viewController.gameView(root: root.diceRoot)
+                        .gameOverlayTabBarView(value: NetworkModules.dice)
+                }
+            }
+            .environment(\.gameModus, .player)
+            .environment(\.showGame, true)
         }
 #if os(iOS)
         .environment(\.horizontalSizeClass, .compact)
@@ -149,7 +147,7 @@ struct OverlayPlayerTabBar: View {
     }
 }
 
-//#Preview {
-//    OverlayPlayerTabBar(root: GameRoot.preview)
-//        .environment(GameScreenModel())
-//}
+#Preview {
+    OverlayPlayerTabBar(root: GameRoot.preview)
+        .environment(GameScreenModel())
+}

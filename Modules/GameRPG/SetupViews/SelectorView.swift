@@ -1,10 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 
 struct SelectorView: View {
-    let root: GameRootController
+    let root: GameRoot
     
     @AppStorage("lastSelectedGameType", store: .standard)
     private var gameTypeInt: Int = 0
@@ -119,7 +119,7 @@ struct SelectorView: View {
     }
 }
 
-//#Preview {
-//    SelectorView(root: .preview)
-//        .environment(AppSettingsModel())
-//}
+#Preview {
+    SelectorView(root: .preview)
+        .environment(AppSettingsModel())
+}

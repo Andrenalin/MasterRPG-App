@@ -6,7 +6,7 @@ import AndrenalinKit
 import DiceRPG
 import Foundation
 import AudioRPG
-@testable import RPGGame
+@testable import GameRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG

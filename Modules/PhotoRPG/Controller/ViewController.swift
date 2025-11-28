@@ -43,6 +43,8 @@ public extension ViewController {
     @ViewBuilder @MainActor func thumbnailRow(root: PhotoRootModel, for itemId: UUID) -> some View {
         if let model = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
             ThumbnailRowPhotoView(cacheController: cacheController, model: model)
+                .environment(root.editController.cacheItemListModel)
+                .environment(root.listDisplayModel)
         }
     }
     

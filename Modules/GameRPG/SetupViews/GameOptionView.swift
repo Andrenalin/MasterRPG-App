@@ -1,10 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 
 struct GameOptionView: View {
-    let root: GameRootController
+    let root: GameRoot
 
     var body: some View {
         VStack {

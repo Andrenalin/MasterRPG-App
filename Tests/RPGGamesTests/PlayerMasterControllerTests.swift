@@ -6,7 +6,7 @@ import Foundation
 import RPGResourcesDebug
 import Testing
 
-@testable import RPGGame
+@testable import GameRPG
 
 @testable import DiceRPG
 @testable import AudioRPG

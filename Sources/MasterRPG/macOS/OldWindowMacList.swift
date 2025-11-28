@@ -6,7 +6,7 @@ import RoleGameKit
 import SwiftUI
 import CharacterRPG
 import TableRPG
-import RPGGame
+import GameRPG
 
 
 struct OldWindowMacList: Scene {

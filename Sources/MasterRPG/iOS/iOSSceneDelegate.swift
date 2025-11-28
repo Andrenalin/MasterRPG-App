@@ -5,7 +5,7 @@ import AndrenalinKit
 import Combine
 import CloudKit
 import RoleGameKit
-import RPGGame
+import GameRPG
 import os.log
 import SwiftUI
 import UIKit

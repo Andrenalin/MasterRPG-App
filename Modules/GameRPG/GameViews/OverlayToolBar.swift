@@ -1,18 +1,18 @@
 // @copyright André Trettin
 
-import CoreRPG
 import SwiftUI
 import MapRPG
+import AndrenalinKit
 
 struct OverlayToolBar: View {
-    let root: GameRootController
+    let root: GameRoot
     let playerController: PlayerController
     let isMaster: Bool
     
     var body: some View {
         switch playerController.gameModel.gameUpdateType {
-//        case .map:
-//            root.mapRoot.viewController.gameToolBarView(isMaster: isMaster)
+        case .map:
+            root.mapRoot.viewController.gameToolBarView(root: root.mapRoot, isMaster: isMaster)
         case .photo:
             //root.photoRoot.viewController.gameToolBarView()
             EmptyView()
@@ -24,6 +24,6 @@ struct OverlayToolBar: View {
     }
 }
 
-//#Preview {
-//    OverlayToolBar(root: .preview, playerController: .preview, isMaster: true)
-//}
+#Preview {
+    OverlayToolBar(root: .preview, playerController: .preview, isMaster: true)
+}

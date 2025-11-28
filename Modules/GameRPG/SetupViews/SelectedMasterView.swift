@@ -1,32 +1,20 @@
 // @copyright André Trettin
 
-import CharacterRPG
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
+import CharacterRPG
 
 struct SelectedMasterView: View {
-    let root: GameRootController
+    let root: GameRoot
 
     @AppStorage("lastGameMasterUUID", store: .standard)
     private var gameMasterUUID: String = ""
 
     @State private var selection: ItemSelectionModel = ItemSelectionModel()
-    
     var body: some View {
         GroupBoxTV(isCard: true) {
             VStack {
-                ViewThatFits {
-                    HStack {
-                        selectedView
-                        root.characterRoot.viewController.selectionView(root: root.characterRoot, model: selection)
-                    }
-
-                    VStack {
-                        selectedView
-                        Divider()
-                        root.characterRoot.viewController.selectionView(root: root.characterRoot, model: selection)
-                    }
-                }
+                root.valueRoot.viewController.selectionView(model: selection)
             }
             .frame(maxWidth: .infinity)
 #if os(macOS)
@@ -49,18 +37,16 @@ struct SelectedMasterView: View {
         .onChange(of: root.gameModel.selectedGameMaster, initial: false) {
             if let playerId = root.gameModel.selectedGameMaster {
                 gameMasterUUID <=> playerId.uuidString
+                selection.resetSelection(itemId: playerId)
             }
-        }
-        .onChange(of: selection.itemId, initial: false) {
-            root.gameModel.selectedGameMaster <=> selection.itemId
         }
     }
 
     private var selectedView: some View {
         VStack {
             if let id = root.gameModel.selectedGameMaster {
-//                root.viewController.selectedCharacterGameMasterView(with: id, isGameMaster: true)
-//                    .id(id)
+                root.viewController.selectedCharacterGameMasterView(with: id, isGameMaster: true)
+                    .id(id)
             } else {
                 Text("Select a game master to start the game. The game master should have a name and for convience one value with a dice as default dice for the game view.", bundle: .module)
                     .lineLimit(10)

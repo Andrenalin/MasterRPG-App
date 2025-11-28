@@ -13,18 +13,18 @@ struct DropChooseView: View {
     
     var body: some View {
         DropItemModuleArea(module: root.module, contentView: {
-            Group {
+            VStack {
                 if let model {
+                    root.viewController.thumbnailRowView(for: model.id)
+                        .clipShape(.rect(corners: .concentric))
                     Text(model.name)
-                    if let photoId = model.photoId {
-                        root.viewController.thumbnailRowView(for: photoId)
-                    }
                 } else {
                     emptyDrop
                 }
             }
             .frame(height: 128)
         }, dropAction: addLink(name:itemId:entryId:))
+        .containerShape(.rect(cornerRadius: 24))
         .background {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color.accentColor.tertiary)

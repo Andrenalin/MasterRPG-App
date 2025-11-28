@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import Combine
 import Foundation
 import os.log
@@ -39,7 +39,7 @@ final class NetworkController: Sendable {
     }
 
     @MainActor
-    func setup(gameModel: GameRootModel) async {
+    func setup(gameModel: GameModel) async {
         guard !model.isSetup else { return }
         sharePlayStore.setup(gameModel: gameModel)
         sharePlayStore.delegate = self

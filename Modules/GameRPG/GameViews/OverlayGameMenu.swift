@@ -1,11 +1,11 @@
 // @copyright André Trettin
 
-import AudioRPG
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
+import AudioRPG
 
 struct OverlayGameMenu: View {
-    let root: GameRootController
+    let root: GameRoot
     let playerController: PlayerController?
     let isMaster: Bool
     
@@ -13,7 +13,7 @@ struct OverlayGameMenu: View {
 #if !os(tvOS)
     @Environment(\.openWindow) private var openWindow
 #endif
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(\.wideMode) private var wideMode
     
     var body: some View {
 #if os(visionOS)
@@ -34,10 +34,10 @@ private extension OverlayGameMenu {
             titleView
 
             HStack(alignment: .bottom, spacing: marginWidth + 4) {
-//                root.audioRoot.viewController.viewVolume(alignment: .top)
-//                    .padding(.horizontal, marginWidth)
-//                    .padding(.leading, marginWidth / 2)
-//                    .zIndex(2)
+                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .top)
+                    .padding(.horizontal, marginWidth)
+                    .padding(.leading, marginWidth / 2)
+                    .zIndex(2)
 
                 toolIconView
                 enlargerView
@@ -53,7 +53,7 @@ private extension OverlayGameMenu {
             titleView
             
             HStack {
-                //root.audioRoot.viewController.viewVolume(alignment: .bottomTrailing)
+                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .bottomTrailing)
                 
                 if isMaster {
                     ControlSharingView(alignment: .bottomLeading) {}
@@ -77,7 +77,7 @@ private extension OverlayGameMenu {
             wifiView
             closeView
         }
-        //.focusSectionAll()
+        .focusSectionAll()
     }
     
     var iosMenu: some View {
@@ -85,10 +85,10 @@ private extension OverlayGameMenu {
             titleView
             
             HStack(spacing: marginWidth + 4) {
-//                root.audioRoot.viewController.viewVolume(alignment: wideMode == .small ? .bottom : .bottomTrailing)
-//                    .padding(.horizontal, marginWidth)
-//                    .padding(.leading, marginWidth / 2)
-//                    .zIndex(2)
+                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: wideMode == .small ? .bottom : .bottomTrailing)
+                    .padding(.horizontal, marginWidth)
+                    .padding(.leading, marginWidth / 2)
+                    .zIndex(2)
                 
                 if isMaster {
                     ControlSharingView(alignment: .bottom) {}
@@ -106,12 +106,12 @@ private extension OverlayGameMenu {
     }
     
     var marginWidth: CGFloat {
-        appSizeMode == .compact ? 4 : 8
+        wideMode == .small ? 4 : 8
     }
     
     @ViewBuilder
     var titleView: some View {
-        if isMaster && appSizeMode != .compact {
+        if isMaster && wideMode != .small {
             Text(root.gameModel.startGameTime, style: .relative)
                 .font(.caption)
                 .frame(maxWidth: .infinity)
@@ -259,24 +259,24 @@ private extension OverlayGameMenu {
     }
 }
 
-//#Preview("wide") {
-//    VStack {
-//        OverlayGameMenu(root: .preview, playerController: .preview, isMaster: true)
-//            .environment(GameScreenModel())
-//            .padding()
-//    }
-//    .background(Color.brown)
-//    .environment(\.wideMode, .wide)
-//}
-//
-//#Preview("small") {
-//    VStack {
-//        OverlayGameMenu(root: .preview, playerController: .preview, isMaster: false)
-//            .environment(GameScreenModel())
-//            .frame(maxWidth: .infinity)
-//            .padding([.vertical])
-//            .padding(.trailing, 8)
-//    }
-//    .background(Color.brown)
-//    .environment(\.wideMode, .small)
-//}
+#Preview("wide") {
+    VStack {
+        OverlayGameMenu(root: .preview, playerController: .preview, isMaster: true)
+            .environment(GameScreenModel())
+            .padding()
+    }
+    .background(Color.brown)
+    .environment(\.wideMode, .wide)
+}
+
+#Preview("small") {
+    VStack {
+        OverlayGameMenu(root: .preview, playerController: .preview, isMaster: false)
+            .environment(GameScreenModel())
+            .frame(maxWidth: .infinity)
+            .padding([.vertical])
+            .padding(.trailing, 8)
+    }
+    .background(Color.brown)
+    .environment(\.wideMode, .small)
+}

@@ -1,10 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 
 struct SelectObserverGameView: View {
-    let root: GameRootController
+    let root: GameRoot
     
     var body: some View {
         VStack {
@@ -30,4 +30,8 @@ struct SelectObserverGameView: View {
             }
         }
     }
+}
+
+#Preview {
+    SelectObserverGameView(root: .preview)
 }

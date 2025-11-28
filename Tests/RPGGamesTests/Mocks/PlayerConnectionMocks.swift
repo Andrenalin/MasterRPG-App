@@ -2,7 +2,7 @@
 
 import Foundation
 
-@testable import RPGGame
+@testable import GameRPG
 
 final class PlayerConnectionDelegateMock: ConnectionControllerDelegate, @unchecked Sendable {
     var calledLostConnection = 0

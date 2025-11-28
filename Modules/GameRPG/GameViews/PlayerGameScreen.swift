@@ -1,15 +1,15 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import DiceRPG
 import SwiftUI
 import MapRPG
 
 struct PlayerGameScreen: View {
-    let root: GameRootController
+    let root: GameRoot
     let playerController: PlayerController
     
-    //@Environment(\.showGameActions) private var showGameActions
+    @Environment(\.showGameActions) private var showGameActions
     
     @State private var gameScreenModel = GameScreenModel()
     @State private var infoState: NetworkModules = .none
@@ -24,13 +24,12 @@ struct PlayerGameScreen: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             GameRootViewer(root: root, playerController: playerController, emptyTitle: "Game is running") { _ in
-                Text("Start")
-                //root.mapRoot.viewController.gameMapView(playerId: root.gameModel.gameConfig.id)
+                root.mapRoot.viewController.gameMapView(root: root.mapRoot, playerId: root.gameModel.gameConfig.id)
             }
             
             overlayMenu
         }
-//        .focusSectionAll()
+        .focusSectionAll()
         .environment(\.gameModus, .player)
         .alert(Text("Quit Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
             Button {
@@ -50,7 +49,7 @@ struct PlayerGameScreen: View {
         }
 #if os(visionOS)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
-            root.diceRoot.viewController.dicePlayerView()
+            root.diceRoot.viewController.dicePlayerView(root: root.diceRoot)
                 .environment(diceShowOptionModel)
         }
         .ornament(attachmentAnchor: .scene(.topTrailing), contentAlignment: .bottomTrailing) {
@@ -66,17 +65,17 @@ struct PlayerGameScreen: View {
             .padding(12)
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
-            root.diceRoot.viewController.diceActionBarView()
+            root.diceRoot.viewController.diceActionBarView(root: root.diceRoot)
                 .padding(.top, 12)
                 .environment(diceShowOptionModel)
         }
         .ornament(attachmentAnchor: .scene(.bottom), contentAlignment: .top) {
-            root.diceRoot.viewController.diceRollView()
+            root.diceRoot.viewController.diceRollView(root: root.diceRoot)
                 .padding(.top, 56)
                 .environment(diceShowOptionModel)
         }
         .ornament(attachmentAnchor: .scene(.bottomTrailing), contentAlignment: .topTrailing) {
-            root.diceRoot.viewController.diceResultView()
+            root.diceRoot.viewController.diceResultView(root: root.diceRoot)
                 .padding(.top, 12)
                 .environment(diceShowOptionModel)
         }
@@ -130,7 +129,7 @@ private extension PlayerGameScreen {
     }
 
     func endGame() {
-        //showGameActions.show(false)
+        showGameActions.show(false)
         Task { @MainActor in
             await root.stopGame()
         }
@@ -171,9 +170,7 @@ private extension PlayerGameScreen {
 #endif
 }
 
-#Preview(traits: .mockData) {
-    @Previewable @Environment(GameRootController.self) var root
-    
-    PlayerGameScreen(root: root, playerController: PlayerController(root: root, asGameMaster: false))
+#Preview {
+    PlayerGameScreen(root: .preview, playerController: PlayerController.preview)
         .environment(GameScreenModel())
 }

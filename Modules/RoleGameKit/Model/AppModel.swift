@@ -11,7 +11,7 @@ import os.log
 import AdventureRPG
 import DiceRPG
 import AudioRPG
-import RPGGame
+import GameRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG

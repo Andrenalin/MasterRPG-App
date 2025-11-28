@@ -1,11 +1,11 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import CharacterRPG
 import SwiftUI
 
 struct PlayerStartView: View {
-    let root: GameRootController
+    let root: GameRoot
     
     var sharePlayStore: RPGSharePlayController {
         root.networkStore.sharePlayStore
@@ -16,14 +16,14 @@ struct PlayerStartView: View {
     @State private var startSharePlayAnimation: Bool = false
     
     var body: some View {
-//        if root.characterRoot.linkController.validate(id: root.gameModel.selectedCharacter, isCharacter: true) != nil {
+        if root.valueRoot.linkController.validate(id: root.gameModel.selectedCharacter, isCharacter: true) != nil {
             Group {
                 if sharePlayStore.canActivateSharePlay {
                     Button {
+                        settingsModel.gameModus = .player
                         Task {
                             await root.startGame(to: nil, mode: .player)
                         }
-                    settingsModel.gameModus = .player
                     } label: {
                         Label {
                             Text(root.gameModel.gameConfig.state == .stopped ? "Join Game" : "Cancel Game", bundle: .module)
@@ -58,7 +58,7 @@ struct PlayerStartView: View {
                     }
                 }
             }
-//        }
+        }
     }
 }
 

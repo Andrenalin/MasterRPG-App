@@ -148,7 +148,6 @@
       }
     },
     "Drop Adventure here" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -159,7 +158,6 @@
       }
     },
     "Drop Character here" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -170,7 +168,6 @@
       }
     },
     "Drop Game Master here" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -211,7 +208,6 @@
       }
     },
     "Game is not running" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -330,9 +326,6 @@
           }
         }
       }
-    },
-    "Paly RPG with your friends" : {
-      "comment" : "Subtitle of group activity"
     },
     "Play Pen&Paper RPG" : {
       "comment" : "Title of group activity",
@@ -576,7 +569,6 @@
       }
     },
     "Waiting for Gamemaster" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

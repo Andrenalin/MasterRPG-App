@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct BrowserView: View {
-    let root: GameRootController
+    let root: GameRoot
     let playerNetworkControllable: any PlayerNetworkControllable
     
     var body: some View {
@@ -42,6 +42,6 @@ extension EnvironmentValues {
     }
 }
 
-//#Preview {
-//    BrowserView(root: .preview, playerNetworkControllable: PlayerNetworkController(name: "Test"))
-//}
+#Preview {
+    BrowserView(root: .preview, playerNetworkControllable: PlayerNetworkController(name: "Test"))
+}

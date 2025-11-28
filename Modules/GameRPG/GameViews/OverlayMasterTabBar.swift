@@ -1,25 +1,24 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
-import AudioRPG
 import AdventureRPG
-import CharacterRPG
-import DiceRPG
-import MapRPG
-import PdfRPG
-import PhotoRPG
-import SpaceRPG
 import TableRPG
+import AudioRPG
+import PhotoRPG
+import MapRPG
+import CharacterRPG
+import PdfRPG
+import SpaceRPG
 import WeatherRPG
 
 struct OverlayMasterTabBar: View {
-    let root: GameRootController
+    let root: GameRoot
     let adventureId: UUID
     let openAction: ((NetworkModules) -> Void)?
 
     @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(\.wideMode) private var wideMode
 
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -37,38 +36,37 @@ struct OverlayMasterTabBar: View {
     }
     
     var onlyGameView: some View {
-        Text("")
-//        root.adventureRoot.viewController.gameView(focusedIds: [adventureId], openAction: openAction)
-//            .environment(\.gameModus, .master)
-//            .environment(\.showGame, true)
-//            .gameOverlayTabBarView(value: NetworkModules.game)
-//            .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
-//            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
-//            .cornerRadius(14)
-//            .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)
-//            .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
-//            .shadow(radius: 8)
-//            .animation(.bouncy, value: gameScreenModel.showMainTab)
+        root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId], openAction: openAction)
+            .environment(\.gameModus, .master)
+            .environment(\.showGame, true)
+            .gameOverlayTabBarView(value: NetworkModules.game)
+            .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+            .cornerRadius(14)
+            .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)
+            .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
+            .shadow(radius: 8)
+            .animation(.bouncy, value: gameScreenModel.showMainTab)
     }
 
     @ViewBuilder
     var tabGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
         TabView(selection: $gameScreenModel.showGameType) {
-//            Group {
-//                root.adventureRoot.viewController.gameView(focusedIds: [adventureId])
-//                    .gameOverlayTabBarView(value: NetworkModules.game)
-//                root.tableRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.table)
-//                root.audioRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.audio)
-//                root.photoRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.photo)
-//                root.mapRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.map)
-//            }
-//            .environment(\.gameModus, .master)
-//            .environment(\.showGame, true)
+            Group {
+                root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
+                    .gameOverlayTabBarView(value: NetworkModules.game)
+                root.tableRoot.viewController.gameView(root: root.tableRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.table)
+                root.audioRoot.viewController.gameView(root: root.audioRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.audio)
+                root.photoRoot.viewController.gameView(root: root.photoRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.photo)
+                root.mapRoot.viewController.gameView(root: root.mapRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.map)
+            }
+            .environment(\.gameModus, .master)
+            .environment(\.showGame, true)
         }
 #if os(iOS)
         .environment(\.horizontalSizeClass, .compact)
@@ -89,19 +87,19 @@ struct OverlayMasterTabBar: View {
         @Bindable var gameScreenModel = gameScreenModel
         TabView(selection: $gameScreenModel.showSettingsType) {
             Group {
-//                root.valueRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.value)
-//                root.pdfRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.pdf)
-//                root.spaceRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.space)
-//                root.weatherRoot.viewController.gameView()
-//                    .gameOverlayTabBarView(value: NetworkModules.weather)
-//                root.viewController.logWindow()
-//                    .gameOverlayTabBarView(value: NetworkModules.setting)
+                root.valueRoot.viewController.gameView(root: root.valueRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.value)
+                root.pdfRoot.viewController.gameView(root: root.pdfRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.pdf)
+                root.spaceRoot.viewController.gameView(root: root.spaceRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.space)
+                root.weatherRoot.viewController.gameView(root: root.weatherRoot)
+                    .gameOverlayTabBarView(value: NetworkModules.weather)
+                root.viewController.logWindow()
+                    .gameOverlayTabBarView(value: NetworkModules.setting)
             }
             .environment(\.gameModus, .master)
-//            .environment(\.showGame, true)
+            .environment(\.showGame, true)
         }
 #if os(iOS)
         .environment(\.horizontalSizeClass, .compact)
@@ -136,7 +134,7 @@ struct OverlayMasterTabBar: View {
     }
 }
 
-//#Preview {
-//    OverlayMasterTabBar(root: GameRoot.preview, adventureId: UUID(), openAction: nil)
-//        .environment(GameScreenModel())
-//}
+#Preview {
+    OverlayMasterTabBar(root: GameRoot.preview, adventureId: UUID(), openAction: nil)
+        .environment(GameScreenModel())
+}

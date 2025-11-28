@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
  
 struct LogMessageList: View {
@@ -137,7 +137,7 @@ struct LogMessageList: View {
     }
 }
 
-//#Preview {
-//    LogMessageList(logController: .preview)
-//        .environment(\.locale, .init(identifier: "de"))
-//}
+#Preview {
+    LogMessageList(logController: .preview)
+        .environment(\.locale, .init(identifier: "de"))
+}

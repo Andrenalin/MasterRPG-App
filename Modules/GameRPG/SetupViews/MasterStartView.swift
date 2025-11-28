@@ -1,11 +1,11 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 import AdventureRPG
 
 struct MasterStartView: View {
-    let root: GameRootController
+    let root: GameRoot
     
     @Environment(AppSettingsModel.self) private var settingsModel
     
@@ -33,10 +33,10 @@ struct MasterStartView: View {
                 startSharePlayAnimation = sharePlayStore.canActivateSharePlay
             }
             
-//            ImportDataModels(importController: root.adventureRoot.gameImportControllable, isSaveGame: true) {
-//                await startGame()
-//            }
-//            .padding()
+            ImportDataModels(importController: root.adventureRoot.gameImportControllable, isSaveGame: true) {
+                await startGame()
+            }
+            .padding()
         }
     }
     
@@ -64,8 +64,8 @@ struct MasterStartView: View {
     }
 }
 
-//#Preview {
-//    MasterStartView(root: .preview)
-//        .padding(30)
-//        .environment(AppSettingsModel())
-//}
+#Preview {
+    MasterStartView(root: .preview)
+        .padding(30)
+        .environment(AppSettingsModel())
+}

@@ -2,7 +2,7 @@
 
 import Foundation
 
-@testable import RPGGame
+@testable import GameRPG
 
 final class PlayerStoreAbstractionMock: PlayerNetworkControllable, @unchecked Sendable {
     @MainActor

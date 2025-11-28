@@ -3,7 +3,7 @@
 import Foundation
 import Network
 
-@testable import RPGGame
+@testable import GameRPG
 
 final class ConnectionMock: ConnectionAbstraction {
     var calledSend = 0

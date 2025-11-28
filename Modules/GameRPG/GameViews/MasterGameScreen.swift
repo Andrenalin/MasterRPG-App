@@ -1,18 +1,18 @@
 // @copyright André Trettin
 
-import AdventureRPG
-import CharacterRPG
-import CoreRPG
+import AndrenalinKit
 import DiceRPG
-import MapRPG
 import SwiftUI
+import MapRPG
+import CharacterRPG
+import AdventureRPG
 
 struct MasterGameScreen: View {
-    let root: GameRootController
+    let root: GameRoot
     let playerController: PlayerController
     let adventureId: UUID
     
-    //@Environment(\.showGameActions) private var showGameActions
+    @Environment(\.showGameActions) private var showGameActions
 
     @State private var gameScreenModel = GameScreenModel()
     @State private var infoState: NetworkModules = .none
@@ -27,20 +27,19 @@ struct MasterGameScreen: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             GameRootViewer(root: root, playerController: playerController, emptyTitle: "Select Map, Photo, Table, Weather or 3D Object") { mapId in
-                Text("Start")
-                //root.mapRoot.viewController.gameMasterMapView(id: mapId)
+                root.mapRoot.viewController.gameMasterMapView(root: root.mapRoot, id: mapId)
             }
             
             overlayMenu
         }
         .environment(\.gameModus, .master)
-        //.environment(\.mapActions, root.mapRoot.mapActions)
-//        .environment(\.valueActions, root.valueRoot.valueActions)
+        .environment(\.mapActions, root.mapRoot.mapActions)
+        .environment(\.valueActions, root.valueRoot.valueActions)
         .overlay(alignment: .center) {
             if gameScreenModel.showExport {
-//                ExportProgressFile(exportController: root.adventureRoot.gameControllable.rootExportControllable, showExport: $gameScreenModel.showExport) {
-//                    root.saveGame()
-//                }
+                ExportProgressFile(exportController: root.adventureRoot.gameControllable.rootExportControllable, showExport: $gameScreenModel.showExport) {
+                    root.saveGame()
+                }
             }
         }
         .alert(Text("Save Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
@@ -71,7 +70,7 @@ struct MasterGameScreen: View {
         }
 #if os(visionOS)
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
-            root.diceRoot.viewController.dicePlayerView()
+            root.diceRoot.viewController.dicePlayerView(root: root.diceRoot)
                 .environment(diceShowOptionModel)
         }
         .ornament(attachmentAnchor: .scene(.topTrailing), contentAlignment: .bottomTrailing) {
@@ -88,17 +87,17 @@ struct MasterGameScreen: View {
             .padding(12)
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
-            root.diceRoot.viewController.diceActionBarView()
+            root.diceRoot.viewController.diceActionBarView(root: root.diceRoot)
                 .padding(.top, 12)
                 .environment(diceShowOptionModel)
         }
         .ornament(attachmentAnchor: .scene(.bottom), contentAlignment: .top) {
-            root.diceRoot.viewController.diceRollView()
+            root.diceRoot.viewController.diceRollView(root: root.diceRoot)
                 .padding(.top, 56)
                 .environment(diceShowOptionModel)
         }
         .ornament(attachmentAnchor: .scene(.bottomTrailing), contentAlignment: .topTrailing) {
-            root.diceRoot.viewController.diceResultView()
+            root.diceRoot.viewController.diceResultView(root: root.diceRoot)
                 .padding(.top, 12)
                 .environment(diceShowOptionModel)
         }
@@ -154,7 +153,7 @@ private extension MasterGameScreen {
     }
     
     func endGame() {
-        //showGameActions.show(false)
+        showGameActions.show(false)
         Task {
             await root.stopGame()
         }
@@ -198,11 +197,11 @@ private extension MasterGameScreen {
 #endif
 }
 
-//#Preview("iPad") {
-//    MasterGameScreen(root: .preview, playerController: .preview, adventureId: UUID())
-//        .environment(\.wideMode, .small)
-//    //.frame(width: 800)
-//}
+#Preview("iPad") {
+    MasterGameScreen(root: .preview, playerController: .preview, adventureId: UUID())
+        .environment(\.wideMode, .small)
+    //.frame(width: 800)
+}
 
 //#Preview("iPhone") {
 //    MasterGameScreen(root: .preview, playerController: .preview, adventureId: UUID())

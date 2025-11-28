@@ -1,11 +1,12 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 
 struct GameRootTabItemView: View {
-    let root: GameRootController
+    let root: GameRoot
 
+    @Environment(\.wideMode) private var wideMode
 #if os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
@@ -18,15 +19,17 @@ struct GameRootTabItemView: View {
             
             ScrollView {
 #if os(macOS)
-                Button {
-                    withAnimation {
-                        openWindow(id: WindowIdentifier.editor.rawValue)
+                if wideMode != .small {
+                    Button {
+                        withAnimation {
+                            openWindow(id: WindowIdentifier.editor.rawValue)
+                        }
+                    } label: {
+                        Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }
                     }
-                } label: {
-                    Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .trailing)
 #endif
                 GameOptionView(root: root)
             }
@@ -37,9 +40,9 @@ struct GameRootTabItemView: View {
     }
 }
 
-//#Preview {
-//    GameRootTabItemView(root: .preview)
-//        .environment(\.wideMode, .small)
-//        .environment(AppSettingsModel())
-//        .environment(SelectionSheetLinkModel())
-//}
+#Preview {
+    GameRootTabItemView(root: .preview)
+        .environment(\.wideMode, .small)
+        .environment(AppSettingsModel())
+        .environment(SelectionSheetLinkModel())
+}

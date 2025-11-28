@@ -1,31 +1,78 @@
 // @copyright André Trettin
 
 import AdventureRPG
-import AudioRPG
+import AndrenalinKit
 import DiceRPG
+import Foundation
+import os.log
+import AudioRPG
 import MapRPG
-import PdfRPG
 import PhotoRPG
 import TableRPG
 import CharacterRPG
 import WeatherRPG
+import PdfRPG
 import SpaceRPG
-import CoreRPG
-import Foundation
-import os.log
 #if os(macOS)
 import AppKit
 #else
 import UIKit
 #endif
 
+@MainActor @Observable
+final class PlayerControllerModel: Sendable {
+    var gameUpdateType: NetworkModules = .none
+    var messageCounter: Int = 0
+    var responseCounter: Int = 0
+    var lostMaster: Bool = true
+    var hasSendPlayer = false
+    var asGameMaster = false
+    
+    var gameModelMessage = GameModelMessage()
+
+    func increaseMessageCounter() {
+        messageCounter += 1
+    }
+
+    func reset(lostMaster: Bool) {
+        self.lostMaster = lostMaster
+    }
+    
+    func reset(sendPlayer: Bool) {
+        self.hasSendPlayer = sendPlayer
+    }
+    
+    func setGameUpdateType(_ type: NetworkModules) {
+        gameUpdateType = type
+    }
+}
+
+actor GameModelMessage {
+    private var messages: [GameNetworkModel] = []
+    private var processing: Bool = false
+    
+    func append(_ message: GameNetworkModel) {
+        messages.append(message)
+    }
+    
+    func next() -> GameNetworkModel? {
+        guard !processing && !messages.isEmpty else { return nil }
+        processing = true
+        return messages.removeFirst()
+    }
+    
+    func processed() {
+        processing = false
+    }
+}
+
 final class PlayerController: Sendable {
-    let root: GameRootController
+    unowned let root: GameRoot!
     let gameModel: PlayerControllerModel
     let proxyMasterController: MasterController?
     
     @MainActor
-    init(root: GameRootController, asGameMaster: Bool) {
+    init(root: GameRoot, asGameMaster: Bool) {
         self.root = root
         self.gameModel = PlayerControllerModel()
         self.gameModel.asGameMaster = asGameMaster
@@ -69,7 +116,7 @@ extension PlayerController {
         Logger.networking.debug("PlayerController: Stop")
         await root.networkProxyStore.stopGame()
         await root.networkStore.stopGame()
-        root.adventureRoot.gameController.resetGame()
+        root.adventureRoot.adventureGameControllable.resetGame()
         gameModel.hasSendPlayer = false
     }
     
@@ -78,7 +125,7 @@ extension PlayerController {
         let players = root.gameModel.gameConfig.controls.compactMap { $0.show ? $0.id : nil }
         root.audioRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
         let playerNames = root.gameModel.gameConfig.controls.map { $0.name }.sorted()
-        root.diceRoot.gameController.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
+        root.diceRoot.diceGameControllable.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
     }
 }
 
@@ -213,7 +260,7 @@ extension PlayerController: PlayerNetworkProxyControllerDelegate {
 extension PlayerController {
     func handle(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
         switch model.data.type {
-        case .none, .game, .setting, .editor, .search, .generator:
+        case .none, .game, .setting, .editor, .generator, .search:
             return nil
         case .adventure:
             return handleAdventure(model)
@@ -253,7 +300,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                await root.audioRoot.gameController.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.gameConfig.id])
+                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.gameConfig.id])
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
                 return await response(for: model, isSuccess: true, requestData: true)
@@ -264,10 +311,10 @@ extension PlayerController {
         case .update:
             switch model.subType {
             case .audioList:
-                await root.audioRoot.gameController.applyAudioList(data: model.data, for: model.gameConfig.id)
+                await root.audioRoot.audioGameControllable.applyAudioList(data: model.data, for: model.gameConfig.id)
             case .playAudio:
-                await root.audioRoot.gameController.applyAudio(id: model.data.id, for: model.gameConfig.controls.map { $0.id } + [model.gameConfig.master.id])
-                let _ = await root.audioRoot.gameController.play(with: model.data).result
+                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: model.gameConfig.controls.map { $0.id } + [model.gameConfig.master.id])
+                let _ = await root.audioRoot.audioGameControllable.play(with: model.data).result
             default:
                 break
             }
@@ -292,9 +339,9 @@ extension PlayerController {
         case .update:
             switch model.subType {
             case .show, .store:
-                try await root.diceRoot.gameController.updateGame(data: model.data, hide: model.subType == .store, focus: model.subType == .show)
+                try await root.diceRoot.diceGameControllable.updateGame(data: model.data, hide: model.subType == .store, focus: model.subType == .show)
             case .generic:
-                _ = await root.diceRoot.gameController.addGameDiceResult(data: model.data, name: model.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
+                _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.gameConfig.name, isGameMaster: model.gameConfig.type == .master)
                 break
             default:
                 break
@@ -327,8 +374,8 @@ extension PlayerController {
             switch model.subType {
             case .mapState:
                 if await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: model.data.version) {
-                    await root.mapRoot.gameController.updateMap(for: model.data.id, with: model.data)
-                    let missingImages = await root.mapRoot.gameController.missingPlayerImages(itemId: model.data.id)
+                    await root.mapRoot.mapGameControllable.updateMap(for: model.data.id, with: model.data)
+                    let missingImages = await root.mapRoot.mapGameControllable.missingPlayerImages(itemId: model.data.id)
                     for idType in missingImages {
                         await send(counter: 0, type: .store, subType: .store, updated: idType)
                     }
@@ -374,7 +421,7 @@ extension PlayerController {
             if try await root.photoRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
                 Task { @MainActor in
                     gameModel.gameUpdateType = .photo
-                    root.photoRoot.gameController.resetPhotoSpace()
+                    root.photoRoot.photoGameControllable.resetPhotoSpace()
                 }
                 
                 return await response(for: model, isSuccess: true, requestData: false)
@@ -428,7 +475,7 @@ extension PlayerController {
         guard model.gameConfig.type == .master else { return nil }
         switch model.type {
         case .reveal:
-            if try await root.characterRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
+            if try await root.valueRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
                 Task { @MainActor in
                     gameModel.gameUpdateType = .value
                 }
@@ -437,25 +484,25 @@ extension PlayerController {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
-            try await root.characterRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
+            try await root.valueRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
             case .generic:
                 if let characterId = await root.gameModel.gameConfig.player.characterId {
                     Task { @MainActor in
-                        await root.characterRoot.gameController.addItem(id: model.data.id, data: model.data, for: characterId)
+                        await root.valueRoot.valueGameControllable.addItem(id: model.data.id, data: model.data, for: characterId)
                     }
                 }
             case .valueResult:
                 if let characterId = await root.gameModel.gameConfig.player.characterId {
                     Task { @MainActor in
-                        await root.characterRoot.gameController.add(result: model.data, for: characterId)
+                        await root.valueRoot.valueGameControllable.add(result: model.data, for: characterId)
                     }
                 }
             default:
                 Task { @MainActor in
-                    if await root.characterRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                    if await root.valueRoot.gameControllable.setCurrent(itemId: model.data.id) {
                         gameModel.gameUpdateType = .value
                     }
                 }
@@ -517,11 +564,11 @@ extension PlayerController {
         case .reveal, .store:
             return nil
         case .update:
-            try await root.characterRoot.gameControllable.updateGame(data: model.data, hide: false, deep: true)
+            try await root.valueRoot.gameControllable.updateGame(data: model.data, hide: false, deep: true)
             let characterId = model.data.id
             Task { @MainActor in
-                _ = await root.characterRoot.gameControllable.setCurrent(itemId: characterId)
-                await root.characterRoot.gameControllable.focus(on: characterId)
+                _ = await root.valueRoot.gameControllable.setCurrent(itemId: characterId)
+                await root.valueRoot.gameControllable.focus(on: characterId)
                 try await Task.sleep(for: .seconds(1))
                 root.gameModel.selectedCharacter = characterId
             }
@@ -541,7 +588,7 @@ extension PlayerController {
         guard await !gameModel.hasSendPlayer && gameType != .observer, let characterId = await root.gameModel.gameConfig.player.characterId else { return }
         await gameModel.reset(sendPlayer: true)
 
-        if let result = try? await root.characterRoot.gameControllable.createGameData(for: characterId) {
+        if let result = try? await root.valueRoot.gameControllable.createGameData(for: characterId) {
             await send(counter: 0, type: .update, subType: .store, updated: result, useJournal: true)
         }
         try? await Task.sleep(for: .seconds(5))
@@ -549,6 +596,6 @@ extension PlayerController {
     }
 
     func sendAudioList() async {
-        await send(counter: 0, type: .update, subType: .audioList, updated: root.audioRoot.gameController.audioList(allPlayers: false, with: root.gameModel.gameConfig.id), useJournal: false)
+        await send(counter: 0, type: .update, subType: .audioList, updated: root.audioRoot.audioGameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id), useJournal: false)
     }
 }

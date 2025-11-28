@@ -1,10 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import AVFoundation
 import Combine
 import Foundation
-import GroupActivities
+@preconcurrency import GroupActivities
 import os.log
 import AudioRPG
 import SwiftUI
@@ -28,7 +28,7 @@ final class RPGSharePlayController {
     var canActivateSharePlay: Bool = false
     var stateText: String = "Not Active"
 
-    var gameModel: GameRootModel?
+    var gameModel: GameModel?
     var packageSender: SharePlaySingleQueuePackageSender?
     var packageReceiver = SharePlayPackageReceiver()
 
@@ -52,7 +52,7 @@ final class RPGSharePlayController {
         Logger.sharePlay.debug("deinit")
     }
 
-    func setup(gameModel: GameRootModel) {
+    func setup(gameModel: GameModel) {
         Logger.sharePlay.debug("setup")
         self.gameModel = gameModel
         packageSender = SharePlaySingleQueuePackageSender { [weak self] package in
@@ -158,14 +158,14 @@ extension RPGSharePlayController {
             for await session in RPGActivity.sessions() {
                 Logger.sharePlay.debug("Session \(session.description, privacy: .public) state: \(self.printState(), privacy: .public)")
 
-//                #if os(visionOS)
-//                guard let systemCoordinator = await session.systemCoordinator else { continue }
-//
-//                var configuration = SystemCoordinator.Configuration()
-//                configuration.supportsGroupImmersiveSpace = true
-////                configuration.spatialTemplatePreference = .sideBySide.contentExtent(200)
-//                systemCoordinator.configuration = configuration
-//                #endif
+                #if os(visionOS)
+                guard let systemCoordinator = await session.systemCoordinator else { continue }
+
+                var configuration = SystemCoordinator.Configuration()
+                configuration.supportsGroupImmersiveSpace = true
+//                configuration.spatialTemplatePreference = .sideBySide.contentExtent(200)
+                systemCoordinator.configuration = configuration
+                #endif
 
                 self.configureGroupSession(session)
             }

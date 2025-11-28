@@ -1,10 +1,10 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 
 struct SearchProxyView: View {
-    let root: GameRootController
+    let root: GameRoot
 
     @State private var playerNetworkController: (any PlayerNetworkControllable)?
     
@@ -36,4 +36,8 @@ struct SearchProxyView: View {
             }
         }
     }
+}
+
+#Preview {
+    SearchProxyView(root: .preview)
 }
