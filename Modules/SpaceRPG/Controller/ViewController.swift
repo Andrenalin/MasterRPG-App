@@ -13,9 +13,8 @@ extension ViewController: ViewControllable {}
 // MARK: - New Views
 
 public extension ViewController {
-    @MainActor func linkWindow(root: SpaceRootModel, isInspector: Bool = false) -> some View {
+    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(root)
     }
     
     @MainActor func windowViewer(root: SpaceRootModel, selection: WindowItemSelection) -> some View {
@@ -25,18 +24,15 @@ public extension ViewController {
         }
         .ignoresSafeArea()
         .navigationTitle(model.name)
-        .environment(root)
     }
 
     @MainActor func inlineViewer(root: SpaceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return SpaceExternalHeader(editController: root.editController, model: model, isModal: true)
-            .environment(root)
     }
     
-    @MainActor func selectionView(root: SpaceRootModel, model: ItemSelectionModel) -> some View {
+    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
         LinkRootView(type: .selection)
-            .environment(root)
     }
 }
 

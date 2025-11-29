@@ -36,7 +36,7 @@ struct LinkRootView: View {
 ////                    root.characterRoot.viewController.linkWindow(root: root.characterRoot, isInspector: type == .inspector)
 //                default:
 ////                    root.tableRoot.viewController.linkWindow(root: root.tableRoot, isInspector: type == .inspector)
-//                    root.diceRoot.viewController.linkWindow(root: root.diceRoot, isInspector: type == .inspector)
+//                    root.diceRoot.viewController.linkWindow(isInspector: type == .inspector)
 //
                 }
             }

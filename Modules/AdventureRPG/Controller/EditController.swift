@@ -91,6 +91,15 @@ extension EditController: EntryDataEditable {
     }
 }
 
+// MARK: - New Editor Functions
+
+extension EditController {
+    @MainActor func add(photoId: UUID?) {
+        model.photoId = photoId
+        save(with: String(localized: "Change Photo").localizedString)
+    }
+}
+
 // MARK: - Selection
 
 extension EditController {

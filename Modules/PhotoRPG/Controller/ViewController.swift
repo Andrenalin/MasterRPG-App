@@ -19,25 +19,21 @@ extension ViewController: ViewControllable {
 // MARK: - Viewer
 
 public extension ViewController {
-    @MainActor func linkWindow(root: PhotoRootModel, isInspector: Bool = false) -> some View {
+    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(root)
     }
     
     @MainActor func inlineViewer(root: PhotoRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return RootPhotoViewer(model: model, toolBarModel: GameToolBarModel())
-            .environment(root)
     }
     
-    @MainActor func selectionView(root: PhotoRootModel, model: ItemSelectionModel) -> some View {
+    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
         LinkRootView(type: .selection)
-            .environment(root)
     }
     
-    func dropSelectionView(root: PhotoRootModel, model: ItemSelectionModel) -> some View {
+    func dropSelectionView(model: ItemSelectionModel) -> some View {
         PhotoDropChooseView(model: model)
-            .environment(root)
     }
 
     @ViewBuilder @MainActor func thumbnailRow(root: PhotoRootModel, for itemId: UUID) -> some View {
@@ -55,7 +51,6 @@ public extension ViewController {
         }
         .ignoresSafeArea()
         .navigationTitle(model.name)
-        .environment(root)
     }
 }
 

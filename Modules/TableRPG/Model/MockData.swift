@@ -57,6 +57,7 @@ struct MockRootViewModifier: ViewModifier {
             .environment(ExternalHeaderModel())
             .environment(LinkRootController.fake)
             .environment(DetailInspectorModel())
+            .environment(root.diceRoot)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

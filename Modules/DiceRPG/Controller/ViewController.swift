@@ -18,9 +18,8 @@ extension ViewController: ViewControllable {
 // MARK: Viewer
 
 public extension ViewController {
-    @MainActor func linkWindow(root: DiceRootModel, isInspector: Bool = false) -> some View {
+    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(root)
     }
     
     func selectionView(root: DiceRootModel, model: ItemSelectionModel) -> some View {

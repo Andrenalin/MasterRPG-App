@@ -20,14 +20,12 @@ extension ViewController: ViewControllable {
 
 public extension ViewController {
     @MainActor
-    func linkWindow(root: AudioRootModel, isInspector: Bool = false) -> some View {
+    func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(root)
     }
         
-    @MainActor func selectionView(root: AudioRootModel, model: ItemSelectionModel) -> some View {
+    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
         LinkRootView(type: .selection)
-            .environment(root)
     }
 }
 

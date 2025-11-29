@@ -25,21 +25,21 @@ struct WindowLinkList: Scene {
 
             windowGroup(model: appModel, module: .value, key: "2", content: appModel.characterRoot.viewController.linkWindow())
 
-            windowGroup(model: appModel, module: .pdf, key: "3", content: appModel.pdfRoot.viewController.linkWindow(root: appModel.pdfRoot))
+            windowGroup(model: appModel, module: .pdf, key: "3", content: appModel.pdfRoot.viewController.linkWindow())
 
-            windowGroup(model: appModel, module: .table, key: "4", content: appModel.tableRoot.viewController.linkWindow(root: appModel.tableRoot))
+            windowGroup(model: appModel, module: .table, key: "4", content: appModel.tableRoot.viewController.linkWindow())
 
             windowGroup(model: appModel, module: .map, key: "5", content: appModel.mapRoot.viewController.linkWindow())
 
-            windowGroup(model: appModel, module: .audio, key: "6", content: appModel.audioRoot.viewController.linkWindow(root: appModel.audioRoot))
+            windowGroup(model: appModel, module: .audio, key: "6", content: appModel.audioRoot.viewController.linkWindow())
 
-            windowGroup(model: appModel, module: .dice, key: "7", content: appModel.diceRoot.viewController.linkWindow(root: appModel.diceRoot))
+            windowGroup(model: appModel, module: .dice, key: "7", content: appModel.diceRoot.viewController.linkWindow())
 
-            windowGroup(model: appModel, module: .photo, key: "8", content: appModel.photoRoot.viewController.linkWindow(root: appModel.photoRoot))
+            windowGroup(model: appModel, module: .photo, key: "8", content: appModel.photoRoot.viewController.linkWindow())
 
-            windowGroup(model: appModel, module: .space, key: "9", content: appModel.spaceRoot.viewController.linkWindow(root: appModel.spaceRoot))
+            windowGroup(model: appModel, module: .space, key: "9", content: appModel.spaceRoot.viewController.linkWindow())
 
-            windowGroup(model: appModel, module: .weather, key: "0", content: appModel.weatherRoot.viewController.linkWindow(root: appModel.weatherRoot))
+            windowGroup(model: appModel, module: .weather, key: "0", content: appModel.weatherRoot.viewController.linkWindow())
         }
         .defaultSize(CGSize(width: 400, height: 800))
     }

@@ -20,33 +20,29 @@ extension ViewController: ViewControllable {
 extension ViewController {
     @MainActor
     func photoSelection(root: WeatherRootModel, selectionModel: ItemSelectionModel) -> some View {
-        root.photoRoot.viewController.dropSelectionView(root: root.photoRoot, model: selectionModel)
+        root.photoRoot.viewController.dropSelectionView(model: selectionModel)
     }
 }
 
 // MARK: - Viewer
 
 public extension ViewController {
-    @MainActor func linkWindow(root: WeatherRootModel, isInspector: Bool = false) -> some View {
+    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(root)
     }
     
     @MainActor func windowViewer(root: WeatherRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return ViewerRootView(model: model)
-            .environment(root)
     }
 
     @MainActor func inlineViewer(root: WeatherRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return ViewerRootView(model: model, dismissAction: dismissAction)
-            .environment(root)
     }
     
-    @MainActor func selectionView(root: WeatherRootModel, model: ItemSelectionModel) -> some View {
+    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
         LinkRootView(type: .selection)
-            .environment(root)
     }
 }
 

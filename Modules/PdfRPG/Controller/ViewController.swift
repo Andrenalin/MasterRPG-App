@@ -13,7 +13,7 @@ extension ViewController: ViewControllable {}
 // MARK: Viewer
 
 public extension ViewController {
-    @MainActor func linkWindow(root: PdfRootModel, isInspector: Bool = false) -> some View {
+    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
     }
 

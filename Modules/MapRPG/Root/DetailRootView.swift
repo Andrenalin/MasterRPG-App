@@ -47,7 +47,7 @@ struct DetailListView: View {
         } editor: {
             detailEditorView
         } inspector: {
-            LinkRootView(type: .inspector)
+            EditorLinkView()
         } entryEditor: {
             EntryEditorView(editController: root.editController)
         }

@@ -46,7 +46,7 @@ struct DetailListView: View {
         } editor: {
             WeatherEditor(model: model)
         } inspector: {
-            root.photoRoot.viewController.linkWindow(root: root.photoRoot, isInspector: true)
+            root.photoRoot.viewController.linkWindow(isInspector: true)
         } overlay: {
             OverlayViewer(animate: $animate)
         }
