@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import CoreExternalRPG
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 public struct TabbedSplitNavigation: View {
@@ -11,6 +11,8 @@ public struct TabbedSplitNavigation: View {
     
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
+    
+    @AppStorage("contentColumnWidth") private var contentColumnWidth: Double = 350
     
     public var body: some View {
         let _ = Self._printChanges()
@@ -25,7 +27,15 @@ public struct TabbedSplitNavigation: View {
                 appModel.selectedModule
             }
             .environment(appModel.itemRootController(for: selectedModule))
-            .navigationSplitViewColumnWidth(min: 250, ideal: 350, max: 600)
+            .navigationSplitViewColumnWidth(min: 250, ideal: contentColumnWidth, max: 600)
+            .background {
+                GeometryReader { reader in
+                    Color.clear
+                        .onChange(of: reader.frame(in: .global).width) { 
+                            contentColumnWidth = reader.frame(in: .global).width
+                        }
+                }
+            }
         } detail: {
             SplitDetailView()
                 .environment(appModel.itemRootController(for: selectedModule))
@@ -47,7 +57,7 @@ public struct TabbedSplitNavigation: View {
 
 
 struct TabSidebar: View {
-    @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
+    @SceneStorage("RootRoute") private var storedTab: RootRoute = .adventures
     
     @Environment(AppModel.self) private var appModel
     

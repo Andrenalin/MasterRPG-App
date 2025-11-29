@@ -6,7 +6,7 @@ import Network
 import RPGResourcesDebug
 import Testing
 
-@testable import AndrenalinKit
+@testable import CoreRPG
 @testable import GameRPG
 import PhotoRPG
 

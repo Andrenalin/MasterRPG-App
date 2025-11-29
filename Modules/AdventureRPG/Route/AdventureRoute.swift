@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import CoreExternalRPG
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 public enum AdventureRoute: Equatable, Hashable, Codable {

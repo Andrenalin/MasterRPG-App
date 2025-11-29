@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import Foundation
 
 public struct TableEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {

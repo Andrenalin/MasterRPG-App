@@ -1,8 +1,23 @@
 // @copyright André Trettin
 
-import Foundation
+import SwiftUI
 
 struct FakeEditController: EditControllable {
-    let itemControllable: any ItemControllable
-    let fileUrlDataController: FileUrlDataController?
+    var linkRegisterControllable: any LinkRegisterControllable {
+        rootControllable.linkRegisterControllable
+    }
+        
+    typealias Model = FakeItemModel
+    
+    var itemControllable: any ItemControllable
+    var fileUrlDataController: FileUrlDataController?
+
+    var rootControllable: any RootControllable
+
+    var editorModel: ItemEditorModel
+    
+    var cacheItemListModel: CacheItemListModel
+    
+    @MainActor
+    static let fake = FakeEditController(itemControllable: FakeItemController.fake, rootControllable: FakeRootController.fake, editorModel: ItemEditorModel(), cacheItemListModel: CacheItemListModel())
 }

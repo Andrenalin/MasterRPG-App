@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if os(iOS) || os(visionOS) || os(tvOS)
-import AndrenalinKit
+import CoreRPG
 import Combine
 import CloudKit
 import RolePlayGameKit

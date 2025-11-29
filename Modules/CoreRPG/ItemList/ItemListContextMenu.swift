@@ -1,137 +1,129 @@
 // @copyright André Trettin
 
-import CoreExternalRPG
 import SwiftUI
 
-public struct ItemListContextMenu: View {
-    public init(controller: any ItemListContextMenuControllable, currentSelected: UUID? = nil) {
-        self.controller = controller
-        self.currentSelected = currentSelected
-    }
-    
-    let controller: ItemListContextMenuControllable
-    let currentSelected: UUID?
+struct ItemListContextMenu: View {
+    let listController: any ListControllable
+    let selection: Set<ItemRowTreeModel>
+    let exportDisabled: Bool
+    let generatorDisabled: Bool
+    let removeEntryList: RemoveEntryListModel?
+    @Binding var showEditGroup: Bool
+    @Binding var showExport: Bool
 
-    @Environment(ItemRootController.self) private var root
-    @Environment(\.navigator) private var navigator
-    @Environment(ListDisplayModel.self) private var listDisplayModel
-    
-    public var body: some View {
-        duplicateItemView
-        moveItemView
-            .disabled(listDisplayModel.isListMode)
-        addItemView
-            .disabled(listDisplayModel.isListMode)
-        Divider()
-        exportItemView
-        generateLinkView
-        Divider()
-        deleteItemView
+    var body: some View {
+#if os(iOS) || os(visionOS)
+        selectItemView
+#endif
+        createLinkItemsView(selection: selection)
+        copyItemsView(selection: selection)
+        groupEditItemsView(selection: selection)
+        
+        if !generatorDisabled {
+            generatorItemsView(selection: selection)
+        }
+        if !exportDisabled {
+            exportItemsView(selection: selection)
+        }
+        focusItemsView(selection: selection)
+        
+        if listController.canGroup {
+            groupItemsView(selection: selection)
+        }
+        deleteItemsView(selection: selection)
     }
 }
 
 private extension ItemListContextMenu {
-    var title: String {
-        controller.itemName(currentSelected: currentSelected)
-    }
-
-    var duplicateItemView: some View {
+    func copyItemsView(selection: Set<ItemRowTreeModel>) -> some View {
         Button {
-            withAnimation { controller.duplicateItem(currentSelected: currentSelected) }
-        } label: {
-            Label {
-                Text("Duplicate \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "doc.on.doc")
+            Task {
+                await listController.copyItems(selection: selection)
             }
+        } label: {
+            Label { Text(listController.copyTitle(for: selection), bundle: .module) } icon: { Image(systemName: "doc.on.doc") }
+        }
+        .disabled(listController.selectionCount(for: selection, filterEntries: true) == 0)
+    }
+    
+    func createLinkItemsView(selection: Set<ItemRowTreeModel>) -> some View {
+        Button {
+            Task {
+                await listController.createLinks(selection: selection)
+            }
+        } label: {
+            Label { Text(listController.createLinkTitle(for: selection), bundle: .module) } icon: { Image(systemName: "link") }
         }
     }
 
-    var deleteItemView: some View {
-        Button(role: .destructive) {
-            withAnimation {
-                let removingItems = controller.deleteItem(currentSelected: currentSelected)
-                guard !removingItems.isEmpty else { return }
-                root.removeEntryListModel.removeItems = removingItems
-                removingItems.forEach {
-                    root.editControllable.markForDeletion(itemId: $0.itemId)
-                }
+    @ViewBuilder
+    func deleteItemsView(selection: Set<ItemRowTreeModel>) -> some View {
+        if let removeEntryList {
+            Button(role: .destructive) {
+                withAnimation { listController.resetAction(selection: selection) }
+                removeEntryList.removeItems = listController.model.actionSelection.map { $0.model }
+                withAnimation { removeEntryList.showDeleteAlert.toggle() }
+            } label: {
+                Label { Text(listController.deleteTitle(for: selection), bundle: .module) } icon: { Image(systemName: "trash") }
             }
-            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
-        } label: {
-            Label {
-                Text("Delete \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "trash")
-            }
-        }
-    }
-
-    var exportItemView: some View {
-        Button {
-            let route = controller.exportItem(currentSelected: currentSelected)
-            navigator.navigate(to: route, method: .sheet)
-        } label: {
-            Label {
-                Text("Export \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "square.and.arrow.up")
-            }
+            .disabled(listController.selectionCount(for: selection, filterEntries: true) == 0)
         }
     }
     
-    var generateLinkView: some View {
+    func exportItemsView(selection: Set<ItemRowTreeModel>) -> some View {
         Button {
-            withAnimation { controller.generateLink(currentSelected: currentSelected) }
+            withAnimation { listController.resetAction(selection: selection) }
+            withAnimation { showExport.toggle() }
         } label: {
-            Label {
-                Text("Link for \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "link")
-            }
+            Label { Text(listController.exportTitle(for: selection), bundle: .module) } icon: { Image(systemName: "square.and.arrow.up") }
         }
+        .disabled(listController.selectionCount(for: selection, filterEntries: true) == 0)
     }
     
-    var moveItemView: some View {
-        Menu {
-            ForEach(controller.folderItems(currentSelected: currentSelected)) { folder in
-                Button {
-                    controller.moveItem(currentSelected: currentSelected, to: folder)
-                } label: {
-                    Label {
-                        Text(folder.name)
-                    } icon: {
-                        Image(systemName: "folder")
-                    }
-                }
-            }
+    func focusItemsView(selection: Set<ItemRowTreeModel>) -> some View {
+        Button {
+            Task { await listController.focus(for: selection) }
         } label: {
-            Label {
-                Text("Move \(title) into", bundle: .module)
-            } icon: {
-                Image(systemName: "folder")
-            }
+            Label { Text(listController.focusTitle(for: selection), bundle: .module) } icon: { Image(systemName: "camera.viewfinder") }
+        }
+        .disabled(selection.filter { $0.model.entryId == nil }.isEmpty)
+    }
+    
+    func generatorItemsView(selection: Set<ItemRowTreeModel>) -> some View {
+        Button {
+            withAnimation { listController.model.showGeneratorItem = listController.selected(for: selection)?.model }
+        } label: {
+            Label { Text(listController.generateTitle(for: selection), bundle: .module) } icon: { Image(systemName: "gear") }
         }
     }
 
-    var addItemView: some View {
-        Menu {
-            ForEach(controller.collectionItems(currentSelected: currentSelected)) { folder in
-                Button {
-                    controller.addItem(currentSelected: currentSelected, to: folder)
-                } label: {
-                    Label {
-                        Text(folder.name)
-                    } icon: {
-                        Image(systemName: controller.collectionIcon)
-                    }
-                }
-            }
+    func groupItemsView(selection: Set<ItemRowTreeModel>) -> some View {
+        Button {
+            withAnimation { listController.groupItems(for: selection) }
         } label: {
-            Label {
-                Text("Add \(title) into", bundle: .module)
-            } icon: {
-                Image(systemName: controller.collectionIcon)
+            Label { Text(listController.groupTitle(for: selection), bundle: .module) } icon: { Image(systemName: "square.on.square.squareshape.controlhandles") }
+        }
+        .disabled(listController.isGroupDisabled(for: selection))
+    }
+
+    func groupEditItemsView(selection: Set<ItemRowTreeModel>) -> some View {
+        Button {
+            withAnimation { listController.resetAction(selection: selection) }
+            withAnimation { showEditGroup.toggle() }
+        } label: {
+            Label { Text(listController.groupEditTitle(for: selection), bundle: .module) } icon: { Image(systemName: "slider.horizontal.2.square.on.square") }
+        }
+        .disabled(selection.filter { $0.model.entryId == nil }.count < 2)
+    }
+
+    var selectItemView: some View {
+        Button {
+            withAnimation { listController.model.selectedItems = listController.model.selectedItems.isEmpty ? listController.model.filteredItems : [] }
+        } label: {
+            if listController.model.selectedItems.isEmpty {
+                Label { Text("Select", bundle: .module) } icon: { Image(systemName: "checkmark.circle.fill") }
+            } else {
+                Label { Text("Deselect", bundle: .module) } icon: { Image(systemName: "checkmark.circle") }
             }
         }
     }

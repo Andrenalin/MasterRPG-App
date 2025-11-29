@@ -1,13 +1,17 @@
 // @copyright André Trettin
 
-import SwiftData
 import SwiftUI
 
-@MainActor
 struct FakeListController: ListControllable {
-    let listModel: ListModel
-    let listDisplayModel: ListDisplayModel
-    let searchModel: SearchModel
+    init(itemControllable: any ItemControllable, model: ListModel) {
+        self.itemControllable = itemControllable
+        self.model = model
+    }
     
-    var cacheListItemModel = CacheItemListModel()
+    var itemControllable: any ItemControllable
+    var model: ListModel
+    
+    
+    @MainActor
+    static let fake = FakeListController(itemControllable: FakeItemController.fake, model: ListModel(searchToken: .all, categoryTags: [], listStoreName: "Test", hasChildren: false))
 }

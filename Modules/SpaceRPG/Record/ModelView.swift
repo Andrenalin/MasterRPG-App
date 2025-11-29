@@ -8,7 +8,7 @@ A wrapper for AR QuickLook viewer that shows the reconstructed USDZ model
 
 #if os(iOS) && !targetEnvironment(simulator)
 
-import AndrenalinKit
+import CoreRPG
 import ARKit
 import QuickLook
 import SwiftUI

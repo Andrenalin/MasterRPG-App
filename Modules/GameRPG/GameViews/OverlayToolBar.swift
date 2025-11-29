@@ -2,7 +2,7 @@
 
 import SwiftUI
 import MapRPG
-import AndrenalinKit
+import CoreRPG
 
 struct OverlayToolBar: View {
     let root: GameRoot

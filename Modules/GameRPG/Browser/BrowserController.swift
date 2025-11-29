@@ -4,7 +4,7 @@ import Foundation
 import Network
 import SwiftUI
 import os.log
-import AndrenalinKit
+import CoreRPG
 
 struct BrowserController: Sendable {
     private let serviceType: GameServiceType

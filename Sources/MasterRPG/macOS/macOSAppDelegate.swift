@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if os(macOS)
-import AndrenalinKit
+import CoreRPG
 import AppKit
 import Combine
 import CloudKit

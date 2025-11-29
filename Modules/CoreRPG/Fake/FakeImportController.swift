@@ -1,17 +1,12 @@
 // @copyright André Trettin
 
-import Foundation
+import SwiftUI
 
 struct FakeImportController: ImportControllable {
-    @MainActor init(itemControllable: any (ItemControllable & ImportDataControllable)) {
-        self.itemControllable = itemControllable
-        self.importModel = ItemDataImportModel()
-        self.module = itemControllable.module
-    }
+    var itemControllable: any ItemControllable
     
-    let itemControllable: any ImportDataControllable
-    let fileUrlDataController: FileUrlDataController? = nil
-    let importModel: ItemDataImportModel
-    let module: NetworkModules
+    var importModel: ItemDataImportModel
     
+    @MainActor
+    static let fake = FakeImportController(itemControllable: FakeItemController.fake, importModel: ItemDataImportModel())
 }

@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 #if !os(tvOS)
 import PDFKit
 #endif

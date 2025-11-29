@@ -3,7 +3,7 @@
 import Foundation
 import Network
 import os.log
-import AndrenalinKit
+import CoreRPG
 
 protocol ConnectionControllable {
     func startConnection()

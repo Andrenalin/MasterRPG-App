@@ -7,7 +7,7 @@ Top-level SwiftUI container view for the entire app.
 
 #if os(iOS) && !targetEnvironment(simulator)
 
-import AndrenalinKit
+import CoreRPG
 import RealityKit
 import SwiftUI
 import os

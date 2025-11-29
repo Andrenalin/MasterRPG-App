@@ -7,7 +7,7 @@ A data model that maintains the state of the app.
 
 #if os(iOS) && !targetEnvironment(simulator)
 
-import AndrenalinKit
+import CoreRPG
 import Combine
 import RealityKit
 import SwiftUI

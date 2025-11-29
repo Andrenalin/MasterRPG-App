@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import DiceRPG
 import TableRPG
 import SwiftUI

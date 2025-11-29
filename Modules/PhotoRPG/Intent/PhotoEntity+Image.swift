@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if !os(tvOS)
-import AndrenalinKit
+import CoreRPG
 
 #if canImport(UIKit)
 import UIKit

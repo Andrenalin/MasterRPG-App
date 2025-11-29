@@ -2,28 +2,24 @@
 
 import SwiftUI
 
-public struct SheetView: View {
-    public init(model: TableSheetModel) {
-        self.model = model
-    }
-    
+struct SheetView: View {
     let model: TableSheetModel
 
-    public var body: some View {
+    var body: some View {
         if let description = model.description(for: model.sheetModel) {
             LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
                 .foregroundStyle(.secondary)
                 .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
         }
 
-        ForEach(model.sheetModel.filteredGroups(for: model.searchModel.searchText)) { group in
+        ForEach(model.sheetModel.filteredGroups(for: model.searchText)) { group in
 
             SheetGroupView(model: model, group: group)
                 .font(.body)
                 .listRowBackground(rowColor(for: group.level))
                 .listRowInsets(EdgeInsets(top: 4, leading: 8 + CGFloat(group.level * 20), bottom: 4, trailing: 8))
 
-            ForEach(group.filteredEntries(for: model.searchModel.searchText)) { entry in
+            ForEach(group.filteredEntries(for: model.searchText)) { entry in
                 SheetEntryView(model: model, entry: entry)
                     .foregroundStyle(.secondary)
                     .font(.subheadline)
@@ -31,7 +27,7 @@ public struct SheetView: View {
                     .listRowInsets(EdgeInsets(top: 8, leading: 18 + CGFloat(group.level * 20), bottom: 8, trailing: 8))
             }
         }
-        .onChange(of: model.searchModel.searchText) {
+        .onChange(of: model.searchText) {
             withAnimation { model.updateSearch() }
         }
     }
@@ -56,12 +52,6 @@ struct SheetGroupView: View {
         ForEach(group.sheetIds, id: \.self) { sheetId in
             if let sheetModel = model.sheets[sheetId] {
                 SheetView(model: sheetModel)
-            }
-        }
-        .applyIf(model.editEnabled) { content in
-            content.onDelete { indexSet in
-                print(indexSet)
-                //group.sheetIds.remove(atOffsets: indexSet)
             }
         }
     }

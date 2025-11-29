@@ -3,7 +3,7 @@
 import Foundation
 
 public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(id: UUID, name: String = "", description: String = "", groups: [SheetGroupModel] = []) {
+    public init(id: UUID, name: String, description: String, groups: [SheetGroupModel]) {
         self.id = id
         self.name = name
         self.description = description
@@ -49,6 +49,7 @@ public struct SheetGroupModel: Equatable, Hashable, Identifiable, Sendable {
             entry.name.localizedCaseInsensitiveContains(searchText) || entry.value.localizedCaseInsensitiveContains(searchText)
         }
     }
+
 }
 
 public struct SheetEntryModel: Equatable, Hashable, Identifiable, Sendable {

@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if os(visionOS)
-import AndrenalinKit
+import CoreRPG
 import Combine
 import RealityKit
 import SwiftUI

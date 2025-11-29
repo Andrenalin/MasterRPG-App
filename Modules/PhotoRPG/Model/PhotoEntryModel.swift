@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import Foundation
 
 public struct PhotoEntryModel: Identifiable, Equatable, Hashable, Codable {

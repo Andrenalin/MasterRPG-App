@@ -37,4 +37,3 @@ public struct CRDTDataUpdate<Value: Equatable> {
 extension CRDTDataUpdate: Equatable where Value: Equatable {}
 extension CRDTDataUpdate: Hashable where Value: Hashable {}
 extension CRDTDataUpdate: Codable where Value: Codable {}
-extension CRDTDataUpdate: Sendable where Value: Sendable {}

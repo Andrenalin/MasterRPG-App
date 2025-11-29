@@ -2,7 +2,7 @@
 
 #if !os(tvOS)
 import CoreExternalRPG
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 public struct SplitNavigation: View {

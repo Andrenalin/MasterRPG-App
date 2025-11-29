@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 struct TableContentColumn<Menu: View>: View {

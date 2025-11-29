@@ -3,7 +3,7 @@
 import Foundation
 import Testing
 
-@testable import AndrenalinKit
+@testable import CoreRPG
 
 struct FilePersistenceControllerTests {
 

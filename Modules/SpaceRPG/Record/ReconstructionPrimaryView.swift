@@ -7,7 +7,7 @@ View to show during the reconstruction phase until the session receives a model 
 
 #if os(iOS) && !targetEnvironment(simulator)
 
-import AndrenalinKit
+import CoreRPG
 import Foundation
 @preconcurrency import RealityKit
 import SwiftUI

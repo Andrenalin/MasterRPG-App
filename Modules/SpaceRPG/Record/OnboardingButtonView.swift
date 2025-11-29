@@ -7,7 +7,7 @@ The buttons on the review screen.
 
 #if os(iOS) && !targetEnvironment(simulator)
 
-import AndrenalinKit
+import CoreRPG
 import RealityKit
 import SwiftUI
 import os

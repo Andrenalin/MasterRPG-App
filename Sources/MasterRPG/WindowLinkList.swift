@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if !os(tvOS)
-import AndrenalinKit
+import CoreRPG
 import AdventureRPG
 import RolePlayGameKit
 import SwiftUI

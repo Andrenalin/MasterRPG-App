@@ -5,7 +5,7 @@
 ////  Created by Andre Trettin on 27/11/2568 BE.
 ////
 //
-//@testable import AndrenalinKit
+//@testable import CoreRPG
 //import Testing
 //import SwiftData
 //import Foundation

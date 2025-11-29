@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if os(macOS)
-import AndrenalinKit
+import CoreRPG
 import RolePlayGameKit
 import SwiftUI
 import CharacterRPG

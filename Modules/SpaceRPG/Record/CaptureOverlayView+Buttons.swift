@@ -7,7 +7,7 @@ The buttons for the full-screen overlay UI that control the capture.
 
 #if os(iOS) && !targetEnvironment(simulator)
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 import RealityKit
 import UniformTypeIdentifiers

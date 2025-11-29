@@ -3,7 +3,7 @@
 import Foundation
 import Network
 import os.log
-import AndrenalinKit
+import CoreRPG
 
 final class PlayerNetworkController {
     let proxy: Bool

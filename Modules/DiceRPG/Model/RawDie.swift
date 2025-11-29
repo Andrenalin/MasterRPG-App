@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 
 public struct RawDie: Equatable, Hashable, Codable {
     // MARK: - static

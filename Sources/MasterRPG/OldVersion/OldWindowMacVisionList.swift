@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if os(visionOS) || os(macOS)
-import AndrenalinKit
+import CoreRPG
 import RolePlayGameKit
 import SwiftUI
 import AdventureRPG

@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 
-import AndrenalinKit
+import CoreRPG
 import Foundation
 import Testing
 

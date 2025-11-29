@@ -2,7 +2,7 @@
 
 import Testing
 
-@testable import AndrenalinKit
+@testable import CoreRPG
 import Foundation
 
 struct LinkReplaceControllerTests {

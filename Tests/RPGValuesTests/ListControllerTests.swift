@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if canImport(Testing)
-import AndrenalinKit
+import CoreRPG
 import DiceRPG
 import Foundation
 import PdfRPG

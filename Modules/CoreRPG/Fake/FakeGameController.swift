@@ -3,16 +3,21 @@
 import Foundation
 
 struct FakeGameController: GameControllable {
-    
-    @MainActor init(itemControllable: any ItemControllable, exportControllable: any ExportControllable, importControllable: any ImportControllable) {
-        self.itemControllable = itemControllable
-        self.exportControllable = exportControllable
-        self.importControllable = importControllable
-        self.gameModel = ItemGameModel()
+    @MainActor init() {
+        self.itemControllable = FakeItemController.fake
+        self.exportControllable = FakeExportController.fake
+        self.importControllable = FakeImportController.fake
+        self.rootExportControllable = FakeExportController.fake
+        self.rootImportControllable = FakeImportController.fake
+        self.gameModel = ItemGameModel(itemDataModel: ItemDataModel(categoryTags: [], networkModule: .audio))
     }
     
-    let itemControllable: any ItemControllable
+    var itemControllable: any ItemControllable
     var exportControllable: any ExportControllable
-    @MainActor var importControllable: any ImportControllable
+    var importControllable: any ImportControllable
+    var rootExportControllable: any ExportControllable
+    var rootImportControllable: any ImportControllable
     var gameModel: ItemGameModel
+    
+    @MainActor static let fake = FakeGameController()
 }

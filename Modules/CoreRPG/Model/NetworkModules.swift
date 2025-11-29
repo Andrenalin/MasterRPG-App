@@ -87,6 +87,7 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .weather: "cloud.bolt.rain"
         }
     }
+
     public var linkWindowId: String {
         switch self {
         case .adventure: "AdventureLink"
@@ -107,8 +108,8 @@ public enum NetworkModules: Int, Codable, Sendable, CaseIterable {
         case .weather: "WeatherLink"
         }
     }
-
-    public var viewerkWindowId: String {
+    
+    public var viewerWindowId: String {
         linkWindowId + "Viewer"
     }
 

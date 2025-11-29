@@ -10,10 +10,19 @@ public struct ValueActions {
     }
 
     public let addResult: (NetworkCodableDataType, UUID?) async -> Void
+
     public let createModelResult: (String, String, [(String, String)], ResultCategory) -> NetworkCodableDataType
+
     public let createEntryResult: (String, String, ResultCategory) -> NetworkCodableDataType
 }
 
 public extension EnvironmentValues {
-    @Entry var valueActions: ValueActions = ValueActions { _, _ in } createModelResult: { _, _, _, _ in NetworkCodableDataType.empty } createEntryResult: { _, _, _ in NetworkCodableDataType.empty }
+    var valueActions: ValueActions {
+        get { self[ValueActionsKey.self] }
+        set { self[ValueActionsKey.self] = newValue }
+    }
+}
+
+struct ValueActionsKey: EnvironmentKey {
+    nonisolated(unsafe) static let defaultValue: ValueActions = ValueActions { _, _ in } createModelResult: { _, _, _, _ in NetworkCodableDataType.empty } createEntryResult: { _, _, _ in NetworkCodableDataType.empty }
 }

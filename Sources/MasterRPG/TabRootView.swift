@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AdventureRPG
-import AndrenalinKit
+import CoreRPG
 import DiceRPG
 import RolePlayGameKit
 import AudioRPG

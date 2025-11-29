@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
-import AndrenalinKit
+import CoreRPG
 
 @Observable
 final class ChangeChildModel {

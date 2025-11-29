@@ -2,10 +2,24 @@
 
 import SwiftUI
 
-public extension FocusedValues {
-    @Entry var selectedModule: Binding<NetworkModules>?
+public struct SelectedModuleKey: FocusedValueKey {
+    public typealias Value = Binding<NetworkModules>
 }
 
 public extension FocusedValues {
-    @Entry var selectedGameModule: Binding<NetworkModules>?
+    var selectedModule: Binding<NetworkModules>? {
+        get { self[SelectedModuleKey.self] }
+        set { self[SelectedModuleKey.self] = newValue }
+    }
+}
+
+public struct SelectedGameModuleKey: FocusedValueKey {
+    public typealias Value = Binding<NetworkModules>
+}
+
+public extension FocusedValues {
+    var selectedGameModule: Binding<NetworkModules>? {
+        get { self[SelectedGameModuleKey.self] }
+        set { self[SelectedGameModuleKey.self] = newValue }
+    }
 }

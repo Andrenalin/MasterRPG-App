@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import Foundation
 
 public struct LinkController: Sendable {
@@ -17,7 +17,7 @@ public struct LinkController: Sendable {
 }
 
 extension LinkController: LinkControllable {
-    public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: AndrenalinKit.ShareValueResult?, toggler: ((UUID, AndrenalinKit.NetworkModules) async -> Void)?, editAction: ((AndrenalinKit.ItemRowModel) -> Bool)?) -> String {
+    public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         text
     }
 }

@@ -1,19 +1,29 @@
 // @copyright André Trettin
 
-import Foundation
-import SwiftData
+import SwiftUI
 
 struct FakeLinkController: LinkControllable {
-    let module: NetworkModules = .audio
-    let itemController: FakeItemController
-    
-    var itemControllable: any ItemControllable {
-        itemController
+    func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+        text
     }
     
-    func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
-        "Not set"
+    func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+        let insertText = "\(itemId.uuidString.prefix(4)): \(entryId?.uuidString.prefix(4) ?? "no entry") for linkNo. \(linkNumber)"
+        let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
+        return text.toggleLink(url: url, with: insertText)
     }
     
-    @MainActor static let fake: FakeLinkController = FakeLinkController(itemController: FakeItemController(container: try! ModelContainer(for: ItemDataModel.self, TagDataModel.self, configurations: .init(isStoredInMemoryOnly: true)), module: .audio))
+    init(itemControllable: FakeItemController) {
+        self.itemControllable = itemControllable
+    }
+    
+    var itemControllable: any ItemControllable
+    
+    @MainActor
+    static let fake = FakeLinkController(itemControllable: FakeItemController.fake)
+    
+    @MainActor
+    func toggleLink(module: NetworkModules, linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?) -> String {
+        "\(itemId.uuidString.prefix(4)): \(entryId?.uuidString.prefix(4) ?? "no entry") for linkNo. \(linkNumber) in module \(module)"
+    }
 }

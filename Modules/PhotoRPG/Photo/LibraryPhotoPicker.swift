@@ -2,7 +2,7 @@
 
 #if !os(tvOS)
 
-import AndrenalinKit
+import CoreRPG
 import PhotosUI
 import SwiftUI
 

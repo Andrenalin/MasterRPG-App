@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreExternalRPG
 import SwiftUI
 
 struct TableSheetView<ImageContent: View>: View {
@@ -9,35 +10,60 @@ struct TableSheetView<ImageContent: View>: View {
     let imageContent: (CGSize) -> ImageContent
 
     @Environment(\.dismiss) var dismiss
-    //@Environment(\.showGame) private var showGame
-
-    @State private var searchText: String = ""
+    @Environment(\.showGame) private var showGame
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            closeButton()
-            searchBarView
-
-            if showImage {
-                imageContent(CGSize(width: 360, height: 256))
-                    .frame(maxWidth: .infinity, alignment: .center)
+        ManagedNavigationStack {
+            @Bindable var model = model
+            
+            VStack(alignment: .leading, spacing: 0) {
+                if showImage {
+                    imageContent(CGSize(width: 360, height: 256))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                
+                listContentView
             }
-
-            listContentView
+            .toolbar {
+                toolbarContent
+            }
+            .searchable(text: $model.searchText, placement: .toolbarAll, prompt: "Find in")
+            .navigationTitle(Text(model.sheetModel.name))
         }
-    }
-
-    var listContentView: some View {
-        List {
-            SheetView(model: model)
-                .animation(.default, value: model.searchModel.searchText)
-        }
-        .listStyle(.plain)
-        .contentMargins(.horizontal, 12, for: .scrollContent)
     }
 }
 
 private extension TableSheetView {
+    var listContentView: some View {
+        List {
+            SheetView(model: model)
+                .animation(.default, value: model.searchText)
+        }
+        .listStyle(.plain)
+        .contentMargins(.horizontal, 12, for: .scrollContent)
+    }
+    
+    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
+        if showCloseButton {
+            ToolbarItem(placement: .cancellationAction) {
+                closeActionButton
+            }
+        }        
+    }
+
+    var closeActionButton: some View {
+        Button {
+            if let dismissAction {
+                dismissAction()
+            } else {
+                dismiss()
+            }
+        } label: {
+            //Image(systemName: showImage ? "xmark.circle" : "chevron.down.circle")
+            Image(systemName: "xmark.circle")
+        }
+    }
+
     func closeButton() -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text(model.sheetModel.name)
@@ -54,7 +80,7 @@ private extension TableSheetView {
                 Image(systemName: showImage ? "xmark.circle" : "chevron.down.circle")
             }
             .borderLessTVBottonStyle()
-            //.opacity(showGame ? 0 : 1)
+            .opacity(showGame ? 0 : 1)
             .padding(.top, 8)
         }
         .font(.title)
@@ -62,14 +88,12 @@ private extension TableSheetView {
     }
 
     var showCloseButton: Bool {
-        guard showImage else { return false }
-        return true
-        //return !showGame
+        !showGame
     }
 
     @ViewBuilder
     var searchBarView: some View {
-        @Bindable var model = model.searchModel
+        @Bindable var model = model
         TextField(text: $model.searchText, prompt: searchPlaceHolder) {
             Label {
                 Text("Search", bundle: .module)
@@ -92,7 +116,7 @@ private extension TableSheetView {
 #Preview {
     TableSheetView(
         model: TableSheetModel(
-            linkController: .fake,
+            linkControllable: FakeLinkController.fake,
             sheetModel: SheetModel(
                 id: UUID(),
                 name: "Hallo",
@@ -108,11 +132,12 @@ private extension TableSheetView {
                     ])
                 ]
             ),
-            searchModel: SearchModel.preview(search: "in")
+            searchText: "in"
         ),
         showImage: false,
         dismissAction: nil,
         imageContent: { _ in Text("Empty")
         }
     )
+    .environment(DeviceRotationModel())
 }

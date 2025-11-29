@@ -4,7 +4,10 @@ import Foundation
 import SwiftUI
 
 public extension EnvironmentValues {
-    @Entry var resultCategory: ResultCategory? = nil
+    var resultCategory: ResultCategory? {
+        get { self[ResultCategoryKey.self] }
+        set { self[ResultCategoryKey.self] = newValue }
+    }
 }
 
 public struct ResultCategory: Equatable, Hashable, Codable, Sendable {
@@ -17,4 +20,8 @@ public struct ResultCategory: Equatable, Hashable, Codable, Sendable {
         self.childId = childId
         self.module = module
     }
+}
+
+struct ResultCategoryKey: EnvironmentKey {
+    static let defaultValue: ResultCategory? = nil
 }

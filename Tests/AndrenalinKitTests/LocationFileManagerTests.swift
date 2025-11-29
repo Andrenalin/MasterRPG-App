@@ -3,7 +3,7 @@
 import Foundation
 import Testing
 
-@testable import AndrenalinKit
+@testable import CoreRPG
 
 struct LocationFileManagerTests {
     @Test func folders() async throws {
@@ -23,9 +23,9 @@ struct LocationFileManagerTests {
         let docFileUrl = URL.documentsDirectory.appendingPathComponent("test.txt")
         let downloadUrl = URL.downloadsDirectory
 
-        #expect(sut.fileLocation(for: docUrl) == AndrenalinKit.FileLocation.local)
-        #expect(sut.fileLocation(for: docFileUrl) == AndrenalinKit.FileLocation.local)
-        #expect(sut.fileLocation(for: downloadUrl) == AndrenalinKit.FileLocation.newCloud)
+        #expect(sut.fileLocation(for: docUrl) == CoreRPG.FileLocation.local)
+        #expect(sut.fileLocation(for: docFileUrl) == CoreRPG.FileLocation.local)
+        #expect(sut.fileLocation(for: downloadUrl) == CoreRPG.FileLocation.newCloud)
     }
 
     @Test func AbsolutUrl() async throws {

@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import SwiftUI
 
 public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {

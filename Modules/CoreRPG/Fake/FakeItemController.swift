@@ -1,16 +1,24 @@
 // @copyright André Trettin
 
+import SwiftUI
 
-import Foundation
-import SwiftData
-
-@MainActor
-struct FakeItemController: ItemControllable, ImportDataControllable, Sendable {
-    let itemCacheModel: ItemCacheModel = ItemCacheModel()
-    let container: ModelContainer
-    let collectionCategory: ItemListCategory = .album
-    let module: NetworkModules
+struct FakeItemController: ItemControllable {
+    typealias Model = FakeItemModel
     
-    @MainActor func decodedItem(data: Data, version: Int) throws -> ItemDataCodableModel { itemDataCodableModel(for: UUID())! }
-    @MainActor func encodedItemData(for: UUID) -> Data? { nil }
+    var dataControllable: (any DataPersistenceControllable)?
+    var fileUrlDataController: FileUrlDataController? 
+    var linkRegisterControllable: any LinkRegisterControllable
+    
+    var itemDataModel: ItemDataModel
+    
+    func children(for model: ItemRowModel) -> [ItemRowModel] {
+        []
+    }
+    
+    func didDelete(model: any ModelType) async {}
+    
+    func didUpdate(model: any ModelType) async {}
+    
+    @MainActor
+    static let fake = FakeItemController(linkRegisterControllable: FakeLinkRegisterController.fake, itemDataModel: ItemDataModel(categoryTags: [.all], networkModule: .photo))
 }

@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import AndrenalinKit
+import CoreRPG
 import CoreExternalRPG
 import AdventureRPG
 import RolePlayGameKit
