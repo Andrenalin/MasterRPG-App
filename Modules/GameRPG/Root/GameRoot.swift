@@ -103,13 +103,13 @@ public final class GameRoot: @unchecked Sendable {
     let photoRoot: PhotoRootModel
     let spaceRoot: SpaceRootModel
     let tableRoot: TableRootModel
-    let valueRoot: CharacterRootModel
+    let characterRoot: CharacterRootModel
     let weatherRoot: WeatherRootModel
 
     let gameModel: GameModel
 
     @MainActor
-    public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, valueRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
+    public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
@@ -118,7 +118,7 @@ public final class GameRoot: @unchecked Sendable {
         self.photoRoot = photoRoot
         self.spaceRoot = spaceRoot
         self.tableRoot = tableRoot
-        self.valueRoot = valueRoot
+        self.characterRoot = characterRoot
         self.weatherRoot = weatherRoot
         
         self.networkStore = NetworkController(name: "Init")
@@ -143,7 +143,7 @@ public final class GameRoot: @unchecked Sendable {
     @MainActor
     var characterName: String {
         if let selectedCharacter = gameModel.selectedCharacter {
-            return valueRoot.linkController.name(for: selectedCharacter)
+            return characterRoot.linkController.name(for: selectedCharacter)
         } else {
             return "Unknown"
         }
@@ -152,7 +152,7 @@ public final class GameRoot: @unchecked Sendable {
     @MainActor
     var gameMasterName: String {
         if let selectedGameMaster = gameModel.selectedGameMaster {
-            return valueRoot.linkController.name(for: selectedGameMaster)
+            return characterRoot.linkController.name(for: selectedGameMaster)
         } else {
             return "Unknown"
         }
@@ -225,8 +225,8 @@ extension GameRoot {
         gameModel.gameConfig.state = .started
 
         await gameModel.masterController?.start()
-        valueRoot.valueGameControllable.startGame(for: gameModel.selectedGameMaster!)
-        diceRoot.diceGameControllable.setFocusDice(on: valueRoot.valueGameControllable.focusDice(for: gameModel.selectedGameMaster!))
+        characterRoot.valueGameControllable.startGame(for: gameModel.selectedGameMaster!)
+        diceRoot.diceGameControllable.setFocusDice(on: characterRoot.valueGameControllable.focusDice(for: gameModel.selectedGameMaster!))
         
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = true
@@ -293,8 +293,8 @@ extension GameRoot {
         gameModel.gameConfig.players[0].name = name(for: type)
         gameModel.gameConfig.state = .started
         if type != .observer {
-            valueRoot.valueGameControllable.startGame(for: gameModel.selectedCharacter)
-            diceRoot.diceGameControllable.setFocusDice(on: valueRoot.valueGameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
+            characterRoot.valueGameControllable.startGame(for: gameModel.selectedCharacter)
+            diceRoot.diceGameControllable.setFocusDice(on: characterRoot.valueGameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
         }
     }
 

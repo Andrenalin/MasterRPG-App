@@ -28,7 +28,7 @@ struct UpdateMapPinEditor: View {
     }
     
     private func showCharakterSelectionView() -> some View {
-        root.valueRoot.viewController.viewSelect(root: root.valueRoot) {
+        root.characterRoot.viewController.viewSelect(root: root.characterRoot) {
             if let characterPinId {
                 return [ItemRowModel(itemId: characterPinId, typeId: .value)]
             }

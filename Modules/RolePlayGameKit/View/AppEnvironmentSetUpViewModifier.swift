@@ -21,7 +21,7 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.windowStateModel)
             .environment(appModel.adventureRoot)
             .environment(appModel.audioRoot)
-            .environment(appModel.valueRoot)
+            .environment(appModel.characterRoot)
             .environment(appModel.diceRoot)
 #if !os(tvOS)
             .environment(appModel.generatorRoot)

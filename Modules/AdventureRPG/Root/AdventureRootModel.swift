@@ -30,7 +30,7 @@ public final class RootModel: Sendable {
 public final class AdventureRootModel: @unchecked Sendable {
 
     @MainActor
-    init(container: ModelContainer, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, valueRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
+    init(container: ModelContainer, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
         rootModel = RootModel()
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
@@ -39,7 +39,7 @@ public final class AdventureRootModel: @unchecked Sendable {
         self.photoRoot = photoRoot
         self.spaceRoot = spaceRoot
         self.tableRoot = tableRoot
-        self.valueRoot = valueRoot
+        self.characterRoot = characterRoot
         self.weatherRoot = weatherRoot
 
         let module: NetworkModules = .adventure
@@ -76,7 +76,7 @@ public final class AdventureRootModel: @unchecked Sendable {
         spaceRoot.setUp(context: context, rootControllable: self)
         weatherRoot.setUp(context: context, rootControllable: self)
         tableRoot.setUp(context: context, rootControllable: self)
-        valueRoot.setUp(context: context, rootControllable: self)
+        characterRoot.setUp(context: context, rootControllable: self)
         mapRoot.setUp(context: context, rootControllable: self)
 
         if let dataController, let context {
@@ -94,7 +94,7 @@ public final class AdventureRootModel: @unchecked Sendable {
     let photoRoot: PhotoRootModel
     let spaceRoot: SpaceRootModel
     let tableRoot: TableRootModel
-    let valueRoot: CharacterRootModel
+    let characterRoot: CharacterRootModel
     let weatherRoot: WeatherRootModel
 
     public let rootModel: RootModel
@@ -245,7 +245,7 @@ extension AdventureRootModel: StoreManiplable {
         await photoRoot.itemControllable.resetData()
         await spaceRoot.itemControllable.resetData()
         await tableRoot.itemControllable.resetData()
-        await valueRoot.itemControllable.resetData()
+        await characterRoot.itemControllable.resetData()
         await weatherRoot.itemControllable.resetData()
     }
 
@@ -264,7 +264,7 @@ extension AdventureRootModel: StoreManiplable {
             photoRoot.linkController.validateLinks()
             spaceRoot.linkController.validateLinks()
             tableRoot.linkController.validateLinks()
-            valueRoot.linkController.validateLinks()
+            characterRoot.linkController.validateLinks()
             weatherRoot.linkController.validateLinks()
         }
     }

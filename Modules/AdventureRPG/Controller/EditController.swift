@@ -214,11 +214,11 @@ extension EditController {
     
     @MainActor @ViewBuilder
     func selectValue(for entryId: UUID, linkKeyPath: WritableKeyPath<AdventureModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.valueRoot.viewController.viewSelect(root: root.valueRoot, filter: .all) {
+        root.characterRoot.viewController.viewSelect(root: root.characterRoot, filter: .all) {
             let text = self.model[keyPath: linkKeyPath]
             return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .value) }
         } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.valueRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
+            self.model[keyPath: linkKeyPath] = self.root.characterRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
             self.save(with: String(localized: "Change value links").localizedString)
         } dismissAction: {
             dismissAction()
@@ -316,7 +316,7 @@ extension EditController {
             case .table:
                 otherEntries = root.tableRoot.linkController.link(for: .adventure)
             case .value:
-                otherEntries = root.valueRoot.linkController.link(for: .adventure)
+                otherEntries = root.characterRoot.linkController.link(for: .adventure)
             default:
                 otherEntries = root.linkController.link(for: .adventure)
             }
@@ -333,7 +333,7 @@ extension EditController {
             case .table:
                 return root.tableRoot.linkController.linkEntries(for: anotherId)
             case .value:
-                return root.valueRoot.linkController.linkEntries(for: anotherId)
+                return root.characterRoot.linkController.linkEntries(for: anotherId)
             default:
                 return []
             }

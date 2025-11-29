@@ -178,17 +178,17 @@ final class PlayerMasterControllerTests {
     @Test func handleCharacterUpdate() async throws {
         try await setUp()
         try await MockRoot.importTestData(into: rootPlayer.adventureRoot)
-        await #expect(rootPlayer.valueRoot.itemController.itemDataModel.items.count == 13)
+        await #expect(rootPlayer.characterRoot.itemController.itemDataModel.items.count == 13)
 
         // send update Character
-        let characterId = await rootPlayer.valueRoot.itemController.itemDataModel.items[1]
+        let characterId = await rootPlayer.characterRoot.itemController.itemDataModel.items[1]
         var master = await rootSut.gameModel.gameConfig.master
         master.characterId = characterId
         await rootSut.gameModel.reset(master: master)
-        let photoId = await rootPlayer.valueRoot.itemController.itemOrEmpty(for: characterId).photoId
+        let photoId = await rootPlayer.characterRoot.itemController.itemOrEmpty(for: characterId).photoId
         #expect(nil != photoId)
         
-        let characterData = try? await rootPlayer.valueRoot.gameControllable.createGameData(for: characterId)
+        let characterData = try? await rootPlayer.characterRoot.gameControllable.createGameData(for: characterId)
         #expect(nil != characterData)
         await sutPlayer.send(counter: 0, type: .update, subType: .store, updated: characterData!, useJournal: true)
         let sendedCharacterData = playerStoreAbstractionMock.requestData as? GameNetworkModel
@@ -196,12 +196,12 @@ final class PlayerMasterControllerTests {
 
         var result = try await sut.handle(sendedCharacterData!)
         #expect(nil == result)
-        await #expect(rootSut.valueRoot.itemController.itemDataModel.items.count == 6)
+        await #expect(rootSut.characterRoot.itemController.itemDataModel.items.count == 6)
         await #expect(rootSut.photoRoot.itemController.itemDataModel.items.contains(photoId!))
         
         result = try await sut.handle(sendedCharacterData!)
         #expect(nil == result)
-        await #expect(rootSut.valueRoot.itemController.itemDataModel.items.count == 6)
+        await #expect(rootSut.characterRoot.itemController.itemDataModel.items.count == 6)
         await #expect(rootSut.photoRoot.itemController.itemDataModel.items.contains(photoId!))
     }
 }

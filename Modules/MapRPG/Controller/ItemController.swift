@@ -51,7 +51,7 @@ extension ItemController: ItemControllable {
         case .table:
             return root.tableRoot.itemControllable.children(for: model)
         case .value:
-            return root.valueRoot.itemControllable.children(for: model)
+            return root.characterRoot.itemControllable.children(for: model)
         default:
             return itemOrEmpty(for: model.itemId).entries.map {
                 ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: itemDataModel.networkModule)

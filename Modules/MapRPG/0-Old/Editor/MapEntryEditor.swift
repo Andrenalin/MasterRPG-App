@@ -46,7 +46,7 @@ struct MapEntryEditor: View {
             Button {
                 var content = editController.model[linkEntryId].content
                 linkValueData.forEach { linkData in
-                    content = root.valueRoot.linkController.generateLinks(itemId: linkData.itemId, entryId: linkData.entryId, into: content)
+                    content = root.characterRoot.linkController.generateLinks(itemId: linkData.itemId, entryId: linkData.entryId, into: content)
                 }
                 withAnimation {
                     editController.model[linkEntryId].content = content

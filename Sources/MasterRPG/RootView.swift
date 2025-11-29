@@ -56,7 +56,7 @@ struct RootView: View {
         .environment(\.sharingControlActions, appModel.gameRoot.sharingControlActions)
         .environment(\.sharingFeatureActions, appModel.gameRoot.sharingFeatureActions)
         .environment(\.showGameActions, appModel.settingsModel.showGameActions)
-        .environment(\.valueActions, appModel.valueRoot.valueActions)
+        .environment(\.valueActions, appModel.characterRoot.valueActions)
         .navigationRoot(appModel.navigator)
         .appExitNotifications(handler: appModel.adventureRoot.save)
         .task {

@@ -99,7 +99,7 @@ extension GameController: AdventureStoreGameable {
             await root.photoRoot.gameControllable.reset()
             await root.spaceRoot.gameControllable.reset()
             await root.tableRoot.gameControllable.reset()
-            await root.valueRoot.gameControllable.reset()
+            await root.characterRoot.gameControllable.reset()
             await root.weatherRoot.gameControllable.reset()
         }
     }

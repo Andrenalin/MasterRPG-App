@@ -30,13 +30,13 @@ public final class RootModel: Sendable {
 public final class MapRootModel: @unchecked Sendable {
     
     @MainActor
-    init(container: ModelContainer, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, valueRoot: CharacterRootModel) {
+    init(container: ModelContainer, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel) {
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
-        self.valueRoot = valueRoot
+        self.characterRoot = characterRoot
 
         rootModel = RootModel()
         
@@ -78,7 +78,7 @@ public final class MapRootModel: @unchecked Sendable {
     let pdfRoot: PdfRootModel
     let photoRoot: PhotoRootModel
     let tableRoot: TableRootModel
-    let valueRoot: CharacterRootModel
+    let characterRoot: CharacterRootModel
 
     public let rootModel: RootModel
     public let module: NetworkModules

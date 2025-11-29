@@ -102,7 +102,7 @@ extension GameController: MapGameStorable {
     
     @MainActor
     func setPlayerPin(for playerId: UUID, name: String, characterId: UUID) {
-        let photoId = root.valueRoot.valueGameControllable.playerPinPhoto(for: characterId)
+        let photoId = root.characterRoot.valueGameControllable.playerPinPhoto(for: characterId)
 
         if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == playerId }) {
             mapGameModel.playerPins[index].photoId = photoId

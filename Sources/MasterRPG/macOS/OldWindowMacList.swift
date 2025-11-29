@@ -28,12 +28,12 @@ struct OldWindowMacList: Scene {
         Group {
             Window("Character Generator", id: WindowIdentifier.generatorValueEditor.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.valueRoot.viewController.generatorEditorWindow(root: appModel.valueRoot)
+                    appModel.characterRoot.viewController.generatorEditorWindow(root: appModel.characterRoot)
                         .accentColor(NetworkModules.value.tint)
                         .tint(NetworkModules.value.tint)
                         .frame(minWidth: 600, minHeight: 400)
                         .environment(\.networkActions, appModel.gameRoot.networkActions())
-                        .environment(\.valueActions, appModel.valueRoot.valueActions)
+                        .environment(\.valueActions, appModel.characterRoot.valueActions)
                         .environment(\.gameModus, appModel.settingsModel.gameModus)
                         .environment(\.showGame, appModel.settingsModel.showGame)
                         .environment(selectionSheetLinkModel)
@@ -47,7 +47,7 @@ struct OldWindowMacList: Scene {
                         .tint(NetworkModules.table.tint)
                         .frame(minWidth: 600, minHeight: 400)
                         .environment(\.networkActions, appModel.gameRoot.networkActions())
-                        .environment(\.valueActions, appModel.valueRoot.valueActions)
+                        .environment(\.valueActions, appModel.characterRoot.valueActions)
                         .environment(\.gameModus, appModel.settingsModel.gameModus)
                         .environment(\.showGame, appModel.settingsModel.showGame)
                         .environment(selectionSheetLinkModel)

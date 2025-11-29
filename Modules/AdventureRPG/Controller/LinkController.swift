@@ -43,7 +43,7 @@ extension LinkController: LinkControllable {
         case .table:
             return root.tableRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .value:
-            return root.valueRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            return root.characterRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .weather:
             return root.weatherRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .adventure:
@@ -76,7 +76,7 @@ extension LinkController: LinkControllable {
         case .table:
             return root.tableRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .value:
-            return root.valueRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+            return root.characterRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .weather:
             return root.weatherRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         default:
@@ -127,7 +127,7 @@ extension LinkController: LinkControllable {
             result = root.photoRoot.linkController.repairLink(link, for: result, for: [.all])
             result = root.spaceRoot.linkController.repairLink(link, for: result, for: [.all])
             result = root.tableRoot.linkController.repairLink(link, for: result, for: [.all])
-            result = root.valueRoot.linkController.repairLink(link, for: result, for: [.all])
+            result = root.characterRoot.linkController.repairLink(link, for: result, for: [.all])
             result = root.weatherRoot.linkController.repairLink(link, for: result, for: [.all])
             result = repairLink(link, for: result, for: [.all])
         }
@@ -196,7 +196,7 @@ public extension LinkController {
         case .table:
             return root.tableRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
         case .value:
-            return root.valueRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
+            return root.characterRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
         case .weather:
             return root.weatherRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
         default:
@@ -219,7 +219,7 @@ public extension LinkController {
                 case .photo:
                     photoIds.append($0.itemId)
                 case .value:
-                    photoIds.append(contentsOf: root.valueRoot.linkController.collectLinks(of: module, from: $0.itemId))
+                    photoIds.append(contentsOf: root.characterRoot.linkController.collectLinks(of: module, from: $0.itemId))
                 case .map:
                     photoIds.append(contentsOf: root.mapRoot.linkController.collectLinks(of: module, from: $0.itemId))
                 case .weather:

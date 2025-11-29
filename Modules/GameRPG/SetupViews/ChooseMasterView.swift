@@ -41,13 +41,13 @@ struct ChooseMasterView: View {
     }
 
     private var selectionView: some View {
-        root.valueRoot.viewController.viewSelectMasters(root: root.valueRoot) {
-            if let id = root.gameModel.selectedGameMaster, let gameMasterId = root.valueRoot.linkController.validate(id: id, isGameMaster: true) {
+        root.characterRoot.viewController.viewSelectMasters(root: root.characterRoot) {
+            if let id = root.gameModel.selectedGameMaster, let gameMasterId = root.characterRoot.linkController.validate(id: id, isGameMaster: true) {
                 return [ItemRowModel(itemId: gameMasterId, typeId: .value)]
             }
             return []
         } toggleSelection: { model, _ in
-            if let itemId = root.valueRoot.linkController.validate(id: model.itemId, isGameMaster: true), root.gameModel.selectedGameMaster != itemId {
+            if let itemId = root.characterRoot.linkController.validate(id: model.itemId, isGameMaster: true), root.gameModel.selectedGameMaster != itemId {
                 root.gameModel.selectedGameMaster <=> itemId
             } else {
                 root.gameModel.selectedGameMaster = nil
@@ -79,7 +79,7 @@ struct ChooseMasterView: View {
     }
 
     private func drop(link: LinkData) -> Bool {
-        guard link.module == .value, let gameMasterId = root.valueRoot.linkController.validate(id: link.itemId, isGameMaster: true) else { return false }
+        guard link.module == .value, let gameMasterId = root.characterRoot.linkController.validate(id: link.itemId, isGameMaster: true) else { return false }
         withAnimation {
             root.gameModel.selectedGameMaster = gameMasterId
         }

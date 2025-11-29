@@ -27,8 +27,8 @@ public extension ViewController {
 
     @MainActor @ViewBuilder
     func selectedCharacterGameMasterView(with id: UUID?, isGameMaster: Bool = false) -> some View {
-        if let id = root.valueRoot.linkController.validate(id: id, isCharacter: !isGameMaster, isGameMaster: isGameMaster) {
-            root.valueRoot.viewController.viewMinimum(root: root.valueRoot, with: id)
+        if let id = root.characterRoot.linkController.validate(id: id, isCharacter: !isGameMaster, isGameMaster: isGameMaster) {
+            root.characterRoot.viewController.viewMinimum(root: root.characterRoot, with: id)
         } else {
             ProgressView().progressViewStyle(.circular)
         }

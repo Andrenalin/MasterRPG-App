@@ -27,7 +27,7 @@ struct MapRow: View {
         case .table:
             root.tableRoot.viewController.rowView(root: root.tableRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .value, .editor:
-            root.valueRoot.viewController.rowView(root: root.valueRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
+            root.characterRoot.viewController.rowView(root: root.characterRoot, item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
         case .map:
             rowMapView
         default:

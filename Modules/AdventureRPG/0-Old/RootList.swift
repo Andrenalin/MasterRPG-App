@@ -161,7 +161,7 @@ struct RootExtendedList: View {
             case .table:
                 root.tableRoot.rootModel.gameItemSelection = selected
             case .value:
-                root.valueRoot.rootModel.gameItemSelection = selected
+                root.characterRoot.rootModel.gameItemSelection = selected
             case .weather:
                 root.weatherRoot.rootModel.gameItemSelection = selected
             default:

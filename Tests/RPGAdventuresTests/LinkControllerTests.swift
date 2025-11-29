@@ -34,7 +34,7 @@ struct LinkControllerTests {
         let valueEntry = ValueEntryModel(id: valueEntryId, name: "Value", type: .text, value: "Some Text")
         let valueId = UUID()
         let value = ValueModel(id: valueId, name: "Value", description: "Some Text", tags: ["Some"], category: .rules, entries: [valueEntry])
-        await root.valueRoot.itemController.replace(model: value, isInsert: true, shouldRepairLinks: true)
+        await root.characterRoot.itemController.replace(model: value, isInsert: true, shouldRepairLinks: true)
         
         var content = "Link to Photo "
         content = await root.photoRoot.linkControllable.generateLinks(itemId: photoId, entryId: nil, into: content)
@@ -43,7 +43,7 @@ struct LinkControllerTests {
         content = await root.tableRoot.linkControllable.generateLinks(itemId: tableId, entryId: tableEntryId, into: content)
         let entry2 = AdventureEntryModel(id: UUID(), name: "Hello 2", content: content)
 
-        content = await root.valueRoot.linkControllable.generateLinks(itemId: valueId, entryId: valueEntryId, into: content)
+        content = await root.characterRoot.linkControllable.generateLinks(itemId: valueId, entryId: valueEntryId, into: content)
         let entry3 = AdventureEntryModel(id: UUID(), name: "Hello 3", content: content)
         
         let itemId = UUID()
@@ -63,13 +63,13 @@ struct LinkControllerTests {
         await #expect(root.photoRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: photoId, typeId: .photo)).count == 4)
         await #expect(root.tableRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: tableId, typeId: .table)).count == 2)
         await #expect(root.tableRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: tableId, entryId: tableEntryId, typeId: .table)).count == 2)
-        await #expect(root.valueRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, typeId: .value)).count == 1)
-        await #expect(root.valueRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, entryId: valueEntryId, typeId: .value)).count == 1)
+        await #expect(root.characterRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, typeId: .value)).count == 1)
+        await #expect(root.characterRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, entryId: valueEntryId, typeId: .value)).count == 1)
 
-        await root.valueRoot.itemController.delete(itemId: valueId)
+        await root.characterRoot.itemController.delete(itemId: valueId)
 
-        await #expect(root.valueRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, typeId: .value)).count == 0)
-        await #expect(root.valueRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, entryId: valueEntryId, typeId: .value)).count == 0)
+        await #expect(root.characterRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, typeId: .value)).count == 0)
+        await #expect(root.characterRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, entryId: valueEntryId, typeId: .value)).count == 0)
 
         await #expect(root.itemController.itemOrEmpty(for: itemId).photoId == photoId)
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry1.id] == entry1)

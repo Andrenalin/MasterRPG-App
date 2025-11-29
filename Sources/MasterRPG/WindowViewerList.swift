@@ -26,7 +26,7 @@ struct WindowViewerList: Scene {
             }
 
             windowGroup(model: appModel, module: .value) { selection in
-                appModel.valueRoot.viewController.windowViewer(root: appModel.valueRoot, selection: selection)
+                appModel.characterRoot.viewController.windowViewer(root: appModel.characterRoot, selection: selection)
             }
             
             windowGroup(model: appModel, module: .generator) { selection in

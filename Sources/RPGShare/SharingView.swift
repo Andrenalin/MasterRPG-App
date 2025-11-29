@@ -12,7 +12,7 @@ struct SharingView: View {
     init(itemProviders: [NSItemProvider], extensionContext: NSExtensionContext? = nil) {
         self.itemProviders = itemProviders
         self.extensionContext = extensionContext
-        self._appStore = State(wrappedValue: AppModel.shared)
+        self._appModel = State(wrappedValue: AppModel.shared)
         self._databaseModel = State(wrappedValue: DataBaseModel(useCloudKit: AppModel.shared.settingsModel.useCloudKit, currentActor: .sharingExtension))
     }
     

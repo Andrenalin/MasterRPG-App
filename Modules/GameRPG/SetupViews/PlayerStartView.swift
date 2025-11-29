@@ -16,7 +16,7 @@ struct PlayerStartView: View {
     @State private var startSharePlayAnimation: Bool = false
     
     var body: some View {
-        if root.valueRoot.linkController.validate(id: root.gameModel.selectedCharacter, isCharacter: true) != nil {
+        if root.characterRoot.linkController.validate(id: root.gameModel.selectedCharacter, isCharacter: true) != nil {
             Group {
                 if sharePlayStore.canActivateSharePlay {
                     Button {

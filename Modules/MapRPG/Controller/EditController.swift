@@ -258,11 +258,11 @@ extension EditController {
     
     @MainActor @ViewBuilder
     func selectValue(for entryId: UUID, linkKeyPath: WritableKeyPath<MapModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.valueRoot.viewController.viewSelect(root: root.valueRoot, filter: .all) {
+        root.characterRoot.viewController.viewSelect(root: root.characterRoot, filter: .all) {
             let text = self.model[keyPath: linkKeyPath]
             return LinkReplaceController.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .value) }
         } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.valueRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
+            self.model[keyPath: linkKeyPath] = self.root.characterRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
             self.save(with: String(localized: "Change value links").localizedString)
         } dismissAction: {
             dismissAction()
@@ -382,8 +382,8 @@ extension EditController {
 
     @MainActor
     func replacePinData(pinId: UUID, with valueId: UUID) {
-        let name = root.valueRoot.linkController.name(for: valueId)
-        let photoId = root.valueRoot.valueGameControllable.imageIds(for: valueId).randomElement()
+        let name = root.characterRoot.linkController.name(for: valueId)
+        let photoId = root.characterRoot.valueGameControllable.imageIds(for: valueId).randomElement()
         var pin = model[MapPinId.id, pinId]
         pin.name = name
         pin.photoId = photoId
@@ -408,14 +408,14 @@ extension EditController {
 
     @MainActor
     private func addMonsters(to model: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
-        let values = monsters.map { root.valueRoot.linkController.generateLink(model: $0) }.joined(separator: ", ")
+        let values = monsters.map { root.characterRoot.linkController.generateLink(model: $0) }.joined(separator: ", ")
 
         let pinNumber = min(max(1, number), 25)
         
         var pins: [MapPinModel] = []
         for _ in 0..<pinNumber {
             pins.append(contentsOf: monsters.map { monster in
-                MapPinModel(id: UUID(), name: root.valueRoot.linkController.name(for: monster.itemId), color: .random, photoId: root.valueRoot.valueGameControllable.imageIds(for: monster.itemId).randomElement(), location: location ?? .zero, size: .normal, isShown: true)
+                MapPinModel(id: UUID(), name: root.characterRoot.linkController.name(for: monster.itemId), color: .random, photoId: root.characterRoot.valueGameControllable.imageIds(for: monster.itemId).randomElement(), location: location ?? .zero, size: .normal, isShown: true)
             })
         }
 
@@ -543,16 +543,16 @@ extension EditController {
         for link in LinkReplaceController.links(for: text) {
             guard link.module == .table else { return }
 
-            parentId = await root.valueRoot.linkController.generateItem(for: model.name, parentId: nil, tableId: link.itemId, entryId: link.entryId)
+            parentId = await root.characterRoot.linkController.generateItem(for: model.name, parentId: nil, tableId: link.itemId, entryId: link.entryId)
         }
         if parentId == nil {
-            parentId = await root.valueRoot.linkController.generateItem(for: model.name, parentId: nil, tableId: nil, entryId: nil)
+            parentId = await root.characterRoot.linkController.generateItem(for: model.name, parentId: nil, tableId: nil, entryId: nil)
         }
         for entry in model.entries {
             let text = entry.content
             for link in LinkReplaceController.links(for: text) {
                 guard link.module == .table else { return }
-                _ = await root.valueRoot.linkController.generateItem(for: entry.name, parentId: parentId, tableId: link.itemId, entryId: link.entryId)
+                _ = await root.characterRoot.linkController.generateItem(for: entry.name, parentId: parentId, tableId: link.itemId, entryId: link.entryId)
             }
         }
     }
@@ -612,7 +612,7 @@ extension EditController {
             case .table:
                 otherEntries = root.tableRoot.linkController.link(for: .map)
             case .value:
-                otherEntries = root.valueRoot.linkController.link(for: .map)
+                otherEntries = root.characterRoot.linkController.link(for: .map)
             default:
                 otherEntries = root.linkController.link(for: .map)
             }
@@ -628,7 +628,7 @@ extension EditController {
             case .table:
                 return root.tableRoot.linkController.linkEntries(for: anotherId)
             case .value:
-                return root.valueRoot.linkController.linkEntries(for: anotherId)
+                return root.characterRoot.linkController.linkEntries(for: anotherId)
             default:
                 return []
             }

@@ -56,7 +56,7 @@ extension ItemController: ItemControllable {
         case .table:
             return root.tableRoot.itemControllable.children(for: model)
         case .value:
-            return root.valueRoot.itemControllable.children(for: model)
+            return root.characterRoot.itemControllable.children(for: model)
         case .weather:
             return root.weatherRoot.itemControllable.children(for: model)
         default:

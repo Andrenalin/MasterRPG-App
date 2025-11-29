@@ -15,7 +15,7 @@ struct SelectedPlayerView: View {
     var body: some View {
         GroupBoxTV(isCard: true) {
             VStack {
-                root.valueRoot.viewController.selectionView(model: selection)
+                root.characterRoot.viewController.selectionView(model: selection)
             }
             .frame(maxWidth: .infinity)
 #if os(macOS)

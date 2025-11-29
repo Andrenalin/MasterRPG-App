@@ -61,7 +61,7 @@ struct AdventureDropArea: View {
         case .table:
             content = root.tableRoot.linkController.generateLinks(itemId: link.itemId, entryId: link.entryId, into: content)
         case .value:
-            content = root.valueRoot.linkController.generateLinks(itemId: link.itemId, entryId: link.entryId, into: content)
+            content = root.characterRoot.linkController.generateLinks(itemId: link.itemId, entryId: link.entryId, into: content)
         case .weather:
             content = root.weatherRoot.linkController.generateLinks(itemId: link.itemId, into: content)
         default:

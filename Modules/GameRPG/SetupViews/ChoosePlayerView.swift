@@ -41,13 +41,13 @@ struct ChoosePlayerView: View {
     }
 
     private var selectionView: some View {
-        root.valueRoot.viewController.viewSelectCharacters(root: root.valueRoot) {
-            if let id = root.gameModel.selectedCharacter, let characterId = root.valueRoot.linkController.validate(id: id, isCharacter: true) {
+        root.characterRoot.viewController.viewSelectCharacters(root: root.characterRoot) {
+            if let id = root.gameModel.selectedCharacter, let characterId = root.characterRoot.linkController.validate(id: id, isCharacter: true) {
                 return [ItemRowModel(itemId: characterId, typeId: .value)]
             }
             return []
         } toggleSelection: { model, _ in
-            if let itemId = root.valueRoot.linkController.validate(id: model.itemId, isCharacter: true), root.gameModel.selectedCharacter != itemId {
+            if let itemId = root.characterRoot.linkController.validate(id: model.itemId, isCharacter: true), root.gameModel.selectedCharacter != itemId {
                 root.gameModel.selectedCharacter <=> itemId
             } else {
                 root.gameModel.selectedCharacter = nil
@@ -79,7 +79,7 @@ struct ChoosePlayerView: View {
     }
 
     private func drop(link: LinkData) -> Bool {
-        guard link.module == .value, let characterId = root.valueRoot.linkController.validate(id: link.itemId, isCharacter: true) else { return false }
+        guard link.module == .value, let characterId = root.characterRoot.linkController.validate(id: link.itemId, isCharacter: true) else { return false }
         withAnimation {
             root.gameModel.selectedCharacter = characterId
         }

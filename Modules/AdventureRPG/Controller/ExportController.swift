@@ -39,7 +39,7 @@ extension ExportController: ExportControllable {
         itemIds.merge(other: root.photoRoot.exportControllable.exportingAll())
         itemIds.merge(other: root.spaceRoot.exportControllable.exportingAll())
         itemIds.merge(other: root.tableRoot.exportControllable.exportingAll())
-        itemIds.merge(other: root.valueRoot.exportControllable.exportingAll())
+        itemIds.merge(other: root.characterRoot.exportControllable.exportingAll())
         itemIds.merge(other: root.weatherRoot.exportControllable.exportingAll())
         itemIds.merge(other: ItemModuleIds(dictionary: [itemController.itemDataModel.networkModule: itemController.itemDataModel.items.map { $0 }]))
         return itemIds
@@ -109,7 +109,7 @@ extension ExportController: ExportControllable {
                         tableIds.insert($0.itemId)
                     }
                 case .value:
-                    if root.valueRoot.linkController.validateLink(itemId: $0.itemId) {
+                    if root.characterRoot.linkController.validateLink(itemId: $0.itemId) {
                         valueIds.insert($0.itemId)
                     }
                 case .weather:
@@ -137,7 +137,7 @@ extension ExportController: ExportControllable {
         allIds.merge(other: newSpaceIds)
         let newTableIds = exportModel.gameExporter ? root.tableRoot.gameControllable.exportControllable.exporting(ids: tableIds) : root.tableRoot.exportControllable.exporting(ids: tableIds)
         allIds.merge(other: newTableIds)
-        let newValueIds = exportModel.gameExporter ? root.valueRoot.gameControllable.exportControllable.exporting(ids: valueIds) : root.valueRoot.exportControllable.exporting(ids: valueIds)
+        let newValueIds = exportModel.gameExporter ? root.characterRoot.gameControllable.exportControllable.exporting(ids: valueIds) : root.characterRoot.exportControllable.exporting(ids: valueIds)
         allIds.merge(other: newValueIds)
         let newWeatherIds = exportModel.gameExporter ? root.weatherRoot.gameControllable.exportControllable.exporting(ids: weatherIds) : root.weatherRoot.exportControllable.exporting(ids: weatherIds)
         allIds.merge(other: newWeatherIds)
@@ -154,7 +154,7 @@ extension ExportController: ExportControllable {
             let ids5 = try await root.photoRoot.gameControllable.exportControllable.export(itemIds: ids4, into: outputStream, counterUpdater: counterUpdater)
             let ids6 = try await root.spaceRoot.gameControllable.exportControllable.export(itemIds: ids5, into: outputStream, counterUpdater: counterUpdater)
             let ids7 = try await root.tableRoot.gameControllable.exportControllable.export(itemIds: ids6, into: outputStream, counterUpdater: counterUpdater)
-            let ids8 = try await root.valueRoot.gameControllable.exportControllable.export(itemIds: ids7, into: outputStream, counterUpdater: counterUpdater)
+            let ids8 = try await root.characterRoot.gameControllable.exportControllable.export(itemIds: ids7, into: outputStream, counterUpdater: counterUpdater)
             let ids9 = try await root.weatherRoot.gameControllable.exportControllable.export(itemIds: ids8, into: outputStream, counterUpdater: counterUpdater)
             return ids9
         } else {
@@ -165,7 +165,7 @@ extension ExportController: ExportControllable {
             let ids5 = try await root.photoRoot.exportControllable.export(itemIds: ids4, into: outputStream, counterUpdater: counterUpdater)
             let ids6 = try await root.spaceRoot.exportControllable.export(itemIds: ids5, into: outputStream, counterUpdater: counterUpdater)
             let ids7 = try await root.tableRoot.exportControllable.export(itemIds: ids6, into: outputStream, counterUpdater: counterUpdater)
-            let ids8 = try await root.valueRoot.exportControllable.export(itemIds: ids7, into: outputStream, counterUpdater: counterUpdater)
+            let ids8 = try await root.characterRoot.exportControllable.export(itemIds: ids7, into: outputStream, counterUpdater: counterUpdater)
             let ids9 = try await root.weatherRoot.exportControllable.export(itemIds: ids8, into: outputStream, counterUpdater: counterUpdater)
             return ids9
         }

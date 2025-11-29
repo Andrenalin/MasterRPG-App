@@ -19,7 +19,7 @@ public extension AdventureRootModel {
     static let preview: AdventureRootModel = {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
 
-        let root = AdventureRootModel(container: modelContainer, audioRoot: .preview, diceRoot: .preview, mapRoot: .preview, pdfRoot: .preview, photoRoot: .preview, spaceRoot: .preview, tableRoot: .preview, valueRoot: .preview, weatherRoot: .preview)
+        let root = AdventureRootModel(container: modelContainer, audioRoot: .preview, diceRoot: .preview, mapRoot: .preview, pdfRoot: .preview, photoRoot: .preview, spaceRoot: .preview, tableRoot: .preview, characterRoot: .preview, weatherRoot: .preview)
         root.setUp(context: nil)
         root.editController.setCurrentItem(to: .preview)
         return root
@@ -50,9 +50,9 @@ public extension AdventureRootModel {
     
 #if DEBUG
     @MainActor
-    static func testRoot(audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, valueRoot: CharacterRootModel, weatherRoot: WeatherRootModel) -> AdventureRootModel {
+    static func testRoot(audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) -> AdventureRootModel {
         let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = AdventureRootModel(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
+        let root = AdventureRootModel(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
         root.setUp(context: nil)
         root.editController.setCurrentItem(to: .preview)
         return root

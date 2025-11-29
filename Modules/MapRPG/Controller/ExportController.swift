@@ -37,7 +37,7 @@ extension ExportController: ExportControllable {
             itemIds.merge(other: root.pdfRoot.exportControllable.exportingAll())
             itemIds.merge(other: root.photoRoot.exportControllable.exportingAll())
             itemIds.merge(other: root.tableRoot.exportControllable.exportingAll())
-            itemIds.merge(other: root.valueRoot.exportControllable.exportingAll())
+            itemIds.merge(other: root.characterRoot.exportControllable.exportingAll())
         }
         return itemIds
     }
@@ -94,7 +94,7 @@ extension ExportController: ExportControllable {
                         tableIds.insert($0.itemId)
                     }
                 case .value:
-                    if root.valueRoot.linkController.validateLink(itemId: $0.itemId) {
+                    if root.characterRoot.linkController.validateLink(itemId: $0.itemId) {
                         valueIds.insert($0.itemId)
                     }
                 default:
@@ -112,7 +112,7 @@ extension ExportController: ExportControllable {
         allIds.merge(other: newPhotoIds)
         let newTableIds = root.tableRoot.exportControllable.exporting(ids: tableIds)
         allIds.merge(other: newTableIds)
-        let newValueIds = root.valueRoot.exportControllable.exporting(ids: valueIds)
+        let newValueIds = root.characterRoot.exportControllable.exporting(ids: valueIds)
         allIds.merge(other: newValueIds)
         return allIds
     }

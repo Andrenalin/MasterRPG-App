@@ -59,7 +59,7 @@ struct RootDetail: View {
         case .table:
             root.tableRoot.viewController.detailEditor(root: root.tableRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         case .value:
-            root.valueRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
+            root.characterRoot.viewController.detailEditor(for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         default:
             MapDetailEditor(editController: editController, model: editController.model)
         }

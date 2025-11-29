@@ -41,7 +41,7 @@ struct LinkRootView: View {
                 case .table:
                     root.tableRoot.viewController.linkWindow(root: root.tableRoot, isInspector: type == .inspector)
                 case .value:
-                    root.valueRoot.viewController.linkWindow(isInspector: type == .inspector)
+                    root.characterRoot.viewController.linkWindow(isInspector: type == .inspector)
                 default:
                     LinkItemRootView(root: root.rootController, type: type)
                 }

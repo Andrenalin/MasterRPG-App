@@ -67,7 +67,7 @@ extension LinkController: LinkControllable {
             result = root.diceRoot.linkController.repairLink(link, for: result, for: [.rules, .table, .value])
             result = root.photoRoot.linkController.repairLink(link, for: result, for: [.all])
             result = root.tableRoot.linkController.repairLink(link, for: result, for: [.all])
-            result = root.valueRoot.linkController.repairLink(link, for: result, for: [.all])
+            result = root.characterRoot.linkController.repairLink(link, for: result, for: [.all])
             result = repairLink(link, for: result, for: [.all])
         }
         return result
@@ -140,7 +140,7 @@ public extension LinkController {
                 case .photo:
                     photoIds.append($0.itemId)
                 case .value:
-                    photoIds.append(contentsOf: root.valueRoot.linkController.collectLinks(of: module, from: $0.itemId))
+                    photoIds.append(contentsOf: root.characterRoot.linkController.collectLinks(of: module, from: $0.itemId))
                 default:
                     break
                 }

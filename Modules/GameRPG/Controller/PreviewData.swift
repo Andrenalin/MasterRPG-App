@@ -15,11 +15,11 @@ import WeatherRPG
 
 extension GameRoot {
     @MainActor
-    static let preview = GameRoot(adventureRoot: .preview, audioRoot: .preview, diceRoot: .preview, mapRoot: .preview, pdfRoot: .preview, photoRoot: .preview, spaceRoot: .preview, tableRoot: .preview, valueRoot: .preview, weatherRoot: .preview)
+    static let preview = GameRoot(adventureRoot: .preview, audioRoot: .preview, diceRoot: .preview, mapRoot: .preview, pdfRoot: .preview, photoRoot: .preview, spaceRoot: .preview, tableRoot: .preview, characterRoot: .preview, weatherRoot: .preview)
 
     @MainActor
     static func preview(_ game: GameConfigModel) -> GameRoot {
-        let root = GameRoot(adventureRoot: .preview, audioRoot: .preview, diceRoot: .preview, mapRoot: .preview, pdfRoot: .preview, photoRoot: .preview, spaceRoot: .preview, tableRoot: .preview, valueRoot: .preview, weatherRoot: .preview)
+        let root = GameRoot(adventureRoot: .preview, audioRoot: .preview, diceRoot: .preview, mapRoot: .preview, pdfRoot: .preview, photoRoot: .preview, spaceRoot: .preview, tableRoot: .preview, characterRoot: .preview, weatherRoot: .preview)
         root.gameModel.gameConfig = game
         root.gameModel.selectedCharacter = game.id
         root.gameModel.selectedGameMaster = game.id

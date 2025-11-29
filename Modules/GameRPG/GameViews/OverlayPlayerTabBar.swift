@@ -35,7 +35,7 @@ struct OverlayPlayerTabBar: View {
     @ViewBuilder
     var onlyGameView: some View {
         if root.gameModel.gameConfig.type != .observer {
-            root.valueRoot.viewController.gameView(root: root.valueRoot, select: root.gameModel.selectedCharacter)
+            root.characterRoot.viewController.gameView(root: root.characterRoot, select: root.gameModel.selectedCharacter)
                 .environment(\.gameModus, .player)
                 .environment(\.showGame, true)
                 .gameOverlayTabBarView(value: NetworkModules.game)
@@ -55,7 +55,7 @@ struct OverlayPlayerTabBar: View {
         TabView(selection: $gameScreenModel.showGameType) {
             Group {
                 if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
-                    root.valueRoot.viewController.gameView(root: root.valueRoot, select: characterId)
+                    root.characterRoot.viewController.gameView(root: root.characterRoot, select: characterId)
                         .gameOverlayTabBarView(value: NetworkModules.value)
                 }
 
@@ -96,7 +96,7 @@ struct OverlayPlayerTabBar: View {
         TabView(selection: $gameScreenModel.showSettingsType) {
             Group {
                 if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
-                    root.valueRoot.viewController.gameView(root: root.valueRoot, select: characterId)
+                    root.characterRoot.viewController.gameView(root: root.characterRoot, select: characterId)
                         .gameOverlayTabBarView(value: NetworkModules.value)
                 }
 

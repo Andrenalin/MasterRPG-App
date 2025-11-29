@@ -35,7 +35,7 @@ extension LinkRegisterController: LinkRegisterControllable {
             case .map:
                 item = root.mapRoot.itemControllable.itemSync(for: $0.source.itemId)
             case .value:
-                item = root.valueRoot.itemControllable.itemSync(for: $0.source.itemId)
+                item = root.characterRoot.itemControllable.itemSync(for: $0.source.itemId)
             case .table:
                 item = root.tableRoot.itemControllable.itemSync(for: $0.source.itemId)
             case .weather:
@@ -70,7 +70,7 @@ extension LinkRegisterController: LinkRegisterControllable {
                 case .map:
                     root.mapRoot.linkControllable.validateLinks(on: link.source.itemId)
                 case .value:
-                    root.valueRoot.linkControllable.validateLinks(on: link.source.itemId)
+                    root.characterRoot.linkControllable.validateLinks(on: link.source.itemId)
                 case .table:
                     root.tableRoot.linkControllable.validateLinks(on: link.source.itemId)
                 case .weather:

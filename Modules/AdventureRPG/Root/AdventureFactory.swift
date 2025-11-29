@@ -24,7 +24,7 @@ public enum AdventureFactory {
         photoRoot: PhotoRootModel,
         spaceRoot: SpaceRootModel,
         tableRoot: TableRootModel,
-        valueRoot: CharacterRootModel,
+        characterRoot: CharacterRootModel,
         weatherRoot: WeatherRootModel
     ) -> AdventureRootModel {
         AdventureRootModel(
@@ -36,7 +36,7 @@ public enum AdventureFactory {
             photoRoot: photoRoot,
             spaceRoot: spaceRoot,
             tableRoot: tableRoot,
-            valueRoot: valueRoot,
+            characterRoot: characterRoot,
             weatherRoot: weatherRoot
         )
     }

@@ -65,7 +65,7 @@ public final class AppModel: Sendable {
     @ObservationIgnored public let photoRoot: PhotoRootModel
     @ObservationIgnored public let spaceRoot: SpaceRootModel
     @ObservationIgnored public let tableRoot: TableRootModel
-    @ObservationIgnored public let valueRoot: CharacterRootModel
+    @ObservationIgnored public let characterRoot: CharacterRootModel
     @ObservationIgnored public let weatherRoot: WeatherRootModel
     
 #if !os(tvOS)
@@ -106,11 +106,11 @@ public final class AppModel: Sendable {
         let tableRoot = TableFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot)
         let weatherRoot = WeatherRootFactory.root(container: modelContainer, photoRoot: photoRoot)
         
-        let valueRoot = CharacterRootFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+        let characterRoot = CharacterRootFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         
-        let mapRoot = MapRootFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, valueRoot: valueRoot)
-        let adventureRoot = AdventureFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
-        let gameRoot = GameRoot(adventureRoot: adventureRoot, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, valueRoot: valueRoot, weatherRoot: weatherRoot)
+        let mapRoot = MapRootFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot)
+        let adventureRoot = AdventureFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
+        let gameRoot = GameRoot(adventureRoot: adventureRoot, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
         
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
@@ -121,14 +121,14 @@ public final class AppModel: Sendable {
         self.photoRoot = photoRoot
         self.spaceRoot = spaceRoot
         self.tableRoot = tableRoot
-        self.valueRoot = valueRoot
+        self.characterRoot = characterRoot
         self.weatherRoot = weatherRoot
         
 #if os(tvOS)
         root = RootManager(
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,
-            characterRoot: valueRoot,
+            characterRoot: characterRoot,
             diceRoot: diceRoot,
             generatorRoot: adventureRoot,
             mapRoot: mapRoot,
@@ -147,7 +147,7 @@ public final class AppModel: Sendable {
         root = RootManager(
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,
-            characterRoot: valueRoot,
+            characterRoot: characterRoot,
             diceRoot: diceRoot,
             generatorRoot: generatorRoot,
             mapRoot: mapRoot,

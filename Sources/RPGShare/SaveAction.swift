@@ -34,7 +34,7 @@ struct SaveAction: View {
                 case .weather:
                     await appModel.weatherRoot.addNewWeather(name: inputModel.name, text: inputModel.text, photoId: photoIds.first)
                 case .value:
-                    await appModel.valueRoot.addNewValue(name: inputModel.name, text: inputModel.text, photoIds: photoIds)
+                    await appModel.characterRoot.addNewValue(name: inputModel.name, text: inputModel.text, photoIds: photoIds)
                 default:
                     break
                 }

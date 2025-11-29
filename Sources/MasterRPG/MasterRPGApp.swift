@@ -25,7 +25,7 @@ struct MasterRPGApp: App {
         AppDependencyManager.shared.add(dependency: adventureRootModel)
         let audioRootModel = appModel.audioRoot
         AppDependencyManager.shared.add(dependency: audioRootModel)
-        let characterRootModel = appModel.valueRoot
+        let characterRootModel = appModel.characterRoot
         AppDependencyManager.shared.add(dependency: characterRootModel)
         let diceRootModel = appModel.diceRoot
         AppDependencyManager.shared.add(dependency: diceRootModel)
