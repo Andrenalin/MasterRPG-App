@@ -1,41 +1,43 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import AdventureRPG
 import AudioRPG
-import CharacterRPG
 import DiceRPG
-#if !os(tvOS)
-import GeneratorRPG
-#endif
 import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import TableRPG
+import CharacterRPG
 import WeatherRPG
 import SwiftUI
+
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 
 struct SplitDetailView: View {
     @Environment(AppModel.self) private var appModel
     
     var body: some View {
         switch selectedModule {
-        case .adventure: AdventureRootFactory.detailView(root: appModel.adventureRoot)
-        case .audio: AudioRootFactory.detailView(root: appModel.audioRoot)
-        case .dice: DiceRootFactory.detailView(root: appModel.diceRoot)
+        case .adventure: AdventureFactory.detailView(root: appModel.adventureRoot)
+        case .audio: AudioFactory.detailView(root: appModel.audioRoot)
+        case .dice: DiceFactory.detailView(root: appModel.diceRoot)
         case .game: EmptyView()
         case .generator:
-            #if os(tvOS)
+#if os(tvOS)
             EmptyView()
-            #else
+#else
             GeneratorRootFactory.detailView(root: appModel.generatorRoot)
-            #endif
+#endif
         case .map: MapRootFactory.detailView(root: appModel.mapRoot)
-        case .pdf: PdfRootFactory.detailView(root: appModel.pdfRoot)
-        case .photo: PhotoRootFactory.detailView(root: appModel.photoRoot)
-        case .space: SpaceRootFactory.detailView(root: appModel.spaceRoot)
-        case .table: TableRootFactory.detailView(root: appModel.tableRoot)
+        case .pdf: PdfFactory.detailView(root: appModel.pdfRoot)
+        case .photo: PhotoFactory.detailView(root: appModel.photoRoot)
+        case .space: SpaceFactory.detailView(root: appModel.spaceRoot)
+        case .table: TableFactory.detailView(root: appModel.tableRoot)
+        case .value: CharacterRootFactory.detailView(root: appModel.valueRoot)
         case .weather: WeatherRootFactory.detailView(root: appModel.weatherRoot)
         case .setting: EmptyView()
         default:

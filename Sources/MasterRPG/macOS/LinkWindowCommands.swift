@@ -3,7 +3,7 @@
 #if os(macOS)
 
 import AndrenalinKit
-import RoleGameKit
+import RolePlayGameKit
 import SwiftUI
 
 struct LinkWindowCommandsView: View {

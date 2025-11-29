@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import CoreExternalRPG
-import CoreRPG
+import AndrenalinKit
 import AudioRPG
 import SwiftUI
 
@@ -13,7 +13,6 @@ public struct TabbedNavigation: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.appSizeMode) private var appSizeMode
     
-    @State private var tabTitleModel = TabTitleModel()
     
     public var body: some View {
         let _ = Self._printChanges()
@@ -23,32 +22,45 @@ public struct TabbedNavigation: View {
         TabView(selection: $appModel.selectedModule) {
             ForEach(RootRoute.fiveTabs) { tab in
                 Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
-                    ManagedNavigationStack(name: tab.title) { _ in
+                    ManagedNavigationStack(name: tab.title) { navigator in
                         tab
+                            .environment(appModel.itemRootController(for: selectedModule))
+                            .tint(tab.module.tint)
+                            .accentColor(tab.module.tint)
+//                            .navigationModifier { destination in
+//                                destination()
+//                                    .tint(tab.module.tint)
+//                                    .accentColor(tab.module.tint)
+//                            }
                     }
                     .environment(appModel.itemRootController(for: selectedModule))
+                    .tint(tab.module.tint)
+                    .accentColor(tab.module.tint)
                 }
             }
         }
 #if os(iOS)
         .tabBarMinimizeBehavior26(.onScrollDown)
-        .tabViewBottomAccessory {
-            if appSizeMode == .compact && appModel.audioRoot.audioPlayerModel.showPlayerToolBar {
-                AudioPlayerMiniBarView()
+        .applyIf(appModel.audioRoot.audioPlayerModel.showPlayerToolBar) {
+            $0.tabViewBottomAccessory {
+                if appSizeMode == .compact && appModel.audioRoot.audioPlayerModel.showPlayerToolBar {
+                    AudioPlayerMiniBarView()
+                }
             }
         }
 #endif
-        .environment(tabTitleModel)
-        //.focusedSceneValue(\.selectedModule, $tabSelectedModule)
         .onChange(of: storedTab, initial: true) {
             guard storedTab != appModel.selectedModule else { return }
             appModel.selectedModule = storedTab
-            //tabSelectedModule <=> storedTab.module
         }
         .onChange(of: appModel.selectedModule) {
+            if let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module {
+                appModel.menuSelectedModule = selected.module
+            }
             guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
             storedTab = selectedModule
         }
+        .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive { (route: RootRoute, navigator) in
             guard RootRoute.fiveTabs.contains(route) else {
                 guard appModel.selectedModule != .editors else { return .immediately }
@@ -63,13 +75,10 @@ public struct TabbedNavigation: View {
         }
         .onNavigationRoute(RootFiveRouteRouter(appModel: appModel))
         .onNavigationOpenURL(RootURLHandler(appModel: appModel))
-        .overlay {
-            UpdateDataModeVliew(model: appModel)
-        }
     }
     
     var selectedModule: NetworkModules {
-        (appModel.selectedModule ?? .game).module
+        (appModel.selectedExtendedModule?.module ?? appModel.selectedModule?.module) ?? .game
     }
 
 }

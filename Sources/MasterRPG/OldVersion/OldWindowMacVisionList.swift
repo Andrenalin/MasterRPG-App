@@ -2,7 +2,7 @@
 
 #if os(visionOS) || os(macOS)
 import AndrenalinKit
-import RoleGameKit
+import RolePlayGameKit
 import SwiftUI
 import AdventureRPG
 import MapRPG

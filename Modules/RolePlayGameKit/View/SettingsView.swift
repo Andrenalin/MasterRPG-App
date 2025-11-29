@@ -1,90 +1,82 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
+import AdventureRPG
+import AudioRPG
+import PdfRPG
+import PhotoRPG
+import SpaceRPG
 
 public struct SettingsView: View {
-    public init(model: AppModel) {
-        self.model = model
+    public init(store: AppModel) {
+        self.store = store
     }
     
-    let model: AppModel
+    let store: AppModel
 
     @Environment(\.navigator) private var navigator
 
     public var body: some View {
-        NavigationStack {
-            List {
-                SectionGroupEditorView {
-                    @Bindable var model = model
-                    Toggle(isOn: $model.isNewUICode) {
-                        Text("Text new UI")
+        AndrenalinKit.SettingsView(store: store.adventureRoot, exportController: store.adventureRoot.exportControllable, importController: store.adventureRoot.importControllable, audioFileStore: store.audioRoot.fileUrlDataController!, pdfFileStore: store.pdfRoot.fileUrlDataController!, photoFileStore: store.photoRoot.fileUrlDataController!, spaceFileStore: store.spaceRoot.fileUrlDataController!) {
+
+//            SectionGroupEditorView {
+//                InAppView(inAppController: store.inAppController)
+//            } header: {
+//                Text("In App Purchase")
+//            }
+
+            SectionGroupEditorView {
+                Button {
+                    Task {
+                        await store.audioRoot.checkFolders()
+                        await store.pdfRoot.checkFolders()
+                        await store.photoRoot.checkFolders()
+                        await store.spaceRoot.checkFolders()
                     }
-                } header: {
-                    Text("Experimental")
+                } label: {
+                    Label("Create Folders", systemImage: "folder")
+                }
+            } header: {
+                Text("Data Checks")
+            }
+
+            SectionGroupEditorView {
+                Button {
+                    store.installExampleData()
+                } label: {
+                    Label("Import Explanation English Data", systemImage: "square.and.arrow.down")
                 }
 
-                ColorSchemeSettingsView()
-
-                //            SectionGroupEditorView {
-                //                InAppView(inAppController: store.inAppController)
-                //            } header: {
-                //                Text("In App Purchase")
-                //            }
-
-                SectionGroupEditorView {
-//                    ExportDataModels(exportController: exportController) {
-//                        let url = URL.cachesDirectory.appending(path: "Export.gmz")
-//                        let exportedIds = exportController.exportingAll()
-//                        return exportController.createExport(itemIds: exportedIds, into: url)
-//                    }
-                    ImportDataModels(importController: ImportController(appModel: model)) {
-                    }
-//
-//#if os(macOS)
-//                    Divider()
-//#endif
-//
-//                    ImportDataModels(importController: importController, overwrite: true) {
-//                    }
-
-                } header: {
-                    Text("Export & Import from files", bundle: .module)
-                } footer: {
-                    Text("Import GMZ data files you got from friends or others", bundle: .module)
+                Button {
+                    store.installExampleData(isGerman: true)
+                } label: {
+                    Label("Import Explanation German Data", systemImage: "square.and.arrow.down")
                 }
+            } header: {
+                Text("Import Prebundled Examples")
+            } footer: {
+                Text("Explanation data packages to see how the app works. It explain with real data how to use and add data.")
+            }            
 
-                SectionGroupEditorView {
-                    Button {
-                        model.installExampleData()
-                    } label: {
-                        Label("Import Explanation English Data", systemImage: "square.and.arrow.down")
-                    }
-
-                    Button {
-                        model.installExampleData(isGerman: true)
-                    } label: {
-                        Label("Import Explanation German Data", systemImage: "square.and.arrow.down")
-                    }
-                } header: {
-                    Text("Import Prebundled Examples")
-                } footer: {
-                    Text("Explanation data packages to see how the app works. It explain with real data how to use and add data.")
-                }
-
-                SectionGroupEditorView {
-                    Text("Use the Free Support [Page](https://github.com/Andrenalin/MasterRPG)")
-                } header: {
-                    Text("Download free game bundles")
-                } footer: {
-                    Text("These are free packages ready to use. They will add tables with rules, photos, characters and adventures for a certain rule system.")
-                }
+            SectionGroupEditorView {
+                Text("Use the Free Support [Page](https://github.com/Andrenalin/MasterRPG)")
+            } header: {
+                Text("Download free game bundles")
+            } footer: {
+                Text("These are free packages ready to use. They will add tables with rules, photos, characters and adventures for a certain rule system.")
+            }
+            
+            SectionGroupEditorView {
+                Text(store.rpgSpotlightIndexer?.model.message ?? "Not yet finished")
+            } header: {
+                Text("Spotlight Indexer Message")
             }
         }
-        .environment(model.settingsModel)
+        .environment(store.settingsModel)
     }
 }
 
 #Preview {
-    SettingsView(model: AppModel())
+    SettingsView(store: .preview)
 }

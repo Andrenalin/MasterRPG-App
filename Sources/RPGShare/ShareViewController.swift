@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import RoleGameKit
+import RolePlayGameKit
 import SwiftUI
 import UniformTypeIdentifiers
 

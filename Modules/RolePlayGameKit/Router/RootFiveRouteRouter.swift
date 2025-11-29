@@ -1,21 +1,22 @@
 // @copyright André Trettin
 
 import CoreExternalRPG
-import CoreRPG
+import AndrenalinKit
 import AdventureRPG
 import AudioRPG
-import CharacterRPG
+import SwiftUI
 import DiceRPG
-#if !os(tvOS)
-import GeneratorRPG
-#endif
 import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import TableRPG
+import CharacterRPG
 import WeatherRPG
-import SwiftUI
+
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 
 struct RootFiveRouteRouter: NavigationRouteHandling {
     let appModel: AppModel

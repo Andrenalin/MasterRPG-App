@@ -2,7 +2,7 @@
 
 #if os(macOS)
 import AndrenalinKit
-import RoleGameKit
+import RolePlayGameKit
 import SwiftUI
 import CharacterRPG
 import TableRPG

@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import RoleGameKit
+import RolePlayGameKit
 import SwiftUI
 import SwiftData
 import CoreExternalRPG

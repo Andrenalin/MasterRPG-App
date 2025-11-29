@@ -1,22 +1,23 @@
 // @copyright André Trettin
 
 import CoreExternalRPG
-import CoreRPG
+import AndrenalinKit
 import AdventureRPG
 import AudioRPG
-import CharacterRPG
 import DiceRPG
 import GameRPG
-#if !os(tvOS)
-import GeneratorRPG
-#endif
 import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import TableRPG
+import CharacterRPG
 import WeatherRPG
 import SwiftUI
+
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 
 public enum RootRoute: Hashable, Codable {
     case adventures
@@ -126,13 +127,13 @@ extension RootRoute: NavigationDestination {
     }
     
     public static var allTabs: [RootRoute] {
-//#if os(iOS) || os(visionOS)
         [.game, .adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
-//#else
-//        [.adventures, .values, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .search]
-//#endif
     }
-    
+
+    public static var macTabs: [RootRoute] {
+        [.adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .search]
+    }
+
     static var fiveTabs: [RootRoute] {
         [.game, .adventures, .values, .editors, .search]
     }
@@ -140,18 +141,17 @@ extension RootRoute: NavigationDestination {
 
 struct RouteRouteDestionationView: View {
     let route: RootRoute
-    
     @Environment(AppModel.self) private var appModel
     
     var body: some View {
         Group {
             switch route {
             case .adventures:
-                AdventureRootFactory.rootView()
+                AdventureFactory.rootView()
             case .audios:
-                AudioRootFactory.rootView()
+                AudioFactory.rootView()
             case .dice:
-                DiceRootFactory.rootView()
+                DiceFactory.rootView()
             case .editors:
 #if os(visionOS)
                 EmptyView()
@@ -159,7 +159,7 @@ struct RouteRouteDestionationView: View {
                 ExtendedTabBar()
 #endif
             case .game:
-                GameRootFactory.rootView(root: appModel.gameRoot)
+                appModel.gameRoot.viewController.gameTabItem()
             case .generator:
 #if os(tvOS)
                 EmptyView()
@@ -169,15 +169,15 @@ struct RouteRouteDestionationView: View {
             case .maps:
                 MapRootFactory.rootView()
             case .pdfs:
-                PdfRootFactory.rootView()
+                PdfFactory.rootView()
             case .photos:
-                PhotoRootFactory.rootView()
+                PhotoFactory.rootView()
             case .space:
-                SpaceRootFactory.rootView()
+                SpaceFactory.rootView()
             case .settings:
-                SettingsView(model: appModel)
+                SettingsView(store: appModel)
             case .tables:
-                TableRootFactory.rootView()
+                TableFactory.rootView()
             case .values:
                 CharacterRootFactory.rootView()
             case .weathers:
@@ -187,5 +187,6 @@ struct RouteRouteDestionationView: View {
             }
         }
         .tint(route.module.tint)
+        .accentColor(route.module.tint)
     }
 }

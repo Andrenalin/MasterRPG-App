@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 
 public struct ColorSchemeSettingsView: View {

@@ -2,7 +2,7 @@
 
 import AndrenalinKit
 import AppIntents
-import RoleGameKit
+import RolePlayGameKit
 import SwiftUI
 import os.log
 

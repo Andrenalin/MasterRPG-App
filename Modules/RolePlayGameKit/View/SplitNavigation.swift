@@ -2,8 +2,7 @@
 
 #if !os(tvOS)
 import CoreExternalRPG
-import CoreRPG
-import PdfRPG
+import AndrenalinKit
 import SwiftUI
 
 public struct SplitNavigation: View {
@@ -14,11 +13,9 @@ public struct SplitNavigation: View {
 
     @Environment(AppModel.self) private var appModel
     
-    @State private var tabTitleModel = TabTitleModel()
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
-
     public var body: some View {
         let _ = Self._printChanges()
         let _ = print("Tab: \(selectedModule.title)")
@@ -31,22 +28,21 @@ public struct SplitNavigation: View {
             allTabs
 #endif
         }
-        .environment(tabTitleModel)
         .onChange(of: storedTab, initial: true) {
             guard storedTab != appModel.selectedModule else { return }
             appModel.selectedModule = storedTab
-            //tabSelectedModule <=> storedTab.module
         }
         .onChange(of: appModel.selectedModule) {
+            if let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module {
+                appModel.menuSelectedModule = selected.module
+            }
             guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
             storedTab = selectedModule
         }
+        .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
         .onNavigationRoute(RootRouteRouter(appModel: appModel))
         .onNavigationOpenURL(RootURLHandler(appModel: appModel))
-        .overlay {
-            UpdateDataModeVliew(model: appModel)
-        }
     }
     
     var selectedModule: NetworkModules {
@@ -135,7 +131,7 @@ private extension SplitNavigation {
     }
 
     func pageTab(for tab: RootRoute) -> Tab<RootRoute?, some View, DefaultTabLabel> {
-        Tab(tabTitleModel.titles[tab.module, default: tab.title], systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
+        Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
             tabView(tab: tab)
         }
     }

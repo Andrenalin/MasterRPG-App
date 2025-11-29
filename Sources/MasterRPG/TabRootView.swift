@@ -3,7 +3,7 @@
 import AdventureRPG
 import AndrenalinKit
 import DiceRPG
-import RoleGameKit
+import RolePlayGameKit
 import AudioRPG
 import GameRPG
 import MapRPG

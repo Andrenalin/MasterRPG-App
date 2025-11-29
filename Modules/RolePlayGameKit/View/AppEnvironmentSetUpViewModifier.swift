@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 
 public extension View {
@@ -15,14 +15,17 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(appModel.deviceRotationModel)
+            .environment(appModel.optionKeyDownModel)
             .environment(appModel.settingsModel)
+            .environment(appModel.selectionSheetLinkModel)
+            .environment(appModel.windowStateModel)
             .environment(appModel.adventureRoot)
             .environment(appModel.audioRoot)
-            .environment(appModel.characterRoot)
+            .environment(appModel.valueRoot)
             .environment(appModel.diceRoot)
-        #if !os(tvOS)
+#if !os(tvOS)
             .environment(appModel.generatorRoot)
-        #endif
+#endif
             .environment(appModel.mapRoot)
             .environment(appModel.pdfRoot)
             .environment(appModel.photoRoot)
@@ -34,4 +37,3 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .observeRotate(with: appModel.deviceRotationModel)
     }
 }
-

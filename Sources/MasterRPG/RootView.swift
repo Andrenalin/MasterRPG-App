@@ -3,7 +3,7 @@
 import AndrenalinKit
 import CoreExternalRPG
 import AdventureRPG
-import RoleGameKit
+import RolePlayGameKit
 import GameRPG
 import SwiftUI
 import MapRPG

@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import AndrenalinKit
-import RoleGameKit
+import RolePlayGameKit
 import DiceRPG
 import SwiftUI
 import WidgetKit

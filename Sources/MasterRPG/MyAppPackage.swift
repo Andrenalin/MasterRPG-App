@@ -2,7 +2,7 @@
 
 #if !os(tvOS)
 import AppIntents
-import RoleGameKit
+import RolePlayGameKit
 import AdventureRPG
 import AudioRPG
 import CharacterRPG

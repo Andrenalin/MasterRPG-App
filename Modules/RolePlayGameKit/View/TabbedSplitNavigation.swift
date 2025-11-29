@@ -1,42 +1,43 @@
 // @copyright André Trettin
 
 import CoreExternalRPG
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
-import PdfRPG
 
 public struct TabbedSplitNavigation: View {
     public init() {}
-
+    
     @Environment(AppModel.self) private var appModel
+    
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
     public var body: some View {
         let _ = Self._printChanges()
         let _ = print("Tab: \(selectedModule.title)")
         @Bindable var appModel = appModel
         
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $preferredCompactColumn) {
             TabSidebar()
                 .navigationSplitViewColumnWidth(min: 100, ideal: 150, max: 200)
         } content: {
-            ManagedNavigationStack(name: selectedModule.title) { _ in
+            ManagedPresentationView {
                 appModel.selectedModule
             }
             .environment(appModel.itemRootController(for: selectedModule))
+            .navigationSplitViewColumnWidth(min: 250, ideal: 350, max: 600)
         } detail: {
             SplitDetailView()
                 .environment(appModel.itemRootController(for: selectedModule))
         }
         .onChange(of: appModel.selectedModule) {
-            print("**** \(appModel.selectedModule?.title ?? "Nothing selected")")
+            guard let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module else { return }
+            appModel.menuSelectedModule = selected.module
         }
-        //.focusedSceneValue(\.selectedModule, $tabSelectedModule)
+        .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
         .onNavigationRoute(RootRouteRouter(appModel: appModel))
         .onNavigationOpenURL(RootURLHandler(appModel: appModel))
-        .overlay {
-            UpdateDataModeVliew(model: appModel)
-        }
     }
     
     var selectedModule: NetworkModules {
@@ -47,27 +48,63 @@ public struct TabbedSplitNavigation: View {
 
 struct TabSidebar: View {
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
-
+    
     @Environment(AppModel.self) private var appModel
     
     var body: some View {
         @Bindable var appModel = appModel
         List(selection: $appModel.selectedModule) {
-            ForEach(RootRoute.allTabs) { tab in
-                NavigationLink(to: tab) {
-                    Label(tab.title, systemImage: tab.icon)
-                }
-                .tag(tab)
-            }
+            allTabs
         }
         .onChange(of: storedTab, initial: true) {
             guard storedTab != appModel.selectedModule else { return }
             appModel.selectedModule = storedTab
-            //tabSelectedModule <=> storedTab.module
         }
         .onChange(of: appModel.selectedModule) {
             guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
             storedTab = selectedModule
         }
+    }
+    
+    @ViewBuilder var allTabs: some View {
+        Section {
+            tabView(tab: .adventures)
+            tabView(tab: .values)
+            tabView(tab: .maps)
+            tabView(tab: .weathers)
+        } header: {
+            Text("Library", bundle: .module)
+        }
+        
+        Section {
+            tabView(tab: .pdfs)
+            tabView(tab: .tables)
+        } header: {
+            Text("References", bundle: .module)
+        }
+        
+        Section {
+            tabView(tab: .audios)
+            tabView(tab: .dice)
+            tabView(tab: .photos)
+            tabView(tab: .space)
+        } header: {
+            Text("Material", bundle: .module)
+        }
+        
+        Section {
+            tabView(tab: .search)
+            
+            tabView(tab: .generator)
+        } header: {
+            Text("Special", bundle: .module)
+        }
+    }
+    
+    @ViewBuilder func tabView(tab: RootRoute) -> some View {
+        NavigationLink(to: tab) {
+            Label(tab.title, systemImage: tab.icon)
+        }
+        .tag(tab)
     }
 }

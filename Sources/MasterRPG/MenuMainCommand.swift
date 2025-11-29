@@ -2,7 +2,7 @@
 
 #if !os(tvOS)
 
-import RoleGameKit
+import RolePlayGameKit
 import SwiftUI
 
 struct MenuMainCommand: Commands {

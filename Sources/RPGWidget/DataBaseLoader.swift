@@ -3,7 +3,7 @@
 import AndrenalinKit
 import CoreData
 import Foundation
-import RoleGameKit
+import RolePlayGameKit
 import DiceRPG
 import WidgetKit
 

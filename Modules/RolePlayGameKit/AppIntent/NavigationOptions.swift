@@ -1,5 +1,7 @@
+// @copyright André Trettin
+
+import AndrenalinKit
 import AppIntents
-import CoreRPG
 import SwiftUI
 
 enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
@@ -8,6 +10,7 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
     case character
     case dice
     case game
+    case generator
     case map
     case pdf
     case photo
@@ -44,6 +47,10 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
             title: "Game",
             image: .init(systemName: "person.2")
         ),
+        NavigationOption.generator: DisplayRepresentation(
+            title: "Generator",
+            image: .init(systemName: "apple.intelligence")
+        ),
         NavigationOption.map: DisplayRepresentation(
             title: "Map",
             image: .init(systemName: "map")
@@ -56,10 +63,6 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
             title: "Photo",
             image: .init(systemName: "photo.on.rectangle.angled")
         ),
-        NavigationOption.table: DisplayRepresentation(
-            title: "Table",
-            image: .init(systemName: "tablecells.fill")
-        ),
         NavigationOption.search: DisplayRepresentation(
             title: "Search",
             image: .init(systemName: "magnifyingglass")
@@ -67,6 +70,10 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
         NavigationOption.space: DisplayRepresentation(
             title: "Space",
             image: .init(systemName: "view.3d")
+        ),
+        NavigationOption.table: DisplayRepresentation(
+            title: "Table",
+            image: .init(systemName: "tablecells.fill")
         ),
         NavigationOption.weather: DisplayRepresentation(
             title: "Weather",
@@ -78,35 +85,37 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
     
     var name: LocalizedStringResource {
         switch self {
-            case .photo: "Photo"
-            case .map: "Map"
-            case .table: "Table"
-            case .adventure: "Adventure"
-            case .dice: "Dice"
-            case .weather: "Weather"
-            case .game: "Game"
-            case .character: "Character"
-            case .audio: "Audio"
-            case .pdf: "Pdf"
-            case .space: "Space"
-            case .search: "Search"
+        case .adventure: "Adventure"
+        case .audio: "Audio"
+        case .dice: "Dice"
+        case .character: "Character"
+        case .game: "Game"
+        case .generator: "Generator"
+        case .map: "Map"
+        case .pdf: "Pdf"
+        case .photo: "Photo"
+        case .search: "Search"
+        case .space: "Space"
+        case .table: "Table"
+        case .weather: "Weather"
         }
     }
     
     var symbolName: String {
         switch self {
-            case .game: "person.2"
-            case .photo: "photo.on.rectangle.angled"
-            case .character: "list.bullet.rectangle"
-            case .adventure: "wand.and.stars"
-            case .map: "map"
-            case .table: "tablecells.fill"
-            case .weather: "cloud.bolt.rain"
-            case .dice: "dice"
-            case .audio: "music.note.list"
-            case .pdf: "books.vertical"
-            case .space: "view.3d"
-            case .search: "magnifyingglass"
+        case .adventure: "wand.and.stars"
+        case .audio: "music.note.list"
+        case .character: "list.bullet.rectangle"
+        case .dice: "dice"
+        case .game: "person.2"
+        case .generator: "apple.intelligence"
+        case .map: "map"
+        case .pdf: "books.vertical"
+        case .photo: "photo.on.rectangle.angled"
+        case .search: "magnifyingglass"
+        case .space: "view.3d"
+        case .table: "tablecells.fill"
+        case .weather: "cloud.bolt.rain"
         }
     }
 }

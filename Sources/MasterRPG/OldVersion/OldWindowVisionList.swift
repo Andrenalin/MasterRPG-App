@@ -3,7 +3,7 @@
 #if os(visionOS)
 import AndrenalinKit
 import DiceRPG
-import RoleGameKit
+import RolePlayGameKit
 import PhotoRPG
 import SpaceRPG
 import SwiftUI

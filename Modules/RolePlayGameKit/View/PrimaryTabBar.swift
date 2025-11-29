@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if os(visionOS)
-import CoreRPG
+import AndrenalinKit
 import SwiftUI
 
 struct PrimaryTabBar: View {
@@ -26,11 +26,12 @@ struct PrimaryTabBar: View {
     }
 }
 
+
 struct SecondaryTabBarButton: View {
     let tab: RootRoute
     let hoverGroup: HoverEffectGroup?
-    @Environment(AppModel.self) var appModel
 
+    @Environment(AppModel.self) var appModel
     
     var body: some View {
         Button {
@@ -47,7 +48,6 @@ struct SecondaryTabBarButton: View {
         }
         .buttonStyle(BarButtonWithHoverEffectStyle(isSelected: appModel.selectedModule == tab, hoverGroup: hoverGroup))
         .hoverEffect(.lift, isEnabled: appModel.selectedModule == tab)
-
     }
     
     func menuIconView(for icon: String) -> some View {
