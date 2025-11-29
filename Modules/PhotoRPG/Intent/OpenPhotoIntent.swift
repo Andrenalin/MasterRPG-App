@@ -5,7 +5,7 @@ import CoreRPG
 import AppIntents
 import Foundation
 import SwiftUI
-import CoreExternalRPG
+
 
 struct OpenPhotoIntent: OpenIntent {
     static let title: LocalizedStringResource = "Open Photo"

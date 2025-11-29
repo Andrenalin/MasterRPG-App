@@ -4,7 +4,7 @@
 
 import CoreRPG
 import AppIntents
-import CoreExternalRPG
+
 import Foundation
 import SwiftUI
 

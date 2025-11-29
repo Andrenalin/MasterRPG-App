@@ -2,7 +2,7 @@
 
 import CoreRPG
 import AppIntents
-import CoreExternalRPG
+
 
 struct NavigateIntent: AppIntent {
     static let title: LocalizedStringResource = "Navigate to Section"

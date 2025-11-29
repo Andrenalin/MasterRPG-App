@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import CoreExternalRPG
 import SwiftUI
 
 public enum KnownRoutes: NavigationRoutes {

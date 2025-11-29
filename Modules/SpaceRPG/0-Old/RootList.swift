@@ -1,6 +1,6 @@
 // @copyright André Trettin00000
 
-import CoreExternalRPG
+
 import CoreRPG
 import SwiftUI
 import UniformTypeIdentifiers

@@ -1,7 +1,5 @@
 // @copyright André Trettin
 
-import CoreExternalRPG
-import SwiftData
 import SwiftUI
 
 enum InternalRoute: Equatable, Codable {

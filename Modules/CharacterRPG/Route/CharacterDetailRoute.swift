@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
-import CoreExternalRPG
+
 import SwiftUI
 
 public enum CharacterDetailRoute: Equatable, Hashable, Codable {

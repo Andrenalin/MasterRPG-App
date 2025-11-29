@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreExternalRPG
+
 import CoreRPG
 import SwiftUI
 
@@ -31,7 +31,7 @@ public struct TabbedSplitNavigation: View {
             .background {
                 GeometryReader { reader in
                     Color.clear
-                        .onChange(of: reader.frame(in: .global).width) { 
+                        .onChange(of: reader.frame(in: .global).width) {
                             contentColumnWidth = reader.frame(in: .global).width
                         }
                 }

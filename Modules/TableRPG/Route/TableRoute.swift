@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
-import CoreExternalRPG
+
 import SwiftUI
 
 public enum TableRoute: Equatable, Hashable, Codable {

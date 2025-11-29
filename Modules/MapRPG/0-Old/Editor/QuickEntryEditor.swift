@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreExternalRPG
+
 import CoreRPG
 import PdfRPG
 import SwiftUI

@@ -6,7 +6,7 @@ import CoreRPG
 import AppIntents
 import Foundation
 import SwiftUI
-import CoreExternalRPG
+
 
 struct OpenDiceIntent: OpenIntent {
     static let title: LocalizedStringResource = "Open Dice"

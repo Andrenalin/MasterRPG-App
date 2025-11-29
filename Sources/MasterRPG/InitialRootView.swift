@@ -4,7 +4,7 @@ import CoreRPG
 import RolePlayGameKit
 import SwiftUI
 import SwiftData
-import CoreExternalRPG
+
 
 struct InitialRootView: View {
     let appModel: AppModel

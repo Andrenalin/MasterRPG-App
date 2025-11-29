@@ -12,7 +12,7 @@ import CharacterRPG
 import SwiftData
 import SwiftUI
 import WeatherRPG
-import CoreExternalRPG
+
 
 public enum AdventureFactory {
     @MainActor public static func root(

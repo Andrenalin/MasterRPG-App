@@ -1,9 +1,8 @@
 // @copyright André Trettin
 
 import CoreRPG
-import CoreExternalRPG
-import SwiftUI
 import DiceRPG
+import SwiftUI
 
 struct DetailRootView: View {
     let root: TableRootModel

@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import CoreExternalRPG
 import SwiftUI
 
 @MainActor
