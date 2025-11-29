@@ -5,19 +5,25 @@ import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
-    init(root: AudioRootModel, editController: EditController, model: AudioModel, isSubFolder: Bool) {
+    let root: AudioRootModel
+    let model: AudioModel
+
+    var body: some View {
+        DetailListView(root: root, model: model)
+            .detailInspectorModifier(folderListControllable: root.folderListController)
+    }
+}
+
+struct DetailListView: View {
+    init(root: AudioRootModel, model: AudioModel) {
         self.root = root
-        self.editController = editController
         self.model = model
-        self.isSubFolder = isSubFolder
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
     let root: AudioRootModel
-    let editController: EditController
     let model: AudioModel
-    let isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
     
@@ -68,7 +74,7 @@ struct DetailRootView: View {
     func fileAndPlayerView(model: AudioModel) -> some View {
         HStack {
             HStack {
-                FileImporterView(editControllable: editController, fileTypes: editController.fileUrlDataController?.fileTypes ?? [], module: root.module)
+                FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], module: root.module)
                 
                 Text(model.url?.absoluteString ?? "No file is set")
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -122,7 +128,7 @@ struct DetailRootView: View {
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId), isSubFolder: false)
+            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId))
                 .preferredColorScheme(.dark)
         }
     }

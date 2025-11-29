@@ -73,7 +73,6 @@ private extension CachePhotoView {
     func loadImage() {
         Task { @MainActor in
             let fileId = model.id
-            let fileUrl = model.fileUrl
             let loaderTask = Task.detached(priority: .userInitiated) {
                 if highResolution {
                     await cacheController.photoId(for: fileId, item: model, shouldDownload: false)

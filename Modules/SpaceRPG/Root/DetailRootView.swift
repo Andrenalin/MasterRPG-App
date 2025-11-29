@@ -5,20 +5,26 @@ import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
-    init(root: SpaceRootModel, editController: EditController, model: SpaceModel, isSubFolder: Bool) {
+    let root: SpaceRootModel
+    let model: SpaceModel
+
+    var body: some View {
+        DetailListView(root: root, model: model)
+            .detailInspectorModifier(folderListControllable: root.folderListController)
+    }
+}
+
+struct DetailListView: View {
+    init(root: SpaceRootModel, model: SpaceModel) {
         self.root = root
-        self.editController = editController
         self.model = model
-        self.isSubFolder = isSubFolder
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
     let root: SpaceRootModel
-    let editController: EditController
     let model: SpaceModel
-    let isSubFolder: Bool
-    
+
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
@@ -36,7 +42,7 @@ struct DetailRootView: View {
     func content(listController: any FolderListControllable) -> some View {
         ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: true) {
         } editor: {
-            SpaceDetailObjectViewer(editController: editController, model: model)
+            SpaceDetailObjectViewer(editController: root.editController, model: model)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -86,7 +92,7 @@ struct SpaceDetailObjectViewer: View {
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId), isSubFolder: false)
+            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId))
                 .preferredColorScheme(.dark)
         }
     }

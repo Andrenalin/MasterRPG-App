@@ -5,19 +5,25 @@ import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
-    init(root: GeneratorRootModel, editController: EditController, model: GeneratorModel, isSubFolder: Bool) {
+    let root: GeneratorRootModel
+    let model: GeneratorModel
+
+    var body: some View {
+        DetailListView(root: root, model: model)
+            .detailInspectorModifier(folderListControllable: root.folderListController)
+    }
+}
+
+struct DetailListView: View {
+    init(root: GeneratorRootModel, model: GeneratorModel) {
         self.root = root
-        self.editController = editController
         self.model = model
-        self.isSubFolder = isSubFolder
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
     let root: GeneratorRootModel
-    let editController: EditController
     let model: GeneratorModel
-    let isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
     
@@ -99,7 +105,7 @@ struct DetailRootView: View {
 //            }
 //    } else {
 //        ManagedNavigationStack {
-//            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? MockData.previewId), isSubFolder: false)
+//            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? MockData.previewId))
 //                .preferredColorScheme(.dark)
 //        }
 //    }

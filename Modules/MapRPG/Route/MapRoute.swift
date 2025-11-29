@@ -29,7 +29,7 @@ extension MapRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DetailRouteDestinationView(itemId: itemId, isSubFolder: false)
+            MapRouteDestinationView(itemId: itemId)
                 .navigationDestination(MapDetailRoute.self)
                 .navigationAutoReceive(MapDetailRoute.self)
         }
@@ -48,13 +48,13 @@ extension MapRoute: ItemDetailRoute {
     }
 }
 
-struct DetailRouteDestinationView: View {
+struct MapRouteDestinationView: View {
     let itemId: UUID
-    let isSubFolder: Bool
+
     @Environment(MapRootModel.self) private var root
     
     var body: some View {
-        DetailRootView(root: root, editController: root.editController, model: root.itemController.itemOrEmpty(for: itemId), isSubFolder: isSubFolder)
+        DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
             .environment(root.rootController)

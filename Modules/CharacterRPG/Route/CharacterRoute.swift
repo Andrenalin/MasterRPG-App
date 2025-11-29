@@ -29,7 +29,7 @@ extension CharacterRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DetailRouteDestinationView(itemId: itemId, isSubFolder: false)
+            CHaracterRouteDestinationView(itemId: itemId)
                 .navigationDestination(CharacterDetailRoute.self)
                 .navigationAutoReceive(CharacterDetailRoute.self)
         }
@@ -48,13 +48,13 @@ extension CharacterRoute: ItemDetailRoute {
     }
 }
 
-struct DetailRouteDestinationView: View {
+struct CHaracterRouteDestinationView: View {
     let itemId: UUID
-    let isSubFolder: Bool
+
     @Environment(CharacterRootModel.self) private var root
     
     var body: some View {
-        DetailRootView(root: root, editController: root.editController, model: root.itemController.itemOrEmpty(for: itemId), isSubFolder: isSubFolder)
+        DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
             .environment(root.rootController)

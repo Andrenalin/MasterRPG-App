@@ -5,19 +5,25 @@ import CoreExternalRPG
 import SwiftUI
 
 struct DetailRootView: View {
-    init(root: DiceRootModel, editController: EditController, model: DiceModel, isSubFolder: Bool) {
+    let root: DiceRootModel
+    let model: DiceModel
+
+    var body: some View {
+        DetailListView(root: root, model: model)
+            .detailInspectorModifier(folderListControllable: root.folderListController)
+    }
+}
+
+struct DetailListView: View {
+    init(root: DiceRootModel, model: DiceModel) {
         self.root = root
-        self.editController = editController
         self.model = model
-        self.isSubFolder = isSubFolder
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
     let root: DiceRootModel
-    let editController: EditController
     let model: DiceModel
-    let isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
     
@@ -51,12 +57,12 @@ struct DetailRootView: View {
     
     @ViewBuilder
     func detailEditorView() -> some View {
-        DiceEditor(model: editController.model)
-        DiceOptionEditor(model: editController.model)
-        CoupEditor(model: editController.model)
-        FumbleEditor(model: editController.model)
-        RerollEditor(model: editController.model)
-        SpecialOptionEditor(model: editController.model)
+        DiceEditor(model: root.editController.model)
+        DiceOptionEditor(model: root.editController.model)
+        CoupEditor(model: root.editController.model)
+        FumbleEditor(model: root.editController.model)
+        RerollEditor(model: root.editController.model)
+        SpecialOptionEditor(model: root.editController.model)
     }
 
     @ViewBuilder
@@ -85,7 +91,7 @@ struct DetailRootView: View {
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? DiceModel.previewId), isSubFolder: false)
+            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? DiceModel.previewId))
                 .preferredColorScheme(.dark)
         }
     }

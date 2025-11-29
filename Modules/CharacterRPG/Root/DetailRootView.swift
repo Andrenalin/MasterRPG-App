@@ -6,25 +6,30 @@ import SwiftUI
 import DiceRPG
 
 struct DetailRootView: View {
-    init(root: CharacterRootModel, editController: EditController, model: ValueModel, isSubFolder: Bool) {
+    let root: CharacterRootModel
+    let model: ValueModel
+    
+    var body: some View {
+        DetailListView(root: root, model: model)
+            .detailInspectorModifier(folderListControllable: root.folderListController)
+    }
+}
+
+struct DetailListView: View {
+    init(root: CharacterRootModel, model: ValueModel) {
         self.root = root
-        self.editController = editController
         self.model = model
-        self.isSubFolder = isSubFolder
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
     let root: CharacterRootModel
-    let editController: EditController
     let model: ValueModel
-    let isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
-    @State private var animate: Bool = false
     
     var body: some View {
         content(listController: detailFolderListController)
@@ -40,9 +45,7 @@ struct DetailRootView: View {
         } editor: {
             detailEditorView
         } inspector: {
-            if !isSubFolder {
-                LinkRootView(type: .inspector)
-            }
+            LinkRootView(type: .inspector)
         } entryEditor: {
             EntryEditorView(editController: root.editController)
         }
@@ -102,7 +105,7 @@ struct DetailRootView: View {
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? ValueModel.previewId), isSubFolder: false)
+            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? ValueModel.previewId))
                 .preferredColorScheme(.dark)
         }
     }

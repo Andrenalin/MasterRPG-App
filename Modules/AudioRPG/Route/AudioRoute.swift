@@ -29,7 +29,7 @@ extension AudioRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .detail(let itemId):
-            DetailRouteDestinationView(itemId: itemId, isSubFolder: false)
+            AudioRouteDestinationView(itemId: itemId)
                 .navigationDestination(AudioDetailRoute.self)
                 .navigationAutoReceive(AudioDetailRoute.self)
         }
@@ -48,14 +48,14 @@ extension AudioRoute: ItemDetailRoute {
     }
 }
 
-struct DetailRouteDestinationView: View {
+struct AudioRouteDestinationView: View {
     let itemId: UUID
-    let isSubFolder: Bool
+    
     @Environment(AudioRootModel.self) private var root
     
     var body: some View {
         let _ = Self._printChanges()
-        DetailRootView(root: root, editController: root.editController, model: root.itemController.itemOrEmpty(for: itemId), isSubFolder: isSubFolder)
+        DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
             .environment(root.rootController)

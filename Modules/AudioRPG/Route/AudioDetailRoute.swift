@@ -29,7 +29,7 @@ extension AudioDetailRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .folder(let itemId):
-            DetailRouteDestinationView(itemId: itemId, isSubFolder: true)
+            AuduioDetailRoutelDestinationView(itemId: itemId)
         }
     }
 }
@@ -43,5 +43,19 @@ extension AudioDetailRoute: ItemDetailRoute {
         switch self {
             case .folder(let id): return id
         }
+    }
+}
+
+struct AuduioDetailRoutelDestinationView: View {
+    let itemId: UUID
+
+    @Environment(AudioRootModel.self) private var root
+    
+    var body: some View {
+        DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .environment(root.folderListController.detailInspectorModel)
+            .environment(root.rootController)
     }
 }

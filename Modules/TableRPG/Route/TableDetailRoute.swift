@@ -4,7 +4,7 @@ import AndrenalinKit
 import CoreExternalRPG
 import SwiftUI
 
-public enum TableDetailRoute: Equatable, Hashable, Codable {
+enum TableDetailRoute: Equatable, Hashable, Codable {
     case folder(UUID)
 }
 
@@ -29,7 +29,7 @@ extension TableDetailRoute: NavigationDestination {
     public var body: some View {
         switch self {
         case .folder(let itemId):
-            DetailRouteDestinationView(itemId: itemId, isSubFolder: true)
+            DestinationDetailTableRouteView(itemId: itemId)
         }
     }
 }
@@ -43,5 +43,19 @@ extension TableDetailRoute: ItemDetailRoute {
         switch self {
             case .folder(let id): return id
         }
+    }
+}
+
+struct DestinationDetailTableRouteView: View {
+    let itemId: UUID
+
+    @Environment(TableRootModel.self) private var root
+    
+    var body: some View {
+        DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .environment(root.folderListController.detailInspectorModel)
+            .environment(root.rootController)
     }
 }

@@ -24,7 +24,7 @@ struct RootDetail: View {
     @Environment(ListModel.self) private var listModel
     
     var body: some View {
-        DetailRootView(root: root, editController: editController, model: editController.model, isSubFolder: false)
+        DetailRootView(root: root, model: editController.model)
             .onChange(of: listController.model.selectedItem) {
                 if listController.model.selectedItem == nil {
                     navigator.back()

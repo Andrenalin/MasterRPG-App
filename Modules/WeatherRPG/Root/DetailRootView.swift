@@ -6,19 +6,25 @@ import SwiftUI
 import PhotoRPG
 
 struct DetailRootView: View {
-    init(root: WeatherRootModel, editController: EditController, model: WeatherModel, isSubFolder: Bool) {
+    let root: WeatherRootModel
+    let model: WeatherModel
+
+    var body: some View {
+        DetailListView(root: root, model: model)
+            .detailInspectorModifier(folderListControllable: root.folderListController)
+    }
+}
+
+struct DetailListView: View {
+    init(root: WeatherRootModel, model: WeatherModel) {
         self.root = root
-        self.editController = editController
         self.model = model
-        self.isSubFolder = isSubFolder
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
     let root: WeatherRootModel
-    let editController: EditController
     let model: WeatherModel
-    let isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
     
@@ -40,9 +46,7 @@ struct DetailRootView: View {
         } editor: {
             WeatherEditor(model: model)
         } inspector: {
-            if !isSubFolder {
-                root.photoRoot.viewController.linkWindow(root: root.photoRoot, isInspector: true)
-            }
+            root.photoRoot.viewController.linkWindow(root: root.photoRoot, isInspector: true)
         } overlay: {
             OverlayViewer(animate: $animate)
         }
@@ -122,7 +126,7 @@ struct OverlayViewer: View {
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? WeatherModel.previewId), isSubFolder: false)
+            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? WeatherModel.previewId))
                 .preferredColorScheme(.dark)
         }
     }

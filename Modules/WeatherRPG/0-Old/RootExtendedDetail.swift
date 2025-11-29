@@ -43,7 +43,7 @@ struct RootDetail: View {
         case .photo:
             root.photoRoot.viewController.detailEditor(root: root.photoRoot, for: selectedItem, module: root.itemController.itemDataModel.networkModule)
         default:
-            DetailRootView(root: root, editController: editController, model: editController.model, isSubFolder: false)
+            DetailRootView(root: root, model: editController.model)
         }
     }
 }

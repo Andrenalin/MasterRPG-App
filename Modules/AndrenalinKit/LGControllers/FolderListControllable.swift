@@ -12,6 +12,7 @@ public protocol FolderListControllable: Sendable {
     var listDisplayModel: ListDisplayModel { get }
     var searchModel: SearchModel { get }
     var cacheListItemModel: CacheItemListModel { get }
+    var detailInspectorModel: DetailInspectorModel { get }
     
     func copy(parentModel: (any ItemDataAccessable)?) -> Self
     func detailDestination(for itemId: UUID) -> any NavigationDestination

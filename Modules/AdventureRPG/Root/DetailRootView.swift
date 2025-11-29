@@ -7,19 +7,26 @@ import DiceRPG
 import PhotoRPG
 
 struct DetailRootView: View {
-    init(root: AdventureRootModel, editController: EditController, model: AdventureModel, isSubFolder: Bool) {
+    let root: AdventureRootModel
+    let model: AdventureModel
+    
+    
+    var body: some View {
+        DetailListView(root: root, model: model)
+            .detailInspectorModifier(folderListControllable: root.folderListController)
+    }
+}
+
+struct DetailListView: View {
+    init(root: AdventureRootModel, model: AdventureModel) {
         self.root = root
-        self.editController = editController
         self.model = model
-        self.isSubFolder = isSubFolder
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
     }
     
     let root: AdventureRootModel
-    let editController: EditController
     let model: AdventureModel
-    let isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
     
@@ -41,9 +48,7 @@ struct DetailRootView: View {
         } editor: {
             detailEditorView
         } inspector: {
-            if !isSubFolder {
-                LinkRootView(type: .inspector)
-            }
+            LinkRootView(type: .inspector)
         } entryEditor: {
             EntryEditorView(editController: root.editController)
         }
@@ -103,7 +108,7 @@ struct DetailRootView: View {
             }
     } else {
         ManagedNavigationStack {
-            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AdventureModel.previewId), isSubFolder: false)
+            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AdventureModel.previewId))
                 .preferredColorScheme(.dark)
         }
     }

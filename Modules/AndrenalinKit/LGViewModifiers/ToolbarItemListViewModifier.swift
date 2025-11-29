@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import SwiftData
 import SwiftUI
 
 extension View {
@@ -15,7 +14,6 @@ struct ToolbarItemListViewModifier: ViewModifier {
     let parentModel: (any ItemDataAccessable)?
     let modal: Bool
 
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
     func body(content: Content) -> some View {

@@ -12,6 +12,7 @@ struct FolderListController: FolderListControllable {
     let searchModel: SearchModel
     let itemControllable: any ItemControllable
     let cacheListItemModel = CacheItemListModel()
+    let detailInspectorModel = DetailInspectorModel()
     
     func detailDestination(for itemId: UUID) -> any NavigationDestination {
         PhotoRoute.detail(itemId)

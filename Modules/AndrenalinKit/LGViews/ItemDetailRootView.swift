@@ -67,10 +67,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     let hasInspector: Bool
     let entryEditor: EntryEditor
     
-    @Environment(\.modelContext) private var modelContext
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-#endif
+    @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.navigator) private var navigator
     
     @Environment(ListDisplayModel.self) private var listDisplayModel
@@ -78,6 +75,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
 
     @Environment(ItemRootController.self) private var root
+    @Environment(DetailInspectorModel.self) private var detailInspectorModel
     
     @State private var isEditing = false
     @State private var itemIdHasUrl = UUID()
@@ -90,8 +88,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     public var body: some View {
         let _ = Self._printChanges()
         if let detailModel {
-            //let _ = print("\(selectedId?.uuidString ?? "Not set") --> \(detailModel.name)")
-
             contentScrollView(model: detailModel)
                 .tint(root.module.tint)
                 .accentColor(root.module.tint)
@@ -109,7 +105,7 @@ private extension ItemDetailRootView {
         guard let itemId = selection.selectedItem else { return model }
         return root.itemControllable.itemOrEmpty(for: itemId)
     }
- 
+    
     var fileTypes: [UTType] {
         root.editControllable.fileUrlDataController?.fileTypes ?? []
     }
@@ -148,6 +144,8 @@ private extension ItemDetailRootView {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: model.id, initial: true) {
             detailListController.resetParentModel(model: model)
+            detailInspectorModel.canShowInspector = canShowInspector(model: model)
+            detailInspectorModel.currentInspectorView = AnyView(inspectorView(model: model))
             withAnimation { selection.selectedItem = nil }
             guard model.url != nil else {
                 itemIdHasUrl = hasFile(model: model) ? model.id : UUID()
@@ -169,15 +167,6 @@ private extension ItemDetailRootView {
             $0.onDrop(of: [.fileURL], delegate: FileDropDelegate(for: fileTypes, updateFile: { updateFile(url: $0, model: model)} ))
         }
 #endif
-        .inspectorAll(isPresented: $showInspector) {
-#if os(iOS)
-            if horizontalSizeClass == .regular {
-                inspectorView(model: model)
-            }
-#else
-            inspectorView(model: model)
-#endif
-        }
         .sheet(isPresented: $isEditing) {
             ItemHeaderEditorView(editControllable: root.editControllable, model: selectedModel(model: model))
                 .presentationContentInteraction(.resizes)
@@ -204,16 +193,6 @@ private extension ItemDetailRootView {
             navigationHeader.font(.title)
                 .padding(.top, -64)
         }
-    }
-    
-    var canShowInspector: Bool {
-#if os(iOS)
-        horizontalSizeClass == .regular
-#elseif(visionOS)
-        false
-#else
-        true
-#endif
     }
     
     @ViewBuilder func initialFileImporterView(model: any ItemDataAccessable) -> some View {
@@ -282,7 +261,7 @@ private extension ItemDetailRootView {
                     if model.description.isEmpty == false {
                         ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
                     }
-
+                    
                     editor
                 }
                 .scrollBounceBehavior(.basedOnSize)
@@ -297,7 +276,7 @@ private extension ItemDetailRootView {
             }
         }
     }
-
+    
     func editorContentBackgroundView(model: any ItemDataAccessable) -> some View {
         editor
             .id(model.id)
@@ -328,16 +307,16 @@ private extension ItemDetailRootView {
                     .padding()
                 }
             }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-        .opacity(hasFile(model: model) || model.specialCategory ? 1 : 0)
-        .transition(.scale)
-        .applyIf(hasOverlay) {
-            $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-                overlay.opacity(0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .opacity(hasFile(model: model) || model.specialCategory ? 1 : 0)
+            .transition(.scale)
+            .applyIf(hasOverlay) {
+                $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+                    overlay.opacity(0)
+                }
             }
-        }
     }
-
+    
     func overlayDescription(model: any ItemDataAccessable) -> some View {
         ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true, lines: 3)
             .padding()
@@ -358,9 +337,23 @@ private extension ItemDetailRootView {
             }
         }
         .padding()
-        #if !os(visionOS)
+#if !os(visionOS)
         .glassEffect(.regular.interactive())
-        #endif
+#endif
+    }
+    
+    func updateFile(url: URL, model: any ItemDataAccessable) {
+        root.editControllable.resetFile(url: url, module: root.module)
+    }
+}
+
+// MARK: - Inspector
+
+private extension ItemDetailRootView {
+    
+    func canShowInspector(model: any ItemDataAccessable) -> Bool {
+        let platform = valueFor(iOS: appSizeMode == .regular, macOS: true, tvOS: true, visionOS: false)
+        return (hasInspector || model.specialCategory) && platform && openFileWindowModel.showItem == false
     }
     
     @ViewBuilder func inspectorView(model: any ItemDataAccessable) -> some View {
@@ -370,27 +363,7 @@ private extension ItemDetailRootView {
             inspector
         }
     }
-    
-    func updateFile(url: URL, model: any ItemDataAccessable) {
-        root.editControllable.resetFile(url: url, module: root.module)
-    }
-    
-    @ViewBuilder var inspectorButton: some View {
-        ControlGroup {
-            if canShowInspector && openFileWindowModel.showItem == false {
-                Button {
-                    withAnimation { showInspector.toggle() }
-                } label: {
-                    Label {
-                        Text("Inspector", bundle: .module)
-                    } icon: {
-                        Image(systemName: "scope")
-                    }
-                }
-            }
-        }
-    }
-    
+        
     @ToolbarContentBuilder
     private func toolbarContent(model: any ItemDataAccessable) -> some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
@@ -403,10 +376,6 @@ private extension ItemDetailRootView {
             }
         }
         ToolbarItemGroup(placement: .secondaryActionAll) {
-            if (hasInspector || model.specialCategory) && canShowInspector && openFileWindowModel.showItem == false {
-                inspectorButton
-                Divider()
-            }
             MenuUndoRedoButton(root: root)
         }
     }
