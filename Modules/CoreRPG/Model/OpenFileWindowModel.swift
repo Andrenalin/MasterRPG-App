@@ -35,7 +35,7 @@ struct OpenFileViewerViewModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content.toolbar {
-            ToolbarItem(placement: .secondaryActionAll) {
+            ToolbarItemGroup(placement: .secondaryActionAll) {
                 if !model.specialCategory && openFileWindowModel.showItem == false && openFileWindowModel.enabled {
                     OpenFileWindowView(model: openFileWindowModel, module: module)
                 }

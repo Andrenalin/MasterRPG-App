@@ -94,16 +94,24 @@ private extension ListRootView {
             Group {
                 @Bindable var listModel = listModel
 #if os(macOS)
-                if listController.listDisplayModel.isSelectionMode {
-                    List(selection: $listModel.listSelection) {
-                        itemRows()
+                Group {
+                    if listController.listDisplayModel.isSelectionMode {
+                        List(selection: $listModel.listSelection) {
+                            itemRows()
+                        }
+                        .frame(minHeight: 300, maxHeight: .infinity)
+                    } else {
+                        List(selection: $listModel.selected) {
+                            itemRows()
+                        }
+                        .frame(minHeight: 300, maxHeight: .infinity)
                     }
-                    .frame(minHeight: 300, maxHeight: .infinity)
-                } else {
-                    List(selection: $listModel.selected) {
-                        itemRows()
-                    }
-                    .frame(minHeight: 300, maxHeight: .infinity)
+                }
+                .applyIf(parentModel != nil) {
+                    $0.listStyle(.bordered)
+                }
+                .applyIf(parentModel != nil) {
+                    $0.listStyle(.sidebar)
                 }
 #else
                 List(selection: $listModel.listSelection) {

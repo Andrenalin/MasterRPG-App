@@ -73,6 +73,7 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
                 model.windowStateModel.openWindowState[module] = false
             }
             .tint(module.tint)
+            .accentColor(module.tint)
 #if os(iOS)
             .environment(\.colorScheme, model.settingsModel.appColorScheme.colorScheme(for: colorScheme))
 #endif

@@ -238,13 +238,7 @@ private extension ItemDetailRootView {
             if selectedModel(model: model).specialCategory == false && editorAsBackground {
                 editorContentBackgroundView(model: selectedModel(model: model))
             } else {
-#if os(macOS)
-                ScrollView {
-                    editorContentView(model: selectedModel(model: model))
-                }
-#else
                 editorContentView(model: selectedModel(model: model))
-#endif
             }
         }
     }
@@ -257,14 +251,13 @@ private extension ItemDetailRootView {
                 
                 ListRootView(root: root, listController: detailListController, parentModel: model)
             } else {
-                Form {
-                    if model.description.isEmpty == false {
-                        ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
-                    }
-                    
-                    editor
+#if os(macOS)
+                ScrollView {
+                    formEditor(model: model)
                 }
-                .scrollBounceBehavior(.basedOnSize)
+#else
+                formEditor(model: model)
+#endif
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
@@ -275,6 +268,18 @@ private extension ItemDetailRootView {
                 overlay.opacity(0)
             }
         }
+    }
+    
+    func formEditor(model: any ItemDataAccessable) -> some View {
+        Form {
+            if model.description.isEmpty == false {
+                ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
+            }
+            
+            editor
+        }
+        .formStyle(.grouped)
+        .scrollBounceBehavior(.basedOnSize)
     }
     
     func editorContentBackgroundView(model: any ItemDataAccessable) -> some View {

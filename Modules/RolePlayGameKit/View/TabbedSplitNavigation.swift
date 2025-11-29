@@ -48,6 +48,7 @@ public struct TabbedSplitNavigation: View {
         .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
         .onNavigationRoute(RootRouteRouter(appModel: appModel))
         .onNavigationOpenURL(RootURLHandler(appModel: appModel))
+        .navigationSplitViewStyle(.prominentDetail)
     }
     
     var selectedModule: NetworkModules {

@@ -22,10 +22,9 @@ struct DetailInspectorViewModifier: ViewModifier {
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .secondaryActionAll) {
+                ToolbarItemGroup(placement: .secondaryActionAll) {
                     if folderListController.detailInspectorModel.canShowInspector {
                         inspectorButton
-                        Divider()
                     }
                 }
             }

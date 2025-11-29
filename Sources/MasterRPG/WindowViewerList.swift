@@ -87,6 +87,7 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
             .frame(minWidth: 600, minHeight: 400)
             .handlesExternalEvents(preferring: [], allowing: [])
             .tint(module.tint)
+            .accentColor(module.tint)
             .environmentSetUp(model)
 #if os(iOS)
             .environment(\.colorScheme, model.settingsModel.appColorScheme.colorScheme(for: colorScheme))

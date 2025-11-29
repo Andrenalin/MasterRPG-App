@@ -30,5 +30,6 @@ struct DetailRootView: View {
             DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId))
                 .preferredColorScheme(.dark)
         }
+        .setAppSizeMode()
     }
 }

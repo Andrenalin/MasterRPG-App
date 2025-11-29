@@ -10,8 +10,10 @@ public struct MenuUndoRedoButton: View {
     let root: any ItemRootControllable
 
     public var body: some View {
-        UndoButton(root: root)
-        RedoButton(root: root)
+        ControlGroup {
+            UndoButton(root: root)
+            RedoButton(root: root)
+        }
     }
 }
 

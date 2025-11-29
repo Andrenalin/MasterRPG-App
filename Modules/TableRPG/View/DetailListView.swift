@@ -47,7 +47,7 @@ struct DetailListView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .secondaryActionAll) {
+            ToolbarItemGroup(placement: .secondaryActionAll) {
                 Button {
                     navigator.navigate(to: EditorRoute.quickEditor, method: .cover)
                 } label: {
@@ -78,7 +78,11 @@ struct DetailListView: View {
                 withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId) }
             }
         
-        EntryListView(editController: root.editController)
+        Section {
+            EntryListView(editController: root.editController)
+        } header: {
+            Text("Entries", bundle: .module)
+        }
     }
 }
 
