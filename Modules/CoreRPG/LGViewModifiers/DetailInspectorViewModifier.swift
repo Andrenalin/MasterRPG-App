@@ -11,16 +11,9 @@ extension View {
 struct DetailInspectorViewModifier: ViewModifier {
     let folderListController: any FolderListControllable
 
-    @State private var showInspector: Bool = false
-    
     func body(content: Content) -> some View {
         content
             .environment(folderListController.detailInspectorModel)
-            .applyIf(folderListController.detailInspectorModel.canShowInspector) {
-                $0.inspectorAll(isPresented: $showInspector) {
-                    folderListController.detailInspectorModel.currentInspectorView
-                }
-            }
             .toolbar {
                 ToolbarItemGroup(placement: .secondaryActionAll) {
                     if folderListController.detailInspectorModel.canShowInspector {
@@ -32,7 +25,7 @@ struct DetailInspectorViewModifier: ViewModifier {
     
     var inspectorButton: some View {
         Button {
-            withAnimation { showInspector.toggle() }
+            withAnimation { folderListController.detailInspectorModel.showInspector.toggle() }
         } label: {
             Label {
                 Text("Inspector", bundle: .module)

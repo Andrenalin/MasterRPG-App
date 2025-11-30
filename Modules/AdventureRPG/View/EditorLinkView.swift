@@ -19,7 +19,6 @@ struct EditorLinkView: View {
 
     var body: some View {
         VStack {
-            #if !os(macOS)
             Picker(selection: $selection) {
                 buttonPicker(module: .adventure)
                 buttonPicker(module: .audio)
@@ -34,64 +33,89 @@ struct EditorLinkView: View {
             } label: {
                 Text("Module selection", bundle: .module)
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(.automatic)
             .padding(.horizontal)
-            #endif
-            TabView(selection: $selection) {
-                Tab(value: .adventure) {
-                    LinkItemRootView(root: root.rootController, type: .inspector)
-                } label: {
-                    Image(systemName: NetworkModules.adventure.icon)
-                }
 
-                Tab(value: .audio) {
+            ZStack {
+                switch selection {
+                case .audio:
                     root.audioRoot.viewController.linkWindow(isInspector: true)
-                } label: {
-                    Image(systemName: NetworkModules.audio.icon)
-                }
-                Tab(value: .value) {
+                case .value:
                     root.characterRoot.viewController.linkWindow(isInspector: true)
-                } label: {
-                    Image(systemName: NetworkModules.value.icon)
-                }
-                Tab(value: .dice) {
+                case .dice:
                     root.diceRoot.viewController.linkWindow(isInspector: true)
-                } label: {
-                    Image(systemName: NetworkModules.dice.icon)
-                }
-                Tab(value: .map) {
+                case .map:
                     root.mapRoot.viewController.linkWindow(isInspector: true)
-                } label: {
-                    Image(systemName: NetworkModules.map.icon)
-                }
-                Tab(value: .pdf) {
+                case .pdf:
                     root.pdfRoot.viewController.linkWindow(isInspector: true)
-                } label: {
-                    Image(systemName: NetworkModules.pdf.icon)
-                }
-                Tab(value: .photo) {
+                case .photo:
                     root.photoRoot.viewController.linkWindow(isInspector: true)
-                } label: {
-                    Image(systemName: NetworkModules.photo.icon)
-                }
-                Tab(value: .space) {
+                case .space:
                     root.spaceRoot.viewController.linkWindow(isInspector: true)
-                } label: {
-                    Image(systemName: NetworkModules.space.icon)
-                }
-                Tab(value: .table) {
+                case .table:
                     root.tableRoot.viewController.linkWindow(isInspector: true)
-                } label: {
-                    Image(systemName: NetworkModules.table.icon)
-                }
-                Tab(value: .weather) {
+                case .weather:
                     root.weatherRoot.viewController.linkWindow(isInspector: true)
-                } label: {
-                    Image(systemName: NetworkModules.weather.icon)
+                default:
+                    LinkItemRootView(root: root.rootController, type: .inspector)
                 }
             }
-            .tabViewStyle(.automatic)
-            .ignoresSafeArea(.container, edges: .bottom)
+            
+//            TabView(selection: $selection) {
+//                Tab(value: .adventure) {
+//                    LinkItemRootView(root: root.rootController, type: .inspector)
+//                } label: {
+//                    Image(systemName: NetworkModules.adventure.icon)
+//                }
+//
+//                Tab(value: .audio) {
+//                    root.audioRoot.viewController.linkWindow(isInspector: true)
+//                } label: {
+//                    Image(systemName: NetworkModules.audio.icon)
+//                }
+//                Tab(value: .value) {
+//                    root.characterRoot.viewController.linkWindow(isInspector: true)
+//                } label: {
+//                    Image(systemName: NetworkModules.value.icon)
+//                }
+//                Tab(value: .dice) {
+//                    root.diceRoot.viewController.linkWindow(isInspector: true)
+//                } label: {
+//                    Image(systemName: NetworkModules.dice.icon)
+//                }
+//                Tab(value: .map) {
+//                    root.mapRoot.viewController.linkWindow(isInspector: true)
+//                } label: {
+//                    Image(systemName: NetworkModules.map.icon)
+//                }
+//                Tab(value: .pdf) {
+//                    root.pdfRoot.viewController.linkWindow(isInspector: true)
+//                } label: {
+//                    Image(systemName: NetworkModules.pdf.icon)
+//                }
+//                Tab(value: .photo) {
+//                    root.photoRoot.viewController.linkWindow(isInspector: true)
+//                } label: {
+//                    Image(systemName: NetworkModules.photo.icon)
+//                }
+//                Tab(value: .space) {
+//                    root.spaceRoot.viewController.linkWindow(isInspector: true)
+//                } label: {
+//                    Image(systemName: NetworkModules.space.icon)
+//                }
+//                Tab(value: .table) {
+//                    root.tableRoot.viewController.linkWindow(isInspector: true)
+//                } label: {
+//                    Image(systemName: NetworkModules.table.icon)
+//                }
+//                Tab(value: .weather) {
+//                    root.weatherRoot.viewController.linkWindow(isInspector: true)
+//                } label: {
+//                    Image(systemName: NetworkModules.weather.icon)
+//                }
+//            }
+//            .tabViewStyle(.automatic)
+//            .ignoresSafeArea(.container, edges: .bottom)
         }
     }
     

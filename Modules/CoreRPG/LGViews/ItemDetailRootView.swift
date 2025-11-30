@@ -80,7 +80,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @State private var isEditing = false
     @State private var itemIdHasUrl = UUID()
     @State private var selection = GroupItemSelectionModel()
-    @State private var showInspector = false
     
     @State private var detailListController: FolderListControllable
     @State private var headerFooterModel = HeaderFooterScrollModel()

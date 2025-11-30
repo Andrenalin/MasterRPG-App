@@ -165,13 +165,20 @@ private extension SplitNavigation {
         }
         .environment(appModel.itemRootController(for: tab.module))
     }
-    
-    func splitWithDetail(tab: RootRoute) -> some View {
+
+    @ViewBuilder func splitWithDetail(tab: RootRoute) -> some View {
+        @Bindable var model = appModel.itemRootController(for: tab.module)?.folderListControllable.detailInspectorModel ?? DetailInspectorModel()
+
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             contentView(tab: tab)
         } detail: {
             SplitDetailView()
                 .environment(appModel.itemRootController(for: tab.module))
+        }
+        .applyIf(model.canShowInspector) {
+            $0.inspectorAll(isPresented: $model.showInspector) {
+                model.currentInspectorView
+            }
         }
     }
 }

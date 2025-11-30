@@ -10,7 +10,6 @@ struct DetailRootView: View {
     let root: AdventureRootModel
     let model: AdventureModel
     
-    
     var body: some View {
         DetailListView(root: root, model: model)
             .detailInspectorModifier(folderListControllable: root.folderListController)

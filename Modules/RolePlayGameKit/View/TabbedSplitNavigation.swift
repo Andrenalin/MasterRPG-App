@@ -18,7 +18,8 @@ public struct TabbedSplitNavigation: View {
         let _ = Self._printChanges()
         let _ = print("Tab: \(selectedModule.title)")
         @Bindable var appModel = appModel
-        
+        @Bindable var model = appModel.itemRootController(for: selectedModule)?.folderListControllable.detailInspectorModel ?? DetailInspectorModel()
+
         NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $preferredCompactColumn) {
             TabSidebar()
                 .navigationSplitViewColumnWidth(min: 100, ideal: 150, max: 200)
@@ -39,6 +40,11 @@ public struct TabbedSplitNavigation: View {
         } detail: {
             SplitDetailView()
                 .environment(appModel.itemRootController(for: selectedModule))
+        }
+        .applyIf(model.canShowInspector) {
+            $0.inspectorAll(isPresented: $model.showInspector) {
+                model.currentInspectorView
+            }
         }
         .onChange(of: appModel.selectedModule) {
             guard let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module else { return }
