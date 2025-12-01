@@ -24,9 +24,9 @@ struct DestinationTableEditorRoute: View {
     var body: some View {
         switch route {
         case .quickEditor:
-            QuickEntryEditor(editController: root.editController)
+            QuickEntryEditor()
         case .selectionPdf:
-            root.pdfRoot.viewController.selectionView( model: root.editController.tableEditModel.selectionPdf)
+            root.pdfRoot.viewController.selectionView(model: root.editController.tableEditModel.selectionPdf)
         }
     }
 }

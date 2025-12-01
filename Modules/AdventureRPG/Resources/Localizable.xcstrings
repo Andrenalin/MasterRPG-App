@@ -259,6 +259,7 @@
       }
     },
     "Extract PDF" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -379,6 +380,7 @@
       }
     },
     "Remove Line Breaks" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -433,6 +435,7 @@
       }
     },
     "The quick editor allows you to add all chapters for the adventure at once. The first line is the title and the next text represents the content of the chapter. An empty line is used to separate chapters." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

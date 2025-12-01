@@ -1,9 +1,9 @@
 // @copyright André Trettin
 
 import CoreRPG
-
-import SwiftUI
 import DiceRPG
+import PhotoRPG
+import SwiftUI
 
 struct DetailRootView: View {
     let root: CharacterRootModel
@@ -80,15 +80,19 @@ struct DetailListView: View {
     
     @ViewBuilder
     var detailEditorView: some View {
-//        root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.valueEditModel.selectionDice)
-//            .onChange(of: root.editController.valueEditModel.selectionDice.selection) {
-//                withAnimation { root.editController.add(diceId: root.editController.valueEditModel.selectionDice.itemId, model: model) }
-//            }
-//            .onChange(of: model.diceId, initial: true) {
-//                withAnimation { root.editController.valueEditModel.selectionDice.resetSelection(itemId: model.diceId) }
-//            }
-        
-        EntryListView(editController: root.editController)
+        root.photoRoot.viewController.dropSelectionView(model: root.editController.valueEditModel.selectionPhoto)
+            .onChange(of: root.editController.valueEditModel.selectionPhoto.itemId) {
+                withAnimation { root.editController.add(photoId: root.editController.valueEditModel.selectionPhoto.itemId) }
+            }
+            .onChange(of: model.photoId, initial: true) {
+                withAnimation { root.editController.valueEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
+            }
+
+        Section {
+            EntryListView(editController: root.editController)
+        } header: {
+            Text("Values", bundle: .module)
+        }
     }
 }
 

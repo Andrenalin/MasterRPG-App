@@ -3,7 +3,7 @@
 import Foundation
 import SwiftUI
 
-public protocol ItemDataAccessable: Sendable {
+public protocol ItemDataAccessable: Sendable, Equatable {
     associatedtype Entry: EntryDataAccessable, Identifiable, Equatable
 
     static var empty: Self { get }
@@ -18,7 +18,7 @@ public protocol ItemDataAccessable: Sendable {
     var displayState: Int { get set }
     var isGroupHidden: Bool { get }
     var isGroupHiddenToggle: Bool { get set }
-    var entries: [Entry] { get set }
+    var entries: [Entry] { get nonmutating set }
     var fileUrl: FileUrl? { get set }
     var parentId: UUID? { get set }
 

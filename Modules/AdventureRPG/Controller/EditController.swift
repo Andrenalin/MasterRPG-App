@@ -68,6 +68,10 @@ extension EditController: EntryDataEditable {
         itemControllable.fileUrlDataController
     }
 
+    func create(name: String, content: String) -> AdventureEntryModel {
+        AdventureEntryModel(id: UUID(), name: name, content: content)
+    }
+    
     @MainActor func didSetModel() {
         guard let id = editorModel.currentItemId else { return }
         if adventureEditModel.photoSelectionModel.id != id {

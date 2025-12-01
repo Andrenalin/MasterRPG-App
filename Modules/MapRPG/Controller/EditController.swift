@@ -62,6 +62,10 @@ extension EditController: EntryDataEditable {
         itemControllable.fileUrlDataController
     }
 
+    func create(name: String, content: String) -> MapEntryModel {
+        MapEntryModel(id: UUID(), name: name, content: content, coordinates: [])
+    }
+    
     @MainActor
     func resetCurrentModel() {
         mapEditModel.resetCurrentModel()
@@ -88,6 +92,15 @@ extension EditController: EntryDataEditable {
     @MainActor
     func submitChanges() {
         mapEditModel.resetCurrentModel()
+    }
+}
+
+// MARK: - New Editor Functions
+
+extension EditController {
+    @MainActor func add(photoId: UUID?) {
+        model.photoId = photoId
+        save(with: String(localized: "Change Photo").localizedString)
     }
 }
 

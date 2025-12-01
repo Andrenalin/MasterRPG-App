@@ -7,6 +7,9 @@ public protocol EntryDataEditable: EditControllable {
     func editEntries(for item: Model) -> [Model.Entry]
 
     @discardableResult @MainActor func copy(entryId: UUID, shouldSave: Bool) -> UUID
+    
+    @MainActor func create(name: String, content: String) -> Model.Entry
+    @MainActor func merge(entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
     @MainActor func remove(entryId: UUID)
     @MainActor func remove(entryId: UUID, shouldSave: Bool)
 }
@@ -62,7 +65,6 @@ public extension EntryDataEditable {
     
     @MainActor
     private func add(entry: Model.Entry, into item: Model, index: Int? = nil) {
-        var item = item
         let validatedIndex = index ?? editEntries(for: item).count
         item.entries.insert(entry, at: validatedIndex)
         if  item.id == model.id {
@@ -222,3 +224,4 @@ public extension EntryDataEditable {
         return replacedEntry
     }
 }
+

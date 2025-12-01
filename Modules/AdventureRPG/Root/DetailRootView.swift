@@ -93,7 +93,7 @@ struct DetailListView: View {
         Section {
             EntryListView(editController: root.editController)
         } header: {
-            Text("Sections")
+            Text("Sections", bundle: .module)
         }
     }
 }

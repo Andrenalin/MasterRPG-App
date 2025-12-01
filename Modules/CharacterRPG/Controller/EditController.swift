@@ -70,6 +70,10 @@ extension EditController: EntryDataEditable {
         itemControllable.fileUrlDataController
     }
 
+    func create(name: String, content: String) -> ValueEntryModel {
+        ValueEntryModel(id: UUID(), name: name, type: .text, value: content)
+    }
+    
     @MainActor
     func add(model childModel: ValueModel, into itemId: UUID?) {
         guard let itemId else { return }
@@ -125,6 +129,15 @@ extension EditController: EntryDataEditable {
     @MainActor
     func submitChanges() {
         valueEditModel.resetLinks()
+    }
+}
+
+// MARK: - New Editor Functions
+
+extension EditController {
+    @MainActor func add(photoId: UUID?) {
+        model.photoId = photoId
+        save(with: String(localized: "Change Photo").localizedString)
     }
 }
 

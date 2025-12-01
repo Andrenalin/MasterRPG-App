@@ -181,7 +181,7 @@ public extension EditControllable {
 
 public extension EditControllable {
     @MainActor func addItem(itemId: UUID, parentId: UUID?) {
-        guard let parentId, itemId != parentId, var parentModel = editModel(for: parentId), var item = editModel(for: itemId) else { return }
+        guard let parentId, itemId != parentId, let parentModel = editModel(for: parentId), var item = editModel(for: itemId) else { return }
         if item.specialCategory && !parentModel.isFolder {
             return
         }
@@ -215,7 +215,7 @@ public extension EditControllable {
     }
     
     @MainActor func removeItemFromParent(itemId: UUID) {
-        guard var item = editModel(for: itemId), let parentId = item.parentId, var parentModel = editModel(for: parentId) else { return }
+        guard var item = editModel(for: itemId), let parentId = item.parentId, let parentModel = editModel(for: parentId) else { return }
         item.parentId = nil
         save(updated: item, message: String(localized: "Removed parent").localizedLowercase.localizedString)
 
@@ -286,7 +286,7 @@ public extension EditControllable {
     }
     
     @MainActor func removeItem(offsets: IndexSet, item: any ItemDataAccessable) {
-        guard var updatedModel = editModel(for: item.id) else { return }
+        guard let updatedModel = editModel(for: item.id) else { return }
         let removedEntries = updatedModel.entries.enumerated().filter { offsets.contains($0.offset) }
         var entries = updatedModel.entries
         entries.remove(atOffsets: offsets)
@@ -301,7 +301,7 @@ public extension EditControllable {
     }
     
     @MainActor func moveItems(source: IndexSet, destination: Int, item: any ItemDataAccessable) {
-        guard var updatedModel = editModel(for: item.id) else { return }
+        guard let updatedModel = editModel(for: item.id) else { return }
         var entries = updatedModel.entries
         entries.move(fromOffsets: source, toOffset: destination)
         updatedModel.entries = entries
@@ -311,7 +311,7 @@ public extension EditControllable {
 
 public extension EditControllable {
     @MainActor func insert(entry: any EntryDataAccessable, item: any ItemDataAccessable) {
-        guard var updatedModel = editModel(for: item.id) else { return }
+        guard let updatedModel = editModel(for: item.id) else { return }
         guard let entry = entry as? Model.Entry else { return }
         var entries = updatedModel.entries
         entries.append(entry)
@@ -320,7 +320,7 @@ public extension EditControllable {
     }
     
     @MainActor func remove(entry indexSet: IndexSet, item: any ItemDataAccessable) {
-        guard var updatedModel = editModel(for: item.id) else { return }
+        guard let updatedModel = editModel(for: item.id) else { return }
         var entries = updatedModel.entries
         entries.remove(atOffsets: indexSet)
         updatedModel.entries = entries
@@ -329,7 +329,7 @@ public extension EditControllable {
     }
     
     @MainActor func remove(entryId: UUID, item: any ItemDataAccessable) {
-        guard var updatedModel = editModel(for: item.id) else { return }
+        guard let updatedModel = editModel(for: item.id) else { return }
         var entries = updatedModel.entries
         entries.removeAll(where: { $0.id == entryId})
         updatedModel.entries = entries

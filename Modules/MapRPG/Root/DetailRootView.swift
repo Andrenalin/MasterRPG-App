@@ -82,15 +82,19 @@ struct DetailListView: View {
     
     @ViewBuilder
     var detailEditorView: some View {
-//        root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.valueEditModel.selectionDice)
-//            .onChange(of: root.editController.valueEditModel.selectionDice.selection) {
-//                withAnimation { root.editController.add(diceId: root.editController.valueEditModel.selectionDice.itemId, model: model) }
-//            }
-//            .onChange(of: model.diceId, initial: true) {
-//                withAnimation { root.editController.valueEditModel.selectionDice.resetSelection(itemId: model.diceId) }
-//            }
+        root.photoRoot.viewController.dropSelectionView(model: root.editController.mapEditModel.selectionPhoto)
+            .onChange(of: root.editController.mapEditModel.selectionPhoto.itemId) {
+                withAnimation { root.editController.add(photoId: root.editController.mapEditModel.selectionPhoto.itemId) }
+            }
+            .onChange(of: model.photoId, initial: true) {
+                withAnimation { root.editController.mapEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
+            }
         
-        EntryListView(editController: root.editController)
+        Section {
+            EntryListView(editController: root.editController)
+        } header: {
+            Text("Rooms", bundle: .module)
+        }
     }
 }
 

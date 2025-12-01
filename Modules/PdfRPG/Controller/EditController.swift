@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreGraphics
 import CoreRPG
 import Foundation
 import Observation
@@ -18,13 +19,21 @@ struct EditController: Sendable {
 
 extension EditController: EntryDataEditable {
     typealias Model = PdfModel
-        
+    
     var itemControllable: any ItemControllable {
         itemController
     }
     
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
+    }
+    
+    func create(name: String, content: String) -> PdfEntryModel {
+        PdfEntryModel(id: UUID(), name: name, content: content, pageNumber: "", bounds: .zero)
+    }
+    
+    func merge(entries: [PdfEntryModel], recoverEntries: [CoreRPG.ItemRowModel]?) async -> [ItemRowModel] {
+        []
     }
 }
 

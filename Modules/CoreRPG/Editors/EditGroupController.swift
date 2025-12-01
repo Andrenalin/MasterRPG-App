@@ -75,7 +75,7 @@ extension EditGroupModel: ItemDataAccessable & ItemDiffComparable {
     
     public func merge(_ other: EditGroupModel) -> Self { self }
     
-    static func == (lhs: EditGroupModel, rhs: EditGroupModel) -> Bool { false }
+    public static func == (lhs: EditGroupModel, rhs: EditGroupModel) -> Bool { false }
     
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)

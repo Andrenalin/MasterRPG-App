@@ -51,6 +51,10 @@ extension EditController: EntryDataEditable {
         itemControllable.fileUrlDataController
     }
 
+    func create(name: String, content: String) -> TableEntryModel {
+        TableEntryModel(id: UUID(), name: name, content: content)
+    }
+    
     @MainActor func didSetModel() {
         guard let id = editorModel.currentItemId else { return }
         if tableEditModel.pdfSelectionModel.id != id {
@@ -166,8 +170,7 @@ extension EditController {
 }
 
 extension EditController {
-    @MainActor
-    func merge(entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+    @MainActor func merge(entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
         let item = model
         var newEntries = entries.map { entry in
             let foundEntry = item.entries.first(where: { $0.name == entry.name })
