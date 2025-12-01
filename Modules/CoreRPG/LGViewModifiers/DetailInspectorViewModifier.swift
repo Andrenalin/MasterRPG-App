@@ -10,10 +10,21 @@ extension View {
 
 struct DetailInspectorViewModifier: ViewModifier {
     let folderListController: any FolderListControllable
-
+    
     func body(content: Content) -> some View {
+#if os(macOS)
+        @Bindable var model = folderListController.detailInspectorModel
+#endif
+        
         content
             .environment(folderListController.detailInspectorModel)
+#if os(macOS)
+            .applyIf(folderListController.detailInspectorModel.canShowInspector) {
+                $0.inspectorAll(isPresented: $model.showInspector) {
+                    folderListController.detailInspectorModel.currentInspectorView
+                }
+            }
+#endif
             .toolbar {
                 ToolbarItemGroup(placement: .secondaryActionAll) {
                     if folderListController.detailInspectorModel.canShowInspector {
