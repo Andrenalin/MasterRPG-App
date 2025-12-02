@@ -10,7 +10,7 @@ public struct ViewController: Sendable {
 }
 
 extension ViewController: ViewControllable {
-    public func thumbnailRowView(for itemId: UUID) -> AnyView {
+    @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
         AnyView(ThumbnailDiceRow(itemId: itemId))
     }
 }

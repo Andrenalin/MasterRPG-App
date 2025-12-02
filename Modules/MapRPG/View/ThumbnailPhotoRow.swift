@@ -4,7 +4,7 @@ import CoreRPG
 import PhotoRPG
 import SwiftUI
 
-struct ThumbnailPhotoRow: View {
+struct ThumbnailPhotoRow: View, Equatable {
     let itemId: UUID
     
     @Environment(MapRootModel.self) private var root
@@ -18,6 +18,10 @@ struct ThumbnailPhotoRow: View {
     
     private var model: MapModel? {
         root.itemController.itemSync(for: itemId)
+    }
+    
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.itemId == rhs.itemId
     }
 }
 

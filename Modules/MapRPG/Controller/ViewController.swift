@@ -10,8 +10,8 @@ public struct ViewController {
 }
 
 extension ViewController: ViewControllable {
-    public func thumbnailRowView(for itemId: UUID) -> AnyView {
-        AnyView(ThumbnailPhotoRow(itemId: itemId))
+    @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
+        AnyView(ThumbnailPhotoRow(itemId: itemId).equatable())
     }
 }
 

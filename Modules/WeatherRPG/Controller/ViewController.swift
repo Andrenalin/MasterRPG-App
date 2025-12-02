@@ -10,16 +10,15 @@ public struct ViewController: Sendable {
 }
 
 extension ViewController: ViewControllable {
-    public func thumbnailRowView(for itemId: UUID) -> AnyView {
-        AnyView(ThumbnailPhotoRow(itemId: itemId))
+    @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
+        AnyView(ThumbnailPhotoRow(itemId: itemId).equatable())
     }
 }
 
 // MARK: - External Views
 
 extension ViewController {
-    @MainActor
-    func photoSelection(root: WeatherRootModel, selectionModel: ItemSelectionModel) -> some View {
+    @MainActor func photoSelection(root: WeatherRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.photoRoot.viewController.dropSelectionView(model: selectionModel)
     }
 }
