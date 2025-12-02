@@ -8,19 +8,12 @@ public struct LinkHighlightTextView: View {
     }
 
     let model: LinkHighlightTextModel
-#if os(iOS)
-    @Environment(DeviceRotationModel.self) private var deviceRotationModel
-#endif
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
             overlays(foreground: false)
 
-            let text = model.displayText.reduce(Text("")) {
-                partialResult, component in
-                return partialResult + component.text
-            }
-            text
+            plainText
                 .textRenderer(LinkHighlightTextRenderer(model: model, style: .yellow.opacity(0.5), elapsedTime: 2, totalDuration: 2))
                 .lineSpacing(4)
                 .transition(OnboardingTextTransition(model: model))
@@ -28,22 +21,14 @@ public struct LinkHighlightTextView: View {
             overlays(foreground: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.width.rounded()
-        } action: { oldValue, newValue in
-            if model.recordedWidth != newValue {
-                withAnimation { model.resetLocations() }
-            }
-            model.recordedWidth <=> newValue
+    }
+    
+    var plainText: Text {
+        let _ = model.updated        
+        return model.displayText.reduce(Text("")) {
+            partialResult, component in
+            return Text("\(partialResult)\(component.text)")
         }
-#if os(iOS)
-        .onChange(of: deviceRotationModel.orientation) {
-            Task { @MainActor in
-                await Task.yield()
-                model.resetLocations(force: true)
-            }
-        }
-#endif
     }
 
     func overlays(foreground: Bool) -> some View {

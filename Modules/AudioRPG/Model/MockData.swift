@@ -52,7 +52,6 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.rootController)
             .environment(ListModel.preview)
             .environment(CacheItemListModel())
-            .environment(DeviceRotationModel())
             .environment(SelectionSheetLinkModel())
             .environment(ExternalHeaderModel())
 #if os(macOS)

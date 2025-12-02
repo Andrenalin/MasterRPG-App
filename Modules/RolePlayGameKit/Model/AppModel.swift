@@ -36,7 +36,6 @@ public final class AppModel: Sendable {
     @MainActor public static let shared = AppModel()
     
     // Other Models
-    @ObservationIgnored public let deviceRotationModel: DeviceRotationModel
     @ObservationIgnored public let optionKeyDownModel: OptionKeyDownModel
     @ObservationIgnored public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
     @ObservationIgnored public let settingsModel: AppSettingsModel
@@ -78,7 +77,6 @@ public final class AppModel: Sendable {
     public let linkRootController: LinkRootController
 
     @MainActor public init() {
-        self.deviceRotationModel = DeviceRotationModel()
         self.optionKeyDownModel = OptionKeyDownModel()
         self.settingsModel = AppSettingsModel()
         self.selectionSheetLinkModel = SelectionSheetLinkModel()

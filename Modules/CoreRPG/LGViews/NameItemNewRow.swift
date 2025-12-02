@@ -57,5 +57,4 @@ struct NameItemNewRow: View {
         NameItemNewRow(itemId: itemId, name: "**Super cool Name** cool and more **cool**", cacheItemListModel: cache)
     }
     .environment(searchModel)
-    .environment(DeviceRotationModel())
 }

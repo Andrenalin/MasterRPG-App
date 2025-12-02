@@ -14,7 +14,6 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .environment(appModel.deviceRotationModel)
             .environment(appModel.optionKeyDownModel)
             .environment(appModel.settingsModel)
             .environment(appModel.selectionSheetLinkModel)
@@ -34,6 +33,5 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.weatherRoot)
             .environment(appModel.linkRootController)
             .environment(appModel)
-            .observeRotate(with: appModel.deviceRotationModel)
     }
 }

@@ -12,7 +12,7 @@ struct TableSheetView<ImageContent: View>: View {
     @Environment(\.showGame) private var showGame
 
     var body: some View {
-        ManagedNavigationStack {
+        ManagedNavigationStack(name: "TableSheetRoot") {
             @Bindable var model = model
             
             VStack(alignment: .leading, spacing: 0) {
@@ -47,9 +47,9 @@ private extension TableSheetView {
             ToolbarItem(placement: .cancellationAction) {
                 closeActionButton
             }
-        }        
+        }
     }
-
+    
     var closeActionButton: some View {
         Button {
             if let dismissAction {
@@ -58,17 +58,16 @@ private extension TableSheetView {
                 dismiss()
             }
         } label: {
-            //Image(systemName: showImage ? "xmark.circle" : "chevron.down.circle")
             Image(systemName: "xmark.circle")
         }
     }
-
+    
     func closeButton() -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text(model.sheetModel.name)
                 .lineLimit(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
-
+            
             Button {
                 if let dismissAction {
                     dismissAction()
@@ -85,30 +84,9 @@ private extension TableSheetView {
         .font(.title)
         .padding(.horizontal)
     }
-
+    
     var showCloseButton: Bool {
         !showGame
-    }
-
-    @ViewBuilder
-    var searchBarView: some View {
-        @Bindable var model = model
-        TextField(text: $model.searchText, prompt: searchPlaceHolder) {
-            Label {
-                Text("Search", bundle: .module)
-            } icon: {
-                Image(systemName: "magnifyingglass")
-            }
-        }
-#if os(iOS) || os(visionOS)
-        .textFieldStyle(.roundedBorder)
-#endif
-        .autocorrectionDisabled()
-        .padding()
-    }
-
-    var searchPlaceHolder: Text {
-        Text("\(Image(systemName: "magnifyingglass")) Search", bundle: .module)
     }
 }
 
@@ -138,5 +116,4 @@ private extension TableSheetView {
         imageContent: { _ in Text("Empty")
         }
     )
-    .environment(DeviceRotationModel())
 }

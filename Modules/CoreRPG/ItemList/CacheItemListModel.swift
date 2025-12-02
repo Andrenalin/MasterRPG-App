@@ -47,7 +47,7 @@ public final class CacheItemListModel: Sendable {
     }
 
     public func resetLinks(cacheType: CacheType, itemId: UUID) {
-        itemLinkCache[cacheId(for: cacheType, itemId: itemId)]?.resetLocations()
+        
     }
 
     public func reset(search: String) {

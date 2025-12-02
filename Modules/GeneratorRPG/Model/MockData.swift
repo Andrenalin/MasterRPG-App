@@ -50,9 +50,7 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.searchModel)
             .environment(root.listDisplayModel)
             .environment(root.rootController)
-            //.environment(ListModel.preview)
             .environment(CacheItemListModel())
-            .environment(DeviceRotationModel())
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

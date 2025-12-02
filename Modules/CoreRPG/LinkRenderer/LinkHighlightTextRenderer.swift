@@ -29,54 +29,66 @@ struct LinkHighlightTextRenderer: TextRenderer {
 
     // MARK : - TextRenderer
     func draw(layout: Text.Layout, in context: inout GraphicsContext) {
-        for run in layout.flattenedRuns {
-            if run[SearchHighlightAttribute.self] != nil {
-                let copy = context
-                let rect = run.typographicBounds.rect
-                let shape = RoundedRectangle(cornerRadius: 4, style: .continuous).path(in: rect)
-                copy.fill(shape, with: .style(style))
-                copy.draw(run)
-            } else if let link = run[LinkHighlightAttribute.self] {
-                var rect = run.typographicBounds.rect
-                rect = CGRect(x: rect.origin.x, y: rect.origin.y, width: rect.width + 2, height: rect.height)
-                let location = rect
-                Task { @MainActor in
-                    model.linkLocations.reset(link: link.linkModel, run: "", location: location)
+        Task { @MainActor in
+            model.linkLocations.update(isStart: true)
+        }
+        for line in layout {
+            for run in line {
+                if run[SearchHighlightAttribute.self] != nil {
+                    let copy = context
+                    let rect = run.typographicBounds.rect
+                    let shape = RoundedRectangle(cornerRadius: 4, style: .continuous).path(in: rect)
+                    copy.fill(shape, with: .style(style))
+                    copy.draw(run)
+                } else if let link = run[LinkHighlightAttribute.self] {
+                    
+                    var rect = run.typographicBounds.rect
+                    //print("\(link.linkModel.itemId) with \(line.indices) \(run.indices) on \(rect)")
+                    rect = CGRect(x: rect.origin.x, y: rect.origin.y, width: rect.width + 2, height: rect.height)
+                    let location = rect
+                    let runId = run.indices.upperBound + 10000 + run.indices.upperBound
+                    Task { @MainActor in
+                        model.linkLocations.reset(link: link.linkModel, runId: runId, location: location)
+                    }
+                    context.draw(run)
+                } else if let link = run[LinkIconAttribute.self] {
+                    var rect = run.typographicBounds.rect
+                    rect = CGRect(x: rect.origin.x - 2, y: rect.origin.y - 2, width: rect.width + 2, height: rect.height + 4)
+                    let location = rect
+                    let runId = run.indices.upperBound + 10000 + run.indices.upperBound
+                    Task { @MainActor in
+                        model.linkLocations.reset(link: link.linkModel, runId: runId, location: location)
+                    }
+                    context.draw(run)
+                } else if let _ = run[LinkIconExpandedAttribute.self] {
+                    context.draw(run)
+                } else if let linkExpand = run[LinkExpandedAttribute.self] {
+                    let copy = context
+                    var rect = run.typographicBounds.rect
+                    rect = CGRect(x: rect.origin.x - 2, y: rect.origin.y, width: rect.width + 4, height: rect.height)
+                    let shape = UnevenRoundedRectangle(topLeadingRadius: 4, bottomLeadingRadius: 4, bottomTrailingRadius: 4, topTrailingRadius: 4, style: .continuous)
+                        .path(in: rect)
+                    let deep: CGFloat = CGFloat(linkExpand.deep * 5) / 100.0
+                    //copy.fill(shape, with: .style(.green.opacity(0.40 - CGFloat(linkExpand.deep * 5))))
+                    copy.fill(shape, with: .style(.green.opacity(0.40 - deep)))
+                    copy.draw(run)
+                    //                let delay = elementDelay(count: run.count)
+                    //
+                    //                for (index, slice) in run.enumerated() {
+                    //                    let timeOffset = TimeInterval(index) * delay
+                    //                    let elementTime = max(0, min(elapsedTime - timeOffset, elementDuration))
+                    //
+                    //                    draw(slice, at: elementTime, in: &copy)
+                    //                }
+                } else {
+                    let copy = context
+                    //copy.opacity = UnitCurve.easeIn.value(at: elapsedTime / 0.2)
+                    copy.draw(run)
                 }
-                context.draw(run)
-            } else if let link = run[LinkIconAttribute.self] {
-                var rect = run.typographicBounds.rect
-                rect = CGRect(x: rect.origin.x - 2, y: rect.origin.y - 2, width: rect.width + 2, height: rect.height + 4)
-                let location = rect
-                Task { @MainActor in
-                    model.linkLocations.reset(link: link.linkModel, run: "", location: location)
-                }
-                context.draw(run)
-            } else if let _ = run[LinkIconExpandedAttribute.self] {
-                context.draw(run)
-            } else if let linkExpand = run[LinkExpandedAttribute.self] {
-                let copy = context
-                var rect = run.typographicBounds.rect
-                rect = CGRect(x: rect.origin.x - 2, y: rect.origin.y, width: rect.width + 4, height: rect.height)
-                let shape = UnevenRoundedRectangle(topLeadingRadius: 4, bottomLeadingRadius: 4, bottomTrailingRadius: 4, topTrailingRadius: 4, style: .continuous)
-                    .path(in: rect)
-                let deep: CGFloat = CGFloat(linkExpand.deep * 5) / 100.0
-                //copy.fill(shape, with: .style(.green.opacity(0.40 - CGFloat(linkExpand.deep * 5))))
-                copy.fill(shape, with: .style(.green.opacity(0.40 - deep)))
-                copy.draw(run)
-//                let delay = elementDelay(count: run.count)
-//
-//                for (index, slice) in run.enumerated() {
-//                    let timeOffset = TimeInterval(index) * delay
-//                    let elementTime = max(0, min(elapsedTime - timeOffset, elementDuration))
-//
-//                    draw(slice, at: elementTime, in: &copy)
-//                }
-            } else {
-                let copy = context
-                //copy.opacity = UnitCurve.easeIn.value(at: elapsedTime / 0.2)
-                copy.draw(run)
             }
+        }
+        Task { @MainActor in
+            model.linkLocations.update(isStart: false)
         }
     }
 

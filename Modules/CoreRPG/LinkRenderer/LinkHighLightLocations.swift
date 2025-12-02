@@ -7,17 +7,27 @@ import SwiftUI
 final class LinkHighLightLocations {
     var locations: [LinkHighLightLocation] = []
 
-    func reset(link: LinkReplaceModel, run: String, location: CGRect) {
-        if let index = locations.firstIndex(where: { $0.link == link }) {
-            var linkLocation = locations[index]
-            if linkLocation.locations.first(where: { $0.rect == location }) == nil {
-                linkLocation.locations.append(LinkLocationCoordinate(id: UUID(), run: run, rect: location))
-                locations[index] = linkLocation
+    @ObservationIgnored private var updatedLocations: [LinkHighLightLocation] = []
+    
+    func update(isStart: Bool) {
+        if isStart {
+            updatedLocations = []
+        } else {
+            locations <=> updatedLocations
+        }
+    }
+    
+    func reset(link: LinkReplaceModel, runId: Int, location: CGRect) {
+        if let index = updatedLocations.firstIndex(where: { $0.link == link }) {
+            var linkLocation = updatedLocations[index]
+            if linkLocation.locations.first(where: { $0.runId == runId }) == nil {
+                linkLocation.locations.append(LinkLocationCoordinate(id: UUID(), runId: runId, rect: location))
+                updatedLocations[index] = linkLocation
             }
         } else {
-            let linkLocation = LinkHighLightLocation(id: link.markDown, link: link, locations: [LinkLocationCoordinate(id: UUID(), run: run, rect: location)])
+            let linkLocation = LinkHighLightLocation(id: link.markDown, link: link, locations: [LinkLocationCoordinate(id: UUID(), runId: runId, rect: location)])
 
-            locations.append(linkLocation)
+            updatedLocations.append(linkLocation)
         }
     }
 }
@@ -52,7 +62,7 @@ struct LinkHighLightLocation: Identifiable, Equatable, Hashable {
 
 struct LinkLocationCoordinate: Identifiable, Hashable, Equatable {
     let id: UUID
-    let run: String
+    let runId: Int
     var rect: CGRect
 }
 

@@ -24,35 +24,24 @@ public final class LinkHighlightTextModel {
     @ObservationIgnored
     let editAction: ((ItemRowModel) -> Bool)?
     
-    private(set) public var text: String
-    private var highlightedText: String?
+    @ObservationIgnored private(set) public var text: String
+    @ObservationIgnored private var highlightedText: String?
     
     var linkLocations: LinkHighLightLocations
-    var recordedWidth: CGFloat = 0
 
+    var updated: UUID = UUID()
+    @ObservationIgnored var lastUpdated: UUID = UUID()
+    
     public func reset(highlightedText: String) {
         guard self.highlightedText != highlightedText else { return }
-        linkLocations.locations = []
         self.highlightedText = highlightedText
+        updated = UUID()
     }
 
     public func reset(text: String) {
         guard self.text != text else { return }
-        Task { @MainActor in
-            linkLocations.locations = []
-            self.text = text
-        }
-    }
-
-    public func resetLocations(force: Bool = false) {
-        linkLocations.locations = []
-        if force {
-            let oldText = self.text
-            self.text = ""
-            Task { @MainActor in
-                self.text = oldText
-            }
-        }
+        self.text = text
+        updated = UUID()
     }
 
     func handle(link: LinkReplaceModel) {
