@@ -124,22 +124,18 @@ private extension LinkItemListView {
     
     func itemRows() -> some View {
         ForEach(listModel.displayedItems) { item in
-            HStack {
-                ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false) {
-                    if root.viewControllable.thumbnailRowViewType == .custom {
-                        root.viewControllable.thumbnailRowView(for: item.model.id)
-                    } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
-                        ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
-                    }
-                }
+            Group {
+                if let entryId = item.entryId {
+                    EntryRowView(root: root, item: item)
 #if !os(tvOS)
-                .draggable(for: root.module, itemId: item.model.id, entryId: nil, name: item.model.name)
+            .draggable(for: root.module, itemId: item.model.id, entryId: entryId, name: item.model.name)
 #endif
-
-                specialCategoryFolderIndicator(item: item)
+                } else {
+                    itemRow(item: item)
+                }
             }
             .selectListItem(isActive: type == .selection && selectionModel.canSelect(isCollection: item.model.specialCategory)) {
-                selectionModel.toggleSelection(itemId: item.model.id, isCollection: item.model.specialCategory)
+                withAnimation { selectionModel.toggleSelection(itemId: item.model.id, isCollection: item.model.specialCategory) }
             } isSelected: {
                 selectionModel.itemId == item.model.id
             }
@@ -149,13 +145,30 @@ private extension LinkItemListView {
         }
     }
     
+    func itemRow(item: ListItemModel) -> some View {
+        HStack {
+            ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false) {
+                if root.viewControllable.thumbnailRowViewType == .custom {
+                    root.viewControllable.thumbnailRowView(for: item.model.id)
+                } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
+                    ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
+                }
+            }
+#if !os(tvOS)
+            .draggable(for: root.module, itemId: item.model.id, entryId: nil, name: item.model.name)
+#endif
+
+            specialCategoryFolderIndicator(item: item)
+        }
+    }
+    
     var leadingPadding: CGFloat {
         CGFloat(valueFor(iOS: 8, macOS: 4, tvOS: 8, visionOS: 8))
     }
     
     @ViewBuilder
     func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
-        if item.model.specialCategory {
+        if showFolderIndicator(item: item) {
             Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                 .imageScale(.small)
                 .padding(.trailing)
@@ -165,5 +178,30 @@ private extension LinkItemListView {
                     withAnimation { root.folderLinkControllable.toggleFolder(item: item) }
                 }
         }
+    }
+    
+    func showFolderIndicator(item: ListItemModel) -> Bool {
+        item.model.specialCategory || (selectionModel.allowEntrySelection && !item.model.entries.isEmpty)
+    }
+}
+
+
+struct EntryRowView: View {
+    let root: any ItemRootControllable
+    let item: ListItemModel
+    
+    
+    var editController: (any EntryDataEditable)? {
+        root.editControllable as? (any EntryDataEditable)
+    }
+    var body: some View {
+        if let editController {
+            EntryEditRow(editController: editController, entry: item.model[entryId], cacheItemListModel: root.editControllable.cacheItemListModel)
+        }
+        //Text("\(item.model[entryId].name): \(item.model[entryId].content)")
+    }
+    
+    var entryId: UUID {
+        item.entryId ?? UUID()
     }
 }

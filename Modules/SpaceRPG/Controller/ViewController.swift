@@ -15,6 +15,7 @@ extension ViewController: ViewControllable {}
 public extension ViewController {
     @MainActor func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
+            .environment(ItemSelectionModel())
     }
     
     @MainActor func windowViewer(root: SpaceRootModel, selection: WindowItemSelection) -> some View {
@@ -33,6 +34,7 @@ public extension ViewController {
     
     @MainActor func selectionView(model: ItemSelectionModel) -> some View {
         LinkRootView(type: .selection)
+            .environment(model)
     }
 }
 

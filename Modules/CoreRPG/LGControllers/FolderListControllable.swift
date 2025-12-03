@@ -115,8 +115,6 @@ extension FolderListControllable {
     }
     
     func toggleFolder(item: ListItemModel) {
-        guard item.model.specialCategory else { return }
-        
         listModel.toggleFolder(itemId: item.model.id)
         item.isOpen.toggle()
         resetFilter()
@@ -136,7 +134,7 @@ private extension FolderListControllable {
                 if item.model.specialCategory {
                     return nil
                 }
-                if item.level > 0 {
+                if item.entryId == nil && item.level > 0 {
                     return nil
                 }
             } else {
@@ -168,6 +166,11 @@ private extension FolderListControllable {
     }
     
     func mapSub(model: any ItemDataAccessable, index: Int, level: Int) -> [ListItemModel] {
+        guard model.specialCategory else {
+            return model.entries.enumerated().map { (subIndex, subModel) in
+                ListItemModel(id: "\(level)-\(subIndex)-\(subModel.id)", model: model, isOpen: false, entryId: subModel.id, level: level + 1)
+            }
+        }
         let subModels = model.entries.compactMap { itemControllable.itemSync(for: $0.childId ) }
         return subModels.enumerated().map { (subIndex, subModel) in
             map(model: subModel, index: subIndex, level: level + 1)

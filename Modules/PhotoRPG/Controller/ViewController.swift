@@ -21,6 +21,7 @@ extension ViewController: ViewControllable {
 public extension ViewController {
     @MainActor func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
+            .environment(ItemSelectionModel())
     }
     
     @MainActor func inlineViewer(root: PhotoRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
@@ -30,6 +31,7 @@ public extension ViewController {
     
     @MainActor func selectionView(model: ItemSelectionModel) -> some View {
         LinkRootView(type: .selection)
+            .environment(model)
     }
     
     func dropSelectionView(model: ItemSelectionModel) -> some View {

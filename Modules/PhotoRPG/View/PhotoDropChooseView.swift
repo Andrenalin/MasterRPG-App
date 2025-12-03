@@ -9,23 +9,22 @@ struct PhotoDropChooseView: View {
     let model: ItemSelectionModel
     
     @Environment(PhotoRootModel.self) private var root
+    @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.navigator) private var navigator
-    
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-#endif
     
     var body: some View {
         DropItemModuleArea(module: root.module, contentView: {
             Group {
                 if let itemId = model.itemId, let item = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
                     GroupedPhotoView(cacheController: cacheController, itemControllable: root.itemController, model: item)
+                        .clipShape(.rect(corners: .concentric))
                 } else {
                     emptyDrop
                 }
             }
             .frame(height: 128)
         }, dropAction: addLink(name:itemId:entryId:))
+        .containerShape(.rect(cornerRadius: 24))
         .background {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color.accentColor.tertiary)
@@ -55,7 +54,7 @@ struct PhotoDropChooseView: View {
     private var emptyDrop: some View {
         Button {
             root.itemSelectionModel = model
-            //navigator.navigate(to: SelectionPhotoRoute.selection, method: .managedSheet)
+            navigator.navigate(to: SelectionPhotoRoute.selection, method: .managedSheet)
         } label: {
             VStack {
                 if showDrop {
@@ -68,14 +67,11 @@ struct PhotoDropChooseView: View {
             }
             .padding(.horizontal, 12)
         }
+        .contentShape(.rect)
     }
     
     private var showDrop: Bool {
-#if os(iOS)
-        horizontalSizeClass == .regular
-#else
-        true
-#endif
+        appSizeMode == .regular
     }
     
     private func addLink(name: String, itemId: UUID, entryId: UUID?) {

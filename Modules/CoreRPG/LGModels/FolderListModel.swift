@@ -176,16 +176,18 @@ final class ListSubItemModel {
 
 @Observable
 public final class ListItemModel: Identifiable {
-    public init(id: String, model: any ItemDataAccessable, isOpen: Bool = false, level: Int = 0) {
+    public init(id: String, model: any ItemDataAccessable, isOpen: Bool = false, entryId: UUID? = nil, level: Int = 0) {
         self.id = id
         self.model = model
         self.isOpen = isOpen
+        self.entryId = entryId
         self.level = level
     }
 
     public let id: String
     let model: any ItemDataAccessable
     var isOpen: Bool
+    let entryId: UUID?
     public let level: Int
 }
 
@@ -194,6 +196,7 @@ extension ListItemModel: Equatable {
         lhs.id == rhs.id
         && lhs.model.id == rhs.model.id
         && lhs.isOpen == rhs.isOpen
+        && lhs.entryId == rhs.entryId
         && lhs.level == rhs.level
     }
 }

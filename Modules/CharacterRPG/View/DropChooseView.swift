@@ -71,6 +71,7 @@ struct DropChooseView: View {
                 Text("Choose \(root.module.title)", bundle: .module)
             }
             .padding(.horizontal, 12)
+            .contentShape(.rect)
         }
     }
     

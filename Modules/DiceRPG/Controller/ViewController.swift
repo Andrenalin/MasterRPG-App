@@ -11,7 +11,7 @@ public struct ViewController {
 
 extension ViewController: ViewControllable {
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
-        AnyView(ThumbnailDiceRow(itemId: itemId))
+        AnyView(ThumbnailDiceRow(itemId: itemId).equatable())
     }
 }
 
@@ -20,10 +20,12 @@ extension ViewController: ViewControllable {
 public extension ViewController {
     @MainActor func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
+            .environment(ItemSelectionModel())
     }
     
     func selectionView(root: DiceRootModel, model: ItemSelectionModel) -> some View {
         DiceDropChooseView(model: model)
+            .environment(model)
             .environment(root)
     }
 }

@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 
-struct ThumbnailDiceRow: View {
+struct ThumbnailDiceRow: View, Equatable {
     let itemId: UUID
     
     @Environment(DiceRootModel.self) private var root
@@ -18,6 +18,10 @@ struct ThumbnailDiceRow: View {
     
     private var model: DiceModel? {
         root.itemController.itemSync(for: itemId)
+    }
+    
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.itemId == rhs.itemId
     }
 }
 

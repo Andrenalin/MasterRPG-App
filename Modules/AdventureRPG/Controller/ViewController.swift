@@ -29,6 +29,7 @@ extension ViewController {
 public extension ViewController {
     @MainActor func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
+            .environment(ItemSelectionModel())
     }
     
     @MainActor func windowViewer(root: AdventureRootModel, selection: WindowItemSelection) -> some View {

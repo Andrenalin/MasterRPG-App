@@ -363,6 +363,7 @@ private extension ItemDetailRootView {
     @ViewBuilder func inspectorView(model: any ItemDataAccessable) -> some View {
         if model.specialCategory {
             LinkItemRootView(root: root, type: .inspector)
+                .environment(root.itemSelectionModel)
         } else {
             inspector
         }
