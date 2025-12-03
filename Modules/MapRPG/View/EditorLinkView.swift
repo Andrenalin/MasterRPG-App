@@ -12,6 +12,7 @@ struct EditorLinkView: View {
     @Environment(MapRootModel.self) private var root
     
     @State private var selection: NetworkModules = .map
+    @State private var itemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: true, allowCollections: true, allowEntrySelection: true)
 
     var body: some View {
         VStack {
@@ -42,6 +43,7 @@ struct EditorLinkView: View {
                     root.characterRoot.viewController.linkWindow(isInspector: true)
                 default:
                     LinkItemRootView(root: root.rootController, type: .inspector)
+                        .environment(itemSelectionModel)
                 }
             }
         }
