@@ -15,6 +15,9 @@ public struct EntryListView: View {
     public var body: some View {
         ForEach(editController.model.entries, id: \.id) { entry in
             EntryEditRow(editController: editController, entry: entry, cacheItemListModel: editController.cacheItemListModel)
+                .dropDestination(for: .table, handler: { name, itemId, entryId in
+                    editController.add(link: name, module: .table, itemId: itemId, entryId: entryId, destinationEntryId: entry.id)
+                })
                 .modifier(ZoomDestinationViewModifier(sourceID: entry.id.uuidString, namespace: zoomNamespace))
                 .contextMenu {
                     editButton(entry: entry)

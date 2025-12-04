@@ -128,7 +128,7 @@ private extension LinkItemListView {
                 if let entryId = item.entryId {
                     EntryRowView(root: root, item: item)
 #if !os(tvOS)
-            .draggable(for: root.module, itemId: item.model.id, entryId: entryId, name: item.model.name)
+            .draggable(for: root.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name)
 #endif
                 } else {
                     itemRow(item: item)

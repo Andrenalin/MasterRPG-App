@@ -8,6 +8,7 @@ public protocol EntryDataEditable: EditControllable {
 
     @discardableResult @MainActor func copy(entryId: UUID, shouldSave: Bool) -> UUID
     
+    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID)
     @MainActor func create(name: String, content: String) -> Model.Entry
     @MainActor func merge(entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
     @MainActor func remove(entryId: UUID)
@@ -15,6 +16,15 @@ public protocol EntryDataEditable: EditControllable {
 }
 
 public extension EntryDataEditable {
+    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID) {
+        var entry = model[destinationEntryId]
+        let entryLink = entryId == nil ? "" : "/\(entryId!.uuidString)"
+        let linkText = " [\(link)](\(URL.appScheme)://\(module.token)/0/\(itemId.uuidString)\(entryLink))"
+        entry.content.append(linkText)
+        model[destinationEntryId] = entry
+        save(with: "Add Link")
+    }
+    
     @MainActor
     var editEntries: [Model.Entry] {
         editEntries(for: model)
