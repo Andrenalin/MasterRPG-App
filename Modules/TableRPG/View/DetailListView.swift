@@ -47,17 +47,7 @@ struct DetailListView: View {
             }
         }
         .toolbar {
-            ToolbarItemGroup(placement: .secondaryActionAll) {
-                Button {
-                    navigator.navigate(to: EditorRoute.quickEditor, method: .cover)
-                } label: {
-                    Label {
-                        Text("Quick Editor", bundle: .module)
-                    } icon: {
-                        Image(systemName: "table.badge.more")
-                    }
-                }
-            }
+            toolbarContent
         }
         .environment(openFileWindowModel)
         .environment(root.folderListController.cacheListItemModel)
@@ -67,10 +57,12 @@ struct DetailListView: View {
         .tint(root.module.tint)
         .accentColor(root.module.tint)
     }
-    
+}
+
+private extension DetailListView {
     @ViewBuilder
     var detailEditorView: some View {
-        root.diceRoot.viewController.selectionView(root: root.diceRoot, model: root.editController.tableEditModel.selectionDice)
+        root.diceRoot.viewController.dropChooseView(model: root.editController.tableEditModel.selectionDice)
             .onChange(of: root.editController.tableEditModel.selectionDice.selection) {
                 withAnimation { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, model: model) }
             }
@@ -78,10 +70,86 @@ struct DetailListView: View {
                 withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId) }
             }
         
-        Section {
-            EntryListView(editController: root.editController, linkTypes: LinkTableModuleTransferable.self)
-        } header: {
-            Text("Entries", bundle: .module)
+        EntryListView(editController: root.editController, linkTypes: LinkTableModuleTransferable.self, headerTitle: "Entries")
+            .onChange(of: root.editController.tableEditModel.addLinkDice.selection) {
+                guard let entryId = root.editController.editorModel.currentEntryId else { return }
+                let selection = root.editController.tableEditModel.addLinkDice.selection
+                for link in selection {
+                    withAnimation { root.editController.add(link: "Dice - Link", module: .dice, itemId: link.itemId, entryId: link.entryId, destinationEntryId: entryId) }
+
+                }
+            }
+
+    }
+
+    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
+        ToolbarItemGroup(placement: .secondaryActionAll) {
+            Button {
+                navigator.navigate(to: EditorRoute.quickEditor, method: .cover)
+            } label: {
+                Label {
+                    Text("Quick Editor", bundle: .module)
+                } icon: {
+                    Image(systemName: "table.badge.more")
+                }
+            }
+            Divider()
+            Button {
+                withAnimation {
+                    let entryId = root.editController.addNewEntry()
+                    root.editController.editorModel.currentEntryId = entryId
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(0.25))
+                        root.editController.editorModel.scrollEntryId = entryId
+                    }
+                }
+            } label: {
+                Label {
+                    Text("Add new Entry", bundle: .module)
+                } icon: {
+                    Image(systemName: "note.text.badge.plus")
+                }
+            }
+        }
+        
+        ToolbarItemGroup(placement: .keyboard) {
+            Button {
+                withAnimation {
+                    navigator.navigate(to: EditorRoute.addLink(.dice), method: .managedSheet)
+                }
+            } label: {
+                Label {
+                    Text("Link", bundle: .module)
+                } icon: {
+                    Image(systemName: NetworkModules.dice.icon)
+                }
+            }
+            
+            Button {
+                withAnimation {
+                    navigator.navigate(to: EditorRoute.addLink(.table), method: .managedSheet)
+                }
+            } label: {
+                Label {
+                    Text("Link", bundle: .module)
+                } icon: {
+                    Image(systemName: NetworkModules.table.icon)
+                }
+            }
+        }
+    }
+    
+    private func addLinkButton(module: NetworkModules) -> some View {
+        Button {
+            withAnimation {
+                navigator.navigate(to: EditorRoute.addLink(module), method: .managedSheet)
+            }
+        } label: {
+            Label {
+                Text("Link", bundle: .module)
+            } icon: {
+                Image(systemName: module.icon)
+            }
         }
     }
 }

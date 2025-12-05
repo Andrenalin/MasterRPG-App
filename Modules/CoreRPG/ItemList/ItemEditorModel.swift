@@ -20,6 +20,8 @@ public final class ItemEditorModel: Sendable {
 
     public internal(set) var currentItemId: UUID?
     public var currentEntryId: UUID?
+    public var scrollEntryId: UUID?
+    
     public var currentSecondaryId: UUID?
 
     public var zoomNamespaceId: Namespace.ID?

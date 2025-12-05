@@ -78,6 +78,21 @@ extension EditController: EntryDataEditable {
         itemControllable.fileUrlDataController
     }
     
+    public var linkModules: [NetworkModules] { [.audio, .value, .dice, .map, .pdf, .photo, .table] }
+    
+    public func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination {
+        EditorRoute.linkSelection(entryId)
+    }
+    
+    public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
+        switch module {
+        case .dice:
+            SelectionDiceRoute.selection
+        default:
+            SelectionTableRoute.selection
+        }
+    }
+
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
         module == .audio || (module == .value && entryId == nil) || module == .dice || module == .map || module == .pdf || module == .photo || (module == .table && entryId == nil)
     }

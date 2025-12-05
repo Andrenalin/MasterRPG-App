@@ -90,11 +90,7 @@ struct DetailListView: View {
                 withAnimation { root.editController.mapEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
             }
         
-        Section {
-            EntryListView(editController: root.editController, linkTypes: LinkMapModuleTransferable.self)
-        } header: {
-            Text("Rooms", bundle: .module)
-        }
+        EntryListView(editController: root.editController, linkTypes: LinkMapModuleTransferable.self, headerTitle: "Rooms")
     }
 }
 

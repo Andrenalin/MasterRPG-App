@@ -8,6 +8,7 @@ import SwiftUI
 enum EditorRoute: Equatable, Hashable, Codable {
     case quickEditor
     case selectionPdf
+    case linkSelection(UUID)
 }
 
 extension EditorRoute: NavigationDestination {
@@ -27,6 +28,8 @@ struct DestinationEditorRoute: View {
             QuickEntryEditor()
         case .selectionPdf:
             root.pdfRoot.viewController.selectionView( model: root.editController.mapEditModel.selectionPdf)
+        case .linkSelection(let entryId):
+            EditorLinkView()
         }
     }
 }

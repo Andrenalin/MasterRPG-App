@@ -21,7 +21,6 @@ struct InternalRouteDestinationView: View {
     var body: some View {
         switch route {
         case .export(let ids):
-            Text("")
             ExportProgressPanelView(exportController: root.exportControllable) {
                 let exportIds = root.exportControllable.exporting(ids: Set(ids))
                 return root.exportControllable.export(ids: exportIds)

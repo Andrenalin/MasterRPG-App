@@ -1,13 +1,15 @@
 // @copyright André Trettin
 
 import CoreRPG
-
+import DiceRPG
 import PdfRPG
 import SwiftUI
 
 public enum EditorRoute: Equatable, Hashable, Codable {
     case quickEditor
     case selectionPdf
+    case linkSelection(UUID)
+    case addLink(NetworkModules)
 }
 
 extension EditorRoute: NavigationDestination {
@@ -27,6 +29,15 @@ struct DestinationTableEditorRoute: View {
             QuickEntryEditor()
         case .selectionPdf:
             root.pdfRoot.viewController.selectionView(model: root.editController.tableEditModel.selectionPdf)
+        case .linkSelection(let entryId):
+            EditorLinkView()
+        case .addLink(let module):
+            switch module {
+            case .dice:
+                root.diceRoot.viewController.selectionView(model: root.editController.tableEditModel.addLinkDice)
+            default:
+                root.viewController.selectionView(model: root.editController.tableEditModel.addLinkTable)
+            }
         }
     }
 }

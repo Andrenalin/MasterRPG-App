@@ -18,18 +18,21 @@ extension ViewController: ViewControllable {
 // MARK: Viewer
 
 public extension ViewController {
+    func dropChooseView(model: ItemSelectionModel) -> some View {
+        DiceDropChooseView(model: model)
+            .environment(model)
+    }
+
     @MainActor func linkWindow(isInspector: Bool = false) -> some View {
         LinkRootView(type: isInspector ? .inspector : .window)
             .environment(ItemSelectionModel())
     }
     
-    func selectionView(root: DiceRootModel, model: ItemSelectionModel) -> some View {
-        DiceDropChooseView(model: model)
+    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
+        LinkRootView(type: .selection)
             .environment(model)
-            .environment(root)
     }
 }
-
 
 public extension ViewController {
     @MainActor

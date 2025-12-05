@@ -92,6 +92,21 @@ extension EditController: EntryDataEditable {
         true
     }
 
+    public var linkModules: [NetworkModules] { [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather] }
+    
+    public func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination {
+        EditorRoute.linkSelection(entryId)
+    }
+    
+    public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
+        switch module {
+        case .dice:
+            SelectionDiceRoute.selection
+        default:
+            SelectionTableRoute.selection
+        }
+    }
+
     func create(name: String, content: String) -> AdventureEntryModel {
         AdventureEntryModel(id: UUID(), name: name, content: content)
     }

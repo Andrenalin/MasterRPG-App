@@ -12,7 +12,9 @@ public protocol EntryDataEditable: EditControllable {
 
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID)
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool
-
+    var linkModules: [NetworkModules] { get }
+    func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination
+    func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination
     
     @MainActor func create(name: String, content: String) -> Model.Entry
     @MainActor func merge(entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]

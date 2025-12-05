@@ -90,11 +90,7 @@ struct DetailListView: View {
                 withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
             }
         
-        Section {
-            EntryListView(editController: root.editController, linkTypes: LinkAdventureModuleTransferable.self)
-        } header: {
-            Text("Sections", bundle: .module)
-        }
+        EntryListView(editController: root.editController, linkTypes: LinkAdventureModuleTransferable.self, headerTitle: "Sections")
     }
 }
 

@@ -17,7 +17,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.hasOverlay = false
         self.entryEditor = entryEditor()
     }
-
+    
     public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
         self.detailListController = detailListController
         self.selectedId = selectedId
@@ -30,7 +30,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.hasOverlay = true
         self.entryEditor = entryEditor()
     }
-
+    
     public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView {
         self.detailListController = detailListController
         self.selectedId = selectedId
@@ -43,7 +43,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.hasOverlay = true
         self.entryEditor = entryEditor()
     }
-
+    
     public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView, Overlay == EmptyView {
         self.detailListController = detailListController
         self.selectedId = selectedId
@@ -56,7 +56,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.hasOverlay = false
         self.entryEditor = entryEditor()
     }
-
+    
     let selectedId: UUID?
     let editorAsBackground: Bool
     let header: Header
@@ -73,7 +73,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @Environment(ListDisplayModel.self) private var listDisplayModel
     @Environment(SearchModel.self) private var searchModel
     @Environment(OpenFileWindowModel.self) private var openFileWindowModel
-
+    
     @Environment(ItemRootController.self) private var root
     @Environment(DetailInspectorModel.self) private var detailInspectorModel
     
@@ -270,12 +270,19 @@ private extension ItemDetailRootView {
     }
     
     func formEditor(model: any ItemDataAccessable) -> some View {
-        Form {
-            if model.description.isEmpty == false {
-                ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
+        ScrollViewReader { scrollProxy in
+            Form {
+                if model.description.isEmpty == false {
+                    ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true)
+                }
+                
+                editor
+                    .onChange(of: root.editControllable.editorModel.scrollEntryId) {
+                        guard let scrollEntryId = root.editControllable.editorModel.scrollEntryId else { return }
+                        scrollProxy.scrollTo(scrollEntryId, anchor: .bottom)
+                        root.editControllable.editorModel.scrollEntryId = nil
+                    }
             }
-            
-            editor
         }
         .formStyle(.grouped)
         .scrollBounceBehavior(.basedOnSize)
@@ -368,7 +375,7 @@ private extension ItemDetailRootView {
             inspector
         }
     }
-        
+    
     @ToolbarContentBuilder
     private func toolbarContent(model: any ItemDataAccessable) -> some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
@@ -389,20 +396,20 @@ private extension ItemDetailRootView {
 //#Preview("Folder", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root
 //    @Previewable @Query var models: [ItemDataModel]
-//    
+//
 //    ItemDetailRootView(model: models.first(where: { $0.id == MockData.folderId })!)
 //}
 //
 //#Preview("Collection", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root
 //    @Previewable @Query var models: [ItemDataModel]
-//    
+//
 //    ItemDetailRootView(model: models.first(where: { $0.id == MockData.playlistId })!)
 //}
 //
 //#Preview("Item", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root
 //    @Previewable @Query var models: [ItemDataModel]
-//    
+//
 //    ItemDetailRootView(model: models.first(where: { $0.id == MockData.previewId })!)
 //}

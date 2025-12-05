@@ -13,9 +13,12 @@ final class TableEditModel: Sendable {
     
     let pdfSelectionModel = SelectionModel(id: UUID(), filter: .all)
     
-    let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
+    let selectionPdf: ItemSelectionModel = ItemSelectionModel()
 
+    let addLinkDice: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+    let addLinkTable: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+    
     func resetLinks() {
         contentLinks = [:]
     }
@@ -65,8 +68,23 @@ extension EditController: EntryDataEditable {
         itemControllable.fileUrlDataController
     }
             
+    public var linkModules: [NetworkModules] { [.table, .dice] }
+    
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
         module == .table || module == .dice
+    }
+    
+    public func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination {
+        EditorRoute.linkSelection(entryId)
+    }
+
+    public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
+        switch module {
+        case .dice:
+            SelectionDiceRoute.selection
+        default:
+            SelectionTableRoute.selection
+        }
     }
 
     func create(name: String, content: String) -> TableEntryModel {
