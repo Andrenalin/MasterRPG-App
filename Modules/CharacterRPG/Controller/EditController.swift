@@ -84,6 +84,10 @@ extension EditController: EntryDataEditable {
         itemControllable.fileUrlDataController
     }
 
+    public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
+        (module == .value && entryId != nil) || module == .dice || module == .pdf || (module == .table && entryId != nil)
+    }
+
     func create(name: String, content: String) -> ValueEntryModel {
         ValueEntryModel(id: UUID(), name: name, type: .text, value: content)
     }

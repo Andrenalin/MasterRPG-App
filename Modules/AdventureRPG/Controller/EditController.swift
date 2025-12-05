@@ -88,6 +88,10 @@ extension EditController: EntryDataEditable {
         itemControllable.fileUrlDataController
     }
 
+    public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
+        true
+    }
+
     func create(name: String, content: String) -> AdventureEntryModel {
         AdventureEntryModel(id: UUID(), name: name, content: content)
     }

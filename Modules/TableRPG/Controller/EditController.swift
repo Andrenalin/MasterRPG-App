@@ -21,6 +21,19 @@ final class TableEditModel: Sendable {
     }
 }
 
+struct LinkTableModuleTransferable: LinkDataTransferable {
+    public var module: NetworkModules
+    public let itemId: UUID
+    public let entryId: UUID?
+    public let name: String
+
+    public static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .diceLink)
+        CodableRepresentation(contentType: .tableLink)
+        ProxyRepresentation(exporting: \.linkRepresentation)
+    }
+}
+
 struct EditController: Sendable {
     @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
         self.diceRoot = diceRoot
@@ -41,22 +54,9 @@ struct EditController: Sendable {
     let tableEditModel: TableEditModel
 }
 
-struct LinkTableModuleTransferable: LinkDataTransferable {
-    public var module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .diceLink)
-        CodableRepresentation(contentType: .tableLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-}
-
 extension EditController: EntryDataEditable {
     typealias Model = TableModel
-
+    
     var itemControllable: any ItemControllable {
         itemController
     }
@@ -64,11 +64,26 @@ extension EditController: EntryDataEditable {
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
     }
+            
+    public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
+        module == .table || module == .dice
+    }
 
     func create(name: String, content: String) -> TableEntryModel {
         TableEntryModel(id: UUID(), name: name, content: content)
     }
-    
+}
+
+// MARK: - Module Editor
+
+extension EditController {
+    @MainActor func add(diceId: UUID?, model: TableModel) {
+        model.diceId = diceId
+        save(with: "Add Dice")
+    }
+}
+
+extension EditController {
     @MainActor func didSetModel() {
         guard let id = editorModel.currentItemId else { return }
         if tableEditModel.pdfSelectionModel.id != id {
@@ -84,15 +99,6 @@ extension EditController: EntryDataEditable {
     @MainActor 
     func submitChanges() {
         tableEditModel.resetLinks()
-    }
-}
-
-// MARK: - Module Editor
-
-extension EditController {
-    @MainActor func add(diceId: UUID?, model: TableModel) {
-        model.diceId = diceId
-        save(with: "Add Dice")
     }
 }
 

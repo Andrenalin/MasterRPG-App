@@ -209,6 +209,10 @@ extension ValueEntryModel {
 }
 
 extension ValueEntryModel: EntryDataAccessable, ItemDuplicatable {
+    public var content: String {
+        get { value }
+        set { value = newValue }
+    }
     public var childId: UUID { id }
     public static func newChild(id: UUID) -> Self {
         empty(id)

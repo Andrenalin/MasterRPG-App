@@ -21,6 +21,11 @@ extension AudioEntryModel: EntryDataAccessable {
         get { "Track" }
         set {}
     }    
+    public var content: String {
+        get { "" }
+        set {}
+    }
+
     public var childId: UUID { audioId }
     
     public static var empty: AudioEntryModel { empty(UUID()) }

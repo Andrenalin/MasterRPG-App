@@ -29,11 +29,6 @@ public extension EntryDataAccessable {
         filter(with: text) || !(selectedTags.map { $0.tag }.filter { filter(with: $0) }.isEmpty)
     }
 
-    var content: String {
-        get { "" }
-        set {}
-    }
-    
     func linkContent() -> String { name }
     
     var isGroupHidden: Bool {
@@ -50,8 +45,9 @@ public struct EmtpyEntryViewModel: EntryDataAccessable, Identifiable, Equatable,
     public var id: UUID = UUID()
     public var childId: UUID = UUID()
     public var name: String = ""
+    public var content: String = ""
     public var displayState: Int = 0
-
+    
     public func duplicate() -> EmtpyEntryViewModel {
         self
     }

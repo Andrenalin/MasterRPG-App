@@ -21,6 +21,10 @@ extension SpaceEntryModel: EntryDataAccessable {
         get { "Space Model" }
         set {}
     }
+    public var content: String {
+        get { "" }
+        set {}
+    }
     public var childId: UUID { spaceId }
     
     public static var empty: SpaceEntryModel { empty(UUID()) }

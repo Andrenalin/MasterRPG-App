@@ -7,8 +7,13 @@ public protocol EntryDataEditable: EditControllable {
     func editEntries(for item: Model) -> [Model.Entry]
 
     @discardableResult @MainActor func copy(entryId: UUID, shouldSave: Bool) -> UUID
-    
+
+    // MARK: - EntryList editor
+
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID)
+    func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool
+
+    
     @MainActor func create(name: String, content: String) -> Model.Entry
     @MainActor func merge(entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
     @MainActor func remove(entryId: UUID)
@@ -16,13 +21,22 @@ public protocol EntryDataEditable: EditControllable {
 }
 
 public extension EntryDataEditable {
+    func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool { false }
+    
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID) {
+        guard canAddLink(module: module, entryId: entryId) else { return }
+        
         var entry = model[destinationEntryId]
+        var content = entry.content.trimmingCharacters(in: .whitespaces)
+        
+        let nextLinkNumer = LinkReplaceController.links(for: content).filter { $0.itemId == itemId && $0.entryId == entryId }.reduce(-1) { max($0, $1.linkNumber) } + 1
+        
         let entryLink = entryId == nil ? "" : "/\(entryId!.uuidString)"
-        let linkText = " [\(link)](\(URL.appScheme)://\(module.token)/0/\(itemId.uuidString)\(entryLink))"
-        entry.content.append(linkText)
+        let linkText = " [\(link)](\(URL.appScheme)://\(module.token)/\(nextLinkNumer)/\(itemId.uuidString)\(entryLink))"
+        content.append(linkText)
+        entry.content = content
         model[destinationEntryId] = entry
-        save(with: "Add Link")
+        save(with: String(localized: "Add Link").localizedString)
     }
     
     @MainActor

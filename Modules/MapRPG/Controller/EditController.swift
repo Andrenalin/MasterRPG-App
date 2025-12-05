@@ -77,6 +77,10 @@ extension EditController: EntryDataEditable {
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
     }
+    
+    public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
+        module == .audio || (module == .value && entryId == nil) || module == .dice || module == .map || module == .pdf || module == .photo || (module == .table && entryId == nil)
+    }
 
     func create(name: String, content: String) -> MapEntryModel {
         MapEntryModel(id: UUID(), name: name, content: content, coordinates: [])

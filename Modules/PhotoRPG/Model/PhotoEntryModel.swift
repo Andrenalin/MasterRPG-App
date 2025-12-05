@@ -21,7 +21,11 @@ extension PhotoEntryModel: EntryDataAccessable {
         get { "Photo" }
         set {}
     }
-    
+    public var content: String {
+        get { "" }
+        set {}
+    }
+
     public var childId: UUID { photoId }
     
     public static var empty: PhotoEntryModel { empty(UUID()) }

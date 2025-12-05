@@ -20,7 +20,12 @@ extension ChildEntryModel: EntryDataAccessable {
         get { "Photo" }
         set {}
     }
-        
+
+    public var content: String {
+        get { "" }
+        set {}
+    }
+
     public static var empty: ChildEntryModel { empty(UUID()) }
     public static func newChild(id: UUID) -> Self {
         ChildEntryModel(id: UUID(), childId: id)
