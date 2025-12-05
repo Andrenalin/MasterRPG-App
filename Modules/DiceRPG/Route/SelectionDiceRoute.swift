@@ -1,0 +1,37 @@
+//
+//  SelectionPhotoRoute.swift
+//  MasterRPG
+//
+//  Created by Andre Trettin on 5/12/2568 BE.
+//
+
+
+// @copyright André Trettin
+
+import CoreRPG
+
+import SwiftUI
+
+public enum SelectionPhotoRoute: Equatable, Hashable, Codable {
+    case selection
+}
+
+extension SelectionPhotoRoute: NavigationDestination {
+    public var body: some View {
+        switch self {
+        case .selection:
+            SelectionPhotoRouteDestinationView()
+        }
+    }
+}
+
+struct SelectionPhotoRouteDestinationView: View {
+    @Environment(PhotoRootModel.self) private var root
+    
+    var body: some View {
+        LinkRootView(type: .selection)
+            .environment(root.rootController)
+            .environment(root.itemSelectionModel)
+        
+    }
+}
