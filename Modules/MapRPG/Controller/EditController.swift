@@ -51,9 +51,25 @@ struct EditController: Sendable {
     let mapEditModel: MapEditModel
 }
 
+struct LinkMapModuleTransferable: LinkDataTransferable {
+    let module: NetworkModules
+    let itemId: UUID
+    let entryId: UUID?
+    let name: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .audioLink)
+        CodableRepresentation(contentType: .characterLink)
+        CodableRepresentation(contentType: .diceLink)
+        CodableRepresentation(contentType: .mapLink)
+        CodableRepresentation(contentType: .pdfLink)
+        CodableRepresentation(contentType: .photoLink)
+        CodableRepresentation(contentType: .tableLink)
+    }
+}
 extension EditController: EntryDataEditable {
     typealias Model = MapModel
-
+    
     var itemControllable: any ItemControllable {
         itemController
     }

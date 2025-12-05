@@ -79,7 +79,7 @@ struct DetailListView: View {
             }
         
         Section {
-            EntryListView(editController: root.editController)
+            EntryListView(editController: root.editController, linkTypes: LinkTableModuleTransferable.self)
         } header: {
             Text("Entries", bundle: .module)
         }

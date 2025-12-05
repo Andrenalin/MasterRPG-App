@@ -1,10 +1,11 @@
 // @copyright André Trettin
 
 import CoreRPG
+import DiceRPG
 import Foundation
 import Observation
 import SwiftUI
-import DiceRPG
+import UniformTypeIdentifiers
 
 @MainActor @Observable
 final class TableEditModel: Sendable {
@@ -38,6 +39,19 @@ struct EditController: Sendable {
     
     let editorModel: ItemEditorModel
     let tableEditModel: TableEditModel
+}
+
+struct LinkTableModuleTransferable: LinkDataTransferable {
+    public var module: NetworkModules
+    public let itemId: UUID
+    public let entryId: UUID?
+    public let name: String
+
+    public static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .diceLink)
+        CodableRepresentation(contentType: .tableLink)
+        ProxyRepresentation(exporting: \.linkRepresentation)
+    }
 }
 
 extension EditController: EntryDataEditable {

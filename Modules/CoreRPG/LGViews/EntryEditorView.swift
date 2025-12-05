@@ -66,6 +66,7 @@ public struct EntryEditorView: View {
                         .fill(Color.accentColor.opacity(0.95).gradient)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
+                .containerShape(.rect(cornerRadius: 24, style: .continuous))
             }
             .frame(maxHeight: .infinity, alignment: .center)
             .padding(32)

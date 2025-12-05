@@ -99,7 +99,7 @@ struct LogMessageList: View {
     private var attachmentView: some View {
         DisclosureGroupTV(isExpanded: $showAttachments) {
             ForEach(logController.attachments) { attachment in
-                Text(attachment.id).bold() + Text(": \(attachment.itemId)")
+                Text("**\(attachment.id)**: \(attachment.itemId)", bundle: .module)
             }
         } label: {
             Text("Attachments in Shareplay", bundle: .module)

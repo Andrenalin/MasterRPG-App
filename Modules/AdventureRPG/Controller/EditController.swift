@@ -28,8 +28,8 @@ final class AdventureEditModel: Sendable {
     let selectionMap: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
-    let selectionTable: ItemSelectionModel = ItemSelectionModel()
     let selectionSpace: ItemSelectionModel = ItemSelectionModel()
+    let selectionTable: ItemSelectionModel = ItemSelectionModel()
     let selectionWeather: ItemSelectionModel = ItemSelectionModel()
     
     func resetCurrentModel() {
@@ -55,6 +55,26 @@ struct EditController: Sendable {
 
     let editorModel: ItemEditorModel
     let adventureEditModel: AdventureEditModel
+}
+
+struct LinkAdventureModuleTransferable: LinkDataTransferable {
+    let module: NetworkModules
+    let itemId: UUID
+    let entryId: UUID?
+    let name: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .adventureLink)
+        CodableRepresentation(contentType: .audioLink)
+        CodableRepresentation(contentType: .characterLink)
+        CodableRepresentation(contentType: .diceLink)
+        CodableRepresentation(contentType: .mapLink)
+        CodableRepresentation(contentType: .pdfLink)
+        CodableRepresentation(contentType: .photoLink)
+        CodableRepresentation(contentType: .spaceLink)
+        CodableRepresentation(contentType: .tableLink)
+        CodableRepresentation(contentType: .weatherLink)
+    }
 }
 
 extension EditController: EntryDataEditable {

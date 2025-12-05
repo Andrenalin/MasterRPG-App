@@ -2,6 +2,7 @@
 
 import CoreGraphics
 import CoreRPG
+import CoreTransferable
 import Foundation
 import Observation
 
@@ -15,6 +16,17 @@ struct EditController: Sendable {
     let itemController: ItemController
     let linkRegisterControllable: any LinkRegisterControllable
     let editorModel: ItemEditorModel
+}
+
+struct LinkPdfModuleTransferable: LinkDataTransferable {
+    let module: NetworkModules
+    let itemId: UUID
+    let entryId: UUID?
+    let name: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        ProxyRepresentation(exporting: \.linkRepresentation)
+    }
 }
 
 extension EditController: EntryDataEditable {

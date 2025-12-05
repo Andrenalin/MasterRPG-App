@@ -91,7 +91,7 @@ struct DetailListView: View {
             }
         
         Section {
-            EntryListView(editController: root.editController)
+            EntryListView(editController: root.editController, linkTypes: LinkMapModuleTransferable.self)
         } header: {
             Text("Rooms", bundle: .module)
         }

@@ -3,21 +3,25 @@
 import Foundation
 import SwiftUI
 
-public struct EntryListView: View {
-    public init(editController: any EntryDataEditable) {
+public struct EntryListView<LinkType: LinkDataTransferable>: View {
+    public init(editController: any EntryDataEditable, linkTypes: LinkType.Type) {
         self.editController = editController
+        self.linkTypes = linkTypes
     }
     
     let editController: any EntryDataEditable
-        
+    let linkTypes: LinkType.Type
+    
     @Namespace private var zoomNamespace
     
     public var body: some View {
         ForEach(editController.model.entries, id: \.id) { entry in
             EntryEditRow(editController: editController, entry: entry, cacheItemListModel: editController.cacheItemListModel)
-                .dropDestination(for: .table, handler: { name, itemId, entryId in
-                    editController.add(link: name, module: .table, itemId: itemId, entryId: entryId, destinationEntryId: entry.id)
-                })
+                .dropDestination(for: linkTypes, isEnabled: true) { items, sessions in
+                    items.forEach {
+                        editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationEntryId: entry.id)
+                    }
+                }
                 .modifier(ZoomDestinationViewModifier(sourceID: entry.id.uuidString, namespace: zoomNamespace))
                 .contextMenu {
                     editButton(entry: entry)
@@ -79,7 +83,7 @@ private extension EntryListView {
             }
         }
     }
-
+    
     func removeButton(entry: any EntryDataAccessable) -> some View {
         Button(role: .destructive) {
             withAnimation {

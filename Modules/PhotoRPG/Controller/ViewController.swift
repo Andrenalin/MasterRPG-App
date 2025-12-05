@@ -34,7 +34,7 @@ public extension ViewController {
             .environment(model)
     }
     
-    func dropSelectionView(model: ItemSelectionModel) -> some View {
+    @MainActor func dropSelectionView(model: ItemSelectionModel) -> some View {
         PhotoDropChooseView(model: model)
     }
 

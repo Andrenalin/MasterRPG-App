@@ -11,16 +11,16 @@ public enum CloudKitAccountStatus: Sendable {
     case available
     case unavailable
     
-    public var title: LocalizedStringKey {
+    public var title: String {
         switch self {
         case .notChecked:
-            return "Not checked"
+            return "Not checked".localizedString
         case .noAccount:
-            return "No Account"
+            return "No Account".localizedString
         case .available:
-            return "Available"
+            return "Available".localizedString
         case .unavailable:
-            return "Unavailable"
+            return "Unavailable".localizedString
         }
     }
 }

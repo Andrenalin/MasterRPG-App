@@ -59,9 +59,23 @@ struct EditController: Sendable {
     let valueEditModel: ValueEditModel
 }
 
+public struct LinkCharacterModuleTransferable: LinkDataTransferable {
+    public var module: NetworkModules
+    public let itemId: UUID
+    public let entryId: UUID?
+    public let name: String
+
+    public static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .characterLink)
+        CodableRepresentation(contentType: .diceLink)
+        CodableRepresentation(contentType: .pdfLink)
+        CodableRepresentation(contentType: .tableLink)
+    }
+}
+
 extension EditController: EntryDataEditable {
     typealias Model = ValueModel
-
+    
     var itemControllable: any ItemControllable {
         itemController
     }

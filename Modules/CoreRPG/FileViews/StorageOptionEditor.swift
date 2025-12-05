@@ -18,7 +18,7 @@ struct StorageOptionEditor: View {
     var body: some View {
         @Bindable var appSettings = appSettings
         SectionGroupEditorView {
-            Text("iCloud Account Status: ", bundle: .module) + Text(iCloudAvailable.title, bundle: .module)
+            Text("iCloud Account Status: \(iCloudAvailable.title)", bundle: .module)
             
             Toggle(isOn: $useCloudKit) {
                 Text("Store Database in iCloud", bundle: .module)

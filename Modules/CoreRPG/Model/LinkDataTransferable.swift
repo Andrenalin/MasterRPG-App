@@ -11,7 +11,7 @@ public protocol LinkDataTransferable: Sendable, Codable, Transferable {
 }
 
 extension LinkDataTransferable {
-    var linkRepresentation: String {
+    public var linkRepresentation: String {
         if let entryId {
             return "[\(name)](\(URL.appScheme)://\(module.token)/0/\(itemId)/\(entryId))"
         } else {
@@ -50,10 +50,11 @@ extension UTType {
 }
 
 public struct LinkAdventureData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .adventure) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
+        self.module = .adventure
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -61,17 +62,18 @@ public struct LinkAdventureData: LinkDataTransferable {
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
-    public var module: NetworkModules { .adventure }
+    public let module: NetworkModules
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
 }
 
 public struct LinkAudioData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .audio) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
+        self.module = .audio
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -79,17 +81,18 @@ public struct LinkAudioData: LinkDataTransferable {
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
-    public var module: NetworkModules { .audio }
+    public let module: NetworkModules
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
 }
 
 public struct LinkCharacterData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .value) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
+        self.module = .value
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -97,17 +100,18 @@ public struct LinkCharacterData: LinkDataTransferable {
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
-    public var module: NetworkModules { .value }
+    public let module: NetworkModules
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
 }
 
 public struct LinkDiceData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .dice) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
+        self.module = .dice
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -115,17 +119,18 @@ public struct LinkDiceData: LinkDataTransferable {
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
-    public var module: NetworkModules { .dice }
+    public let module: NetworkModules
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
 }
 
 public struct LinkMapData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .map) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
+        self.module = .map
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -133,17 +138,18 @@ public struct LinkMapData: LinkDataTransferable {
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
-    public var module: NetworkModules { .map }
+    public let module: NetworkModules
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
 }
 
 public struct LinkPdfData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .pdf) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
+        self.module = .pdf
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -151,17 +157,18 @@ public struct LinkPdfData: LinkDataTransferable {
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
-    public var module: NetworkModules { .pdf }
+    public var module: NetworkModules
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
 }
 
 public struct LinkPhotoData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .photo) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
+        self.module = .photo
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -169,17 +176,18 @@ public struct LinkPhotoData: LinkDataTransferable {
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
-    public var module: NetworkModules { .photo }
+    public let module: NetworkModules
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
 }
 
 public struct LinkSpaceData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .space) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
+        self.module = .space
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -187,17 +195,18 @@ public struct LinkSpaceData: LinkDataTransferable {
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
-    public var module: NetworkModules { .space }
+    public let module: NetworkModules
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
 }
 
 public struct LinkTableData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .table) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
+        self.module = .table
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -205,17 +214,18 @@ public struct LinkTableData: LinkDataTransferable {
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
-    public var module: NetworkModules { .table }
+    public let module: NetworkModules
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
 }
 
 public struct LinkWeatherData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String) {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .weather) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
+        self.module = .weather
     }
 
     public static var transferRepresentation: some TransferRepresentation {
@@ -223,7 +233,7 @@ public struct LinkWeatherData: LinkDataTransferable {
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
-    public var module: NetworkModules { .weather }
+    public let module: NetworkModules
     public let itemId: UUID
     public let entryId: UUID?
     public let name: String
