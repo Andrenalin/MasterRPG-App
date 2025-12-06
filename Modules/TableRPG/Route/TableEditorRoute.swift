@@ -28,15 +28,15 @@ struct DestinationTableEditorRoute: View {
         case .quickEditor:
             QuickEntryEditor()
         case .selectionPdf:
-            root.pdfRoot.viewController.selectionView(model: root.editController.tableEditModel.selectionPdf)
+            root.pdfRoot.viewController.linkListView(type: .selection, itemSelectionModel: root.editController.tableEditModel.selectionPdf)
         case .linkSelection(let entryId):
             EditorLinkView()
         case .addLink(let module):
             switch module {
             case .dice:
-                root.diceRoot.viewController.selectionView(model: root.editController.tableEditModel.addLinkDice)
+                root.diceRoot.viewController.linkListView(type: .selection, itemSelectionModel: root.editController.tableEditModel.addLinkDice)
             default:
-                root.viewController.selectionView(model: root.editController.tableEditModel.addLinkTable)
+                root.viewController.linkListView(type: .inspector, itemSelectionModel: root.editController.tableEditModel.addLinkTable)
             }
         }
     }

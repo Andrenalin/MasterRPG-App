@@ -59,17 +59,7 @@ struct DetailListView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .secondaryActionAll) {
-                Button {
-                    navigator.navigate(to: EditorRoute.quickEditor, method: .cover)
-                } label: {
-                    Label {
-                        Text("Quick Editor", bundle: .module)
-                    } icon: {
-                        Image(systemName: "table.badge.more")
-                    }
-                }
-            }
+            toolbarContent
         }
         .environment(openFileWindowModel)
         .environment(root.folderListController.cacheListItemModel)
@@ -79,9 +69,10 @@ struct DetailListView: View {
         .tint(root.module.tint)
         .accentColor(root.module.tint)
     }
-    
-    @ViewBuilder
-    var detailEditorView: some View {
+}
+
+private extension DetailListView {
+    @ViewBuilder var detailEditorView: some View {
         root.photoRoot.viewController.dropSelectionView(model: root.editController.adventureEditModel.selectionPhoto)
             .onChange(of: root.editController.adventureEditModel.selectionPhoto.itemId) {
                 withAnimation { root.editController.add(photoId: root.editController.adventureEditModel.selectionPhoto.itemId) }
@@ -91,6 +82,39 @@ struct DetailListView: View {
             }
         
         EntryListView(editController: root.editController, linkTypes: LinkAdventureModuleTransferable.self, headerTitle: "Sections")
+    }
+    
+    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
+        ToolbarItemGroup(placement: .secondaryActionAll) {
+            ControlGroup {
+                Button {
+                    navigator.navigate(to: EditorRoute.quickEditor, method: .cover)
+                } label: {
+                    Label {
+                        Text("Quick Editor", bundle: .module)
+                    } icon: {
+                        Image(systemName: "table.badge.more")
+                    }
+                }
+                
+                Button {
+                    withAnimation {
+                        let entryId = root.editController.addNewEntry()
+                        root.editController.editorModel.currentEntryId = entryId
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .seconds(0.25))
+                            root.editController.editorModel.scrollEntryId = entryId
+                        }
+                    }
+                } label: {
+                    Label {
+                        Text("Add new Entry", bundle: .module)
+                    } icon: {
+                        Image(systemName: "note.text.badge.plus")
+                    }
+                }
+            }
+        }
     }
 }
 

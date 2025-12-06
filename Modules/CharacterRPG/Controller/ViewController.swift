@@ -29,11 +29,11 @@ extension ViewController {
 // MARK: - Viewer
 
 public extension ViewController {
-    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
-        LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(ItemSelectionModel())
+    @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
+        LinkRootView(type: type)
+            .environment(itemSelectionModel)
     }
-    
+
     @MainActor func windowViewer(root: CharacterRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return CharacterSheet(model: model, showTopImage: false, dismissAction: nil)
@@ -44,7 +44,7 @@ public extension ViewController {
         return CharacterSheet(model: model, showTopImage: false, dismissAction: dismissAction)
     }
     
-    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
+    @MainActor func dropChooseView(model: ItemSelectionModel) -> some View {
         DropChooseView(selectionModel: model)
             .environment(model)
     }

@@ -103,6 +103,37 @@ extension EditController: EntryDataEditable {
         (module == .value && entryId != nil) || module == .dice || module == .pdf || (module == .table && entryId != nil)
     }
 
+    @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID) {
+        guard canAddLink(module: module, entryId: entryId) else { return }
+        
+        switch module {
+        case .table:
+            if let entryId {
+                addLinkInName(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+            }
+        case .dice:
+            var entry = model[destinationEntryId]
+            entry.diceId = itemId
+            model[destinationEntryId] = entry
+            save(with: String(localized: "Add Dice").localizedString)
+
+        case .pdf, .value:
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+        default:
+            return
+        }
+    }
+    
+    @MainActor private func addLinkInName(link: String, module: NetworkModules, itemId: UUID, entryId: UUID, destinationEntryId: UUID) {
+        var entry = model[destinationEntryId]
+        
+        let entryLink = "/\(entryId.uuidString)"
+        let linkText = " [\(link)](\(URL.appScheme)://\(module.token)/0/\(itemId.uuidString)\(entryLink))"
+        entry.name = linkText
+        model[destinationEntryId] = entry
+        save(with: String(localized: "Add Link").localizedString)
+    }
+
     func create(name: String, content: String) -> ValueEntryModel {
         ValueEntryModel(id: UUID(), name: name, type: .text, value: content)
     }

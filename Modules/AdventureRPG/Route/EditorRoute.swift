@@ -27,7 +27,7 @@ struct DestinationEditorRoute: View {
         case .quickEditor:
             QuickEntryEditor()
         case .selectionPdf:
-            root.pdfRoot.viewController.selectionView( model: root.editController.adventureEditModel.selectionPdf)
+            root.pdfRoot.viewController.linkListView(type: .selection, itemSelectionModel: root.editController.adventureEditModel.selectionPdf)
         case .linkSelection(let entryId):
             EditorLinkView()
         }

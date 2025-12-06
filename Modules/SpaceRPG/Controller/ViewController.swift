@@ -13,11 +13,16 @@ extension ViewController: ViewControllable {}
 // MARK: - New Views
 
 public extension ViewController {
-    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
-        LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(ItemSelectionModel())
+    @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
+        LinkRootView(type: type)
+            .environment(itemSelectionModel)
     }
-    
+
+    @MainActor func inlineViewer(root: SpaceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: id)
+        return SpaceExternalHeader(editController: root.editController, model: model, isModal: true)
+    }
+
     @MainActor func windowViewer(root: SpaceRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return NavigationStack {
@@ -25,16 +30,6 @@ public extension ViewController {
         }
         .ignoresSafeArea()
         .navigationTitle(model.name)
-    }
-
-    @MainActor func inlineViewer(root: SpaceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return SpaceExternalHeader(editController: root.editController, model: model, isModal: true)
-    }
-    
-    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
-        LinkRootView(type: .selection)
-            .environment(model)
     }
 }
 

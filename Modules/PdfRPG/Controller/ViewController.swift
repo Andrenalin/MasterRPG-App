@@ -13,18 +13,9 @@ extension ViewController: ViewControllable {}
 // MARK: Viewer
 
 public extension ViewController {
-    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
-        LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(ItemSelectionModel())
-    }
-
-    @MainActor func windowViewer(root: PdfRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return NavigationStack {
-            PdfViewerView(model: model, entryId: selection.entryId, withoutBookmark: false)
-        }
-        .ignoresSafeArea()
-        .navigationTitle(model.name)
+    @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
+        LinkRootView(type: type)
+            .environment(itemSelectionModel)
     }
 
     @MainActor func inlineViewer(root: PdfRootModel, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
@@ -32,9 +23,13 @@ public extension ViewController {
         return PdfViewerView(model: model, entryId: nil, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
     }
     
-    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
-        LinkRootView(type: .selection)
-            .environment(model)
+    @MainActor func windowViewer(root: PdfRootModel, selection: WindowItemSelection) -> some View {
+        let model = root.itemController.itemOrEmpty(for: selection.itemId)
+        return NavigationStack {
+            PdfViewerView(model: model, entryId: selection.entryId, withoutBookmark: false)
+        }
+        .ignoresSafeArea()
+        .navigationTitle(model.name)
     }
 }
 

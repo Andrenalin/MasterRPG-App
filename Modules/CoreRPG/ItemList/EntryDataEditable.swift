@@ -26,6 +26,10 @@ public extension EntryDataEditable {
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool { false }
     
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID) {
+        addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+    }
+
+    @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID) {
         guard canAddLink(module: module, entryId: entryId) else { return }
         
         var entry = model[destinationEntryId]
@@ -40,7 +44,7 @@ public extension EntryDataEditable {
         model[destinationEntryId] = entry
         save(with: String(localized: "Add Link").localizedString)
     }
-    
+
     @MainActor
     var editEntries: [Model.Entry] {
         editEntries(for: model)

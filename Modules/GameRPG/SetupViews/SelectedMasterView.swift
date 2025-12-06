@@ -14,7 +14,7 @@ struct SelectedMasterView: View {
     var body: some View {
         GroupBoxTV(isCard: true) {
             VStack {
-                root.characterRoot.viewController.selectionView(model: selection)
+                root.characterRoot.viewController.dropChooseView(model: selection)
             }
             .frame(maxWidth: .infinity)
 #if os(macOS)

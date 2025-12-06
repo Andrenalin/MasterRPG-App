@@ -21,25 +21,25 @@ struct WindowLinkList: Scene {
     
     var body: some Scene {
         Group {
-            windowGroup(model: appModel, module: .adventure, key: "1", content: appModel.adventureRoot.viewController.linkWindow())
+            windowGroup(model: appModel, module: .adventure, key: "1", content: appModel.adventureRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.adventureRoot.linkSelectionModel))
 
-            windowGroup(model: appModel, module: .value, key: "2", content: appModel.characterRoot.viewController.linkWindow())
+            windowGroup(model: appModel, module: .value, key: "2", content: appModel.characterRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.characterRoot.linkSelectionModel))
 
-            windowGroup(model: appModel, module: .pdf, key: "3", content: appModel.pdfRoot.viewController.linkWindow())
+            windowGroup(model: appModel, module: .pdf, key: "3", content: appModel.pdfRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.pdfRoot.itemSelectionModel))
 
-            windowGroup(model: appModel, module: .table, key: "4", content: appModel.tableRoot.viewController.linkWindow())
+            windowGroup(model: appModel, module: .table, key: "4", content: appModel.tableRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.tableRoot.linkSelectionModel))
 
-            windowGroup(model: appModel, module: .map, key: "5", content: appModel.mapRoot.viewController.linkWindow())
+            windowGroup(model: appModel, module: .map, key: "5", content: appModel.mapRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.mapRoot.linkSelectionModel))
 
-            windowGroup(model: appModel, module: .audio, key: "6", content: appModel.audioRoot.viewController.linkWindow())
+            windowGroup(model: appModel, module: .audio, key: "6", content: appModel.audioRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.audioRoot.linkSelectionModel))
 
-            windowGroup(model: appModel, module: .dice, key: "7", content: appModel.diceRoot.viewController.linkWindow())
+            windowGroup(model: appModel, module: .dice, key: "7", content: appModel.diceRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.diceRoot.linkSelectionModel))
 
-            windowGroup(model: appModel, module: .photo, key: "8", content: appModel.photoRoot.viewController.linkWindow())
+            windowGroup(model: appModel, module: .photo, key: "8", content: appModel.photoRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.photoRoot.linkSelectionModel))
 
-            windowGroup(model: appModel, module: .space, key: "9", content: appModel.spaceRoot.viewController.linkWindow())
+            windowGroup(model: appModel, module: .space, key: "9", content: appModel.spaceRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.spaceRoot.linkSelectionModel))
 
-            windowGroup(model: appModel, module: .weather, key: "0", content: appModel.weatherRoot.viewController.linkWindow())
+            windowGroup(model: appModel, module: .weather, key: "0", content: appModel.weatherRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.weatherRoot.linkSelectionModel))
         }
         .defaultSize(CGSize(width: 400, height: 800))
     }

@@ -19,31 +19,26 @@ extension ViewController: ViewControllable {
 // MARK: - Viewer
 
 public extension ViewController {
-    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
-        LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(ItemSelectionModel())
-    }
-    
-    @MainActor func inlineViewer(root: PhotoRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return RootPhotoViewer(model: model, toolBarModel: GameToolBarModel())
-    }
-    
-    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
-        LinkRootView(type: .selection)
-            .environment(model)
-    }
-    
     @MainActor func dropSelectionView(model: ItemSelectionModel) -> some View {
         PhotoDropChooseView(model: model)
     }
-
+    
+    @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
+        LinkRootView(type: type)
+            .environment(itemSelectionModel)
+    }
+    
     @ViewBuilder @MainActor func thumbnailRow(root: PhotoRootModel, for itemId: UUID) -> some View {
         if let model = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
             ThumbnailRowPhotoView(cacheController: cacheController, model: model)
                 .environment(root.editController.cacheItemListModel)
                 .environment(root.listDisplayModel)
         }
+    }
+
+    @MainActor func inlineViewer(root: PhotoRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: id)
+        return RootPhotoViewer(model: model, toolBarModel: GameToolBarModel())
     }
     
     @MainActor func windowViewer(root: PhotoRootModel, selection: WindowItemSelection) -> some View {

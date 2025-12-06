@@ -28,9 +28,10 @@ struct DetailListView: View {
     
     @Environment(\.navigator) private var navigator
     
+    @State private var animate: Bool = false
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.weather.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
-    @State private var animate: Bool = false
+    @State private var photoSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: true, allowCollections: false, allowEntrySelection: false)
     
     var body: some View {
         content(listController: detailFolderListController)
@@ -46,7 +47,7 @@ struct DetailListView: View {
         } editor: {
             WeatherEditor(model: model)
         } inspector: {
-            root.photoRoot.viewController.linkWindow(isInspector: true)
+            root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
         } overlay: {
             OverlayViewer(animate: $animate)
         }

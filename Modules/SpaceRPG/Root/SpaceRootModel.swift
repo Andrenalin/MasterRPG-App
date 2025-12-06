@@ -29,8 +29,8 @@ public final class SpaceRootModel: @unchecked Sendable {
         let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
         self.searchModel = searchModel
         
-        let itemSelectionModel = ItemSelectionModel()
-        self.itemSelectionModel = itemSelectionModel
+        self.itemSelectionModel = ItemSelectionModel()
+        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -60,6 +60,8 @@ public final class SpaceRootModel: @unchecked Sendable {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
+    public var linkSelectionModel: ItemSelectionModel
+    
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     

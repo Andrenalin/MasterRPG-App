@@ -30,9 +30,9 @@ public final class AudioRootModel: @unchecked Sendable {
         let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.music, .playlist, .sound])
         self.searchModel = searchModel
         
-        let itemSelectionModel = ItemSelectionModel()
-        self.itemSelectionModel = itemSelectionModel
-        
+        self.itemSelectionModel = ItemSelectionModel()
+        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+
         let audioPlayerModel = AudioPlayerModel()
         self.audioPlayerModel = audioPlayerModel
     }
@@ -71,6 +71,8 @@ public final class AudioRootModel: @unchecked Sendable {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
+    public var linkSelectionModel: ItemSelectionModel
+    
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     

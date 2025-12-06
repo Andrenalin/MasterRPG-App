@@ -22,6 +22,8 @@ public final class RootModel: Sendable {
 @Observable
 public final class WeatherRootModel: @unchecked Sendable {
     @MainActor init(container: ModelContainer, photoRoot: PhotoRootModel) {
+        self.photoRoot = photoRoot
+        
         rootModel = RootModel()
         let module: NetworkModules = .weather
         self.module = module
@@ -31,10 +33,8 @@ public final class WeatherRootModel: @unchecked Sendable {
         let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.adventure, .map, .scenario])
         self.searchModel = searchModel
         
-        let itemSelectionModel = ItemSelectionModel()
-        self.itemSelectionModel = itemSelectionModel
-
-        self.photoRoot = photoRoot
+        self.itemSelectionModel = ItemSelectionModel()
+        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -66,6 +66,8 @@ public final class WeatherRootModel: @unchecked Sendable {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
+    public var linkSelectionModel: ItemSelectionModel
+    
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     

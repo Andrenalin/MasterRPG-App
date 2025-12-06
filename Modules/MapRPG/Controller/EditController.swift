@@ -96,6 +96,20 @@ extension EditController: EntryDataEditable {
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
         module == .audio || (module == .value && entryId == nil) || module == .dice || module == .map || module == .pdf || module == .photo || (module == .table && entryId == nil)
     }
+    
+    @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID) {
+        guard canAddLink(module: module, entryId: entryId) else { return }
+        
+        switch module {
+        case .audio, .dice, .map, .pdf, .photo, .table:
+            add(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+        case .value:
+            add(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+            addMonsters(to: model, entryId: destinationEntryId, location: nil, monsters: [ItemRowModel(itemId: itemId, typeId: .value)], number: 1)
+        default:
+            return
+        }
+    }
 
     func create(name: String, content: String) -> MapEntryModel {
         MapEntryModel(id: UUID(), name: name, content: content, coordinates: [])

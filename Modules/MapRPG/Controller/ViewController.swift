@@ -18,8 +18,7 @@ extension ViewController: ViewControllable {
 // MARK: External Views
 
 extension ViewController {
-    @MainActor
-    func diceSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
+    @MainActor func diceSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.diceRoot.viewController.dropChooseView(model: selectionModel)
     }
 }
@@ -27,11 +26,11 @@ extension ViewController {
 // MARK: - Viewer
 
 public extension ViewController {
-    @MainActor func linkWindow(isInspector: Bool = false) -> some View {
-        LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(ItemSelectionModel())
+    @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
+        LinkRootView(type: type)
+            .environment(itemSelectionModel)
     }
-    
+
     @MainActor func windowViewer(root: MapRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return MapSheet(model: model, showTopImage: false, dismissAction: nil)
@@ -40,11 +39,6 @@ public extension ViewController {
     @MainActor func inlineViewer(root: MapRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return MapSheet(model: model, showTopImage: false, dismissAction: dismissAction)
-    }
-    
-    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
-        LinkRootView(type: .selection)
-            .environment(model)
     }
 }
 

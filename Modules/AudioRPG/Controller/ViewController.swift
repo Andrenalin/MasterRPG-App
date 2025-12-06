@@ -19,15 +19,9 @@ extension ViewController: ViewControllable {
 // MARK: - New Views
 
 public extension ViewController {
-    @MainActor
-    func linkWindow(isInspector: Bool = false) -> some View {
-        LinkRootView(type: isInspector ? .inspector : .window)
-            .environment(ItemSelectionModel())
-    }
-        
-    @MainActor func selectionView(model: ItemSelectionModel) -> some View {
-        LinkRootView(type: .selection)
-            .environment(model)
+    @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
+        LinkRootView(type: type)
+            .environment(itemSelectionModel)
     }
 }
 

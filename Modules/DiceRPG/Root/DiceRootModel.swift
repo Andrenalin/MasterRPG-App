@@ -32,6 +32,7 @@ public final class DiceRootModel: @unchecked Sendable {
         
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
+        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false)
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -65,6 +66,8 @@ public final class DiceRootModel: @unchecked Sendable {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
+    public var linkSelectionModel: ItemSelectionModel
+    
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     

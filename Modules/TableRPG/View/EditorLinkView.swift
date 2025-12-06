@@ -8,8 +8,9 @@ struct EditorLinkView: View {
     @Environment(TableRootModel.self) private var root
     
     @State private var selection: NetworkModules = .table
-    @State private var itemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: true, allowCollections: true, allowEntrySelection: true)
-    
+    @State private var diceSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false)
+    @State private var tableSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+
     var body: some View {
         VStack {
             Picker(selection: $selection) {
@@ -24,10 +25,9 @@ struct EditorLinkView: View {
             ZStack {
                 switch selection {
                 case .dice:
-                    root.diceRoot.viewController.linkWindow(isInspector: true)
+                    root.diceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: diceSelectionModel)
                 default:
-                    LinkItemRootView(root: root.rootController, type: .inspector)
-                        .environment(itemSelectionModel)
+                    root.viewController.linkListView(type: .inspector, itemSelectionModel: tableSelectionModel)
                 }
             }
         }
