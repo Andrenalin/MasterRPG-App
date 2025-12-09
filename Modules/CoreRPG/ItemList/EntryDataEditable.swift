@@ -3,6 +3,16 @@
 import Foundation
 import SwiftUI
 
+public enum ThumbnailEntryViewType: Hashable, Sendable {
+    case none
+    case photo
+}
+
+public enum AdditionalEntryViewType: Hashable, Sendable {
+    case none
+    case custom
+}
+
 public protocol EntryDataEditable: EditControllable {
     func editEntries(for item: Model) -> [Model.Entry]
 
@@ -12,9 +22,15 @@ public protocol EntryDataEditable: EditControllable {
 
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID)
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool
+    
     var linkModules: [NetworkModules] { get }
     func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination
     func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination
+    
+    var thumbnailEntryViewType: ThumbnailEntryViewType { get }
+    var additioanlEnrtryViewType: AdditionalEntryViewType { get }
+    
+    @MainActor func additionalRowView(for entryId: UUID) -> AnyView
     
     @MainActor func create(name: String, content: String) -> Model.Entry
     @MainActor func merge(entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
@@ -44,7 +60,12 @@ public extension EntryDataEditable {
         model[destinationEntryId] = entry
         save(with: String(localized: "Add Link").localizedString)
     }
+    
+    var thumbnailEntryViewType: ThumbnailEntryViewType { .none }
+    var additioanlEnrtryViewType: AdditionalEntryViewType { .none }
 
+    @MainActor func additionalRowView(for entryId: UUID) -> AnyView { AnyView(EmptyView()) }
+    
     @MainActor
     var editEntries: [Model.Entry] {
         editEntries(for: model)

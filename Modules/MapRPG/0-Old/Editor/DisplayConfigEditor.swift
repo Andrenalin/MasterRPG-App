@@ -21,7 +21,7 @@ struct DisplayConfigEditor: View {
                     Text("Cover color", bundle: .module)
                 }
                 .labelsHidden()
-                .tint(Color.accentColor)
+                .tint(root.module.tint)
             } label: {
                 Text("Cover color", bundle: .module)
             }
@@ -31,7 +31,7 @@ struct DisplayConfigEditor: View {
                     Label { Text("Activate Border", bundle: .module) } icon: { Image(systemName: "rectangle") }
                 }
                 .labelsHidden()
-                .tint(Color.accentColor)
+                .tint(root.module.tint)
             } label: {
                 Text("Activate Border", bundle: .module)
             }
@@ -83,7 +83,7 @@ struct DisplayConfigBorderEditor: View {
                     Text("Border color", bundle: .module)
                 }
                 .labelsHidden()
-                .tint(Color.accentColor)
+                .tint(root.module.tint)
 #else
                 Text("Color Picker not available", bundle: .module)
 #endif

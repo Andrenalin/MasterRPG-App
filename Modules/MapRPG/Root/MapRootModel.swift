@@ -134,7 +134,7 @@ public final class MapRootModel: @unchecked Sendable {
             searchModel: searchModel,
             itemSelectionModel: ItemSelectionModel(),
             removeEntryListModel: RemoveEntryListModel(),
-            cacheControllable: nil,
+            cacheControllable: cacheController,
             editControllable: editController,
             exportControllable: exportControllable,
             gameControllable: gameControllable,

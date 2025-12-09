@@ -3,13 +3,15 @@
 import SwiftUI
 
 public struct ThumbnailRowPhotoView: View {
-    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable) {
+    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, entryId: UUID? = nil) {
         self.cacheController = cacheController
         self.model = model
+        self.entryId = entryId
     }
 
     let cacheController: ImageCacheControllable
     let model: any ItemDataAccessable
+    let entryId: UUID?
 
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
@@ -65,7 +67,7 @@ private extension ThumbnailRowPhotoView {
     }
     
     var cachedImage: AKImage? {
-        cacheItemListModel.imageCache(cacheType: .thumbnail, itemId: model.id)
+        cacheItemListModel.imageCache(cacheType: .thumbnail, itemId: entryId ?? model.id)
     }
 
     func imageView(image: AKImage) -> some View {
@@ -116,7 +118,7 @@ private extension ThumbnailRowPhotoView {
 
     func loadImage() {
         Task { @MainActor in
-            let fileId = model.id
+            let fileId = entryId ?? model.id
             let loaderTask = Task.detached(priority: .userInitiated) {
                 await cacheController.thumbnailId(for: fileId, item: model)
             }

@@ -81,6 +81,8 @@ private extension DetailListView {
                 withAnimation { root.editController.mapEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
             }
         
+        DisplayConfigEditor(editController: root.editController)
+        
         EntryListView(editController: root.editController, linkTypes: LinkMapModuleTransferable.self, headerTitle: "Rooms")
     }
     

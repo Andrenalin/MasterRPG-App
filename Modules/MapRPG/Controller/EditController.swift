@@ -102,13 +102,20 @@ extension EditController: EntryDataEditable {
         
         switch module {
         case .audio, .dice, .map, .pdf, .photo, .table:
-            add(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
         case .value:
-            add(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
             addMonsters(to: model, entryId: destinationEntryId, location: nil, monsters: [ItemRowModel(itemId: itemId, typeId: .value)], number: 1)
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
         default:
             return
         }
+    }
+    
+    public var thumbnailEntryViewType: ThumbnailEntryViewType { .photo }
+    public var additioanlEnrtryViewType: AdditionalEntryViewType { .custom }
+
+    @MainActor public func additionalRowView(for entryId: UUID) -> AnyView {
+        AnyView(AddtionalEntryRow(entryId: entryId).equatable())
     }
 
     func create(name: String, content: String) -> MapEntryModel {
@@ -470,7 +477,7 @@ extension EditController {
 
     @MainActor
     private func addMonsters(to model: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
-        let values = monsters.map { root.characterRoot.linkController.generateLink(model: $0) }.joined(separator: ", ")
+        //let values = monsters.map { root.characterRoot.linkController.generateLink(model: $0) }.joined(separator: ", ")
 
         let pinNumber = min(max(1, number), 25)
         
@@ -482,7 +489,7 @@ extension EditController {
         }
 
         if let entryId {
-            model[entryId].content.append(values)
+            //model[entryId].content.append(values)
             if location == nil {
                 pins = calculateLocations(model: model, for: pins, entryId: entryId)
             }
