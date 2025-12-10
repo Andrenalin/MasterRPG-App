@@ -114,11 +114,26 @@ extension EditController: EntryDataEditable {
         case .dice:
             var entry = model[destinationEntryId]
             entry.diceId = itemId
+            if entry.type != .number || entry.type != .decimal {
+                entry.type = .number
+            }
             model[destinationEntryId] = entry
             save(with: String(localized: "Add Dice").localizedString)
 
-        case .pdf, .value:
+        case .pdf:
+            var entry = model[destinationEntryId]
+            if entry.type != .text {
+                entry.type = .text
+            }
+            model[destinationEntryId] = entry
             addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+        case .value:
+            var entry = model[destinationEntryId]
+            if entry.type != .number || entry.type != .decimal {
+                entry.type = .number
+            }
+            model[destinationEntryId] = entry
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId, separator: "+")
         default:
             return
         }

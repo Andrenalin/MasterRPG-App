@@ -45,7 +45,7 @@ public extension EntryDataEditable {
         addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
     }
 
-    @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID) {
+    @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID, separator: String = " ") {
         guard canAddLink(module: module, entryId: entryId) else { return }
         
         var entry = model[destinationEntryId]
@@ -54,7 +54,7 @@ public extension EntryDataEditable {
         let nextLinkNumer = LinkReplaceController.links(for: content).filter { $0.itemId == itemId && $0.entryId == entryId }.reduce(-1) { max($0, $1.linkNumber) } + 1
         
         let entryLink = entryId == nil ? "" : "/\(entryId!.uuidString)"
-        let linkText = " [\(link)](\(URL.appScheme)://\(module.token)/\(nextLinkNumer)/\(itemId.uuidString)\(entryLink))"
+        let linkText = "\(content.isEmpty ? "" : separator)[\(link)](\(URL.appScheme)://\(module.token)/\(nextLinkNumer)/\(itemId.uuidString)\(entryLink))"
         content.append(linkText)
         entry.content = content
         model[destinationEntryId] = entry
