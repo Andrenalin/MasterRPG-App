@@ -111,7 +111,7 @@ private extension DetailListView {
                 }
             }
         }
-        
+        #if os(iOS)
         ToolbarItemGroup(placement: .keyboard) {
             Button {
                 withAnimation {
@@ -137,6 +137,7 @@ private extension DetailListView {
                 }
             }
         }
+        #endif
     }
     
     private func addLinkButton(module: NetworkModules) -> some View {

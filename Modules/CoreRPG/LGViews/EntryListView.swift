@@ -22,11 +22,13 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
             ForEach(editController.model.entries, id: \.id) { entry in
                 EntryEditRow(editController: editController, entry: entry, cacheItemListModel: editController.cacheItemListModel)
                     .id(entry.id)
+#if !os(tvOS)
                     .dropDestination(for: linkTypes, isEnabled: true) { items, sessions in
                         items.forEach {
                             editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationEntryId: entry.id)
                         }
                     }
+#endif
                     .modifier(ZoomDestinationViewModifier(sourceID: entry.id.uuidString, namespace: zoomNamespace))
                     .contextMenu {
                         editButton(entry: entry)
