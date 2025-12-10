@@ -28,7 +28,10 @@ struct DetailListView: View {
     let model: MapModel
     
     @Environment(\.navigator) private var navigator
-    
+#if os(visionOS) || os(macOS)
+    @Environment(\.openWindow) private var openWindow
+#endif
+
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.map.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
     @State private var animate: Bool = false
@@ -96,6 +99,20 @@ private extension DetailListView {
                         Text("Quick Editor", bundle: .module)
                     } icon: {
                         Image(systemName: "table.badge.more")
+                    }
+                }
+                
+                Button {
+#if os(visionOS) || os(macOS)
+                    openWindow(id: WindowIdentifier.mapEditor.rawValue)
+#else
+                    navigator.navigate(to: EditorRoute.mapEditor, method: .cover)
+#endif
+                } label: {
+                    Label {
+                        Text("Map Editor", bundle: .module)
+                    } icon: {
+                        Image(systemName: "map")
                     }
                 }
                 

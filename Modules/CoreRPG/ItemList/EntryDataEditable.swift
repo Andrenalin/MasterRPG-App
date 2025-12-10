@@ -31,7 +31,8 @@ public protocol EntryDataEditable: EditControllable {
     var additioanlEnrtryViewType: AdditionalEntryViewType { get }
     
     @MainActor func additionalRowView(for entryId: UUID) -> AnyView
-    
+    @MainActor func rowText(entry: any EntryDataAccessable) -> String
+        
     @MainActor func create(name: String, content: String) -> Model.Entry
     @MainActor func merge(entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
     @MainActor func remove(entryId: UUID)
@@ -66,6 +67,11 @@ public extension EntryDataEditable {
 
     @MainActor func additionalRowView(for entryId: UUID) -> AnyView { AnyView(EmptyView()) }
     
+    @MainActor func rowText(entry: any EntryDataAccessable) -> String {
+        entry.name.isEmpty ? entry.content : "\(entry.name.markDownText()): \(entry.content)"
+    }
+
+
     @MainActor
     var editEntries: [Model.Entry] {
         editEntries(for: model)
@@ -232,10 +238,6 @@ public extension EntryDataEditable {
         return linkModel
     }
     
-    func rowText(entry: any EntryDataAccessable) -> String {
-        entry.name.isEmpty ? entry.content : "\(entry.name.markDownText()): \(entry.content)"
-    }
-
     @MainActor
     func isUsed(rowModels: [ItemRowModel]) -> Bool {
         for rowModel in rowModels {

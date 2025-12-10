@@ -6,6 +6,7 @@ import PdfRPG
 import SwiftUI
 
 enum EditorRoute: Equatable, Hashable, Codable {
+    case mapEditor
     case quickEditor
     case selectionPdf
     case linkSelection(UUID)
@@ -24,6 +25,8 @@ struct DestinationEditorRoute: View {
     
     var body: some View {
         switch route {
+        case .mapEditor:
+            MapEditWindow(editController: root.editController)
         case .quickEditor:
             QuickEntryEditor()
         case .selectionPdf:

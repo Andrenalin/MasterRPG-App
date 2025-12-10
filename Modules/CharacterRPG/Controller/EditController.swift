@@ -155,6 +155,10 @@ extension EditController: EntryDataEditable {
         save(with: String(localized: "Add Link").localizedString)
     }
 
+    @MainActor public func rowText(entry: any EntryDataAccessable) -> String {
+        root.linkController.linkText(model: model, entryId: entry.id)
+    }
+    
     func create(name: String, content: String) -> ValueEntryModel {
         ValueEntryModel(id: UUID(), name: name, type: .text, value: content)
     }

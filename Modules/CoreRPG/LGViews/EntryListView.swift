@@ -55,34 +55,10 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
         } header: {
             Text(headerTitle)
         }
-        .toolbar {
-            toolbarContent
-        }
     }
 }
 
 private extension EntryListView {
-    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .secondaryActionAll) {
-            Button {
-                withAnimation {
-                    let entryId = editController.addNewEntry()
-                    editController.editorModel.currentEntryId = entryId
-                    Task { @MainActor in
-                        try? await Task.sleep(for: .seconds(0.25))
-                        editController.editorModel.scrollEntryId = entryId
-                    }
-                }
-            } label: {
-                Label {
-                    Text("Add new Entry", bundle: .module)
-                } icon: {
-                    Image(systemName: "note.text.badge.plus")
-                }
-            }
-        }
-    }
-    
     func editButton(entry: any EntryDataAccessable, onlyIcon: Bool = false) -> some View {
         Button {
             withAnimation { editController.editorModel.currentEntryId = entry.id }
