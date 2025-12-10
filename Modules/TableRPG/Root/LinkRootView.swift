@@ -11,6 +11,7 @@ struct LinkRootView: View {
     
     var body: some View {
         LinkItemRootView(root: root.rootController, type: type)
+            .environment(root.rootController)
     }
 }
 

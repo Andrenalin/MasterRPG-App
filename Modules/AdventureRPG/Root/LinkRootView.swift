@@ -9,7 +9,8 @@ struct LinkRootView: View {
     @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
-            LinkItemRootView(root: root.rootController, type: type)
+        LinkItemRootView(root: root.rootController, type: type)
+            .environment(root.rootController)
     }
 }
 

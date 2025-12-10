@@ -124,6 +124,12 @@ extension EditController: EntryDataEditable {
         }
     }
     
+    public var additioanlEnrtryViewType: AdditionalEntryViewType { .custom }
+
+    @MainActor public func additionalRowView(for entryId: UUID) -> AnyView {
+        AnyView(AddtionalEntryRow(entryId: entryId).equatable())
+    }
+
     @MainActor private func addLinkInName(link: String, module: NetworkModules, itemId: UUID, entryId: UUID, destinationEntryId: UUID) {
         var entry = model[destinationEntryId]
         
