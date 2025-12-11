@@ -7,13 +7,13 @@ struct NameItemNewRow: View {
     let name: String
     let cacheItemListModel: CacheItemListModel
     
-    //@Environment(LinkRootController.self) private var linkController
+    @Environment(ListDisplayModel.self) private var listDisplayModel
     @Environment(SearchModel.self) private var searchModel
 
     var body: some View {
         LinkHighlightTextView(model: linkTextModel)
             .foregroundStyle(name.isEmpty ? .secondary : .primary)
-            .lineLimit(1)
+            .lineLimit(listDisplayModel.displayMode == .compact ? 2 : 1)
     }
 
     private var linkTextModel: LinkHighlightTextModel {

@@ -26,7 +26,8 @@ extension DataController: CoreDataPersistable {
             category: CRDT(string: model.adventureCategory ?? "", defaultValue: ItemListCategory(rawValue: Int(model.adventureCategory ?? "1000") ?? 1000) ?? ItemListCategory.adventure),
             displayState: Int(model.displayState),
             photoId: CRDT(string: model.photoUUID ?? "", defaultValue: nil),
-            entries: CRDTDataUpdate(wrappedValue: map(model.entriesModel), update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID()))
+            entries: CRDTDataUpdate(wrappedValue: map(model.entriesModel), update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
+            parentId: model.parentId
         )
         return vm
     }
@@ -48,6 +49,7 @@ extension DataController: CoreDataPersistable {
                 return entry
             }
         }
+        model.parentId <=> viewModel.parentId
     }
 
     // MARK: - EntryViewModel

@@ -315,4 +315,9 @@ public extension AdventureRootModel {
             }
         }
     }
+    
+    func checkFolders() async {
+        let cc = ConvertController(itemController: itemController, editController: editController)
+        await cc.createFolderAndCollections()
+    }
 }

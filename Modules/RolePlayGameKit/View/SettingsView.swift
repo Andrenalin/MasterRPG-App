@@ -7,6 +7,7 @@ import AudioRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import TableRPG
 
 public struct SettingsView: View {
     public init(store: AppModel) {
@@ -33,6 +34,8 @@ public struct SettingsView: View {
                         await store.pdfRoot.checkFolders()
                         await store.photoRoot.checkFolders()
                         await store.spaceRoot.checkFolders()
+                        await store.adventureRoot.checkFolders()
+                        await store.tableRoot.checkFolders()
                     }
                 } label: {
                     Label("Create Folders", systemImage: "folder")

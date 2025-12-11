@@ -27,7 +27,8 @@ extension DataController: CoreDataPersistable {
             displayState: Int(model.displayState),
             tableType: CRDT(string: model.tableType ?? "", defaultValue: TableModel.TableType.list),
             diceId: CRDT(string: model.diceUUID ?? "", defaultValue: nil),
-            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID()))
+            entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
+            parentId: model.parentId
         )
     }
     
@@ -49,6 +50,7 @@ extension DataController: CoreDataPersistable {
                 return entry
             }
         }
+        model.parentId <=> viewModel.parentId
     }
     
     // MARK: - TableEntryViewModel

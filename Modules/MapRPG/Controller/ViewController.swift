@@ -5,7 +5,7 @@ import SwiftUI
 import DiceRPG
 
 public struct ViewController {
-    public let goupViewType: GroupViewType = .item
+    public let goupViewType: GroupViewType = .none
     public let thumbnailRowViewType: ThumbnailRowViewType = .custom
 }
 

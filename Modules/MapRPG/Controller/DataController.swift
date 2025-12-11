@@ -35,7 +35,8 @@ extension DataController: CoreDataPersistable {
             pinScale: model.pinScale,
             hexMapScale: CRDT(string: model.hexMapScale ?? "", defaultValue: 0.0),
             scale: 1,
-            degrees: 0
+            degrees: 0,
+            parentId: model.parentId
         )
     }
 
@@ -74,6 +75,7 @@ extension DataController: CoreDataPersistable {
         }
         model.pinScale <=> viewModel.pinScale
         model.hexMapScale <=> viewModel.hexMapScale_.rawValue
+        model.parentId <=> viewModel.parentId
     }
 
     // MARK: - MapEntryModel

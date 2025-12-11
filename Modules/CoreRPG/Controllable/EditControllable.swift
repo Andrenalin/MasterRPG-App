@@ -191,6 +191,7 @@ public extension EditControllable {
         if item.parentId != nil {
             removeItemFromParent(itemId: itemId)
         }
+        item.displayState = 0
         let entry = Model.Entry.newChild(id: itemId)
         var entries = parentModel.entries
         if parentModel.category == .folder {

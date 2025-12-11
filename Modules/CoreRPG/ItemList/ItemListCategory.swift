@@ -66,7 +66,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
 
     public var isCollection: Bool {
         switch self {
-            case .album, .diceBag, .playlist, .bookshelf, .models: true
+        case .album, .collection, .diceBag, .playlist, .bookshelf, .models: true
             default: false
         }
     }

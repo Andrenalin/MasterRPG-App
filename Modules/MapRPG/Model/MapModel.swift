@@ -11,7 +11,7 @@ enum MapPinId {
 
 @Observable
 public final class MapModel: Identifiable, @unchecked Sendable {
-    public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .dungeon, displayState: Int = 0, entries: [MapEntryModel] = [], displayConfig: DisplayConfigModel = DisplayConfigModel(id: UUID(), tileCoordinates: [], border: DisplayBorderViewModel(id: UUID())), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, mapPins: [MapPinModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, degrees: Double = 0) {
+    public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .dungeon, displayState: Int = 0, entries: [MapEntryModel] = [], displayConfig: DisplayConfigModel = DisplayConfigModel(id: UUID(), tileCoordinates: [], border: DisplayBorderViewModel(id: UUID())), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, mapPins: [MapPinModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, degrees: Double = 0, parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -28,9 +28,10 @@ public final class MapModel: Identifiable, @unchecked Sendable {
         hexMapScale_ = CRDT(wrappedValue: hexMapScale)
         self.scale = scale
         self.degrees = degrees
+        self.parentId = parentId
     }
 
-    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[MapEntryModel]>, displayConfig: CRDTDataUpdate<DisplayConfigModel>, photoId: CRDTDataUpdate<UUID?>, width: CGFloat, height: CGFloat, mapPins: CRDTDataUpdate<[MapPinModel]>, pinScale: CGFloat, hexMapScale: CRDT<Double>, scale: CGFloat, degrees: Double) {
+    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[MapEntryModel]>, displayConfig: CRDTDataUpdate<DisplayConfigModel>, photoId: CRDTDataUpdate<UUID?>, width: CGFloat, height: CGFloat, mapPins: CRDTDataUpdate<[MapPinModel]>, pinScale: CGFloat, hexMapScale: CRDT<Double>, scale: CGFloat, degrees: Double, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -47,6 +48,7 @@ public final class MapModel: Identifiable, @unchecked Sendable {
         hexMapScale_ = hexMapScale
         self.scale = scale
         self.degrees = degrees
+        self.parentId = parentId
     }
 
     public init(from decoder: Decoder) throws {
@@ -68,6 +70,7 @@ public final class MapModel: Identifiable, @unchecked Sendable {
         self._hexMapScale_ = try container.decode(CRDT<Double>.self, forKey: MapModel.CodingKeys._hexMapScale_)
         self._scale = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._scale)
         self._degrees = try container.decode(Double.self, forKey: MapModel.CodingKeys._degrees)
+        self._parentId = try container.decodeIfPresent(UUID.self, forKey: MapModel.CodingKeys._parentId)
     }
 
     public var id: UUID
@@ -300,7 +303,8 @@ extension MapModel: ItemDiffComparable {
             pinScale: pinScale,
             hexMapScale: hexMapScale_.merged(other: other.hexMapScale_),
             scale: other.scale,
-            degrees: other.degrees
+            degrees: other.degrees,
+            parentId: other.parentId
         )
     }
 
@@ -315,6 +319,7 @@ extension MapModel: ItemDiffComparable {
         mapPins_.update == other.mapPins_.update &&
         hexMapScale == other.hexMapScale &&
         pinScale == other.pinScale &&
+        parentId == other.parentId &&
         // santity checks
         entries.count == other.entries.count &&
         entries.enumerated().allSatisfy { index, entry in
@@ -334,7 +339,7 @@ extension MapModel: ItemDiffComparable {
 extension MapModel: ItemDuplicatable {
     public func duplicate() -> MapModel {
         let copyName = duplicateName(from: name)
-        return MapModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, displayConfig: displayConfig, photoId: photoId, width: width, height: height, mapPins: mapPins, pinScale: pinScale, hexMapScale: hexMapScale, scale: scale, degrees: degrees)
+        return MapModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, displayConfig: displayConfig, photoId: photoId, width: width, height: height, mapPins: mapPins, pinScale: pinScale, hexMapScale: hexMapScale, scale: scale, degrees: degrees, parentId: parentId)
     }
 }
 
@@ -366,7 +371,7 @@ extension MapModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .map
 
     public func copy() -> MapModel {
-        MapModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, displayConfig: displayConfig_, photoId: photoId_, width: width, height: height, mapPins: mapPins_, pinScale: pinScale, hexMapScale: hexMapScale_, scale: scale, degrees: degrees)
+        MapModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, displayConfig: displayConfig_, photoId: photoId_, width: width, height: height, mapPins: mapPins_, pinScale: pinScale, hexMapScale: hexMapScale_, scale: scale, degrees: degrees, parentId: parentId)
     }
 
     public func filter(_ filter: String) -> Bool {
@@ -405,6 +410,7 @@ extension MapModel: ItemDataAccessable {
         hexMapScale_ <=> model.hexMapScale_
         scale <=> model.scale
         degrees <=> model.degrees
+        parentId <=> model.parentId
         return true
     }
 
@@ -438,6 +444,7 @@ extension MapModel: Codable {
         case _hexMapScale_
         case _scale
         case _degrees
+        case _parentId
     }
 
     public final func encode(to encoder: Encoder) throws {
@@ -459,6 +466,7 @@ extension MapModel: Codable {
         try container.encode(self._hexMapScale_, forKey: MapModel.CodingKeys._hexMapScale_)
         try container.encode(self._scale, forKey: MapModel.CodingKeys._scale)
         try container.encode(self._degrees, forKey: MapModel.CodingKeys._degrees)
+        try container.encodeIfPresent(self._parentId, forKey: MapModel.CodingKeys._parentId)
     }
 }
 

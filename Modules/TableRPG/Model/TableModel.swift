@@ -6,7 +6,7 @@ import Observation
 
 @Observable
 public final class TableModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, tableType: TableModel.TableType = .list, diceId: UUID? = nil, entries: [TableEntryModel], diceResult: String? = nil) {
+    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .rules, displayState: Int = 0, tableType: TableModel.TableType = .list, diceId: UUID? = nil, entries: [TableEntryModel], diceResult: String? = nil, parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -17,9 +17,10 @@ public final class TableModel: Identifiable, @unchecked Sendable {
         diceId_ = CRDT(wrappedValue: diceId)
         entries_ = CRDTDataUpdate(wrappedValue: entries)
         self.diceResult = diceResult
+        self.parentId = parentId
     }
 
-    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, tableType: CRDT<TableModel.TableType>, diceId: CRDT<UUID?>, entries: CRDTDataUpdate<[TableEntryModel]>, diceResult: String? = nil) {
+    init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, tableType: CRDT<TableModel.TableType>, diceId: CRDT<UUID?>, entries: CRDTDataUpdate<[TableEntryModel]>, diceResult: String? = nil, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -30,6 +31,7 @@ public final class TableModel: Identifiable, @unchecked Sendable {
         diceId_ = diceId
         entries_ = entries
         self.diceResult = diceResult
+        self.parentId = parentId
     }
 
     public init(from decoder: Decoder) throws {
@@ -45,6 +47,7 @@ public final class TableModel: Identifiable, @unchecked Sendable {
         self._diceId_ = try container.decode(CRDT<UUID?>.self, forKey: TableModel.CodingKeys._diceId_)
         self._entries_ = try container.decode(CRDTDataUpdate<[TableEntryModel]>.self, forKey: TableModel.CodingKeys._entries_)
         self._diceResult = try container.decodeIfPresent(String.self, forKey: TableModel.CodingKeys._diceResult)
+        self._parentId = try container.decodeIfPresent(UUID.self, forKey: TableModel.CodingKeys._parentId)
     }
 
     public enum TableType: Int, Equatable, Hashable, Codable, CaseIterable, Identifiable {
@@ -142,7 +145,8 @@ extension TableModel: ItemDiffComparable {
             tableType: tableType_.merged(other: other.tableType_),
             diceId: diceId_.merged(other: other.diceId_),
             entries: entries_.merged(other: other.entries_),
-            diceResult: other.diceResult
+            diceResult: other.diceResult,
+            parentId: other.parentId
         )
     }
 
@@ -154,6 +158,7 @@ extension TableModel: ItemDiffComparable {
         tableType == other.tableType &&
         diceId == other.diceId &&
         entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
         // santity checks
         entries.count == other.entries.count &&
         entries.enumerated().allSatisfy { index, entry in
@@ -165,7 +170,7 @@ extension TableModel: ItemDiffComparable {
 extension TableModel: ItemDuplicatable {
     public func duplicate() -> TableModel {
         let copyName = duplicateName(from: name)
-        return TableModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, tableType: tableType, diceId: diceId, entries: entries.map { $0.duplicate() })
+        return TableModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, tableType: tableType, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: parentId)
     }
 }
 
@@ -184,7 +189,7 @@ extension TableModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .table
 
     public func copy() -> TableModel {
-        TableModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, tableType: tableType_, diceId: diceId_, entries: entries_)
+        TableModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, tableType: tableType_, diceId: diceId_, entries: entries_, parentId: parentId)
     }
 
     public func filter(_ filter: String) -> Bool {
@@ -216,6 +221,7 @@ extension TableModel: ItemDataAccessable {
         tableType_ <=> model.tableType_
         diceId_ <=> model.diceId_
         entries_ <=> model.entries_
+        parentId <=> model.parentId
         return true
     }
 
@@ -243,6 +249,7 @@ extension TableModel: Codable {
         case _diceId_
         case _entries_
         case _diceResult
+        case _parentId
     }
 
     public final func encode(to encoder: Encoder) throws {
@@ -258,6 +265,7 @@ extension TableModel: Codable {
         try container.encode(self._diceId_, forKey: TableModel.CodingKeys._diceId_)
         try container.encode(self._entries_, forKey: TableModel.CodingKeys._entries_)
         try container.encodeIfPresent(self._diceResult, forKey: TableModel.CodingKeys._diceResult)
+        try container.encodeIfPresent(self._parentId, forKey: TableModel.CodingKeys._parentId)
     }
 }
 

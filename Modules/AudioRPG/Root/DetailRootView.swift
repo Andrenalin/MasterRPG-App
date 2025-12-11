@@ -34,7 +34,7 @@ struct DetailListView: View {
         content(listController: detailFolderListController)
             .onChange(of: detailFolderListController.listModel.subFolderRoute) {
                 guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
-                resetNavigationStack()
+                //resetNavigationStack()
                 navigator.navigate(to: AudioDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
             }

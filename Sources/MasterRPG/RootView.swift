@@ -12,6 +12,9 @@ import AudioRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import DiceRPG
+import TableRPG
+import WeatherRPG
 
 @MainActor
 struct RootView: View {
@@ -72,9 +75,16 @@ struct RootView: View {
             }
             try? await Task.sleep(for: .seconds(5))
             
+            try? await appModel.adventureRoot.itemDataCleanup()
             try? await appModel.audioRoot.itemDataCleanup()
+            try? await appModel.characterRoot.itemDataCleanup()
+            try? await appModel.diceRoot.itemDataCleanup()
+            try? await appModel.mapRoot.itemDataCleanup()
             try? await appModel.pdfRoot.itemDataCleanup()
+            try? await appModel.photoRoot.itemDataCleanup()
+            try? await appModel.tableRoot.itemDataCleanup()
             try? await appModel.spaceRoot.itemDataCleanup()
+            try? await appModel.weatherRoot.itemDataCleanup()
 #endif
         }
         .alert("First Launch", isPresented: $showFirstLunchAlert) {

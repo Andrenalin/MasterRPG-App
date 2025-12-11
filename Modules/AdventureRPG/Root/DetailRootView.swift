@@ -31,7 +31,6 @@ struct DetailListView: View {
     
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
-    @State private var animate: Bool = false
     
     var body: some View {
         content(listController: detailFolderListController)
@@ -77,8 +76,8 @@ private extension DetailListView {
             .onChange(of: root.editController.adventureEditModel.selectionPhoto.itemId) {
                 withAnimation { root.editController.add(photoId: root.editController.adventureEditModel.selectionPhoto.itemId) }
             }
-            .onChange(of: model.photoId, initial: true) {
-                withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
+            .onChange(of: root.editController.model.photoId, initial: true) {
+                withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: root.editController.model.photoId) }
             }
         
         EntryListView(editController: root.editController, linkTypes: LinkAdventureModuleTransferable.self, headerTitle: "Sections")

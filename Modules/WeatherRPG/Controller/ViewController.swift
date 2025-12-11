@@ -5,7 +5,7 @@ import SwiftUI
 import PhotoRPG
 
 public struct ViewController: Sendable {
-    public let goupViewType: GroupViewType = .photo
+    public let goupViewType: GroupViewType = .none
     public let thumbnailRowViewType: ThumbnailRowViewType = .custom
 }
 

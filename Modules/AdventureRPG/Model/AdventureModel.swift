@@ -6,7 +6,7 @@ import Observation
 
 @Observable
 public final class AdventureModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, photoId: UUID? = nil, entries: [AdventureEntryModel] = []) {
+    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, photoId: UUID? = nil, entries: [AdventureEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -15,9 +15,10 @@ public final class AdventureModel: Identifiable, @unchecked Sendable {
         self.displayState = displayState
         photoId_ = CRDT(wrappedValue: photoId)
         entries_ = CRDTDataUpdate(wrappedValue: entries)
+        self.parentId = parentId
     }
 
-    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, entries: CRDTDataUpdate<[AdventureEntryModel]>) {
+    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, entries: CRDTDataUpdate<[AdventureEntryModel]>, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -26,6 +27,7 @@ public final class AdventureModel: Identifiable, @unchecked Sendable {
         self.displayState = displayState
         photoId_ = photoId
         entries_ = entries
+        self.parentId = parentId
     }
 
     public init(from decoder: Decoder) throws {
@@ -39,6 +41,7 @@ public final class AdventureModel: Identifiable, @unchecked Sendable {
         self._displayState = try container.decode(Int.self, forKey: AdventureModel.CodingKeys._displayState)
         self._photoId_ = try container.decode(CRDT<UUID?>.self, forKey: AdventureModel.CodingKeys._photoId_)
         self._entries_ = try container.decode(CRDTDataUpdate<[AdventureEntryModel]>.self, forKey: AdventureModel.CodingKeys._entries_)
+        self._parentId = try container.decodeIfPresent(UUID.self, forKey: AdventureModel.CodingKeys._parentId)
     }
 
     public var id: UUID
@@ -116,7 +119,8 @@ extension AdventureModel: ItemDiffComparable {
             category: category_.merged(other: other.category_),
             displayState: other.displayState,
             photoId: photoId_.merged(other: other.photoId_),
-            entries: entries_.merged(other: other.entries_)
+            entries: entries_.merged(other: other.entries_),
+            parentId: other.parentId
         )
     }
 
@@ -127,6 +131,7 @@ extension AdventureModel: ItemDiffComparable {
         category == other.category &&
         photoId == other.photoId &&
         entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
         // santity checks
         entries.count == other.entries.count &&
         entries.enumerated().allSatisfy { index, entry in
@@ -138,7 +143,7 @@ extension AdventureModel: ItemDiffComparable {
 extension AdventureModel: ItemDuplicatable {
     public func duplicate() -> AdventureModel {
         let copyName = duplicateName(from: name)
-        return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, entries: entries.map { $0.duplicate() })
+        return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId)
     }
 }
 
@@ -157,7 +162,7 @@ extension AdventureModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .adventure
 
     public func copy() -> AdventureModel {
-        AdventureModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, entries: entries_)
+        AdventureModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, entries: entries_, parentId: parentId)
     }
 
     public func filter(_ filter: String) -> Bool {
@@ -188,6 +193,7 @@ extension AdventureModel: ItemDataAccessable {
         displayState <=> model.displayState
         photoId_ <=> model.photoId_
         entries_ <=> model.entries_
+        parentId <=> model.parentId
         return true
     }
 
@@ -219,6 +225,7 @@ extension AdventureModel: Codable {
         case _displayState
         case _photoId_
         case _entries_
+        case _parentId
     }
 
     public final func encode(to encoder: Encoder) throws {
@@ -232,6 +239,7 @@ extension AdventureModel: Codable {
         try container.encode(self._displayState, forKey: AdventureModel.CodingKeys._displayState)
         try container.encode(self._photoId_, forKey: AdventureModel.CodingKeys._photoId_)
         try container.encode(self._entries_, forKey: AdventureModel.CodingKeys._entries_)
+        try container.encodeIfPresent(self._parentId, forKey: AdventureModel.CodingKeys._parentId)
     }
 }
 
