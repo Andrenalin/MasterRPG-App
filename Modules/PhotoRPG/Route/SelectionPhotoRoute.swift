@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 public enum SelectionPhotoRoute: Equatable, Hashable, Codable {
@@ -24,6 +23,5 @@ struct SelectionPhotoRouteDestinationView: View {
         LinkRootView(type: .selection)
             .environment(root.rootController)
             .environment(root.itemSelectionModel)
-        
     }
 }

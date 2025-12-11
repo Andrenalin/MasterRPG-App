@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 public enum SelectionCharacterRoute: Equatable, Hashable, Codable {
@@ -22,6 +21,7 @@ struct DestinationSelectionCharacterRoute: View {
     
     var body: some View {
         LinkRootView(type: .selection)
+            .environment(root.rootController)
             .environment(root.itemSelectionModel)
     }
 }

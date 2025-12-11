@@ -23,6 +23,5 @@ struct SelectionTableRouteDestinationView: View {
         LinkRootView(type: .selection)
             .environment(root.rootController)
             .environment(root.itemSelectionModel)
-        
     }
 }

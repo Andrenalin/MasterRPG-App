@@ -11,7 +11,7 @@ import Foundation
 import RealityKit
 
 struct UntilProcessingCompleteFilter<Base>: AsyncSequence,
-                                            AsyncIteratorProtocol where Base: AsyncSequence, Base.Element == PhotogrammetrySession.Output {
+                                            AsyncIteratorProtocol where Base: AsyncSequence, Base.Element == PhotogrammetrySession.Output, Base.AsyncIterator: Sendable {
     func makeAsyncIterator() -> UntilProcessingCompleteFilter {
         return self
     }

@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import DiceRPG
 import SwiftUI
 
 struct LinkRootView: View {

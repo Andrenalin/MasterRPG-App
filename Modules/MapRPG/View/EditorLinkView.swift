@@ -21,38 +21,47 @@ struct EditorLinkView: View {
 
     var body: some View {
         VStack {
-            Picker(selection: $selection) {
-                buttonPicker(module: .map)
-                buttonPicker(module: .value)
-                buttonPicker(module: .table)
-                buttonPicker(module: .audio)
-                buttonPicker(module: .photo)
-                buttonPicker(module: .dice)
-            } label: {
-                Text("Module selection", bundle: .module)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
+            pickerRow(modules: firstRow)
             
             ZStack {
-                switch selection {
-                case .audio:
-                    root.audioRoot.viewController.linkListView(type: .inspector, itemSelectionModel: diceSelectionModel)
-                case .dice:
-                    root.diceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: diceSelectionModel)
-                case .photo:
-                    root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
-                case .table:
-                    root.tableRoot.viewController.linkListView(type: .inspector, itemSelectionModel: tableSelectionModel)
-                case .value:
-                    root.characterRoot.viewController.linkListView(type: .inspector, itemSelectionModel: characterSelectionModel)
-                default:
-                    root.viewController.linkListView(type: .inspector, itemSelectionModel: mapSelectionModel)
-                }
+                root.audioRoot.viewController.linkListView(type: .inspector, itemSelectionModel: audioSelectionModel)
+                    .opacity(selection == .audio ? 1 : 0)
+                
+                root.characterRoot.viewController.linkListView(type: .inspector, itemSelectionModel: characterSelectionModel)
+                    .opacity(selection == .value ? 1 : 0)
+                
+                root.diceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: diceSelectionModel)
+                    .opacity(selection == .dice ? 1 : 0)
+                
+                root.viewController.linkListView(type: .inspector, itemSelectionModel: mapSelectionModel)
+                    .opacity(selection == .map ? 1 : 0)
+                                
+                root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
+                    .opacity(selection == .photo ? 1 : 0)
+                
+                root.tableRoot.viewController.linkListView(type: .inspector, itemSelectionModel: tableSelectionModel)
+                    .opacity(selection == .table ? 1 : 0)
             }
         }
     }
     
+    var firstRow: [NetworkModules] {
+        [.map, .value, .table, .photo, .audio, .dice]
+    }
+    
+    func pickerRow(modules: [NetworkModules]) -> some View {
+        Picker(selection: $selection) {
+            ForEach(modules, id: \.self) { module in
+                buttonPicker(module: module)
+            }
+        } label: {
+            Text("Module selection", bundle: .module)
+        }
+        .labelsHidden()
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+    }
+
     func buttonPicker(module: NetworkModules) -> some View {
         Image(systemName: module.icon)
             .tag(module)

@@ -39,6 +39,10 @@ public struct LinkItemListView: View {
                         .searchItemList(listControllable: root.folderLinkControllable, parentModel: nil)
                         .navigationTitle(root.module.title)
                 }
+            #if !os(macOS)
+                .toolbarVisibility(.hidden, for: .navigationBar)
+            #endif
+
         }
         .environment(root.folderLinkControllable.listDisplayModel)
         .environment(root.folderLinkControllable.searchModel)
@@ -62,6 +66,7 @@ private extension LinkItemListView {
         } label: {
             Text("List Mode", bundle: .module)
         }
+        .labelsHidden()
         .pickerStyle(.segmented)
         .padding(.horizontal)
     }

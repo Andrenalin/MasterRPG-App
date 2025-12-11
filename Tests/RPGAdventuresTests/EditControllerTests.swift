@@ -18,7 +18,7 @@ import Testing
 struct EditControllerTests {
     @Test func scanMapEntries() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = await root.editController
+        let sut = root.editController
 
         let itemRowModel = await root.itemController.addNew(type: nil)
         
@@ -55,7 +55,7 @@ struct EditControllerTests {
     
     @Test func mergeEntries() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = await root.editController
+        let sut = root.editController
 
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], typeId: .adventure))
         let item = await sut.model.copy()
@@ -96,7 +96,7 @@ struct EditControllerTests {
 
     @Test func validateEntries() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = await root.editController
+        let sut = root.editController
 
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], typeId: .adventure))
         let model = await sut.model

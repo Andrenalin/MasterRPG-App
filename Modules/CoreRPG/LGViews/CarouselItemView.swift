@@ -96,6 +96,7 @@ private extension CarouselItemView {
         .sheet(isPresented: $showSelection) {
             SelectionModuleRoute.selection
                 .environment(root.rootController)
+                .environment(root.itemSelectionModel)
         }
         .onChange(of: showSelection) {
             guard showSelection == false, let itemId = root.itemSelectionModel.itemId else { return }

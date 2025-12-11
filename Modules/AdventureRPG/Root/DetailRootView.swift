@@ -134,5 +134,6 @@ private extension DetailListView {
             DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AdventureModel.previewId))
                 .preferredColorScheme(.dark)
         }
+        .setAppSizeMode()
     }
 }
