@@ -144,6 +144,7 @@ private extension ItemDetailRootView {
         .onChange(of: model.id, initial: true) {
             detailListController.resetParentModel(model: model)
             detailInspectorModel.canShowInspector = canShowInspector(model: model)
+            updateInspectorStates(model: model)
             detailInspectorModel.currentInspectorView = AnyView(inspectorView(model: model))
             withAnimation { selection.selectedItem = nil }
             guard model.url != nil else {
@@ -151,6 +152,9 @@ private extension ItemDetailRootView {
                 return
             }
             itemIdHasUrl = model.id
+        }
+        .onChange(of: openFileWindowModel.showItem) {
+            updateInspectorStates(model: model)
         }
         .onChange(of: model.name, initial: true) {
             guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
@@ -179,6 +183,14 @@ private extension ItemDetailRootView {
             toolbarContent(model: model)
         }
         .environment(selection)
+    }
+    
+    func updateInspectorStates(model: any ItemDataAccessable) {
+        withAnimation {
+            if detailInspectorModel.showInspector && openFileWindowModel.showItem {
+                detailInspectorModel.showInspector = false
+            }
+        }
     }
     
     func headerView(model: any ItemDataAccessable) -> some View {
@@ -363,32 +375,43 @@ private extension ItemDetailRootView {
 private extension ItemDetailRootView {
     
     func canShowInspector(model: any ItemDataAccessable) -> Bool {
-        let platform = valueFor(iOS: appSizeMode == .regular, macOS: true, tvOS: true, visionOS: false)
-        return (hasInspector || model.specialCategory) && platform && openFileWindowModel.showItem == false
+        valueFor(iOS: appSizeMode == .regular, macOS: true, tvOS: true, visionOS: false)
     }
-    
+
+    func hasAnyInspector(model: any ItemDataAccessable) -> Bool {
+        (hasInspector || model.specialCategory) && canShowInspector(model: model)
+    }
+
     @ViewBuilder func inspectorView(model: any ItemDataAccessable) -> some View {
-        if model.specialCategory {
-            LinkItemRootView(root: root, type: .inspector)
-                .environment(root.itemSelectionModel)
-        } else {
-            inspector
+        Group {
+            if hasAnyInspector(model: model) {
+                if model.specialCategory {
+                    LinkItemRootView(root: root, type: .inspector)
+                        .environment(root.itemSelectionModel)
+                } else {
+                    inspector
+                }
+            } else {
+                ContentUnavailableView("No Inspector for this item", image: "spyglass")
+            }
         }
     }
     
     @ToolbarContentBuilder
     private func toolbarContent(model: any ItemDataAccessable) -> some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            if openFileWindowModel.showItem == false && (hasFile(model: selectedModel(model: model)) || selectedModel(model: model).specialCategory) {
-                Button {
-                    withAnimation { isEditing = true }
-                } label: {
-                    Image(systemName: "pencil")
+        if openFileWindowModel.showItem == false {
+            ToolbarItem(placement: .primaryAction) {
+                if (hasFile(model: selectedModel(model: model)) || selectedModel(model: model).specialCategory) {
+                    Button {
+                        withAnimation { isEditing = true }
+                    } label: {
+                        Image(systemName: "pencil")
+                    }
                 }
             }
-        }
-        ToolbarItemGroup(placement: .secondaryActionAll) {
-            MenuUndoRedoButton(root: root)
+            ToolbarItemGroup(placement: .secondaryActionAll) {
+                MenuUndoRedoButton(root: root)
+            }
         }
     }
 }

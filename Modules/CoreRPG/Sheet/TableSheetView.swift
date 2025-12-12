@@ -86,7 +86,7 @@ private extension TableSheetView {
     }
     
     var showCloseButton: Bool {
-        !showGame
+        valueFor(iOS: !showGame, macOS: false, tvOS: !showGame, visionOS: !showGame)
     }
 }
 

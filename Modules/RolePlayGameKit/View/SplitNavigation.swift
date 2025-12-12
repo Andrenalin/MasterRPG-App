@@ -175,10 +175,8 @@ private extension SplitNavigation {
             SplitDetailView()
                 .environment(appModel.itemRootController(for: tab.module))
         }
-        .applyIf(model.canShowInspector) {
-            $0.inspectorAll(isPresented: $model.showInspector) {
-                model.currentInspectorView
-            }
+        .inspectorAll(isPresented: $model.showInspector) {
+            model.currentInspectorView
         }
     }
 }

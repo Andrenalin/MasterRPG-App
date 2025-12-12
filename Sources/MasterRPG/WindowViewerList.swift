@@ -56,6 +56,19 @@ struct WindowViewerList: Scene {
             windowGroup(model: appModel, module: .weather) { selection in
                 appModel.weatherRoot.viewController.windowViewer(root: appModel.weatherRoot, selection: selection)
             }
+            
+            WindowGroup("Map Edit Viewer", id: WindowIdentifier.mapEditor.rawValue) {
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.mapRoot.viewController.mapEditWindow(root: appModel.mapRoot)
+                        .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .map))
+                }
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(.below(WindowIdentifier.game.rawValue))
+    #if !os(iOS)
+            .restorationBehavior(.disabled)
+    #endif
+
         }
         .defaultSize(CGSize(width: 600, height: 800))
     }

@@ -48,21 +48,3 @@ struct MapEditSectionEditor: View {
         }
     }
 }
-
-struct MapEditWindow: View {
-    let editController: EditController
-
-    @Environment(MapRootModel.self) private var root
-
-    var body: some View {
-        @Bindable var model = editController.editorModel
-        Group {
-            if let listItem = model.currentListItem {
-                RootEditCanvasMap(editController: editController)
-                    .navigationTitle(root.itemController.nameSync(model: listItem.model))
-            } else {
-                Text("No Map Item is selected for editing", bundle: .module)
-            }
-        }
-    }
-}

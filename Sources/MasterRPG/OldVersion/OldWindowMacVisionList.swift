@@ -30,16 +30,6 @@ struct OldWindowMacVisionList: Scene {
             }
             .defaultWindowPlacementAll( .below(NetworkModules.table.linkWindowId, fallback: WindowIdentifier.game.rawValue))
             
-            BaseWindow("Map Edit Viewer", id: WindowIdentifier.mapEditor.rawValue) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.mapRoot.viewController.mapEditWindow(root: appModel.mapRoot)
-                        .accentColor(.teal)
-                        .tint(.teal)
-                        .frame(minWidth: 600, minHeight: 400)
-                }
-                .handlesExternalEvents(preferring: [], allowing: [])
-            }
-            .defaultWindowPlacementAll( .below(WindowIdentifier.game.rawValue))                        
         }
         .defaultSize(CGSize(width: 600, height: 800))
     }

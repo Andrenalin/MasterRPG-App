@@ -40,6 +40,10 @@ public extension ViewController {
         let model = root.itemController.itemOrEmpty(for: id)
         return MapSheet(model: model, showTopImage: false, dismissAction: dismissAction)
     }
+    
+    @MainActor func mapEditWindow(root: MapRootModel) -> some View {
+        MapEditWindow(editController: root.editController)
+    }
 }
 
 // MARK: - OLd Views
@@ -47,12 +51,6 @@ public extension ViewController {
 public extension ViewController {
     @MainActor
     private static let linkTabId = UUID()
-
-    @MainActor
-    func mapEditWindow(root: MapRootModel) -> some View {
-        MapEditWindow(editController: root.editController)
-            .environment(root)
-    }
 
     @MainActor
     func mapBookWindow(root: MapRootModel, selection: ItemSelection) -> some View {
