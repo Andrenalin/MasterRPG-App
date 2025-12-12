@@ -55,6 +55,12 @@ struct MockRootViewModifier: ViewModifier {
             .environment(SelectionSheetLinkModel())
             .environment(ExternalHeaderModel())
             .environment(LinkRootController.fake)
+            .environment(root.audioRoot)
+            .environment(root.characterRoot)
+            .environment(root.diceRoot)
+            .environment(root.pdfRoot)
+            .environment(root.photoRoot)
+            .environment(root.tableRoot)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

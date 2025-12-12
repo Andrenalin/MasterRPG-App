@@ -3,6 +3,7 @@
 import CoreRPG
 import SwiftUI
 import DiceRPG
+import CharacterRPG
 
 public struct ViewController {
     public let goupViewType: GroupViewType = .none
@@ -20,6 +21,10 @@ extension ViewController: ViewControllable {
 extension ViewController {
     @MainActor func diceSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.diceRoot.viewController.dropChooseView(model: selectionModel)
+    }
+    
+    @MainActor func characterSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
+        root.characterRoot.viewController.linkListView(type: .selection, itemSelectionModel: selectionModel)
     }
 }
 

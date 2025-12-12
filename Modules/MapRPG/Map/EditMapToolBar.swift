@@ -37,135 +37,212 @@ final class EditToolBarModel {
     }
 }
 
-struct EditToolBar: View {
+struct EditToolBarViewModifier: ViewModifier {
     let editController: EditController
     let model: EditToolBarModel
-    let closeAction: (() -> Void)?
     
-    @Environment(MapRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.wideMode) private var wideMode
-    
-#if os(macOS)
+    #if !os(tvOS)
     @Environment(\.openWindow) private var openWindow
-#endif
+    #endif
+    @Environment(MapRootModel.self) private var root
+    
+    @State private var hideScales: Bool = true
+    @State private var showPinSelection: Bool = false
+    
     @State private var pinScale: CGFloat = 1
     @State private var hexScale: Double = 1
     
-    @State private var showPinSelection: Bool = false
-    @State private var pinSelection: [UUID] = []
+    @State private var selectedPin: ItemSelectionModel = ItemSelectionModel(isSingleSelection: false, allowCollections: true)
     
-    @State private var showToolBar: Bool = true
-    @State private var hideScales: Bool = true
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if wideMode == .small {
-                VStack(spacing: 8) {
+    @Namespace private var pinSpace
+    
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .bottom) {
+                GlassEffectContainerView {
+                    VStack(spacing: 8) {
                         pinScaleView
-                            .padding(.horizontal)
                         
                         hexMapScaleView
-                            .padding([.horizontal, .bottom])
-                }
-                .offset(x: hideScales || !showToolBar ? -500 : 0)
-                .animation(.bouncy, value: hideScales)
-            } else {
-#if os(macOS)
-                Divider()
-                    .opacity(0)
-#endif
-            }
-
-            HStack {
-                Button {
-                    withAnimation { showToolBar.toggle() }
-                } label: {
-                    Image(systemName: showToolBar ? "arrow.left.square.fill" : "arrow.right.square")
-                        .contentTransition(.symbolEffect(.replace.downUp))
-                        .frame(height: 24)
-                }
-                
-                HStack {
-                    if showToolBar {
-                        HStack {
-                            Button {
-                                withAnimation { model.toggleDisplayMode() }
-                            } label: {
-                                Image(systemName: model.iconDisplaMode)
-                                    .contentTransition(.symbolEffect(.replace.byLayer))
-                                    .frame(width: 28, height: 24)
-                            }
-                            
-                            barButtonViews
-                            
-                            if wideMode != .small {
-                                hexMapScaleView
-                                pinScaleView
-                            }
-                            Spacer()
-                            if wideMode == .small {
-                                hideScaleButtonView
-                            }
-                            closeButtonView
-                        }
                     }
+                    .padding()
+                    #if !os(visionOS)
+                    .glassEffect(.clear)
+                    #endif
+                    .offset(x: hideScales ? -2500 : 0)
+                    .opacity(hideScales ? 0 : 1)
+                    .animation(.bouncy, value: hideScales)
                 }
-                .applyIf(!showToolBar) {
-                    $0.frame(width: 0)
-                }
-                .offset(x: showToolBar ? 0 : -250)
+                .padding(.horizontal)
+                .padding(.bottom, bottomPadding)
             }
-        }
-        .padding(.horizontal)
-        .animation(.bouncy.delay(hideScales ? 0 : 0.25), value: showToolBar)
-        .buttonStyle(.borderedProminent)
-        .onChange(of: model.pinScale, initial: true) {
-            pinScale <=> model.pinScale
-        }
-    }
-    
-    @ViewBuilder
-    var barButtonViews: some View {
-        if model.hideCloseButton {
-            Button {
-#if os(macOS)
-                openWindow(id: NetworkModules.value.linkWindowId)
-#else
-                showPinSelection.toggle()
-#endif
-            } label: {
-                Image(systemName: "mappin\(showPinSelection ? ".and.ellipse" : "")")
-                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                    .frame(width: 24, height: 24)
-            }
+            .sheet(isPresented: $showPinSelection) {
+                    root.viewController.characterSelection(root: root, selectionModel: selectedPin)
 #if !os(macOS)
-            .sizedSheet(isPresented: $showPinSelection) {
-                root.characterRoot.viewController.viewSelect(root: root.characterRoot, filter: .monster, isGroupHidden: true) {
-                    return pinSelection.map { ItemRowModel(itemId: $0, typeId: .value) }
-                } toggleSelection: { selection, _ in
-                    if pinSelection.contains(selection.itemId) {
-                        pinSelection.removeAll(where: { selection.itemId == $0 })
-                    } else {
-                        pinSelection.append(selection.itemId)
-                    }
-                } dismissAction: {
-                    withAnimation { showPinSelection = false }
-                }
+                .navigationTransition(.zoom(sourceID: "pin", in: pinSpace))
+#endif
             }
             .onChange(of: showPinSelection, initial: false) {
-                guard !showPinSelection, !pinSelection.isEmpty else { return }
-                let map = root.gameController.currentItem()
-                let entry = map.entries.reversed().first(where: { $0.isShown })
-                withAnimation { editController.addMonsters(map: map, entryId: entry?.id, location: nil, monsters: pinSelection.map { ItemRowModel(itemId: $0, typeId: .value)}, number: 1) }
-                pinSelection = []
+                guard !showPinSelection, !selectedPin.selection.isEmpty else { return }
+                let map = editController.model
+                let entryId = editController.editorModel.currentEntryId
+                withAnimation { editController.addMonsters(map: map, entryId: entryId, location: nil, monsters: selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }, number: 1) }
+                selectedPin.resetSelection(itemId: nil)
             }
+        #if os(macOS)
+            .navigationTitle(navTitle)
+        #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    previousEntryButton
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    nextEntryButton
+                }
+                
+#if os(macOS)
+                ToolbarSpacer(.fixed, placement: bottomBarPlacement)
+#else
+                ToolbarItem(placement: titlePlacement) {
+                    Text(titlename)
+                }
+                
+                ToolbarItem(placement: subtitlePlacement) {
+                    Text(subtitleName)
+                }
 #endif
+                
+                ToolbarItem(placement: bottomBarPlacement) {
+                    hideScaleButton
+                }
+                
+#if !os(visionOS) && !os(tvOS)
+                ToolbarSpacer(.fixed, placement: bottomBarPlacement)
+#endif
+                
+                ToolbarItemGroup(placement: bottomBarPlacement) {
+                    toggleDisplayModeButton
+                    hexCreationButton
+                    
+                    showPinSelectionButton
+                        .matchedTransitionSource(id: "pin", in: pinSpace)
+                }
+                
+#if !os(visionOS) && !os(tvOS)
+                ToolbarSpacer(.flexible, placement: bottomBarPlacement)
+#endif
+
+#if !os(macOS)
+                ToolbarItem(placement: bottomBarPlacement) {
+                    closeButtonView
+                }
+#endif
+            }
+    }
+}
+
+private extension EditToolBarViewModifier {
+    var bottomPadding: CGFloat {
+#if os(macOS)
+        16
+#else
+        80
+#endif
+    }
+    
+    var navTitle: String {
+        guard editController.editorModel.currentEntryId != nil else { return titlename }
+        return subtitleName
+    }
+    
+    var titlename: String {
+        editController.model.name
+    }
+    
+    var subtitleName: String {
+        guard let entryId = editController.editorModel.currentEntryId else { return "\(editController.editEntries.count) Entries" }
+        let current: String
+        if let currentIndex {
+            current = "\(currentIndex + 1)/"
+        } else {
+            current = ""
+        }
+        return "\(editController.model[entryId].name) \(current)\(editController.editEntries.count)"
+    }
+    
+    @ViewBuilder var nextEntryButton: some View {
+        Button {
+            resetSelectedIndex(shouldIncrease: true)
+        } label: {
+            Image(systemName: canIncrease ? "forward" : "plus")
+                .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
         }
     }
     
-    @ViewBuilder
-    var pinScaleView: some View {
+    @ViewBuilder var previousEntryButton: some View {
+        Button {
+            resetSelectedIndex(shouldIncrease: false)
+        } label: {
+            Image(systemName: "backward")
+        }
+    }
+    
+    @ViewBuilder var closeButtonView: some View {
+        if !model.hideCloseButton {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "checkmark")
+            }
+        }
+    }
+    
+    @ViewBuilder var showPinSelectionButton: some View {
+        Button {
+#if os(macOS)
+            openWindow(id: NetworkModules.value.linkWindowId)
+#else
+            showPinSelection.toggle()
+#endif
+        } label: {
+            Image(systemName: "mappin\(showPinSelection ? ".and.ellipse" : "")")
+                .contentTransition(.symbolEffect(.replace.wholeSymbol))
+        }
+    }
+    
+    @ViewBuilder var toggleDisplayModeButton: some View {
+        Button {
+            withAnimation { model.toggleDisplayMode() }
+        } label: {
+            Image(systemName: model.iconDisplaMode)
+                .contentTransition(.symbolEffect(.replace.byLayer))
+        }
+    }
+    
+    @ViewBuilder var hideScaleButton: some View {
+        if !model.hideCloseButton {
+            Button {
+                hideScales.toggle()
+            } label: {
+                Image(systemName: "square.arrowtriangle.4.outward")
+            }
+        }
+    }
+    
+    @ViewBuilder var hexCreationButton: some View {
+        Button {
+            withAnimation {
+                let _ = editController.toggleHexMap()
+                withAnimation { hideScales <=> false }
+            }
+        } label: {
+            Image(systemName: editController.isHexMap() ? "hexagon.fill" : "hexagon")
+                .contentTransition(.symbolEffect(.replace.wholeSymbol))
+        }
+    }
+    
+    @ViewBuilder var pinScaleView: some View {
         @Bindable var model = model
         HStack {
 #if !os(tvOS)
@@ -183,24 +260,14 @@ struct EditToolBar: View {
         .opacity(model.hideCloseButton ? 0 : 1)
     }
     
-    @ViewBuilder
-    var hexMapScaleView: some View {
+    @ViewBuilder var hexMapScaleView: some View {
         @Bindable var model = model
         HStack {
 #if !os(tvOS)
-            Button {
-                withAnimation {
-                    let _ = editController.toggleHexMap()
-                }
-            } label: {
-                Image(systemName: editController.isHexMap() ? "hexagon.fill" : "hexagon")
-                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                    .frame(width: 24, height: 24)
-            }
-            Text("Hex Map Scale", bundle: .module)
+            Text("Hex Scale", bundle: .module)
             
             Slider(value: $hexScale, in: 20 ... 200) {
-                Text("Hex Map Scale", bundle: .module)
+                Text("Hex Scale", bundle: .module)
             }
             .onChange(of: hexScale) {
                 model.hexScale = hexScale
@@ -211,46 +278,76 @@ struct EditToolBar: View {
         .opacity(model.hideCloseButton ? 0 : 1)
     }
     
-    @ViewBuilder
-    var closeButtonView: some View {
-        if !model.hideCloseButton {
-            Button {
-                if let closeAction {
-                    closeAction()
-                } else {
-                    dismiss()
-                }
-            } label: {
-                Image(systemName: "xmark.circle")
-                    .frame(width: 24, height: 24)
+    func resetSelectedIndex(shouldIncrease: Bool) {
+        if shouldIncrease && !canIncrease {
+            let entryId = editController.addNewEntry()
+            withAnimation { editController.editorModel.currentEntryId = entryId }
+            return
+        }
+        
+        guard editController.editorModel.currentEntryId != nil else {
+            if let first = editController.editEntries.first {
+                withAnimation { editController.editorModel.currentEntryId = first.id }
             }
+            return
+        }
+        guard let index = currentIndex else { return }
+        
+        let nextIndex = shouldIncrease ? index.advanced(by: 1) : index.advanced(by: -1)
+        if nextIndex >= 0 && nextIndex < editController.editEntries.count {
+            withAnimation { editController.editorModel.currentEntryId = editController.editEntries[nextIndex].id }
         }
     }
     
-    @ViewBuilder
-    var hideScaleButtonView: some View {
-        if !model.hideCloseButton {
-            Button {
-                hideScales.toggle()
-            } label: {
-                Image(systemName: "square.arrowtriangle.4.outward")
-                    .frame(width: 24, height: 24)
-            }
+    var canIncrease: Bool {
+        guard editController.editorModel.currentEntryId != nil else {
+            return !editController.editEntries.isEmpty
         }
+        
+        guard let index = currentIndex else { return false }
+        
+        return index + 1 < editController.editEntries.count
+    }
+    
+    var currentIndex: Int? {
+        guard let entryId = editController.editorModel.currentEntryId else { return nil }
+        return editController.editEntries.firstIndex(where: { $0.id == entryId })
+    }
+    
+    var bottomBarPlacement: ToolbarItemPlacement {
+#if os(macOS)
+        .automatic
+#else
+        .bottomBar
+#endif
+    }
+    
+    var titlePlacement: ToolbarItemPlacement {
+#if os(iOS)
+        .title
+#else
+        .automatic
+#endif
+    }
+    
+    var subtitlePlacement: ToolbarItemPlacement {
+#if os(iOS)
+        .subtitle
+#else
+        .automatic
+#endif
     }
 }
 
-#Preview {
-    VStack {
-        Spacer()
-        
-        HStack {
-            EditToolBar(editController: .preview, model: EditToolBarModel()) {
-                print("Close")
-            }
-            .environment(MapRootModel.preview)
+#Preview("New Modifier") {
+    @Previewable var model = EditToolBarModel()
+    @Previewable var editController: EditController = .preview
+    
+    NavigationStack {
+        VStack {
+            Rectangle().fill(Color.green.gradient).ignoresSafeArea()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .modifier(EditToolBarViewModifier(editController: editController, model: model))
     }
-    .setWideMode()
+    .setAppSizeMode()
 }

@@ -112,7 +112,7 @@ private extension DetailListView {
                     Label {
                         Text("Map Editor", bundle: .module)
                     } icon: {
-                        Image(systemName: "map")
+                        Image(systemName: "mappin.and.ellipse")
                     }
                 }
                 

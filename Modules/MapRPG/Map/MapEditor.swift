@@ -54,81 +54,89 @@ struct MapEditor: View {
     @State private var isTapping: DraggingType = .nothing
     
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            backColor
-            
-            Image(akImage: image)
-                .overlay(alignment: .topLeading) {
-                    ZStack(alignment: .topLeading) {
-                        drawEntryViews(isShowing: true)
-                        drawEntryViews(isShowing: false)
-
-                        if let editEntry = editEntries.entries.first {
-                            drawEntryView(entries: editEntries, entry: editEntry)
-                        }
-                        
-                        drawPins
-                        
-                        if let scalePinId {
-                            drawPin(id: scalePinId)
-                        }
-
-                        if toolBarModel.displayMode == .master || toolBarModel.displayMode == .reader {
-                            drawEntryPins()
-                        }
-
-                        if let magnifyPoint = editEntries.selectedNeedleCoordinate {
-                            drawCrosshair(location: magnifyPoint)
-                                .zIndex(500)
-                        }
+        ManagedNavigationStack(name: "MapEditor") { navigator in
+            ZStack(alignment: .topLeading) {
+                Color.clear
+                
+                Image(akImage: image)
+                    .overlay(alignment: .topLeading) {
+                        overlayMap
                     }
-                }
-                .scaleEffect(model.scale)
-                .rotationEffect(Angle(degrees: photoDegrees))
-                .offset(x: model.offset.x, y: model.offset.y)
-                .contentMargins(.all, 50)
-                .frame(width: currentSize.width, height: currentSize.height)
-        }
-        .frame(width: containerSize.width, height: containerSize.height, alignment: .topLeading)
+                    .scaleEffect(model.scale)
+                    .rotationEffect(Angle(degrees: photoDegrees))
+                    .offset(x: model.offset.x, y: model.offset.y)
+                    .contentMargins(.all, 50)
+                    .frame(width: currentSize.width, height: currentSize.height)
+
+            }
+            .frame(width: containerSize.width, height: containerSize.height, alignment: .topLeading)
+            .background {
+                Rectangle().fill(Color.black.gradient)
+                    .ignoresSafeArea()
+            }
 #if !os(tvOS)
-        .dragTapGesture(isActive: true, pressAction: pressAction(_:), releaseAction: releaseAction(_:), longPressAction: longPressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
+            .dragTapGesture(isActive: true, pressAction: pressAction(_:), releaseAction: releaseAction(_:), longPressAction: longPressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
 #endif
-        .background(backColor)
-        .overlay(alignment: .bottomLeading) {
-            toolBarView
-        }
-        .onChange(of: editController.editorModel.currentItemId) {
-            changeImage()
-        }
-        .onChange(of: editController.editorModel.currentEntryId, initial: true) {
-            changeMap()
-        }
-        .onChange(of: map.mapPins) {
-            resetPlayerAndPins(newPins: map.mapPins)
-        }
-        .onChange(of: map.entries) {
-            resetEntries(newEntries: map.entries)
-        }
-        .onChange(of: toolBarModel.hexScale) {
-            guard toolBarModel.hexScale != 0 && toolBarModel.hexScale != map.hexMapScale else { return }
-            editController.createHexMap(hexMapScale: toolBarModel.hexScale)
-        }
-        .onChange(of: toolBarModel.pinScale) {
-            editController.model.pinScale = toolBarModel.pinScale
-        }
-        .onChange(of: containerSize) {
-            resetZoom()
-        }
-        .onChange(of: dropPinModel.items) {
-            dropPin()
-        }
-        .onAppear {
-            firstAppear()
-        }
+            .onChange(of: editController.editorModel.currentItemId) {
+                changeImage()
+            }
+            .onChange(of: editController.editorModel.currentEntryId, initial: true) {
+                changeMap()
+            }
+            .onChange(of: map.mapPins) {
+                resetPlayerAndPins(newPins: map.mapPins)
+            }
+            .onChange(of: map.entries) {
+                resetEntries(newEntries: map.entries)
+            }
+            .onChange(of: toolBarModel.hexScale) {
+                guard toolBarModel.hexScale != 0 && toolBarModel.hexScale != map.hexMapScale else { return }
+                editController.createHexMap(hexMapScale: toolBarModel.hexScale)
+            }
+            .onChange(of: toolBarModel.pinScale) {
+                editController.model.pinScale = toolBarModel.pinScale
+            }
+            .onChange(of: containerSize) {
+                resetZoom()
+            }
+            .onChange(of: dropPinModel.items) {
+                dropPin()
+            }
+            .onAppear {
+                firstAppear()
+            }
+            .modifier(EditToolBarViewModifier(editController: editController, model: toolBarModel))
+       }
     }
 }
 
-extension MapEditor {
+private extension MapEditor {
+    var overlayMap: some View {
+        ZStack(alignment: .topLeading) {
+            drawEntryViews(isShowing: true)
+            drawEntryViews(isShowing: false)
+            
+            if let editEntry = editEntries.entries.first {
+                drawEntryView(entries: editEntries, entry: editEntry)
+            }
+            
+            drawPins
+            
+            if let scalePinId {
+                drawPin(id: scalePinId)
+            }
+            
+            if toolBarModel.displayMode == .master || toolBarModel.displayMode == .reader {
+                drawEntryPins()
+            }
+            
+            if let magnifyPoint = editEntries.selectedNeedleCoordinate {
+                drawCrosshair(location: magnifyPoint)
+                    .zIndex(500)
+            }
+        }
+    }
+    
     func firstAppear() {
         Task {
             try? await Task.sleep(for: .milliseconds(50))
@@ -184,10 +192,6 @@ extension MapEditor {
         colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea()
     }
     
-    var toolBarView: some View {
-        EditToolBar(editController: editController, model: toolBarModel, closeAction: closeAction)
-    }
-
     var loupeSize: CGFloat {
         12 / MapEditor.imageSize(image, degrees: photoDegrees).width
     }
@@ -661,14 +665,18 @@ private extension MapEditor {
     }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
+    @Previewable @Environment(MapRootModel.self) var root
+    
     Group {
 #if os(macOS)
-        MapEditor(editController: .preview, image: AKImage(named: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
+        MapEditor(editController: root.editController, image: AKImage(named: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
 #else
-        MapEditor(editController: .preview, image: AKImage(systemName: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
+        MapEditor(editController: root.editController, image: AKImage(systemName: "photo")!, photoDegrees: 0, map: MapModel.preview, viewMode: .master, tile: nil, isPinEdit: false, containerSize: CGSize(width: 300, height: 800))
 #endif
     }
-    .environment(MapRootModel.previewWithData)
+    .onAppear {
+        root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], typeId: .map))
+    }
     .environment(DropPinModel())
 }

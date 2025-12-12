@@ -39,12 +39,14 @@ struct ToolbarItemListViewModifier: ViewModifier {
                         }
                     }
                 }
-                
+
+#if !os(macOS)
                 ToolbarItem(placement: .confirmationAction) {
                     if modal == true {
                         dismissButton
                     }
                 }
+#endif
             }
     }
 }

@@ -31,6 +31,17 @@ struct RootEditCanvasMap: View {
                 await reloadImage()
             }
         }
+#if !os(tvOS)
+        .dropDestination(for: LinkCharacterData.self) { items, point in
+            let dropItems = items.filter { $0.module == .value && $0.entryId == nil }.map { ItemRowModel(itemId: $0.itemId, typeId: $0.module )}
+            guard !dropItems.isEmpty else { return false }
+            dropPinModel.point = point
+            dropPinModel.items = dropItems
+            return true
+        } isTargeted: { inDropArea in
+            dropPinModel.isTarget = inDropArea
+        }
+#endif
     }
 
     func reloadImage() async {
