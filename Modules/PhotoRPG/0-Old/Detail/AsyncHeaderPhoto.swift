@@ -48,7 +48,7 @@ struct AsyncHeaderPhoto: View {
         let fileUrl = model.fileUrl
         Task { @MainActor in
             let loaderTask = Task.detached(priority: .userInitiated) {
-                await editController.loadImage(cacheType: .image, itemId: itemId, fileUrl: fileUrl)
+                await editController.loadImage(cacheType: .image, item: model, itemId: itemId, fileUrl: fileUrl)
             }
             _ = await loaderTask.result
             if cacheItemListModel.imageCache(cacheType: .image, itemId: itemId) == nil {

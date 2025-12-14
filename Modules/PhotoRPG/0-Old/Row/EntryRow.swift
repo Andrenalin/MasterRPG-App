@@ -81,7 +81,7 @@ struct EntryRow: View {
     private func loadImage(model: PhotoModel) {
         Task { @MainActor in
             let loaderTask = Task.detached(priority: .userInitiated) {
-                await editController.loadImage(cacheType: .image, itemId: model.id, fileUrl: model.fileUrl)
+                await editController.loadImage(cacheType: .image, item: model, itemId: model.id, fileUrl: model.fileUrl)
             }
             _ = await loaderTask.result
             isLoading = false

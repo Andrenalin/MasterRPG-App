@@ -66,8 +66,8 @@ extension EditController {
         }
     }
     
-    func loadImage(cacheType: CacheItemListModel.CacheType, itemId: UUID, fileUrl: FileUrl?, reset: Bool = false) async -> AKImage? {
-        guard fileUrl != nil, let item = await itemController.itemSync(for: itemId) else { return nil }
+    func loadImage(cacheType: CacheItemListModel.CacheType, item: Model, itemId: UUID, fileUrl: FileUrl?, reset: Bool = false) async -> AKImage? {
+        guard fileUrl != nil else { return nil }
         if reset {
             await cacheItemListModel.setImageCache(cacheType: .image, itemId: itemId, image: nil)
             await cacheItemListModel.setImageCache(cacheType: .thumbnail, itemId: itemId, image: nil)

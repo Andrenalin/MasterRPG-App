@@ -94,7 +94,7 @@ private extension PhotoEditor {
             lastFileUrl = editController.model.fileUrl
             
             let loaderTask = Task.detached(priority: .userInitiated) {
-                await editController.loadImage(cacheType: .image, itemId: editController.model.id, fileUrl: editController.model.fileUrl, reset: reset)
+                await editController.loadImage(cacheType: .image, item: editController.model, itemId: editController.model.id, fileUrl: editController.model.fileUrl, reset: reset)
             }
             _ = await loaderTask.result
             isLoading = false

@@ -54,7 +54,7 @@ struct AsyncPhotoViewer: View {
     private func loadImage() {
         Task { @MainActor in
             let loaderTask = Task.detached(priority: .userInitiated) {
-                await root.editController.loadImage(cacheType: .image, itemId: model.id, fileUrl: model.fileUrl)
+                await root.editController.loadImage(cacheType: .image, item: model, itemId: model.id, fileUrl: model.fileUrl)
             }
             _ = await loaderTask.result
             if cachedImage(for: model.id) == nil {

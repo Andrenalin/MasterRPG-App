@@ -202,7 +202,7 @@ public extension PhotoRootModel {
         let model = useGame ? gameController.gameItem(for: id) : itemController.itemOrEmpty(for: id)
 
         let loaderTask = Task.detached(priority: .userInitiated) {
-            await self.editController.loadImage(cacheType: .image, itemId: model.id, fileUrl: model.fileUrl)
+            await self.editController.loadImage(cacheType: .image, item: model, itemId: model.id, fileUrl: model.fileUrl)
         }
         _ = await loaderTask.result
 
