@@ -5,6 +5,7 @@ import SwiftUI
 
 public struct ViewController {
     public let goupViewType: GroupViewType = .photo
+    public let sharingViewType: SharingViewType = .share
     public let thumbnailRowViewType: ThumbnailRowViewType = .photo
 }
 

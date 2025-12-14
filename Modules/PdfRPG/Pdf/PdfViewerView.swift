@@ -24,6 +24,7 @@ struct PdfViewerView: View {
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.showGame) private var showGame
     
     @State private var searchModel = PdfSearchModel()
     
@@ -63,7 +64,9 @@ struct PdfViewerView: View {
                 }
             }
 #endif
-            .searchable(text: $searchModel.displaySearchText, placement: .automatic, prompt: Text("Find in pdf", bundle: .module))
+            .applyIf(!showGame) {
+                $0.searchable(text: $searchModel.displaySearchText, placement: .automatic, prompt: Text("Find in pdf", bundle: .module))
+            }
             .onSubmit(of: .search) {
                 searchModel.resetSearch()
             }
@@ -113,7 +116,7 @@ private extension PdfViewerView {
         } label: {
             Image(systemName: "xmark.circle")
         }
-        //.opacity(showGame ? 0 : 1)
+        .opacity(showGame ? 0 : 1)
     }
 
 }

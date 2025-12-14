@@ -45,7 +45,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
                         allTagsView
                     }
                 }
-                actionBarWSithSharing
+                actionBarWithSharing
 
                 if listDisplayModel.displayMode != .compact {
                     DescriptionItemNewRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
@@ -155,7 +155,7 @@ private extension ItemRowView {
     }
     
     @ViewBuilder
-    var actionBarWSithSharing: some View {
+    var actionBarWithSharing: some View {
         switch root.viewControllable.sharingViewType {
         case .none:
             actionBar
