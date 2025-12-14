@@ -32,12 +32,19 @@ struct SelectedMasterView: View {
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(2)) {
                 root.resetSelectedGameMaster(uuidString: gameMasterUUID)
+                selection.resetSelection(itemId: root.gameModel.selectedGameMaster)
             }
+        }
+        .onChange(of: gameMasterUUID, initial: true) {
+            root.gameModel.selectedGameMaster <=> selection.itemId
+        }
+        .onChange(of: selection.itemId) {
+            root.gameModel.selectedGameMaster <=> selection.itemId
         }
         .onChange(of: root.gameModel.selectedGameMaster, initial: false) {
             if let playerId = root.gameModel.selectedGameMaster {
-                gameMasterUUID <=> playerId.uuidString
                 selection.resetSelection(itemId: playerId)
+                gameMasterUUID <=> playerId.uuidString
             }
         }
     }
