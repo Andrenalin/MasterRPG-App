@@ -18,8 +18,8 @@ extension ViewController: ViewControllable {
 // MARK: Viewer
 
 public extension ViewController {
-    func dropChooseView(model: ItemSelectionModel) -> some View {
-        DiceDropChooseView(model: model)
+    @MainActor func dropChooseView(model: ItemSelectionModel) -> some View {
+        DropChooseView(selectionModel: model)
             .environment(model)
     }
 

@@ -5,27 +5,29 @@ import CoreRPG
 import SwiftData
 import SwiftUI
 
-struct DiceDropChooseView: View {
-    let model: ItemSelectionModel
+struct DropChooseView: View {
+    let selectionModel: ItemSelectionModel
     
-    @Environment(DiceRootModel.self) private var root
+    @Environment(PhotoRootModel.self) private var root
+    @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.navigator) private var navigator
-    
-#if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#if os(macOS)
+    @Environment(\.openWindow) private var openWindow
 #endif
-    
+
     var body: some View {
         DropItemModuleArea(module: root.module, contentView: {
             Group {
-                if let item = diceModel {
-                    DiceViewer(model: item, isEditor: false)
+                if let itemId = selectionModel.itemId, let item = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
+                    GroupedPhotoView(cacheController: cacheController, itemControllable: root.itemController, model: item)
+                        .clipShape(.rect(corners: .concentric))
                 } else {
                     emptyDrop
                 }
             }
             .frame(height: 128)
         }, dropAction: addLink(name:itemId:entryId:))
+        .containerShape(.rect(cornerRadius: 24))
         .background {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color.accentColor.tertiary)
@@ -38,7 +40,7 @@ struct DiceDropChooseView: View {
         .overlay(alignment: .topTrailing) {
             Button(role: .destructive) {
                 withAnimation {
-                    model.selection = []
+                    selectionModel.selection = []
                 }
             } label: {
                 Image(systemName: "minus.circle.fill")
@@ -48,18 +50,18 @@ struct DiceDropChooseView: View {
 #if !os(visionOS)
             .glassEffect()
 #endif
-            .opacity(model.itemId != nil ? 1.0 : 0.0)
+            .opacity(selectionModel.itemId != nil ? 1.0 : 0.0)
         }
-    }
-    
-    private var diceModel: DiceModel? {
-        root.itemController.itemSync(for: model.itemId ?? UUID())
     }
     
     private var emptyDrop: some View {
         Button {
-            root.itemSelectionModel = model
-            //navigator.navigate(to: SelectionDiceRoute.selection, method: .managedSheet)
+            root.itemSelectionModel = selectionModel
+#if os(macOS)
+            openWindow(id: NetworkModules.photo.linkWindowId)
+#else
+            navigator.navigate(to: SelectionPhotoRoute.selection, method: .managedSheet)
+#endif
         } label: {
             VStack {
                 if showDrop {
@@ -68,25 +70,32 @@ struct DiceDropChooseView: View {
                     Image(systemName: "square.and.arrow.down")
                         .imageScale(.large)
                 }
-                Text("Choose \(root.module.title)", bundle: .module)
+                Text(chosseText, bundle: .module)
             }
             .padding(.horizontal, 12)
         }
+        .contentShape(.rect)
     }
     
-    private var showDrop: Bool {
-#if os(iOS)
-        horizontalSizeClass == .regular
+    private var chosseText: LocalizedStringKey {
+#if os(macOS)
+        "Open \(root.module.title)"
 #else
-        true
+        "Choose \(root.module.title)"
 #endif
+    }
+
+    private var showDrop: Bool {
+        appSizeMode == .regular
     }
     
     private func addLink(name: String, itemId: UUID, entryId: UUID?) {
-        model.selection = [WindowItemSelection(itemId: itemId, entryId: entryId)]
+        selectionModel.selection = [WindowItemSelection(itemId: itemId, entryId: entryId)]
     }
 }
 
 #Preview(traits: .mockData) {
-    DiceDropChooseView(model: ItemSelectionModel())
+    ManagedNavigationStack {
+        DropChooseView(selectionModel: ItemSelectionModel())
+    }
 }

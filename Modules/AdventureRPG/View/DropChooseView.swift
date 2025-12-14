@@ -11,6 +11,9 @@ struct DropChooseView: View {
     @Environment(AdventureRootModel.self) private var root
     @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.navigator) private var navigator
+#if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+#endif
     
     var body: some View {
         DropItemModuleArea(module: root.module, contentView: {
@@ -60,7 +63,11 @@ struct DropChooseView: View {
     private var emptyDrop: some View {
         Button {
             root.itemSelectionModel = selectionModel
+#if os(macOS)
+            openWindow(id: NetworkModules.adventure.linkWindowId)
+#else
             navigator.navigate(to: SelectionAdventureRoute.selection, method: .managedSheet)
+#endif
         } label: {
             VStack {
                 if showDrop {
@@ -69,10 +76,18 @@ struct DropChooseView: View {
                     Image(systemName: "square.and.arrow.down")
                         .imageScale(.large)
                 }
-                Text("Choose \(root.module.title)", bundle: .module)
+                Text(chosseText, bundle: .module)
             }
             .padding(.horizontal, 12)
         }
+    }
+    
+    private var chosseText: LocalizedStringKey {
+        #if os(macOS)
+        "Open \(root.module.title)"
+        #else
+        "Choose \(root.module.title)"
+        #endif
     }
     
     private var showDrop: Bool {

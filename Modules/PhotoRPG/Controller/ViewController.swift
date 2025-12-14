@@ -20,7 +20,8 @@ extension ViewController: ViewControllable {
 
 public extension ViewController {
     @MainActor func dropSelectionView(model: ItemSelectionModel) -> some View {
-        PhotoDropChooseView(model: model)
+        DropChooseView(selectionModel: model)
+            .environment(model)
     }
     
     @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
