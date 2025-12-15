@@ -12,8 +12,9 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
     case hide = 1
 
     // structure
-    case drop = 3
     case folder = 2
+    case drop = 3
+    case entry = 4
 
     // collections
     case album = 7000
@@ -78,6 +79,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
 
             case .drop: "Drop"
             case .folder: "Folder"
+            case .entry: "Entry"
 
             case .album: "Album"
             case .bookshelf: "Bookshelf"

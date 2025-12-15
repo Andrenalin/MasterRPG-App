@@ -48,32 +48,52 @@ public struct ConvertController: Sendable {
     }
     
     @MainActor public func createFolderAndCollections() async {
+        print("\(itemController.itemDataModel.items.count) - Items")
+        var countCat: [String: Int] = [:]
+        var folderModelId: [ItemListCategory: UUID] = [:]
+        var tagCounter: [String: [UUID]] = [:]
+        
         for itemId in itemController.itemDataModel.items {
-            guard let model = itemController.itemSync(for: itemId), model.specialCategory == false, model.category != .item else { continue }
+            guard let model = itemController.itemSync(for: itemId), model.specialCategory == false, model.category != .entry else { continue }
             
+            countCat[model.category.title, default: 0] += 1
+            
+            for tag in model.tags {
+                tagCounter[tag, default: []] += [model.id]
+            }
             // Extract folder from category
             let folderName = model.category.title
-            
-            var folderId = itemController.itemDataModel.items.first {
-                let item = itemController.itemOrEmpty(for: $0)
-                return item.category == .folder && item.name == folderName && item.parentId == nil
+
+            var folderId = folderModelId[model.category]
+            if folderId == nil {
+                folderId = itemController.itemDataModel.items.first {
+                    let item = itemController.itemOrEmpty(for: $0)
+                    return item.category == .folder && item.name == folderName && item.parentId == nil
+                }
+                
+                if folderId == nil, var newModel = await editController.addNew(type: .folder) {
+                    // If not found, create
+                    newModel.name = folderName
+                    folderId = newModel.id
+                    folderModelId[model.category] = folderId
+                    print("Folder: \(folderName) -> \(newModel.id)")
+                }
             }
-            
-            if folderId == nil, var newModel = await editController.addNew(type: .folder) {
-                // If not found, create
-                newModel.name = folderName
-                folderId = newModel.id
-            }
-            
+
             if let folderId {
-                let currentFolderModel = itemController.itemOrEmpty(for: folderId)
-                editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: itemController.itemDataModel.networkModule))
-                let category = model.category
-                editController.reset(category: .item, saveIt: false)
-                editController.reset(tags: [category.title] + model.tags)
-                editController.addItem(itemId: model.id, parentId: currentFolderModel.id)
+                if let currentFolderModel = itemController.itemSync(for: folderId) {
+                    editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: itemController.itemDataModel.networkModule))
+                    let category = model.category
+                    editController.reset(category: .entry, saveIt: false)
+                    editController.reset(tags: [category.title] + model.tags)
+                    editController.addItem(itemId: model.id, parentId: currentFolderModel.id)
+                } else {
+                    print("folderId \(folderId) not found")
+                }
             }
         }
+        
+        print("Have \(countCat) categories")
 
         let count = itemController.itemDataModel.items.count
         guard count > 50 else { return }
