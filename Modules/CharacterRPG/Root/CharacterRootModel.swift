@@ -245,8 +245,8 @@ extension CharacterRootModel {
     }
     
     public func checkFolders() async {
-//        let cc = ConvertController(itemController: itemController, editController: editController)
-//        await cc.createFolderAndCollections()
+        let cc = ConvertController(itemController: itemController, editController: editController)
+        await cc.createFoldersAndCollections(excludeHidden: true)
     }
 }
 

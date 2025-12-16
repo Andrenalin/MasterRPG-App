@@ -17,11 +17,14 @@ public struct ConvertController: Sendable {
         for itemId in itemController.itemDataModel.items {
             guard let model = itemController.itemSync(for: itemId), model.specialCategory == false, model.category != .entry else { continue }
 
-            for tag in model.tags {
-                tagCounter[tag, default: []] += [model.id]
+            if model.parentId == nil && model.displayState == 0 {
+                for tag in model.tags {
+                    tagCounter[tag, default: []] += [model.id]
+                }
+                tagCounter[model.category.title, default: []] += [model.id]
             }
-            tagCounter[model.category.title, default: []] += [model.id]
             
+            guard model.displayState == 0 else { continue }
             guard let url = model.fileUrl?.rawUrl else { continue }
             
             // Extract folder path components from the file URL
@@ -61,13 +64,16 @@ public struct ConvertController: Sendable {
         await createCollections(tagCounter: tagCounter)
     }
     
-    @MainActor public func createFoldersAndCollections() async {
+    @MainActor public func createFoldersAndCollections(excludeHidden: Bool = false) async {
         var folderModelId: [ItemListCategory: UUID] = [:]
         var tagCounter: [String: [UUID]] = [:]
         
         for itemId in itemController.itemDataModel.items {
             guard let model = itemController.itemSync(for: itemId), model.specialCategory == false, model.category != .entry else { continue }
-                        
+
+            guard model.parentId == nil else { continue }
+            guard excludeHidden && model.displayState == 0 else { continue }
+            
             for tag in model.tags {
                 tagCounter[tag, default: []] += [model.id]
             }
@@ -89,13 +95,16 @@ public struct ConvertController: Sendable {
                 }
             }
             
+            let category = model.category
             editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: itemController.itemDataModel.networkModule))
+            editController.reset(category: .entry, saveIt: false)
+            editController.reset(tags: [category.title] + model.tags)
+            if model.parentId == nil && model.displayState != 0 {
+                editController.reset(hidden: false)
+            }
             
             if let folderId {
                 if let currentFolderModel = itemController.itemSync(for: folderId) {
-                    let category = model.category
-                    editController.reset(category: .entry, saveIt: false)
-                    editController.reset(tags: [category.title] + model.tags)
                     editController.addItem(itemId: model.id, parentId: currentFolderModel.id)
                 }
             }
