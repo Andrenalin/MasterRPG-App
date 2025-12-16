@@ -80,9 +80,10 @@ public struct ConvertController: Sendable {
                 }
             }
 
+            editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: itemController.itemDataModel.networkModule))
+        
             if let folderId {
                 if let currentFolderModel = itemController.itemSync(for: folderId) {
-                    editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: itemController.itemDataModel.networkModule))
                     let category = model.category
                     editController.reset(category: .entry, saveIt: false)
                     editController.reset(tags: [category.title] + model.tags)
@@ -94,34 +95,38 @@ public struct ConvertController: Sendable {
         }
         
         print("Have \(countCat) categories")
-
+        
         let count = itemController.itemDataModel.items.count
         guard count > 50 else { return }
+
+        let tags: [String] = tagCounter.compactMap { (key, value) in
+            value.count >= count / 10 ? key : nil
+        }
+        print("Have \(tags) tags")
+        var collectionModelId: [String: UUID] = [:]
         
-        for tag in itemController.itemDataModel.allTags {
-            let tagItems = itemController.itemDataModel.items.filter {
-                let item = itemController.itemOrEmpty(for: $0)
-                return item.tags.contains(tag)
-            }
-            guard tagItems.count >= count / 10 else { continue }
-           
+        for tag in tags {
             // Collections
             let tabName = tag.localizedLowercase.localizedCapitalized
                 
-            var collectionId = itemController.itemDataModel.items.first {
-                let item = itemController.itemOrEmpty(for: $0)
-                return item.specialCategory && item.category != .folder && item.name == tabName && item.parentId == nil
-            }
-
-            if collectionId == nil, var newModel = await editController.addNew(type: .collection) {
-                // If not found, create
-                newModel.name = tabName
-                collectionId = newModel.id
+            var collectionId = collectionModelId[tabName]
+            if collectionId == nil {
+                collectionId = itemController.itemDataModel.items.first {
+                    let item = itemController.itemOrEmpty(for: $0)
+                    return item.specialCategory && item.category != .folder && item.name == tabName && item.parentId == nil
+                }
+                
+                if collectionId == nil, var newModel = await editController.addNew(type: .collection) {
+                    // If not found, create
+                    newModel.name = tabName
+                    collectionId = newModel.id
+                    collectionModelId[tabName] = newModel.id
+                }
             }
 
             if let collectionId, let currentCollectionModel = itemController.itemSync(for: collectionId) {
-                for tagItem in tagItems {
-                    editController.addItem(itemId: tagItem.id, parentId: currentCollectionModel.id)
+                for modelId in tagCounter[tag, default: []] {
+                    editController.addItem(itemId: modelId, parentId: currentCollectionModel.id)
                 }
             }
         }
