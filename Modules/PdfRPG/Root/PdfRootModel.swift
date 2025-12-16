@@ -213,6 +213,6 @@ extension PdfRootModel {
     
     public func checkFolders() async {
         let cc = ConvertController(itemController: itemController, editController: editController)
-        await cc.checkFolders()
+        await cc.createFilepathFoldersAndCollections()
     }
 }

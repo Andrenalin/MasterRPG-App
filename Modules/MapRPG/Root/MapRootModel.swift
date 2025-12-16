@@ -244,4 +244,9 @@ public extension MapRootModel {
             }
         }
     }
+    
+    func checkFolders() async {
+        let cc = ConvertController(itemController: itemController, editController: editController)
+        await cc.createFoldersAndCollections()
+    }
 }

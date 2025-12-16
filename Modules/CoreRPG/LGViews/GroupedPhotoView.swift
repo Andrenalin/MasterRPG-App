@@ -4,21 +4,24 @@ import SwiftData
 import SwiftUI
 
 public struct GroupedPhotoView: View {
-    public init(cacheController: any ImageCacheControllable, itemControllable: any ItemControllable, model: any ItemDataAccessable) {
+    public init(cacheController: any ImageCacheControllable, itemControllable: any ItemControllable, model: any ItemDataAccessable, highResolution: Bool = false) {
         self.cacheController = cacheController
         self.itemController = itemControllable
         self.model = model
+        self.highResolution = highResolution
     }
     
     let cacheController: ImageCacheControllable
     let itemController: any ItemControllable
     let model: any ItemDataAccessable
+    let highResolution: Bool
 
     @Environment(\.modelContext) var modelContext
     @Environment(GroupItemSelectionModel.self) var selection
 
     public var body: some View {
-        CachePhotoView(cacheController: cacheController, model: selectedModel, highResolution: false)
+        CachePhotoView(cacheController: cacheController, model: selectedModel, highResolution: highResolution)
+            .id(selection.selectedItem ?? model.id)
     }
 
     var selectedModel: any ItemDataAccessable {
@@ -27,6 +30,6 @@ public struct GroupedPhotoView: View {
 
     var item: (any ItemDataAccessable)? {
         guard let id = selection.selectedItem else { return nil }
-        return itemController.itemOrEmpty(for: id)
+        return itemController.itemSync(for: id)
     }
 }

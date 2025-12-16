@@ -8,6 +8,10 @@ import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import TableRPG
+import MapRPG
+import CharacterRPG
+import WeatherRPG
+import DiceRPG
 
 public struct SettingsView: View {
     public init(store: AppModel) {
@@ -30,12 +34,16 @@ public struct SettingsView: View {
             SectionGroupEditorView {
                 Button {
                     Task {
+                        await store.adventureRoot.checkFolders()
                         await store.audioRoot.checkFolders()
+                        await store.characterRoot.checkFolders()
+                        await store.diceRoot.checkFolders()
+                        await store.mapRoot.checkFolders()
                         await store.pdfRoot.checkFolders()
                         await store.photoRoot.checkFolders()
                         await store.spaceRoot.checkFolders()
-                        await store.adventureRoot.checkFolders()
                         await store.tableRoot.checkFolders()
+                        await store.weatherRoot.checkFolders()
                     }
                 } label: {
                     Label("Create Folders", systemImage: "folder")

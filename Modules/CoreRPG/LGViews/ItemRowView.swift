@@ -115,10 +115,6 @@ private extension ItemRowView {
     
     var allTagsView: some View {
         HStack(spacing: 4) {
-            if model.category != .folder && model.category != root.itemControllable.collectionCategory {
-                CategoryItemRow(category: model.category)
-            }
-            
             TagItemRow(tags: tagContent)
         }
     }

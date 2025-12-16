@@ -25,9 +25,7 @@ public struct ItemDetailOverlayView: View {
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
-                HStack {
-                    TagItemRow(tags: [model.category.title])
-                    
+                HStack(spacing: 4) {
                     TagItemRow(tags: model.tags)
                 }
             }

@@ -233,6 +233,6 @@ extension TableRootModel {
     
     public func checkFolders() async {
         let cc = ConvertController(itemController: itemController, editController: editController)
-        await cc.createFolderAndCollections()
+        await cc.createFoldersAndCollections()
     }
 }

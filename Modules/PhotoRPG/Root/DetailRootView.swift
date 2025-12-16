@@ -43,7 +43,7 @@ struct DetailListView: View {
         ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: true) {
         } editor: {
             if let cacheController = root.cacheController {
-                CachePhotoView(cacheController: cacheController, model: model, highResolution: true)
+                GroupedPhotoView(cacheController: cacheController, itemControllable: root.itemController, model: model, highResolution: true)
             }
         }
         .overlay {
