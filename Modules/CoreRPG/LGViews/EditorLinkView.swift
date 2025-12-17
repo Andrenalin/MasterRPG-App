@@ -3,11 +3,11 @@
 import SwiftUI
 
 public struct EditorLinkView: View {
-    public init(root: ItemRootController, editorLinkModel: EditorLinkModel, selectedModule: NetworkModules = .table, selectedEntryId: UUID? = nil) {
+    public init(root: ItemRootController, editorLinkModel: EditorLinkModel, selectedModule: NetworkModules? = nil, selectedEntryId: UUID? = nil) {
         self.root = root
         self.editorLinkModel = editorLinkModel
-        editorLinkModel.selection = selectedModule
         self.selectedEntryId = selectedEntryId
+        editorLinkModel.preselectedModule = selectedModule
     }
     
     let root: ItemRootController
@@ -33,7 +33,7 @@ public struct EditorLinkView: View {
             }
             .searchItemList(listControllable: editorLinkModel.folderListController)
             .environment(editorLinkModel.folderListController.cacheListItemModel)
-            .onChange(of: editorLinkModel.selectionFirstRow, initial: true) {
+            .onChange(of: editorLinkModel.selectionFirstRow) {
                 guard let selectionFirstRow = editorLinkModel.selectionFirstRow else { return }
                 withAnimation {
                     editorLinkModel.update(selection: selectionFirstRow)
@@ -56,6 +56,10 @@ public struct EditorLinkView: View {
             }
             .onChange(of: editorLinkModel.folderListController.searchModel.searchText) {
                 editorLinkModel.update()
+            }
+            .onAppear {
+                guard let preselectedModule = editorLinkModel.preselectedModule else { return }
+                withAnimation { editorLinkModel.update(selection: preselectedModule) }
             }
             .navigationTitle(editorLinkModel.selection.title)
             .navigationBarTitleDisplayMode(.inline)

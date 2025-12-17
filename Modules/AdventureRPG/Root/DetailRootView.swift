@@ -118,7 +118,7 @@ private extension DetailListView {
         }
 #if os(iOS)
         ToolbarItemGroup(placement: .keyboard) {
-            ForEach(root.editorLinkModel.modulesRow, id: \.self) { module in
+            ForEach(root.editorLinkModel.firstRow, id: \.self) { module in
                 addLinkButton(module: module)
             }
         }

@@ -50,7 +50,7 @@ struct DetailListView: View {
         } editor: {
             detailEditorView
         } inspector: {
-            EditorLinkView()
+            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel)
         } entryEditor: {
             EntryEditorView(editController: root.editController)
         }
@@ -132,6 +132,27 @@ private extension DetailListView {
                         Image(systemName: "note.text.badge.plus")
                     }
                 }
+            }
+        }
+#if os(iOS)
+        ToolbarItemGroup(placement: .keyboard) {
+            ForEach(root.editorLinkModel.modulesRow, id: \.self) { module in
+                addLinkButton(module: module)
+            }
+        }
+#endif
+    }
+    
+    private func addLinkButton(module: NetworkModules) -> some View {
+        Button {
+            withAnimation {
+                navigator.navigate(to: EditorRoute.addLink(module), method: .managedSheet)
+            }
+        } label: {
+            Label {
+                Text("Link", bundle: .module)
+            } icon: {
+                Image(systemName: module.icon)
             }
         }
     }

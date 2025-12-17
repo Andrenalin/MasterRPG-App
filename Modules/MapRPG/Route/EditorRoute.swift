@@ -10,6 +10,7 @@ enum EditorRoute: Equatable, Hashable, Codable {
     case quickEditor
     case selectionPdf
     case linkSelection(UUID)
+    case addLink(NetworkModules)
 }
 
 extension EditorRoute: NavigationDestination {
@@ -32,7 +33,9 @@ struct DestinationEditorRoute: View {
         case .selectionPdf:
             root.pdfRoot.viewController.linkListView(type: .selection, itemSelectionModel: root.editController.mapEditModel.selectionPdf)
         case .linkSelection(let entryId):
-            EditorLinkView()
+            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel, selectedEntryId: entryId)
+        case .addLink(let module):
+            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel, selectedModule: module, selectedEntryId: root.editController.editorModel.currentEntryId)
         }
     }
 }

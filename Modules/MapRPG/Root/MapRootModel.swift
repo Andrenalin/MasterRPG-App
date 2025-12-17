@@ -91,6 +91,22 @@ public final class MapRootModel: @unchecked Sendable {
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     
+    @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
+        EditorLinkModel(
+            rootManager: RootManager(adventureRoot: self, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, generatorRoot: self, mapRoot: self, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: self, tableRoot: tableRoot, weatherRoot: self),
+            folderListController: folderListController.copy(parentModel: nil),
+            audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            mapSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            firstRow: [.map, .value, .table, .photo, .audio, .dice],
+            selection: .value
+        )
+    }()
+    
     var cacheController: CacheController? { itemController.cacheController }
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }

@@ -55,25 +55,27 @@ public final class EditorLinkModel {
     let tableSelectionModel: ItemSelectionModel
     let weatherSelectionModel: ItemSelectionModel
 
-    let firstRow: [NetworkModules]
+    public let firstRow: [NetworkModules]
     let secondRow: [NetworkModules]
 
     var selection: NetworkModules
     var selectionFirstRow: NetworkModules? = nil
     var selectionSecondRow: NetworkModules? = nil
+    
+    var preselectedModule: NetworkModules? = nil
 
     public var modulesRow: [NetworkModules] {
         firstRow + secondRow
     }
-    
+        
     func update(selection: NetworkModules) {
-        self.selection = selection
+        self.selection <=> selection
         if firstRow.contains(selection) {
             selectionFirstRow <=> selection
-            selectionSecondRow = nil
+            selectionSecondRow <=> nil
         }
         if secondRow.contains(selection) {
-            selectionFirstRow = nil
+            selectionFirstRow <=> nil
             selectionSecondRow <=> selection
         }
     }
