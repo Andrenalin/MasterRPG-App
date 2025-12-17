@@ -40,7 +40,7 @@ struct DetailListView: View {
     }
     
     func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: true) {
+        ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: true) {
         } editor: {
             SpaceDetailObjectViewer(editController: root.editController, model: model)
         }

@@ -225,10 +225,10 @@ public extension EntryDataEditable {
 }
 
 public extension EntryDataEditable {
-    @MainActor func linkTextModel(for entry: any EntryDataAccessable, linkController: LinkRootController, searchModel: SearchModel) -> LinkHighlightTextModel {
+    @MainActor func linkTextModel(for entry: any EntryDataAccessable, linkController: LinkRootController, searchModel: SearchModel, toggler: ((UUID, NetworkModules) async -> Void)? = nil) -> LinkHighlightTextModel {
         let nameText = rowText(entry: entry)
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entry.id) else {
-            let model = LinkHighlightTextModel(linkControllable: linkController.linkControllable, text: nameText, highlightedText: searchModel.searchText)
+            let model = LinkHighlightTextModel(linkControllable: linkController.linkControllable, text: nameText, highlightedText: searchModel.searchText, toggler: toggler)        
             cacheItemListModel.setItemLink(cacheType: .row, itemId: entry.id, linkModel: model)
             return model
         }

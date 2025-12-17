@@ -30,7 +30,7 @@ struct DetailListView: View {
     }
     
     func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: true) {
+        ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: true) {
         } editor: {
             if let cacheController = root.cacheController {
                 CachePhotoView(cacheController: cacheController, model: model, highResolution: false)

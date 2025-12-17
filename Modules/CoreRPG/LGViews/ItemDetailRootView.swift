@@ -5,9 +5,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Overlay: View, EntryEditor: View>: View {
-    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
+    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Overlay == EmptyView {
         self.detailListController = detailListController
-        self.selectedId = selectedId
+        self.selectedModel = selectedModel
         self.editorAsBackground = editorAsBackground
         self.header = header()
         self.editor = editor()
@@ -18,9 +18,9 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.entryEditor = entryEditor()
     }
     
-    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
+    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder inspector: () -> Inspector, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) {
         self.detailListController = detailListController
-        self.selectedId = selectedId
+        self.selectedModel = selectedModel
         self.editorAsBackground = editorAsBackground
         self.header = header()
         self.editor = editor()
@@ -31,9 +31,9 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.entryEditor = entryEditor()
     }
     
-    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView {
+    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder overlay: () -> Overlay, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView {
         self.detailListController = detailListController
-        self.selectedId = selectedId
+        self.selectedModel = selectedModel
         self.editorAsBackground = editorAsBackground
         self.header = header()
         self.editor = editor()
@@ -44,9 +44,9 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.entryEditor = entryEditor()
     }
     
-    public init(detailListController: FolderListControllable, selectedId: UUID?, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView, Overlay == EmptyView {
+    public init(detailListController: FolderListControllable, selectedModel: any ItemDataAccessable, editorAsBackground: Bool = false, @ViewBuilder header: () -> Header = EmptyView.init, @ViewBuilder editor: () -> Editor = EmptyView.init, @ViewBuilder entryEditor: () -> EntryEditor = EmptyView.init) where Inspector == EmptyView, Overlay == EmptyView {
         self.detailListController = detailListController
-        self.selectedId = selectedId
+        self.selectedModel = selectedModel
         self.editorAsBackground = editorAsBackground
         self.header = header()
         self.editor = editor()
@@ -57,7 +57,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
         self.entryEditor = entryEditor()
     }
     
-    let selectedId: UUID?
+    let selectedModel: any ItemDataAccessable
     let editorAsBackground: Bool
     let header: Header
     let editor: Editor
@@ -86,21 +86,14 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     
     public var body: some View {
         let _ = Self._printChanges()
-        if let detailModel {
-            contentScrollView(model: detailModel)
-                .tint(root.module.tint)
-                .accentColor(root.module.tint)
-        }
+        contentScrollView(model: selectedModel)
+            .tint(root.module.tint)
+            .accentColor(root.module.tint)
     }
 }
 
 private extension ItemDetailRootView {
-    var detailModel: (any ItemDataAccessable)? {
-        guard let itemId = selectedId else { return nil }
-        return root.itemControllable.itemSync(for: itemId)
-    }
-    
-    func selectedModel(model: any ItemDataAccessable) -> any ItemDataAccessable {
+    func currentModel(model: any ItemDataAccessable) -> any ItemDataAccessable {
         guard let itemId = selection.selectedItem else { return model }
         return root.itemControllable.itemOrEmpty(for: itemId)
     }
@@ -171,14 +164,14 @@ private extension ItemDetailRootView {
         }
 #endif
         .sheet(isPresented: $isEditing) {
-            ItemHeaderEditorView(editControllable: root.editControllable, model: selectedModel(model: model))
+            ItemHeaderEditorView(editControllable: root.editControllable, model: currentModel(model: model))
                 .presentationContentInteraction(.resizes)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .tint(root.module.tint)
                 .accentColor(root.module.tint)
         }
-        .modifier(OpenFileViewerViewModifier(model: selectedModel(model: model), module: root.module))
+        .modifier(OpenFileViewerViewModifier(model: currentModel(model: model), module: root.module))
         .toolbar {
             toolbarContent(model: model)
         }
@@ -197,7 +190,7 @@ private extension ItemDetailRootView {
         ZStack(alignment: .bottom) {
             header
             
-            ItemDetailOverlayView(model: selectedModel(model: model))
+            ItemDetailOverlayView(model: currentModel(model: model))
                 .padding()
         }
         .overlay(alignment: .top) {
@@ -220,7 +213,7 @@ private extension ItemDetailRootView {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .opacity(hasFile(model: selectedModel(model: model)) || selectedModel(model: model).specialCategory ? 0 : 1)
+        .opacity(hasFile(model: currentModel(model: model)) || currentModel(model: model).specialCategory ? 0 : 1)
         .transition(.scale)
     }
     
@@ -246,10 +239,10 @@ private extension ItemDetailRootView {
         ZStack {
             initialFileImporterView(model: model)
             
-            if selectedModel(model: model).specialCategory == false && editorAsBackground {
-                editorContentBackgroundView(model: selectedModel(model: model))
+            if currentModel(model: model).specialCategory == false && editorAsBackground {
+                editorContentBackgroundView(model: currentModel(model: model))
             } else {
-                editorContentView(model: selectedModel(model: model))
+                editorContentView(model: currentModel(model: model))
             }
         }
     }
@@ -401,7 +394,7 @@ private extension ItemDetailRootView {
     private func toolbarContent(model: any ItemDataAccessable) -> some ToolbarContent {
         if openFileWindowModel.showItem == false {
             ToolbarItem(placement: .primaryAction) {
-                if (hasFile(model: selectedModel(model: model)) || selectedModel(model: model).specialCategory) {
+                if (hasFile(model: currentModel(model: model)) || currentModel(model: model).specialCategory) {
                     Button {
                         withAnimation { isEditing = true }
                     } label: {

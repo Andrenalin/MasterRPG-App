@@ -17,6 +17,8 @@ public struct EntryEditRow: View {
     @Environment(ItemRootController.self) private var itemRootController
     @Environment(LinkRootController.self) private var linkController
     @Environment(SearchModel.self) private var searchModel
+    @Environment(ItemRootController.self) private var root
+    @Environment(\.navigator) private var navigator
     
     public var body: some View {
         VStack {
@@ -29,7 +31,7 @@ public struct EntryEditRow: View {
                     }
                 }
             }
-            
+                        
             LinkHighlightTextView(model: linkTextModel)
                 .multilineTextAlignment(.leading)
                 .lineLimit(nil)
@@ -50,7 +52,10 @@ private extension EntryEditRow {
     }
     
     var linkTextModel: LinkHighlightTextModel {
-        editController.linkTextModel(for: entry, linkController: linkController, searchModel: searchModel)
+        editController.linkTextModel(for: entry, linkController: linkController, searchModel: searchModel) { itemId, module in
+            guard module == .value else { return }
+            navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
+        }
     }
     
     var hasThumbnail: Bool {

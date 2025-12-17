@@ -43,7 +43,7 @@ struct DetailListView: View {
     }
     
     func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: false) {
+        ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: false) {
         } editor: {
             WeatherEditor(model: model)
         } inspector: {

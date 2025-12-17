@@ -57,6 +57,8 @@ struct MockRootViewModifier: ViewModifier {
             .environment(LinkRootController.fake)
             .environment(root.diceRoot)
             .environment(root.tableRoot)
+            .environment(root.photoRoot)
+            .environment(root.pdfRoot)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

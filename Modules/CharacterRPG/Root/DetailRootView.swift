@@ -38,10 +38,13 @@ struct DetailListView: View {
                 navigator.navigate(to: CharacterDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
             }
+            .onAppear {
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: .value))
+            }
     }
     
     func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedId: model.id, editorAsBackground: false) {
+        ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: false) {
         } editor: {
             detailEditorView
         } inspector: {
@@ -79,6 +82,7 @@ private extension DetailListView {
                 withAnimation { root.editController.valueEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
             }
 
+        
         EntryListView(editController: root.editController, linkTypes: LinkCharacterModuleTransferable.self, headerTitle: "Values")
     }
     
