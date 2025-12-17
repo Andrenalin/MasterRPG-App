@@ -3,8 +3,8 @@
 import SwiftUI
 
 extension View {
-    func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any FolderListControllable, parentModel: (any ItemDataAccessable)?, modal: Bool = false) -> some View {
-        modifier(ToolbarItemListViewModifier(root: root, listController: listControllable, parentModel: parentModel, modal: modal))
+    public func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any FolderListControllable, parentModel: (any ItemDataAccessable)?, modal: Bool = false, dismissHandler: (() -> Void)? = nil) -> some View {
+        modifier(ToolbarItemListViewModifier(root: root, listController: listControllable, parentModel: parentModel, modal: modal, dimissHandler: dismissHandler))
     }
 }
 
@@ -13,6 +13,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
     let listController: any FolderListControllable
     let parentModel: (any ItemDataAccessable)?
     let modal: Bool
+    let dimissHandler: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     
@@ -154,6 +155,7 @@ private extension ToolbarItemListViewModifier {
     
     var dismissButton: some View {
         Button {
+            dimissHandler?()
             dismiss()
         } label: {
             Image(systemName: "checkmark")

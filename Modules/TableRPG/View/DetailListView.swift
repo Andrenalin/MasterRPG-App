@@ -35,7 +35,7 @@ struct DetailListView: View {
         } editor: {
             detailEditorView
         } inspector: {
-            EditorLinkView()
+            EditorLinkView(root: root, selectedEntryId: nil)
         } entryEditor: {
             EntryEditorView(editController: root.editController)
         }
@@ -70,14 +70,6 @@ private extension DetailListView {
             }
         
         EntryListView(editController: root.editController, linkTypes: LinkTableModuleTransferable.self, headerTitle: "Entries")
-            .onChange(of: root.editController.tableEditModel.addLinkDice.selection) {
-                guard let entryId = root.editController.editorModel.currentEntryId else { return }
-                let selection = root.editController.tableEditModel.addLinkDice.selection
-                for link in selection {
-                    withAnimation { root.editController.add(link: "Dice - Link", module: .dice, itemId: link.itemId, entryId: link.entryId, destinationEntryId: entryId) }
-
-                }
-            }
     }
 
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
@@ -113,29 +105,8 @@ private extension DetailListView {
         }
         #if os(iOS)
         ToolbarItemGroup(placement: .keyboard) {
-            Button {
-                withAnimation {
-                    navigator.navigate(to: EditorRoute.addLink(.dice), method: .managedSheet)
-                }
-            } label: {
-                Label {
-                    Text("Link", bundle: .module)
-                } icon: {
-                    Image(systemName: NetworkModules.dice.icon)
-                }
-            }
-            
-            Button {
-                withAnimation {
-                    navigator.navigate(to: EditorRoute.addLink(.table), method: .managedSheet)
-                }
-            } label: {
-                Label {
-                    Text("Link", bundle: .module)
-                } icon: {
-                    Image(systemName: NetworkModules.table.icon)
-                }
-            }
+            addLinkButton(module: .dice)
+            addLinkButton(module: .table)
         }
         #endif
     }

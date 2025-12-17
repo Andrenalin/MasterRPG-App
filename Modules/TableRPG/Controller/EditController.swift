@@ -16,9 +16,6 @@ final class TableEditModel: Sendable {
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
 
-    let addLinkDice: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
-    let addLinkTable: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
-    
     func resetLinks() {
         contentLinks = [:]
     }

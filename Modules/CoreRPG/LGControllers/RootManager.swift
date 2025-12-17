@@ -29,6 +29,26 @@ public struct RootManager: Sendable {
         self.weatherRoot = weatherRoot
     }
 
+    public init(
+        diceRoot: any ItemRootControllable,
+        generatorRoot: any ItemRootControllable,
+        pdfRoot: any ItemRootControllable,
+        tableRoot: any ItemRootControllable,
+    ) {
+        self.diceRoot = diceRoot
+        self.generatorRoot = generatorRoot
+        self.pdfRoot = pdfRoot
+        self.tableRoot = tableRoot
+        
+        self.adventureRoot = tableRoot
+        self.audioRoot = tableRoot
+        self.characterRoot = tableRoot
+        self.mapRoot = tableRoot
+        self.photoRoot = tableRoot
+        self.spaceRoot = tableRoot
+        self.weatherRoot = tableRoot
+    }
+
     public let adventureRoot: ItemRootControllable
     public let audioRoot: ItemRootControllable
     public let characterRoot: ItemRootControllable

@@ -93,9 +93,10 @@ public final class PhotoRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
     }()
-    @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
-        folderListController.copy(parentModel: nil)
-    }()
+        @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
+        rootController.folderLinkControllable
+    }
+
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
     }()

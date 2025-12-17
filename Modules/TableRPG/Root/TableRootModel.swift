@@ -85,6 +85,10 @@ public final class TableRootModel: @unchecked Sendable {
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     
+    @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
+        EditorLinkModel(rootManager: RootManager(diceRoot: diceRoot, generatorRoot: self, pdfRoot: pdfRoot, tableRoot: self), folderListController: folderLinkController)
+    }()
+    
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }
     @ObservationIgnored private(set) var _syncDataController: SyncDataController?
@@ -107,9 +111,9 @@ public final class TableRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
     }()
-    @MainActor @ObservationIgnored lazy var folderLinkController: FolderListControllable = {
-        folderListController.copy(parentModel: nil)
-    }()
+    @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
+        rootController.folderLinkControllable
+    }
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
     }()

@@ -99,7 +99,7 @@ private extension EntryListView {
     
     func linkButton(entry: any EntryDataAccessable, onlyIcon: Bool = false) -> some View {
         Button {
-            navigator.navigate(to: editController.linkSelectionDestination(for: entry.id), method: .managedSheet)
+            navigator.navigate(to: editController.linkSelectionDestination(for: entry.id), method: .sheet)
         } label: {
             if onlyIcon {
                 Image(systemName: "link.badge.plus")

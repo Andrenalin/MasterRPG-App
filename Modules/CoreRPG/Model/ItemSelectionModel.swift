@@ -16,6 +16,9 @@ public final class ItemSelectionModel {
     public var allowCollections: Bool = false
     public var allowEntrySelection: Bool = false
     
+    public var selectionFinished: Bool = false
+    public var selectedLinkEntryId: UUID? 
+    
     public var itemId: UUID? {
         selection.first?.itemId
     }

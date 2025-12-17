@@ -6,6 +6,7 @@ public enum LinkRootType {
     case window
     case inspector
     case selection
+    case selectionInline
 }
 
 public struct LinkItemRootView: View {
@@ -19,9 +20,14 @@ public struct LinkItemRootView: View {
         
     public var body: some View {
         LinkItemListView(root: root, type: type, parentModel: nil)
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(CacheItemListModel())
+            .environment(root.folderLinkControllable.listDisplayModel)
+            .environment(root.folderLinkControllable.searchModel)
             .environment(root.folderLinkControllable.cacheListItemModel)
+            .tint(root.module.tint)
+            .accentColor(root.module.tint)
+            .onChange(of: root.listDisplayModel.displayMode) {
+                guard type == .inspector else { return }
+                root.folderLinkControllable.listDisplayModel.displayMode <=> root.listDisplayModel.displayMode
+            }
     }
 }

@@ -32,41 +32,43 @@ struct EditorLinkView: View {
     @State private var weatherSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false)
     
     var body: some View {
-        VStack {
-            pickerAll
-            
-            ZStack {
-                root.audioRoot.viewController.linkListView(type: .inspector, itemSelectionModel: audioSelectionModel)
-                    .opacity(selection == .audio ? 1 : 0)
+        ManagedNavigationStack(name: "AdventureEditorLink") {
+            VStack {
+                pickerAll
                 
-                root.characterRoot.viewController.linkListView(type: .inspector, itemSelectionModel: characterSelectionModel)
-                    .opacity(selection == .value ? 1 : 0)
-                
-                root.diceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: diceSelectionModel)
-                    .opacity(selection == .dice ? 1 : 0)
-                
-                root.mapRoot.viewController.linkListView(type: .inspector, itemSelectionModel: mapSelectionModel)
-                    .opacity(selection == .map ? 1 : 0)
-                
-                root.pdfRoot.viewController.linkListView(type: .inspector, itemSelectionModel: pdfSelectionModel)
-                    .opacity(selection == .pdf ? 1 : 0)
-                
-                root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
-                    .opacity(selection == .photo ? 1 : 0)
-                
-                root.spaceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: spaceSelectionModel)
-                    .opacity(selection == .space ? 1 : 0)
-                
-                root.tableRoot.viewController.linkListView(type: .inspector, itemSelectionModel: tableSelectionModel)
-                    .opacity(selection == .table ? 1 : 0)
-                
-                root.weatherRoot.viewController.linkListView(type: .inspector, itemSelectionModel: weatherSelectionModel)
-                    .opacity(selection == .weather ? 1 : 0)
-                
-                root.viewController.linkListView(type: .inspector, itemSelectionModel: adventureSelectionModel)
-                    .opacity(selection == .adventure ? 1 : 0)
+                ZStack {
+                    root.audioRoot.viewController.linkListView(type: .inspector, itemSelectionModel: audioSelectionModel)
+                        .opacity(selection == .audio ? 1 : 0)
+                    
+                    root.characterRoot.viewController.linkListView(type: .inspector, itemSelectionModel: characterSelectionModel)
+                        .opacity(selection == .value ? 1 : 0)
+                    
+                    root.diceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: diceSelectionModel)
+                        .opacity(selection == .dice ? 1 : 0)
+                    
+                    root.mapRoot.viewController.linkListView(type: .inspector, itemSelectionModel: mapSelectionModel)
+                        .opacity(selection == .map ? 1 : 0)
+                    
+                    root.pdfRoot.viewController.linkListView(type: .inspector, itemSelectionModel: pdfSelectionModel)
+                        .opacity(selection == .pdf ? 1 : 0)
+                    
+                    root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
+                        .opacity(selection == .photo ? 1 : 0)
+                    
+                    root.spaceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: spaceSelectionModel)
+                        .opacity(selection == .space ? 1 : 0)
+                    
+                    root.tableRoot.viewController.linkListView(type: .inspector, itemSelectionModel: tableSelectionModel)
+                        .opacity(selection == .table ? 1 : 0)
+                    
+                    root.weatherRoot.viewController.linkListView(type: .inspector, itemSelectionModel: weatherSelectionModel)
+                        .opacity(selection == .weather ? 1 : 0)
+                    
+                    root.viewController.linkListView(type: .inspector, itemSelectionModel: adventureSelectionModel)
+                        .opacity(selection == .adventure ? 1 : 0)
+                }
+                .frame(maxWidth: .infinity, alignment: .top)
             }
-            .frame(maxWidth: .infinity, alignment: .top)
         }
     }
     

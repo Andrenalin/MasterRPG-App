@@ -25,3 +25,10 @@ struct TableSheet: View {
         }
     }
 }
+
+#Preview(traits: .mockData) {
+    @Previewable @Environment(TableRootModel.self) var root
+    
+    TableSheet(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId), showTopImage: false, dismissAction: nil)
+}
+

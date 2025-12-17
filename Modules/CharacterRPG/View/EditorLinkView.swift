@@ -16,21 +16,23 @@ struct EditorLinkView: View {
     @State private var tableSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
     
     var body: some View {
-        VStack {
-            pickerRow(modules: firstRow)
-            
-            ZStack {
-                root.diceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: diceSelectionModel)
-                    .opacity(selection == .dice ? 1 : 0)
+        ManagedNavigationStack(name: "CharacterEditorLink") {
+            VStack {
+                pickerRow(modules: firstRow)
                 
-                root.pdfRoot.viewController.linkListView(type: .inspector, itemSelectionModel: pdfSelectionModel)
-                    .opacity(selection == .pdf ? 1 : 0)
-                
-                root.tableRoot.viewController.linkListView(type: .inspector, itemSelectionModel: tableSelectionModel)
-                    .opacity(selection == .table ? 1 : 0)
-                
-                root.viewController.linkListView(type: .inspector, itemSelectionModel: characterSelectionModel)
-                    .opacity(selection == .value ? 1 : 0)
+                ZStack {
+                    root.diceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: diceSelectionModel)
+                        .opacity(selection == .dice ? 1 : 0)
+                    
+                    root.pdfRoot.viewController.linkListView(type: .inspector, itemSelectionModel: pdfSelectionModel)
+                        .opacity(selection == .pdf ? 1 : 0)
+                    
+                    root.tableRoot.viewController.linkListView(type: .inspector, itemSelectionModel: tableSelectionModel)
+                        .opacity(selection == .table ? 1 : 0)
+                    
+                    root.viewController.linkListView(type: .inspector, itemSelectionModel: characterSelectionModel)
+                        .opacity(selection == .value ? 1 : 0)
+                }
             }
         }
     }

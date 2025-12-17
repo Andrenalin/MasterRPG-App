@@ -20,27 +20,29 @@ struct EditorLinkView: View {
     @State private var tableSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false)
 
     var body: some View {
-        VStack {
-            pickerRow(modules: firstRow)
-            
-            ZStack {
-                root.audioRoot.viewController.linkListView(type: .inspector, itemSelectionModel: audioSelectionModel)
-                    .opacity(selection == .audio ? 1 : 0)
+        ManagedNavigationStack(name: "MapeEditorLink") {
+            VStack {
+                pickerRow(modules: firstRow)
                 
-                root.characterRoot.viewController.linkListView(type: .inspector, itemSelectionModel: characterSelectionModel)
-                    .opacity(selection == .value ? 1 : 0)
-                
-                root.diceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: diceSelectionModel)
-                    .opacity(selection == .dice ? 1 : 0)
-                
-                root.viewController.linkListView(type: .inspector, itemSelectionModel: mapSelectionModel)
-                    .opacity(selection == .map ? 1 : 0)
-                                
-                root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
-                    .opacity(selection == .photo ? 1 : 0)
-                
-                root.tableRoot.viewController.linkListView(type: .inspector, itemSelectionModel: tableSelectionModel)
-                    .opacity(selection == .table ? 1 : 0)
+                ZStack {
+                    root.audioRoot.viewController.linkListView(type: .inspector, itemSelectionModel: audioSelectionModel)
+                        .opacity(selection == .audio ? 1 : 0)
+                    
+                    root.characterRoot.viewController.linkListView(type: .inspector, itemSelectionModel: characterSelectionModel)
+                        .opacity(selection == .value ? 1 : 0)
+                    
+                    root.diceRoot.viewController.linkListView(type: .inspector, itemSelectionModel: diceSelectionModel)
+                        .opacity(selection == .dice ? 1 : 0)
+                    
+                    root.viewController.linkListView(type: .inspector, itemSelectionModel: mapSelectionModel)
+                        .opacity(selection == .map ? 1 : 0)
+                    
+                    root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
+                        .opacity(selection == .photo ? 1 : 0)
+                    
+                    root.tableRoot.viewController.linkListView(type: .inspector, itemSelectionModel: tableSelectionModel)
+                        .opacity(selection == .table ? 1 : 0)
+                }
             }
         }
     }

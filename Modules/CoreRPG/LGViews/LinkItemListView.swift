@@ -9,34 +9,32 @@ public struct LinkItemListView: View {
         self.type = type
         root.folderLinkControllable.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
     }
-
+    
     let root: any ItemRootControllable
     let type: LinkRootType
-
+    
     @Environment(CacheItemListModel.self) private var cacheItemListModel
-    @Environment(ListDisplayModel.self) private var listDisplayModel
     @Environment(ItemSelectionModel.self) private var selectionModel
     
     public var body: some View {
-        NavigationStack {
+        VStack {
             if type == .inspector {
                 pickerView
                 
                 filterFieldView
             }
-
+            
             contentView
-                .onChange(of: listDisplayModel.displayMode, initial: true) {
-                    root.folderLinkControllable.listDisplayModel.displayMode = listDisplayModel.displayMode
+                .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode, initial: true) {
                     withAnimation { root.folderLinkControllable.resetFilter() }
                 }
                 .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
                     withAnimation { root.folderLinkControllable.resetFilter() }
                 }
-                .applyIf(type != .inspector) { content in
+                .applyIf(type != .inspector && type != .selectionInline) { content in
                     content
                         .toolbarItemListModifier(root: root, listControllable: root.folderLinkControllable, parentModel: nil, modal: true)
-                        .searchItemList(listControllable: root.folderLinkControllable, parentModel: nil)
+                        .searchItemList(listControllable: root.folderLinkControllable)
                         .navigationTitle(root.module.title)
                 }
                 .applyIf(type == .inspector) { content in
@@ -46,8 +44,6 @@ public struct LinkItemListView: View {
 #endif
                 }
         }
-        .environment(root.folderLinkControllable.listDisplayModel)
-        .environment(root.folderLinkControllable.searchModel)
     }
 }
 
@@ -55,7 +51,7 @@ private extension LinkItemListView {
     var listModel: FolderListModel {
         root.folderLinkControllable.listModel
     }
-
+    
     @ViewBuilder
     var pickerView: some View {
         @Bindable var inspectorDisplayModel = root.folderLinkControllable.listDisplayModel
@@ -109,10 +105,9 @@ private extension LinkItemListView {
                 }
             }
             .animation(.smooth, value: listModel.displayedItems.count)
-        #if os(macOS)
-            //.listStyle(.inset(alternatesRowBackgrounds: true))
+#if os(macOS)
             .listStyle(.sidebar)
-        #endif
+#endif
             .scrollIndicatorsFlash(onAppear: true)
             .scrollIndicatorsFlash(trigger: listModel.displayedItems.count)
 #if !os(visionOS)
@@ -120,7 +115,7 @@ private extension LinkItemListView {
             .scrollDismissesKeyboard(.immediately)
 #endif
     }
-
+    
     @ViewBuilder
     var listView: some View {
         @Bindable var listModel = listModel
@@ -135,13 +130,13 @@ private extension LinkItemListView {
                 if let entryId = item.entryId {
                     EntryRowView(root: root, item: item)
 #if !os(tvOS)
-            .draggable(for: root.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name)
+                        .draggable(for: root.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name)
 #endif
                 } else {
                     itemRow(item: item)
                 }
             }
-            .selectListItem(isActive: type == .selection && selectionModel.canSelect(isCollection: item.model.specialCategory)) {
+            .selectListItem(isActive: isSelectionActive(item: item)) {
                 withAnimation { selectionModel.toggleSelection(itemId: item.model.id, isCollection: item.model.specialCategory) }
             } isSelected: {
                 selectionModel.itemId == item.model.id
@@ -150,6 +145,10 @@ private extension LinkItemListView {
             .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
             .listRowSeparatorAll(item.isOpen ? .visible : .hidden, edges: .bottom)
         }
+    }
+    
+    func isSelectionActive(item: ListItemModel) -> Bool {
+        (type == .selection || type == .selectionInline) && selectionModel.canSelect(isCollection: item.model.specialCategory)
     }
     
     func itemRow(item: ListItemModel) -> some View {
@@ -164,7 +163,7 @@ private extension LinkItemListView {
 #if !os(tvOS)
             .draggable(for: root.module, itemId: item.model.id, entryId: nil, name: item.model.name)
 #endif
-
+            
             specialCategoryFolderIndicator(item: item)
         }
     }

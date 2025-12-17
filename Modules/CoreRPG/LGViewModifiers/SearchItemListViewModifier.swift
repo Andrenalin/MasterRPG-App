@@ -3,14 +3,13 @@
 import SwiftUI
 
 extension View {
-    func searchItemList(listControllable: any FolderListControllable, parentModel: (any ItemDataAccessable)?) -> some View {
-        modifier(SearchItemListViewModifier(listControllable: listControllable, parentModel: parentModel))
+    public func searchItemList(listControllable: any FolderListControllable) -> some View {
+        modifier(SearchItemListViewModifier(listControllable: listControllable))
     }
 }
 
 struct SearchItemListViewModifier: ViewModifier {
     let listControllable: any FolderListControllable
-    let parentModel: (any ItemDataAccessable)?
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     
@@ -47,6 +46,7 @@ struct SearchItemListViewModifier: ViewModifier {
                     listControllable.resetFilter()
                     cacheItemListModel.reset(search: searchModel.searchText)
                     searchModel.updateTagSuggestions()
+                    searchModel.searchFieldText <=> searchModel.searchText
                 }
             }
     }

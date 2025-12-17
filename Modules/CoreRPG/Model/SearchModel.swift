@@ -18,12 +18,12 @@ public final class SearchModel: Sendable {
     let module: NetworkModules
     
     public var searchText: String
-    internal(set) public var searchToken: ItemListCategory
-    internal(set) public var selectedTokens: [SearchTags]
+    public var searchToken: ItemListCategory
+    public var selectedTokens: [SearchTags]
     var categoryTags: [ItemListCategory]
     var searchFieldText: String = ""
     
-    internal(set) public var searchTags: [SearchTags] = []
+    public var searchTags: [SearchTags] = []
     
     func updateTagSuggestions() {
         guard searchFieldText.starts(with: "@") else {
