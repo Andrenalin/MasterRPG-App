@@ -35,7 +35,7 @@ struct DetailListView: View {
         } editor: {
             detailEditorView
         } inspector: {
-            EditorLinkView(root: root, selectedEntryId: nil)
+            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel)
         } entryEditor: {
             EntryEditorView(editController: root.editController)
         }
@@ -105,8 +105,9 @@ private extension DetailListView {
         }
         #if os(iOS)
         ToolbarItemGroup(placement: .keyboard) {
-            addLinkButton(module: .dice)
-            addLinkButton(module: .table)
+            ForEach(root.editorLinkModel.modulesRow, id: \.self) { module in
+                addLinkButton(module: module)
+            }
         }
         #endif
     }

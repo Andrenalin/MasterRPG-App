@@ -11,7 +11,7 @@ struct QuickEntryEditor: View {
 
     var body: some View {
         QuickEntryEditorView(editController: root.editController, referenceText: referenceText, pdfEditorRoute: EditorRoute.selectionPdf) {
-            EditorLinkView()
+            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel)
         } pdfOverlay: {
 #if os(iOS) || os(tvOS)
             if let selectedPdf = root.editController.adventureEditModel.selectionPdf.itemId {

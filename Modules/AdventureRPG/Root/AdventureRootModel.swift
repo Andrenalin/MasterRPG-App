@@ -108,6 +108,26 @@ public final class AdventureRootModel: @unchecked Sendable {
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     
+    @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
+        EditorLinkModel(
+            rootManager: RootManager(adventureRoot: self, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, generatorRoot: self, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot),
+            folderListController: folderListController.copy(parentModel: nil),
+            adventureSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            mapSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            spaceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            weatherSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            firstRow: [.adventure, .map, .value, .table, .weather],
+            secondRow: [.audio, .dice, .pdf, .photo, .space],
+            selection: .map
+        )
+    }()
+
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }
     @ObservationIgnored private(set) var _syncDataController: SyncDataController?

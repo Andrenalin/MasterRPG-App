@@ -30,9 +30,9 @@ struct DestinationTableEditorRoute: View {
         case .selectionPdf:
             root.pdfRoot.viewController.linkListView(type: .selection, itemSelectionModel: root.editController.tableEditModel.selectionPdf)
         case .linkSelection(let entryId):
-            EditorLinkView(root: root, selectedEntryId: entryId)
+            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel, selectedEntryId: entryId)
         case .addLink(let module):
-            EditorLinkView(root: root, selectedModule: module, selectedEntryId: root.editController.editorModel.currentEntryId)
+            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel, selectedModule: module, selectedEntryId: root.editController.editorModel.currentEntryId)
         }
     }
 }

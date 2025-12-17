@@ -86,7 +86,15 @@ public final class TableRootModel: @unchecked Sendable {
     public let removeEntryListModel = RemoveEntryListModel()
     
     @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
-        EditorLinkModel(rootManager: RootManager(diceRoot: diceRoot, generatorRoot: self, pdfRoot: pdfRoot, tableRoot: self), folderListController: folderLinkController)
+        EditorLinkModel(
+            rootManager: RootManager(diceRoot: diceRoot, generatorRoot: self, pdfRoot: pdfRoot, tableRoot: self),
+            folderListController: folderListController.copy(parentModel: nil),
+            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            firstRow: [.table, .dice],
+            selection: .table
+        )
     }()
     
     @ObservationIgnored private(set) var _dataController: DataController?

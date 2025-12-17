@@ -41,7 +41,6 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
 #if !os(tvOS)
                     .swipeActions(edge: .leading) {
                         editButton(entry: entry, onlyIcon: true)
-                        linkButton(entry: entry, onlyIcon: true)
                     }
 #endif
             }
