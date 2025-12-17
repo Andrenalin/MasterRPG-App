@@ -96,6 +96,20 @@ public final class CharacterRootModel: @unchecked Sendable {
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
     
+    @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
+        EditorLinkModel(
+            rootManager: RootManager(adventureRoot: self, audioRoot: self, characterRoot: self, diceRoot: diceRoot, generatorRoot: self, mapRoot: self, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: self, tableRoot: tableRoot, weatherRoot: self),
+            folderListController: folderListController.copy(parentModel: nil),
+            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            firstRow: [.value, .table, .dice, .pdf],
+            selection: .value
+        )
+    }()
+    
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }
     @ObservationIgnored private(set) var _syncDataController: SyncDataController?
