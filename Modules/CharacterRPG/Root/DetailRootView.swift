@@ -21,15 +21,20 @@ struct DetailListView: View {
         self.model = model
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
+        let sheetModel = SheetController(itemController: root.itemController, linkController: root.linkController).sheet(for: model.id)
+        self.tableSheetModel = TableSheetModel(linkControllable: root.rootControllable.linkControllable, sheetModel: sheetModel, searchText: "")
     }
     
     let root: CharacterRootModel
     let model: ValueModel
+    let tableSheetModel: TableSheetModel
     
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
+    
+    @State private var showViewer: Bool = false
     
     var body: some View {
         content(listController: detailFolderListController)
@@ -82,8 +87,19 @@ private extension DetailListView {
                 withAnimation { root.editController.valueEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
             }
 
+        Toggle(isOn: $showViewer) {
+            Text("Viewer Style")
+        }
         
-        EntryListView(editController: root.editController, linkTypes: LinkCharacterModuleTransferable.self, headerTitle: "Values")
+        if showViewer {
+            Section {
+                SheetView(model: tableSheetModel)
+            } header: {
+                Text("Values")
+            }
+        } else {
+            EntryListView(editController: root.editController, linkTypes: LinkCharacterModuleTransferable.self, headerTitle: "Values")
+        }
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
