@@ -27,11 +27,14 @@ public struct EditorLinkView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .top)
             }
-            .toolbarItemListModifier(root: root, listControllable: editorLinkModel.folderListController, parentModel: nil, modal: true) {
-                guard let editControllable = root.editControllable as? (any EntryDataEditable) else { return }
-                editorLinkModel.addLinkAndReset(editController: editControllable, destinationEntryId: selectedEntryId)
+            .applyIf(selectionMode) {
+                $0
+                    .toolbarItemListModifier(root: root, listControllable: editorLinkModel.folderListController, parentModel: nil, modal: true) {
+                        guard let editControllable = root.editControllable as? (any EntryDataEditable) else { return }
+                        editorLinkModel.addLinkAndReset(editController: editControllable, destinationEntryId: selectedEntryId)
+                    }
+                    .searchItemList(listControllable: editorLinkModel.folderListController)
             }
-            .searchItemList(listControllable: editorLinkModel.folderListController)
             .environment(editorLinkModel.folderListController.cacheListItemModel)
             .onChange(of: editorLinkModel.selectionFirstRow) {
                 guard let selectionFirstRow = editorLinkModel.selectionFirstRow else { return }
@@ -62,7 +65,9 @@ public struct EditorLinkView: View {
                 withAnimation { editorLinkModel.update(selection: preselectedModule) }
             }
             .navigationTitle(editorLinkModel.selection.title)
+#if os(iOS) || os(visionOS)
             .navigationBarTitleDisplayMode(.inline)
+#endif
         }
     }
 }

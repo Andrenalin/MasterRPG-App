@@ -34,7 +34,9 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
                         editButton(entry: entry)
                         Divider()
                         duplicateButton(entry: entry)
+#if os(iOS)
                         linkButton(entry: entry)
+#endif
                         Divider()
                         removeButton(entry: entry)
                     }
