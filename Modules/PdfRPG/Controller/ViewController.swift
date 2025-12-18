@@ -32,30 +32,17 @@ public extension ViewController {
         .ignoresSafeArea()
         .navigationTitle(model.name)
     }
+    
+    @MainActor func gameView(root: PdfRootModel) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel())
+    }
 }
 
 public extension ViewController {
     @MainActor
     func detailEditor(root: PdfRootModel, for item: ItemRowTreeModel, module: NetworkModules) -> some View {
         PdfDetailViewer(item: item)
-            .environment(root)
-    }
-
-    @MainActor
-    private static let gameTabId = UUID()
-
-    @MainActor
-    func gameView(root: PdfRootModel, select: Bool = false) -> some View {
-        if select == true, let id = root.gameController.gameModel.currentItemId {
-            let item = root.gameController.gameItem(for: id)
-            if item.displayState == 0 {
-                let model = ItemRowModel(itemId: id, typeId: .pdf)
-                let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
-            }
-        }
-        return RootNaviList(root: root, tabId: ViewController.gameTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
             .environment(root)
     }
 

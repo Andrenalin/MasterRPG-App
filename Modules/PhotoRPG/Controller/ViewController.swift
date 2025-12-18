@@ -50,6 +50,11 @@ public extension ViewController {
         .ignoresSafeArea()
         .navigationTitle(model.name)
     }
+    
+    @MainActor func gameView(root: PhotoRootModel) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel())
+    }
 }
 
 // MARK: - old
@@ -88,24 +93,6 @@ public extension ViewController {
         GameToolBar(model: root.rootModel.toolbarModel, hideCloseButton: true, dismiss: nil)
     }
 
-    @MainActor
-    private static let gameTabId = UUID()
-
-    @MainActor
-    func gameView(root: PhotoRootModel, select: Bool = false) -> some View {
-        if select == true, let id = root.gameController.gameModel.currentItemId {
-            let item = root.gameController.gameItem(for: id)
-            if item.displayState == 0 {
-                let model = ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)
-                let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
-            }
-        }
-        return RootNaviList(root: root, tabId: ViewController.gameTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
-            .environment(root)
-    }
-    
     @MainActor
     func mapImage(root: PhotoRootModel, for itemId: UUID?, size: CGSize, color: Color) -> some View {
         AsyncThumbnail(model: root.gameController.gameItem(for: itemId ?? UUID()), size: size, color: color)
@@ -153,9 +140,6 @@ public extension ViewController {
 // MARK: - Window
 
 public extension ViewController {
-    @MainActor
-    private static let linkTabId = UUID()
-
     @MainActor
     func photoWindow(root: PhotoRootModel, selection: ItemSelection) -> some View {
         RootPhotoViewer(model: root.itemController.itemOrEmpty(for: selection.itemId), toolBarModel: GameToolBarModel())

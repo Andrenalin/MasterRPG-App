@@ -41,6 +41,11 @@ public extension ViewController {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return ViewerRootView(model: model)
     }
+    
+    @MainActor func gameView(root: WeatherRootModel) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel())
+    }
 }
 
 // MARK: - old
@@ -60,24 +65,6 @@ public extension ViewController {
     @MainActor
     func weatherWindow(root: WeatherRootModel, selection: ItemSelection) -> some View {
         WeatherWindow(selection: selection)
-            .environment(root)
-    }
-
-    @MainActor
-    private static let gameTabId = UUID()
-
-    @MainActor
-    func gameView(root: WeatherRootModel, select: Bool = false) -> some View {
-        if select == true, let id = root.gameController.gameModel.currentItemId {
-            let item = root.gameController.gameItem(for: id)
-            if item.displayState == 0 {
-                let model = ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)
-                let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
-            }
-        }
-        return RootNaviList(root: root, tabId: ViewController.gameTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
             .environment(root)
     }
 }

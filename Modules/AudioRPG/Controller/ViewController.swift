@@ -23,6 +23,11 @@ public extension ViewController {
         LinkRootView(type: type)
             .environment(itemSelectionModel)
     }
+    
+    @MainActor func gameView(root: AudioRootModel) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel())
+    }
 }
 
 // MARK: - Edit
@@ -31,25 +36,6 @@ public extension ViewController {
     @MainActor
     func detailEditor(root: AudioRootModel, for item: ItemRowTreeModel, module: NetworkModules) -> some View {
         AudioDetailPlayerView(item: item)
-            .environment(root)
-    }
-
-    @MainActor
-    private static let gameTabId = UUID(uuidString: "2942C8E2-A5E9-432F-8E10-92EEC7BC344C")!
-
-    @MainActor
-    func gameView(root: AudioRootModel, select: Bool = false) -> some View {
-        var model: ItemRowModel? = nil
-        if select == true, let id = root.gameController.gameModel.currentItemId {
-            let item = root.gameController.gameItem(for: id)
-            if item.displayState == 0 {
-                model = ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)
-                let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
-            }
-        }
-        return RootNaviList(root: root, tabId: ViewController.gameTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
             .environment(root)
     }
 }
