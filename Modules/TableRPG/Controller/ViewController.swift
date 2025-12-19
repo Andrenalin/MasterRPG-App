@@ -41,7 +41,12 @@ public extension ViewController {
     @MainActor func inlineViewer(root: TableRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return TableSheet(model: model, showTopImage: false, dismissAction: dismissAction)
-    }    
+    }
+    
+    @MainActor func gameView(root: TableRootModel) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel())
+    }
 }
 
 // MARK: - old
@@ -53,24 +58,6 @@ public extension ViewController {
             .environment(root)
     }
 
-    @MainActor
-    private static let gameTabId = UUID()
-
-    @MainActor
-    func gameView(root: TableRootModel, select: Bool = false) -> some View {
-        if select == true, let id = root.gameController.gameModel.currentItemId {
-            let item = root.gameController.gameItem(for: id)
-            if item.displayState == 0 {
-                let model = ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)
-                let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
-            }
-        }
-        return RootNaviList(root: root, tabId: ViewController.gameTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
-            .environment(root)
-    }
-    
     @MainActor
     func generatorEditorWindow(root: TableRootModel) -> some View {
         GeneratorWindow(root: root)

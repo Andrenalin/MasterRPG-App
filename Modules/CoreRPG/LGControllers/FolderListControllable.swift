@@ -15,6 +15,7 @@ public protocol FolderListControllable: Sendable {
     
     func copy(parentModel: (any ItemDataAccessable)?) -> Self
     func detailDestination(for itemId: UUID) -> any NavigationDestination
+    func viewerDestination(for itemId: UUID) -> any NavigationDestination
 }
 
 extension FolderListControllable {

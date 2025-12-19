@@ -16,7 +16,7 @@ struct LinkRootView: View {
 
 #Preview(traits: .mockData) {
     ManagedNavigationStack(name: "Test") {
-        LinkRootView(type: .window)
+        LinkRootView(type: .inspector)
             .environment(ItemSelectionModel(allowCollections: true, allowEntrySelection: true))
     }
 }

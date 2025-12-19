@@ -12,7 +12,7 @@ struct TableSheetView<ImageContent: View>: View {
     @Environment(\.showGame) private var showGame
 
     var body: some View {
-        ManagedNavigationStack(name: "TableSheetRoot") {
+        //ManagedNavigationStack(name: "TableSheetRoot") {
             @Bindable var model = model
             
             VStack(alignment: .leading, spacing: 0) {
@@ -23,12 +23,12 @@ struct TableSheetView<ImageContent: View>: View {
                 
                 listContentView
             }
-            .toolbar {
-                toolbarContent
-            }
-            .searchable(text: $model.searchText, placement: .toolbarAll, prompt: "Find in")
+//            .toolbar {
+//                toolbarContent
+//            }
+//            .searchable(text: $model.searchText, placement: .toolbarAll, prompt: "Find in")
             .navigationTitle(Text(model.sheetModel.name))
-        }
+        //}
     }
 }
 

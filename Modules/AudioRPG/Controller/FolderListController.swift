@@ -18,6 +18,10 @@ struct FolderListController: FolderListControllable {
         AudioRoute.detail(itemId)
     }
     
+    func viewerDestination(for itemId: UUID) -> any NavigationDestination {
+        AudioRoute.detail(itemId)
+    }
+    
     func copy(parentModel: (any ItemDataAccessable)?) -> FolderListController {
         FolderListController(listModel: FolderListModel(parentModel: parentModel), listDisplayModel: listDisplayModel.newListDisplayModel, searchModel: searchModel.newSearchModel, itemControllable: itemControllable)
     }

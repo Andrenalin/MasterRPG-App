@@ -15,40 +15,44 @@ public struct LinkItemListView: View {
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ItemSelectionModel.self) private var selectionModel
-    @Environment(\.navigator) private var navigator
+    //@Environment(\.navigator) private var navigator
+    
+    @State private var showDetails: Bool = false
+    @State private var showDetailsView: (any NavigationDestination)? = nil
     
     public var body: some View {
-        VStack {
-            if type == .inspector {
-                pickerView
+        ManagedNavigationStack(name: "LinkInspector") { navigator in
+            VStack {
+                if type == .inspector {
+                    pickerView
+                    
+                    filterFieldView
+                }
                 
-                filterFieldView
-            }
-            
-            contentView
-                .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode, initial: true) {
-                    withAnimation { root.folderLinkControllable.resetFilter() }
-                }
-                .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
-                    withAnimation { root.folderLinkControllable.resetFilter() }
-                }
-                .onChange(of: listModel.listSelection) {
-                    guard let itemIdString = listModel.listSelection.first?.replacing("0-0-", with: "") else { return }
-                    guard let itemId = UUID(uuidString: itemIdString) else { return }
-                    navigator.navigate(to: root.folderLinkControllable.detailDestination(for: itemId))
-                }
-                .applyIf(type != .inspector && type != .selectionInline) { content in
-                    content
-                        .toolbarItemListModifier(root: root, listControllable: root.folderLinkControllable, parentModel: nil, modal: true)
-                        .searchItemList(listControllable: root.folderLinkControllable)
-                        .navigationTitle(root.module.title)
-                }
-                .applyIf(type == .inspector) { content in
-                    content
+                contentView
+                    .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode, initial: true) {
+                        withAnimation { root.folderLinkControllable.resetFilter() }
+                    }
+                    .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
+                        withAnimation { root.folderLinkControllable.resetFilter() }
+                    }
+                    .applyIf(type != .inspector && type != .selectionInline) { content in
+                        content
+                            .toolbarItemListModifier(root: root, listControllable: root.folderLinkControllable, parentModel: nil, modal: true)
+                            .searchItemList(listControllable: root.folderLinkControllable)
+                            .navigationTitle(root.module.title)
+                    }
+                    .applyIf(type == .inspector) { content in
+                        content
 #if !os(macOS)
-                        .toolbarVisibility(.hidden, for: .navigationBar)
+                            .toolbarVisibility(.hidden, for: .navigationBar)
 #endif
-                }
+                    }
+            }
+            .onChange(of: showDetails) {
+                guard let showDetailsView else { return }
+                navigator.navigate(to: showDetailsView, method: .push)
+            }
         }
     }
 }
@@ -140,6 +144,14 @@ private extension LinkItemListView {
 #endif
                 } else {
                     itemRow(item: item)
+                        .onTapGesture(count: 2) {
+                            if item.model.specialCategory {
+                                showDetailsView = root.folderLinkControllable.detailDestination(for: item.model.id)
+                            } else {
+                                showDetailsView = root.folderLinkControllable.viewerDestination(for: item.model.id)
+                            }
+                            withAnimation { showDetails.toggle() }
+                        }
                 }
             }
             .selectListItem(isActive: isSelectionActive(item: item)) {
@@ -172,6 +184,7 @@ private extension LinkItemListView {
             
             specialCategoryFolderIndicator(item: item)
         }
+        .contentShape(.rect)
     }
     
     var leadingPadding: CGFloat {

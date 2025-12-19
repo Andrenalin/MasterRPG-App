@@ -48,6 +48,11 @@ public extension ViewController {
         DropChooseView(selectionModel: model)
             .environment(model)
     }
+    
+    @MainActor func gameView(root: CharacterRootModel) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel())
+    }
 }
 
 // MARK: - OLd Views
@@ -62,7 +67,7 @@ public extension ViewController {
     private static let gameTabId = UUID()
 
     @MainActor
-    func gameView(root: CharacterRootModel, select: UUID? = nil) -> some View {
+    func gameView(root: CharacterRootModel, select: UUID?) -> some View {
         if let id = select {
             let item = root.itemController.itemOrEmpty(for: id)
             if item.displayState == 0 {

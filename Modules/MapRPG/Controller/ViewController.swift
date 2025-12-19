@@ -50,6 +50,11 @@ public extension ViewController {
     @MainActor func mapEditWindow(root: MapRootModel) -> some View {
         MapEditWindow(editController: root.editController)
     }
+    
+    @MainActor func gameView(root: MapRootModel) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel())
+    }
 }
 
 // MARK: - OLd Views
@@ -73,25 +78,6 @@ public extension ViewController {
 
     func rowView(root: MapRootModel, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
         MapRow(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
-            .environment(root)
-    }
-
-    @MainActor
-    private static let gameTabId = UUID()
-
-    @MainActor
-    func gameView(root: MapRootModel, select: Bool = false) -> some View {
-        var model: ItemRowModel? = nil
-        if select == true, let id = root.gameController.gameModel.currentItemId {
-            let item = root.gameController.gameItem(for: id)
-            if item.displayState == 0 {
-                model = ItemRowModel(itemId: id, typeId: .map)
-                let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
-            }
-        }
-        return RootNaviList(root: root, tabId: ViewController.gameTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
             .environment(root)
     }
 }
