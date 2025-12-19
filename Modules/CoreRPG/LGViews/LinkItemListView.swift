@@ -15,6 +15,7 @@ public struct LinkItemListView: View {
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ItemSelectionModel.self) private var selectionModel
+    @Environment(\.navigator) private var navigator
     
     public var body: some View {
         VStack {
@@ -30,6 +31,11 @@ public struct LinkItemListView: View {
                 }
                 .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
                     withAnimation { root.folderLinkControllable.resetFilter() }
+                }
+                .onChange(of: listModel.listSelection) {
+                    guard let itemIdString = listModel.listSelection.first?.replacing("0-0-", with: "") else { return }
+                    guard let itemId = UUID(uuidString: itemIdString) else { return }
+                    navigator.navigate(to: root.folderLinkControllable.detailDestination(for: itemId))
                 }
                 .applyIf(type != .inspector && type != .selectionInline) { content in
                     content
