@@ -57,7 +57,9 @@ struct ViewerRootView: View {
         .applyIf(isGame) {
             $0.overlay(alignment: .bottomLeading)  {
                 rotateButton
+#if !os(visionOS)
                     .buttonStyle(.glass)
+#endif
                     .padding()
             }
         }
