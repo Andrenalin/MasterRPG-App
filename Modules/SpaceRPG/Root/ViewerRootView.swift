@@ -4,38 +4,66 @@ import CoreRPG
 import SwiftUI
 
 struct ViewerRootView: View {
-    init(model: SpaceModel, dismissAction: (() -> Void)? = nil) {
-        self.model = model
-        self.dismissAction = dismissAction
-    }
-    
     let model: SpaceModel
-    let dismissAction: (() -> Void)?
-    
+    var windowMode: Bool = false
+    var externalViewer: Bool = true
+    var dismissAction: (() -> Void)? = nil
+
     @Environment(SpaceRootModel.self) private var root
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-        
+    @Environment(\.appSizeMode) private var appSizeMode
+
     var body: some View {
         let _ = Self._printChanges()
-        NavigationStack {
-            VStack {
+        VStack {
 #if !os(tvOS)
-                SpaceViewer(root: root, id: model.id, isModal: true)
-                    .id(model.id)
-#endif
-            }
-            .ignoresSafeArea(.container, edges: [.top, .bottom])
-#if !os(visionOS)
-            .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
-#endif
-            .navigationTitle(Text(model.name))
-#if !os(macOS) && !os(tvOS)
-            .navigationBarTitleDisplayMode(.inline)
+            SpaceViewer(root: root, id: model.id, isModal: externalViewer)
+                .id(model.id)
 #endif
         }
+        .ignoresSafeArea(.container, edges: [.top, .bottom])
+        .applyIf(externalViewer) {
+            $0.toolbar {
+                toolbarContent
+            }
+        }
+#if !os(visionOS)
+        .background(.black.gradient)
+#endif
+        .navigationTitle(Text(model.name))
+#if !os(macOS) && !os(tvOS)
+        .navigationBarTitleDisplayMode(.inline)
+#endif
         .environment(CacheItemListModel())
+    }
+}
+
+private extension ViewerRootView {
+    @ToolbarContentBuilder
+    var toolbarContent: some ToolbarContent {
+        if shouldShowCloseButton {
+            ToolbarItem(placement: .cancellationAction) {
+                closeButton
+            }
+        }
+    }
+    
+    var shouldShowCloseButton: Bool {
+        valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
+    }
+
+    var closeButton: some View {
+        Button {
+            if let dismissAction {
+                dismissAction()
+            } else {
+                dismiss()
+            }
+        } label: {
+            Image(systemName: "xmark.circle")
+        }
     }
 }
 

@@ -3,19 +3,23 @@
 import CoreRPG
 import SwiftUI
 
-struct SpaceExternalHeader: View {
-    let editController: EditController
+struct SpeaceExternalView: View {
     let model: SpaceModel
-    let isModal: Bool
+    var windowMode: Bool = false
+    var dismissAction: (() -> Void)? = nil
     
     @Environment(SpaceRootModel.self) private var root
     
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.appSizeMode) private var appSizeMode
+
     var body: some View {
 #if os(tvOS)
-        SpaceEditor(editController: editController)
+        SpaceEditor(editController: root.editController)
             .environment(DetailHeaderModel(size: CGSize(width: 400, height: 400)))
 #else
-        SpaceViewer(root: root, id: model.id, isModal: isModal)
+        SpaceViewer(root: root, id: model.id, isModal: windowMode)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 #endif
     }
@@ -79,15 +83,7 @@ struct SpaceViewer: View {
                     }
                 }
 
-                ToolbarSpacer()
-                
-                ToolbarItem(placement: .automatic) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                }
+                ToolbarSpacer()                
 #endif
             }
         }

@@ -69,7 +69,7 @@ struct SpaceDetailObjectViewer: View {
     @Environment(GroupItemSelectionModel.self) private var selection
     
     var body: some View {
-        SpaceExternalHeader(editController: editController, model: selectedModel, isModal: false)
+        ViewerRootView(model: selectedModel, externalViewer: false)
             .id(selectedModel.id)
     }
     

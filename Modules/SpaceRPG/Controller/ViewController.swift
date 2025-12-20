@@ -21,16 +21,12 @@ public extension ViewController {
 
     @MainActor func inlineViewer(root: SpaceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
-        return SpaceExternalHeader(editController: root.editController, model: model, isModal: true)
+        return ViewerRootView(model: model, dismissAction: dismissAction)
     }
 
     @MainActor func windowViewer(root: SpaceRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return NavigationStack {
-            SpaceExternalHeader(editController: root.editController, model: model, isModal: true)
-        }
-        .ignoresSafeArea()
-        .navigationTitle(model.name)
+        return ViewerRootView(model: model, windowMode: true)
     }
     
     @MainActor func gameView(root: SpaceRootModel) -> some View {
