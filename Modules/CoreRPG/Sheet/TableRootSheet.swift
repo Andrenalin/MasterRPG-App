@@ -3,17 +3,19 @@
 import SwiftUI
 
 public struct TableRootSheet<ImageContent: View>: View {
-    public init(linkControllable: any LinkControllable, model: SheetModel, showImage: Bool, dismissAction: (() -> Void)? = nil, @ViewBuilder imageContent: @escaping (CGSize) -> ImageContent) {
+    public init(linkControllable: any LinkControllable, model: SheetModel, showImage: Bool, windowMode: Bool = false, dismissAction: (() -> Void)? = nil, @ViewBuilder imageContent: @escaping (CGSize) -> ImageContent) {
         self.model = model
         self.showImage = showImage
+        self.windowMode = windowMode
         self.dismissAction = dismissAction
         self.imageContent = imageContent
         self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: linkControllable, sheetModel: model))
     }
     
-    public init(linkControllable: any LinkControllable, model: SheetModel, showImage: Bool, dismissAction: (() -> Void)? = nil) where ImageContent == EmptyView {
+    public init(linkControllable: any LinkControllable, model: SheetModel, showImage: Bool, windowMode: Bool = false, dismissAction: (() -> Void)? = nil) where ImageContent == EmptyView {
         self.model = model
         self.showImage = showImage
+        self.windowMode = windowMode
         self.dismissAction = dismissAction
         self.imageContent = { _ in EmptyView() }
         self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: linkControllable, sheetModel: model))
@@ -21,17 +23,18 @@ public struct TableRootSheet<ImageContent: View>: View {
     
     let model: SheetModel
     let showImage: Bool
+    let windowMode: Bool
     let dismissAction: (() -> Void)?
     let imageContent: (CGSize) -> ImageContent
     
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.colorScheme) private var colorScheme
-    
+    @Environment(\.dismiss) var dismiss
+
     @State private var tableSheetModel: TableSheetModel
     
     public var body: some View {
-        TableSheetView(model: tableSheetModel, showImage: showImage, dismissAction: dismissAction, imageContent: imageContent)
-            .environment(\.colorScheme, colorScheme)
+        TableSheetView(model: tableSheetModel, showImage: showImage, windowMode: windowMode, dismissAction: dismissAction, imageContent: imageContent)
 #if os(macOS) || os(visionOS)
             .padding(.top)
 #else
@@ -40,6 +43,10 @@ public struct TableRootSheet<ImageContent: View>: View {
 #if os(visionOS)
             .glassBackgroundEffect()
 #endif
+            .toolbar {
+                toolbarContent
+            }
+            .navigationTitle(Text(model.name))
             .onChange(of: model, initial: true) {
                 resetModels()
             }
@@ -50,4 +57,33 @@ public struct TableRootSheet<ImageContent: View>: View {
             tableSheetModel.resetModel(model: model)
         }
     }
+}
+
+private extension TableRootSheet {
+    @ToolbarContentBuilder
+    var toolbarContent: some ToolbarContent {
+        if shouldShowCloseButton {
+            ToolbarItem(placement: .cancellationAction) {
+                closeButton
+            }
+        }
+    }
+    
+    var shouldShowCloseButton: Bool {
+        valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
+    }
+    
+    var closeButton: some View {
+        Button {
+            if let dismissAction {
+                dismissAction()
+            } else {
+                dismiss()
+            }
+        } label: {
+            Image(systemName: "xmark.circle")
+        }
+    }
+
+
 }

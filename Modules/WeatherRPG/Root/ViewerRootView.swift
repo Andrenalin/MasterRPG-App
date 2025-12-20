@@ -10,9 +10,9 @@ struct ViewerRootView: View {
     
     @Environment(WeatherRootModel.self) private var root
     
+    @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.appSizeMode) private var appSizeMode
     
     @State private var isAnimating: Bool = false
     

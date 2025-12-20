@@ -6,14 +6,15 @@ import SwiftUI
 struct TableSheet: View {
     let model: TableModel
     let showTopImage: Bool
-    let dismissAction: (() -> Void)?
+    var windowMode: Bool = false
+    var dismissAction: (() -> Void)? = nil
 
     @Environment(TableRootModel.self) private var root
 
     @State private var sheetModel: SheetModel = SheetModel(id: UUID(), name: "", description: "", groups: [])
 
     var body: some View {
-        TableRootSheet(linkControllable: root.rootControllable.linkControllable, model: sheetModel, showImage: showTopImage, dismissAction: dismissAction)
+        TableRootSheet(linkControllable: root.rootControllable.linkControllable, model: sheetModel, showImage: showTopImage, windowMode: windowMode, dismissAction: dismissAction)
             .onChange(of: model, initial: true) {
                 resetModels()
             }
@@ -28,7 +29,7 @@ struct TableSheet: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(TableRootModel.self) var root
-    
-    TableSheet(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId), showTopImage: false, dismissAction: nil)
+    ManagedNavigationStack {
+        TableSheet(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId), showTopImage: false, dismissAction: nil)
+    }
 }
-

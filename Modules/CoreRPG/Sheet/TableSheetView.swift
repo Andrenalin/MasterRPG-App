@@ -5,34 +5,36 @@ import SwiftUI
 struct TableSheetView<ImageContent: View>: View {
     let model: TableSheetModel
     let showImage: Bool
+    let windowMode: Bool
     let dismissAction: (() -> Void)?
     let imageContent: (CGSize) -> ImageContent
 
+    @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.dismiss) var dismiss
     @Environment(\.showGame) private var showGame
 
     var body: some View {
-        //ManagedNavigationStack(name: "TableSheetRoot") {
-            @Bindable var model = model
-            
-            VStack(alignment: .leading, spacing: 0) {
-                if showImage {
-                    imageContent(CGSize(width: 360, height: 256))
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-                
-                listContentView
+        @Bindable var model = model
+        
+        VStack(alignment: .leading, spacing: 0) {
+            if showImage {
+                imageContent(CGSize(width: 360, height: 256))
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
-//            .toolbar {
-//                toolbarContent
-//            }
-//            .searchable(text: $model.searchText, placement: .toolbarAll, prompt: "Find in")
-            .navigationTitle(Text(model.sheetModel.name))
-        //}
+            
+            listContentView
+        }
+        .applyIf(searchBar) {
+            $0.searchable(text: $model.searchText, placement: .navigationBarDrawerAll, prompt: "Find in")
+        }
     }
 }
 
 private extension TableSheetView {
+    var searchBar: Bool {
+        valueFor(iOS: true, macOS: windowMode, tvOS: true, visionOS: true)
+    }
+
     var listContentView: some View {
         List {
             SheetView(model: model)
@@ -41,28 +43,8 @@ private extension TableSheetView {
         .listStyle(.plain)
         .contentMargins(.horizontal, 12, for: .scrollContent)
     }
-    
-    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
-        if showCloseButton {
-            ToolbarItem(placement: .cancellationAction) {
-                closeActionButton
-            }
-        }
-    }
-    
-    var closeActionButton: some View {
-        Button {
-            if let dismissAction {
-                dismissAction()
-            } else {
-                dismiss()
-            }
-        } label: {
-            Image(systemName: "xmark.circle")
-        }
-    }
-    
-    func closeButton() -> some View {
+        
+    func closeButtonInline() -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text(model.sheetModel.name)
                 .lineLimit(4)
@@ -112,6 +94,7 @@ private extension TableSheetView {
             searchText: "in"
         ),
         showImage: false,
+        windowMode: true,
         dismissAction: nil,
         imageContent: { _ in Text("Empty")
         }

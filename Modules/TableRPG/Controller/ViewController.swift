@@ -33,16 +33,16 @@ public extension ViewController {
             .environment(itemSelectionModel)
     }
     
-    @MainActor func windowViewer(root: TableRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return TableSheet(model: model, showTopImage: false, dismissAction: nil)
-    }
-
     @MainActor func inlineViewer(root: TableRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return TableSheet(model: model, showTopImage: false, dismissAction: dismissAction)
     }
     
+    @MainActor func windowViewer(root: TableRootModel, selection: WindowItemSelection) -> some View {
+        let model = root.itemController.itemOrEmpty(for: selection.itemId)
+        return TableSheet(model: model, showTopImage: false, windowMode: true)
+    }
+
     @MainActor func gameView(root: TableRootModel) -> some View {
         LinkRootView(type: .inspector)
             .environment(ItemSelectionModel())

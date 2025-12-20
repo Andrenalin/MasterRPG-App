@@ -20,4 +20,15 @@ extension SearchFieldPlacement {
         .toolbar
 #endif
     }
+
+    public static var navigationBarDrawerAll: SearchFieldPlacement {
+#if os(tvOS)
+        .automatic
+#elseif os(macOS)
+        .toolbar
+#else
+        .navigationBarDrawer(displayMode: .always)
+#endif
+    }
+
 }
