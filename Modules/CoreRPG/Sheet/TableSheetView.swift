@@ -41,13 +41,15 @@ private extension TableSheetView {
             SheetView(root: root, model: model)
                 .animation(.default, value: model.searchText)
         }
+#if os(iOS)
         .background(root.module.tint.opacity(0.4).gradient)
         .toolbarBackgroundVisibility(.visible, for: .navigationBar)
         .toolbarBackground(root.module.tint, for: .navigationBar)
         .scrollContentBackground(.hidden)
         .scrollEdgeEffectStyle(.soft, for: .all)
-        .toolbarTitleDisplayMode(.inlineLarge)
         .listRowSpacing(5)
+#endif
+        //.toolbarTitleDisplayMode(.inlineLarge)
         .contentMargins(.horizontal, 12, for: .scrollContent)
     }
         
