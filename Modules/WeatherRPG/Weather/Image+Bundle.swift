@@ -12,13 +12,14 @@ extension Image {
         }
         return Image(akImage: akImage)
     }
-
+    
     static func loadImage(name: String) -> AKImage? {
-        #if os(macOS)
-            return Bundle.module.image(forResource: name)
-        #else
+#if os(macOS)
         let bundle = RPGResources.Resources.bundle
-            return AKImage(named: name, in: bundle, with: nil)
-        #endif
+        return bundle.image(forResource: name)
+#else
+        let bundle = RPGResources.Resources.bundle
+        return AKImage(named: name, in: bundle, with: nil)
+#endif
     }
 }

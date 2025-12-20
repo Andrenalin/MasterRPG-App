@@ -76,8 +76,10 @@ struct WindowViewerList: Scene {
     private func windowGroup<Content: View>(model: AppModel, module: NetworkModules, content: @escaping (WindowItemSelection) -> Content) -> some Scene {
         WindowGroup("\(module.title) Viewer", id: module.viewerWindowId, for: WindowItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { _ in
-                content(selection ?? WindowItemSelection(itemId: UUID()))
-                    .modifier(WindowViewerSetUpViewModifier(model: model, module: module))
+                ManagedNavigationStack(name: "\(module.title) Viewer") {
+                    content(selection ?? WindowItemSelection(itemId: UUID()))
+                }
+                .modifier(WindowViewerSetUpViewModifier(model: model, module: module))
             }
         }
         .windowResizability(.contentSize)

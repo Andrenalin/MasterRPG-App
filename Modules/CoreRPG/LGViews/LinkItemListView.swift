@@ -129,7 +129,7 @@ private extension LinkItemListView {
     @ViewBuilder
     var listView: some View {
         @Bindable var listModel = listModel
-        List(selection: $listModel.listSelection) {
+        List {
             itemRows()
         }
     }

@@ -39,7 +39,7 @@ public extension ViewController {
     
     @MainActor func windowViewer(root: WeatherRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return ViewerRootView(model: model)
+        return ViewerRootView(model: model, windowMode: true)
     }
     
     @MainActor func gameView(root: WeatherRootModel) -> some View {

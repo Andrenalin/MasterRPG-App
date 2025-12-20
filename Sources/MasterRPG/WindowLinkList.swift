@@ -47,9 +47,11 @@ struct WindowLinkList: Scene {
     private func windowGroup<Content: View>(model: AppModel, module: NetworkModules, key: KeyEquivalent, content: Content) -> some Scene {
         WindowGroup("\(module.title) Link", id: module.linkWindowId) {
             DataBaseAppStoreAvailable(appModel: model) { model in
-                content
-                    .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
+                ManagedNavigationStack(name: module.linkWindowId) {
+                    content
+                }
             }
+            .modifier(WindowLinkSetUpViewModifier(model: model, module: module))
         }
         .windowResizability(.contentSize)
         .defaultWindowPlacementAll(model.windowPlacement(for: module))
