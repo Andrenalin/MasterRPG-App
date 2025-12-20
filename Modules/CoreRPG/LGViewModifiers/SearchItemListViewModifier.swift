@@ -52,7 +52,11 @@ struct SearchItemListViewModifier: ViewModifier {
     }
     
     var searchPlacement: SearchFieldPlacement {
+#if os(iOS) || os(visionOS)
+        .navigationBarDrawer(displayMode: .always)
+#else
         .automatic
+#endif
     }
     
     var searchScopeActivition: SearchScopeActivation {

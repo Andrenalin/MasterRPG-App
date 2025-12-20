@@ -15,7 +15,6 @@ public struct LinkItemListView: View {
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ItemSelectionModel.self) private var selectionModel
-    //@Environment(\.navigator) private var navigator
     
     @State private var showDetails: Bool = false
     @State private var showDetailsView: (any NavigationDestination)? = nil

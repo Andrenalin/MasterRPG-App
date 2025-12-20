@@ -26,11 +26,9 @@ public extension ViewController {
     
     @MainActor func windowViewer(root: PdfRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return NavigationStack {
-            PdfViewerView(model: model, entryId: selection.entryId, withoutBookmark: false)
-        }
-        .ignoresSafeArea()
-        .navigationTitle(model.name)
+        return PdfViewerView(model: model, entryId: selection.entryId, windowMode: true, withoutBookmark: false)
+//        .ignoresSafeArea()
+//        .navigationTitle(model.name)
     }
     
     @MainActor func gameView(root: PdfRootModel) -> some View {

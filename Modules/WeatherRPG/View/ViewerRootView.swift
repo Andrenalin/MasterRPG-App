@@ -12,6 +12,7 @@ struct ViewerRootView: View {
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.appSizeMode) private var appSizeMode
     
     @State private var isAnimating: Bool = false
     
@@ -41,7 +42,7 @@ struct ViewerRootView: View {
 private extension ViewerRootView {
     @ToolbarContentBuilder
     var toolbarContent: some ToolbarContent {
-        if windowMode || dismissAction != nil {
+        if shouldShowCloseButton {
             ToolbarItem(placement: .cancellationAction) {
                 closeButton
             }
@@ -52,6 +53,10 @@ private extension ViewerRootView {
         }
     }
     
+    var shouldShowCloseButton: Bool {
+        valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
+    }
+
     var animateButton: some View {
         Button {
             withAnimation { isAnimating.toggle() }
@@ -71,7 +76,6 @@ private extension ViewerRootView {
         } label: {
             Image(systemName: "xmark.circle")
         }
-        //.opacity(showGame ? 0 : 1)
     }
 }
 

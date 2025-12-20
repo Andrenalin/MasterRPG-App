@@ -19,7 +19,6 @@ public struct ItemRootView: View {
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
             .environment(root)
-            .tabBarPlacementModifier(listControllable: root.folderListControllable)
             .tint(root.module.tint)
             .accentColor(root.module.tint)
     }

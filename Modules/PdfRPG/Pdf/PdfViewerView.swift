@@ -8,29 +8,23 @@ import SwiftUI
 #endif
 
 struct PdfViewerView: View {
-    init(model: PdfModel, entryId: UUID? = nil, withoutBookmark: Bool = false, dismissAction: (() -> Void)? = nil) {
-        self.model = model
-        self.entryId = entryId
-        self.withoutBookmark = withoutBookmark
-        self.dismissAction = dismissAction
-    }
-    
     let model: PdfModel
-    let entryId: UUID?
-    let withoutBookmark: Bool
-    let dismissAction: (() -> Void)?
+    var entryId: UUID? = nil
+    var windowMode: Bool = false
+    var withoutBookmark: Bool = false
+    var dismissAction: (() -> Void)? = nil
     
     @Environment(PdfRootModel.self) private var root
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.showGame) private var showGame
+    @Environment(\.appSizeMode) private var appSizeMode
     
     @State private var searchModel = PdfSearchModel()
     
     var body: some View {
         let _ = Self._printChanges()
-        NavigationStack {
             VStack {
 #if !os(tvOS)
                 PdfContentView(searchModel: searchModel, horizontal: false, entry: entry)
@@ -57,20 +51,19 @@ struct PdfViewerView: View {
                     SearchBar(searchModel: searchModel)
                 }
             }
-#if !os(macOS)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    closeButton
+                if shouldShowCloseButton {
+                    ToolbarItem(placement: .cancellationAction) {
+                        closeButton
+                    }
                 }
             }
-#endif
-            .applyIf(!showGame) {
+            .applyIf(searchBar) {
                 $0.searchable(text: $searchModel.displaySearchText, placement: .automatic, prompt: Text("Find in pdf", bundle: .module))
             }
             .onSubmit(of: .search) {
                 searchModel.resetSearch()
             }
-        }
 #if !os(visionOS)
         .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
@@ -101,6 +94,14 @@ struct PdfViewerView: View {
 }
 
 private extension PdfViewerView {
+    var shouldShowCloseButton: Bool {
+        valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
+    }
+
+    var searchBar: Bool {
+        valueFor(iOS: !showGame, macOS: windowMode, tvOS: !showGame, visionOS: !showGame)
+    }
+    
     var entry: PdfEntryModel? {
         guard entryId == nil else { return nil }
         return PdfEntryModel.empty(UUID())
@@ -122,8 +123,10 @@ private extension PdfViewerView {
 }
 
 #Preview(traits: .mockData) {
-        
-    PdfViewerView(model: PdfModel.preview)
+    
+    ManagedNavigationStack {
+        PdfViewerView(model: PdfModel.preview)
+    }
 #if os(macOS)
         .frame(width: 800, height: 600)
 #endif

@@ -16,4 +16,5 @@ struct LinkRootView: View {
 
 #Preview(traits: .mockData) {
     LinkRootView(type: .window)
+        .environment(ItemSelectionModel())
 }
