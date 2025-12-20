@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct TableSheetView<ImageContent: View>: View {
+    let root: ItemRootController
     let model: TableSheetModel
     let showImage: Bool
     let windowMode: Bool
@@ -37,10 +38,16 @@ private extension TableSheetView {
 
     var listContentView: some View {
         List {
-            SheetView(model: model)
+            SheetView(root: root, model: model)
                 .animation(.default, value: model.searchText)
         }
-        .listStyle(.plain)
+        .background(root.module.tint.opacity(0.4).gradient)
+        .toolbarBackgroundVisibility(.visible, for: .navigationBar)
+        .toolbarBackground(root.module.tint, for: .navigationBar)
+        .scrollContentBackground(.hidden)
+        .scrollEdgeEffectStyle(.soft, for: .all)
+        .toolbarTitleDisplayMode(.inlineLarge)
+        .listRowSpacing(5)
         .contentMargins(.horizontal, 12, for: .scrollContent)
     }
         
@@ -74,6 +81,7 @@ private extension TableSheetView {
 
 #Preview {
     TableSheetView(
+        root: ItemRootController.fake,
         model: TableSheetModel(
             linkControllable: FakeLinkController.fake,
             sheetModel: SheetModel(

@@ -156,7 +156,7 @@ public final class MapRootModel: @unchecked Sendable {
             exportControllable: exportControllable,
             gameControllable: gameControllable,
             itemControllable: itemControllable,
-            linkControllable: linkControllable,
+            linkControllable: rootControllable.linkControllable,
             listControllable: listController,
             folderListControllable: folderListController,
             viewControllable: viewController

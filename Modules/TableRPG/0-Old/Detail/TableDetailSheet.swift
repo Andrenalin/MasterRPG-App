@@ -10,7 +10,7 @@ struct TableDetailSheet: View {
     @Environment(\.routeActions) private var routeActions
     
     var body: some View {
-        TableSheet(model: model, showTopImage: true, dismissAction: nil)
+        ViewerRootView(model: model, showTopImage: true, dismissAction: nil)
             .environment(\.showGame, true)
             .overlay(alignment: .topTrailing) {
                 Button {

@@ -50,7 +50,7 @@ struct TableExternalHeader: View {
     @Environment(ExternalHeaderModel.self) private var externalHeaderModel
 
     var body: some View {
-        TableSheet(model: editController.model, showTopImage: false) {
+        ViewerRootView(model: editController.model, showTopImage: false) {
             externalHeaderModel.showExtHeader = false
         }
     }

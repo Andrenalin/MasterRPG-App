@@ -13,7 +13,7 @@ struct AdventureSheet: View {
     @State private var sheetModel: SheetModel = SheetModel(id: UUID(), name: "", description: "", groups: [])
 
     var body: some View {
-        TableRootSheet(linkControllable: root.linkControllable, model: sheetModel, showImage: true, dismissAction: dismissAction, imageContent: imageView(size:))
+        TableRootSheet(root: root.rootController, model: sheetModel, showImage: true, dismissAction: dismissAction, imageContent: imageView(size:))
             .onChange(of: model, initial: true) {
                 resetModels()
             }

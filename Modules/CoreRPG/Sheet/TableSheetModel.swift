@@ -29,11 +29,9 @@ public final class TableSheetModel {
     }
     
     @MainActor
-    func linkTextModel(for id: LinkHighlightTextModelId, text: String) -> LinkHighlightTextModel {
+    func linkTextModel(for id: LinkHighlightTextModelId, text: String, shareResults: ShareValueResult? = nil) -> LinkHighlightTextModel {
         guard let model = linkTextModel[id] else {
-            let model = LinkHighlightTextModel(linkControllable: linkControllable, text: text, highlightedText: searchText) {
-                self.toggle(id: id, itemId: $0, module: $1)
-            }
+            let model = LinkHighlightTextModel(linkControllable: linkControllable, text: text, highlightedText: searchText, toggler: { self.toggle(id: id, itemId: $0, module: $1) }, shareResult: shareResults)
             linkTextModel[id] = model
             return model
         }

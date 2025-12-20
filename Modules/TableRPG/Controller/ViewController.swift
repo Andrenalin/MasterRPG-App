@@ -35,12 +35,12 @@ public extension ViewController {
     
     @MainActor func inlineViewer(root: TableRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
-        return TableSheet(model: model, showTopImage: false, dismissAction: dismissAction)
+        return ViewerRootView(model: model, showTopImage: false, dismissAction: dismissAction)
     }
     
     @MainActor func windowViewer(root: TableRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return TableSheet(model: model, showTopImage: false, windowMode: true)
+        return ViewerRootView(model: model, showTopImage: false, windowMode: true)
     }
 
     @MainActor func gameView(root: TableRootModel) -> some View {
@@ -69,7 +69,7 @@ public extension ViewController {
 
     @MainActor
     func tableSheetWindow(root: TableRootModel, selection: ItemSelection) -> some View {
-        TableSheet(model: root.itemController.itemOrEmpty(for: selection.itemId), showTopImage: true, dismissAction: nil)
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: selection.itemId), showTopImage: true, dismissAction: nil)
             .navigationTitle(root.itemController.itemOrEmpty(for: selection.itemId).name)
             .environment(root)
     }

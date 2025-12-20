@@ -54,7 +54,7 @@ struct TableDetailHeader: View {
     }
     
     var tableSheetView: some View {
-        TableSheet(model: editController.model, showTopImage: false, dismissAction: nil)
+        ViewerRootView(model: editController.model, showTopImage: false, dismissAction: nil)
             .environment(root)
             .environment(\.showGame, false)
     }

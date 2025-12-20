@@ -93,7 +93,7 @@ private extension DetailListView {
         
         if showViewer {
             Section {
-                SheetView(model: tableSheetModel)
+                SheetView(root: root.rootController, model: tableSheetModel)
             } header: {
                 Text("Values")
             }
