@@ -45,5 +45,7 @@ struct ViewerRouteDestinationView: View {
     
     var body: some View {
         root.viewController.inlineViewer(root: root, with: itemId)
+            .tint(root.module.tint)
+            .accentColor(root.module.tint)
     }
 }

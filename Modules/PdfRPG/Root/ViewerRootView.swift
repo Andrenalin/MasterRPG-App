@@ -7,7 +7,7 @@ import SwiftUI
 @preconcurrency import PDFKit
 #endif
 
-struct PdfViewerView: View {
+struct ViewerRootView: View {
     let model: PdfModel
     var entryId: UUID? = nil
     var windowMode: Bool = false
@@ -93,7 +93,7 @@ struct PdfViewerView: View {
     }
 }
 
-private extension PdfViewerView {
+private extension ViewerRootView {
     var shouldShowCloseButton: Bool {
         valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
     }
@@ -125,7 +125,7 @@ private extension PdfViewerView {
 #Preview(traits: .mockData) {
     
     ManagedNavigationStack {
-        PdfViewerView(model: PdfModel.preview)
+        ViewerRootView(model: PdfModel.preview)
     }
 #if os(macOS)
         .frame(width: 800, height: 600)
