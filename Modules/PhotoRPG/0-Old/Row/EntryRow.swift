@@ -37,7 +37,7 @@ struct EntryRow: View {
                 .onTapGesture { showImage.toggle() }
 #endif
                 .sheetFullScreen(isPresented: $showImage, idealSize: cachedImage(for: model.id)?.size ?? CGSize(width: 300, height: 200) + 100.0) {
-                    RootPhotoViewer(model: model, toolBarModel: GameToolBarModel())
+                    ViewerRootView(model: model, toolBarModel: GameToolBarModel())
 #if os(iOS)
                         .statusBar(hidden: true)
 #endif

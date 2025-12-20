@@ -28,13 +28,13 @@ struct ViewerRootView: View {
             $0.toolbar {
                 toolbarContent
             }
+            .navigationTitle(Text(model.name))
+#if !os(macOS) && !os(tvOS)
+            .navigationBarTitleDisplayMode(.inline)
+#endif
         }
 #if !os(visionOS)
         .background(.black.gradient)
-#endif
-        .navigationTitle(Text(model.name))
-#if !os(macOS) && !os(tvOS)
-        .navigationBarTitleDisplayMode(.inline)
 #endif
         .environment(CacheItemListModel())
     }

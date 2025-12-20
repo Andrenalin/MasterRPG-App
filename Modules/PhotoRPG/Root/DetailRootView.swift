@@ -42,9 +42,7 @@ struct DetailListView: View {
     func content(listController: any FolderListControllable) -> some View {
         ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: true) {
         } editor: {
-            if let cacheController = root.cacheController {
-                GroupedPhotoView(cacheController: cacheController, itemControllable: root.itemController, model: model, highResolution: true)
-            }
+            SelectedPhotoViewerView(model: model)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -62,6 +60,28 @@ struct DetailListView: View {
         .accentColor(root.module.tint)
     }
 }
+
+struct SelectedPhotoViewerView: View {
+    let model: PhotoModel
+    
+    @Environment(PhotoRootModel.self) var root
+    @Environment(GroupItemSelectionModel.self) var selection
+    
+    var body: some View {
+        ViewerRootView(model: selectedModel, externalViewer: false)
+            .id(selection.selectedItem ?? model.id)
+    }
+    
+    var selectedModel: PhotoModel {
+        item ?? model
+    }
+
+    var item: PhotoModel? {
+        guard let id = selection.selectedItem else { return nil }
+        return root.itemController.itemSync(for: id)
+    }
+}
+
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(PhotoRootModel.self) var root

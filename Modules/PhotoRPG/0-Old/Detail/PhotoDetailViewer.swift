@@ -10,7 +10,7 @@ struct PhotoDetailViewer: View {
     @Environment(\.routeActions) private var routeActions
 
     var body: some View {
-        RootPhotoViewer(model: model, toolBarModel: root.rootModel.toolbarModel, isGame: true)
+        ViewerRootView(model: model, toolBarModel: root.rootModel.toolbarModel, isGame: true)
             .environment(\.showGame, true)
             .overlay(alignment: .topTrailing) {
                 Button {

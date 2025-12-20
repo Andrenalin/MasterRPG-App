@@ -17,9 +17,5 @@ struct RootImageViewer: View {
         AsyncImageViewer(model: model, size: size, toolBarModel: toolBarModel)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.black.gradient)
-            .overlay(alignment: .bottom) {
-                GameToolBar(model: toolBarModel, hideCloseButton: isGame, dismiss: dismiss)
-                    .padding()
-            }
     }
 }

@@ -39,21 +39,23 @@ public extension ViewController {
 
     @MainActor func inlineViewer(root: PhotoRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
-        return RootPhotoViewer(model: model, toolBarModel: GameToolBarModel())
+        return ViewerRootView(model: model, dismissAction: dismissAction)
     }
     
     @MainActor func windowViewer(root: PhotoRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return NavigationStack {
-            RootPhotoViewer(model: model, toolBarModel: GameToolBarModel())
-        }
-        .ignoresSafeArea()
-        .navigationTitle(model.name)
+        return ViewerRootView(model: model, windowMode: true)
     }
     
     @MainActor func gameView(root: PhotoRootModel) -> some View {
         LinkRootView(type: .inspector)
             .environment(ItemSelectionModel())
+    }
+    
+    @MainActor
+    func gamePhotoView(root: PhotoRootModel) -> some View {
+        ViewerRootView(model: root.gameController.currentItem(), toolBarModel: root.rootModel.toolbarModel, isGame: true)
+            .environment(root)
     }
 }
 
@@ -82,12 +84,6 @@ public extension ViewController {
 
 // MARK: - Game
 public extension ViewController {
-    @MainActor
-    func gamePhotoView(root: PhotoRootModel) -> some View {
-        RootPhotoViewer(model: root.gameController.currentItem(), toolBarModel: root.rootModel.toolbarModel, isGame: true)
-            .environment(root)
-    }
-
     @MainActor
     func gameToolBarView(root: PhotoRootModel) -> some View {
         GameToolBar(model: root.rootModel.toolbarModel, hideCloseButton: true, dismiss: nil)
@@ -133,17 +129,6 @@ public extension ViewController {
             .itemSplitViewSizeMode(.small)
             .itemListChildrenConfiguration(canNavigate: false)
             .itemListConfiguration(modalOk: true, modalDismissAction: dismissAction)
-            .environment(root)
-    }
-}
-
-// MARK: - Window
-
-public extension ViewController {
-    @MainActor
-    func photoWindow(root: PhotoRootModel, selection: ItemSelection) -> some View {
-        RootPhotoViewer(model: root.itemController.itemOrEmpty(for: selection.itemId), toolBarModel: GameToolBarModel())
-            .navigationTitle(root.itemController.itemOrEmpty(for: selection.itemId).name)
             .environment(root)
     }
 }

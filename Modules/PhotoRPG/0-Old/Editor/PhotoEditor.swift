@@ -113,7 +113,7 @@ private extension PhotoEditor {
         ShowQuickLook(listController: root.listController(model: itemListModel), windowId: WindowIdentifier.photoViewer.rawValue) { model in
             root.itemController.itemOrEmpty(for: model.itemId).hasPhoto
         } content: { model in
-            root.viewController.photoWindow(root: root, selection: ItemSelection(itemId: model.itemId, entryId: model.entryId))
+            root.viewController.windowViewer(root: root, selection: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
         }
     }
 }

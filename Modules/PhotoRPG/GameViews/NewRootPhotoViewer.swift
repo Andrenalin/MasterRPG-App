@@ -3,7 +3,7 @@
 //import CoreRPG
 //import SwiftUI
 //
-//struct RootPhotoViewer: View {
+//struct ViewerRootView: View {
 //    let model: ItemDataCodableModel?
 //    let toolBarModel: GameToolBarModel
 //    var isGame: Bool = false
@@ -54,7 +54,7 @@
 //    
 //    Group {
 //        if let model = root.itemController.itemDataCodableModel(id: root.itemController.allItemIds().first ?? MockData.previewId2) {
-//            RootPhotoViewer(model: model, toolBarModel: GameToolBarModel(), isGame: true)
+//            ViewerRootView(model: model, toolBarModel: GameToolBarModel(), isGame: true)
 //        } else {
 //            Text("Empty")
 //        }
