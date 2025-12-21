@@ -3,25 +3,35 @@
 import Foundation
 
 public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(id: UUID, name: String, description: String, groups: [SheetGroupModel]) {
-        self.id = id
+    public init(source: ItemRowModel, level: Int = 0, name: String, description: String, entries: [SheetModel]) {
+        self.id = "\(level)!\(source.entryId ?? source.itemId)"
+        self.source = source
+        self.level = level
         self.name = name
         self.description = description
-        self.groups = groups
+        self.entries = entries
+        self.sheetIds = []
     }
 
-    public let id: UUID
+    public let id: String
+    public let source: ItemRowModel
+    public let level: Int
     public let name: String
     public let description: String
 
-    public var groups: [SheetGroupModel]
-
-    func filteredGroups(for searchText: String) -> [SheetGroupModel] {
-        guard !searchText.isEmpty else { return groups }
-        return groups.filter { group in
-            group.name.localizedCaseInsensitiveContains(searchText) || group.description.localizedCaseInsensitiveContains(searchText) ||
-            !group.filteredEntries(for: searchText).isEmpty
+    public var entries: [SheetModel]
+    
+    public var sheetIds: [ItemRowModel]
+    
+    func filter(searchText: String) -> [SheetModel] {
+        guard !searchText.isEmpty else { return entries }
+        return entries.filter { entry in
+            entry.name.localizedCaseInsensitiveContains(searchText) || entry.description.localizedCaseInsensitiveContains(searchText) || !entry.filter(searchText: searchText).isEmpty
         }
+    }
+    
+    public static var empty: SheetModel {
+        SheetModel(source: .empty, level: 0, name: "", description: "", entries: [])
     }
 }
 

@@ -6,29 +6,19 @@ import Foundation
 struct SheetController {
     let itemController: ItemController
 
-    @MainActor
-    func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
+    @MainActor func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
-        let sheetModel = SheetModel(id: itemId, name: model.name, description: model.description, groups: sheetGroups(for: itemId, level: level))
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, name: model.name, description: model.description, entries: sheetGroups(for: itemId, level: level))
         return sheetModel
     }
     
-    @MainActor
-    func sheetGroups(for itemId: UUID, level: Int) -> [SheetGroupModel] {
+    @MainActor func sheetGroups(for itemId: UUID, level: Int) -> [SheetModel] {
+        guard level < 25 else { return [] }
         let value = itemController.itemOrEmpty(for: itemId)
         return value.entries.map { entry in
-            let name = entry.name.withoutLink()
+            let name = entry.name
             let description = entry.content
-            let entries = sheetEntries(for: entry).dropFirst()
-            return SheetGroupModel(id: UUID(), name: name, description: description, level: level, entries: Array(entries))
+            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.itemDataModel.networkModule), level: level, name: name, description: description, entries: [])
         }
-    }
-    
-    @MainActor
-    func sheetEntries(for entry: TableEntryModel, deep: Int = 0) -> [SheetEntryModel] {
-        guard deep < 20 else { return [] }
-        let value = entry.content
-        let entries = [SheetEntryModel(id: UUID(), name: entry.name.withoutLink(), value: value)]
-        return entries
     }
 }

@@ -68,7 +68,7 @@ public struct RawDie: Equatable, Hashable, Codable {
     }
 
     public var text: String {
-        "D\(sides.number())"
+        "d\(sides.number())"
     }
 
     public enum Sides: Equatable, Hashable, Codable {

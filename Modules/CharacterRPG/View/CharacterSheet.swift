@@ -12,7 +12,7 @@ struct CharacterSheet: View {
     
     @Environment(CharacterRootModel.self) private var root
 
-    @State private var sheetModel: SheetModel = SheetModel(id: UUID(), name: "", description: "", groups: [])
+    @State private var sheetModel: SheetModel = SheetModel.empty
     
     var body: some View {
         TableRootSheet(root: root.rootController, model: sheetModel, showImage: showTopImage, dismissAction: dismissAction, imageContent: imageView(size:))

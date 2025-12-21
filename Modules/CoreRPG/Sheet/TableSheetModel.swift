@@ -18,7 +18,7 @@ public final class TableSheetModel {
     var linkControllable: any LinkControllable
 
     @ObservationIgnored
-    var sheets: [UUID: TableSheetModel] = [:]
+    var sheets: [ItemRowModel: TableSheetModel] = [:]
     
     @ObservationIgnored
     private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
@@ -54,39 +54,37 @@ public final class TableSheetModel {
         sheetModel = model
     }
 
-    func group(groupId: UUID) -> SheetGroupModel? {
-        sheetModel.groups.first { $0.id == groupId }
+    func entry(entryId: String) -> SheetModel? {
+        sheetModel.entries.first { $0.id == entryId }
     }
     
     @MainActor
     func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules) {
+        let rowModel = ItemRowModel(itemId: itemId, typeId: module)
+        
         switch id {
         case .description:
             let sheets = linkControllable.toggleSheet(itemId: itemId, level: 0, module: module)
-            sheetModel.groups.insert(contentsOf: sheets?.groups ?? [], at: 0)
-        case .group(let uuid):
-            guard let groupIndex = sheetModel.groups.firstIndex(where: { $0.id == uuid }) else { return }
-            var group = sheetModel.groups[groupIndex]
-            if group.sheetIds.contains(itemId) {
-                group.sheetIds.removeAll(where: { $0 == itemId })
+            sheetModel.entries.insert(contentsOf: sheets?.entries ?? [], at: 0)
+        case .entry(let uuid):
+            guard let entryIndex = sheetModel.entries.firstIndex(where: { $0.id == uuid }) else { return }
+            var entry = sheetModel.entries[entryIndex]
+            if entry.sheetIds.contains(rowModel) {
+                entry.sheetIds.removeAll(where: { $0 == rowModel })
             } else {
-                guard let sheet = linkControllable.toggleSheet(itemId: itemId, level: group.level + 1, module: module) else { return }
+                guard let sheet = linkControllable.toggleSheet(itemId: itemId, level: entry.level + 1, module: module) else { return }
                 let tableSheetModel = TableSheetModel(linkControllable: linkControllable, sheetModel: sheet, searchText: searchText)
                 tableSheetModel.id = itemId
-                sheets[tableSheetModel.id] = tableSheetModel
-                group.sheetIds.append(tableSheetModel.id)
+                
+                sheets[rowModel] = tableSheetModel
+                entry.sheetIds.append(rowModel)
             }
-            sheetModel.groups[groupIndex] = group
-        case .entry(let uuid):
-            //let group = sheetModel.groups.first(where: { $0.id == uuid })
-            //level = 0
-            break
-        }        
+            sheetModel.entries[entryIndex] = entry
+        }
     }
 }
 
 enum LinkHighlightTextModelId: Hashable {
     case description
-    case group(UUID)
-    case entry(UUID)
+    case entry(String)
 }

@@ -10,40 +10,30 @@ struct SheetController {
     @MainActor
     func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
-        let sheetModel = SheetModel(id: itemId, name: model.name, description: model.description, groups: sheetGroups(for: itemId, level: level))
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, name: model.name, description: model.description, entries: sheetGroups(for: itemId, level: level + 1))
         return sheetModel
     }
 
     @MainActor
-    func sheetGroups(for itemId: UUID, level: Int) -> [SheetGroupModel] {
+    func sheetGroups(for itemId: UUID, level: Int) -> [SheetModel] {
+        guard level < 25 else { return [] }
         let value = itemController.itemOrEmpty(for: itemId)
         return value.entries.map { entry in
-            var name = entry.name.withoutLink()
-            var description = entry.value
+            var name = entry.name
+            var entries: [SheetModel] = []
+
+            var description = ""
             if let valueId = entry.valueId {
                 let value = itemController.itemOrEmpty(for: valueId)
                 name = value.name
-                description = ""
+                entries = [sheet(for: valueId, level: level + 1)]
+            } else {
+                description = entry.value
+                if let valueCalculate = linkController.calculate(entry: entry), description != valueCalculate {
+                    description += " = \(valueCalculate)"
+                }
             }
-            let entries = sheetEntries(for: entry).dropFirst()
-            return SheetGroupModel(id: UUID(), name: name, description: description, level: level, entries: Array(entries))
+            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.itemDataModel.networkModule), level: level, name: name, description: description, entries: entries)
         }
-    }
-    
-    @MainActor
-    func sheetEntries(for entry: ValueEntryModel, deep: Int = 0) -> [SheetEntryModel] {
-        guard deep < 20 else { return [] }
-        var value = entry.value
-        if let valueCalculate = linkController.calculate(entry: entry), value != valueCalculate {
-            value += " = \(valueCalculate)"
-        }
-        var entries = [SheetEntryModel(id: UUID(), name: entry.name.withoutLink(), value:  value)]
-        
-        if let valueId = entry.valueId {
-            let model = itemController.itemOrEmpty(for: valueId)
-            let subEntries = model.entries.flatMap { sheetEntries(for: $0, deep: deep + 1) }
-            entries.append(contentsOf: subEntries)
-        }
-        return entries
     }
 }

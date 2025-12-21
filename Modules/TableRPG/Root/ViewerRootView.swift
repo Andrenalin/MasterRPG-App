@@ -11,7 +11,7 @@ struct ViewerRootView: View {
 
     @Environment(TableRootModel.self) private var root
 
-    @State private var sheetModel: SheetModel = SheetModel(id: UUID(), name: "", description: "", groups: [])
+    @State private var sheetModel: SheetModel = SheetModel.empty
 
     var body: some View {
         TableRootSheet(root: root.rootController, model: sheetModel, showImage: showTopImage, windowMode: windowMode, dismissAction: dismissAction)

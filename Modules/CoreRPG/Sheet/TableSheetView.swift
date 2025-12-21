@@ -26,7 +26,7 @@ struct TableSheetView<ImageContent: View>: View {
             listContentView
         }
         .applyIf(searchBar) {
-            $0.searchable(text: $model.searchText, placement: .navigationBarDrawerAll, prompt: "Find in")
+            $0.searchable(text: $model.searchText, placement: .automatic, prompt: "Find in")
         }
     }
 }
@@ -42,15 +42,15 @@ private extension TableSheetView {
                 .animation(.default, value: model.searchText)
         }
 #if os(iOS)
-        .background(root.module.tint.opacity(0.4).gradient)
-        .toolbarBackgroundVisibility(.visible, for: .navigationBar)
-        .toolbarBackground(root.module.tint, for: .navigationBar)
+        .background(root.module.tint.opacity(0.3).gradient)
+//        .toolbarBackgroundVisibility(.visible, for: .navigationBar)
+//        .toolbarBackground(root.module.tint, for: .navigationBar)
         .scrollContentBackground(.hidden)
         .scrollEdgeEffectStyle(.soft, for: .all)
-        .listRowSpacing(5)
+        .listRowSpacing(4)
 #endif
-        //.toolbarTitleDisplayMode(.inlineLarge)
-        .contentMargins(.horizontal, 12, for: .scrollContent)
+        .toolbarTitleDisplayMode(.inline)
+        .contentMargins(.horizontal, 8, for: .scrollContent)
     }
         
     func closeButtonInline() -> some View {
@@ -87,17 +87,18 @@ private extension TableSheetView {
         model: TableSheetModel(
             linkControllable: FakeLinkController.fake,
             sheetModel: SheetModel(
-                id: UUID(),
+                source: ItemRowModel(itemId: UUID(), typeId: .table),
+                level: 0,
                 name: "Hallo",
                 description: "More",
-                groups: [
-                    .init(id: UUID(), name: "First", description: "Mega mit Link [Name](RPG://PHOTOS/0/9D877C38-41F5-4595-93A4-C25DC94BDD2E)", level: 1, entries: [
-                        SheetEntryModel(id: UUID(), name: "Entry", value: "Value of Entry"),
-                        SheetEntryModel(id: UUID(), name: "2nd Entry", value: "Another Value of Entry")
+                entries: [
+                    SheetModel(source: ItemRowModel(itemId: UUID(), entryId: UUID(), typeId: .table), level: 1, name: "First", description: "Mega mit Link [Name](RPG://PHOTOS/0/9D877C38-41F5-4595-93A4-C25DC94BDD2E)", entries: [
+                        SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .table), level: 2, name: "Entry", description: "Value of Entry", entries: []),
+                        SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .table), level: 2, name: "2nd Entry", description: "Another Value of Entry", entries: [])
                     ]),
-                    .init(id: UUID(), name: "Second **Master**", description: "Here it comes more", level: 1, entries: [
-                        SheetEntryModel(id: UUID(), name: "Entry", value: "Value [inside link](RPG://MAPS/0/2181D9D0-8896-44E0-B2C4-A6E93F2533D7) of Entry und  [Name](RPG://PHOTOS/0/9D877C38-41F5-4595-93A4-C25DC94BDD2E) noch einer"),
-                        SheetEntryModel(id: UUID(), name: "2nd Entry", value: "Another Value of Entry")
+                    SheetModel(source: ItemRowModel(itemId: UUID(), entryId: UUID(), typeId: .table), level: 1, name: "Second **Master**", description: "Here it comes more", entries: [
+                        SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .table), level: 2, name: "Entry", description: "Value [inside link](RPG://MAPS/0/2181D9D0-8896-44E0-B2C4-A6E93F2533D7) of Entry und  [Name](RPG://PHOTOS/0/9D877C38-41F5-4595-93A4-C25DC94BDD2E) noch einer", entries: []),
+                        SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .table), level: 2, name: "2nd Entry", description: "Another Value of Entry", entries: [])
                     ])
                 ]
             ),
