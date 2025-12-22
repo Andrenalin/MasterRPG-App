@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-struct SharingActionView: View {
+struct SharingActionView: View, Equatable {
     let itemId: UUID
     
     @Environment(AudioRootModel.self) private var root
@@ -65,6 +65,10 @@ struct SharingActionView: View {
                 }
             }
         }
+    }
+    
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.itemId == rhs.itemId
     }
 }
 

@@ -8,11 +8,16 @@ struct SheetController {
 
     @MainActor func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, name: model.name, description: model.description, entries: sheetGroups(for: itemId, level: level))
+        var entries: [SheetModel] = []
+        if let diceId = model.diceId {
+            entries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), level: level, type: .dice, name: "", description: "", entries: []))
+        }
+        entries.append(contentsOf: sheetEntries(for: itemId, level: level))
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, name: model.name, description: model.description, entries: entries)
         return sheetModel
     }
     
-    @MainActor func sheetGroups(for itemId: UUID, level: Int) -> [SheetModel] {
+    @MainActor func sheetEntries(for itemId: UUID, level: Int) -> [SheetModel] {
         guard level < 25 else { return [] }
         let value = itemController.itemOrEmpty(for: itemId)
         return value.entries.map { entry in

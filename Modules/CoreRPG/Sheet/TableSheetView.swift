@@ -17,17 +17,10 @@ struct TableSheetView<ImageContent: View>: View {
     var body: some View {
         @Bindable var model = model
         
-        VStack(alignment: .leading, spacing: 0) {
-            if showImage {
-                imageContent(CGSize(width: 360, height: 256))
-                    .frame(maxWidth: .infinity, alignment: .center)
+        listContentView
+            .applyIf(searchBar) {
+                $0.searchable(text: $model.searchText, placement: .automatic, prompt: "Find in")
             }
-            
-            listContentView
-        }
-        .applyIf(searchBar) {
-            $0.searchable(text: $model.searchText, placement: .automatic, prompt: "Find in")
-        }
     }
 }
 
@@ -38,46 +31,24 @@ private extension TableSheetView {
 
     var listContentView: some View {
         List {
+            if showImage {
+                GeometryReader { proxy in
+                    imageContent(CGSize(width: proxy.size.width, height: 256))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+
             SheetView(root: root, model: model)
                 .animation(.default, value: model.searchText)
         }
 #if os(iOS)
         .background(root.module.tint.opacity(0.3).gradient)
-//        .toolbarBackgroundVisibility(.visible, for: .navigationBar)
-//        .toolbarBackground(root.module.tint, for: .navigationBar)
         .scrollContentBackground(.hidden)
         .scrollEdgeEffectStyle(.soft, for: .all)
         .listRowSpacing(4)
 #endif
         .toolbarTitleDisplayMode(.inline)
         .contentMargins(.horizontal, 8, for: .scrollContent)
-    }
-        
-    func closeButtonInline() -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(model.sheetModel.name)
-                .lineLimit(4)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            Button {
-                if let dismissAction {
-                    dismissAction()
-                } else {
-                    dismiss()
-                }
-            } label: {
-                Image(systemName: showImage ? "xmark.circle" : "chevron.down.circle")
-            }
-            .borderLessTVBottonStyle()
-            .opacity(showGame ? 0 : 1)
-            .padding(.top, 8)
-        }
-        .font(.title)
-        .padding(.horizontal)
-    }
-    
-    var showCloseButton: Bool {
-        valueFor(iOS: !showGame, macOS: false, tvOS: !showGame, visionOS: !showGame)
     }
 }
 

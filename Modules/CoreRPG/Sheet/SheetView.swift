@@ -10,22 +10,31 @@ public struct SheetView: View {
     
     let root: ItemRootController
     let model: TableSheetModel
-
+    
     public var body: some View {
+        LinkHighlightTextView(model: model.linkTextModel(for: .name, text: model.sheetModel.name))
+            .font(.title)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+        
         if let description = model.description(for: model.sheetModel), !description.isEmpty {
             LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
-                .foregroundStyle(.secondary)
+            //.foregroundStyle(.secondary)
                 .font(.subheadline)
+                .listRowBackground(rowColor(for: model.sheetModel.level))
                 .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-               // .listRowBackground(rowColor(for: group.level))
         }
-
+        
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
             SheetGroupView(root: root, model: model, group: entry)
         }
         .onChange(of: model.searchText) {
             withAnimation { model.updateSearch() }
         }
+    }
+    
+    func rowColor(for level: Int) -> Color {
+        level.isMultiple(of: 2) ? .white : .secondary.opacity(0.3)
     }
 }
 
@@ -35,21 +44,28 @@ struct SheetGroupView: View {
         self.model = model
         self.group = group
     }
- 
+    
     let root: ItemRootController
     let model: TableSheetModel
     let group: SheetModel
-
+    
     @Environment(\.networkActions) private var networkActions
     @Environment(\.showGame) private var showGame
     @Environment(\.gameModus) private var gameModus
     
     var body: some View {
-        LinkHighlightTextView(model: model.linkTextModel(for: .entry(group.id), text: text, shareResults: shareResult))
-            .font(.body)
-            .listRowBackground(rowColor(for: group.level))
-            .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(group.level * 4), bottom: 8, trailing: 8))
-
+        switch group.sheetType {
+        case .item:
+            LinkHighlightTextView(model: model.linkTextModel(for: .entry(group.id), text: text, shareResults: shareResult))
+                .font(.body)
+                .listRowBackground(rowColor(for: group.level))
+                .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(group.level * 4), bottom: 8, trailing: 8))
+        case .dice:
+            root.viewControllable.diceRowView(for: group.source.itemId)
+        case .photo:
+            Text("Photo: \(group.source)")
+        }
+        
         ForEach(group.sheetIds, id: \.self) { sheetId in
             if let sheetModel = model.sheets[sheetId] {
                 SheetView(root: root, model: sheetModel)
@@ -58,14 +74,13 @@ struct SheetGroupView: View {
     }
     
     func rowColor(for level: Int) -> Color {
-        level.isMultiple(of: 2) ? .clear : .secondary.opacity(0.5)
+        level.isMultiple(of: 2) ? .white : .secondary.opacity(0.3)
     }
-
     
     private var shareResult: ShareValueResult {
         ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: group.source.itemId, childId: group.source.entryId, module: group.source.typeId), showGame: showGame, gameModus: gameModus)
     }
-
+    
     
     var text: String {
         if group.description.isEmpty {

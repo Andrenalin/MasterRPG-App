@@ -1848,6 +1848,9 @@
         }
       }
     },
+    "Photo: %@" : {
+
+    },
     "Play" : {
       "localizations" : {
         "de" : {

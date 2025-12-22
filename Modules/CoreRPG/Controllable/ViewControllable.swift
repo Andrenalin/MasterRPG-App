@@ -35,6 +35,8 @@ public protocol ViewControllable: Sendable {
     @MainActor func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView
     @MainActor func sharingView(for itemId: UUID) -> AnyView
     @MainActor func thumbnailRowView(for itemId: UUID) -> AnyView
+    
+    @MainActor func diceRowView(for itemId: UUID) -> AnyView
 }
 
 public extension ViewControllable {
@@ -45,6 +47,7 @@ public extension ViewControllable {
     @MainActor func sharingView(for itemId: UUID) -> AnyView { AnyView(EmptyView()) }
 
     @MainActor func thumbnailRowView(for itemId: UUID) -> AnyView { AnyView(EmptyView()) }
+    @MainActor func diceRowView(for itemId: UUID) -> AnyView { AnyView(EmptyView()) }
     
     @MainActor func linkListView(rootController: ItemRootController, type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> AnyView {
         AnyView(

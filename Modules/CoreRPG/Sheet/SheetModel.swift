@@ -3,10 +3,11 @@
 import Foundation
 
 public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(source: ItemRowModel, level: Int = 0, name: String, description: String, entries: [SheetModel]) {
+    public init(source: ItemRowModel, level: Int = 0, type: SheetModelType = .item, name: String, description: String, entries: [SheetModel]) {
         self.id = "\(level)!\(source.entryId ?? source.itemId)"
         self.source = source
         self.level = level
+        self.sheetType = type
         self.name = name
         self.description = description
         self.entries = entries
@@ -16,6 +17,8 @@ public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
     public let id: String
     public let source: ItemRowModel
     public let level: Int
+    
+    public let sheetType: SheetModelType
     public let name: String
     public let description: String
 
@@ -35,42 +38,8 @@ public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
     }
 }
 
-public struct SheetGroupModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(id: UUID, name: String, description: String, level: Int = 0, entries: [SheetEntryModel]) {
-        self.id = id
-        self.name = name
-        self.description = description
-        self.level = level
-        self.sheetIds = []
-        self.entries = entries
-    }
-    
-    public let id: UUID
-    public let name: String
-    public let description: String
-    public let level: Int
-
-    public var sheetIds: [UUID]
-    public let entries: [SheetEntryModel]
-
-    func filteredEntries(for searchText: String) -> [SheetEntryModel] {
-        guard !searchText.isEmpty else { return entries }
-        return entries.filter { entry in
-            entry.name.localizedCaseInsensitiveContains(searchText) || entry.value.localizedCaseInsensitiveContains(searchText)
-        }
-    }
-
+public enum SheetModelType: Equatable, Hashable, Sendable {
+    case item
+    case dice
+    case photo
 }
-
-public struct SheetEntryModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(id: UUID, name: String, value: String) {
-        self.id = id
-        self.name = name
-        self.value = value
-    }
-    
-    public let id: UUID
-    public let name: String
-    public let value: String
-}
-

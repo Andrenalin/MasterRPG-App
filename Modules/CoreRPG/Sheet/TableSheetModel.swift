@@ -63,6 +63,8 @@ public final class TableSheetModel {
         let rowModel = ItemRowModel(itemId: itemId, typeId: module)
         
         switch id {
+        case .name:
+            break
         case .description:
             let sheets = linkControllable.toggleSheet(itemId: itemId, level: 0, module: module)
             sheetModel.entries.insert(contentsOf: sheets?.entries ?? [], at: 0)
@@ -85,6 +87,7 @@ public final class TableSheetModel {
 }
 
 enum LinkHighlightTextModelId: Hashable {
+    case name
     case description
     case entry(String)
 }
