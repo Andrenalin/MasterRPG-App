@@ -94,7 +94,6 @@ public final class GeneratorRootModel: @unchecked Sendable {
             gameControllable: gameControllable,
             itemControllable: itemControllable,
             linkControllable: linkControllable,
-            listControllable: listController,
             folderListControllable: folderListController,
             viewControllable: viewController
         )
@@ -114,15 +113,7 @@ extension GeneratorRootModel: ItemRootControllable {
     public var importControllable: any ImportControllable { importController }
     public var itemControllable: any ItemControllable { itemController }
     public var linkControllable: any LinkControllable { linkController }
-    public var listControllable: any ListControllable { listController }
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
     public var viewControllable: any ViewControllable { viewController }
-}
-
-extension GeneratorRootModel {
-    @MainActor
-    private var listController: ListController {
-        ListController(itemController: itemController, listStoreName: "Generator", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
-    }
 }

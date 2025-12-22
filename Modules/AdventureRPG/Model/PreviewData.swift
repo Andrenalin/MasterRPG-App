@@ -104,19 +104,6 @@ extension ExportController {
     static let preview = AdventureRootModel.preview.exportController
 }
 
-extension ListController {
-    @MainActor
-    static let previewTabId = UUID()
-    
-    @MainActor
-    static let preview = AdventureRootModel.preview.listController(tabId: previewTabId)
-}
-
-extension ListModel {
-    @MainActor
-    static var preview = ListController.preview.model
-}
-
 extension ViewController {
     @MainActor
     static let preview = AdventureRootModel.preview.viewController

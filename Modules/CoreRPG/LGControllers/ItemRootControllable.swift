@@ -19,7 +19,6 @@ public protocol ItemRootControllable: Sendable {
     var gameControllable: any GameControllable { get }
     var itemControllable: any ItemControllable { get }
     var linkControllable: any LinkControllable { get }
-    var listControllable: any ListControllable { get }
     var folderListControllable: any FolderListControllable { get }
     var folderLinkControllable: any FolderListControllable { get }
     var viewControllable: any ViewControllable { get }
@@ -41,7 +40,6 @@ public final class ItemRootController: ItemRootControllable {
         gameControllable: any GameControllable,
         itemControllable: any ItemControllable,
         linkControllable: any LinkControllable,
-        listControllable: any ListControllable,
         folderListControllable: any FolderListControllable,
         viewControllable: any ViewControllable
     ) {
@@ -56,7 +54,6 @@ public final class ItemRootController: ItemRootControllable {
         self.gameControllable = gameControllable
         self.itemControllable = itemControllable
         self.linkControllable = linkControllable
-        self.listControllable = listControllable
         self.folderListControllable = folderListControllable
         self.folderLinkControllable = folderListControllable.copy(parentModel: nil)
         self.viewControllable = viewControllable
@@ -68,7 +65,7 @@ public final class ItemRootController: ItemRootControllable {
     
     public var itemSelectionModel: ItemSelectionModel
     public var currentSelectedItemId: UUID? {
-        listControllable.model.selectedItem?.id
+        folderListControllable.listModel.selectedItemId
     }
 
     public let cacheControllable: (any ImageCacheControllable)?
@@ -77,7 +74,6 @@ public final class ItemRootController: ItemRootControllable {
     public let gameControllable: any GameControllable
     public let itemControllable: any ItemControllable
     public let linkControllable: any LinkControllable
-    public let listControllable: any ListControllable
     public let folderListControllable: any FolderListControllable
     public let folderLinkControllable: any FolderListControllable
     public let viewControllable: any ViewControllable

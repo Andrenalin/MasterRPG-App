@@ -48,17 +48,4 @@ struct SelectedMasterView: View {
             }
         }
     }
-
-    private var selectedView: some View {
-        VStack {
-            if let id = root.gameModel.selectedGameMaster {
-                root.viewController.selectedCharacterGameMasterView(with: id, isGameMaster: true)
-                    .id(id)
-            } else {
-                Text("Select a game master to start the game. The game master should have a name and for convience one value with a dice as default dice for the game view.", bundle: .module)
-                    .lineLimit(10)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
 }

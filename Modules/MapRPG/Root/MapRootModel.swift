@@ -157,7 +157,6 @@ public final class MapRootModel: @unchecked Sendable {
             gameControllable: gameControllable,
             itemControllable: itemControllable,
             linkControllable: rootControllable.linkControllable,
-            listControllable: listController,
             folderListControllable: folderListController,
             viewControllable: viewController
         )
@@ -167,7 +166,6 @@ public final class MapRootModel: @unchecked Sendable {
 extension MapRootModel: ItemRootControllable {
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
-    public var listControllable: any ListControllable { listController }
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
     public var viewControllable: any ViewControllable { viewController }

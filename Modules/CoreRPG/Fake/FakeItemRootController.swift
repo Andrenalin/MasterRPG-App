@@ -16,7 +16,6 @@ public extension ItemRootController {
         gameControllable: FakeGameController.fake,
         itemControllable: FakeItemController.fake,
         linkControllable: FakeLinkController.fake,
-        listControllable: FakeListController.fake,
         folderListControllable: FakeFolderListController.fake,
         viewControllable: FakeViewController()
     )

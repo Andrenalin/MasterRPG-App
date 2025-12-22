@@ -8,63 +8,6 @@ import TableRPG
 import CharacterRPG
 import MapRPG
 
-struct SpecialEditor: View {
-    let editController: EditController
-    
-    @Environment(AdventureRootModel.self) private var root
-    @Environment(\.navigator) private var navigator
-
-    var body: some View {
-        Section {
-            ViewThatFits {
-                HStack {
-                    showLinkScannerView
-                    Spacer()
-                    showQuickEditorView
-                }
-
-                VStack(alignment: .leading) {
-                    showLinkScannerView
-                    showQuickEditorView
-                }
-            }
-        } header: {
-#if os(macOS)
-            Divider()
-                .padding(.top)
-#endif
-            HStack {
-                Text("Special Editor", bundle: .module)
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
-        }
-    }
-
-    private var showLinkScannerView: some View {
-        Button {
-            navigator.navigate(to: InternalRoute.linkEditor, method: .cover)
-        } label: {
-            Label { Text("Quick Links", bundle: .module) } icon: { Image(systemName: "link") }
-        }
-#if os(iOS) || os(visionOS)
-        .borderLessTVBottonStyle()
-#endif
-    }
-
-    @MainActor
-    private var showQuickEditorView: some View {
-        Button {
-            navigator.navigate(to: InternalRoute.quickEditor, method: .cover)
-        } label: {
-            Label { Text("Quick Editor", bundle: .module) } icon: { Image(systemName: "pencil.and.outline") }
-        }
-#if os(iOS) || os(visionOS)
-        .borderLessTVBottonStyle()
-#endif
-    }
-}
-
 struct RootQuickLinkEditor: View {
     let editController: EditController
     

@@ -57,69 +57,41 @@ public extension ViewController {
     }
 }
 
-// MARK: - Viewer
-
-public extension ViewController {
-    //@MainActor
-    func viewMinimum(root: AdventureRootModel, with id: UUID?) -> some View {
-        MinimumRow(itemId: id ?? UUID())
-            .environment(root)
-    }
-}
-
-// MARK: Selection
-
-public extension ViewController {
-    @MainActor
-    private static let selectionTabId = UUID()
-
-    @MainActor
-    func viewSelect(root: AdventureRootModel, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, isGroupHidden: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
-        let listController = root.listController(tabId: ViewController.selectionTabId)
-        listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: isGroupHidden, focus: nil, mode: SelectionMode(selected: selection, toggle: toggleSelection))
-        return RootNaviList(root: root, tabId: ViewController.selectionTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false)
-            .itemListConfiguration(modalOk: true, modalDismissAction: dismissAction)
-            .environment(root)
-            .environment(SelectionSheetLinkModel(selection: false))
-    }
-}
-
 // MARK: Links
 
 public extension ViewController {
     @MainActor 
     func selectForScan(root: AdventureRootModel, ids: Binding<[UUID]?>, entryId: Binding<UUID?>? = nil, entryOnly: Bool = false, dismissAction: @escaping () -> Void) -> some View {
-        viewSelect(root: root) {
-            if let links = ids.wrappedValue {
-                return links.map { ItemRowModel(itemId: $0, entryId: entryId?.wrappedValue, typeId: root.itemController.itemDataModel.networkModule) }
-            } else {
-                return []
-            }
-        } toggleSelection: { selection, _ in
-            if entryOnly {
-                if ids.wrappedValue?.first == selection.itemId,
-                   entryId?.wrappedValue == selection.entryId
-                {
-                    ids.wrappedValue = nil
-                    entryId?.wrappedValue = nil
-                } else {
-                    ids.wrappedValue = [selection.itemId]
-                    entryId?.wrappedValue = selection.entryId
-                }
-            } else {
-                if let index = ids.wrappedValue?.firstIndex(of: selection.itemId) {
-                    ids.wrappedValue?.remove(at: index)
-                } else {
-                    if ids.wrappedValue == nil {
-                        ids.wrappedValue = []
-                    }
-                    ids.wrappedValue?.append(selection.itemId)
-                }
-            }
-        } dismissAction: {
-            dismissAction()
-        }
+        Text("Selection - should be LinkRootView with ItemSelectionModel")
+//        viewSelect(root: root) {
+//            if let links = ids.wrappedValue {
+//                return links.map { ItemRowModel(itemId: $0, entryId: entryId?.wrappedValue, typeId: root.itemController.itemDataModel.networkModule) }
+//            } else {
+//                return []
+//            }
+//        } toggleSelection: { selection, _ in
+//            if entryOnly {
+//                if ids.wrappedValue?.first == selection.itemId,
+//                   entryId?.wrappedValue == selection.entryId
+//                {
+//                    ids.wrappedValue = nil
+//                    entryId?.wrappedValue = nil
+//                } else {
+//                    ids.wrappedValue = [selection.itemId]
+//                    entryId?.wrappedValue = selection.entryId
+//                }
+//            } else {
+//                if let index = ids.wrappedValue?.firstIndex(of: selection.itemId) {
+//                    ids.wrappedValue?.remove(at: index)
+//                } else {
+//                    if ids.wrappedValue == nil {
+//                        ids.wrappedValue = []
+//                    }
+//                    ids.wrappedValue?.append(selection.itemId)
+//                }
+//            }
+//        } dismissAction: {
+//            dismissAction()
+//        }
     }
 }

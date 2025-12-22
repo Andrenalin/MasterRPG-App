@@ -1,8 +1,8 @@
 // @copyright André Trettin
 
+import AdventureRPG
 import CoreRPG
 import SwiftUI
-import AdventureRPG
 
 struct SelectedAdventureView: View {
     let root: GameRoot
@@ -48,17 +48,5 @@ struct SelectedAdventureView: View {
                 lastAdventureUUID <=> adventureId.uuidString
             }
         }
-    }
-
-    private var selectedView: some View {
-        VStack {
-            if let id = root.gameModel.selectedAdventure {
-                root.viewController.selectedAdventureView(with: id)
-                    .id(id)
-            } else {
-                Text("Select an adventure for the current game to enjoy the focused adventure view during the game. The adventure itself can be empty and changed during the game.", bundle: .module)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -12,7 +12,8 @@ struct EditGroupEditorList: View {
 
     var body: some View {
         EditGroupEditor(editGroupController: editController, isPresented: $isPresented) { model in
-            MainRow(model: model, isSelected: false, cacheItemListModel: editController.cacheItemListModel)
+            Text(model.name)
+            //MainRow(model: model, isSelected: false, cacheItemListModel: editController.cacheItemListModel)
         }
     }
 }

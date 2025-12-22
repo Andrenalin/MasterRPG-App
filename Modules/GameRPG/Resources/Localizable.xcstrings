@@ -161,6 +161,7 @@
       }
     },
     "Drop Adventure here" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -171,6 +172,7 @@
       }
     },
     "Drop Character here" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -181,6 +183,7 @@
       }
     },
     "Drop Game Master here" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -442,6 +445,7 @@
       }
     },
     "Select a character to join the game. The character should have a name and for convience one value with a dice as default dice for the game view. Any other values for the character are optional. You can still play with a character sheet if you or the game master prefer." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -452,6 +456,7 @@
       }
     },
     "Select a game master to start the game. The game master should have a name and for convience one value with a dice as default dice for the game view." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -462,6 +467,7 @@
       }
     },
     "Select an adventure for the current game to enjoy the focused adventure view during the game. The adventure itself can be empty and changed during the game." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

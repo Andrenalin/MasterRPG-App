@@ -161,19 +161,6 @@ extension EditController {
     }
     
     @MainActor @ViewBuilder
-    func selectAdventure(for entryId: UUID, linkKeyPath: WritableKeyPath<AdventureModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.viewController.viewSelect(root: root, filter: .all) {
-            let text = self.model[keyPath: linkKeyPath]
-            return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .adventure) }
-        } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-            self.save(with: String(localized: "Change adventure links").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
-    
-    @MainActor @ViewBuilder
     func selectAudio(for entryId: UUID, linkKeyPath: WritableKeyPath<AdventureModel, String>, dismissAction: @escaping () -> Void) -> some View {
         root.audioRoot.viewController.viewSelect(root: root.audioRoot, filter: .all) {
             let text = self.model[keyPath: linkKeyPath]

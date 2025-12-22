@@ -49,17 +49,4 @@ struct SelectedPlayerView: View {
             }
         }
     }
-
-    private var selectedView: some View {
-        VStack {
-            if let id = root.gameModel.selectedCharacter {
-                root.viewController.selectedCharacterGameMasterView(with: id)
-                    .id(id)
-            } else {
-                Text("Select a character to join the game. The character should have a name and for convience one value with a dice as default dice for the game view. Any other values for the character are optional. You can still play with a character sheet if you or the game master prefer.", bundle: .module)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
 }

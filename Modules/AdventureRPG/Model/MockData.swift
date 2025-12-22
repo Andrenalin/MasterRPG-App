@@ -50,7 +50,6 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.searchModel)
             .environment(root.listDisplayModel)
             .environment(root.rootController)
-            .environment(ListModel.preview)
             .environment(CacheItemListModel())
             .environment(SelectionSheetLinkModel())
             .environment(ExternalHeaderModel())

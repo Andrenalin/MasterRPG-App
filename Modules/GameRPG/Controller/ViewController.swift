@@ -24,22 +24,4 @@ public extension ViewController {
     func logWindow() -> some View {
         LogMessageList(logController: root.logGameController)
     }
-
-    @MainActor @ViewBuilder
-    func selectedCharacterGameMasterView(with id: UUID?, isGameMaster: Bool = false) -> some View {
-        if let id = root.characterRoot.linkController.validate(id: id, isCharacter: !isGameMaster, isGameMaster: isGameMaster) {
-            root.characterRoot.viewController.viewMinimum(root: root.characterRoot, with: id)
-        } else {
-            ProgressView().progressViewStyle(.circular)
-        }
-    }
-
-    @MainActor @ViewBuilder
-    func selectedAdventureView(with id: UUID?) -> some View {
-        if let id, root.adventureRoot.linkController.validateLink(itemId: id) == true {
-            root.adventureRoot.viewController.viewMinimum(root: root.adventureRoot, with: id)
-        } else {
-            ProgressView().progressViewStyle(.circular)
-        }
-    }
 }
