@@ -36,7 +36,7 @@ struct OverlayMasterTabBar: View {
     }
     
     var onlyGameView: some View {
-        root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId], openAction: openAction)
+        root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
             .environment(\.gameModus, .master)
             .environment(\.showGame, true)
             .gameOverlayTabBarView(value: NetworkModules.game)

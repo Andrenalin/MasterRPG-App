@@ -50,6 +50,11 @@ public extension ViewController {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return AdventureSheet(model: model, dismissAction: nil)
     }
+    
+    @MainActor func gameView(root: AdventureRootModel, focusedIds: [UUID]) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel(selection: focusedIds.map { WindowItemSelection(itemId: $0) }))
+    }
 }
 
 // MARK: - Viewer
@@ -59,30 +64,6 @@ public extension ViewController {
     func viewMinimum(root: AdventureRootModel, with id: UUID?) -> some View {
         MinimumRow(itemId: id ?? UUID())
             .environment(root)
-    }
-}
-
-// MARK: - Game
-
-public extension ViewController {
-    @MainActor
-    private static let gameTabId = UUID()
-    
-    @MainActor
-    func gameView(root: AdventureRootModel, focusedIds: [UUID], openAction: ((NetworkModules) -> Void)? = nil) -> some View {
-        if let id = focusedIds.first {
-            let model = ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)
-            let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
-        }
-        return RootNaviList(root: root, tabId: ViewController.gameTabId, openAction: openAction)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
-            .environment(root)
-    }
-
-    @MainActor
-    func overlayRootView(root: AdventureRootModel, adventureId: UUID) -> some View {
-        gameView(root: root, focusedIds: [adventureId], openAction: nil)
     }
 }
 

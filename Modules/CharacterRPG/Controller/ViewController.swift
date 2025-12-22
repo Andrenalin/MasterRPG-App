@@ -49,9 +49,13 @@ public extension ViewController {
             .environment(model)
     }
     
-    @MainActor func gameView(root: CharacterRootModel) -> some View {
-        LinkRootView(type: .inspector)
-            .environment(ItemSelectionModel())
+    @MainActor func gameView(root: CharacterRootModel, select: UUID? = nil) -> some View {
+        var selection: [WindowItemSelection] = []
+        if let preSelected = select.map({ WindowItemSelection(itemId: $0)}) {
+            selection = [preSelected]
+        }
+        return LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel(selection: selection))
     }
 }
 
@@ -61,23 +65,6 @@ public extension ViewController {
     @MainActor
     func detailEditor(for item: ItemRowTreeModel, module: NetworkModules) -> some View {
         CharacterDetailSheet(item: item)
-    }
-
-    @MainActor
-    private static let gameTabId = UUID()
-
-    @MainActor
-    func gameView(root: CharacterRootModel, select: UUID?) -> some View {
-        if let id = select {
-            let item = root.itemController.itemOrEmpty(for: id)
-            if item.displayState == 0 {
-                let model = ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)
-                let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
-            }
-        }
-        return RootNaviList(root: root, tabId: ViewController.gameTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
     }
     
     @MainActor
