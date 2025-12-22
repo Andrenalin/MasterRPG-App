@@ -31,13 +31,6 @@ private extension TableSheetView {
 
     var listContentView: some View {
         List {
-            if showImage {
-                GeometryReader { proxy in
-                    imageContent(CGSize(width: proxy.size.width, height: 256))
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-            }
-
             SheetView(root: root, model: model)
                 .animation(.default, value: model.searchText)
         }

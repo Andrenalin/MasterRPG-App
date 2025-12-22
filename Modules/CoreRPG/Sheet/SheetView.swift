@@ -11,6 +11,8 @@ public struct SheetView: View {
     let root: ItemRootController
     let model: TableSheetModel
     
+    @Environment(\.colorScheme) private var colorScheme
+    
     public var body: some View {
         LinkHighlightTextView(model: model.linkTextModel(for: .name, text: model.sheetModel.name))
             .font(.title)
@@ -34,7 +36,11 @@ public struct SheetView: View {
     }
     
     func rowColor(for level: Int) -> Color {
-        level.isMultiple(of: 2) ? .white : .secondary.opacity(0.3)
+#if os(macOS) || os(visionOS)
+        .clear
+#else
+        level.isMultiple(of: 2) ? (colorScheme == .dark ? .black : .white) : .secondary.opacity(0.3)
+#endif
     }
 }
 
@@ -52,6 +58,7 @@ struct SheetGroupView: View {
     @Environment(\.networkActions) private var networkActions
     @Environment(\.showGame) private var showGame
     @Environment(\.gameModus) private var gameModus
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         switch group.sheetType {
@@ -63,7 +70,10 @@ struct SheetGroupView: View {
         case .dice:
             root.viewControllable.diceRowView(for: group.source.itemId)
         case .photo:
-            Text("Photo: \(group.source)")
+            root.viewControllable.photoRowView(for: group.source.itemId)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .listRowBackground(Color.clear)
+                .frame(height: 256)
         }
         
         ForEach(group.sheetIds, id: \.self) { sheetId in
@@ -74,7 +84,11 @@ struct SheetGroupView: View {
     }
     
     func rowColor(for level: Int) -> Color {
-        level.isMultiple(of: 2) ? .white : .secondary.opacity(0.3)
+#if os(macOS) || os(visionOS)
+        .clear
+#else
+        level.isMultiple(of: 2) ? (colorScheme == .dark ? .black : .white) : .secondary.opacity(0.3)
+#endif
     }
     
     private var shareResult: ShareValueResult {

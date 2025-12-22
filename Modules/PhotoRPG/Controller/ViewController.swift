@@ -37,6 +37,13 @@ public extension ViewController {
         }
     }
 
+    @ViewBuilder @MainActor func photoRow(root: PhotoRootModel, for itemId: UUID) -> some View {
+        if let model = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
+            CachePhotoView(cacheController: cacheController, model: model, highResolution: true)
+                .environment(root.editController.cacheItemListModel)
+        }
+    }
+
     @MainActor func inlineViewer(root: PhotoRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return ViewerRootView(model: model, dismissAction: dismissAction)
