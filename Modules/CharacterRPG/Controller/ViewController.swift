@@ -63,61 +63,8 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func detailEditor(for item: ItemRowTreeModel, module: NetworkModules) -> some View {
-        CharacterDetailSheet(item: item)
-    }
-    
-    @MainActor
     func generatorEditorWindow(root: CharacterRootModel) -> some View {
         GeneratorWindow(root: root)
-            .environment(root)
-    }
-
-    @MainActor
-    private static let linkTabId = UUID()
-
-    @MainActor
-    func characterWindow(root: CharacterRootModel, selection: ItemSelection) -> some View {
-        CharacterSheet(model: root.itemController.itemOrEmpty(for: selection.itemId), showTopImage: true, dismissAction: nil)
-            .navigationTitle(root.itemController.itemOrEmpty(for: selection.itemId).name)
-            .environment(root)
-    }
-
-    func rowView(root: CharacterRootModel, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
-        ValueRow(item: item, isSelected: isSelected, hasQuickEditor: true, cacheItemListModel: cacheItemListModel)
-            .environment(root)
-    }
-
-    @MainActor
-    private static let selectionTabId = UUID()
-
-    @MainActor
-    func viewSelect(root: CharacterRootModel, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, isGroupHidden: Bool = true, focus: UUID? = nil, searchText: String? = nil, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
-        let listController = root.listController(tabId: ViewController.selectionTabId)
-        listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: isGroupHidden, focus: focus, mode: SelectionMode(selected: selection, toggle: toggleSelection))
-        if let searchText {
-            listController.setSearchFilter(text: searchText)
-        }
-        return RootNaviList(root: root, tabId: ViewController.selectionTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false)
-            .itemListConfiguration(modalOk: true, modalDismissAction: dismissAction)
-            .environment(root)
-    }
-
-    @MainActor
-    func viewSelectCharacters(root: CharacterRootModel, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
-        viewSelect(root: root, filter: .character, onlyItems: true, selection: selection, toggleSelection: toggleSelection, dismissAction: dismissAction)
-    }
-
-    @MainActor 
-    func viewSelectMasters(root: CharacterRootModel, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
-        viewSelect(root: root, filter: .gameMaster, onlyItems: true, selection: selection, toggleSelection: toggleSelection, dismissAction: dismissAction)
-    }
-
-    @MainActor
-    func viewMinimum(root: CharacterRootModel, with id: UUID?) -> some View {
-        MinimumRow(itemId: id ?? UUID())
             .environment(root)
     }
 }
@@ -125,23 +72,6 @@ public extension ViewController {
 public extension ViewController {
     @MainActor 
     func selectForScan(root: CharacterRootModel, ids: Binding<[UUID]?>, dismissAction: @escaping () -> Void) -> some View {
-        viewSelect(root: root) {
-            if let links = ids.wrappedValue {
-                return links.map { ItemRowModel(itemId: $0, typeId: root.itemController.itemDataModel.networkModule) }
-            } else {
-                return []
-            }
-        } toggleSelection: { selection, _ in
-            if let index = ids.wrappedValue?.firstIndex(of: selection.itemId) {
-                ids.wrappedValue?.remove(at: index)
-            } else {
-                if ids.wrappedValue == nil {
-                    ids.wrappedValue = []
-                }
-                ids.wrappedValue?.append(selection.itemId)
-            }
-        } dismissAction: {
-            dismissAction()
-        }
+        Text("TodO")
     }
 }

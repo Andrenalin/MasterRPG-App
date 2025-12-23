@@ -6,64 +6,6 @@ import SwiftUI
 import DiceRPG
 import TableRPG
 
-struct SpecialEditor: View {
-    let editController: EditController
-    
-    @Environment(CharacterRootModel.self) private var root
-    @Environment(\.navigator) private var navigator
-    
-    var body: some View {
-        Section {
-            ViewThatFits {
-                HStack {
-                    showLinkScannerView
-                    Spacer()
-                    showQuickEditorView
-                }
-                
-                VStack(alignment: .leading) {
-                    showLinkScannerView
-                    showQuickEditorView
-                }
-            }
-        } header: {
-            VStack {
-#if os(macOS)
-                Divider()
-                    .padding(.top)
-#endif
-                
-                Text("Special Editor", bundle: .module)
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
-        }
-    }
-    
-    private var showLinkScannerView: some View {
-        Button {
-            navigator.navigate(to: InternalRoute.linkEditor, method: .cover)
-        } label: {
-            Label { Text("Quick Links", bundle: .module) } icon: { Image(systemName: "link") }
-        }
-#if os(iOS) || os(visionOS)
-        .borderLessTVBottonStyle()
-#endif
-    }
-    
-    @MainActor
-    private var showQuickEditorView: some View {
-        Button {
-            navigator.navigate(to: InternalRoute.quickEditor, method: .cover)
-        } label: {
-            Label { Text("Quick Editor", bundle: .module) } icon: { Image(systemName: "pencil.and.outline") }
-        }
-#if os(iOS) || os(visionOS)
-        .borderLessTVBottonStyle()
-#endif
-    }
-}
-
 struct RootQuickLinkEditor: View {
     let editController: EditController
     
@@ -94,12 +36,4 @@ struct RootQuickLinkEditor: View {
             QuickLinkConfig(module: .value, title: "Value", name: { $0.map { root.linkController.name(for: $0) }.joined(separator: ", ") }),
         ]
     }
-}
-
-#Preview {
-    SpecialEditor(editController: .preview)
-        .tint(Color.accentColor)
-        .accentColor(.teal)
-        .environment(CharacterRootModel.preview)
-        .environment(\.locale, .init(identifier: "de"))
 }
