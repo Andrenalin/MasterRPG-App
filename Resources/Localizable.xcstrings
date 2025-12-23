@@ -36,6 +36,7 @@
       }
     },
     "Character Generator" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

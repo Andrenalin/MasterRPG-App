@@ -26,20 +26,6 @@ struct OldWindowMacList: Scene {
         .defaultSize(CGSize(width: 1000, height: 800))
 
         Group {
-            Window("Character Generator", id: WindowIdentifier.generatorValueEditor.rawValue) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.characterRoot.viewController.generatorEditorWindow(root: appModel.characterRoot)
-                        .accentColor(NetworkModules.value.tint)
-                        .tint(NetworkModules.value.tint)
-                        .frame(minWidth: 600, minHeight: 400)
-                        .environment(\.networkActions, appModel.gameRoot.networkActions())
-                        .environment(\.valueActions, appModel.characterRoot.valueActions)
-                        .environment(\.gameModus, appModel.settingsModel.gameModus)
-                        .environment(\.showGame, appModel.settingsModel.showGame)
-                        .environment(selectionSheetLinkModel)
-                }
-            }
-            
             Window("Table Generator", id: WindowIdentifier.generatorTableEditor.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.tableRoot.viewController.generatorEditorWindow(root: appModel.tableRoot)

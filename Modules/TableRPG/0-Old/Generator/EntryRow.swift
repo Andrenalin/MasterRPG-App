@@ -103,7 +103,7 @@ struct EntryRow: View {
             withAnimation { linkModel.reset(text: entryText) }
             return linkModel
         } else {
-            let linkModel = LinkHighlightTextModel(linkControllable: root.rootControllable.linkControllable, text: entryText, highlightedText: itemListModel.searchText, toggler: toggler(itemId:module:), shareResult: shareResult, editAction: isEditing ? { _ in isEditing } : nil)
+            let linkModel = LinkHighlightTextModel(linkControllable: root.rootControllable.linkControllable, text: entryText, highlightedText: itemListModel.searchText, toggler: nil, shareResult: shareResult, editAction: isEditing ? { _ in isEditing } : nil)
             cacheItemListModel.setItemLink(cacheType: .row, itemId: entryId, linkModel: linkModel)
             return linkModel
         }
@@ -111,18 +111,6 @@ struct EntryRow: View {
     
     private var shareResult: ShareValueResult {
         ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: itemId, childId: entryId, module: root.itemController.itemDataModel.networkModule), showGame: showGame, gameModus: gameModus)
-    }
-    
-    private func toggler(itemId: UUID, module: NetworkModules) async {
-        if isEditing {
-            if module == .table {
-                navigator.navigate(to: InternalRoute.editDetail(itemId))
-            } else {
-                routeActions.routePage(module, itemId, nil)
-            }
-        } else {
-            itemListToggleAction.toggler(itemId, module)
-        }
     }
 }
 
