@@ -14,17 +14,18 @@ public struct SheetView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     public var body: some View {
-        LinkHighlightTextView(model: model.linkTextModel(for: .name, text: model.sheetModel.name))
-            .font(.title)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-        
-        if let description = model.description(for: model.sheetModel), !description.isEmpty {
-            LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
-            //.foregroundStyle(.secondary)
-                .font(.subheadline)
-                .listRowBackground(rowColor(for: model.sheetModel.level))
+        if model.sheetModel.showHeader {
+            LinkHighlightTextView(model: model.linkTextModel(for: .name, text: model.sheetModel.name))
+                .font(.title)
+                .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+            
+            if let description = model.description(for: model.sheetModel), !description.isEmpty {
+                LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
+                    .font(.subheadline)
+                    .listRowBackground(rowColor(for: model.sheetModel.level))
+                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+            }
         }
         
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
@@ -75,7 +76,7 @@ struct SheetGroupView: View {
                 .listRowBackground(Color.clear)
                 .frame(height: 256)
         }
-        
+
         ForEach(group.sheetIds, id: \.self) { sheetId in
             if let sheetModel = model.sheets[sheetId] {
                 SheetView(root: root, model: sheetModel)
@@ -99,6 +100,8 @@ struct SheetGroupView: View {
     var text: String {
         if group.description.isEmpty {
             group.name
+        } else if group.name.isEmpty {
+            group.description
         } else {
             "**" + group.name + "**: " + group.description
         }

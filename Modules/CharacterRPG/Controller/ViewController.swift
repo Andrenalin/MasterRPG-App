@@ -12,6 +12,14 @@ public struct ViewController {
 }
 
 extension ViewController: ViewControllable {
+    @MainActor public func diceRowView(for itemId: UUID) -> AnyView {
+        AnyView(DiceInlineRow(itemId: itemId))
+    }
+
+    @MainActor public func photoRowView(for itemId: UUID) -> AnyView {
+        AnyView(PhotoInlineRow(itemId: itemId).equatable())
+    }
+
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
         AnyView(ThumbnailPhotoRow(itemId: itemId).equatable())
     }

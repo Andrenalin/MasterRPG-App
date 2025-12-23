@@ -775,6 +775,7 @@
       }
     },
     "Spaces" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

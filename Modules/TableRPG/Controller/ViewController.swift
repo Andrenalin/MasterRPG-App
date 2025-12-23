@@ -11,12 +11,12 @@ public struct ViewController: Sendable {
 }
 
 extension ViewController: ViewControllable {
-    @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
-        AnyView(ThumbnailDiceRow(itemId: itemId))
-    }
-    
     @MainActor public func diceRowView(for itemId: UUID) -> AnyView {
         AnyView(DiceInlineRow(itemId: itemId))
+    }
+
+    @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
+        AnyView(ThumbnailDiceRow(itemId: itemId))
     }
 }
 

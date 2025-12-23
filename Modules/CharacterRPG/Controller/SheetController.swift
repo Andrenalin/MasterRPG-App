@@ -10,30 +10,43 @@ struct SheetController {
     @MainActor
     func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, name: model.name, description: model.description, entries: sheetGroups(for: itemId, level: level + 1))
+        var entries: [SheetModel] = []
+        var showHeader: Bool = true
+        if let parentId = model.parentId, let parentModel = itemController.itemSync(for: parentId) {
+            showHeader = parentModel.isFolder
+        } else {
+            showHeader = false
+        }
+        if showHeader, let photoId = model.photoId {
+            entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), level: level, type: .photo, name: "", description: "", entries: []))
+        }
+        entries.append(contentsOf: sheetEntries(for: itemId, level: level + 1))
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, type: .item, showHeader: showHeader, name: model.name, description: model.description, entries: entries)
         return sheetModel
     }
 
-    @MainActor
-    func sheetGroups(for itemId: UUID, level: Int) -> [SheetModel] {
+    @MainActor func sheetEntries(for itemId: UUID, level: Int) -> [SheetModel] {
         guard level < 25 else { return [] }
         let value = itemController.itemOrEmpty(for: itemId)
-        return value.entries.map { entry in
+        return value.entries.flatMap { entry -> [SheetModel] in
             var name = entry.name
-            var entries: [SheetModel] = []
-
             var description = ""
             if let valueId = entry.valueId {
                 let value = itemController.itemOrEmpty(for: valueId)
-                name = value.name
-                entries = [sheet(for: valueId, level: level + 1)]
+                name = ""
+                description = value.url(linkNumber: 0)
             } else {
                 description = entry.value
                 if let valueCalculate = linkController.calculate(entry: entry), description != valueCalculate {
                     description += " = \(valueCalculate)"
                 }
             }
-            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.itemDataModel.networkModule), level: level, name: name, description: description, entries: entries)
+            var result = [SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.itemDataModel.networkModule), level: level, name: name, description: description, entries: [])]
+            if let diceId = entry.diceId {
+                result.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), level: level, type: .dice, name: "", description: "", entries: []))
+            }
+
+            return result
         }
     }
 }
