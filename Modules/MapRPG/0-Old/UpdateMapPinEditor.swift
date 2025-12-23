@@ -28,31 +28,32 @@ struct UpdateMapPinEditor: View {
     }
     
     private func showCharakterSelectionView() -> some View {
-        root.characterRoot.viewController.viewSelect(root: root.characterRoot) {
-            if let characterPinId {
-                return [ItemRowModel(itemId: characterPinId, typeId: .value)]
-            }
-            return []
-        } toggleSelection: { selection, _ in
-            if selection.itemId == characterPinId {
-                characterPinId = nil
-            } else {
-                characterPinId = selection.itemId
-            }
-        } dismissAction: {
-            if let characterPinId {
-                withAnimation {
-                    if let pinId {
-                        editController.replacePinData(pinId: pinId, with: characterPinId)
-                    }
-                    if let entryId {
-                        editController.addMonsters(to: entryId, monsters: [ItemRowModel(itemId: characterPinId, typeId: .value)], number: 1)
-                    }
-                }
-                self.characterPinId = nil
-            }
-            selectionModel.selection = false
-        }
+        Text("Todo")
+//        root.characterRoot.viewController.viewSelect(root: root.characterRoot) {
+//            if let characterPinId {
+//                return [ItemRowModel(itemId: characterPinId, typeId: .value)]
+//            }
+//            return []
+//        } toggleSelection: { selection, _ in
+//            if selection.itemId == characterPinId {
+//                characterPinId = nil
+//            } else {
+//                characterPinId = selection.itemId
+//            }
+//        } dismissAction: {
+//            if let characterPinId {
+//                withAnimation {
+//                    if let pinId {
+//                        editController.replacePinData(pinId: pinId, with: characterPinId)
+//                    }
+//                    if let entryId {
+//                        editController.addMonsters(to: entryId, monsters: [ItemRowModel(itemId: characterPinId, typeId: .value)], number: 1)
+//                    }
+//                }
+//                self.characterPinId = nil
+//            }
+//            selectionModel.selection = false
+//        }
     }
 }
 

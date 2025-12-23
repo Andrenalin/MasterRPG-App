@@ -62,14 +62,6 @@ public extension ViewController {
 // MARK: - OLd Views
 
 public extension ViewController {
-    @MainActor
-    func generatorEditorWindow(root: CharacterRootModel) -> some View {
-        GeneratorWindow(root: root)
-            .environment(root)
-    }
-}
-
-public extension ViewController {
     @MainActor 
     func selectForScan(root: CharacterRootModel, ids: Binding<[UUID]?>, dismissAction: @escaping () -> Void) -> some View {
         Text("TodO")
