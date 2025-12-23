@@ -117,59 +117,6 @@ extension EditController {
     }
 }
 
-// MARK: Quick Editor
-
-
-// MARK: - Selection
-
-extension EditController {
-    @MainActor @ViewBuilder
-    func selectDice(for entryId: UUID, linkKeyPath: WritableKeyPath<TableModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        diceRoot.viewController.viewSelect(root: diceRoot, filter: .table) {
-            let text = self.model[keyPath: linkKeyPath]
-            return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .dice) }
-        } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = diceRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-            self.save(with: String(localized: "Change dice links").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
-
-    @MainActor 
-    func selectDice(dismissAction: @escaping () -> Void) -> some View {
-        diceRoot.viewController.viewSelect(root: diceRoot, filter: .table) {
-            if let diceId = self.model.diceId {
-                return [ItemRowModel(itemId: diceId, typeId: .dice)]
-            } else {
-                return []
-            }
-        } toggleSelection: { selection, _ in
-            if self.model.diceId == selection.itemId {
-                self.model.diceId = nil
-            } else {
-                self.model.diceId = selection.itemId
-            }
-            self.save(with: String(localized: "Change dice link").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
-
-//    @MainActor @ViewBuilder
-//    func selectTable(for entryId: UUID, linkKeyPath: WritableKeyPath<TableModel, String>, dismissAction: @escaping () -> Void) -> some View {
-//        root.viewController.viewSelect(filter: .all) {
-//            let text = self.model[keyPath: linkKeyPath]
-//            return self.model.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .table) }
-//        } toggleSelection: { sel, _ in
-//            self.model[keyPath: linkKeyPath] = self.root.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-//            self.save(with: String(localized: "Change table links").localizedString)
-//        } dismissAction: {
-//            dismissAction()
-//        }
-//    }
-}
-
 // MARK: - Link Editor
 
 extension EditController {

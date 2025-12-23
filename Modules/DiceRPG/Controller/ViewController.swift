@@ -28,28 +28,14 @@ public extension ViewController {
         LinkRootView(type: type)
             .environment(itemSelectionModel)
     }
+    
+    @MainActor func gameView(root: DiceRootModel) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel())
+    }
 }
 
 public extension ViewController {
-    @MainActor
-    private static let gameTabId = UUID()
-
-    @MainActor
-    func gameView(root: DiceRootModel, select: Bool = false) -> some View {
-        var model: ItemRowModel? = nil
-        if select == true, let id = root.gameController.gameModel.currentItemId {
-            let item = root.gameController.gameItem(for: id)
-            if item.displayState == 0 {
-                model = ItemRowModel(itemId: id, typeId: .dice)
-                let _ = root.listController(tabId: ViewController.gameTabId, focus: model)
-            }
-        }
-        return RootNaviList(root: root, tabId: ViewController.gameTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false, disableSelection: true)
-            .environment(root)
-    }
-
     func diceRollView(root: DiceRootModel) -> some View {
         DiceFocusRoll()
             .environment(root)
@@ -81,45 +67,10 @@ public extension ViewController {
 public extension ViewController {
     @MainActor
     func selectForScan(root: DiceRootModel, ids: Binding<[UUID]?>, dismissAction: @escaping () -> Void) -> some View {
-        viewSelect(root: root, filter: .table) {
-            if let links = ids.wrappedValue {
-                return links.map { ItemRowModel(itemId: $0, typeId: root.itemController.itemDataModel.networkModule) }
-            } else {
-                return []
-            }
-        } toggleSelection: { selection, _ in
-            if let index = ids.wrappedValue?.firstIndex(of: selection.itemId) {
-                ids.wrappedValue?.remove(at: index)
-            } else {
-                if ids.wrappedValue == nil {
-                    ids.wrappedValue = []
-                }
-                ids.wrappedValue?.append(selection.itemId)
-            }
-        } dismissAction: {
-            dismissAction()
-        }
+        Text("Todo")
     }
 }
 
-// MARK: - Selection
-
-public extension ViewController {
-    @MainActor
-    private static let selectionTabId = UUID()
-
-    @MainActor
-    func viewSelect(root: DiceRootModel, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
-        let listController = root.listController(tabId: ViewController.selectionTabId)
-        listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: false, focus: nil, mode: SelectionMode(selected: selection, toggle: toggleSelection))
-        return RootNaviList(root: root, tabId: ViewController.selectionTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false)
-            .itemListConfiguration(modalOk: true, modalDismissAction: dismissAction)
-            .environment(root)
-            .environment(SelectionSheetLinkModel())
-    }
-}
 
 // MARK: - Dice
 

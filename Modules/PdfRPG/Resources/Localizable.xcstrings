@@ -60,6 +60,7 @@
       }
     },
     "Content" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -81,6 +82,7 @@
       }
     },
     "Enter a name for the bookmark" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -91,6 +93,7 @@
       }
     },
     "Enter some content for the bookmark" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -111,6 +114,7 @@
       }
     },
     "Loading PDF document ..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -121,6 +125,7 @@
       }
     },
     "Name" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -141,6 +146,7 @@
       }
     },
     "No bookmark added yet" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

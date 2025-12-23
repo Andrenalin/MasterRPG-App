@@ -103,6 +103,7 @@
       }
     },
     "Change dice link" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -113,6 +114,7 @@
       }
     },
     "Change dice links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

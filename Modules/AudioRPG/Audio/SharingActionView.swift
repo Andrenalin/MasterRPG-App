@@ -71,9 +71,3 @@ struct SharingActionView: View, Equatable {
         lhs.itemId == rhs.itemId
     }
 }
-
-#Preview {
-    MainRow(model: .preview, isSelected: true, cacheItemListModel: .preview)
-        .environment(AudioRootModel.preview)
-    
-}
