@@ -15,10 +15,13 @@ public struct LinkItemListView: View {
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ItemSelectionModel.self) private var selectionModel
+#if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+#endif
     
     @State private var showDetails: Bool = false
     @State private var showDetailsView: (any NavigationDestination)? = nil
-    
+        
     public var body: some View {
         ManagedNavigationStack(name: "LinkInspector") { navigator in
             VStack {
@@ -144,12 +147,7 @@ private extension LinkItemListView {
                 } else {
                     itemRow(item: item)
                         .onTapGesture(count: 2) {
-                            if item.model.specialCategory {
-                                showDetailsView = root.folderLinkControllable.detailDestination(for: item.model.id)
-                            } else {
-                                showDetailsView = root.folderLinkControllable.viewerDestination(for: item.model.id)
-                            }
-                            withAnimation { showDetails.toggle() }
+                            openDetail(for: item)
                         }
                 }
             }
@@ -184,6 +182,21 @@ private extension LinkItemListView {
             specialCategoryFolderIndicator(item: item)
         }
         .contentShape(.rect)
+    }
+    
+    func openDetail(for item: ListItemModel) {
+#if os(macOS)
+        guard !item.model.specialCategory else { return }
+        openWindow(id: root.module.viewerWindowId, value: WindowItemSelection(itemId: item.model.id))
+#else
+        if item.model.specialCategory {
+            showDetailsView = root.folderLinkControllable.detailDestination(for: item.model.id)
+        } else {
+
+            showDetailsView = root.folderLinkControllable.viewerDestination(for: item.model.id)
+        }
+        withAnimation { showDetails.toggle() }
+#endif
     }
     
     var leadingPadding: CGFloat {

@@ -18,17 +18,11 @@ struct TableSheetView<ImageContent: View>: View {
         @Bindable var model = model
         
         listContentView
-            .applyIf(searchBar) {
-                $0.searchable(text: $model.searchText, placement: .automatic, prompt: "Find in")
-            }
+            .searchable(text: $model.searchText, placement: .automatic, prompt: "Find in")
     }
 }
 
 private extension TableSheetView {
-    var searchBar: Bool {
-        valueFor(iOS: true, macOS: windowMode, tvOS: true, visionOS: true)
-    }
-
     var listContentView: some View {
         List {
             SheetView(root: root, model: model)
