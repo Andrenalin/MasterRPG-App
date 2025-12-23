@@ -69,6 +69,7 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
+            .resetAppColorScheme()
             .frame(minWidth: 350, minHeight: 400)
             .handlesExternalEvents(preferring: [], allowing: [])
             .onDisappear {
@@ -76,9 +77,6 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
             }
             .tint(module.tint)
             .accentColor(module.tint)
-#if os(iOS)
-            .environment(\.colorScheme, model.settingsModel.appColorScheme.colorScheme(for: colorScheme))
-#endif
             .environmentSetUp(model)
             .environment(\.gameModus, model.settingsModel.gameModus)
             .environment(\.networkActions, model.gameRoot.networkActions())

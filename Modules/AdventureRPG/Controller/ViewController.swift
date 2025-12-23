@@ -52,8 +52,14 @@ public extension ViewController {
     }
     
     @MainActor func gameView(root: AdventureRootModel, focusedIds: [UUID]) -> some View {
-        LinkRootView(type: .inspector)
-            .environment(ItemSelectionModel(selection: focusedIds.map { WindowItemSelection(itemId: $0) }))
+        Group {
+            if let select = focusedIds.first {
+                windowViewer(root: root, selection: WindowItemSelection(itemId: select))
+            } else {
+                LinkRootView(type: .inspector)
+                    .environment(ItemSelectionModel())
+            }
+        }
     }
 }
 

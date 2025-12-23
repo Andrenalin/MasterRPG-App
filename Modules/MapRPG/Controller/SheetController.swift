@@ -20,7 +20,8 @@ struct SheetController {
     @MainActor func sheetEntries(for itemId: UUID, level: Int) -> [SheetModel] {
         guard level < 25 else { return [] }
         let value = itemController.itemOrEmpty(for: itemId)
-        return value.entries.map { entry in
+        return value.entries.compactMap { entry in
+            guard !entry.isHexGrid else { return nil }
             let name = entry.name
             let description = entry.content
             return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.itemDataModel.networkModule), level: level, name: name, description: description, entries: [])
