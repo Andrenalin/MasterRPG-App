@@ -35,17 +35,8 @@ public extension ViewController {
     }
 }
 
-// MARK: - Edit
-
-public extension ViewController {
-    @MainActor
-    func detailEditor(root: SpaceRootModel, for item: ItemRowTreeModel, module: NetworkModules) -> some View {
-        SpaceDetailViewer(item: item)
-            .environment(root)
-    }
-}
-
 // MARK: - Game
+
 public extension ViewController {
     @MainActor @ViewBuilder
     func gameSpaceView(root: SpaceRootModel) -> some View {
@@ -62,36 +53,6 @@ public extension ViewController {
             .padding()
 #endif
     }
-}
-
-// MARK: - Selection
-
-public extension ViewController {
-    @MainActor
-    private static let selectionTabId = UUID()
-    
-    @MainActor
-    func viewSelect(root: SpaceRootModel, filter: ItemListCategory = .all, onlyItems: Bool = false, onlyEntries: Bool = false, selection: @escaping () -> [ItemRowModel], toggleSelection: @escaping (ItemRowModel, Bool) -> Void, dismissAction: @escaping () -> Void) -> some View {
-        let listController = root.listController(tabId: ViewController.selectionTabId)
-        listController.setSelection(onlyItems: onlyItems, onlyEntries: onlyEntries, filter: filter, isHidden: true, focus: nil, mode: SelectionMode(selected: selection, toggle: toggleSelection))
-        
-//        return LinkRootView(type: .selection)
-//            .environment(root)
-//            .environment(listController.model)
-
-        return RootNaviList(root: root, tabId: ViewController.selectionTabId)
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false)
-            .itemListConfiguration(modalOk: true, modalDismissAction: dismissAction)
-            .environment(root)
-    }
-}
-
-// MARK: - Window
-
-public extension ViewController {
-    @MainActor
-    private static let linkTabId = UUID()
     
 #if os(visionOS)
     @MainActor @ViewBuilder
@@ -99,18 +60,4 @@ public extension ViewController {
         SpaceViewer(root: root, id: id, isModal: false)
     }
 #endif
-    
-    @MainActor
-    func spaceWindow(root: SpaceRootModel, selection: ItemSelection) -> some View {
-        SpaceQuickLook(root: root, item: selection, startLoading: true, gameMode: false, dismiss: nil)
-    }
-}
-
-// MARK: - Viewer
-
-public extension ViewController {
-    func rowView(root: SpaceRootModel, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
-        SpaceRow(item: item, isSelected: isSelected, cacheItemListModel: cacheItemListModel)
-            .environment(root)
-    }
 }
