@@ -187,6 +187,7 @@
       }
     },
     "Map Book Viewer" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

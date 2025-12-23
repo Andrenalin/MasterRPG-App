@@ -14,24 +14,11 @@ import SwiftData
 import SwiftUI
 import WeatherRPG
 
-@MainActor @Observable
-public final class RootModel: Sendable {
-    
-    @MainActor
-    public var selectedItem: ItemRowModel?
-    @MainActor
-    public var gameItemSelection: ItemRowModel?
-    
-    @ObservationIgnored
-    var listModels: [UUID: ListModel] = [:]
-}
-
 @Observable
 public final class AdventureRootModel: @unchecked Sendable {
 
     @MainActor
     init(container: ModelContainer, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
-        rootModel = RootModel()
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
         self.mapRoot = mapRoot
@@ -97,7 +84,6 @@ public final class AdventureRootModel: @unchecked Sendable {
     let characterRoot: CharacterRootModel
     let weatherRoot: WeatherRootModel
 
-    public let rootModel: RootModel
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel

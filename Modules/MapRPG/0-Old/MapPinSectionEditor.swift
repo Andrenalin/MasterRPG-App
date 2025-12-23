@@ -71,7 +71,7 @@ struct MapPinSectionEditor: View {
     
     @ViewBuilder
     private func showLink(linkValue: ShowLinkEntryAction<MapModel>) -> some View {
-        editController.selectPhoto(for: linkValue.entryId) { selectionModel.selection = false }
+        Text("")
     }
     
     @ViewBuilder

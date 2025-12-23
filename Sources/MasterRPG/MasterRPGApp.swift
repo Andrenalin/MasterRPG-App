@@ -99,10 +99,6 @@ struct MasterRPGApp: App {
         OldWindowMacList(appModel: appModel)
 #endif
         
-#if os(macOS) || os(visionOS)
-        OldWindowMacVisionList(appModel: appModel)
-#endif
-        
 #if os(visionOS)
         OldWindowVisionList(appModel: appModel)
 #endif

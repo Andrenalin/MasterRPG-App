@@ -10,7 +10,6 @@ public enum WindowIdentifier: String {
     case generatorTableEditor
     case generatorValueEditor
     case logs
-    case mapBookViewer
     case mapEditor
     case pdfViewer
     case photoViewer

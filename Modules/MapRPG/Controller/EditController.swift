@@ -219,82 +219,6 @@ extension EditController {
 // MARK: - Selection
 
 extension EditController {
-    @MainActor @ViewBuilder
-    func selectAudio(for entryId: UUID, linkKeyPath: WritableKeyPath<MapModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.audioRoot.viewController.viewSelect(root: root.audioRoot, filter: .all) {
-            let text = self.model[keyPath: linkKeyPath]
-            return LinkReplaceController.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .audio) }
-        } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.audioRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-            self.save(with: String(localized: "Change audio links").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
-
-    @MainActor @ViewBuilder
-    func selectDice(for entryId: UUID, linkKeyPath: WritableKeyPath<MapModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.diceRoot.viewController.viewSelect(root: root.diceRoot, filter: .all) {
-            let text = self.model[keyPath: linkKeyPath]
-            return LinkReplaceController.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .dice) }
-        } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.diceRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-            self.save(with: String(localized: "Change dice links").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
-
-    @MainActor @ViewBuilder
-    func selectMap(for entryId: UUID, linkKeyPath: WritableKeyPath<MapModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.viewController.viewSelect(root: root, filter: .all) {
-            let text = self.model[keyPath: linkKeyPath]
-            return LinkReplaceController.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .map) }
-        } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-            self.save(with: String(localized: "Change map links").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
-
-    @MainActor @ViewBuilder
-    func selectPdf(for entryId: UUID, linkKeyPath: WritableKeyPath<MapModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.pdfRoot.viewController.viewSelect(root: root.pdfRoot, filter: .all) {
-            let text = self.model[keyPath: linkKeyPath]
-            return LinkReplaceController.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .pdf) }
-        } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.pdfRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-            self.save(with: String(localized: "Change pdf links").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
-
-    @MainActor @ViewBuilder
-    func selectPhoto(for entryId: UUID, linkKeyPath: WritableKeyPath<MapModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.photoRoot.viewController.viewSelect(root: root.photoRoot, filter: .all) {
-            let text = self.model[keyPath: linkKeyPath]
-            return LinkReplaceController.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .photo) }
-        } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.photoRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-            self.save(with: String(localized: "Change photo links").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
-
-    @MainActor @ViewBuilder
-    func selectPhoto(for pinId: UUID, dismissAction: @escaping () -> Void) -> some View {
-        root.photoRoot.viewController.viewSelect(root: root.photoRoot, filter: .character) {
-            selectedPinPhoto(for: pinId)
-        } toggleSelection: { selection, _ in
-            toggleSelectedPinPhoto(for: pinId, selection: selection)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
-
     @MainActor
     func selectedPinPhoto(for pinId: UUID) -> [ItemRowModel] {
         if let photoId = model[MapPinId.id, pinId].photoId {
@@ -310,32 +234,6 @@ extension EditController {
         }
         model[MapPinId.id, pinId].photoId = selection.itemId
         save(with: String(localized: "Change pin photo").localizedString)
-    }
-    
-    @MainActor @ViewBuilder
-    func selectTable(for entryId: UUID, linkKeyPath: WritableKeyPath<MapModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.tableRoot.viewController.viewSelect(root: root.tableRoot, filter: .all) {
-            let text = self.model[keyPath: linkKeyPath]
-            return LinkReplaceController.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .table) }
-        } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.tableRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-            self.save(with: String(localized: "Change table links").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
-    }
-    
-    @MainActor @ViewBuilder
-    func selectValue(for entryId: UUID, linkKeyPath: WritableKeyPath<MapModel, String>, dismissAction: @escaping () -> Void) -> some View {
-        root.characterRoot.viewController.viewSelect(root: root.characterRoot, filter: .all) {
-            let text = self.model[keyPath: linkKeyPath]
-            return LinkReplaceController.links(for: text).map { ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: .value) }
-        } toggleSelection: { sel, _ in
-            self.model[keyPath: linkKeyPath] = self.root.characterRoot.linkController.generateLinks(itemId: sel.itemId, entryId: sel.entryId, into: self.model[keyPath: linkKeyPath])
-            self.save(with: String(localized: "Change value links").localizedString)
-        } dismissAction: {
-            dismissAction()
-        }
     }
 }
 

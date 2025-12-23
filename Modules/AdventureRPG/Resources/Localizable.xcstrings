@@ -67,6 +67,7 @@
       }
     },
     "Change audio links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -77,6 +78,7 @@
       }
     },
     "Change dice links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -87,6 +89,7 @@
       }
     },
     "Change map links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -97,6 +100,7 @@
       }
     },
     "Change pdf links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -117,6 +121,7 @@
       }
     },
     "Change photo links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -127,6 +132,7 @@
       }
     },
     "Change space links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -137,6 +143,7 @@
       }
     },
     "Change table links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -147,6 +154,7 @@
       }
     },
     "Change value links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -157,6 +165,7 @@
       }
     },
     "Change weather links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
