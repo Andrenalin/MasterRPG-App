@@ -19,7 +19,7 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
     
     public var body: some View {
         Section {
-            ForEach(editController.model.entries, id: \.id) { entry in
+            ForEach(editController.editEntries, id: \.id) { entry in
                 EntryEditRow(editController: editController, entry: entry, cacheItemListModel: editController.cacheItemListModel)
                     .id(entry.id)
 #if !os(tvOS)

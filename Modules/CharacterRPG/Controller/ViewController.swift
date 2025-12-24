@@ -54,12 +54,14 @@ public extension ViewController {
     }
     
     @MainActor func gameView(root: CharacterRootModel, select: UUID? = nil) -> some View {
-        var selection: [WindowItemSelection] = []
-        if let preSelected = select.map({ WindowItemSelection(itemId: $0)}) {
-            selection = [preSelected]
+        Group {
+            if let select {
+                inlineViewer(root: root, with: select)
+            } else {
+                LinkRootView(type: .inspector)
+                    .environment(ItemSelectionModel())
+            }
         }
-        return LinkRootView(type: .inspector)
-            .environment(ItemSelectionModel(selection: selection))
     }
 }
 

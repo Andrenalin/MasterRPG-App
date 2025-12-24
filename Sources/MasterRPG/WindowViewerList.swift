@@ -15,6 +15,7 @@ import TableRPG
 import WeatherRPG
 
 import GeneratorRPG
+import GameRPG
 
 struct WindowViewerList: Scene {
     let appModel: AppModel
@@ -104,9 +105,11 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
             .tint(module.tint)
             .accentColor(module.tint)
             .environmentSetUp(model)
-#if os(iOS)
-            .environment(\.colorScheme, model.settingsModel.appColorScheme.colorScheme(for: colorScheme))
-#endif
+            .environment(\.gameModus, model.settingsModel.gameModus)
+            .environment(\.networkActions, model.gameRoot.networkActions())
+            .environment(\.sharingControlActions, model.gameRoot.sharingControlActions)
+            .environment(\.sharingFeatureActions, model.gameRoot.sharingFeatureActions)
+            .environment(\.showGame, model.settingsModel.showGame)
 #if os(macOS)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
 #endif
