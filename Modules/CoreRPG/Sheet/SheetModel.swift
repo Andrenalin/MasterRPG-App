@@ -44,4 +44,5 @@ public enum SheetModelType: Equatable, Hashable, Sendable {
     case item
     case dice
     case photo
+    case weather
 }

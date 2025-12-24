@@ -20,6 +20,12 @@ public struct ResultCategory: Equatable, Hashable, Codable, Sendable {
         self.childId = childId
         self.module = module
     }
+    
+    public init(source: ItemRowModel) {
+        self.id = source.itemId
+        self.childId = source.entryId
+        self.module = source.typeId
+    }
 }
 
 struct ResultCategoryKey: EnvironmentKey {

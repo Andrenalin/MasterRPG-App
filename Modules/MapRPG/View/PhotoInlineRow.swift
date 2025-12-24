@@ -4,20 +4,22 @@ import CoreRPG
 import PhotoRPG
 import SwiftUI
 
-struct PhotoInlineRow: View, Equatable {
-    let itemId: UUID
+struct InlineRowViewer: View, Equatable {
+    let source: ItemRowModel
     
     @Environment(MapRootModel.self) private var root
     
     var body: some View {
-        root.photoRoot.viewController.photoRow(root: root.photoRoot, for: itemId)
+        if source.typeId == .photo {
+            root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
+        }
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.itemId == rhs.itemId
+        lhs.source == rhs.source
     }
 }
 
 #Preview(traits: .mockData) {
-    PhotoInlineRow(itemId: MockData.previewId)
+    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .photo))
 }

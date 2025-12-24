@@ -7,7 +7,6 @@ import SwiftUI
 
 @MainActor @Observable
 final class WeatherEditModel: Sendable {
-    let photoSelectionModel = SelectionModel(id: UUID(), filter: .weather)
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
 }
 
@@ -35,14 +34,6 @@ extension EditController: EditControllable {
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
     }
-
-    @MainActor func didSetModel() {
-        guard let id = editorModel.currentItemId, weatherEditModel.photoSelectionModel.id != id else { return }
-        weatherEditModel.photoSelectionModel.id = id
-        if weatherEditModel.photoSelectionModel.currentValue != model.photoId {
-            weatherEditModel.photoSelectionModel.currentValue = model.photoId
-        }
-    }
 }
 
 // MARK: - Module Editor
@@ -50,22 +41,6 @@ extension EditController: EditControllable {
 extension EditController {
     @MainActor func add(photoId: UUID?) {
         model.photoId = photoId
-        save(with: String(localized: "Change Photo").localizedString)
-    }
-}
-
-extension EditController {
-    @MainActor func selection(for module: NetworkModules) -> [ItemRowModel] {
-        guard module == .photo else { return [] }
-        if let id = model.photoId {
-            return [ItemRowModel(itemId: id, typeId: .photo)]
-        }
-        return []
-    }
-    
-    @MainActor func toggle(for module: NetworkModules, itemRowModel: ItemRowModel) async {
-        guard module == .photo else { return }
-        model.photoId = itemRowModel.itemId
         save(with: String(localized: "Change Photo").localizedString)
     }
 }

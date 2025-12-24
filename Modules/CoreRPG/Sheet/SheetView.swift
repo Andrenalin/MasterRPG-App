@@ -69,21 +69,28 @@ struct SheetGroupView: View {
                 .listRowBackground(rowColor(for: group.level))
                 .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(group.level * 4), bottom: 8, trailing: 8))
         case .dice:
-            root.viewControllable.diceRowView(for: group.source.itemId)
+            root.viewControllable.rowViewer(source: group.source)
         case .photo:
-            root.viewControllable.photoRowView(for: group.source.itemId)
+            root.viewControllable.rowViewer(source: group.source)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .listRowBackground(Color.clear)
+                .frame(height: 256)
+        case .weather:
+            root.viewControllable.rowViewer(source: group.source)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowBackground(Color.clear)
                 .frame(height: 256)
         }
-
+        
         ForEach(group.sheetIds, id: \.self) { sheetId in
             if let sheetModel = model.sheets[sheetId] {
                 SheetView(root: root, model: sheetModel)
             }
         }
     }
-    
+}
+
+private extension SheetGroupView {
     func rowColor(for level: Int) -> Color {
 #if os(macOS) || os(visionOS)
         .clear
@@ -92,11 +99,10 @@ struct SheetGroupView: View {
 #endif
     }
     
-    private var shareResult: ShareValueResult {
+    var shareResult: ShareValueResult {
         ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: group.source.itemId, childId: group.source.entryId, module: group.source.typeId), showGame: showGame, gameModus: gameModus)
     }
-    
-    
+        
     var text: String {
         if group.description.isEmpty {
             group.name

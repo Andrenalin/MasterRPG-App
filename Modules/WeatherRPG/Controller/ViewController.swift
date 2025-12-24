@@ -14,6 +14,10 @@ extension ViewController: ViewControllable {
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
         AnyView(ThumbnailPhotoRow(itemId: itemId).equatable())
     }
+    
+    @MainActor public func rowViewer(source: ItemRowModel) -> AnyView {
+        AnyView(InlineRowViewer(source: source).equatable())
+    }
 }
 
 // MARK: - External Views

@@ -72,8 +72,8 @@ extension LinkController: LinkControllable {
     }
     
     @MainActor public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
-        guard module == .photo, let model = itemController.itemSync(for: itemId) else { return nil }
-        let entry = SheetModel(source: ItemRowModel(itemId: itemId, typeId: .photo), level: level, type: .photo, name: "", description: "", entries: [])        
-        return SheetModel(source: ItemRowModel(itemId: itemId, typeId: .photo), level: level, type: .item, name: model.name, description: model.description, entries: [entry])
+        guard module == itemController.itemDataModel.networkModule, let model = itemController.itemSync(for: itemId) else { return nil }
+        let entry = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, type: .photo, name: "", description: "", entries: [])
+        return SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, type: .item, name: model.name, description: model.description, entries: [entry])
     }
 }
