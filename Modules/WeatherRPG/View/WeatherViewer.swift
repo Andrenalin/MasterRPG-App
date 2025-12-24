@@ -2,6 +2,7 @@
 
 import CoreRPG
 import SwiftUI
+import PhotoRPG
 
 struct WeatherViewer: View {
     let model: WeatherModel
@@ -74,7 +75,7 @@ struct WeatherViewer: View {
     var body: some View {
         ZStack {
             if let photoId = model.photoId {
-                root.viewController.photo(root: root, for: photoId, useGame: useGame, size: containerSize)
+                root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: photoId, useGame: useGame, size: containerSize, contentMode: .fill)
             }
 
             if isAnimating || useGame {

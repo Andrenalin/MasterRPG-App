@@ -5,7 +5,7 @@ import SwiftUI
 
 struct ViewerRootView: View {
     let model: WeatherModel
-    var windowMode: Bool = false
+    var isGame: Bool = false
     var dismissAction: (() -> Void)? = nil
     
     @Environment(WeatherRootModel.self) private var root
@@ -20,22 +20,28 @@ struct ViewerRootView: View {
         let _ = Self._printChanges()
         VStack {
             GeometryReader { proxy in
-                WeatherViewer(model: model, size: proxy.size, useGame: false, isAnimating: $isAnimating)
+                WeatherViewer(model: model, size: proxy.size, useGame: isGame, isAnimating: $isAnimating)
                     .id(model.id)
             }
         }
         .ignoresSafeArea(.container, edges: [.top, .bottom])
-        .toolbar {
-            toolbarContent
+        .applyIf(!isGame) {
+            $0.toolbar {
+                toolbarContent
+            }
+            .navigationTitle(Text(model.name))
+    #if !os(macOS) && !os(tvOS)
+            .navigationBarTitleDisplayMode(.inline)
+    #endif
         }
 #if !os(visionOS)
         .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
-        .navigationTitle(Text(model.name))
-#if !os(macOS) && !os(tvOS)
-        .navigationBarTitleDisplayMode(.inline)
-#endif
         .environment(CacheItemListModel())
+        .onAppear {
+            guard isGame else { return }
+            withAnimation { isAnimating = true }
+        }
     }
 }
 

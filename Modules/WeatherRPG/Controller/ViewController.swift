@@ -28,40 +28,32 @@ extension ViewController {
     }
 }
 
-// MARK: - Viewer
+// MARK: - List View
 
 public extension ViewController {
+    @MainActor func gameListView(root: WeatherRootModel) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel())
+    }
+    
     @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
         LinkRootView(type: type)
             .environment(itemSelectionModel)
     }
+}
 
+// MARK: - Viewer
+
+public extension ViewController {
+    @MainActor func gameViewer(root: WeatherRootModel) -> some View {
+        ViewerRootView(model: root.gameController.currentItem(), isGame: true)
+    }
+    
     @MainActor func inlineViewer(root: WeatherRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return ViewerRootView(model: model, dismissAction: dismissAction)
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: id), dismissAction: dismissAction)
     }
     
     @MainActor func windowViewer(root: WeatherRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return ViewerRootView(model: model, windowMode: true)
-    }
-    
-    @MainActor func gameView(root: WeatherRootModel) -> some View {
-        LinkRootView(type: .inspector)
-            .environment(ItemSelectionModel())
-    }
-}
-
-// MARK: - old
-
-public extension ViewController {
-    func gameWeatherView(root: WeatherRootModel) -> some View {
-        RootGame()
-            .environment(root)
-    }
-
-    @MainActor @ViewBuilder
-    func photo(root: WeatherRootModel, for itemId: UUID, useGame: Bool, size: CGSize) -> some View {
-        root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: itemId, useGame: useGame, size: size, contentMode: .fill)
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: selection.itemId))
     }
 }
