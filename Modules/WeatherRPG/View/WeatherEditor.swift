@@ -4,9 +4,15 @@ import CoreRPG
 import SwiftUI
 
 struct WeatherEditor: View {
-    let model: WeatherModel
-
+    init(editController: EditController, model: WeatherModel) {
+        editController.setCurrentItem(model: model)
+    }
+    
     @Environment(WeatherRootModel.self) private var root
+    
+    var model: WeatherModel {
+        root.editController.model
+    }
     
     var body: some View {
         Section {
@@ -234,5 +240,5 @@ private extension WeatherEditor {
 #Preview(traits: .mockData) {
     @Previewable @Environment(WeatherRootModel.self) var root
 
-    WeatherEditor(model: root.itemController.itemOrEmpty(for: MockData.previewId))
+    WeatherEditor(editController: root.editController, model: root.itemController.itemOrEmpty(for: MockData.previewId))
 }

@@ -34,7 +34,7 @@ struct DetailListView: View {
     func content(listController: any FolderListControllable) -> some View {
         ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: false) {
         } editor: {
-            WeatherEditor(model: model)
+            WeatherEditor(editController: root.editController, model: model)
         } inspector: {
             root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
         } overlay: {

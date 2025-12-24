@@ -53,7 +53,6 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.photoRoot)
             .environment(CacheItemListModel())
             .environment(SelectionSheetLinkModel())
-            .environment(ExternalHeaderModel())
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

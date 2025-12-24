@@ -398,15 +398,19 @@ public extension EditControllable {
     }
 
     @MainActor func setCurrentItem(to item: ItemRowTreeModel) {
+        guard let model = itemControllable.copy(of: item.model.itemId) as? Model else { return }
+        setCurrentItem(model: model)
+    }
+    
+    @MainActor func setCurrentItem(model: Model) {
         save(with: "")
         resetCurrentModel()
         editorModel.reset()
 
-        guard let model = itemControllable.copy(of: item.model.itemId) as? Model else { return }
         editorModel.undoManaged.resetValue(model)
-        editorModel.currentItemId = item.model.itemId
-        editorModel.currentListItem = item
-        editorModel.currentEntryId = item.model.entryId
+        editorModel.currentItemId = model.id
+        //editorModel.currentListItem = item
+        editorModel.currentEntryId = nil
 
         editorModel.nameTextFieldModel.text = model.name
         editorModel.categoryEditModel.selection = model.category
