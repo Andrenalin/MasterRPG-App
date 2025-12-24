@@ -7,24 +7,11 @@ import PhotoRPG
 import SwiftData
 import SwiftUI
 
-@MainActor @Observable
-public final class RootModel: Sendable {
-    
-    @MainActor
-    public var selectedItem: ItemRowModel?
-    @MainActor
-    public var gameItemSelection: ItemRowModel?
-    
-    @ObservationIgnored
-    var listModels: [UUID: ListModel] = [:]
-}
-
 @Observable
 public final class WeatherRootModel: @unchecked Sendable {
     @MainActor init(container: ModelContainer, photoRoot: PhotoRootModel) {
         self.photoRoot = photoRoot
         
-        rootModel = RootModel()
         let module: NetworkModules = .weather
         self.module = module
         
@@ -60,7 +47,6 @@ public final class WeatherRootModel: @unchecked Sendable {
     
     let photoRoot: PhotoRootModel
 
-    public let rootModel: RootModel
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -93,7 +79,7 @@ public final class WeatherRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
     }()
-        @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
+    @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
         rootController.folderLinkControllable
     }
 
@@ -105,15 +91,13 @@ public final class WeatherRootModel: @unchecked Sendable {
     @ObservationIgnored private(set) var _rootControllable: RootControllable?
     var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
     
-    @ObservationIgnored private(set) var mainListController: ListController?
-    
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: ItemSelectionModel(),
-            removeEntryListModel: RemoveEntryListModel(),
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,
@@ -147,34 +131,6 @@ extension WeatherRootModel {
     }
     @MainActor public var itemControllable: any ItemControllable {
         itemController
-    }
-    
-    @MainActor
-    private var listController: ListController {
-        ListController(itemController: itemController, listStoreName: "Weather", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
-    }
-    func listController(model: ListModel) -> ListController {
-        ListController(itemController: itemController, itemListModel: model)
-    }
-    @MainActor
-    func listController(tabId: UUID, focus: ItemRowModel? = nil) -> ListController {
-        guard let listModel = rootModel.listModels[tabId] else {
-            let newController = listController
-            newController.update(models: itemController.itemDataModel.items.map { ItemRowModel(itemId: $0, typeId: itemController.itemDataModel.networkModule) })
-            if let focus {
-                newController.setFocusItem(model: focus)
-            }
-            setMainListController(newController)
-            rootModel.listModels[tabId] = newController.model
-            return newController
-        }
-        return listController(model: listModel)
-    }
-    
-    @MainActor
-    private func setMainListController(_ listController: ListController) {
-        guard mainListController == nil else { return }
-        mainListController = listController
     }
 }
 
