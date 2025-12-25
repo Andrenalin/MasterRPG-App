@@ -130,8 +130,6 @@ public final class TableRootModel: @unchecked Sendable {
     @ObservationIgnored private(set) var _rootControllable: RootControllable?
     var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
     
-    @ObservationIgnored private(set) var mainListController: ListController?
-    
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
@@ -181,28 +179,6 @@ extension TableRootModel {
     public func generatorControllable(for tableItem: ItemRowModel, parentItem: ItemRowModel, listControllable: ListControllable) -> GeneratorControllable {
         GeneratorController(root: self, rootItemId: tableItem.itemId, parentItem: parentItem, listControllable: listControllable)
     }
-    
-    @MainActor
-    private var listController: ListController {
-        ListController(itemController: itemController, listStoreName: "Tables", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
-    }
-    func listController(model: ListModel) -> ListController {
-        ListController(itemController: itemController, itemListModel: model)
-    }
-    @MainActor
-    func listController(tabId: UUID, focus: ItemRowModel? = nil) -> ListController {
-        guard let listModel = rootModel.listModels[tabId] else {
-            let newController = listController
-            newController.update(models: itemController.itemDataModel.items.map { ItemRowModel(itemId: $0, typeId: itemController.itemDataModel.networkModule) })
-            if let focus {
-                newController.setFocusItem(model: focus)
-            }
-            setMainListController(newController)
-            rootModel.listModels[tabId] = newController.model
-            return newController
-        }
-        return listController(model: listModel)
-    }
 
     @MainActor 
     func generatorController(rootItem: ItemRowModel?) -> GeneratorController {
@@ -214,12 +190,6 @@ extension TableRootModel {
         rootModel.resetGeneratorController(rootItem: rootItem, generatorController: generatorController(rootItem: rootItem))
     }
     
-    @MainActor
-    private func setMainListController(_ listController: ListController) {
-        guard mainListController == nil else { return }
-        mainListController = listController
-    }
-
     @MainActor
     public func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         SheetController(itemController: itemController).sheet(for: itemId, level: level)

@@ -118,19 +118,6 @@ extension ExportController {
     static var preview = TableRootModel.preview.exportController
 }
 
-extension ListController {
-    @MainActor
-    static let previewTabId = UUID()
-    
-    @MainActor
-    static var preview = TableRootModel.preview.listController(tabId: previewTabId)
-}
-
-extension ListModel {
-    @MainActor
-    static var preview = ListController.preview.model
-}
-
 extension ViewController {
     @MainActor
     static var preview = TableRootModel.preview.viewController

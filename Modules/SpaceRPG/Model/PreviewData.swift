@@ -105,19 +105,6 @@ extension ExportController {
     static var preview = SpaceRootModel.preview.exportController
 }
 
-extension ListController {
-    @MainActor
-    static let previewTabId = UUID()
-    
-    @MainActor
-    static var preview = SpaceRootModel.preview.listController(tabId: previewTabId)
-}
-
-extension ListModel {
-    @MainActor
-    static var preview = ListController.preview.model
-}
-
 extension ViewController {
     @MainActor
     static var preview = SpaceRootModel.preview.viewController

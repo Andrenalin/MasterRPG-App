@@ -88,8 +88,6 @@ public final class PhotoRootModel: @unchecked Sendable {
     
     @ObservationIgnored private(set) var _rootControllable: RootControllable?
     var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
-
-    @ObservationIgnored private(set) var mainListController: ListController?
     
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(

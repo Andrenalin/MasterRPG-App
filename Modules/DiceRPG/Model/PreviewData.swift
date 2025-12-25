@@ -141,19 +141,6 @@ extension ExportController {
     static var preview = DiceRootModel.preview.exportController
 }
 
-extension ListController {
-    @MainActor
-    static let previewTabId = UUID()
-
-    @MainActor
-    static var preview = DiceRootModel.preview.listController(tabId: previewTabId)
-}
-
-extension ListModel {
-    @MainActor
-    static var preview = ListController.preview.model
-}
-
 extension ViewController {
     @MainActor
     static var preview = DiceRootModel.preview.viewController

@@ -234,6 +234,7 @@
 
     },
     "Character Generator" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -244,6 +245,7 @@
       }
     },
     "Characters" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -472,6 +474,7 @@
       }
     },
     "Generator change" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -631,6 +634,7 @@
       }
     },
     "No item" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

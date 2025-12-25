@@ -9,34 +9,6 @@ import CoreData
 import SwiftData
 import SwiftUI
 
-@MainActor @Observable
-public final class RootModel: Sendable {
-    
-    @MainActor
-    public var selectedItem: ItemRowModel?
-    @MainActor
-    public var gameItemSelection: ItemRowModel?
-
-    @ObservationIgnored
-    var listModels: [UUID: ListModel] = [:]
-
-    @MainActor
-    var generatorItemId: UUID = UUID()
-    
-    @MainActor
-    private(set) var generatorController: GeneratorController?
-    
-    @MainActor
-    func resetGeneratorController(rootItem: ItemRowModel?, generatorController: GeneratorController) {
-        let newRootId = rootItem?.itemId ?? UUID()
-        if newRootId == generatorItemId {
-            generatorItemId = UUID()
-        }
-        generatorItemId = newRootId
-        self.generatorController = generatorController
-    }
-}
-
 @Observable
 public final class CharacterRootModel: @unchecked Sendable {
     @MainActor init(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
@@ -44,8 +16,6 @@ public final class CharacterRootModel: @unchecked Sendable {
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
-
-        rootModel = RootModel()
         
         let module: NetworkModules = .value
         self.module = module
@@ -85,7 +55,6 @@ public final class CharacterRootModel: @unchecked Sendable {
     let photoRoot: PhotoRootModel
     let tableRoot: TableRootModel
 
-    public let rootModel: RootModel
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -143,9 +112,6 @@ public final class CharacterRootModel: @unchecked Sendable {
     @ObservationIgnored private(set) var _rootControllable: RootControllable?
     var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
     
-    @ObservationIgnored
-    private(set) var mainListController: ListController?
-    
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
@@ -188,48 +154,6 @@ extension CharacterRootModel {
     }
     public var itemControllable: any ItemControllable {
         itemController
-    }
-    
-    @MainActor
-    private var listController: ListController {
-        ListController(itemController: itemController, editController: editController, listStoreName: "Characters", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
-    }
-    func listController(model: ListModel) -> ListController {
-        ListController(itemController: itemController, editController: editController, itemListModel: model)
-    }
-    @MainActor
-    func listController(tabId: UUID, config: Bool = false, focus: ItemRowModel? = nil) -> ListController {
-        guard let listModel = rootModel.listModels[tabId] else {
-            let newController = listController
-            if config {
-                newController.model.categoryTags.removeAll(where: { $0 == .gameMaster })
-                newController.model.hideChildrenHeader = true
-            }
-            newController.update(models: itemController.itemDataModel.items.map { ItemRowModel(itemId: $0, typeId: itemController.itemDataModel.networkModule) })
-            if let focus {
-                newController.setFocusItem(model: focus)
-            }
-            setMainListController(newController)
-            rootModel.listModels[tabId] = newController.model
-            return newController
-        }
-        return listController(model: listModel)
-    }
-
-    @MainActor
-    func generatorController(rootItem: ItemRowModel?, saveId: UUID?) -> GeneratorController {
-        GeneratorController(root: self, rootItemId: rootItem?.itemId ?? UUID(), saveId: saveId)
-    }
-    
-    @MainActor
-    func resetGeneratorController(rootItem: ItemRowModel?, saveId: UUID?) {
-        rootModel.resetGeneratorController(rootItem: rootItem, generatorController: generatorController(rootItem: rootItem, saveId: saveId))
-    }
-    
-    @MainActor
-    private func setMainListController(_ listController: ListController) {
-        guard mainListController == nil else { return }
-        mainListController = listController
     }
 }
 

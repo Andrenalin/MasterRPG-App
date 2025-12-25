@@ -67,7 +67,6 @@ struct GeneratorController: Sendable {
     weak var root: TableRootModel!
 
     let itemController: ItemController
-    let listController: ListControllable
     let genDataModel: GeneratorDataModel
 
     @MainActor
@@ -75,7 +74,6 @@ struct GeneratorController: Sendable {
         self.root = root
         let itemController = ItemController(dataController: nil, linkRegisterControllable: root.linkRegisterControllable)
         self.itemController = itemController
-        self.listController = listControllable
         self.genDataModel = GeneratorDataModel(itemDataModel: itemController.itemDataModel, rootItemId: rootItemId)
         genDataModel.parentItem = parentItem
         
@@ -87,20 +85,13 @@ struct GeneratorController: Sendable {
         self.root = root
         let itemController = ItemController(dataController: nil, linkRegisterControllable: root.linkRegisterControllable)
         self.itemController = itemController
-        self.listController = ListController(itemController: itemController, listStoreName: "Table Generator", hasChildren: true, searchToken: .all, categoryTags: [], selectedItems: [])
         self.genDataModel = GeneratorDataModel(itemDataModel: itemController.itemDataModel, rootItemId: rootItemId)
         
         _ = addTable(with: rootItemId, after: nil)
         
         let dataModel = genDataModel
-        listController.setSelection(onlyItems: false, onlyEntries: true, filter: .all, isHidden: false, focus: nil, mode: SelectionMode(selected: {
-            dataModel.selectedEntries
-        }, toggle: { [self] model, old in
-            self.addSelectItem(itemModel: model, old: old)
-        }))
         
         let model = ItemRowModel(itemId: rootItemId, typeId: root.itemController.itemDataModel.networkModule)
-        listController.setFocusItem(model: model)
     }
 
     @MainActor
@@ -108,7 +99,6 @@ struct GeneratorController: Sendable {
         if let first = genDataModel.selectedEntries.first {
             _ = changeSelectItem(itemModel: first, old: false)
         }
-        listController.setSelectedItems(models: [])
         genDataModel.reset()
     }
 
@@ -121,7 +111,6 @@ struct GeneratorController: Sendable {
                 roleResult(for: genDataModel.items[0])
             }
         }
-        listController.setSelectedItems(models: genDataModel.selectedEntries)
         return genDataModel.selectedEntries
     }
     
@@ -269,14 +258,14 @@ private extension GeneratorController {
             } else {
                 genDataModel.selectedEntries = []
             }
-            if itemModel.entryId == nil {
-                listController.toggleExpanded(model: resetItemModel.unsafelyUnwrapped, to: false)
-            } else {
-                listController.toggleExpanded(model: itemModel, to: false)
-            }
-            if let item {
-                listController.update(model: ItemRowModel(itemId: item.id, typeId: itemModel.typeId))
-            }
+//            if itemModel.entryId == nil {
+//                listController.toggleExpanded(model: resetItemModel.unsafelyUnwrapped, to: false)
+//            } else {
+//                listController.toggleExpanded(model: itemModel, to: false)
+//            }
+//            if let item {
+//                listController.update(model: ItemRowModel(itemId: item.id, typeId: itemModel.typeId))
+//            }
             return []
         } else {
             if let newIndex = findIndex(itemModel: itemModel, firstIndex: 0) {
@@ -288,7 +277,7 @@ private extension GeneratorController {
                     genDataModel.itemData[itemModel.itemId] as? TableModel else { return [] }
             if model.tableType != .all {
                 model.entries = model.entries.filter { $0.id == entryId }
-                listController.update(model: ItemRowModel(itemId: itemModel.itemId, typeId: itemModel.typeId))
+//                listController.update(model: ItemRowModel(itemId: itemModel.itemId, typeId: itemModel.typeId))
             }
             return nextTables(for: itemModel.itemId, entry: model[entryId])
         }
@@ -375,7 +364,7 @@ private extension GeneratorController {
             genDataModel.childParentLinks[ItemRowModel(itemId: $0, typeId: .table)] = ItemRowModel(itemId: tableId, entryId: entry.id, typeId: .table)
         }
         if links.count > 0 {
-            listController.addSubTables(child: ItemRowModel(itemId: tableId, typeId: .table), entryId: entry.id, nextItems: links.map { ItemRowModel(itemId: $0, typeId: .table) })
+//            listController.addSubTables(child: ItemRowModel(itemId: tableId, typeId: .table), entryId: entry.id, nextItems: links.map { ItemRowModel(itemId: $0, typeId: .table) })
         }
         return links
     }
@@ -404,7 +393,7 @@ private extension GeneratorController {
         links.forEach { linkId in
             let children = genDataModel.selectedEntries.filter { $0.itemId == linkId }
             children.forEach { _ = changeItem(itemModel: $0, old: false) }
-            listController.removeSubTables(from: model)
+//            listController.removeSubTables(from: model)
             genDataModel.items.removeAll(where: { $0 == linkId })
             genDataModel.itemData[linkId] = nil
             genDataModel.tableReplacement[linkId] = nil

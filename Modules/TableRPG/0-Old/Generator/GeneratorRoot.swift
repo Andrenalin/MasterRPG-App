@@ -37,14 +37,14 @@ struct GeneratorRoot: View {
             }
             .padding()
 
-            ItemList(listController: generatorController.listController) { item, isSelected in
-                TableRowModel(item: item, model: model(item: item), isSelected: isSelected, cacheItemListModel: CacheItemListModel())
-                    .environment(\.showGame, false)
-                    .environment(\.itemListToggleAction, .empty)
-            }
-            .itemSplitViewSizeMode(.small)
-            .itemListChildrenConfiguration(canNavigate: false)
-            .environment(generatorController.listController.model)
+//            ItemList(listController: generatorController.listController) { item, isSelected in
+//                TableRowModel(item: item, model: model(item: item), isSelected: isSelected, cacheItemListModel: CacheItemListModel())
+//                    .environment(\.showGame, false)
+//                    .environment(\.itemListToggleAction, .empty)
+//            }
+//            .itemSplitViewSizeMode(.small)
+//            .itemListChildrenConfiguration(canNavigate: false)
+//            .environment(generatorController.listController.model)
         }
         .overlay(alignment: .top) {
             if showInputField {

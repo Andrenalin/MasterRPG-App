@@ -106,19 +106,6 @@ extension ExportController {
     static let preview = CharacterRootModel.preview.exportController
 }
 
-extension ListController {
-    @MainActor
-    static let previewTabId = UUID()
-    
-    @MainActor
-    static let preview = CharacterRootModel.preview.listController(tabId: previewTabId)
-}
-
-extension ListModel {
-    @MainActor
-    static var preview = ListController.preview.model
-}
-
 extension ViewController {
     @MainActor
     static let preview = CharacterRootModel.preview.viewController

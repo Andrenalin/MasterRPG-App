@@ -108,8 +108,6 @@ public final class PdfRootModel: @unchecked Sendable {
     @ObservationIgnored private(set) var _rootControllable: RootControllable?
     var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
     
-    @ObservationIgnored private(set) var mainListController: ListController?
-
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
@@ -149,34 +147,6 @@ extension PdfRootModel {
     }
     @MainActor public var itemControllable: any ItemControllable {
         itemController
-    }
-
-    @MainActor
-    private var listController: ListController {
-        ListController(itemController: itemController, listStoreName: "Pdf", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
-    }
-    func listController(model: ListModel) -> ListController {
-        ListController(itemController: itemController, itemListModel: model)
-    }
-    @MainActor
-    func listController(tabId: UUID, focus: ItemRowModel? = nil) -> ListController {
-        guard let listModel = rootModel.listModels[tabId] else {
-            let newController = listController
-            newController.update(models: itemController.itemDataModel.items.map { ItemRowModel(itemId: $0, typeId: itemController.itemDataModel.networkModule) })
-            if let focus {
-                newController.setFocusItem(model: focus)
-            }
-            setMainListController(newController)
-            rootModel.listModels[tabId] = newController.model
-            return newController
-        }
-        return listController(model: listModel)
-    }
-
-    @MainActor
-    private func setMainListController(_ listController: ListController) {
-        guard mainListController == nil else { return }
-        mainListController = listController
     }
 
     public static let thumbnailSize: CGSize = .init(width: 64.0, height: 64.0)

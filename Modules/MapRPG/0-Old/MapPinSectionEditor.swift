@@ -133,7 +133,6 @@ struct MapPinSectionEditor: View {
 #Preview {
     MapPinSectionEditor(editController: .preview)
         .environment(MapRootModel.previewWithData)
-        .environment(ListModel.preview)
 }
 
 struct PinSectionEditor<EditContent: View, Content: View, ShowLink: View, SwipeAction: View, MenuContent: View, LinkAction: View>: View {
