@@ -9,16 +9,13 @@ import AppKit
 #endif
 
 struct ItemController: Sendable {
-    static var fileTypes: [UTType] { [.image] }
-    static var filenameExtension: String { "jpg" }
-
-    @MainActor init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
 
-        self.itemDataModel = ItemDataModel(categoryTags: [.adventure, .map, .value, .weather], networkModule: .photo)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
         
-        let fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.photo.token, fileTypes: ItemController.fileTypes, filenameExtension: ItemController.filenameExtension, fileUrlAccess: self)
+        let fileUrlDataController = FileUrlDataController(moduleFolder: config.module.token, fileTypes: config.fileTypes, filenameExtension: config.filenameExtension, fileUrlAccess: self)
         self.cacheController = CacheController(fileUrlDataController: fileUrlDataController)
         self.fileUrlDataController = fileUrlDataController
     }

@@ -18,7 +18,7 @@ public final class PhotoRootModel: @unchecked Sendable {
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+        self.linkSelectionModel = config.linkSelectionModel
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -26,12 +26,12 @@ public final class PhotoRootModel: @unchecked Sendable {
         
         let dataController = context.map { DataController(context: $0, token: module.token) }
         _dataController = dataController
-        let itemController = ItemController(dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
         _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
         _exportController = ExportController(itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
-        _gameController = GameController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+        _gameController = GameController(config: config, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
         _linkController = LinkController(itemController: itemController, gameController: gameController)
 
         if let dataController, let context {
