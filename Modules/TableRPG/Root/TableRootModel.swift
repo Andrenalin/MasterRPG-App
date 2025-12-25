@@ -7,37 +7,12 @@ import PdfRPG
 import SwiftData
 import SwiftUI
 
-@MainActor @Observable
-public final class RootModel: Sendable {
-    
-    @MainActor
-    public var selectedItem: ItemRowModel?
-    @MainActor
-    public var gameItemSelection: ItemRowModel?
-    
-    @ObservationIgnored
-    var listModels: [UUID: ListModel] = [:]
-
-    @MainActor
-    var generatorItemId: UUID = UUID()
-    
-    @MainActor
-    private(set) var generatorController: GeneratorController?
-    
-    @MainActor
-    func resetGeneratorController(rootItem: ItemRowModel?, generatorController: GeneratorController) {
-        generatorItemId = rootItem?.itemId ?? UUID()
-        self.generatorController = generatorController
-    }
-}
-
 @Observable
 public final class TableRootModel: @unchecked Sendable {
     @MainActor init(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) {
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
 
-        rootModel = RootModel()
         let module: NetworkModules = .table
         self.module = module
         
@@ -74,7 +49,6 @@ public final class TableRootModel: @unchecked Sendable {
     let diceRoot: DiceRootModel
     let pdfRoot: PdfRootModel
 
-    public let rootModel: RootModel
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel

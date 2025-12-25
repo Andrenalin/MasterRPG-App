@@ -128,26 +128,6 @@ extension LinkController {
     static var preview = TableRootModel.preview.linkController
 }
 
-extension GeneratorController {
-    @MainActor
-    static let previewWithData: GeneratorController = {
-        let root = TableRootModel.previewWithData
-        let itemController = root.itemController
-        let generatorController = GeneratorController(root: root, rootItemId: TableModel.previewId)
-#if DEBUG
-        Task.detached(priority: .userInitiated) {
-            try await Task.sleep(for: .seconds(0.5))
-            Task { @MainActor in
-                generatorController.genDataModel.rootItemId = itemController.itemDataModel.items[0]
-                generatorController.reset()
-                _ = generatorController.roleResults()
-            }
-        }
-#endif
-        return generatorController
-    }()
-}
-
 // Example Preview Data
 
 extension TableModel {
