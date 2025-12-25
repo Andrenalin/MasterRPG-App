@@ -12,16 +12,17 @@ public final class WeatherRootModel: @unchecked Sendable {
     @MainActor init(container: ModelContainer, photoRoot: PhotoRootModel) {
         self.photoRoot = photoRoot
         
-        let module: NetworkModules = .weather
-        self.module = module
+        let config = ModuleConfiguration()
+        self.config = config
+        self.module = config.module
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.adventure, .map, .scenario])
+        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+        self.linkSelectionModel = config.linkSelectionModel
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -29,12 +30,12 @@ public final class WeatherRootModel: @unchecked Sendable {
 
         let dataController = context.map { DataController(context: $0, token: module.token) }
         _dataController = dataController
-        let itemController = ItemController(dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
         _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
         _exportController = ExportController(photoRoot: photoRoot, itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
-        _gameController = GameController(photoRoot: photoRoot, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+        _gameController = GameController(config: config, photoRoot: photoRoot, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
         _linkController = LinkController(photoRoot: photoRoot, itemController: itemController, gameController: gameController)
 
         if let dataController, let context {
@@ -46,7 +47,7 @@ public final class WeatherRootModel: @unchecked Sendable {
     }
     
     let photoRoot: PhotoRootModel
-
+    public let config: ModuleConfiguration
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -122,7 +123,6 @@ extension WeatherRootModel {
     public var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    
     public var importControllable: any ImportControllable {
         importController as ImportControllable
     }

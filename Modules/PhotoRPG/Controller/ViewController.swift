@@ -12,21 +12,16 @@ public struct ViewController {
 
 extension ViewController: ViewControllable {
     @MainActor public func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView {
-        AnyView(PhotoInlineImporterView(itemId: itemId, preopen: preopen, layoutDown: layoutDown))
+        AnyView(PhotoInlineImporterView(itemId: itemId, preopen: preopen, layoutDown: layoutDown).equatable())
     }
 }
 
-// MARK: - Viewer
+// MARK: - External Views
 
 public extension ViewController {
     @MainActor func dropSelectionView(model: ItemSelectionModel) -> some View {
         DropChooseView(selectionModel: model)
             .environment(model)
-    }
-    
-    @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
-        LinkRootView(type: type)
-            .environment(itemSelectionModel)
     }
     
     @ViewBuilder @MainActor func thumbnailRow(root: PhotoRootModel, for itemId: UUID) -> some View {
@@ -36,33 +31,42 @@ public extension ViewController {
                 .environment(root.listDisplayModel)
         }
     }
-
+    
     @ViewBuilder @MainActor func photoRow(root: PhotoRootModel, for itemId: UUID) -> some View {
         if let model = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
             CachePhotoView(cacheController: cacheController, model: model, highResolution: true)
                 .environment(root.editController.cacheItemListModel)
         }
     }
+}
 
-    @MainActor func inlineViewer(root: PhotoRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return ViewerRootView(model: model, dismissAction: dismissAction)
-    }
-    
-    @MainActor func windowViewer(root: PhotoRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return ViewerRootView(model: model)
-    }
-    
-    @MainActor func gameView(root: PhotoRootModel) -> some View {
+// MARK: - List View
+
+public extension ViewController {
+    @MainActor func gameListView(root: PhotoRootModel) -> some View {
         LinkRootView(type: .inspector)
             .environment(ItemSelectionModel())
     }
     
-    @MainActor
-    func gamePhotoView(root: PhotoRootModel) -> some View {
+    @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
+        LinkRootView(type: type)
+            .environment(itemSelectionModel)
+    }
+}
+
+// MARK: - Viewer
+
+public extension ViewController {
+    @MainActor func gameViewer(root: PhotoRootModel) -> some View {
         ViewerRootView(model: root.gameController.currentItem(), isGame: true)
-            .environment(root)
+    }
+
+    @MainActor func inlineViewer(root: PhotoRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: id), dismissAction: dismissAction)
+    }
+    
+    @MainActor func windowViewer(root: PhotoRootModel, selection: WindowItemSelection) -> some View {
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: selection.itemId))
     }
 }
 

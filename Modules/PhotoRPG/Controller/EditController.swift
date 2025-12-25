@@ -56,9 +56,9 @@ extension EditController {
 
         await resetFileUrl()
         var dataUrl = fileUrl
-        dataUrl.convertFile(data, fileExtension: "jpg")
+        dataUrl.convertFile(data, fileExtension: itemController.config.filenameExtension)
 
-        let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataUrl, pathExtension: "jpg")
+        let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataUrl, pathExtension: itemController.config.filenameExtension)
 
         Task { @MainActor in
             model.fileUrl = newFileUrl
@@ -102,16 +102,16 @@ extension EditController {
         try? await resetPhotoJob(data: data)
     }
     
-    func resetPhotoJob(data: Data?) async throws {
+    private func resetPhotoJob(data: Data?) async throws {
         await resetFileUrl()
         guard let data else { return }
         
         let module = await itemController.itemDataModel.networkModule.token
-        let filePath = await model.name.isEmpty ? "\(await model.category.title)/Image-\(model.id.uuidString).jpg" : "\(await model.category.title)/\(await model.name).jpg"
+        let filePath = await model.name.isEmpty ? "\(await model.category.title)/Image-\(model.id.uuidString).\(itemController.config.filenameExtension)" : "\(await model.category.title)/\(await model.name).\(itemController.config.filenameExtension)"
         var dataFileUrl = await FileUrl(fileId: model.id, url: URL(string: filePath)!, location: .newCloud, module: module, relativeUrl: nil)
         dataFileUrl.resetData(data)
         
-        let fileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: "jpg")
+        let fileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: itemController.config.filenameExtension)
 
         let saveTask = Task { @MainActor in
             model.fileUrl = fileUrl
@@ -124,12 +124,6 @@ extension EditController {
         Task { @MainActor in
             await resetPhoto(url: url, for: model, undoSave: true)
         }
-    }
-
-    func resetPhoto(url: URL?, into itemId: UUID) async {
-        let item = await model.id == itemId ? model : itemController.item(for: itemId)?.copy()
-        guard let item else { return }
-        await resetPhoto(url: url, for: item, undoSave: model.id == itemId)
     }
 
     private func resetPhoto(url: URL?, for item: PhotoModel, undoSave: Bool) async {
@@ -174,6 +168,6 @@ extension EditController {
     @MainActor
     func isNotJpegPhoto() -> Bool {
         guard let fileUrl = model.fileUrl else { return false }
-        return !(fileUrl.fileExtension == "jpg" || fileUrl.fileExtension == "jpeg")
+        return !(fileUrl.fileExtension == itemController.config.filenameExtension || fileUrl.fileExtension == "jpeg")
     }
 }

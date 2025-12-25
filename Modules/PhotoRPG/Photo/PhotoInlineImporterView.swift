@@ -77,8 +77,8 @@ enum PhotoImporterButtonType: String {
     }
 }
 
-struct PhotoInlineImporterView: View {
-    internal init(itemId: UUID, preopen: Bool, layoutDown: Bool) {
+struct PhotoInlineImporterView: View, Equatable {
+    init(itemId: UUID, preopen: Bool, layoutDown: Bool) {
         self.itemId = itemId
         self.preopen = preopen
         self.layoutDown = layoutDown
@@ -194,6 +194,10 @@ struct PhotoInlineImporterView: View {
 #endif
         .offset(type.offset(expanded: isExpanded, layoutDown: layoutDown))
         .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: isExpanded)
+    }
+    
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.itemId == rhs.itemId
     }
 }
 

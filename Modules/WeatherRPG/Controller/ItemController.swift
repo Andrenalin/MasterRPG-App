@@ -5,14 +5,18 @@ import Foundation
 import CoreData
 
 struct ItemController: Sendable {
-    @MainActor init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.config = config
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
 
-        self.itemDataModel = ItemDataModel(categoryTags: [.adventure, .map, .scenario], networkModule: .weather)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        
+        self.collectionCategory = config.collectionCategory
     }
 
-    let collectionCategory: ItemListCategory = .collection
+    let config: ModuleConfiguration
+    let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable

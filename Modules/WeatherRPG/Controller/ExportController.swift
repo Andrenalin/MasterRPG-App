@@ -23,15 +23,15 @@ extension ExportController: ExportControllable {
 
     @MainActor public func exportingAll() -> ItemModuleIds {
         var allIds = photoRoot.exportControllable.exportingAll()
-        allIds.merge(other: ItemModuleIds(dictionary: [itemController.itemDataModel.networkModule: itemController.itemDataModel.items.map { $0 }]))
+        allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.map { $0 }]))
         return allIds
     }
 
     @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
-        let checkIds = itemIds.ids[itemController.itemDataModel.networkModule, default: []]
+        let checkIds = itemIds.ids[itemController.config.module, default: []]
         let results = checkIds.compactMap { itemController.itemSync(for: $0)?.id }
         var allIds = itemIds
-        allIds.ids[itemController.itemDataModel.networkModule] = results
+        allIds.ids[itemController.config.module] = results
 
         let photoIds = Set(results.compactMap { itemController.itemSync(for: $0)?.photoId })
         let newPhotoIds = photoRoot.exportControllable.exporting(ids: photoIds)

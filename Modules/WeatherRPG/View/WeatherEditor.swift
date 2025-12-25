@@ -5,7 +5,7 @@ import SwiftUI
 
 struct WeatherEditor: View {
     init(editController: EditController, model: WeatherModel) {
-        editController.setCurrentItem(model: model)
+        //editController.setCurrentItem(model: model)
     }
     
     @Environment(WeatherRootModel.self) private var root
@@ -80,8 +80,7 @@ struct WeatherEditor: View {
 }
 
 private extension WeatherEditor {
-    @ViewBuilder
-    var timeEditorView: some View {
+    @ViewBuilder var timeEditorView: some View {
         @Bindable var model = model
 
         LabeledContent {
@@ -114,7 +113,7 @@ private extension WeatherEditor {
         LabeledContent {
             Picker("Thickness", selection: $model.cloudThickness) {
                 ForEach(Cloud.Thickness.allCases, id: \.self) { thickness in
-                    Text(thickness.localizedTitle, bundle: .module)
+                    Text(thickness.localizedTitle, bundle: .module).tag(thickness)
                 }
             }
             .pickerStyle(.automatic)
@@ -131,7 +130,7 @@ private extension WeatherEditor {
         LabeledContent {
             Picker("Precipitation", selection: $model.stormType) {
                 ForEach(Storm.Contents.allCases, id: \.self) { stormType in
-                    Text(stormType.localizedTitle, bundle: .module)
+                    Text(stormType.localizedTitle, bundle: .module).tag(stormType)
                 }
             }
             .pickerStyle(.automatic)

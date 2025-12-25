@@ -77,7 +77,7 @@ public final class PhotoRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
     }()
-        @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
+    @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
         rootController.folderLinkControllable
     }
 
@@ -94,8 +94,8 @@ public final class PhotoRootModel: @unchecked Sendable {
             module: module,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: ItemSelectionModel(),
-            removeEntryListModel: RemoveEntryListModel(),
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: cacheController,
             editControllable: editController,
             exportControllable: exportControllable,
@@ -169,7 +169,7 @@ public extension PhotoRootModel {
         await editController.model.name = name
         await editController.model.description = text
         
-        try? await editController.resetPhotoJob(data: data)
+        await editController.resetPhoto(data: data)
         await editController.save(with: "Add new Photo from Sharing".localizedString)
         
         return await (itemRowModel.itemId, editController.model.url(linkNumber: 0))
@@ -212,5 +212,4 @@ public extension PhotoRootModel {
         let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.createFilepathFoldersAndCollections()
     }
-
 }

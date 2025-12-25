@@ -62,7 +62,7 @@ struct GameRootViewer<MapContent: View>: View {
                 root.pdfRoot.viewController.gamePdfView(root: root.pdfRoot)
                     .id(root.pdfRoot.gameControllable.gameModel.currentItemId ?? UUID())
             case .photo:
-                root.photoRoot.viewController.gamePhotoView(root: root.photoRoot)
+                root.photoRoot.viewController.gameViewer(root: root.photoRoot)
                     .id(root.photoRoot.gameControllable.gameModel.currentItemId ?? UUID())
             case .space:
                 root.spaceRoot.viewController.gameSpaceView(root: root.spaceRoot)
