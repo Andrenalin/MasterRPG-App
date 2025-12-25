@@ -51,7 +51,7 @@ public extension ViewController {
     
     @MainActor func windowViewer(root: PhotoRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return ViewerRootView(model: model, windowMode: true)
+        return ViewerRootView(model: model)
     }
     
     @MainActor func gameView(root: PhotoRootModel) -> some View {
@@ -61,7 +61,7 @@ public extension ViewController {
     
     @MainActor
     func gamePhotoView(root: PhotoRootModel) -> some View {
-        ViewerRootView(model: root.gameController.currentItem(), toolBarModel: root.rootModel.toolbarModel, isGame: true)
+        ViewerRootView(model: root.gameController.currentItem(), isGame: true)
             .environment(root)
     }
 }

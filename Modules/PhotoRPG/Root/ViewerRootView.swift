@@ -5,8 +5,6 @@ import SwiftUI
 
 struct ViewerRootView: View {
     let model: PhotoModel
-    var toolBarModel: GameToolBarModel = GameToolBarModel()
-    var windowMode: Bool = false
     var externalViewer: Bool = true
     var isGame: Bool = false
     var dismissAction: (() -> Void)? = nil
@@ -20,17 +18,15 @@ struct ViewerRootView: View {
     @Environment(\.dismissImmersiveSpace) private var dismissSpace
 #endif
 
+    @State private var toolBarModel: GameToolBarModel = GameToolBarModel()
+
     var body: some View {
         let _ = Self._printChanges()
         VStack {
             GeometryReader { geo in
-                RootImageViewer(model: model, size: geo.size, toolBarModel: toolBarModel, isGame: isGame) {
-                    if let dismissAction {
-                        dismissAction()
-                    } else {
-                        dismiss()
-                    }
-                }
+                AsyncImageViewer(model: model, size: geo.size, toolBarModel: toolBarModel)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.black.gradient)
             }
         }
         .onChange(of: root.gameController.photoGameModel.openPhotoSpace, initial: false) {
@@ -102,7 +98,7 @@ private extension ViewerRootView {
     
     var rotateButton: some View {
         Button {
-            withAnimation { model.degrees += 90 }
+            withAnimation { toolBarModel.degrees += 90 }
         } label: {
             Image(systemName: "rotate.right")
                 .rotationEffect(Angle(degrees: model.degrees))
@@ -116,7 +112,7 @@ private extension ViewerRootView {
     @Previewable @Environment(PhotoRootModel.self) var root
     
     NavigationStack {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), externalViewer: false)
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), externalViewer: true, isGame: true)
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

@@ -5,32 +5,16 @@ import CoreData
 import SwiftData
 import SwiftUI
 
-@MainActor @Observable
-public final class RootModel: Sendable {
-    
-    @MainActor
-    public var selectedItem: ItemRowModel?
-    @MainActor
-    public var gameItemSelection: ItemRowModel?
-
-    @MainActor
-    var toolbarModel = GameToolBarModel()
-    
-    @ObservationIgnored
-    var listModels: [UUID: ListModel] = [:]
-}
-
 @Observable
-public final class PhotoRootModel: @unchecked Sendable {
+public final class PhotoRootModel: @unchecked Sendable {    
     @MainActor init(container: ModelContainer) {
-        rootModel = RootModel()
-        
-        let module: NetworkModules = .photo
-        self.module = module
+        let config = ModuleConfiguration()
+        self.config = config
+        self.module = config.module
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
@@ -58,7 +42,7 @@ public final class PhotoRootModel: @unchecked Sendable {
         }
     }
 
-    public let rootModel: RootModel
+    public let config: ModuleConfiguration
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -149,34 +133,6 @@ extension PhotoRootModel {
     }
     public var photoGameControllable: any (GameControllable & PhotoGameControllable) {
         gameController
-    }
-    
-    @MainActor
-    private var listController: ListController {
-        ListController(itemController: itemController, listStoreName: "Photo", hasChildren: true, searchToken: .all, categoryTags: itemController.itemDataModel.categoryTags)
-    }
-    func listController(model: ListModel) -> ListController {
-        ListController(itemController: itemController, itemListModel: model)
-    }
-    @MainActor
-    func listController(tabId: UUID, focus: ItemRowModel? = nil) -> ListController {
-        guard let listModel = rootModel.listModels[tabId] else {
-            let newController = listController
-            newController.update(models: itemController.itemDataModel.items.map { ItemRowModel(itemId: $0, typeId: itemController.itemDataModel.networkModule) })
-            if let focus {
-                newController.setFocusItem(model: focus)
-            }
-            setMainListController(newController)
-            rootModel.listModels[tabId] = newController.model
-            return newController
-        }
-        return listController(model: listModel)
-    }
-
-    @MainActor
-    private func setMainListController(_ listController: ListController) {
-        guard mainListController == nil else { return }
-        mainListController = listController
     }
 }
 
