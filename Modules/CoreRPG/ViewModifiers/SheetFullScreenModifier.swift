@@ -38,7 +38,6 @@ struct SizedSheetViewModifier<SheetContent: View>: ViewModifier {
             .sheet(isPresented: isPresented, onDismiss: onDismiss) {
                 sheetContent()
                     .environment(\.colorScheme, colorScheme)
-                    .itemListConfiguration(modalOk: true)
             }
 #endif
     }

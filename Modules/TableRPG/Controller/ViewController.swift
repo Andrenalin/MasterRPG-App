@@ -66,27 +66,7 @@ public extension ViewController {
 
 // MARK: - old
 
-public extension ViewController {
-    @MainActor
-    func generatorEditorWindow(root: TableRootModel) -> some View {
-        GeneratorWindow(root: root)
-            .environment(root)
-    }
-    
-    @MainActor
-    func generatorRow(root: TableRootModel, controllable: GeneratorControllable?, item: ItemRowTreeModel) -> some View {
-        let controller = controllable as? GeneratorController
-        let model = controller?.genDataModel.itemDataModel.itemData[item.model.itemId] as? TableModel ?? .empty
-        return TableRowModel(item: item, model: model, isSelected: false, cacheItemListModel: CacheItemListModel())
-            .environment(root)
-            .environment(\.showGame, false)
-    }
-    
-    @MainActor
-    func viewGenerator(root: TableRootModel, with id: UUID, dismissAction: @escaping (UUID?) -> Void) -> some View {
-        GeneratorRoot(generatorController: root.generatorController(rootItem: ItemRowModel(itemId: id, typeId: .table)), item: .constant(nil))
-    }
-
+public extension ViewController {    
     @MainActor @ViewBuilder
     func diceView(root: TableRootModel, for id: UUID?, from itemId: UUID) -> some View {
         if let id {

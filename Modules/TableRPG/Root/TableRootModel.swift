@@ -176,21 +176,6 @@ extension TableRootModel {
     }
 
     @MainActor
-    public func generatorControllable(for tableItem: ItemRowModel, parentItem: ItemRowModel, listControllable: ListControllable) -> GeneratorControllable {
-        GeneratorController(root: self, rootItemId: tableItem.itemId, parentItem: parentItem, listControllable: listControllable)
-    }
-
-    @MainActor 
-    func generatorController(rootItem: ItemRowModel?) -> GeneratorController {
-        GeneratorController(root: self, rootItemId: rootItem?.itemId ?? UUID())
-    }
-    
-    @MainActor
-    func resetGeneratorController(rootItem: ItemRowModel?) {
-        rootModel.resetGeneratorController(rootItem: rootItem, generatorController: generatorController(rootItem: rootItem))
-    }
-    
-    @MainActor
     public func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         SheetController(itemController: itemController).sheet(for: itemId, level: level)
     }

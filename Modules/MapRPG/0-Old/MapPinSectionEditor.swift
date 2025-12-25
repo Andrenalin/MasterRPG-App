@@ -251,13 +251,7 @@ struct PinSectionEditor<EditContent: View, Content: View, ShowLink: View, SwipeA
         }
         .sheet(item: $showLink) { linkValue in
             showLinkView(linkValue)
-                .itemListConfiguration(modalOk: true)
                 .environment(\.colorScheme, colorScheme)
-        }
-        .sheetFullScreen(isPresented: $showDeleteAlert) {
-            EffectedLinkAction(itemControllable: editControllable.itemControllable, removeEntryList: removeEntryList) {
-                deleteSelectedEntries(rowModels: $0)
-            }
         }
     }
     
