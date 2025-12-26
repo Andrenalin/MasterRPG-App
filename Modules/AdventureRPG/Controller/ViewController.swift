@@ -35,17 +35,17 @@ public extension ViewController {
         DropChooseView(selectionModel: model)
             .environment(model)
     }
-
+    
     @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
         LinkRootView(type: type)
             .environment(itemSelectionModel)
     }
-
+    
     @MainActor func inlineViewer(root: AdventureRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
         return AdventureSheet(model: model, dismissAction: dismissAction)
     }
-
+    
     @MainActor func windowViewer(root: AdventureRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return AdventureSheet(model: model, dismissAction: nil)
@@ -60,6 +60,10 @@ public extension ViewController {
                     .environment(ItemSelectionModel())
             }
         }
+    }
+    
+    @MainActor func gameModuleListView(root: AdventureRootModel) -> some View {
+        EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel)
     }
 }
 

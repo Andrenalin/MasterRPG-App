@@ -309,6 +309,16 @@ public extension EditControllable {
     }
 }
 
+// MARK: - New Entry Editor
+
+public extension EditControllable {
+    @MainActor func removeEntry(source: ItemRowModel) {
+        guard source.typeId == itemControllable.config.module else { return }
+        guard let model = itemControllable.itemSync(for: source.itemId), let entryId = source.entryId else { return }
+        remove(entryId: entryId, item: model)
+    }
+}
+
 public extension EditControllable {
     @MainActor func insert(entry: any EntryDataAccessable, item: any ItemDataAccessable) {
         guard let updatedModel = editModel(for: item.id) else { return }

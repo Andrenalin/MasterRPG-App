@@ -31,6 +31,7 @@ struct OverlayMasterTabBar: View {
             tabSecondGameView
 #endif
         }
+        //.edgesIgnoringSafeArea(.bottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         .focusedSceneValue(\.selectedGameModule, tabSelectedModule)
     }
@@ -52,25 +53,12 @@ struct OverlayMasterTabBar: View {
     @ViewBuilder
     var tabGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
-        TabView(selection: $gameScreenModel.showGameType) {
-            Group {
-                root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
-                    .gameOverlayTabBarView(value: NetworkModules.game)
-                root.tableRoot.viewController.gameListView(root: root.tableRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.table)
-                root.audioRoot.viewController.gameView(root: root.audioRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.audio)
-                root.photoRoot.viewController.gameListView(root: root.photoRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.photo)
-                root.mapRoot.viewController.gameView(root: root.mapRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.map)
-            }
-            .environment(\.gameModus, .master)
-            .environment(\.showGame, true)
+        NavigationStack {
+            root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
+                .environment(\.gameModus, .master)
+                .environment(\.showGame, true)
         }
-#if os(iOS)
-        .environment(\.horizontalSizeClass, .compact)
-#endif
+        .gameOverlayTabBarView(value: NetworkModules.game)
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
 #if !os(visionOS)
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
@@ -85,25 +73,9 @@ struct OverlayMasterTabBar: View {
     @ViewBuilder
     var tabSecondGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
-        TabView(selection: $gameScreenModel.showSettingsType) {
-            Group {
-                root.characterRoot.viewController.gameView(root: root.characterRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.value)
-                root.pdfRoot.viewController.gameView(root: root.pdfRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.pdf)
-                root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.space)
-                root.weatherRoot.viewController.gameListView(root: root.weatherRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.weather)
-                root.viewController.logWindow()
-                    .gameOverlayTabBarView(value: NetworkModules.setting)
-            }
+        root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot)
             .environment(\.gameModus, .master)
             .environment(\.showGame, true)
-        }
-#if os(iOS)
-        .environment(\.horizontalSizeClass, .compact)
-#endif
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
 #if !os(visionOS)
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))

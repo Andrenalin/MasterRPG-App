@@ -34,8 +34,6 @@ struct DetailListView: View {
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
     
-    @State private var showViewer: Bool = false
-    
     var body: some View {
         content(listController: detailFolderListController)
             .onChange(of: detailFolderListController.listModel.subFolderRoute) {
@@ -87,18 +85,10 @@ private extension DetailListView {
                 withAnimation { root.editController.valueEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
             }
 
-        Toggle(isOn: $showViewer) {
-            Text("Viewer Style")
-        }
-        
-        if showViewer {
-            Section {
-                SheetView(root: root.rootController, model: tableSheetModel)
-            } header: {
-                Text("Values")
-            }
-        } else {
-            EntryListView(editController: root.editController, linkTypes: LinkCharacterModuleTransferable.self, headerTitle: "Values")
+        Section {
+            SheetView(root: root.rootController, model: tableSheetModel, isEditor: true)
+        } header: {
+            Text("Values")
         }
     }
     

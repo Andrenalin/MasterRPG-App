@@ -3,13 +3,15 @@
 import SwiftUI
 
 public struct SheetView: View {
-    public init(root: ItemRootController, model: TableSheetModel) {
+    public init(root: ItemRootController, model: TableSheetModel, isEditor: Bool = false) {
         self.root = root
         self.model = model
+        self.isEditor = isEditor
     }
     
     let root: ItemRootController
     let model: TableSheetModel
+    let isEditor: Bool
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -29,7 +31,7 @@ public struct SheetView: View {
         }
         
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
-            SheetGroupView(root: root, model: model, entry: entry)
+            SheetGroupView(root: root, model: model, entry: entry, isEditor: isEditor)
         }
         .onChange(of: model.searchText) {
             withAnimation { model.updateSearch() }
@@ -46,15 +48,17 @@ public struct SheetView: View {
 }
 
 struct SheetGroupView: View {
-    init(root: ItemRootController, model: TableSheetModel, entry: SheetModel) {
+    init(root: ItemRootController, model: TableSheetModel, entry: SheetModel, isEditor: Bool) {
         self.root = root
         self.model = model
         self.entry = entry
+        self.isEditor = isEditor
     }
     
     let root: ItemRootController
     let model: TableSheetModel
     let entry: SheetModel
+    let isEditor: Bool
     
     @Environment(\.networkActions) private var networkActions
     @Environment(\.showGame) private var showGame
@@ -89,6 +93,23 @@ struct SheetGroupView: View {
                         EmptyView()
                     }
                 }
+                
+                if isEditor && entry.sheetType == .item {
+                    Button(role: .destructive) {
+                        withAnimation {
+                            root.editControllable.removeEntry(source: entry.source)
+                        }
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .imageScale(.large)
+                            .foregroundStyle(.white, .red, .red)
+                    }
+                    .borderLessTVBottonStyle()
+                    .contentShape(.circle)
+    #if !os(visionOS)
+                    .glassEffect()
+    #endif
+                }
             }
 
             ForEach(entry.entries) { inlineSheet in
@@ -100,9 +121,13 @@ struct SheetGroupView: View {
                 }
             }
         }
+        .onTapGesture(count: 2) {
+            withAnimation { root.editControllable.editorModel.currentEntryId = entry.source.entryId }
+        }
+        
         ForEach(entry.sheetIds, id: \.self) { sheetId in
             if let sheetModel = model.sheets[sheetId] {
-                SheetView(root: root, model: sheetModel)
+                SheetView(root: root, model: sheetModel, isEditor: isEditor)
             }
         }
     }
