@@ -43,7 +43,7 @@ struct DiceInline: View {
                             await roleAndShareDiceResult()
                         }
                     } label: {
-                        Label { Text(roleShareTitle, bundle: .module) } icon: { Image(systemName: root.itemController.itemDataModel.networkModule.icon) }
+                        Label { Text(roleShareTitle, bundle: .module) } icon: { Image(systemName: root.itemController.config.module.icon) }
                     }
 
                     Button {
@@ -100,7 +100,7 @@ struct DiceInline: View {
                 #endif
             }
             if showResult {
-                Text("\(Image(systemName: root.itemController.itemDataModel.networkModule.icon))\(root.gameController.resultText(itemId: itemId))")
+                Text("\(Image(systemName: root.itemController.config.module.icon))\(root.gameController.resultText(itemId: itemId))")
             }
         }
     }

@@ -31,7 +31,7 @@ extension LinkController: LinkControllable {
             }
             Task { @MainActor in
                 if command == LinkType.show.rawValue {
-                    await toggler?(itemId, itemControllable.itemDataModel.networkModule)
+                    await toggler?(itemId, itemControllable.config.module)
                 } else {
                     // command share
                     await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
@@ -41,13 +41,13 @@ extension LinkController: LinkControllable {
         } else {
             if let toggler, entryId == nil, editAction == nil {
                 Task { @MainActor in
-                    await toggler(itemId, itemControllable.itemDataModel.networkModule)
+                    await toggler(itemId, itemControllable.config.module)
                 }
             }
             let item = itemController.itemOrEmpty(for: itemId)
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId) : ""
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
-            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.itemDataModel.networkModule)) ?? false
+            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module)) ?? false
             let removeAction = editLine ? " \(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let description: String
             if let entryId {
@@ -106,7 +106,7 @@ extension LinkController: LinkControllable {
 public extension LinkController {
     @MainActor
     func link(for name: String, entryName: String?) -> String? {
-        guard let itemId = itemController.itemDataModel.items.first(where: { itemController.nameSync(model: ItemRowModel(itemId: $0, typeId: itemController.itemDataModel.networkModule)) == name }) else { return nil }
+        guard let itemId = itemController.itemDataModel.items.first(where: { itemController.nameSync(model: ItemRowModel(itemId: $0, typeId: itemController.config.module)) == name }) else { return nil }
         let item = itemController.itemOrEmpty(for: itemId)
         if let entryName = entryName {
             guard let entry = item.entries.first(where: { $0.name == entryName }) else { return nil }
@@ -146,12 +146,12 @@ public extension LinkController {
     @MainActor
     func templateItems(for rootId: UUID) -> [ItemRowModel] {
         let item = itemController.itemOrEmpty(for: rootId)
-        return item.entries.map { ItemRowModel(itemId: rootId, entryId: $0.id, typeId: itemController.itemDataModel.networkModule) }
+        return item.entries.map { ItemRowModel(itemId: rootId, entryId: $0.id, typeId: itemController.config.module) }
     }
     
 //    @MainActor 
 //    func generateItems(for rootId: UUID) -> ([ItemRowModel], String) {
-//        let generatorStore = root.generatorController(rootItem: ItemRowModel(itemId: rootId, typeId: itemController.itemDataModel.networkModule))
+//        let generatorStore = root.generatorController(rootItem: ItemRowModel(itemId: rootId, typeId: itemController.config.module))
 //        return (generatorStore.roleResults(), generatorStore.entryValue)
 //    }
     

@@ -102,7 +102,7 @@ extension EditController {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             item.name = name
         }
-        let fileUrl = try? await fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: itemController.itemDataModel.networkModule.token, category: item.category.title)
+        let fileUrl = try? await fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: itemController.config.module.token, category: item.category.title)
         await resetURL(url: fileUrl, on: item)
         if undoSave {
             await save(with: String(localized: "New Pdf").localizedString)

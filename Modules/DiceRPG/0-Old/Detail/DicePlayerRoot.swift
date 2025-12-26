@@ -14,7 +14,7 @@ struct DicePlayerRoot: View {
                 withAnimation { showPlayerDice.toggle()
                 }
             } label: {
-                Image(systemName: root.itemController.itemDataModel.networkModule.icon)
+                Image(systemName: root.itemController.config.module.icon)
             }
             .buttonStyle(.borderedProminent)
 

@@ -95,7 +95,7 @@ struct EditGroupHeaderEditor<Model, ItemDataController: ItemControllable, ItemEd
 
             CategoryItemEditor(editController: editGroupController, allCategories: editGroupController.itemControllable.itemDataModel.categoryTags + [.all])
 #endif
-            TagsItemEditor(editController: editGroupController, module: editGroupController.itemControllable.itemDataModel.networkModule)
+            TagsItemEditor(editController: editGroupController, module: editGroupController.itemControllable.config.module)
 
 #if !os(macOS)
             HiddenToggleEditor(editController: editGroupController)

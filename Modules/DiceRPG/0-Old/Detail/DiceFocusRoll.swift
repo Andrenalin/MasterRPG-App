@@ -22,7 +22,7 @@ struct DiceFocusRoll: View {
     @State private var itemId = UUID()
     
     var body: some View {
-        DiceOverlay(item: ItemRowTreeModel(itemId: itemId, typeId: root.itemController.itemDataModel.networkModule), showFocusButton: false, canShowPlayer: false, hideOwnDice: false, alignIsVertical: false)
+        DiceOverlay(item: ItemRowTreeModel(itemId: itemId, typeId: root.itemController.config.module), showFocusButton: false, canShowPlayer: false, hideOwnDice: false, alignIsVertical: false)
             .onChange(of: root.gameController.gameModel.focusItemIds, initial: true) {
                 withAnimation { itemId <=> root.gameController.gameModel.focusItemIds.first ?? UUID() }
             }

@@ -78,7 +78,7 @@ private extension SpaceViewer {
     var contentView: some View {
         RealityView { content in
             do {
-                guard let url = await root.itemController.loadableUrl(for: ItemRowModel(itemId: id, typeId: root.itemController.itemDataModel.networkModule)) else { return }
+                guard let url = await root.itemController.loadableUrl(for: ItemRowModel(itemId: id, typeId: root.itemController.config.module)) else { return }
                 
                 defer { url.stopAccessingSecurityScopedResource() }
                 let _ = url.startAccessingSecurityScopedResource()

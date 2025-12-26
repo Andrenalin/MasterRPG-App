@@ -19,7 +19,7 @@ struct ItemController: Sendable {
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
         
-        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         self.collectionCategory = config.collectionCategory
 
         let fileUrlDataController = FileUrlDataController(moduleFolder: config.module.token, fileTypes: config.fileTypes, filenameExtension: config.filenameExtension, fileUrlAccess: self)
@@ -47,10 +47,10 @@ extension ItemController: ItemControllable {
     func children(for model: ItemRowModel) -> [ItemRowModel] {
         let item = itemOrEmpty(for: model.itemId)
         guard !item.entries.isEmpty else {
-            return [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: itemDataModel.networkModule)]
+            return [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: config.module)]
         }
         return itemOrEmpty(for: model.itemId).entries.map {
-            ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: itemDataModel.networkModule)
+            ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: config.module)
         }
     }
     

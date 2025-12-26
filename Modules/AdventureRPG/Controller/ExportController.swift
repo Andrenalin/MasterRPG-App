@@ -41,12 +41,12 @@ extension ExportController: ExportControllable {
         itemIds.merge(other: root.tableRoot.exportControllable.exportingAll())
         itemIds.merge(other: root.characterRoot.exportControllable.exportingAll())
         itemIds.merge(other: root.weatherRoot.exportControllable.exportingAll())
-        itemIds.merge(other: ItemModuleIds(dictionary: [itemController.itemDataModel.networkModule: itemController.itemDataModel.items.map { $0 }]))
+        itemIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.map { $0 }]))
         return itemIds
     }
     
     public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
-        var checkIds = itemIds.ids[itemController.itemDataModel.networkModule, default: []]
+        var checkIds = itemIds.ids[itemController.config.module, default: []]
         var results: Set<UUID> = []
         var audioIds: Set<UUID> = []
         var diceIds: Set<UUID> = []
@@ -122,7 +122,7 @@ extension ExportController: ExportControllable {
             }
         }        
         var allIds = itemIds
-        allIds.ids[itemController.itemDataModel.networkModule] = Array(results)
+        allIds.ids[itemController.config.module] = Array(results)
         let newAudioIds = exportModel.gameExporter ? root.audioRoot.gameControllable.exportControllable.exporting(ids: audioIds) : root.audioRoot.exportControllable.exporting(ids: audioIds)
         allIds.merge(other: newAudioIds)
         let newDiceIds = exportModel.gameExporter ? root.diceRoot.gameControllable.exportControllable.exporting(ids: diceIds) : root.diceRoot.exportControllable.exporting(ids: diceIds)

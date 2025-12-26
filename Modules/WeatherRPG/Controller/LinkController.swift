@@ -31,7 +31,7 @@ extension LinkController: LinkControllable {
             }
             if command == LinkType.show.rawValue {
                 Task { @MainActor in
-                    await toggler?(itemId, itemControllable.itemDataModel.networkModule)
+                    await toggler?(itemId, itemControllable.config.module)
                 }
                 return text
             }
@@ -42,13 +42,13 @@ extension LinkController: LinkControllable {
         } else {
             if let toggler, entryId == nil, editAction == nil {
                 Task { @MainActor in
-                    await toggler(itemId, itemControllable.itemDataModel.networkModule)
+                    await toggler(itemId, itemControllable.config.module)
                 }
             }
             let item = itemController.itemOrEmpty(for: itemId)
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? "\(specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
-            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.itemDataModel.networkModule)) ?? false
+            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module)) ?? false
             let removeAction = editLine ? "\(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let result = "\(sendAction)\(showAction) \(item.description) \(removeAction)"
             let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
@@ -79,9 +79,9 @@ extension LinkController: LinkControllable {
     }
     
     @MainActor public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
-        guard module == itemController.itemDataModel.networkModule, let model = itemController.itemSync(for: itemId) else { return nil }
-        let entry = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, type: .weather, name: "", description: "", entries: [])
-        return SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, type: .item, name: model.name, description: model.description, entries: [entry])
+        guard module == itemController.config.module, let model = itemController.itemSync(for: itemId) else { return nil }
+        let entry = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .weather, name: "", description: "", entries: [])
+        return SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .item, name: model.name, description: model.description, entries: [entry])
     }
 }
 

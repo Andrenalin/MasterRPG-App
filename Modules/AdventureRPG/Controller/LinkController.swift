@@ -92,18 +92,18 @@ extension LinkController: LinkControllable {
                 return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
             }
             Task { @MainActor in
-                await toggler?(itemId, itemControllable.itemDataModel.networkModule)
+                await toggler?(itemId, itemControllable.config.module)
             }
             return text
         } else {
             if let toggler, entryId == nil, editAction == nil {
                 Task { @MainActor in
-                    await toggler(itemId, itemController.itemDataModel.networkModule)
+                    await toggler(itemId, itemController.config.module)
                 }
             }
             let item = itemController.itemOrEmpty(for: itemId)
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId)) " : ""
-            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.itemDataModel.networkModule)) ?? false
+            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module)) ?? false
             let removeAction = editLine ? " \(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let description: String
             if let entryId {

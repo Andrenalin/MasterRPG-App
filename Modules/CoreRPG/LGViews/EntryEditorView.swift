@@ -18,7 +18,7 @@ public struct EntryEditorView: View {
             if isActive {
                 content(entry: entry)
                     .onAppear {
-                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.model.id, entryId: entry.id, typeId: editController.itemControllable.itemDataModel.networkModule))
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.model.id, entryId: entry.id, typeId: editController.itemControllable.config.module))
                     }
             }
         }
@@ -75,7 +75,7 @@ public struct EntryEditorView: View {
     }
     
     var backGroundColor: Color {
-        editController.itemControllable.itemDataModel.networkModule.color
+        editController.itemControllable.config.module.color
     }
     
     var isActive: Bool {

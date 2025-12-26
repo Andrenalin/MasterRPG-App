@@ -204,12 +204,12 @@ public extension GameControllable {
             throw ItemGameStorableError.memoryStreamError
         }
         let version = await itemControllable.item(for: itemId)?.version ?? -1
-        let module = itemControllable.itemDataModel.networkModule
+        let module = itemControllable.config.module
         return NetworkCodableDataType(id: itemId, type: module, version: version, data: data)
     }
 
     func share(id: UUID) async -> NetworkCodableDataType {
-        await NetworkCodableDataType(id: id, type: itemControllable.itemDataModel.networkModule, version: itemControllable.item(for: id)?.version ?? -1)
+        await NetworkCodableDataType(id: id, type: itemControllable.config.module, version: itemControllable.item(for: id)?.version ?? -1)
     }
     
     func reveal(itemId: UUID, data: NetworkCodableDataType, save: Bool) async throws -> Bool {
@@ -234,7 +234,7 @@ public extension GameControllable {
                 throw ItemGameStorableError.networkDecoding
             }
         } else {
-            let module = itemControllable.itemDataModel.networkModule
+            let module = itemControllable.config.module
             guard data.type == module else { throw ItemGameStorableError.wrongData }
         }
 

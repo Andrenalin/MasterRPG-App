@@ -307,7 +307,7 @@ private extension EntrySectionEditor {
 
 private extension EntrySectionEditor {
     func checkDeleteEntries(ids: [UUID], alwaysDeleteCheck: Bool = false) {
-        entrySectionEditorModel.removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
+        entrySectionEditorModel.removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.config.module) }
         if alwaysDeleteCheck {
             withAnimation { entrySectionEditorModel.showDeleteAlert.toggle() }
         } else {
@@ -329,7 +329,7 @@ private extension EntrySectionEditor {
 
     func remove(indexSet: IndexSet) {
         let ids = indexSet.map { editControllable.model.entries[$0].id }
-        entrySectionEditorModel.removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
+        entrySectionEditorModel.removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.config.module) }
 
         if editControllable.isUsed(rowModels: entrySectionEditorModel.removeEntryList.removeItems) {
             let copyEntries = model.entries

@@ -11,7 +11,7 @@ struct ItemController: Sendable {
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
 
-        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         self.collectionCategory = config.collectionCategory
     }
 
@@ -33,7 +33,7 @@ extension ItemController: ItemControllable {
 
     @MainActor
     func children(for model: ItemRowModel) -> [ItemRowModel] {
-        [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: itemDataModel.networkModule)]
+        [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: config.module)]
     }
 
     func didDelete(model: ModelType) async {

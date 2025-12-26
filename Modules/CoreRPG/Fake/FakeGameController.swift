@@ -9,7 +9,7 @@ struct FakeGameController: GameControllable {
         self.importControllable = FakeImportController.fake
         self.rootExportControllable = FakeExportController.fake
         self.rootImportControllable = FakeImportController.fake
-        self.gameModel = ItemGameModel(itemDataModel: ItemDataModel(categoryTags: [], networkModule: .audio))
+        self.gameModel = ItemGameModel(itemDataModel: ItemDataModel(categoryTags: []))
     }
     
     var itemControllable: any ItemControllable

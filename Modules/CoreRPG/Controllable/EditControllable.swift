@@ -261,7 +261,7 @@ public extension EditControllable {
     }
     
     @MainActor func duplicate(item: any ItemDataAccessable) async {
-        await itemControllable.duplicate(model: ItemRowModel(itemId: item.id, typeId: itemControllable.itemDataModel.networkModule))
+        await itemControllable.duplicate(model: ItemRowModel(itemId: item.id, typeId: itemControllable.config.module))
     }
     
     @MainActor func markForDeletion(itemId: UUID) {

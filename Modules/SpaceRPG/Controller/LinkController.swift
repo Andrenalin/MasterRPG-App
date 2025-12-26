@@ -27,7 +27,7 @@ extension LinkController: LinkControllable {
             }
             if command == LinkType.show.rawValue {
                 Task { @MainActor in
-                    await toggler?(itemId, itemControllable.itemDataModel.networkModule)
+                    await toggler?(itemId, itemControllable.config.module)
                 }
                 return text
             }
@@ -45,13 +45,13 @@ extension LinkController: LinkControllable {
         } else {
             if let toggler, entryId == nil, editAction == nil {
                 Task { @MainActor in
-                    await toggler(itemId, itemController.itemDataModel.networkModule)
+                    await toggler(itemId, itemController.config.module)
                 }
             }
             let item = itemController.itemOrEmpty(for: itemId)
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? "\(specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
-            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.itemDataModel.networkModule)) ?? false
+            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module)) ?? false
             let removeAction = editLine ? "\(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let result = "\(sendAction)\(showAction)\(item.description)\(removeAction)"
             let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)

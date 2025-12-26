@@ -133,7 +133,7 @@ private extension DiceDropDownMenuArea {
     }
     
     func drop(link: LinkData) -> Bool {
-        guard link.module == root.itemController.itemDataModel.networkModule else { return false }
+        guard link.module == root.itemController.config.module else { return false }
         withAnimation {
             model.wrappedValue = link.itemId
         }

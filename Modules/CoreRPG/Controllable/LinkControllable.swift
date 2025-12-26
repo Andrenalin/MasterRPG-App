@@ -146,7 +146,7 @@ public extension LinkControllable {
     @MainActor
     func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         let module = url.moduleIdentifier
-        guard module == itemControllable.itemDataModel.networkModule else { return text }
+        guard module == itemControllable.config.module else { return text }
 
         guard let itemId = url.itemId else { return text }
         guard let brokenLink = brokenTextLinkToggle(url: url, itemId: itemId, entryId: nil, in: text) else {
@@ -186,7 +186,7 @@ public extension LinkControllable {
     @MainActor
     func brokenTextLinkToggle(url: URL, itemId: UUID, entryId: UUID?, in text: String) -> String? {
         guard !validateLink(itemId: itemId, entryId: entryId) else { return nil }
-        return text.toggleLink(url: url.absoluteString, with: "🚨 \(String(localized: itemControllable.itemDataModel.networkModule.localizedTitle)) Link is broken")
+        return text.toggleLink(url: url.absoluteString, with: "🚨 \(String(localized: itemControllable.config.module.localizedTitle)) Link is broken")
     }
 
     @MainActor
@@ -210,20 +210,20 @@ public extension LinkControllable {
 
     @MainActor func repairLink(_ link: LinkReplaceModel, for content: String, for categories: [ItemListCategory]) -> String {
 
-        guard link.module == itemControllable.itemDataModel.networkModule else { return content }
+        guard link.module == itemControllable.config.module else { return content }
         guard !validateLink(itemId: link.itemId, entryId: link.entryId) else { return content }
 
-        Logger.linkController.info("\(itemControllable.itemDataModel.networkModule.token, privacy: .public) \(link.markDown, privacy: .public) is gone")
+        Logger.linkController.info("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) is gone")
 
         if link.entryId != nil {
             // Is item available for the entry? If not recovery not possible
             guard let model = itemControllable.itemSync(for: link.itemId) else {
-                Logger.linkController.warning("\(itemControllable.itemDataModel.networkModule.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover entry because item is missing.")
+                Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover entry because item is missing.")
                 return content.replacingOccurrences(of: link.markDown, with: link.name)
             }
 
             guard let entry = model.entries.first(where: { model.urlName(entryId: $0.id) == link.name }) else {
-                Logger.linkController.warning("\(itemControllable.itemDataModel.networkModule.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover entry because entry name is missing.")
+                Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover entry because entry name is missing.")
                 return content.replacingOccurrences(of: link.markDown, with: link.name)
             }
             return content.replacingOccurrences(of: link.markDown, with: model.url(linkNumber: link.linkNumber, entryId: entry.id))
@@ -238,7 +238,7 @@ public extension LinkControllable {
             items.sort { $0.1 < $1.1}
 
             guard let newItem = items.first(where: { $0.0.urlName() == link.name })?.0 else {
-                Logger.linkController.warning("\(itemControllable.itemDataModel.networkModule.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover item because it is missing.")
+                Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover item because it is missing.")
                 return content.replacingOccurrences(of: link.markDown, with: link.name)
             }
 

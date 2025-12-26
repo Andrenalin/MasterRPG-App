@@ -40,7 +40,7 @@ public protocol EntryEditControllable: Sendable {
 
 public extension EntryEditControllable {
     @MainActor var module: NetworkModules {
-        editControllable.itemControllable.itemDataModel.networkModule
+        editControllable.itemControllable.config.module
     }
     
     @MainActor func remove(_ indexSet: IndexSet, from model: EditDataModel) {

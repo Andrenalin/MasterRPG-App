@@ -26,12 +26,12 @@ extension ExportController: ExportControllable {
 
     public func exportingAll() -> ItemModuleIds {
         var allIds = diceRoot.exportControllable.exportingAll()
-        allIds.merge(other: ItemModuleIds(dictionary: [itemController.itemDataModel.networkModule: itemController.itemDataModel.items.map { $0 }]))
+        allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.map { $0 }]))
         return allIds
     }
     
     public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
-        var checkIds = itemIds.ids[itemController.itemDataModel.networkModule, default: []]
+        var checkIds = itemIds.ids[itemController.config.module, default: []]
         var results: Set<UUID> = []
         var diceIds: Set<UUID> = []
     
@@ -69,7 +69,7 @@ extension ExportController: ExportControllable {
             }
         }
         var allIds = itemIds
-        allIds.ids[itemController.itemDataModel.networkModule] = Array(results)
+        allIds.ids[itemController.config.module] = Array(results)
 
         let newDiceIds = diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)

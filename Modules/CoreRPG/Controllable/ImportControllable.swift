@@ -145,7 +145,7 @@ public extension ImportControllable {
 private extension ImportControllable {
     @MainActor
     func token() async -> Int {
-        itemControllable.itemDataModel.networkModule.rawValue
+        itemControllable.config.module.rawValue
     }
     
     @MainActor

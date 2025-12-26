@@ -71,7 +71,7 @@ public extension ViewController {
         Text("Selection - should be LinkRootView with ItemSelectionModel")
 //        viewSelect(root: root) {
 //            if let links = ids.wrappedValue {
-//                return links.map { ItemRowModel(itemId: $0, entryId: entryId?.wrappedValue, typeId: root.itemController.itemDataModel.networkModule) }
+//                return links.map { ItemRowModel(itemId: $0, entryId: entryId?.wrappedValue, typeId: root.itemController.config.module) }
 //            } else {
 //                return []
 //            }

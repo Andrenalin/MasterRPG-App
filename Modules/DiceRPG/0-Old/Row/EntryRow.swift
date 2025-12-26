@@ -21,7 +21,7 @@ struct EntryRow: View {
                 Button {
                     withAnimation { root.gameController.rollDice(itemId: item.model.itemId, networkActions: networkActions) }
                 } label: {
-                    Image(systemName: root.itemController.itemDataModel.networkModule.icon)
+                    Image(systemName: root.itemController.config.module.icon)
                 }
                 
                 if showGame && !root.gameController.isFocusedDice(itemId: item.model.itemId) {

@@ -25,7 +25,7 @@ struct SpaceQuickLook: View {
     @State private var selected: URL?
     
     var body: some View {
-        ImageOverlayButton(icon: root.itemController.itemDataModel.networkModule.icon) {
+        ImageOverlayButton(icon: root.itemController.config.module.icon) {
             loader()
         }
         .opacity(gameMode ? 0.01 : 1)

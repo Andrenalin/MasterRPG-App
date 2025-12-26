@@ -6,6 +6,7 @@ import Observation
 public protocol ItemControllable: Sendable  {
     associatedtype Model: ItemDataAccessable & ItemDiffComparable & ItemDuplicatable & ItemLinkRegistable & Identifiable & Equatable & Hashable & Codable & ModelType
         
+    var config: ModuleConfigurable { get }
     var collectionCategory: ItemListCategory { get }
     var dataControllable: (any DataPersistenceControllable)? { get }
     var fileUrlDataController: FileUrlDataController? { get }
@@ -103,10 +104,10 @@ public extension ItemControllable {
                 }
                 originalEntryIds.subtract(orignal.entries.map { $0.id })
                 if shouldRepairLinks {
-                    repairLinks(for: originalEntryIds.map { ItemRowModel(itemId: orignal.id, entryId: $0, typeId: itemDataModel.networkModule) })
+                    repairLinks(for: originalEntryIds.map { ItemRowModel(itemId: orignal.id, entryId: $0, typeId: config.module) })
                 }
                 for entryId in originalEntryIds {
-                    resetUsedLink(for: ItemRowModel(itemId: orignal.id, entryId: entryId, typeId: itemDataModel.networkModule))
+                    resetUsedLink(for: ItemRowModel(itemId: orignal.id, entryId: entryId, typeId: config.module))
                 }
 
                 if resort {
@@ -184,7 +185,7 @@ public extension ItemControllable {
                 }
                 originalEntryIds.subtract(orignal.entries.map { $0.id })
                 for entryId in originalEntryIds {
-                    resetUsedLink(for: ItemRowModel(itemId: orignal.id, entryId: entryId, typeId: itemDataModel.networkModule))
+                    resetUsedLink(for: ItemRowModel(itemId: orignal.id, entryId: entryId, typeId: config.module))
                 }
                 resortItem(changed: orignal)
             }
@@ -224,7 +225,7 @@ public extension ItemControllable {
         try? await dataControllable?.replace(id: updatedModel.id, with: updatedModel)
         insertIntoItems(model: model)
         setModel(with: model)
-        return ItemRowModel(itemId: model.id, typeId: itemDataModel.networkModule)
+        return ItemRowModel(itemId: model.id, typeId: config.module)
     }
 
     @MainActor
@@ -264,7 +265,7 @@ public extension ItemControllable {
     }
     
     func delete(itemId: UUID) async {
-        await delete(model: ItemRowModel(itemId: itemId, typeId: itemDataModel.networkModule))
+        await delete(model: ItemRowModel(itemId: itemId, typeId: config.module))
     }
 
     func delete(model: ItemRowModel) async {
@@ -278,7 +279,7 @@ public extension ItemControllable {
         await repairLinks(for: [model])
         await resetUsedLink(for: model)
         for entry in entries {
-            await resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemDataModel.networkModule))
+            await resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: config.module))
         }
     }
 
@@ -369,7 +370,7 @@ public extension ItemControllable {
 
     func resetData() async {
         for id in await itemDataModel.items {
-            await delete(model: ItemRowModel(itemId: id, typeId: itemDataModel.networkModule))
+            await delete(model: ItemRowModel(itemId: id, typeId: config.module))
         }
     }
 

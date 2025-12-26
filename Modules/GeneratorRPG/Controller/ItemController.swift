@@ -5,14 +5,18 @@ import Foundation
 import SwiftData
 
 struct ItemController: Sendable {
-    @MainActor init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.config = config
+        
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
 
-        self.itemDataModel = ItemDataModel(categoryTags: [.rules, .table, .value], networkModule: .generator)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
+        self.collectionCategory = config.collectionCategory
     }
 
-    let collectionCategory: ItemListCategory = .diceBag
+    let config: ModuleConfigurable
+    let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
@@ -27,7 +31,7 @@ extension ItemController: ItemControllable {
 
     @MainActor
     func children(for model: ItemRowModel) -> [ItemRowModel] {
-        [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: itemDataModel.networkModule)]
+        [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: config.module)]
     }
 
     func didDelete(model: ModelType) async {}

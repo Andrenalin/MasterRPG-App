@@ -354,7 +354,7 @@ private extension PinSectionEditor {
 
 private extension PinSectionEditor {
     func checkDeleteEntries(ids: [UUID], alwaysDeleteCheck: Bool = false) {
-        removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
+        removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.config.module) }
 
         if alwaysDeleteCheck {
             showDeleteAlert.toggle()
@@ -377,7 +377,7 @@ private extension PinSectionEditor {
     
     func remove(indexSet: IndexSet) {
         let ids = indexSet.map { editControllable.model.mapPins[$0].id }
-        removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
+        removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.config.module) }
 
         deleteSelectedEntries(rowModels: removeEntryList.removeItems)
     }

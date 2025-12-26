@@ -15,7 +15,7 @@ struct ItemController: Sendable {
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
 
-        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         self.collectionCategory = config.collectionCategory
         
         let fileUrlDataController = FileUrlDataController(moduleFolder: config.module.token, fileTypes: config.fileTypes, filenameExtension: config.filenameExtension, fileUrlAccess: self)

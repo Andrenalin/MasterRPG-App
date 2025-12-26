@@ -45,7 +45,7 @@ public extension ExportControllable {
 
     @MainActor
     func exportingAll() -> ItemModuleIds {
-        ItemModuleIds(dictionary: [itemControllable.itemDataModel.networkModule: itemControllable.itemDataModel.items.map { $0 }])
+        ItemModuleIds(dictionary: [itemControllable.config.module: itemControllable.itemDataModel.items.map { $0 }])
     }
 
     @MainActor
@@ -88,7 +88,7 @@ public extension ExportControllable {
 
     @MainActor
     func exporting(ids: Set<UUID>) -> ItemModuleIds {
-        exporting(itemIds: ItemModuleIds(ids: ids, module: itemControllable.itemDataModel.networkModule))
+        exporting(itemIds: ItemModuleIds(ids: ids, module: itemControllable.config.module))
     }
 
     func export(ids: ItemModuleIds) -> (Task<Void, any Error>, URL) {
@@ -161,7 +161,7 @@ public extension ExportControllable {
 
     @MainActor
     func token() async -> NetworkModules {
-        itemControllable.itemDataModel.networkModule
+        itemControllable.config.module
     }
 
     @MainActor

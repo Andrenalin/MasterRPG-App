@@ -95,7 +95,7 @@ struct DiceGameActionBar: View {
     }
     
     var diceIcon: String {
-        root.gameController.hasResults(itemId: itemId) ? root.itemController.itemDataModel.networkModule.icon + ".fill" : root.itemController.itemDataModel.networkModule.icon
+        root.gameController.hasResults(itemId: itemId) ? root.itemController.config.module.icon + ".fill" : root.itemController.config.module.icon
     }
 }
 

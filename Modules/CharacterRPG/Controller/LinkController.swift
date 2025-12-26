@@ -36,7 +36,7 @@ extension LinkController {
     @MainActor
     func updateValueCalculation(itemId: UUID, entryId: UUID, action: @MainActor @escaping @Sendable () -> Void) {
         let details: [LinkReplaceModel] = LinkReplaceController.links(for: itemController.itemOrEmpty(for: itemId)[entryId].value).filter {
-            $0.module == itemController.itemDataModel.networkModule && $0.entryId != nil && $0.entryId != entryId && itemController.itemSync(for: $0.itemId) != nil
+            $0.module == itemController.config.module && $0.entryId != nil && $0.entryId != entryId && itemController.itemSync(for: $0.itemId) != nil
         }
         for detail in details {
             _ = withObservationTracking {
@@ -60,7 +60,7 @@ extension LinkController: LinkControllable {
             }
             if command == LinkType.show.rawValue {
                 Task { @MainActor in
-                    await toggler?(itemId, itemControllable.itemDataModel.networkModule)
+                    await toggler?(itemId, itemControllable.config.module)
                 }
                 return text
             }
@@ -72,13 +72,13 @@ extension LinkController: LinkControllable {
             if let toggler, entryId == nil, editAction == nil {
                 Task { @MainActor in
                     try await Task.sleep(for: .milliseconds(100))
-                    await toggler(itemId, itemController.itemDataModel.networkModule)
+                    await toggler(itemId, itemController.config.module)
                 }
             }
             let item = itemController.itemOrEmpty(for: itemId)
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? "\(specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
-            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.itemDataModel.networkModule)) ?? false
+            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module)) ?? false
             let removeAction = editLine ? " \(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let description: String
             if let entryId {

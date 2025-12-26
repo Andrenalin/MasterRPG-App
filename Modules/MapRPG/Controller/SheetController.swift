@@ -13,7 +13,7 @@ struct SheetController {
             entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), level: level, type: .photo, name: "", description: "", entries: []))
         }
         entries.append(contentsOf: sheetEntries(for: itemId, level: level + 1))
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, name: model.name, description: model.description, entries: entries)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, name: model.name, description: model.description, entries: entries)
         return sheetModel
     }
 
@@ -24,7 +24,7 @@ struct SheetController {
             guard !entry.isHexGrid else { return nil }
             let name = entry.name
             let description = entry.content
-            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.itemDataModel.networkModule), level: level, name: name, description: description, entries: [])
+            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: [])
         }
     }
 }

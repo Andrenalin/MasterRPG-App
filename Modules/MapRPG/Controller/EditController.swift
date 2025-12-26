@@ -535,7 +535,7 @@ extension EditController {
             return foundEntry ?? entry
         }
         let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
-        let module = itemController.itemDataModel.networkModule
+        let module = itemController.config.module
         let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
 
         var effectedLinks = true

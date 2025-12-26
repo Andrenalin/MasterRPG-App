@@ -11,7 +11,7 @@ struct ItemController: Sendable {
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
         
-        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         self.collectionCategory = config.collectionCategory
 
         self.tableRoot = tableRoot
@@ -48,7 +48,7 @@ extension ItemController: ItemControllable {
 
     @MainActor
     func childrenTree(for model: ItemRowModel) -> ItemRowModel? {
-        guard model.typeId == itemDataModel.networkModule, let entryId = model.entryId, let valueId = itemOrEmpty(for: model.itemId)[entryId].valueId else { return nil }
+        guard model.typeId == config.module, let entryId = model.entryId, let valueId = itemOrEmpty(for: model.itemId)[entryId].valueId else { return nil }
         return ItemRowModel(itemId: valueId, typeId: config.module)
     }
 

@@ -181,7 +181,7 @@ public extension EntryDataEditable {
         var changed = model[entryId].name != name.withoutLink()
         model[entryId].name <=> name.withoutLink()
 
-        let links = linkRegisterControllable.linkRegisterModel(in: content, for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.itemDataModel.networkModule))
+        let links = linkRegisterControllable.linkRegisterModel(in: content, for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
         var seenIds: Set<UUID> = []
         var newContent = content
         for link in links {
@@ -250,12 +250,12 @@ public extension EntryDataEditable {
 
     @MainActor
     func isUsed(entryId: UUID) -> Bool {
-        linkRegisterControllable.isUsed(link: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.itemDataModel.networkModule))
+        linkRegisterControllable.isUsed(link: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
     }
 
     @MainActor
     func used(entryId: UUID) -> [EffectedItemModel] {
-        linkRegisterControllable.used(for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.itemDataModel.networkModule))
+        linkRegisterControllable.used(for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
     }
     
     func scanReplace(entry: Model.Entry, linkEntry: LinkEntryModel, getLink: @Sendable @escaping (Model.Entry) -> String, setLink: @Sendable @escaping (String, Model.Entry) -> Model.Entry, caseInsensitive: Bool, words: Bool) -> Model.Entry {

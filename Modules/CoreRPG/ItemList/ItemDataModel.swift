@@ -7,9 +7,8 @@ public typealias ModelType = Observable & Sendable
 
 @MainActor @Observable
 public final class ItemDataModel: Sendable {
-    public init(categoryTags: [ItemListCategory], networkModule: NetworkModules, version: Int = 2024) {
+    public init(categoryTags: [ItemListCategory], version: Int = 2024) {
         self.categoryTags = categoryTags
-        self.networkModule = networkModule
         self.version = version
     }
 
@@ -19,12 +18,11 @@ public final class ItemDataModel: Sendable {
     public var allTags: [String] = []
 
     public let categoryTags: [ItemListCategory]
-    public let networkModule: NetworkModules
     public let version: Int
     public internal(set) var updateHiddenCounter: Int = 0
     
     public func copyWithoutItems() -> ItemDataModel {
-        ItemDataModel(categoryTags: categoryTags, networkModule: networkModule, version: version)
+        ItemDataModel(categoryTags: categoryTags, version: version)
     }
     
     func updateTags(with newTags: [String]) {

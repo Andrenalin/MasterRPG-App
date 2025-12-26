@@ -29,7 +29,7 @@ public struct HeaderEditor: View {
 
             CategoryItemEditor(editController: editController, allCategories: editController.itemControllable.itemDataModel.categoryTags)
 #endif
-            TagsItemEditor(editController: editController, module: editController.itemControllable.itemDataModel.networkModule)
+            TagsItemEditor(editController: editController, module: editController.itemControllable.config.module)
 
 #if !os(macOS)
             HiddenToggleEditor(editController: editController)

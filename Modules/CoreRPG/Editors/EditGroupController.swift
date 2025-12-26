@@ -97,7 +97,7 @@ public struct EditGroupController<ItemDataController: ItemControllable, ItemEdit
         self.itemControllable = itemControllable
         self.editControllable = editControllable
         self.rootControllable = rootControllable
-        self.selections = selections.filter { $0.model.entryId == nil && $0.model.typeId == itemControllable.itemDataModel.networkModule }
+        self.selections = selections.filter { $0.model.entryId == nil && $0.model.typeId == itemControllable.config.module }
         self.editorModel = ItemEditorModel()
         self.cacheItemListModel = CacheItemListModel()
 

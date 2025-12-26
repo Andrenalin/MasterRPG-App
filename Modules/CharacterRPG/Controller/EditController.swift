@@ -276,7 +276,7 @@ extension EditController {
                 let subValue = itemController.itemOrEmpty(for: valueId)
                 guard subValue.isGroupHidden else { return }
                 Task {
-                    await itemController.delete(model: ItemRowModel(itemId: subValue.id, typeId: itemController.itemDataModel.networkModule))
+                    await itemController.delete(model: ItemRowModel(itemId: subValue.id, typeId: itemController.config.module))
                 }
             } else {
                 removeChild(childId: valueId)
@@ -716,7 +716,7 @@ extension EditController {
             return foundEntry ?? entry
         }
         let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
-        let module = itemController.itemDataModel.networkModule
+        let module = itemController.config.module
         let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
 
         var effectedLinks = true

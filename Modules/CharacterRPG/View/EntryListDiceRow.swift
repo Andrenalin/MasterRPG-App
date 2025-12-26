@@ -14,7 +14,7 @@ struct EntryListDiceRow: View {
     var body: some View {
         @Bindable var model = root.itemController.itemOrEmpty(for: itemId)
         if let id = root.gameController.gameDiceId(itemId: itemId, entryId: entryId) {
-            root.diceRoot.viewController.viewDice(root: root.diceRoot, with: id, for: ResultCategory(id: itemId, childId: entryId, module: root.itemController.itemDataModel.networkModule), onlyPrimaryAction: true)
+            root.diceRoot.viewController.viewDice(root: root.diceRoot, with: id, for: ResultCategory(id: itemId, childId: entryId, module: root.itemController.config.module), onlyPrimaryAction: true)
                 .onChange(of: model[entryId].diceId, initial: false) {
                     updateDiceValue(id: id)
                 }

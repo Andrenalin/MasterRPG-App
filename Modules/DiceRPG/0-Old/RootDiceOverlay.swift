@@ -11,7 +11,7 @@ struct RootDiceOverlay: View {
     @State private var itemId: UUID = UUID()
 
     var body: some View {
-        DiceOverlay(item: ItemRowTreeModel(itemId: itemId, typeId: root.itemController.itemDataModel.networkModule), showFocusButton: false, hideOwnDice: valueFor(iOS: false, macOS: false, tvOS: false, visionOS: true))
+        DiceOverlay(item: ItemRowTreeModel(itemId: itemId, typeId: root.itemController.config.module), showFocusButton: false, hideOwnDice: valueFor(iOS: false, macOS: false, tvOS: false, visionOS: true))
         .onChange(of: root.gameController.gameModel.focusItemIds, initial: true) {
             withAnimation { itemId <=> root.gameController.gameModel.focusItemIds.first ?? UUID() }
         }

@@ -70,7 +70,7 @@ public extension ViewController {
     @MainActor @ViewBuilder
     func diceView(root: TableRootModel, for id: UUID?, from itemId: UUID) -> some View {
         if let id {
-            root.diceRoot.viewController.viewDice(root: root.diceRoot, with: id, for: ResultCategory(id: itemId, module: root.itemController.itemDataModel.networkModule))
+            root.diceRoot.viewController.viewDice(root: root.diceRoot, with: id, for: ResultCategory(id: itemId, module: root.itemController.config.module))
         } else {
             EmptyView()
         }

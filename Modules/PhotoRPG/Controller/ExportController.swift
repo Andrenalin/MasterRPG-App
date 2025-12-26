@@ -19,7 +19,7 @@ extension ExportController: ExportControllable {
     }
 
     @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
-        var checkIds = itemIds.ids[itemController.itemDataModel.networkModule, default: []]
+        var checkIds = itemIds.ids[itemController.config.module, default: []]
         var results: Set<UUID> = []
 
         while !checkIds.isEmpty {
@@ -42,7 +42,7 @@ extension ExportController: ExportControllable {
             checkIds.append(contentsOf: ids)
         }
         var allIds = itemIds
-        allIds.ids[itemController.itemDataModel.networkModule] = Array(results)
+        allIds.ids[itemController.config.module] = Array(results)
         return allIds
     }
 }

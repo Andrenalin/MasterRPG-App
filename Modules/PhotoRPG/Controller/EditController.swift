@@ -106,7 +106,7 @@ extension EditController {
         await resetFileUrl()
         guard let data else { return }
         
-        let module = await itemController.itemDataModel.networkModule.token
+        let module = itemController.config.module.token
         let filePath = await model.name.isEmpty ? "\(await model.category.title)/Image-\(model.id.uuidString).\(itemController.config.filenameExtension)" : "\(await model.category.title)/\(await model.name).\(itemController.config.filenameExtension)"
         var dataFileUrl = await FileUrl(fileId: model.id, url: URL(string: filePath)!, location: .newCloud, module: module, relativeUrl: nil)
         dataFileUrl.resetData(data)
@@ -149,7 +149,7 @@ extension EditController {
             }
             _ = await saveName.value
         }
-        let fileUrl = try? await fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: itemController.itemDataModel.networkModule.token, category: item.category.title)
+        let fileUrl = try? await fileUrlDataController.createFileUrl(fileId: item.id, url: url, module: itemController.config.module.token, category: item.category.title)
         await resetURL(url: fileUrl, on: item)
         if undoSave {
             await save(with: String(localized: "New Photo").localizedString)

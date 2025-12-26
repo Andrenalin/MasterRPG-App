@@ -107,7 +107,7 @@ private extension QuickEntryEditorView {
         .onAppear {
             referenceText.input = initialText
             focusedField = .editor
-            textEditModel.reset(text: referenceText.input, source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.itemDataModel.networkModule))
+            textEditModel.reset(text: referenceText.input, source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.config.module))
         }
         .onChange(of: referenceText.output) {
             entries = createMultiLineEntries(referenceText.output)

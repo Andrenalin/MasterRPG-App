@@ -96,7 +96,7 @@ public struct ConvertController: Sendable {
             }
             
             let category = model.category
-            editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: itemController.itemDataModel.networkModule))
+            editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: itemController.config.module))
             editController.reset(category: .entry, saveIt: false)
             editController.reset(tags: [category.title] + model.tags)
             if model.parentId == nil && model.displayState != 0 {

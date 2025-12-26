@@ -182,7 +182,7 @@ extension GameController: ValueGameStorable {
                 print("Error \(error.localizedDescription)")
             }
         } else {
-            guard await data.type == itemControllable.itemDataModel.networkModule else { throw ItemGameStorableError.wrongData }
+            guard await data.type == itemControllable.config.module else { throw ItemGameStorableError.wrongData }
         }
     }
 
@@ -190,7 +190,7 @@ extension GameController: ValueGameStorable {
     func create(name: String, value: String, resultCategory: ResultCategory) -> NetworkCodableDataType {
         let entry = ValueEntryModel(id: UUID(), name: name, type: .text, value: value)
         let result = ValueResultModel(valueModels: [], valueEntryModels: [entry])
-        return NetworkCodableDataType(id: UUID(), type: itemController.itemDataModel.networkModule, version: 0, data: result.encodeData())
+        return NetworkCodableDataType(id: UUID(), type: itemController.config.module, version: 0, data: result.encodeData())
     }
 
     @MainActor
@@ -203,7 +203,7 @@ extension GameController: ValueGameStorable {
         let model = ValueModel(id: UUID(), name: name, description: description, category: .item, entries: valueEntries)
 
         let result = ValueResultModel(valueModels: [model], valueEntryModels: [])
-        return NetworkCodableDataType(id: UUID(), type: itemController.itemDataModel.networkModule, version: 0, data: result.encodeData())
+        return NetworkCodableDataType(id: UUID(), type: itemController.config.module, version: 0, data: result.encodeData())
     }
 
     func add(result: NetworkCodableDataType, for characterId: UUID?) async {

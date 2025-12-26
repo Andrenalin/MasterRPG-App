@@ -131,7 +131,7 @@ private extension EntryEditor {
     }
 
     func checkDeleteEntries(ids: [UUID], alwaysDeleteCheck: Bool = false) {
-        removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.itemDataModel.networkModule) }
+        removeEntryList.removeItems = ids.map { ItemRowModel(itemId: model.id, entryId: $0, typeId: editControllable.itemControllable.config.module) }
         if alwaysDeleteCheck {
             showDeleteAlert.toggle()
         } else {

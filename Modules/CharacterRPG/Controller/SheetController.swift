@@ -21,7 +21,7 @@ struct SheetController {
             entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), level: level, type: .photo, name: "", description: "", entries: []))
         }
         entries.append(contentsOf: sheetEntries(for: itemId, level: level + 1))
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.itemDataModel.networkModule), level: level, type: .item, showHeader: showHeader, name: model.name, description: model.description, entries: entries)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .item, showHeader: showHeader, name: model.name, description: model.description, entries: entries)
         return sheetModel
     }
 
@@ -41,7 +41,7 @@ struct SheetController {
                     description += " = \(valueCalculate)"
                 }
             }
-            var result = [SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.itemDataModel.networkModule), level: level, name: name, description: description, entries: [])]
+            var result = [SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: [])]
             if let diceId = entry.diceId {
                 result.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), level: level, type: .dice, name: "", description: "", entries: []))
             }

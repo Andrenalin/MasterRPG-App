@@ -5,6 +5,7 @@ import SwiftUI
 struct FakeItemController: ItemControllable {
     typealias Model = FakeItemModel
     
+    var config: any ModuleConfigurable
     var dataControllable: (any DataPersistenceControllable)?
     var fileUrlDataController: FileUrlDataController? 
     var linkRegisterControllable: any LinkRegisterControllable
@@ -20,5 +21,5 @@ struct FakeItemController: ItemControllable {
     func didUpdate(model: any ModelType) async {}
     
     @MainActor
-    static let fake = FakeItemController(linkRegisterControllable: FakeLinkRegisterController.fake, itemDataModel: ItemDataModel(categoryTags: [.all], networkModule: .photo))
+    static let fake = FakeItemController(config: FakeModuleConfiguration(), linkRegisterControllable: FakeLinkRegisterController.fake, itemDataModel: ItemDataModel(categoryTags: [.all]))
 }
