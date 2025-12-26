@@ -81,33 +81,5 @@ struct DetailListView: View {
         } label: {
             Text("Generation Type")
         }
-
-//        root.characterRoot.viewController.selectionView(root: root.characterRoot, model: root.editController.selectionReference)
-//            .onChange(of: root.editController.selectionReference.selection) {
-//                withAnimation { root.editController.add(referenceId: root.editController.selectionReference.itemId, model: model) }
-//            }
-//            .onChange(of: model.referenceId, initial: true) {
-//                withAnimation { root.editController.selectionReference.resetSelection(itemId: model.referenceId) }
-//            }
     }
 }
-
-//#Preview(traits: .mockData) {
-//    @Previewable @Environment(GeneratorRootModel.self) var root
-//    @Previewable @Environment(ListModel.self) var listModel
-//    
-//    if listModel.selectedItem == nil {
-//        Text("Hello")
-//            .onAppear {
-//                let id = root.itemController.itemDataModel.items.first ?? MockData.previewId
-//                root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? MockData.previewId)
-//                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .generator)
-//            }
-//    } else {
-//        ManagedNavigationStack {
-//            DetailRootView(root: root, editController: .preview, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? MockData.previewId))
-//                .preferredColorScheme(.dark)
-//        }
-//    }
-//
-//}

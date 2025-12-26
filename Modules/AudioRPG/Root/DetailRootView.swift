@@ -117,20 +117,8 @@ struct DetailListView: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(AudioRootModel.self) var root
-    @Previewable @Environment(ListModel.self) var listModel
-    
-    if listModel.selectedItem == nil {
-        Text("Hello")
-            .onAppear {
-                let id = root.itemController.itemDataModel.items.first ?? AudioModel.previewId
-                root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId)
-                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: root.configurable.module)
-            }
-    } else {
-        ManagedNavigationStack {
-            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId))
-                .preferredColorScheme(.dark)
-        }
+    ManagedNavigationStack {
+        DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId))
+            .preferredColorScheme(.dark)
     }
-    
 }

@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 struct DetailRootView: View {
@@ -81,19 +80,9 @@ struct SpaceDetailObjectViewer: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(SpaceRootModel.self) var root
-    @Previewable @Environment(ListModel.self) var listModel
-    
-    if listModel.selectedItem == nil {
-        Text("Hello")
-            .onAppear {
-                let id = root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId
-                root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId)
-                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
-            }
-    } else {
-        ManagedNavigationStack {
-            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId))
-                .preferredColorScheme(.dark)
-        }
+
+    ManagedNavigationStack {
+        DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? SpaceRootModel.previewSpaceId))
+            .preferredColorScheme(.dark)
     }
 }

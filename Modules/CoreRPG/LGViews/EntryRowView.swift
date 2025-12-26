@@ -1,0 +1,25 @@
+// @copyright André Trettin
+
+import Foundation
+import SwiftUI
+
+struct EntryRowView: View {
+    let root: any ItemRootControllable
+    let item: ListItemModel
+    
+    
+    var editController: (any EntryDataEditable)? {
+        root.editControllable as? (any EntryDataEditable)
+    }
+    var body: some View {
+        if let editController {
+            EntryEditRow(editController: editController, entry: item.model[entryId], cacheItemListModel: root.editControllable.cacheItemListModel)
+        } else {
+            Text("\(item.model[entryId].name): \(item.model[entryId].content)")
+        }
+    }
+    
+    var entryId: UUID {
+        item.entryId ?? UUID()
+    }
+}

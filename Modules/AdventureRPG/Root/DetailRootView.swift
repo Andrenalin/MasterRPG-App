@@ -142,20 +142,10 @@ private extension DetailListView {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(AdventureRootModel.self) var root
-    @Previewable @Environment(ListModel.self) var listModel
-    
-    if listModel.selectedItem == nil {
-        Text("Hello")
-            .onAppear {
-                let id = root.itemController.itemDataModel.items.first ?? AdventureModel.previewId
-                root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AdventureModel.previewId)
-                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
-            }
-    } else {
-        ManagedNavigationStack {
-            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AdventureModel.previewId))
-                .preferredColorScheme(.dark)
-        }
-        .setAppSizeMode()
+
+    ManagedNavigationStack {
+        DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AdventureModel.previewId))
+            .preferredColorScheme(.dark)
     }
+    .setAppSizeMode()
 }

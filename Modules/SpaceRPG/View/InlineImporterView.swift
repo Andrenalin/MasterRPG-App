@@ -120,7 +120,7 @@ struct InlineImporterView: View, Equatable {
             root.editController.resetSpace(url: url)
         }
 #endif
-#if os(iOS)
+#if os(iOS) && !targetEnvironment(simulator)
         .sheet(isPresented: $showScanner) {
             Scanner3DRootView()
         }

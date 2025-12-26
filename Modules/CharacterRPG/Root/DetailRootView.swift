@@ -158,19 +158,8 @@ private extension DetailListView {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(CharacterRootModel.self) var root
-    @Previewable @Environment(ListModel.self) var listModel
-    
-    if listModel.selectedItem == nil {
-        Text("Hello")
-            .onAppear {
-                let id = root.itemController.itemDataModel.items.first ?? ValueModel.previewId
-                root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? ValueModel.previewId)
-                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
-            }
-    } else {
-        ManagedNavigationStack {
-            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? ValueModel.previewId))
-                .preferredColorScheme(.dark)
-        }
+    ManagedNavigationStack {
+        DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? ValueModel.previewId))
+            .preferredColorScheme(.dark)
     }
 }

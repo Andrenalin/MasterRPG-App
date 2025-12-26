@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 struct DetailRootView: View {
@@ -29,7 +28,7 @@ struct DetailListView: View {
     
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.photo.viewerWindowId, route: { DetailRoute.viewer($0) })
-
+    
     var body: some View {
         content(listController: detailFolderListController)
             .onChange(of: detailFolderListController.listModel.subFolderRoute) {
@@ -75,7 +74,7 @@ struct SelectedPhotoViewerView: View {
     var selectedModel: PhotoModel {
         item ?? model
     }
-
+    
     var item: PhotoModel? {
         guard let id = selection.selectedItem else { return nil }
         return root.itemController.itemSync(for: id)
@@ -85,19 +84,9 @@ struct SelectedPhotoViewerView: View {
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(PhotoRootModel.self) var root
-    @Previewable @Environment(ListModel.self) var listModel
     
-    if listModel.selectedItem == nil {
-        Text("Hello")
-            .onAppear {
-                let id = root.itemController.itemDataModel.items.first ?? PhotoRootModel.previewPhotoId
-                root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PhotoRootModel.previewPhotoId)
-                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: .space)
-            }
-    } else {
-        ManagedNavigationStack {
-            DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PhotoRootModel.previewPhotoId))
-                .preferredColorScheme(.dark)
-        }
+    ManagedNavigationStack {
+        DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PhotoRootModel.previewPhotoId))
+            .preferredColorScheme(.dark)
     }
 }

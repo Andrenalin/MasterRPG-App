@@ -76,12 +76,6 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func viewRow(root: DiceRootModel, item: ItemRowTreeModel, isSelected: Bool, cacheItemListModel: CacheItemListModel) -> some View {
-        DiceRow(item: item, isSelected: false, cacheItemListModel: cacheItemListModel)
-            .environment(root)
-    }
-
-    @MainActor
     func viewCompactDice(root: DiceRootModel, itemId: UUID) -> some View {
         let item = root.itemController.itemOrEmpty(for: itemId)
         return Text(item.inlineText)
