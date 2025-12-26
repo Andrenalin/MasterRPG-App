@@ -29,7 +29,7 @@ public struct SheetView: View {
         }
         
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
-            SheetGroupView(root: root, model: model, group: entry)
+            SheetGroupView(root: root, model: model, entry: entry)
         }
         .onChange(of: model.searchText) {
             withAnimation { model.updateSearch() }
@@ -46,15 +46,15 @@ public struct SheetView: View {
 }
 
 struct SheetGroupView: View {
-    init(root: ItemRootController, model: TableSheetModel, group: SheetModel) {
+    init(root: ItemRootController, model: TableSheetModel, entry: SheetModel) {
         self.root = root
         self.model = model
-        self.group = group
+        self.entry = entry
     }
     
     let root: ItemRootController
     let model: TableSheetModel
-    let group: SheetModel
+    let entry: SheetModel
     
     @Environment(\.networkActions) private var networkActions
     @Environment(\.showGame) private var showGame
@@ -62,22 +62,45 @@ struct SheetGroupView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        switch group.sheetType {
-        case .item:
-            LinkHighlightTextView(model: model.linkTextModel(for: .entry(group.id), text: text, shareResults: shareResult))
-                .font(.body)
-                .listRowBackground(rowColor(for: group.level))
-                .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(group.level * 4), bottom: 8, trailing: 8))
-        case .dice:
-            root.viewControllable.rowViewer(source: group.source)
-        case .photo, .space, .weather:
-            root.viewControllable.rowViewer(source: group.source)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .listRowBackground(Color.clear)
-                .frame(height: 256)
+        VStack(alignment: .leading) {
+            HStack {
+                switch entry.sheetType {
+                case .item:
+                    LinkHighlightTextView(model: model.linkTextModel(for: .entry(entry.id), text: text, shareResults: shareResult))
+                        .font(.body)
+                        .listRowBackground(rowColor(for: entry.level))
+                        .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entry.level * 4), bottom: 8, trailing: 8))
+                case .dice:
+                    root.viewControllable.rowViewer(source: entry.source)
+                case .photo, .space, .weather:
+                    root.viewControllable.rowViewer(source: entry.source)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowBackground(Color.clear)
+                        .frame(height: 256)
+                case .photoInline:
+                    EmptyView()
+                }
+                
+                ForEach(entry.entries) { inlineSheet in
+                    switch inlineSheet.sheetType {
+                    case .photoInline:
+                        root.viewControllable.rowViewer(source: entry.source)
+                    default:
+                        EmptyView()
+                    }
+                }
+            }
+
+            ForEach(entry.entries) { inlineSheet in
+                switch inlineSheet.sheetType {
+                case .dice:
+                    root.viewControllable.rowViewer(source: inlineSheet.source)
+                default:
+                    EmptyView()
+                }
+            }
         }
-        
-        ForEach(group.sheetIds, id: \.self) { sheetId in
+        ForEach(entry.sheetIds, id: \.self) { sheetId in
             if let sheetModel = model.sheets[sheetId] {
                 SheetView(root: root, model: sheetModel)
             }
@@ -95,16 +118,16 @@ private extension SheetGroupView {
     }
     
     var shareResult: ShareValueResult {
-        ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: group.source.itemId, childId: group.source.entryId, module: group.source.typeId), showGame: showGame, gameModus: gameModus)
+        ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: entry.source.itemId, childId: entry.source.entryId, module: entry.source.typeId), showGame: showGame, gameModus: gameModus)
     }
         
     var text: String {
-        if group.description.isEmpty {
-            group.name
-        } else if group.name.isEmpty {
-            group.description
+        if entry.description.isEmpty {
+            entry.name
+        } else if entry.name.isEmpty {
+            entry.description
         } else {
-            "**" + group.name + "**: " + group.description
+            "**" + entry.name + "**: " + entry.description
         }
     }
 }

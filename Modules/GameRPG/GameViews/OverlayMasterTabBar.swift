@@ -56,7 +56,7 @@ struct OverlayMasterTabBar: View {
             Group {
                 root.adventureRoot.viewController.gameView(root: root.adventureRoot, focusedIds: [adventureId])
                     .gameOverlayTabBarView(value: NetworkModules.game)
-                root.tableRoot.viewController.gameView(root: root.tableRoot)
+                root.tableRoot.viewController.gameListView(root: root.tableRoot)
                     .gameOverlayTabBarView(value: NetworkModules.table)
                 root.audioRoot.viewController.gameView(root: root.audioRoot)
                     .gameOverlayTabBarView(value: NetworkModules.audio)

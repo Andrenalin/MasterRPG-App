@@ -13,6 +13,15 @@ struct InlineRowViewer: View, Equatable {
         if source.typeId == .photo {
             root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
         }
+        if source.typeId == .map, let cacheController = root.cacheController {
+            ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: source.entryId)
+                .environment(root.editController.cacheItemListModel)
+                .environment(root.listDisplayModel)
+        }
+    }
+    
+    var model: MapModel {
+        root.itemController.itemOrEmpty(for: source.itemId)
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

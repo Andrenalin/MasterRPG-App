@@ -68,7 +68,7 @@ struct GameRootViewer<MapContent: View>: View {
                 root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
                     .id(root.spaceRoot.gameControllable.gameModel.currentItemId ?? UUID())
             case .table:
-                root.tableRoot.viewController.gameTableView(root: root.tableRoot)
+                root.tableRoot.viewController.gameViewer(root: root.tableRoot)
                     .id(root.tableRoot.gameControllable.gameModel.currentItemId ?? UUID())
             case .weather:
                 root.weatherRoot.viewController.gameViewer(root: root.weatherRoot)

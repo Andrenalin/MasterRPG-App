@@ -13,7 +13,7 @@ struct AdventureSheet: View {
     @State private var sheetModel: SheetModel = SheetModel.empty
 
     var body: some View {
-        TableRootSheet(root: root.rootController, model: sheetModel, showImage: true, dismissAction: dismissAction, imageContent: imageView(size:))
+        TableRootSheet(root: root.rootController, model: sheetModel, dismissAction: dismissAction)
             .onChange(of: model, initial: true) {
                 resetModels()
             }
@@ -24,28 +24,4 @@ struct AdventureSheet: View {
             sheetModel = SheetController(itemController: root.itemController).sheet(for: model.id)
         }
     }
-
-    func imageView(size: CGSize) -> some View {
-        root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: model.photoId, useGame: false, size: size) 
-    }
-}
-
-struct TableGameSheet: View {
-    @Environment(AdventureRootModel.self) private var root
-
-    @State private var model: AdventureModel = .empty
-
-    var body: some View {
-        AdventureSheet(model: model, dismissAction: nil)
-            .padding(32)
-            .onChange(of: root.gameController.gameModel.currentItemId) {
-                model = root.gameController.currentItem()
-            }
-    }
-}
-
-#Preview {
-    TableGameSheet()
-        .environment(AdventureRootModel.previewWithData)
-
 }

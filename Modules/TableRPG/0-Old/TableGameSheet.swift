@@ -9,7 +9,7 @@ struct TableGameSheet: View {
     @State private var model: TableModel = .empty
 
     var body: some View {
-        ViewerRootView(model: model, showTopImage: true, dismissAction: nil)
+        ViewerRootView(model: model, dismissAction: nil)
             .padding(32)
             .onChange(of: root.gameController.gameModel.currentItemId) {
                 guard let id = root.gameController.gameModel.currentItemId else { return }

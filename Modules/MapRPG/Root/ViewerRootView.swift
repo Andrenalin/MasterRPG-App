@@ -4,17 +4,16 @@ import CoreRPG
 import SwiftUI
 import PhotoRPG
 
-struct MapSheet: View {
+struct ViewerRootView: View {
     let model: MapModel
-    let showTopImage: Bool
-    let dismissAction: (() -> Void)?
+    var dismissAction: (() -> Void)? = nil
 
     @Environment(MapRootModel.self) private var root
 
     @State private var sheetModel: SheetModel = SheetModel.empty
 
     var body: some View {
-        TableRootSheet(root: root.rootController, model: sheetModel, showImage: showTopImage, dismissAction: dismissAction, imageContent: imageView(size:))
+        TableRootSheet(root: root.rootController, model: sheetModel, dismissAction: dismissAction, imageContent: imageView(size:))
             .onChange(of: model, initial: true) {
                 resetModels()
             }
@@ -28,5 +27,13 @@ struct MapSheet: View {
 
     func imageView(size: CGSize) -> some View {
         root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: model.photoId, useGame: false, size: size)
+    }
+}
+
+#Preview(traits: .mockData) {
+    @Previewable @Environment(MapRootModel.self) var root
+    ManagedNavigationStack {
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? MapModel.previewId))
+            .preferredColorScheme(.dark)
     }
 }

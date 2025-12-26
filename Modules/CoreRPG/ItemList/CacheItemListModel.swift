@@ -17,14 +17,14 @@ public final class CacheItemListModel: Sendable {
         case thumbnail
     }
     
-    private var imageCache: [String: AKImage] = [:]
+    private static var imageCache: [String: AKImage] = [:]
 
     public func imageCache(cacheType: CacheType, itemId: UUID) -> AKImage? {
-        imageCache[cacheId(for: cacheType, itemId: itemId)]
+        CacheItemListModel.imageCache[cacheId(for: cacheType, itemId: itemId)]
     }
 
     public func setImageCache(cacheType: CacheType, itemId: UUID, image: AKImage?) {
-        imageCache[cacheId(for: cacheType, itemId: itemId)] = image
+        CacheItemListModel.imageCache[cacheId(for: cacheType, itemId: itemId)] = image
     }
 
     @ObservationIgnored

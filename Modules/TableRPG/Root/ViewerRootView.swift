@@ -5,7 +5,6 @@ import SwiftUI
 
 struct ViewerRootView: View {
     let model: TableModel
-    let showTopImage: Bool
     var windowMode: Bool = false
     var dismissAction: (() -> Void)? = nil
 
@@ -14,7 +13,7 @@ struct ViewerRootView: View {
     @State private var sheetModel: SheetModel = SheetModel.empty
 
     var body: some View {
-        TableRootSheet(root: root.rootController, model: sheetModel, showImage: showTopImage, windowMode: windowMode, dismissAction: dismissAction)
+        TableRootSheet(root: root.rootController, model: sheetModel, windowMode: windowMode, dismissAction: dismissAction)
             .onChange(of: model, initial: true) {
                 resetModels()
             }
@@ -30,6 +29,6 @@ struct ViewerRootView: View {
 #Preview(traits: .mockData) {
     @Previewable @Environment(TableRootModel.self) var root
     ManagedNavigationStack {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId), showTopImage: false, dismissAction: nil)
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId), dismissAction: nil)
     }
 }

@@ -43,12 +43,12 @@ public extension ViewController {
 
     @MainActor func windowViewer(root: MapRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return MapSheet(model: model, showTopImage: false, dismissAction: nil)
+        return ViewerRootView(model: model, dismissAction: nil)
     }
 
     @MainActor func inlineViewer(root: MapRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
-        return MapSheet(model: model, showTopImage: false, dismissAction: dismissAction)
+        return ViewerRootView(model: model, dismissAction: dismissAction)
     }
     
     @MainActor func mapEditWindow(root: MapRootModel) -> some View {

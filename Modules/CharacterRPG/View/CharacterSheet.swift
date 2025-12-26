@@ -15,7 +15,7 @@ struct CharacterSheet: View {
     @State private var sheetModel: SheetModel = SheetModel.empty
     
     var body: some View {
-        TableRootSheet(root: root.rootController, model: sheetModel, showImage: showTopImage, dismissAction: dismissAction, imageContent: imageView(size:))
+        TableRootSheet(root: root.rootController, model: sheetModel, dismissAction: dismissAction, imageContent: imageView(size:))
             .onChange(of: model, initial: true) {
                 resetModels()
             }
