@@ -139,7 +139,7 @@ extension GameController: ValueGameStorable {
         }
         guard let adventureValue else { return }
         
-        let hasItem = await itemController.itemDataModel.items.contains { $0.id == id }
+        let hasItem = await itemController.itemDataModel.items.contains { $0 == id }
         try? await updateGame(data: data, hide: false, deep: true)
         let valueId = await itemController.duplicate(itemId: id, withCopy: false)
         if !hasItem {

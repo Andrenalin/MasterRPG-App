@@ -85,13 +85,7 @@ public extension ViewController {
     func viewDice(root: DiceRootModel, with id: UUID?, for resultCategory: ResultCategory, onlyPrimaryAction: Bool = false) -> some View {
         DiceInline(itemId: id ?? UUID(), resultCategory: resultCategory, onlyPrimaryAction: onlyPrimaryAction)
             .environment(root)
-    }
-    
-    @MainActor
-    func viewDiceDropDownMenu(root: DiceRootModel, editController: any EditControllable, model: Binding<UUID?>) -> some View {
-        DiceDropDownMenuArea(editController: editController, model: model)
-            .environment(root)
-    }
+    }    
 }
 
 extension ViewController {

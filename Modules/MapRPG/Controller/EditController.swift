@@ -16,9 +16,6 @@ import CharacterRPG
 final class MapEditModel: Sendable {
     var contentLinks: [UUID: LinkReplaceController] = [:]
     
-    let photoSelectionModel = SelectionModel(id: UUID(), filter: .map)
-    let pdfSelectionModel = SelectionModel(id: UUID(), filter: .all)
-    
     let selectionAudio: ItemSelectionModel = ItemSelectionModel()
     let selectionCharacter: ItemSelectionModel = ItemSelectionModel()
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
@@ -127,19 +124,7 @@ extension EditController: EntryDataEditable {
         mapEditModel.resetCurrentModel()
     }
     
-    @MainActor func didSetModel() {
-        guard let id = editorModel.currentItemId else { return }
-        
-        if mapEditModel.photoSelectionModel.id != id {
-            mapEditModel.photoSelectionModel.id = id
-            if mapEditModel.photoSelectionModel.currentValue != model.photoId {
-                mapEditModel.photoSelectionModel.currentValue = model.photoId
-            }
-        }
-        if mapEditModel.pdfSelectionModel.id != id {
-            mapEditModel.pdfSelectionModel.id = id
-        }
-    }
+    @MainActor func didSetModel() {}
     
     func editEntries(for item: MapModel) -> [MapEntryModel] {
         item.entries.filter { !$0.isHexGrid }

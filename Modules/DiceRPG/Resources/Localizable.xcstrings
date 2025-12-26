@@ -233,6 +233,7 @@
       }
     },
     "Change dice" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -578,6 +579,7 @@
       }
     },
     "Remove dice" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

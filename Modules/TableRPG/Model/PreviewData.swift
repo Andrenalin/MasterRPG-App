@@ -41,8 +41,7 @@ public extension TableRootModel {
             }
             _ = await saveTask.result
             Task.detached {
-                await print(itemController.itemDataModel.items.first!.id)
-                _ = await gameController.setCurrent(itemId: itemController.itemDataModel.items.first!.id)
+                _ = await gameController.setCurrent(itemId: itemController.itemDataModel.items.first!)
             }
         }
 #endif

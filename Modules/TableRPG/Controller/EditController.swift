@@ -11,8 +11,6 @@ import UniformTypeIdentifiers
 final class TableEditModel: Sendable {
     var contentLinks: [UUID: LinkReplaceController] = [:]
     
-    let pdfSelectionModel = SelectionModel(id: UUID(), filter: .all)
-    
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
 
@@ -99,12 +97,7 @@ extension EditController {
 }
 
 extension EditController {
-    @MainActor func didSetModel() {
-        guard let id = editorModel.currentItemId else { return }
-        if tableEditModel.pdfSelectionModel.id != id {
-            tableEditModel.pdfSelectionModel.id = id
-        }
-    }
+    @MainActor func didSetModel() {}
 
     @MainActor
     func resetCurrentModel() {

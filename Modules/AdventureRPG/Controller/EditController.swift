@@ -19,9 +19,6 @@ import WeatherRPG
 final class AdventureEditModel: Sendable {
     var contentLinks: [UUID: LinkReplaceController] = [:]
     
-    let photoSelectionModel = SelectionModel(id: UUID(), filter: .adventure)
-    let pdfSelectionModel = SelectionModel(id: UUID(), filter: .all)
-    
     let selectionAudio: ItemSelectionModel = ItemSelectionModel()
     let selectionCharacter: ItemSelectionModel = ItemSelectionModel()
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
@@ -111,19 +108,7 @@ extension EditController: EntryDataEditable {
         AdventureEntryModel(id: UUID(), name: name, content: content)
     }
     
-    @MainActor func didSetModel() {
-        guard let id = editorModel.currentItemId else { return }
-        if adventureEditModel.photoSelectionModel.id != id {
-            adventureEditModel.photoSelectionModel.id = id
-            if adventureEditModel.photoSelectionModel.currentValue != model.photoId {
-                adventureEditModel.photoSelectionModel.currentValue = model.photoId
-            }
-        }
-
-        if adventureEditModel.pdfSelectionModel.id != id {
-            adventureEditModel.pdfSelectionModel.id = id
-        }
-    }
+    @MainActor func didSetModel() {}
     
     @MainActor func resetCurrentModel() {
         adventureEditModel.resetCurrentModel()

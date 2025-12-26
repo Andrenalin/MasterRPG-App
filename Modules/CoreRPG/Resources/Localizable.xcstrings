@@ -29,6 +29,7 @@
       }
     },
     " here" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -219,6 +220,7 @@
       }
     },
     "Add " : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -449,6 +451,7 @@
       }
     },
     "Change " : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -482,6 +485,7 @@
 
     },
     "Change item" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -905,6 +909,7 @@
 
     },
     "Drop " : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1961,6 +1966,7 @@
 
     },
     "Remove item" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2137,6 +2143,7 @@
       }
     },
     "Selection for: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

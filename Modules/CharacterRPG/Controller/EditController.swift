@@ -17,9 +17,6 @@ final class ValueEditModel: Sendable {
 
     var childIds: [UUID: UUID] = [:]
 
-    let photoSelectionModel = SelectionModel(id: UUID(), filter: .character)
-    let pdfSelectionModel = SelectionModel(id: UUID(), filter: .all)
-
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
@@ -186,19 +183,7 @@ extension EditController: EntryDataEditable {
         return duplicate.id
     }
 
-    @MainActor func didSetModel() {
-        guard let id = editorModel.currentItemId else { return }
-        if valueEditModel.photoSelectionModel.id != id {
-            valueEditModel.photoSelectionModel.id = id
-            if valueEditModel.photoSelectionModel.currentValue != model.photoId {
-                valueEditModel.photoSelectionModel.currentValue = model.photoId
-            }
-        }
-
-        if valueEditModel.pdfSelectionModel.id != id {
-            valueEditModel.pdfSelectionModel.id = id
-        }
-    }
+    @MainActor func didSetModel() {}
 
     @MainActor
     func resetCurrentModel() {
