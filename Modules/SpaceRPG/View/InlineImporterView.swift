@@ -1,30 +1,18 @@
 // @copyright André Trettin
 
 import CoreRPG
-#if !os(tvOS)
-import PhotosUI
-#endif
 import SwiftUI
 import UniformTypeIdentifiers
 
-#if canImport(ImagePlayground)
-import ImagePlayground
-#endif
-
-
-enum PhotoImporterButtonType: String {
-    case file, library, camera, playground
+enum ImporterButtonType: String {
+    case file, scanner
     
     var systemImage: String {
         switch self {
         case .file:
             return "folder"
-        case .library:
-            return "photo.stack"
-        case .camera:
-            return "camera"
-        case .playground:
-            return "apple.image.playground"
+        case .scanner:
+            return "doc.viewfinder"
         }
     }
     
@@ -36,11 +24,7 @@ enum PhotoImporterButtonType: String {
         switch self {
         case .file:
             return 0.3
-        case .library:
-            return 0.4
-        case .camera:
-            return 0.5
-        case .playground:
+        case .scanner:
             return 0.6
         }
     }
@@ -53,11 +37,7 @@ enum PhotoImporterButtonType: String {
         switch self {
         case .file:
             return offset(atIndex: 0, layoutDown: layoutDown)
-        case .library:
-            return offset(atIndex: 1, layoutDown: layoutDown)
-        case .camera:
-            return offset(atIndex: 2, layoutDown: layoutDown)
-        case .playground:
+        case .scanner:
             return offset(atIndex: 3, layoutDown: layoutDown)
         }
     }
@@ -77,7 +57,7 @@ enum PhotoImporterButtonType: String {
     }
 }
 
-struct PhotoInlineImporterView: View, Equatable {
+struct InlineImporterView: View, Equatable {
     init(itemId: UUID, preopen: Bool, layoutDown: Bool) {
         self.itemId = itemId
         self.preopen = preopen
@@ -89,21 +69,15 @@ struct PhotoInlineImporterView: View, Equatable {
     let preopen: Bool
     let layoutDown: Bool
     
-    @Environment(PhotoRootModel.self) private var root
-#if !os(tvOS)
-    @Environment(\.supportsImagePlayground) private var supportsImagePlayground
-    @State private var selectedItem: PhotosPickerItem? = nil
-    @State private var selectedImage: Image? = nil
-#endif
+    @Environment(SpaceRootModel.self) private var root
+    @State private var canScan: Bool = false
     
     @Namespace var glassNamespace
     
     @State private var isExpanded: Bool
     
     @State private var showImporter = false
-    @State private var showCamera = false
-    @State private var showLibrary = false
-    @State private var showImagePlayground = false
+    @State private var showScanner = false
     
     var body: some View {
 #if os(visionOS)
@@ -118,16 +92,14 @@ struct PhotoInlineImporterView: View, Equatable {
     var content: some View {
         ZStack {
             button(type: .file)
-            button(type: .library)
-            button(type: .camera)
-            button(type: .playground)
+            button(type: .scanner)
             
             Button {
                 withAnimation {
                     isExpanded.toggle()
                 }
             } label: {
-                Label("Importer", systemImage: "photo.badge.plus")
+                Label("Importer", systemImage: "graph.3d")
                     .labelStyle(.iconOnly)
                     .frame(width: 50, height: 50)
             }
@@ -137,49 +109,31 @@ struct PhotoInlineImporterView: View, Equatable {
             .glassEffectID("menu", in: glassNamespace)
 #endif
         }
+        .task {
+#if os(iOS) && !targetEnvironment(simulator)
+            canScan = await ConfigCaptureObject.isSupported()
+#endif
+        }
 #if !os(tvOS)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: root.config.fileTypes) { result in
             guard let url = try? result.get() else { return }
-            root.editController.resetPhoto(url: url)
-        }
-        .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
-            root.editController.resetPhoto(url: url)
-        }
-        .photosPicker(isPresented: $showLibrary, selection: $selectedItem, matching: .images, photoLibrary: .shared())
-        .onChange(of: selectedItem) {
-            guard let localItem = selectedItem else { return }
-            let id = itemId
-            Task.detached {
-                if let data = try? await localItem.loadTransferable(type: Data.self) {
-                    await update(id: id, image: AKImage(data: data))
-                }
-            }
+            root.editController.resetSpace(url: url)
         }
 #endif
 #if os(iOS)
-        .sheet(isPresented: $showCamera) {
-            CaptureImagePicker(shown: $showCamera) { [id = itemId] image in
-                await update(id: id, image: image)
-            }
+        .sheet(isPresented: $showScanner) {
+            Scanner3DRootView(root: root)
         }
 #endif
     }
     
-    private func update(id: UUID, image: AKImage?) async {
-        await root.editController.resetPhoto(image: image)
-    }
-    
-    private func button(type: PhotoImporterButtonType) -> some View {
+    private func button(type: ImporterButtonType) -> some View {
         return Button {
             switch type {
             case .file:
                 showImporter.toggle()
-            case .library:
-                showLibrary.toggle()
-            case .camera:
-                showCamera.toggle()
-            case .playground:
-                showImagePlayground.toggle()
+            case .scanner:
+                showScanner.toggle()
             }
         } label: {
             Label(type.label, systemImage: type.systemImage)
@@ -198,15 +152,5 @@ struct PhotoInlineImporterView: View, Equatable {
     
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.itemId == rhs.itemId
-    }
-}
-
-#Preview(traits: .mockData) {
-    @Previewable @Environment(PhotoRootModel.self) var root
-    ZStack {
-        Color
-            .blue
-        
-        PhotoInlineImporterView(itemId: root.itemController.itemDataModel.items[0], preopen: true, layoutDown: true)
     }
 }
