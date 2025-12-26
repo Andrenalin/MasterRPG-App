@@ -54,7 +54,7 @@ public struct CarouselItemView<Content: View>: View {
 private extension CarouselItemView {
     @ViewBuilder
     var dropItemView: some View {
-        DropItemModuleArea(module: root.module, contentView: {
+        DropItemModuleArea(module: root.configurable.module, contentView: {
             areaButton
         }, dropAction: linkHandler(name:itemId:entryId:))
         .background {
@@ -71,7 +71,7 @@ private extension CarouselItemView {
     var areaButton: some View {
         VStack {
             if appSizeMode == .regular {
-                Text("Drop \(root.module.title)", bundle: .module)
+                Text("Drop \(root.configurable.module.title)", bundle: .module)
                 
                 Image(systemName: "square.and.arrow.down")
                     .imageScale(.large)
@@ -83,7 +83,7 @@ private extension CarouselItemView {
                 VStack {
                     Text("Select", bundle: .module)
                     if appSizeMode == .compact {
-                        Text(root.module.title)
+                        Text(root.configurable.module.title)
                         Image(systemName: "checkmark.circle")
                             .imageScale(.large)
                     }
@@ -123,7 +123,7 @@ private extension CarouselItemView {
                         .stroke(selection.selectedItem == selectedItemId ? Color.accentColor : Color.clear, lineWidth: 4)
                 }
             }
-            .dropDestination(for: root.module, handler: linkHandler(name:itemId:entryId:))
+            .dropDestination(for: root.configurable.module, handler: linkHandler(name:itemId:entryId:))
             .padding(1)
     }
 }

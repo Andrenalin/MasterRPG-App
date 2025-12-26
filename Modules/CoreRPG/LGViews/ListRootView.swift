@@ -25,7 +25,7 @@ struct ListRootView: View {
             }
 #endif
             .applyIf(parentModel == nil) {
-                $0.navigationTitle("\(root.module.title) - \(displayItems.count)")
+                $0.navigationTitle("\(root.configurable.module.title) - \(displayItems.count)")
             }
             .scrollIndicatorsFlash(onAppear: true)
             .scrollIndicatorsFlash(trigger: displayItems.count)
@@ -79,7 +79,7 @@ private extension ListRootView {
             guard let model = await root.editControllable.addNew(type: .item) else { return }
             try? await Task.sleep(for: .seconds(0.5))
             withAnimation {
-                root.editControllable.resetFile(url: url, module: root.module)
+                root.editControllable.resetFile(url: url, module: root.configurable.module)
                 if parentModel != nil {
                     root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
                 }
@@ -129,7 +129,7 @@ private extension ListRootView {
     @ViewBuilder func itemRows() -> some View {
         if displayItems.isEmpty && parentModel != nil {
             Text("Drop here")
-                .dropDestination(for: root.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
+                .dropDestination(for: root.configurable.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
         }
         
         ForEach(displayItems) { item in
@@ -141,7 +141,7 @@ private extension ListRootView {
                         ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
                     }
                 }
-                .draggable(for: root.module, itemId: item.model.id, entryId: nil, name: item.model.name)
+                .draggable(for: root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)
                 .applyIf(!listController.listDisplayModel.isSelectionMode) { content in
                     content.contextMenu {
                         ListRootContextMenu(controller: menuController, currentSelected: item.model.id)
@@ -151,7 +151,7 @@ private extension ListRootView {
                 specialCategoryFolderIndicator(item: item)
             }
             .padding(.leading, CGFloat(item.level * 16))
-            .dropDestination(for: root.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
+            .dropDestination(for: root.configurable.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
             .listRowInsets(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
             .listRowSeparatorAll(item.isOpen ? .visible : .hidden, edges: .bottom)
         }

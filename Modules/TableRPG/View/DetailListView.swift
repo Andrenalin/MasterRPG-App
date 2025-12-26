@@ -54,8 +54,8 @@ struct DetailListView: View {
         .environment(root.listDisplayModel)
         .environment(root.searchModel)
         .environment(root.rootController)
-        .tint(root.module.tint)
-        .accentColor(root.module.tint)
+        .tint(root.configurable.module.tint)
+        .accentColor(root.configurable.module.tint)
     }
 }
 

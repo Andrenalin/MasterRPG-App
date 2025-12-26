@@ -23,7 +23,7 @@ struct DetailRootView: View {
             .onAppear {
                 let id = root.itemController.itemDataModel.items.first ?? PdfRootModel.previewSpaceId
                 root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRootModel.previewSpaceId)
-                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: root.module)
+                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: root.configurable.module)
             }
     } else {
         ManagedNavigationStack {

@@ -19,8 +19,8 @@ public struct ItemRootView: View {
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
             .environment(root)
-            .tint(root.module.tint)
-            .accentColor(root.module.tint)
+            .tint(root.configurable.module.tint)
+            .accentColor(root.configurable.module.tint)
     }
 }
 
@@ -36,7 +36,7 @@ struct ItemRootSingleListView: View {
         ItemRootListView(root: root)
             .onChange(of: listModel.selected) {
                 if let itemId = listModel.selectedItemId {
-                    root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: root.module))
+                    root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: root.configurable.module))
                 }
             }
             .onChange(of: listModel.itemRoute) {
@@ -72,14 +72,14 @@ public struct ItemSplitDetailRootView: View {
     
     public var body: some View {
         let _ = Self._printChanges()
-        let _ = print("*** ->", root.module)
+        let _ = print("*** ->", root.configurable.module)
         
-        ManagedNavigationStack(name: "Split-\(root.module.token)") {
+        ManagedNavigationStack(name: "Split-\(root.configurable.module.token)") {
             SplitContentDetailRootView(root: root, itemId: listModel.selectedItemId)
         }
         .environment(root)
-        .tint(root.module.tint)
-        .accentColor(root.module.tint)
+        .tint(root.configurable.module.tint)
+        .accentColor(root.configurable.module.tint)
     }
     
     var listModel: FolderListModel {
@@ -97,7 +97,7 @@ struct SplitContentDetailRootView: View {
         if let itemId {
             root.folderListControllable.detailDestination(for: itemId).asAnyView()
         } else {
-            SplitContentUnavailableView(module: root.module)
+            SplitContentUnavailableView(module: root.configurable.module)
         }
     }
 }

@@ -20,7 +20,7 @@ public struct ItemGroupItemView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Image(systemName: root.module.icon)
+            Image(systemName: root.configurable.module.icon)
                 .imageScale(.large)
                 .font(.title)
         }

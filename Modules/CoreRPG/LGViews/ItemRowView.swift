@@ -166,7 +166,7 @@ private extension ItemRowView {
     var canShare: Bool {
         if gameModus == .player {
             let features = sharingFeatureActions.features()
-            switch root.module {
+            switch root.configurable.module {
             case .photo:
                 return features.photoSharing && showGame
             case .audio:

@@ -42,7 +42,7 @@ public struct LinkItemListView: View {
                         content
                             .toolbarItemListModifier(root: root, listControllable: root.folderLinkControllable, parentModel: nil, modal: true)
                             .searchItemList(listControllable: root.folderLinkControllable)
-                            .navigationTitle(root.module.title)
+                            .navigationTitle(root.configurable.module.title)
                     }
                     .applyIf(type == .inspector) { content in
                         content
@@ -142,7 +142,7 @@ private extension LinkItemListView {
                 if let entryId = item.entryId {
                     EntryRowView(root: root, item: item)
 #if !os(tvOS)
-                        .draggable(for: root.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name)
+                        .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name)
 #endif
                 } else {
                     itemRow(item: item)
@@ -176,7 +176,7 @@ private extension LinkItemListView {
                 }
             }
 #if !os(tvOS)
-            .draggable(for: root.module, itemId: item.model.id, entryId: nil, name: item.model.name)
+            .draggable(for: root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)
 #endif
             
             specialCategoryFolderIndicator(item: item)
@@ -187,7 +187,7 @@ private extension LinkItemListView {
     func openDetail(for item: ListItemModel) {
 #if os(macOS)
         guard !item.model.specialCategory else { return }
-        openWindow(id: root.module.viewerWindowId, value: WindowItemSelection(itemId: item.model.id))
+        openWindow(id: root.configurable.module.viewerWindowId, value: WindowItemSelection(itemId: item.model.id))
 #else
         if item.model.specialCategory {
             showDetailsView = root.folderLinkControllable.detailDestination(for: item.model.id)

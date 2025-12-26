@@ -14,7 +14,7 @@ struct DropChooseView: View {
 #endif
 
     var body: some View {
-        DropItemModuleArea(module: root.module, contentView: {
+        DropItemModuleArea(module: root.configurable.module, contentView: {
             VStack {
                 if let model {
                     root.viewController.thumbnailRowView(for: model.id)
@@ -69,7 +69,7 @@ struct DropChooseView: View {
         } label: {
             VStack {
                 if showDrop {
-                    Text("Drop \(root.module.title)", bundle: .module)
+                    Text("Drop \(root.configurable.module.title)", bundle: .module)
                     
                     Image(systemName: "square.and.arrow.down")
                         .imageScale(.large)
@@ -83,9 +83,9 @@ struct DropChooseView: View {
     
     private var chosseText: LocalizedStringKey {
 #if os(macOS)
-        "Open \(root.module.title)"
+        "Open \(root.configurable.module.title)"
 #else
-        "Choose \(root.module.title)"
+        "Choose \(root.configurable.module.title)"
 #endif
     }
     

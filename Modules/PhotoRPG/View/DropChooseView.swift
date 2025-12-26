@@ -16,7 +16,7 @@ struct DropChooseView: View {
 #endif
 
     var body: some View {
-        DropItemModuleArea(module: root.module, contentView: {
+        DropItemModuleArea(module: root.configurable.module, contentView: {
             Group {
                 if let itemId = selectionModel.itemId, let item = root.itemController.itemSync(for: itemId), let cacheController = root.cacheController {
                     GroupedPhotoView(cacheController: cacheController, itemControllable: root.itemController, model: item)
@@ -65,7 +65,7 @@ struct DropChooseView: View {
         } label: {
             VStack {
                 if showDrop {
-                    Text("Drop \(root.module.title)", bundle: .module)
+                    Text("Drop \(root.configurable.module.title)", bundle: .module)
                     
                     Image(systemName: "square.and.arrow.down")
                         .imageScale(.large)
@@ -79,9 +79,9 @@ struct DropChooseView: View {
     
     private var chosseText: LocalizedStringKey {
 #if os(macOS)
-        "Open \(root.module.title)"
+        "Open \(root.configurable.module.title)"
 #else
-        "Choose \(root.module.title)"
+        "Choose \(root.configurable.module.title)"
 #endif
     }
 

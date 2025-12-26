@@ -36,7 +36,7 @@ struct AdventureEntity: IndexedEntity {
     var description: String { model.description }
 
     var icon: String {
-        model.specialCategory ? model.category.icon : root.module.icon
+        model.specialCategory ? model.category.icon : root.config.module.icon
     }
 
     var root: AdventureRootModel

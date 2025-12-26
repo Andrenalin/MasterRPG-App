@@ -87,8 +87,8 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     public var body: some View {
         let _ = Self._printChanges()
         contentScrollView(model: selectedModel)
-            .tint(root.module.tint)
-            .accentColor(root.module.tint)
+            .tint(root.configurable.module.tint)
+            .accentColor(root.configurable.module.tint)
     }
 }
 
@@ -107,7 +107,7 @@ private extension ItemDetailRootView {
     }
     
     var navigationHeader: Text {
-        Text("\(Image(systemName: root.module.icon)) \(root.module.title)")
+        Text("\(Image(systemName: root.configurable.module.icon)) \(root.configurable.module.title)")
     }
     
     @ViewBuilder func contentScrollView(model: any ItemDataAccessable) -> some View {
@@ -119,7 +119,7 @@ private extension ItemDetailRootView {
             bottomView(model: model)
         } background: {
             Rectangle()
-                .fill(root.module.color)
+                .fill(root.configurable.module.color)
         }
         .overlay(alignment: .center) {
             entryEditor
@@ -168,10 +168,10 @@ private extension ItemDetailRootView {
                 .presentationContentInteraction(.resizes)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
-                .tint(root.module.tint)
-                .accentColor(root.module.tint)
+                .tint(root.configurable.module.tint)
+                .accentColor(root.configurable.module.tint)
         }
-        .modifier(OpenFileViewerViewModifier(model: currentModel(model: model), module: root.module))
+        .modifier(OpenFileViewerViewModifier(model: currentModel(model: model), module: root.configurable.module))
         .toolbar {
             toolbarContent(model: model)
         }
@@ -202,7 +202,7 @@ private extension ItemDetailRootView {
     @ViewBuilder func initialFileImporterView(model: any ItemDataAccessable) -> some View {
         HStack {
             if root.viewControllable.fileImporterViewType == .file {
-                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
+                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.configurable.module)
                     .padding(32)
                     .overlay {
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -347,7 +347,7 @@ private extension ItemDetailRootView {
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             if root.viewControllable.fileImporterViewType == .file {
-                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.module)
+                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.configurable.module)
             } else {
                 root.viewControllable.fileImporterView(for: model.id, preopen: false, layoutDown: true)
             }
@@ -359,7 +359,7 @@ private extension ItemDetailRootView {
     }
     
     func updateFile(url: URL, model: any ItemDataAccessable) {
-        root.editControllable.resetFile(url: url, module: root.module)
+        root.editControllable.resetFile(url: url, module: root.configurable.module)
     }
 }
 

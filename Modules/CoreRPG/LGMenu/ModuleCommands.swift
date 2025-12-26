@@ -18,7 +18,7 @@ public struct ModuleCommands: Commands {
 
     public var body: some Commands {
         CommandGroup(after: .windowArrangement) {
-            LinkWindowCommandView(networkModule: root.module, key: key)
+            LinkWindowCommandView(networkModule: root.configurable.module, key: key)
         }
         CommandGroup(after: .toolbar) {
             NavigateButton(root: root, navigator: navigator, key: key)
@@ -27,19 +27,19 @@ public struct ModuleCommands: Commands {
             AddItemButton(root: root, navigator: navigator, key: key)
         }
         CommandGroup(before: .textEditing) {
-            if selectedModule == root.module {
+            if selectedModule == root.configurable.module {
                 DuplicateItemButton(root: root)
                 Divider()
             }
         }
         CommandGroup(replacing: .undoRedo) {
-            if selectedModule == root.module {
+            if selectedModule == root.configurable.module {
                 UndoButton(root: root)
                 RedoButton(root: root)
             }
         }
         CommandGroup(before: .sidebar) {
-            if selectedModule == root.module {
+            if selectedModule == root.configurable.module {
                 MenuDisplayModeToggle(listDisplayModel: root.listDisplayModel, showSelectionButton: true)
                 Divider()
             }
@@ -54,9 +54,9 @@ struct NavigateButton: View {
 
     var body: some View {
         Button {
-            navigator.perform(route: KnownRoutes.route(module: root.module, itemId: nil, entryId: nil))
+            navigator.perform(route: KnownRoutes.route(module: root.configurable.module, itemId: nil, entryId: nil))
         } label: {
-            Label { Text("Show \(root.module.title)", bundle: .module) } icon: { Image(systemName: "eye") }
+            Label { Text("Show \(root.configurable.module.title)", bundle: .module) } icon: { Image(systemName: "eye") }
         }
         .keyboardShortcut(key, modifiers: [.command])
     }
@@ -71,10 +71,10 @@ struct AddItemButton: View {
         Button {
             Task {
                 guard let item = await root.editControllable.addNew(type: .item) else { return }
-                navigator.perform(route: KnownRoutes.route(module: root.module, itemId: item.id, entryId: nil))
+                navigator.perform(route: KnownRoutes.route(module: root.configurable.module, itemId: item.id, entryId: nil))
             }
         } label: {
-            Label { Text("New \(root.module.title)", bundle: .module) } icon: { Image(systemName: "plus") }
+            Label { Text("New \(root.configurable.module.title)", bundle: .module) } icon: { Image(systemName: "plus") }
         }
         .keyboardShortcut(key, modifiers: [.command, .control])
     }

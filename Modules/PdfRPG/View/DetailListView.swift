@@ -48,8 +48,8 @@ struct DetailListView: View {
         .environment(root.listDisplayModel)
         .environment(root.searchModel)
         .environment(root.rootController)
-        .tint(root.module.tint)
-        .accentColor(root.module.tint)
+        .tint(root.configurable.module.tint)
+        .accentColor(root.configurable.module.tint)
     }
 }
 
@@ -62,7 +62,7 @@ struct DetailListView: View {
             .onAppear {
                 let id = root.itemController.itemDataModel.items.first ?? PdfRootModel.previewSpaceId
                 root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? PdfRootModel.previewSpaceId)
-                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: root.module)
+                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: root.configurable.module)
             }
     } else {
         ManagedNavigationStack {

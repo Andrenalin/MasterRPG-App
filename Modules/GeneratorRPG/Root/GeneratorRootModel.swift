@@ -10,7 +10,6 @@ public final class GeneratorRootModel: @unchecked Sendable {
     @MainActor init(container: ModelContainer) {
         let config = ModuleConfiguration()
         self.config = config
-        self.module = config.module
 
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
@@ -22,7 +21,7 @@ public final class GeneratorRootModel: @unchecked Sendable {
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
-        let dataController = context.map { DataController(context: $0, token: module.token) }
+        let dataController = context.map { DataController(context: $0, token: config.module.token) }
         _dataController = dataController
         let itemController = ItemController(dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
@@ -41,7 +40,6 @@ public final class GeneratorRootModel: @unchecked Sendable {
     }
 
     public let config: ModuleConfiguration
-    public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
@@ -87,7 +85,6 @@ public final class GeneratorRootModel: @unchecked Sendable {
     
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
-            module: module,
             config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,

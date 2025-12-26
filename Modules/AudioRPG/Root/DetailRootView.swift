@@ -67,14 +67,14 @@ struct DetailListView: View {
         .environment(root.listDisplayModel)
         .environment(root.searchModel)
         .environment(root.rootController)
-        .tint(root.module.tint)
-        .accentColor(root.module.tint)
+        .tint(root.configurable.module.tint)
+        .accentColor(root.configurable.module.tint)
     }
 
     func fileAndPlayerView(model: AudioModel) -> some View {
         HStack {
             HStack {
-                FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], module: root.module)
+                FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], module: root.configurable.module)
                 
                 Text(model.url?.absoluteString ?? "No file is set")
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -124,7 +124,7 @@ struct DetailListView: View {
             .onAppear {
                 let id = root.itemController.itemDataModel.items.first ?? AudioModel.previewId
                 root.editController.model = root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? AudioModel.previewId)
-                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: root.module)
+                listModel.selectedItem = ItemRowTreeModel(itemId: id, typeId: root.configurable.module)
             }
     } else {
         ManagedNavigationStack {

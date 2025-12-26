@@ -5,7 +5,6 @@ import SwiftData
 
 @MainActor
 public protocol ItemRootControllable: Sendable {
-    var module: NetworkModules { get }
     var configurable: ModuleConfigurable { get }
     var listDisplayModel: ListDisplayModel { get }
     var searchModel: SearchModel { get }
@@ -30,7 +29,6 @@ public protocol ItemRootControllable: Sendable {
 @MainActor @Observable
 public final class ItemRootController: ItemRootControllable {
     public init(
-        module: NetworkModules,
         config: ModuleConfigurable,
         listDisplayModel: ListDisplayModel,
         searchModel: SearchModel,
@@ -45,7 +43,6 @@ public final class ItemRootController: ItemRootControllable {
         folderListControllable: any FolderListControllable,
         viewControllable: any ViewControllable
     ) {
-        self.module = module
         self.configurable = config
         self.listDisplayModel = listDisplayModel
         self.searchModel = searchModel
@@ -62,7 +59,6 @@ public final class ItemRootController: ItemRootControllable {
         self.viewControllable = viewControllable
     }
     
-    public let module: NetworkModules
     public let configurable: ModuleConfigurable
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel

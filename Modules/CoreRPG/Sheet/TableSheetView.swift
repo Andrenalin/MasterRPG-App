@@ -29,7 +29,7 @@ private extension TableSheetView {
                 .animation(.default, value: model.searchText)
         }
 #if os(iOS)
-        .background(root.module.tint.opacity(0.3).gradient)
+        .background(root.configurable.module.tint.opacity(0.3).gradient)
         .scrollContentBackground(.hidden)
         .scrollEdgeEffectStyle(.soft, for: .all)
         .listRowSpacing(4)
