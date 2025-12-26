@@ -1,37 +1,25 @@
 // @copyright André Trettin
 
-import CoreRPG
 import AVFoundation
+import CoreRPG
 import CoreData
 import SwiftData
 import SwiftUI
 
-@MainActor @Observable
-public final class RootModel: Sendable {
-    
-    @MainActor
-    public var selectedItem: ItemRowModel?
-    @MainActor
-    public var gameItemSelection: ItemRowModel?
-    
-    @ObservationIgnored
-    var listModels: [UUID: ListModel] = [:]
-}
-
 @Observable
 public final class AudioRootModel: @unchecked Sendable {
     @MainActor init(container: ModelContainer) {
-        rootModel = RootModel()
-        let module: NetworkModules = .audio
-        self.module = module
-        
+        let config = ModuleConfiguration()
+        self.config = config
+        self.module = config.module
+
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.music, .playlist, .sound])
+        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+        self.linkSelectionModel = config.linkSelectionModel
 
         let audioPlayerModel = AudioPlayerModel()
         self.audioPlayerModel = audioPlayerModel
@@ -43,7 +31,7 @@ public final class AudioRootModel: @unchecked Sendable {
         let dataController = context.map { DataController(context: $0, token: module.token) }
         _dataController = dataController
 
-        let itemController = ItemController(dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
         _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
         _exportController = ExportController(itemController: itemController, gameExporter: false)
@@ -52,7 +40,7 @@ public final class AudioRootModel: @unchecked Sendable {
         let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
         _audioController = audioController
 
-        let gameController = GameController(itemController: itemController, audioController: audioController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+        let gameController = GameController(config: config, itemController: itemController, audioController: audioController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
         _gameController = gameController
 
         _linkController = LinkController(itemController: itemController, audioController: audioController, gameController: gameController)
@@ -65,7 +53,7 @@ public final class AudioRootModel: @unchecked Sendable {
         }
     }
     
-    public let rootModel: RootModel
+    public let config: ModuleConfiguration
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -118,10 +106,11 @@ public final class AudioRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
+            config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: ItemSelectionModel(),
-            removeEntryListModel: RemoveEntryListModel(),
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,
@@ -135,6 +124,7 @@ public final class AudioRootModel: @unchecked Sendable {
 }
 
 extension AudioRootModel: ItemRootControllable {
+    public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var folderListControllable: any FolderListControllable { folderListController }
@@ -152,12 +142,11 @@ extension AudioRootModel {
     public var gameControllable: any GameControllable {
         gameController
     }
-    public var audioGameControllable: any (GameControllable & AudioGameStoreable) {
-        gameController
-    }
-    
     @MainActor public var itemControllable: any ItemControllable {
         itemController
+    }
+    public var audioGameControllable: any (GameControllable & AudioGameStoreable) {
+        gameController
     }
 }
 

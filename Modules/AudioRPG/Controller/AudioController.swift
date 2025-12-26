@@ -175,7 +175,7 @@ extension AudioController {
 
         do {
             if audioAsset == nil, let data = fileUrl.data {
-                let tempUrl = URL.temporaryDirectory.appending(path: item.id.uuidString).appendingPathExtension(ItemController.filenameExtension)
+                let tempUrl = URL.temporaryDirectory.appending(path: item.id.uuidString).appendingPathExtension(itemController.config.filenameExtension)
                 try data.write(to: tempUrl)
                 let asset = AVURLAsset(url: tempUrl)
                 let duration = try await asset.load(.duration)

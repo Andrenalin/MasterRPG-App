@@ -34,10 +34,10 @@ public protocol DiceGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+    @MainActor init(config: ModuleConfiguration, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
         self.exportController = ExportController(itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        let internItemController = ItemController(config: config, dataController: nil, linkRegisterControllable: linkRegisterControllable)
         self.importController = ImportController(itemController: internItemController)
         self.rootExportControllable = rootExportControllable
         self.rootImportControllable = rootImportControllable

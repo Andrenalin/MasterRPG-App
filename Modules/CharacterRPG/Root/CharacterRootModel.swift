@@ -17,16 +17,17 @@ public final class CharacterRootModel: @unchecked Sendable {
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
         
-        let module: NetworkModules = .value
-        self.module = module
-        
+        let config = ModuleConfiguration()
+        self.config = config
+        self.module = config.module
+
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+        self.linkSelectionModel = config.linkSelectionModel
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -34,7 +35,7 @@ public final class CharacterRootModel: @unchecked Sendable {
         
         let dataController = context.map { DataController(context: $0, token: module.token) }
         _dataController = dataController
-        let itemController = ItemController(tableRoot: tableRoot, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        let itemController = ItemController(config: config, tableRoot: tableRoot, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
         _editController = EditController(root: self, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
         _exportController = ExportController(diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, gameExporter: false)
@@ -55,6 +56,7 @@ public final class CharacterRootModel: @unchecked Sendable {
     let photoRoot: PhotoRootModel
     let tableRoot: TableRootModel
 
+    public let config: ModuleConfiguration
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -115,10 +117,11 @@ public final class CharacterRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
+            config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: ItemSelectionModel(),
-            removeEntryListModel: RemoveEntryListModel(),
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,
@@ -132,6 +135,7 @@ public final class CharacterRootModel: @unchecked Sendable {
 }
 
 extension CharacterRootModel: ItemRootControllable {
+    public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var folderListControllable: any FolderListControllable { folderListController }
@@ -149,11 +153,11 @@ extension CharacterRootModel {
     public var gameControllable: any GameControllable {
         gameController
     }
+    @MainActor public var itemControllable: any ItemControllable {
+        itemController
+    }
     public var valueGameControllable: any (GameControllable & ValueGameStorable) {
         gameController
-    }
-    public var itemControllable: any ItemControllable {
-        itemController
     }
 }
 

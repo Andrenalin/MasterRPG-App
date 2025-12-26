@@ -92,6 +92,7 @@ public final class PhotoRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
+            config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
@@ -109,6 +110,7 @@ public final class PhotoRootModel: @unchecked Sendable {
 }
 
 extension PhotoRootModel: ItemRootControllable {
+    public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { cacheController }
     public var editControllable: any EditControllable { editController }
     public var folderListControllable: any FolderListControllable { folderListController }

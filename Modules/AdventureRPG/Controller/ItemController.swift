@@ -1,15 +1,15 @@
 // @copyright André Trettin
 
-import CoreRPG
-import Foundation
-import CoreData
 import AudioRPG
+import CharacterRPG
+import CoreData
+import CoreRPG
 import DiceRPG
+import Foundation
 import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
-import CharacterRPG
 import WeatherRPG
 import TableRPG
 
@@ -17,14 +17,18 @@ struct ItemController: Sendable {
     @MainActor
     init(root: AdventureRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.root = root
+        self.config = root.config
+
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
-        
-        itemDataModel = ItemDataModel(categoryTags: [.adventure, .campaign, .scenario, .rules, .supplement], networkModule: .adventure)
+
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.collectionCategory = config.collectionCategory
     }
 
     let root: AdventureRootModel
-    let collectionCategory: ItemListCategory = .collection
+    let config: ModuleConfigurable
+    let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
@@ -61,7 +65,7 @@ extension ItemController: ItemControllable {
             return root.weatherRoot.itemControllable.children(for: model)
         default:
             return itemOrEmpty(for: model.itemId).entries.map {
-                ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: itemDataModel.networkModule)
+                ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: config.module)
             }
         }
     }

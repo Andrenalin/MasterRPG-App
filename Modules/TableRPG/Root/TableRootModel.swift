@@ -13,16 +13,17 @@ public final class TableRootModel: @unchecked Sendable {
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
 
-        let module: NetworkModules = .table
-        self.module = module
-        
+        let config = ModuleConfiguration()
+        self.config = config
+        self.module = config.module
+
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.rules, .loot, .supplement, .generator])
+        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+        self.linkSelectionModel = config.linkSelectionModel
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -30,12 +31,12 @@ public final class TableRootModel: @unchecked Sendable {
 
         let dataController = context.map { DataController(context: $0, token: module.token) }
         _dataController = dataController
-        let itemController = ItemController(dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
         _editController = EditController(diceRoot: diceRoot, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
         _exportController = ExportController(diceRoot: diceRoot, itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
-        _gameController = GameController(diceRoot: diceRoot, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+        _gameController = GameController(config: config, diceRoot: diceRoot, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
         _linkController = LinkController(diceRoot: diceRoot, itemController: itemController, gameController: gameController)
 
         if let dataController, let context {
@@ -49,6 +50,7 @@ public final class TableRootModel: @unchecked Sendable {
     let diceRoot: DiceRootModel
     let pdfRoot: PdfRootModel
 
+    public let config: ModuleConfiguration
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -107,10 +109,11 @@ public final class TableRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
+            config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: ItemSelectionModel(),
-            removeEntryListModel: RemoveEntryListModel(),
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,
@@ -124,6 +127,7 @@ public final class TableRootModel: @unchecked Sendable {
 }
 
 extension TableRootModel: ItemRootControllable {
+    public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var folderListControllable: any FolderListControllable { folderListController }
@@ -135,33 +139,36 @@ extension TableRootModel {
     public var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    
     public var importControllable: any ImportControllable {
         importController as ImportControllable
     }
     public var gameControllable: any GameControllable {
         gameController
     }
-    public var tableGameControllable: any (GameControllable & TableGameStorable) {
-        gameController
-    }
     @MainActor public var itemControllable: any ItemControllable {
         itemController
     }
+    public var tableGameControllable: any (GameControllable & TableGameStorable) {
+        gameController
+    }
+}
 
+// Other
+
+public extension TableRootModel {
     @MainActor
-    public func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
+    func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         SheetController(itemController: itemController).sheet(for: itemId, level: level)
     }
     
     @MainActor
-    public func listItems() -> [TableModel] {
+    func listItems() -> [TableModel] {
         itemController.itemDataModel.items.map {
             itemController.itemOrEmpty(for: $0)
         }
     }
     
-    public func itemDataCleanup() async throws {
+    func itemDataCleanup() async throws {
         for itemId in await itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {
@@ -170,7 +177,7 @@ extension TableRootModel {
         }
     }
     
-    public func checkFolders() async {
+    func checkFolders() async {
         let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.createFoldersAndCollections()
     }

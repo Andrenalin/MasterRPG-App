@@ -6,6 +6,7 @@ import SwiftData
 public extension ItemRootController {
     @MainActor static let fake = ItemRootController(
         module: .adventure,
+        config: FakeModuleConfiguration(),
         listDisplayModel: ListDisplayModel(),
         searchModel: SearchModel.preview(),
         itemSelectionModel: ItemSelectionModel(),

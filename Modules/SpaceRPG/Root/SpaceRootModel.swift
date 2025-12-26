@@ -5,32 +5,20 @@ import CoreData
 import SwiftData
 import SwiftUI
 
-@MainActor @Observable
-public final class RootModel: Sendable {
-    
-    @MainActor
-    public var selectedItem: ItemRowModel?
-    @MainActor
-    public var gameItemSelection: ItemRowModel?
-    
-    @ObservationIgnored
-    var listModels: [UUID: ListModel] = [:]
-}
-
 @Observable
 public final class SpaceRootModel: @unchecked Sendable {
     @MainActor init(container: ModelContainer) {
-        rootModel = RootModel()
-        let module: NetworkModules = .space
-        self.module = module
+        let config = ModuleConfiguration()
+        self.config = config
+        self.module = config.module
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .item, .supplement])
+        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+        self.linkSelectionModel = config.linkSelectionModel
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -38,12 +26,12 @@ public final class SpaceRootModel: @unchecked Sendable {
         
         let dataController = context.map { DataController(context: $0, token: module.token) }
         _dataController = dataController
-        let itemController = ItemController(dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
         _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
         _exportController = ExportController(itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
-        _gameController = GameController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+        _gameController = GameController(config: config, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
         _linkController = LinkController(itemController: itemController, gameController: gameController)
 
         if let dataController, let context {
@@ -54,7 +42,7 @@ public final class SpaceRootModel: @unchecked Sendable {
         }
     }
 
-    public let rootModel: RootModel
+    public let config: ModuleConfiguration
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -104,10 +92,11 @@ public final class SpaceRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
+            config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: ItemSelectionModel(),
-            removeEntryListModel: RemoveEntryListModel(),
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: cacheController,
             editControllable: editController,
             exportControllable: exportControllable,
@@ -121,6 +110,7 @@ public final class SpaceRootModel: @unchecked Sendable {
 }
 
 extension SpaceRootModel: ItemRootControllable {
+    public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { cacheController }
     public var editControllable: any EditControllable { editController }
     public var folderListControllable: any FolderListControllable { folderListController }

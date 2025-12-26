@@ -6,23 +6,24 @@ import os.log
 import UniformTypeIdentifiers
 
 struct ItemController: Sendable {
-    static var fileTypes: [UTType] { [.usdz] }
-    static var filenameExtension: String { "usdz" }
-
-    @MainActor init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.config = config
+        
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
 
-        self.itemDataModel = ItemDataModel(categoryTags: [.building, .item, .supplement], networkModule: .space)
-        
-        let fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.space.token, fileTypes: ItemController.fileTypes, filenameExtension: ItemController.filenameExtension, fileUrlAccess: self)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.collectionCategory = config.collectionCategory
+
+        let fileUrlDataController = FileUrlDataController(moduleFolder: config.module.token, fileTypes: config.fileTypes, filenameExtension: config.filenameExtension, fileUrlAccess: self)
         self.cacheController = CacheController(fileUrlDataController: fileUrlDataController)
         self.fileUrlDataController = fileUrlDataController
     }
 
+    let config: ModuleConfigurable
     var cacheController: CacheController?
     var fileUrlDataController: FileUrlDataController?
-    let collectionCategory: ItemListCategory = .album
+    let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
@@ -39,8 +40,8 @@ extension ItemController: ItemControllable {
     func children(for model: ItemRowModel) -> [ItemRowModel] {
         guard let item = self.itemSync(for: model.itemId) else { return [] }
 
-        return [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: itemDataModel.networkModule)] +
-        item.entries.map { ItemRowModel(itemId: item.id, entryId: $0.spaceId, typeId: itemDataModel.networkModule) }
+        return [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: config.module)] +
+        item.entries.map { ItemRowModel(itemId: item.id, entryId: $0.spaceId, typeId: config.module) }
     }
 
     @MainActor

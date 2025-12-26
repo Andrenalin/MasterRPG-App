@@ -6,14 +6,18 @@ import Observation
 import CoreData
 
 struct ItemController: Sendable {
-    @MainActor init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.config = config
+
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
 
-        self.itemDataModel = ItemDataModel(categoryTags: [.rules, .loot, .supplement, .generator], networkModule: .table)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.collectionCategory = config.collectionCategory
     }
 
-    let collectionCategory: ItemListCategory = .bookshelf
+    let config: ModuleConfigurable
+    let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
@@ -29,7 +33,7 @@ extension ItemController: ItemControllable {
     @MainActor
     func children(for model: ItemRowModel) -> [ItemRowModel] {
         itemOrEmpty(for: model.itemId).entries.map {
-            ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: itemDataModel.networkModule)
+            ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: config.module)
         }
     }
     
@@ -43,7 +47,7 @@ extension ItemController: ItemControllable {
     func itemTree(from rootModel: ItemRowModel?, to childModel: ItemRowModel) -> [ItemRowModel] {
         guard let rootModel else {
             for itemId in itemDataModel.items {
-                let model = ItemRowModel(itemId: itemId, typeId: itemDataModel.networkModule)
+                let model = ItemRowModel(itemId: itemId, typeId: config.module)
                 let result = itemTree(from: model, to: childModel)
                 if !result.isEmpty {
                     return result

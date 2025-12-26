@@ -2,25 +2,27 @@
 
 import CoreRPG
 import Foundation
-import CoreData
 import TableRPG
 
 struct ItemController: Sendable {
-    @MainActor init(tableRoot: TableRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable, tableChildren: (@MainActor @Sendable (ItemRowModel) -> [ItemRowModel])? = nil) {
-        self.tableRoot = tableRoot
+    @MainActor init(config: ModuleConfiguration, tableRoot: TableRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.config = config
+        
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
         
-        self.itemDataModel = ItemDataModel(categoryTags: [.character, .gameMaster, .item, .monster], networkModule: .value)
-        self.tableChildren = tableChildren
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.collectionCategory = config.collectionCategory
+
+        self.tableRoot = tableRoot
     }
 
-    let collectionCategory: ItemListCategory = .collection
+    let config: ModuleConfigurable
+    let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
-    let tableChildren: (@MainActor @Sendable (ItemRowModel) -> [ItemRowModel])?
-    
+
     let tableRoot: TableRootModel
 }
 
@@ -33,29 +35,21 @@ extension ItemController: ItemControllable {
 
     @MainActor
     func children(for model: ItemRowModel) -> [ItemRowModel] {
-        switch model.typeId {
-        case .table:
-            if let tableChildren {
-                return tableChildren(model)
+        let item = itemOrEmpty(for: model.itemId)
+        return item.entries.flatMap {
+            var entries = [ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: config.module)]
+            if item.quickEditEntries.contains($0.id) {
+                let edit = ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: NetworkModules.editor)
+                entries.append(edit)
             }
-            return tableRoot.itemControllable.children(for: model)
-        default:
-            let item = itemOrEmpty(for: model.itemId)
-            return item.entries.flatMap {
-                var entries = [ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: itemDataModel.networkModule)]
-                if item.quickEditEntries.contains($0.id) {
-                    let edit = ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: NetworkModules.editor)
-                    entries.append(edit)
-                }
-                return entries
-            }
+            return entries
         }
     }
 
     @MainActor
     func childrenTree(for model: ItemRowModel) -> ItemRowModel? {
         guard model.typeId == itemDataModel.networkModule, let entryId = model.entryId, let valueId = itemOrEmpty(for: model.itemId)[entryId].valueId else { return nil }
-        return ItemRowModel(itemId: valueId, typeId : itemDataModel.networkModule)
+        return ItemRowModel(itemId: valueId, typeId: config.module)
     }
 
     func didDelete(model: ModelType) async {
@@ -85,7 +79,7 @@ extension ItemController: ItemControllable {
     func itemTree(from rootModel: ItemRowModel?, to childModel: ItemRowModel) -> [ItemRowModel] {
         guard let rootModel else {
             for itemId in itemDataModel.items {
-                let model = ItemRowModel(itemId: itemId, typeId: itemDataModel.networkModule)
+                let model = ItemRowModel(itemId: itemId, typeId: config.module)
                 let result = itemTree(from: model, to: childModel)
                 if !result.isEmpty {
                     return result
@@ -103,7 +97,7 @@ extension ItemController: ItemControllable {
     @MainActor
     func filterChildren(model: ItemRowModel, search: String, isHidden: Bool, filterTags: [TagFilterSelection], deep: Int) -> ListFilterOptions {
         guard deep < 10, let entryId = model.entryId, let valueId = itemOrEmpty(for: model.itemId)[entryId].valueId else { return .notMatch }
-        return filter(model: ItemRowModel(itemId: valueId, typeId: itemDataModel.networkModule), search: search, isHidden: isHidden, filterTags: filterTags, deep: deep + 1)
+        return filter(model: ItemRowModel(itemId: valueId, typeId: config.module), search: search, isHidden: isHidden, filterTags: filterTags, deep: deep + 1)
     }
 }
 
@@ -144,9 +138,9 @@ extension ItemController {
         return item.entries.flatMap { entry -> [ItemRowModel] in
             guard let valueId = entry.valueId else { return [] }
             if valueId == childModel.itemId {
-                return [ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemDataModel.networkModule)]
+                return [ItemRowModel(itemId: item.id, entryId: entry.id, typeId: config.module)]
             }
-            return itemTree(from: ItemRowModel(itemId: valueId, typeId: itemDataModel.networkModule), to: childModel)
+            return itemTree(from: ItemRowModel(itemId: valueId, typeId: config.module), to: childModel)
         }
     }
 }

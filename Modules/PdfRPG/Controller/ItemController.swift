@@ -9,28 +9,28 @@ import UniformTypeIdentifiers
 import PDFKit
 #endif
 
-#if canImport(QuickLookThumbnailing)
-import QuickLookThumbnailing
-#endif
+//#if canImport(QuickLookThumbnailing)
+//import QuickLookThumbnailing
+//#endif
 
 struct ItemController: Sendable {
-    static var fileTypes: [UTType] { [.pdf] }
-    static var filenameExtension: String { "pdf" }
-
-    @MainActor init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.config = config
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
         
-        itemDataModel = ItemDataModel(categoryTags: [.adventure, .character, .rules, .supplement], networkModule: .pdf)
-        
-        let fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.pdf.token, fileTypes: ItemController.fileTypes, filenameExtension: ItemController.filenameExtension, fileUrlAccess: self)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.collectionCategory = config.collectionCategory
+
+        let fileUrlDataController = FileUrlDataController(moduleFolder: config.module.token, fileTypes: config.fileTypes, filenameExtension: config.filenameExtension, fileUrlAccess: self)
         self.cacheController = CacheController(fileUrlDataController: fileUrlDataController)
         self.fileUrlDataController = fileUrlDataController
     }
     
+    let config: ModuleConfigurable
     var cacheController: CacheController?
     var fileUrlDataController: FileUrlDataController?
-    let collectionCategory: ItemListCategory = .bookshelf
+    let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable

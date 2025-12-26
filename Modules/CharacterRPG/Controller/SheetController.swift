@@ -11,7 +11,7 @@ struct SheetController {
     func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
         var entries: [SheetModel] = []
-        var showHeader: Bool = model.displayState == 0
+        let showHeader: Bool = model.displayState == 0
         
 //        if let parentId = model.parentId, let parentModel = itemController.itemSync(for: parentId) {
 //            showHeader = parentModel.isFolder

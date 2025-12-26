@@ -29,16 +29,17 @@ public final class AdventureRootModel: @unchecked Sendable {
         self.characterRoot = characterRoot
         self.weatherRoot = weatherRoot
 
-        let module: NetworkModules = .adventure
-        self.module = module
+        let config = ModuleConfiguration()
+        self.config = config
+        self.module = config.module
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.adventure, .campaign, .scenario, .rules, .supplement])
+        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+        self.linkSelectionModel = config.linkSelectionModel
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?) {
@@ -84,6 +85,7 @@ public final class AdventureRootModel: @unchecked Sendable {
     let characterRoot: CharacterRootModel
     let weatherRoot: WeatherRootModel
 
+    public let config: ModuleConfiguration
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -152,10 +154,11 @@ public final class AdventureRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
+            config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: ItemSelectionModel(),
-            removeEntryListModel: RemoveEntryListModel(),
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,
@@ -169,24 +172,12 @@ public final class AdventureRootModel: @unchecked Sendable {
 }
 
 extension AdventureRootModel: ItemRootControllable {
+    public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var folderListControllable: any FolderListControllable { folderListController }
     public var folderLinkControllable: any FolderListControllable { folderLinkController }
     public var viewControllable: any ViewControllable { viewController }
-}
-
-
-extension AdventureRootModel {
-    public var gameControllable: any GameControllable {
-        gameController
-    }
-    public var adventureGameControllable: any (GameControllable & AdventureStoreGameable) {
-        gameController
-    }
-    public var itemControllable: any ItemControllable {
-        itemController
-    }
 }
 
 extension AdventureRootModel: RootControllable {
@@ -196,6 +187,16 @@ extension AdventureRootModel: RootControllable {
     public var importControllable: any ImportControllable {
         importController as ImportControllable
     }
+    public var gameControllable: any GameControllable {
+        gameController
+    }
+    @MainActor public var itemControllable: any ItemControllable {
+        itemController
+    }
+    public var adventureGameControllable: any (GameControllable & AdventureStoreGameable) {
+        gameController
+    }
+
     public var linkControllable: any LinkControllable {
         linkController as LinkControllable
     }

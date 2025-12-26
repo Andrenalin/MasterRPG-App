@@ -8,22 +8,13 @@ import PdfRPG
 import PhotoRPG
 import TableRPG
 import CharacterRPG
-import CoreData
 import SwiftData
 import SwiftUI
 
 @MainActor @Observable
 public final class RootModel: Sendable {
-    
-    @MainActor
-    public var selectedItem: ItemRowModel?
-    @MainActor
-    public var gameItemSelection: ItemRowModel?
     @MainActor
     var toolBarModel = GameToolBarModel()
-    
-    @ObservationIgnored
-    var listModels: [UUID: ListModel] = [:]
 }
 
 @Observable
@@ -40,16 +31,17 @@ public final class MapRootModel: @unchecked Sendable {
 
         rootModel = RootModel()
         
-        let module: NetworkModules = .map
-        self.module = module
-        
+        let config = ModuleConfiguration()
+        self.config = config
+        self.module = config.module
+
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.building, .dungeon, .map])
+        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.linkSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true)
+        self.linkSelectionModel = config.linkSelectionModel
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -81,6 +73,7 @@ public final class MapRootModel: @unchecked Sendable {
     let characterRoot: CharacterRootModel
 
     public let rootModel: RootModel
+    public let config: ModuleConfiguration
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
@@ -144,10 +137,11 @@ public final class MapRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
+            config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: ItemSelectionModel(),
-            removeEntryListModel: RemoveEntryListModel(),
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: cacheController,
             editControllable: editController,
             exportControllable: exportControllable,
@@ -161,6 +155,7 @@ public final class MapRootModel: @unchecked Sendable {
 }
 
 extension MapRootModel: ItemRootControllable {
+    public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var folderListControllable: any FolderListControllable { folderListController }
@@ -172,19 +167,17 @@ extension MapRootModel {
     public var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
-    
     public var importControllable: any ImportControllable {
         importController as ImportControllable
     }
-    
     public var gameControllable: any GameControllable {
         gameController
     }
+    @MainActor public var itemControllable: any ItemControllable {
+        itemController
+    }
     public var mapGameControllable: any (GameControllable & MapGameStorable) {
         gameController
-    }
-    public var itemControllable: any ItemControllable {
-        itemController
     }
 }
 

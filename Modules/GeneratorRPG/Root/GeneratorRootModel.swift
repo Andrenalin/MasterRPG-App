@@ -8,16 +8,17 @@ import SwiftData
 @Observable
 public final class GeneratorRootModel: @unchecked Sendable {
     @MainActor init(container: ModelContainer) {
-        let module: NetworkModules = .generator
-        self.module = module
-        
+        let config = ModuleConfiguration()
+        self.config = config
+        self.module = config.module
+
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: module, categoryTags: [.character, .item, .adventure])
+        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
-        let itemSelectionModel = ItemSelectionModel()
-        self.itemSelectionModel = itemSelectionModel
+        self.itemSelectionModel = ItemSelectionModel()
+        self.linkSelectionModel = config.linkSelectionModel
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
@@ -39,11 +40,14 @@ public final class GeneratorRootModel: @unchecked Sendable {
         }
     }
 
+    public let config: ModuleConfiguration
     public let module: NetworkModules
     
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
-    public var itemSelectionModel: ItemSelectionModel
+    public let itemSelectionModel: ItemSelectionModel
+    public let linkSelectionModel: ItemSelectionModel
+    
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
 
@@ -84,10 +88,11 @@ public final class GeneratorRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             module: module,
+            config: config,
             listDisplayModel: listDisplayModel,
             searchModel: searchModel,
-            itemSelectionModel: ItemSelectionModel(),
-            removeEntryListModel: RemoveEntryListModel(),
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
             cacheControllable: nil,
             editControllable: editController,
             exportControllable: exportControllable,
@@ -105,7 +110,7 @@ public final class GeneratorRootModel: @unchecked Sendable {
 }
 
 extension GeneratorRootModel: ItemRootControllable {
-    
+    public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
     public var editControllable: any EditControllable { editController }
     public var exportControllable: any ExportControllable { exportController }

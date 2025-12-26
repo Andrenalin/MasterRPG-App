@@ -6,22 +6,23 @@ import os.log
 import UniformTypeIdentifiers
 
 struct ItemController: Sendable {
-    static var fileTypes: [UTType] { [.audio] }
-    static var filenameExtension: String { "m4a" }
-
     @MainActor
-    init(dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.config = config
+        
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
 
-        itemDataModel = ItemDataModel(categoryTags: [.music, .playlist, .sound], networkModule: .audio)
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.collectionCategory = config.collectionCategory
         
-        let fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.audio.token, fileTypes: ItemController.fileTypes, filenameExtension: ItemController.filenameExtension, fileUrlAccess: self)
+        let fileUrlDataController = FileUrlDataController(moduleFolder: config.module.token, fileTypes: config.fileTypes, filenameExtension: config.filenameExtension, fileUrlAccess: self)
         self.fileUrlDataController = fileUrlDataController
     }
 
+    let config: ModuleConfigurable
     var fileUrlDataController: FileUrlDataController?
-    let collectionCategory: ItemListCategory = .playlist
+    let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
@@ -38,8 +39,8 @@ extension ItemController: ItemControllable {
     func children(for model: ItemRowModel) -> [ItemRowModel] {
         guard let item = self.itemSync(for: model.itemId) else { return [] }
         
-        return [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: itemDataModel.networkModule)] +
-        item.entries.map { ItemRowModel(itemId: item.id, entryId: $0.audioId, typeId: itemDataModel.networkModule) }
+        return [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: config.module)] +
+        item.entries.map { ItemRowModel(itemId: item.id, entryId: $0.audioId, typeId: config.module) }
     }
     
     @MainActor

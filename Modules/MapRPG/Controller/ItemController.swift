@@ -14,16 +14,20 @@ struct ItemController: Sendable {
     @MainActor
     init(root: MapRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.root = root
+        self.config = root.config
+
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
-        
-        itemDataModel = ItemDataModel(categoryTags: [.building, .dungeon, .map], networkModule: .map)
+
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags, networkModule: config.module)
+        self.collectionCategory = config.collectionCategory
         self.cacheController = CacheController(photoRoot: root.photoRoot)
     }
 
     let root: MapRootModel
+    let config: ModuleConfigurable
     var cacheController: CacheController?
-    let collectionCategory: ItemListCategory = .collection
+    let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
@@ -54,7 +58,7 @@ extension ItemController: ItemControllable {
             return root.characterRoot.itemControllable.children(for: model)
         default:
             return itemOrEmpty(for: model.itemId).entries.map {
-                ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: itemDataModel.networkModule)
+                ItemRowModel(itemId: model.itemId, entryId: $0.id, typeId: config.module)
             }
         }
     }
