@@ -91,7 +91,7 @@ struct OverlayMasterTabBar: View {
                     .gameOverlayTabBarView(value: NetworkModules.value)
                 root.pdfRoot.viewController.gameView(root: root.pdfRoot)
                     .gameOverlayTabBarView(value: NetworkModules.pdf)
-                root.spaceRoot.viewController.gameView(root: root.spaceRoot)
+                root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
                     .gameOverlayTabBarView(value: NetworkModules.space)
                 root.weatherRoot.viewController.gameListView(root: root.weatherRoot)
                     .gameOverlayTabBarView(value: NetworkModules.weather)

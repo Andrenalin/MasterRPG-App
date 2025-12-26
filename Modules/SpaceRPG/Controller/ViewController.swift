@@ -9,37 +9,30 @@ public struct ViewController: Sendable {
     public let thumbnailRowViewType: ThumbnailRowViewType = .photo
 }
 
-extension ViewController: ViewControllable {}
+extension ViewController: ViewControllable {
+    @MainActor public func rowViewer(source: ItemRowModel) -> AnyView {
+        AnyView(InlineRowViewer(source: source).equatable())
+    }
+}
 
-// MARK: - New Views
+// MARK: - List View
 
 public extension ViewController {
+    @MainActor func gameListView(root: SpaceRootModel) -> some View {
+        LinkRootView(type: .inspector)
+            .environment(ItemSelectionModel())
+    }
+    
     @MainActor func linkListView(type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> some View {
         LinkRootView(type: type)
             .environment(itemSelectionModel)
     }
-
-    @MainActor func inlineViewer(root: SpaceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return ViewerRootView(model: model, dismissAction: dismissAction)
-    }
-
-    @MainActor func windowViewer(root: SpaceRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return ViewerRootView(model: model, windowMode: true)
-    }
-    
-    @MainActor func gameView(root: SpaceRootModel) -> some View {
-        LinkRootView(type: .inspector)
-            .environment(ItemSelectionModel())
-    }
 }
 
-// MARK: - Game
+// MARK: - Viewer
 
 public extension ViewController {
-    @MainActor @ViewBuilder
-    func gameSpaceView(root: SpaceRootModel) -> some View {
+    @MainActor @ViewBuilder func gameViewer(root: SpaceRootModel) -> some View {
 #if os(tvOS)
         SpaceQuickLook(root: root, item: ItemSelection(itemId: root.gameController.gameModel.currentItemId ?? UUID(), entryId: nil), startLoading: true, gameMode: true, dismiss: nil)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -53,10 +46,22 @@ public extension ViewController {
             .padding()
 #endif
     }
+
+    @MainActor func inlineViewer(root: SpaceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: id), dismissAction: dismissAction)
+    }
+    
+    @MainActor func windowViewer(root: SpaceRootModel, selection: WindowItemSelection) -> some View {
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: selection.itemId))
+    }
+}
+
+// MARK: - Game
+
+public extension ViewController {
     
 #if os(visionOS)
-    @MainActor @ViewBuilder
-    func spaceImmersionWindow(root: SpaceRootModel, id: UUID, defaultSize: Size3D) -> some View {
+    @MainActor @ViewBuilder func spaceImmersionWindow(root: SpaceRootModel, id: UUID, defaultSize: Size3D) -> some View {
         SpaceViewer(root: root, id: id, isModal: false)
     }
 #endif

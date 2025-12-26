@@ -4,6 +4,7 @@ import CoreRPG
 import PhotoRPG
 import SwiftUI
 import WeatherRPG
+import SpaceRPG
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
@@ -11,11 +12,13 @@ struct InlineRowViewer: View, Equatable {
     @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
-        if source.typeId == .photo {
-            root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
-        }
-        if source.typeId == .weather {
+        switch source.typeId {
+        case .space:
+            root.spaceRoot.viewController.rowViewer(source: source)
+        case .weather:
             root.weatherRoot.viewController.rowViewer(source: source)
+        default:
+            root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
         }
     }
     

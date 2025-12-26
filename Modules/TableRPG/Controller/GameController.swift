@@ -83,7 +83,7 @@ extension GameController: TableGameStorable {
 
         let model = await gameItem(for: itemId)
         let value = "\(model[entryId].content) 🎲 \(diceResult)"
-        let result = await valueActions.createEntryResult(model.name, value, ResultCategory(id: itemId, childId: entryId, module: itemController.config.module))
+        let result = valueActions.createEntryResult(model.name, value, ResultCategory(id: itemId, childId: entryId, module: itemController.config.module))
         await networkActions.game(result, .valueResult)
     }
 

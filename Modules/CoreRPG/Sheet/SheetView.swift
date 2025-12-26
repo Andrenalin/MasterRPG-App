@@ -70,12 +70,7 @@ struct SheetGroupView: View {
                 .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(group.level * 4), bottom: 8, trailing: 8))
         case .dice:
             root.viewControllable.rowViewer(source: group.source)
-        case .photo:
-            root.viewControllable.rowViewer(source: group.source)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .listRowBackground(Color.clear)
-                .frame(height: 256)
-        case .weather:
+        case .photo, .space, .weather:
             root.viewControllable.rowViewer(source: group.source)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowBackground(Color.clear)

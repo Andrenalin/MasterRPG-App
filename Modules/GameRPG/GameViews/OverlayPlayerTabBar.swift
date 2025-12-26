@@ -106,7 +106,7 @@ struct OverlayPlayerTabBar: View {
                 root.photoRoot.viewController.gameListView(root: root.photoRoot)
                     .gameOverlayTabBarView(value: NetworkModules.photo)
 
-                root.spaceRoot.viewController.gameView(root: root.spaceRoot)
+                root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
                     .gameOverlayTabBarView(value: NetworkModules.space)
 
                 if root.gameModel.gameConfig.type != .observer {
