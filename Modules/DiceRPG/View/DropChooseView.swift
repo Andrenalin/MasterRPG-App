@@ -45,6 +45,9 @@ struct DropChooseView: View {
                     .imageScale(.large)
                     .foregroundStyle(.white, .red, .red)
             }
+            .borderLessTVBottonStyle()
+            .padding(4)
+            .contentShape(.circle)
 #if !os(visionOS)
             .glassEffect()
 #endif
