@@ -12,7 +12,7 @@ public struct ViewController {
 
 extension ViewController: ViewControllable {
     @MainActor public func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView {
-        AnyView(PhotoInlineImporterView(itemId: itemId, preopen: preopen, layoutDown: layoutDown).equatable())
+        AnyView(InlineImporterView(itemId: itemId, preopen: preopen, layoutDown: layoutDown).equatable())
     }
 }
 

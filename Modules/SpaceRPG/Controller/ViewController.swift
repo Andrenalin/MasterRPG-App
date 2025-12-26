@@ -4,12 +4,17 @@ import CoreRPG
 import SwiftUI
 
 public struct ViewController: Sendable {
+    public let fileImporterViewType: FileImporterViewType = .custom
     public let goupViewType: GroupViewType = .photo
     public let sharingViewType: SharingViewType = .share
     public let thumbnailRowViewType: ThumbnailRowViewType = .photo
 }
 
 extension ViewController: ViewControllable {
+    @MainActor public func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView {
+        AnyView(InlineImporterView(itemId: itemId, preopen: preopen, layoutDown: layoutDown).equatable())
+    }
+
     @MainActor public func rowViewer(source: ItemRowModel) -> AnyView {
         AnyView(InlineRowViewer(source: source).equatable())
     }

@@ -386,6 +386,9 @@
     "HIDDEN SPACER" : {
 
     },
+    "Importer" : {
+
+    },
     "Keep app running while processing. (Object Capture)" : {
       "comment" : "Description displayed while processing models.",
       "extractionState" : "extracted_with_value",

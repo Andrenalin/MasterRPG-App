@@ -23,7 +23,7 @@ enum ImporterButtonType: String {
     var duration: CGFloat {
         switch self {
         case .file:
-            return 0.3
+            return 0.5
         case .scanner:
             return 0.6
         }
@@ -36,7 +36,7 @@ enum ImporterButtonType: String {
         
         switch self {
         case .file:
-            return offset(atIndex: 0, layoutDown: layoutDown)
+            return offset(atIndex: 2, layoutDown: layoutDown)
         case .scanner:
             return offset(atIndex: 3, layoutDown: layoutDown)
         }
@@ -122,7 +122,7 @@ struct InlineImporterView: View, Equatable {
 #endif
 #if os(iOS)
         .sheet(isPresented: $showScanner) {
-            Scanner3DRootView(root: root)
+            Scanner3DRootView()
         }
 #endif
     }
