@@ -62,8 +62,8 @@ public extension ViewController {
         }
     }
     
-    @MainActor func gameModuleListView(root: AdventureRootModel) -> some View {
-        EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel)
+    @MainActor func gameModuleListView(root: AdventureRootModel, isPlayer: Bool) -> some View {
+        EditorLinkView(root: root.rootController, editorLinkModel: isPlayer ? root.playerLinkModel : root.editorLinkModel)
     }
 }
 

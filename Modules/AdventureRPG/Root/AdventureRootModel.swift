@@ -114,6 +114,23 @@ public final class AdventureRootModel: @unchecked Sendable {
         )
     }()
 
+    @MainActor @ObservationIgnored lazy var playerLinkModel: EditorLinkModel = {
+        EditorLinkModel(
+            rootManager: RootManager(adventureRoot: self, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, generatorRoot: self, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot),
+            folderListController: folderListController.copy(parentModel: nil),
+            audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            spaceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            firstRow: [.table, .pdf, .audio, .photo, .space, .dice],
+            secondRow: [],
+            selection: .table
+        )
+    }()
+
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }
     @ObservationIgnored private(set) var _syncDataController: SyncDataController?

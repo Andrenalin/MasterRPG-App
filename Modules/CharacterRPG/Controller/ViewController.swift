@@ -40,12 +40,12 @@ public extension ViewController {
 
     @MainActor func windowViewer(root: CharacterRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return CharacterSheet(model: model, showTopImage: false, dismissAction: nil)
+        return ViewerRootView(model: model, dismissAction: nil)
     }
 
     @MainActor func inlineViewer(root: CharacterRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
-        return CharacterSheet(model: model, showTopImage: false, dismissAction: dismissAction)
+        return ViewerRootView(model: model, dismissAction: dismissAction)
     }
     
     @MainActor func dropChooseView(model: ItemSelectionModel) -> some View {

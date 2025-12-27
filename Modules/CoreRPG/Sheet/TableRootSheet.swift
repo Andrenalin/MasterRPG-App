@@ -29,6 +29,7 @@ public struct TableRootSheet<ImageContent: View>: View {
     
     @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.showGame) private var showGame
     @Environment(\.dismiss) var dismiss
 
     @State private var tableSheetModel: TableSheetModel
@@ -70,7 +71,7 @@ private extension TableRootSheet {
     }
     
     var shouldShowCloseButton: Bool {
-        valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
+        valueFor(iOS: (!showGame && appSizeMode == .compact) || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
     }
     
     var closeButton: some View {

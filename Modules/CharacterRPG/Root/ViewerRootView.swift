@@ -5,9 +5,8 @@ import SwiftUI
 import PhotoRPG
 
 @MainActor
-struct CharacterSheet: View {
+struct ViewerRootView: View {
     let model: ValueModel
-    let showTopImage: Bool
     let dismissAction: (() -> Void)?
     
     @Environment(CharacterRootModel.self) private var root
@@ -28,13 +27,13 @@ struct CharacterSheet: View {
     }
 }
 
-private extension CharacterSheet {
+private extension ViewerRootView {
     func imageView(size: CGSize) -> some View {
         root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: model.photoId, useGame: false, size: size)
     }
 }
 
 #Preview {
-    CharacterSheet(model: .preview, showTopImage: false, dismissAction: nil)
+    ViewerRootView(model: .preview, dismissAction: nil)
         .environment(CharacterRootModel.previewWithData)
 }

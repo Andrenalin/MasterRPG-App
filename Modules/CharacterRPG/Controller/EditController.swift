@@ -101,7 +101,7 @@ extension EditController: EntryDataEditable {
     }
 
     @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
-        guard canAddLink(module: module, entryId: entryId), var editModel = editModel(for: destinationItemId) else { return }
+        guard canAddLink(module: module, entryId: entryId), let editModel = editModel(for: destinationItemId) else { return }
         
         switch module {
         case .table:
@@ -144,7 +144,7 @@ extension EditController: EntryDataEditable {
     }
 
     @MainActor private func addLinkInName(link: String, module: NetworkModules, itemId: UUID, entryId: UUID, destinationItemId: UUID, destinationEntryId: UUID) {
-        guard var editModel = editModel(for: destinationItemId) else { return }
+        guard let editModel = editModel(for: destinationItemId) else { return }
         var entry = editModel[destinationEntryId]
         
         let entryLink = "/\(entryId.uuidString)"

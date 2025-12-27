@@ -9,6 +9,7 @@ import AudioRPG
 import PhotoRPG
 import SpaceRPG
 import DiceRPG
+import AdventureRPG
 
 struct OverlayPlayerTabBar: View {
     let root: GameRoot
@@ -24,7 +25,9 @@ struct OverlayPlayerTabBar: View {
 #elseif os(visionOS)
             onlyGameView
 #else
-            tabGameView
+            if root.gameModel.gameConfig.type != .observer {
+                tabGameView
+            }
             tabSecondGameView
 #endif
         }
@@ -52,33 +55,13 @@ struct OverlayPlayerTabBar: View {
     @ViewBuilder
     var tabGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
-        TabView(selection: $gameScreenModel.showGameType) {
-            Group {
-                if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
-                    root.characterRoot.viewController.gameView(root: root.characterRoot, select: characterId)
-                        .gameOverlayTabBarView(value: NetworkModules.value)
-                }
-
-                root.tableRoot.viewController.gameListView(root: root.tableRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.table)
-
-                root.pdfRoot.viewController.gameView(root: root.pdfRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.pdf)
-
-                root.audioRoot.viewController.gameView(root: root.audioRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.audio)
-
-                root.photoRoot.viewController.gameListView(root: root.photoRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.photo)
-
+        NavigationStack {
+            if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
+                root.characterRoot.viewController.gameView(root: root.characterRoot, select: characterId)
+                    .environment(\.gameModus, .player)
+                    .environment(\.showGame, true)
             }
-            .environment(\.gameModus, .player)
-            .environment(\.showGame, true)
-            .environment(selectionSheetLinkModel)
         }
-#if os(iOS)
-        .environment(\.horizontalSizeClass, .compact)
-#endif
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
 #if !os(visionOS)
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
@@ -93,33 +76,9 @@ struct OverlayPlayerTabBar: View {
     @ViewBuilder
     var tabSecondGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
-        TabView(selection: $gameScreenModel.showSettingsType) {
-            Group {
-                if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
-                    root.characterRoot.viewController.gameView(root: root.characterRoot, select: characterId)
-                        .gameOverlayTabBarView(value: NetworkModules.value)
-                }
-
-                root.audioRoot.viewController.gameView(root: root.audioRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.audio)
-
-                root.photoRoot.viewController.gameListView(root: root.photoRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.photo)
-
-                root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
-                    .gameOverlayTabBarView(value: NetworkModules.space)
-
-                if root.gameModel.gameConfig.type != .observer {
-                    root.diceRoot.viewController.gameView(root: root.diceRoot)
-                        .gameOverlayTabBarView(value: NetworkModules.dice)
-                }
-            }
+        root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: true)
             .environment(\.gameModus, .player)
             .environment(\.showGame, true)
-        }
-#if os(iOS)
-        .environment(\.horizontalSizeClass, .compact)
-#endif
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
 #if !os(visionOS)
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))

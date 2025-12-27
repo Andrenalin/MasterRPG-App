@@ -15,68 +15,68 @@ public struct EditorLinkView: View {
     let selectedEntryId: UUID?
     
     public var body: some View {
-        ManagedNavigationStack(name: "EditorLink") {
-            VStack {
-                pickerAll
-                
-                ZStack {
-                    ForEach(editorLinkModel.modulesRow, id: \.self) { module in
+        VStack {
+            pickerAll
+            
+            ZStack {
+                ForEach(editorLinkModel.modulesRow, id: \.self) { module in
+                    ManagedNavigationStack(name: "EditorLink") {
                         linkLinkView(module: module)
-                            .opacity(editorLinkModel.selection == module ? 1 : 0)
                     }
-                }
-                .frame(maxWidth: .infinity, alignment: .top)
-            }
-            .applyIf(selectionMode) {
-                $0
-                    .toolbarItemListModifier(root: root, listControllable: editorLinkModel.folderListController, parentModel: nil, modal: true) {
-                        guard let editControllable = root.editControllable as? (any EntryDataEditable) else { return }
-                        editorLinkModel.addLinkAndReset(editController: editControllable, destinationEntryId: selectedEntryId)
-                    }
-                    .searchItemList(listControllable: editorLinkModel.folderListController)
-            }
-            .environment(editorLinkModel.folderListController.cacheListItemModel)
-            .onChange(of: editorLinkModel.selectionFirstRow) {
-                guard let selectionFirstRow = editorLinkModel.selectionFirstRow else { return }
-                withAnimation {
-                    editorLinkModel.update(selection: selectionFirstRow)
+                    .opacity(editorLinkModel.selection == module ? 1 : 0)
                 }
             }
-            .onChange(of: editorLinkModel.selectionSecondRow) {
-                guard let selectionSecondRow = editorLinkModel.selectionSecondRow else { return }
-                withAnimation {
-                    editorLinkModel.update(selection: selectionSecondRow)
-                }
-            }
-            .onChange(of: editorLinkModel.selection, initial: true) {
-                editorLinkModel.updateListController()
-            }
-            .onChange(of: editorLinkModel.folderListController.listDisplayModel.displayMode) {
-                editorLinkModel.update()
-            }
-            .onChange(of: editorLinkModel.folderListController.listDisplayModel.listMode) {
-                editorLinkModel.update()
-            }
-            .onChange(of: editorLinkModel.folderListController.searchModel.searchText) {
-                editorLinkModel.update()
-            }
-            .onAppear {
-                guard let preselectedModule = editorLinkModel.preselectedModule else { return }
-                withAnimation { editorLinkModel.update(selection: preselectedModule) }
-            }
-            .navigationTitle(editorLinkModel.selection.title)
-#if os(iOS) || os(visionOS)
-            .navigationBarTitleDisplayMode(.inline)
-#endif
+            .frame(maxWidth: .infinity, alignment: .top)
         }
+        .applyIf(selectionMode) {
+            $0
+                .toolbarItemListModifier(root: root, listControllable: editorLinkModel.folderListController, parentModel: nil, modal: true) {
+                    guard let editControllable = root.editControllable as? (any EntryDataEditable) else { return }
+                    editorLinkModel.addLinkAndReset(editController: editControllable, destinationEntryId: selectedEntryId)
+                }
+                .searchItemList(listControllable: editorLinkModel.folderListController)
+        }
+        .environment(editorLinkModel.folderListController.cacheListItemModel)
+        .onChange(of: editorLinkModel.selectionFirstRow) {
+            guard let selectionFirstRow = editorLinkModel.selectionFirstRow else { return }
+            withAnimation {
+                editorLinkModel.update(selection: selectionFirstRow)
+            }
+        }
+        .onChange(of: editorLinkModel.selectionSecondRow) {
+            guard let selectionSecondRow = editorLinkModel.selectionSecondRow else { return }
+            withAnimation {
+                editorLinkModel.update(selection: selectionSecondRow)
+            }
+        }
+        .onChange(of: editorLinkModel.selection, initial: true) {
+            editorLinkModel.updateListController()
+        }
+        .onChange(of: editorLinkModel.folderListController.listDisplayModel.displayMode) {
+            editorLinkModel.update()
+        }
+        .onChange(of: editorLinkModel.folderListController.listDisplayModel.listMode) {
+            editorLinkModel.update()
+        }
+        .onChange(of: editorLinkModel.folderListController.searchModel.searchText) {
+            editorLinkModel.update()
+        }
+        .onAppear {
+            guard let preselectedModule = editorLinkModel.preselectedModule else { return }
+            withAnimation { editorLinkModel.update(selection: preselectedModule) }
+        }
+        .navigationTitle(editorLinkModel.selection.title)
+#if os(iOS) || os(visionOS)
+        .navigationBarTitleDisplayMode(.inline)
+#endif
     }
 }
- 
+
 private extension EditorLinkView {
     var selectionMode: Bool {
         selectedEntryId != nil
     }
-
+    
     @ViewBuilder func linkLinkView(module: NetworkModules) -> some View {
         if let itemRootController = editorLinkModel.rootManager.itemRootController(for: module) {
             itemRootController.viewControllable.linkListView(rootController: itemRootController, type: selectionMode ? .selectionInline : .inspector, itemSelectionModel: editorLinkModel.selectionModel(for: module))
