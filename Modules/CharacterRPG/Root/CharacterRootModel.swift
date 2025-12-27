@@ -185,6 +185,15 @@ extension CharacterRootModel {
     public func checkFolders() async {
         let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.createFoldersAndCollections(excludeHidden: true)
+        
+        for id in await itemController.itemDataModel.items {
+            guard let model = await itemController.item(for: id) else { return }
+            guard model.diceId == nil else { continue }
+            let entry = model.entries.first {
+                $0.diceId != nil
+            }
+            await editController.add(diceId: entry?.diceId, modelId: model.id)
+        }
     }
 }
 

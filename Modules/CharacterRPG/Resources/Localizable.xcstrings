@@ -130,6 +130,9 @@
         }
       }
     },
+    "Change Dice" : {
+
+    },
     "Change dice link" : {
       "extractionState" : "stale",
       "localizations" : {

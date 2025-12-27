@@ -490,18 +490,18 @@ public extension EditControllable {
 
 // MARK: - General Edit
 
-private extension EditControllable {
-    @MainActor func saveChanges(to newValue: Model, name: String) {
+extension EditControllable {
+    @MainActor public func editModel(for itemId: UUID) -> Model? {
+        guard model.id != itemId else { return model }
+        return itemControllable.itemSync(for: itemId)?.copy() as? Model
+    }
+
+    @MainActor private func saveChanges(to newValue: Model, name: String) {
         editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
         itemControllable.replace(model: newValue, isInsert: false, shouldRepairLinks: true)
     }
 
-    @MainActor func editModel(for itemId: UUID) -> Model? {
-        guard model.id != itemId else { return model }
-        return itemControllable.itemSync(for: itemId)?.copy() as? Model
-    }
-    
-    @MainActor func save(updated: Model, message: String) {
+    @MainActor public func save(updated: Model, message: String) {
         if updated.id == model.id {
             save(with: message)
         } else {

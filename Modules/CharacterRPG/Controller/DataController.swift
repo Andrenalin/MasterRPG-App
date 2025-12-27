@@ -28,7 +28,8 @@ extension DataController: CoreDataPersistable {
             photoId: CRDT(string: model.photoUUID ?? "", defaultValue: nil),
             photos: CRDTDataUpdate(wrappedValue: model.photoIds.compactMap { $0.uuid }, update: CRDT(string: model.photosUpdate ?? "", defaultValue: UUID())),
             entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
-            parentId: model.parentUUID
+            parentId: model.parentUUID,
+            diceId: model.diceUUID
         )
     }
     
@@ -58,6 +59,7 @@ extension DataController: CoreDataPersistable {
             }
         }
         model.parentUUID <=> viewModel.parentId
+        model.diceUUID <=> viewModel.diceId
     }
     
     // MARK: - ValueEntryModel

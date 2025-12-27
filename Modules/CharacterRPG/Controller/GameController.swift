@@ -108,6 +108,26 @@ extension GameController {
         gameDiceModel.gameDiceId[entryId] = newDiceId
         return newDiceId
     }
+
+    
+    @MainActor
+    func gameDiceId(itemId: UUID, diceId: UUID) -> UUID? {
+        let gameEntryDiceId = gameDiceModel.gameEntryDiceId[itemId]
+        let gameDiceId: UUID?
+        if gameEntryDiceId != diceId {
+            // reset
+            gameDiceModel.gameEntryDiceId[itemId] = diceId
+            gameDiceId = nil
+        } else {
+            gameDiceId = gameDiceModel.gameDiceId[itemId]
+        }
+        let newDiceId = diceRoot.diceGameControllable.createGameDice(for: diceId, gameDiceId: gameDiceId)
+        if gameDiceId != nil {
+            return gameDiceId
+        }
+        gameDiceModel.gameDiceId[itemId] = newDiceId
+        return newDiceId
+    }
     
     @MainActor
     func resetGameDiceId(itemId: UUID, entryId: UUID) {
@@ -151,6 +171,9 @@ extension GameController: ValueGameStorable {
 
     @MainActor
     public func focusDice(for itemId: UUID) -> UUID? {
+        if let diceId = itemController.itemOrEmpty(for: itemId).diceId {
+            return gameDiceId(itemId: itemId, diceId: diceId)
+        }        
         guard let entry = itemController.itemOrEmpty(for: itemId).entries.first(where: { $0.diceId != nil }) else { return nil }
         return gameDiceId(itemId: itemId, entryId: entry.id)
     }

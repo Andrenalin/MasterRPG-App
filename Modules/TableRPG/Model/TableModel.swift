@@ -170,7 +170,7 @@ extension TableModel: ItemDiffComparable {
 extension TableModel: ItemDuplicatable {
     public func duplicate() -> TableModel {
         let copyName = duplicateName(from: name)
-        return TableModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, tableType: tableType, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: parentId)
+        return TableModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, tableType: tableType, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: nil)
     }
 }
 

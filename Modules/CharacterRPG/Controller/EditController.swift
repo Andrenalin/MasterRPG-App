@@ -209,9 +209,16 @@ extension EditController: EntryDataEditable {
 // MARK: - New Editor Functions
 
 extension EditController {
-    @MainActor func add(photoId: UUID?) {
-        model.photoId = photoId
-        save(with: String(localized: "Change Photo").localizedString)
+    @MainActor func add(photoId: UUID?, modelId: UUID?) {
+        guard let editModel = editModel(for: modelId ?? model.id) else { return }
+        editModel.photoId = photoId
+        save(updated: editModel, message: String(localized: "Change Photo").localizedString)
+    }
+    
+    @MainActor func add(diceId: UUID?, modelId: UUID?) {
+        guard let editModel = editModel(for: modelId ?? model.id) else { return }
+        editModel.diceId = diceId
+        save(updated: editModel, message: String(localized: "Change Dice").localizedString)
     }
 }
 
