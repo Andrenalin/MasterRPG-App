@@ -20,7 +20,7 @@ public protocol EntryDataEditable: EditControllable {
 
     // MARK: - EntryList editor
 
-    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID)
+    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID)
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool
         
     var linkModules: [NetworkModules] { get }
@@ -40,16 +40,16 @@ public protocol EntryDataEditable: EditControllable {
 }
 
 public extension EntryDataEditable {
-    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID) {
-        addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
+        addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
     }
 
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool { false }
     
-    @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID, separator: String = " ") {
-        guard canAddLink(module: module, entryId: entryId) else { return }
+    @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, separator: String = " ") {
+        guard canAddLink(module: module, entryId: entryId), var editModel = editModel(for: destinationItemId) else { return }
         
-        var entry = model[destinationEntryId]
+        var entry = editModel[destinationEntryId]
         var content = entry.content.trimmingCharacters(in: .whitespaces)
         
         let nextLinkNumer = LinkReplaceController.links(for: content).filter { $0.itemId == itemId && $0.entryId == entryId }.reduce(-1) { max($0, $1.linkNumber) } + 1
@@ -58,8 +58,8 @@ public extension EntryDataEditable {
         let linkText = "\(content.isEmpty ? "" : separator)[\(link)](\(URL.appScheme)://\(module.token)/\(nextLinkNumer)/\(itemId.uuidString)\(entryLink))"
         content.append(linkText)
         entry.content = content
-        model[destinationEntryId] = entry
-        save(with: String(localized: "Add Link").localizedString)
+        editModel[destinationEntryId] = entry
+        save(updated: editModel, message: String(localized: "Add Link").localizedString)
     }
     
     var thumbnailEntryViewType: ThumbnailEntryViewType { .none }

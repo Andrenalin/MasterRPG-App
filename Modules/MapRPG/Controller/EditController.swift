@@ -64,6 +64,7 @@ struct LinkMapModuleTransferable: LinkDataTransferable {
         CodableRepresentation(contentType: .tableLink)
     }
 }
+
 extension EditController: EntryDataEditable {
     typealias Model = MapModel
     
@@ -94,15 +95,17 @@ extension EditController: EntryDataEditable {
         module == .audio || (module == .value && entryId == nil) || module == .dice || module == .map || module == .pdf || module == .photo || (module == .table && entryId == nil)
     }
     
-    @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID) {
+    @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
         guard canAddLink(module: module, entryId: entryId) else { return }
         
         switch module {
         case .audio, .dice, .map, .pdf, .photo, .table:
-            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
         case .value:
-            addMonsters(to: model, entryId: destinationEntryId, location: nil, monsters: [ItemRowModel(itemId: itemId, typeId: .value)], number: 1)
-            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+            guard let editModel = editModel(for: destinationItemId) else { return }
+            addMonsters(to: editModel, entryId: destinationEntryId, location: nil, monsters: [ItemRowModel(itemId: itemId, typeId: .value)], number: 1)
+            save(updated: editModel, message: "Added Monster".localizedString)
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
         default:
             return
         }
@@ -354,14 +357,7 @@ extension EditController {
     }
 
     @MainActor
-    func addMonsters(to entryId: UUID?, monsters: [ItemRowModel], number: Int) {
-        addMonsters(to: model, entryId: entryId, location: nil, monsters: monsters, number: number)
-    }
-
-    @MainActor
     private func addMonsters(to model: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
-        //let values = monsters.map { root.characterRoot.linkController.generateLink(model: $0) }.joined(separator: ", ")
-
         let pinNumber = min(max(1, number), 25)
         
         var pins: [MapPinModel] = []

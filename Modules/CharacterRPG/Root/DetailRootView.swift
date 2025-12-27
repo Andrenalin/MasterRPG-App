@@ -94,7 +94,7 @@ private extension DetailListView {
             }
 
         Section {
-            SheetView(root: root.rootController, model: tableSheetModel, isEditor: true)
+            SheetView(root: root.rootController, model: tableSheetModel, isEditor: true, linkTypes: LinkCharacterModuleTransferable.self)
         } header: {
             Text("Values")
         }

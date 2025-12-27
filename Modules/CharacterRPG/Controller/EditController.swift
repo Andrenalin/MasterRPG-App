@@ -100,37 +100,38 @@ extension EditController: EntryDataEditable {
         (module == .value && entryId != nil) || module == .dice || module == .pdf || (module == .table && entryId != nil)
     }
 
-    @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationEntryId: UUID) {
-        guard canAddLink(module: module, entryId: entryId) else { return }
+    @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
+        guard canAddLink(module: module, entryId: entryId), var editModel = editModel(for: destinationItemId) else { return }
         
         switch module {
         case .table:
             if let entryId {
-                addLinkInName(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+                addLinkInName(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId,  destinationEntryId: destinationEntryId)
             }
         case .dice:
-            var entry = model[destinationEntryId]
+            var entry = editModel[destinationEntryId]
             entry.diceId = itemId
             if entry.type != .number || entry.type != .decimal {
                 entry.type = .number
             }
-            model[destinationEntryId] = entry
-            save(with: String(localized: "Add Dice").localizedString)
-
+            editModel[destinationEntryId] = entry
+            save(updated: editModel, message: String(localized: "Add Dice").localizedString)
         case .pdf:
-            var entry = model[destinationEntryId]
+            var entry = editModel[destinationEntryId]
             if entry.type != .text {
                 entry.type = .text
+                editModel[destinationEntryId] = entry
+                save(updated: editModel, message: String(localized: "Change Value Type").localizedString)
             }
-            model[destinationEntryId] = entry
-            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId)
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
         case .value:
-            var entry = model[destinationEntryId]
+            var entry = editModel[destinationEntryId]
             if entry.type != .number || entry.type != .decimal {
                 entry.type = .number
+                editModel[destinationEntryId] = entry
+                save(updated: editModel, message: String(localized: "Change Value Type").localizedString)
             }
-            model[destinationEntryId] = entry
-            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationEntryId: destinationEntryId, separator: "+")
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, separator: "+")
         default:
             return
         }
@@ -142,14 +143,15 @@ extension EditController: EntryDataEditable {
         AnyView(AddtionalEntryRow(entryId: entryId).equatable())
     }
 
-    @MainActor private func addLinkInName(link: String, module: NetworkModules, itemId: UUID, entryId: UUID, destinationEntryId: UUID) {
-        var entry = model[destinationEntryId]
+    @MainActor private func addLinkInName(link: String, module: NetworkModules, itemId: UUID, entryId: UUID, destinationItemId: UUID, destinationEntryId: UUID) {
+        guard var editModel = editModel(for: destinationItemId) else { return }
+        var entry = editModel[destinationEntryId]
         
         let entryLink = "/\(entryId.uuidString)"
         let linkText = " [\(link)](\(URL.appScheme)://\(module.token)/0/\(itemId.uuidString)\(entryLink))"
         entry.name = linkText
-        model[destinationEntryId] = entry
-        save(with: String(localized: "Add Link").localizedString)
+        editModel[destinationEntryId] = entry
+        save(updated: editModel, message: String(localized: "Add Link").localizedString)
     }
 
     @MainActor public func rowText(entry: any EntryDataAccessable) -> String {

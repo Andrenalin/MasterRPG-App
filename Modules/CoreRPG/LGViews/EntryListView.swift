@@ -25,7 +25,7 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
 #if !os(tvOS)
                     .dropDestination(for: linkTypes, isEnabled: true) { items, sessions in
                         items.forEach {
-                            editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationEntryId: entry.id)
+                            editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: editController.model.id, destinationEntryId: entry.id)
                         }
                     }
 #endif

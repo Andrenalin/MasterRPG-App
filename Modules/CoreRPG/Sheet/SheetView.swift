@@ -2,16 +2,18 @@
 
 import SwiftUI
 
-public struct SheetView: View {
-    public init(root: ItemRootController, model: TableSheetModel, isEditor: Bool = false) {
+public struct SheetView<LinkType: LinkDataTransferable>: View {
+    public init(root: ItemRootController, model: TableSheetModel, isEditor: Bool = false, linkTypes: LinkType.Type = LinkDiceData.self) {
         self.root = root
         self.model = model
         self.isEditor = isEditor
+        self.linkTypes = linkTypes
     }
     
     let root: ItemRootController
     let model: TableSheetModel
     let isEditor: Bool
+    let linkTypes: LinkType.Type
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -31,7 +33,7 @@ public struct SheetView: View {
         }
         
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
-            SheetGroupView(root: root, model: model, entry: entry, isEditor: isEditor)
+            SheetGroupView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
         }
         .onChange(of: model.searchText) {
             withAnimation { model.updateSearch() }
@@ -47,18 +49,20 @@ public struct SheetView: View {
     }
 }
 
-struct SheetGroupView: View {
-    init(root: ItemRootController, model: TableSheetModel, entry: SheetModel, isEditor: Bool) {
+struct SheetGroupView<LinkType: LinkDataTransferable>: View {
+    init(root: ItemRootController, model: TableSheetModel, entry: SheetModel, isEditor: Bool, linkTypes: LinkType.Type) {
         self.root = root
         self.model = model
         self.entry = entry
         self.isEditor = isEditor
+        self.linkTypes = linkTypes
     }
     
     let root: ItemRootController
     let model: TableSheetModel
     let entry: SheetModel
     let isEditor: Bool
+    let linkTypes: LinkType.Type
     
     @Environment(\.networkActions) private var networkActions
     @Environment(\.showGame) private var showGame
@@ -124,10 +128,21 @@ struct SheetGroupView: View {
         .onTapGesture(count: 2) {
             withAnimation { root.editControllable.editorModel.currentEntryId = entry.source.entryId }
         }
+#if !os(tvOS)
+        .applyIf(isEditor && entry.sheetType == .item) {
+            $0.dropDestination(for: linkTypes, isEnabled: true) { items, sessions in
+                guard let editCOntroller = root.editControllable as? (any EntryDataEditable), let entryId = entry.source.entryId else { return }
+                items.forEach {
+                    editCOntroller.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: entry.source.itemId, destinationEntryId: entryId)
+                }
+            }
+        }
+#endif
+
         
         ForEach(entry.sheetIds, id: \.self) { sheetId in
             if let sheetModel = model.sheets[sheetId] {
-                SheetView(root: root, model: sheetModel, isEditor: isEditor)
+                SheetView(root: root, model: sheetModel, isEditor: isEditor, linkTypes: linkTypes)
             }
         }
     }
