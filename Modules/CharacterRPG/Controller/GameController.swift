@@ -182,7 +182,7 @@ extension GameController: ValueGameStorable {
                 print("Error \(error.localizedDescription)")
             }
         } else {
-            guard await data.type == itemControllable.config.module else { throw ItemGameStorableError.wrongData }
+            guard data.type == itemControllable.config.module else { throw ItemGameStorableError.wrongData }
         }
     }
 
