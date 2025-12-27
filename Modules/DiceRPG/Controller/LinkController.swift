@@ -39,7 +39,7 @@ extension LinkController: LinkControllable {
             // send
             Task { @MainActor in
                 if let shareResult, let result = try? await gameController.createGameData(for: itemId, resultCategory: shareResult.resultCategory) {
-                    shareResult.networkActions?.game(result, .show)
+                    shareResult.networkActions?.game(result, .show, nil)
                 }
             }
             return text

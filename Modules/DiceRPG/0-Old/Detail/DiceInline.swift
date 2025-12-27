@@ -12,7 +12,8 @@ struct DiceInline: View {
 
     @Environment(\.gameModus) private var gameModus
     @Environment(\.networkActions) private var networkActions
-
+    @Environment(\.sharingControlActions) private var playerSharingActions
+    
     @State private var showResult = false
 
     var body: some View {
@@ -53,14 +54,26 @@ struct DiceInline: View {
                     }
 
                     if gameModus == .master {
+                        ForEach(players) { player in
+                            Button {
+                                Task {
+                                    if let result = try? await root.gameController.createGameData(for: itemId, resultCategory: resultCategory) {
+                                        networkActions?.game(result, .show, player.id)
+                                    }
+                                }
+                            } label: {
+                                Label { Text("Share to \(player.name)", bundle: .module) } icon: { Image(systemName: "square.and.arrow.up") }
+                            }
+                        }
+                        
                         Button {
                             Task {
                                 if let result = try? await root.gameController.createGameData(for: itemId, resultCategory: resultCategory) {
-                                    networkActions?.game(result, .show)
+                                    networkActions?.game(result, .show, nil)
                                 }
                             }
                         } label: {
-                            Label { Text("Share", bundle: .module) } icon: { Image(systemName: "square.and.arrow.up") }
+                            Label { Text("Share to all", bundle: .module) } icon: { Image(systemName: "square.and.arrow.up") }
                         }
                     }
 
@@ -81,16 +94,6 @@ struct DiceInline: View {
                     .background {
                         RoundedRectangle(cornerRadius: 8).fill(Color.accentColor)
                     }
-//                } primaryAction: {
-//                    Task {
-//                        if gameModus == .master {
-//                            if let result = try? await root.gameController.createGameData(for: itemId, resultCategory: resultCategory) {
-//                                networkActions?.game(result, .show)
-//                            }
-//                        } else {
-//                            await roleAndShareDiceResult()
-//                        }
-//                    }
                 }
                 #if !os(tvOS)
                 .menuStyle(.borderlessButton)
@@ -103,6 +106,10 @@ struct DiceInline: View {
                 Text("\(Image(systemName: root.itemController.config.module.icon))\(root.gameController.resultText(itemId: itemId))")
             }
         }
+    }
+    
+    private var players: [SharingControlModel] {
+        playerSharingActions.control?() ?? []
     }
 
     private var roleShareTitle: LocalizedStringKey {

@@ -126,20 +126,20 @@ private extension RootGameMapViewer {
 
     func sendMapUpdates() {
         if mode == .master {
-            networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState)
+            networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
         } else {
             if mapModel.pointer.isShown {
-                networkActions?.game(root.gameController.networkPin(itemId: itemId, position: mapModel.pointer), .mapPin)
+                networkActions?.game(root.gameController.networkPin(itemId: itemId, position: mapModel.pointer), .mapPin, nil)
             } else {
                 if let pin = mapModel.mapPins.first(where: { $0.id == playerPinId }) {
-                    networkActions?.game(root.gameController.networkPin(itemId: itemId, position: pin), .mapPin)
+                    networkActions?.game(root.gameController.networkPin(itemId: itemId, position: pin), .mapPin, nil)
                 }
             }
         }
     }
 
     func focused() {
-        networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState)
+        networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
     }
 }
 

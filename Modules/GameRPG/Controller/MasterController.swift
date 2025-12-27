@@ -105,19 +105,22 @@ extension MasterController {
         await send(type: .reveal, subtype: .show, updated: idType)
     }
     
-    func game(message: NetworkCodableDataType, actionType: RPGMessageActionType) async {
-        await send(type: .update, subtype: actionType, updated: message)
+    func game(message: NetworkCodableDataType, actionType: RPGMessageActionType, playerId: UUID? = nil) async {
+        await send(type: .update, subtype: actionType, updated: message, playerId: playerId)
     }
     
     func send(updated: NetworkCodableDataType) async {
         await send(type: .store, subtype: .store, updated: updated)
     }
     
-    func send(type: RPGMessageType, subtype: RPGMessageActionType, updated: NetworkCodableDataType, connectionId: ConnectionController.ID? = nil) async {
+    func send(type: RPGMessageType, subtype: RPGMessageActionType, updated: NetworkCodableDataType, connectionId: ConnectionController.ID? = nil, playerId: UUID? = nil) async {
         let counter = "\(await gameModel.messageCounter)"
         Logger.networking.debug("MasterController: Send \(counter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subtype.debugDescription, privacy: .public) for \(updated.type.token, privacy: .public) -> \(updated.id, privacy: .public)")
         
-        let game = await root.gameModel.gameConfig
+        var game = await root.gameModel.gameConfig
+        if let playerId {
+            game.controls = game.controls.filter { $0.id == playerId }
+        }
         let networtData = await GameNetworkModel(counter: gameModel.messageCounter, proxyCounter: 0, type: type, subType: subtype, gameConfig: game, data: updated)
         
         await root.logGameController.addMessage(counter: gameModel.messageCounter, type: type, subType: subtype, module: updated.type, itemId: updated.id)

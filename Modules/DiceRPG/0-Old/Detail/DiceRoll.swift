@@ -43,6 +43,6 @@ struct DiceRoll: View {
     private func roleDice(_ die: DieModel) async {
         root.gameController.role(die: die, for: itemId)
         let result = await root.gameController.createDiceResult(for: itemId, resultCategory: ResultCategory(id: itemId, module: .dice))
-        networkActions?.game(result, .generic)
+        networkActions?.game(result, .generic, nil)
     }
 }

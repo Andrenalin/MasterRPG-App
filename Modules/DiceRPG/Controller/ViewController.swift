@@ -14,6 +14,10 @@ extension ViewController: ViewControllable {
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
         AnyView(ThumbnailDiceRow(itemId: itemId).equatable())
     }
+    
+    @MainActor public func rowViewer(source: ItemRowModel) -> AnyView {
+        AnyView(InlineRowViewer(source: source).equatable())
+    }
 }
 
 // MARK: Viewer
@@ -84,8 +88,7 @@ public extension ViewController {
     @MainActor
     func viewDice(root: DiceRootModel, with id: UUID?, for resultCategory: ResultCategory, onlyPrimaryAction: Bool = false) -> some View {
         DiceInline(itemId: id ?? UUID(), resultCategory: resultCategory, onlyPrimaryAction: onlyPrimaryAction)
-            .environment(root)
-    }    
+    }
 }
 
 extension ViewController {

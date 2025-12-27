@@ -187,7 +187,7 @@ private extension ItemRowView {
                 await networkActions?.shareId(root.gameControllable.share(id: model.id))
             } else {
                 if let result = try? await root.gameControllable.createGameData(for: model.id) {
-                    networkActions?.game(result, .generic)
+                    networkActions?.game(result, .generic, nil)
                 }
             }
         }

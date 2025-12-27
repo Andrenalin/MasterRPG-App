@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import DiceRPG
 import PhotoRPG
 import SwiftUI
 
@@ -10,13 +11,17 @@ struct InlineRowViewer: View, Equatable {
     @Environment(MapRootModel.self) private var root
     
     var body: some View {
-        if source.typeId == .photo {
+        switch source.typeId {
+        case .dice:
+            root.diceRoot.viewController.rowViewer(source: source)
+        case .photo:
             root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
-        }
-        if source.typeId == .map, let cacheController = root.cacheController {
-            ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: source.entryId)
-                .environment(root.editController.cacheItemListModel)
-                .environment(root.listDisplayModel)
+        default:
+            if source.typeId == root.config.module, let cacheController = root.cacheController {
+                ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: source.entryId)
+                    .environment(root.editController.cacheItemListModel)
+                    .environment(root.listDisplayModel)
+            }
         }
     }
     

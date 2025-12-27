@@ -10,15 +10,15 @@ public extension EnvironmentValues {
 public struct NetworkActions: Sendable {
     public let shareId: @MainActor @Sendable (NetworkCodableDataType) -> Void
     public let send: @MainActor @Sendable (NetworkCodableDataType) -> Void
-    public let game: @MainActor @Sendable (NetworkCodableDataType, RPGMessageActionType) -> Void
+    public let game: @MainActor @Sendable (NetworkCodableDataType, RPGMessageActionType, UUID?) -> Void
 
-    public init(shareId: @MainActor @escaping @Sendable (NetworkCodableDataType) -> Void, send: @MainActor @escaping @Sendable (NetworkCodableDataType) -> Void, game: @MainActor @escaping @Sendable (NetworkCodableDataType, RPGMessageActionType) -> Void) {
+    public init(shareId: @MainActor @escaping @Sendable (NetworkCodableDataType) -> Void, send: @MainActor @escaping @Sendable (NetworkCodableDataType) -> Void, game: @MainActor @escaping @Sendable (NetworkCodableDataType, RPGMessageActionType, UUID?) -> Void) {
         self.shareId = shareId
         self.send = send
         self.game = game
     }
     
-    @MainActor static let empty = NetworkActions(shareId: { _ in }, send: { _ in }, game: { _, _ in })
+    @MainActor static let empty = NetworkActions(shareId: { _ in }, send: { _ in }, game: { _, _, _ in })
 }
 
 public struct NetworkCodableDataType: Codable, Sendable {

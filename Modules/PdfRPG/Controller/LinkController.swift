@@ -37,7 +37,7 @@ extension LinkController: LinkControllable {
                     await shareResult.networkActions?.shareId(gameController.share(id: itemId))
                 } else {
                     if let result = try? await gameController.createGameData(for: itemId) {
-                        shareResult.networkActions?.game(result, .generic)
+                        shareResult.networkActions?.game(result, .generic, nil)
                     }
                 }
             }

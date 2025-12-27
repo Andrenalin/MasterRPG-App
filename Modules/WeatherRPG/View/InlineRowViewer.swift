@@ -10,7 +10,7 @@ struct InlineRowViewer: View, Equatable {
     @Environment(WeatherRootModel.self) private var root
     
     var body: some View {
-        if source.typeId == .weather {
+        if source.typeId == root.config.module {
             GeometryReader { proxy in
                 WeatherViewer(model: root.itemController.itemOrEmpty(for: source.itemId), size: proxy.size, useGame: true, isAnimating: .constant(true))
             }

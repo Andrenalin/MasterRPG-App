@@ -12,7 +12,7 @@ struct InlineRowViewer: View, Equatable {
     var body: some View {
         let _ = Self._printChanges()
         if source.typeId == .dice {
-            root.diceRoot.viewController.viewDice(root: root.diceRoot, with: source.itemId, for: ResultCategory(source: source))
+            root.diceRoot.viewController.rowViewer(source: source)
         }
     }
     

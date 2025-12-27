@@ -393,13 +393,13 @@ public extension GameRoot {
                     await playerStore?.send(updated: update)
                 }
             }
-        } game: { @MainActor [weak self] message, actionType in
+        } game: { @MainActor [weak self] message, actionType, playerId in
             let masterStore = self?.gameModel.masterController
             let playerStore = self?.gameModel.playerController
             
             Task {
                 if let masterStore {
-                    await masterStore.game(message: message, actionType: actionType)
+                    await masterStore.game(message: message, actionType: actionType, playerId: playerId)
                 } else {
                     await playerStore?.game(message: message, actionType: actionType)
                 }

@@ -21,7 +21,7 @@ struct SharingActionView: View, Equatable {
                 shareAudio()
             } secondAction: {
                 if root.gameController.allPlayersReported(for: itemId) {
-                    networkActions?.game(root.gameController.requestPlay(id: itemId), .playAudio)
+                    networkActions?.game(root.gameController.requestPlay(id: itemId), .playAudio, nil)
                 } else {
                     waitForSharing = true
                     shareAudio()
@@ -30,7 +30,7 @@ struct SharingActionView: View, Equatable {
             .onChange(of: root.gameController.allPlayersReported(for: itemId)) {
                 if waitForSharing && root.gameController.allPlayersReported(for: itemId) {
                     waitForSharing = false
-                    networkActions?.game(root.gameController.requestPlay(id: itemId), .playAudio)
+                    networkActions?.game(root.gameController.requestPlay(id: itemId), .playAudio, nil)
                 }
             }
     }
@@ -61,7 +61,7 @@ struct SharingActionView: View, Equatable {
                 await networkActions?.shareId(root.gameController.share(id: itemId))
             } else {
                 if let result = try? await root.gameController.createGameData(for: itemId) {
-                    networkActions?.game(result, .generic)
+                    networkActions?.game(result, .generic, nil)
                 }
             }
         }

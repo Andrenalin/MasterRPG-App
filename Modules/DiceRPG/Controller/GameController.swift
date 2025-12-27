@@ -274,7 +274,7 @@ extension GameController {
                 Task {
                     let sendedResult = resultCategopry ?? gameItem(for: itemId).resultCategory ?? ResultCategory(id: itemId, module: itemController.config.module)
                     let result = await createDiceResult(for: itemId, resultCategory: sendedResult)
-                    networkActions.game(result, .generic)
+                    networkActions.game(result, .generic, nil)
                 }
             }
         }

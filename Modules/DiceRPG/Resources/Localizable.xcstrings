@@ -720,6 +720,7 @@
       }
     },
     "Share" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -728,6 +729,12 @@
           }
         }
       }
+    },
+    "Share to %@" : {
+
+    },
+    "Share to all" : {
+
     },
     "Show 2nd D20" : {
       "localizations" : {

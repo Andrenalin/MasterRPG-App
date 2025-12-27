@@ -39,7 +39,7 @@ extension LinkController: LinkControllable {
                 if let shareResult, shareResult.showGame {
                     if gameController.allPlayersReported(for: itemId) {
                         let isPlaying = audioController.model.isPlaying
-                        shareResult.networkActions?.game(gameController.requestPlay(id: itemId), .playAudio)
+                        shareResult.networkActions?.game(gameController.requestPlay(id: itemId), .playAudio, nil)
                         return text.toggleLink(url: playUrl, with: "\(!isPlaying ? "playing" : "pause")", replace: true)
                     } else {
                         Task { @MainActor in

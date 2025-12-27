@@ -107,7 +107,7 @@ extension AudioPlayerView {
             
             Button {
                 if let currentId = root.audioController.model.currentId, showGame {
-                    networkActions?.game(root.gameController.requestPlay(id: currentId), .generic)
+                    networkActions?.game(root.gameController.requestPlay(id: currentId), .generic, nil)
                 } else {
                     root.audioController.toggle()
                 }
