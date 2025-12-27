@@ -22,10 +22,10 @@ public protocol EditControllable: Sendable {
     var model: Model { get set }
 
     // reset / edit  extensions
-    @MainActor func reset(name: String, saveIt: Bool)
-    @MainActor func reset(category: ItemListCategory, saveIt: Bool)
-    @MainActor func reset(description: String, saveIt: Bool)
-    @MainActor func reset(hidden: Bool)
+    @MainActor func reset(name: String, saveIt: Bool, modelId: UUID?)
+    @MainActor func reset(category: ItemListCategory, saveIt: Bool, modelId: UUID?)
+    @MainActor func reset(description: String, saveIt: Bool, modelId: UUID?)
+    @MainActor func reset(hidden: Bool, modelId: UUID?)
     @MainActor func add(tag: String)
     @MainActor func remove(tag: String)
 
@@ -69,58 +69,53 @@ public extension EditControllable {
 
 public extension EditControllable {
     @MainActor func update(id: UUID, name: String, description: String, category: ItemListCategory, tags: [String]) {
-        if id == model.id {
-            reset(name: name, saveIt: false)
-            reset(description: description, saveIt: false)
-            reset(name: name, saveIt: false)
-            reset(category: category, saveIt: false)
-            reset(tags: tags, saveIt: false)
-            
-            save(with: String(localized: "Changed Header").localizedString)
-        } else {
-            var updateModel = itemControllable.itemOrEmpty(for: id)
-            updateModel.name <=> name.trimmingCharacters(in: .whitespacesAndNewlines)
-            updateModel.description <=> description.trimmingCharacters(in: .whitespacesAndNewlines)
-            updateModel.category <=> category
-            updateModel.tags <=> tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
-        }
+        reset(name: name, modelId: id)
+        reset(description: description, modelId: id)
+        reset(name: name, modelId: id)
+        reset(category: category, modelId: id)
+        reset(tags: tags, modelId: id)
     }
 
-    @MainActor func reset(category: ItemListCategory, saveIt: Bool = true) {
-        guard model.category != category else { return }
-        model.category = category
+    @MainActor func reset(category: ItemListCategory, saveIt: Bool = true, modelId: UUID? = nil) {
+        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+        guard editModel.category != category else { return }
+        editModel.category = category
         guard saveIt else { return }
-        save(with: String(localized: "Change to \(category.title)").localizedString)
+        save(updated: editModel, message: String(localized: "Change to \(category.title)").localizedString)
     }
 
-    @MainActor func reset(description: String, saveIt: Bool = true) {
-        guard model.description != description else { return }
-        model.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
+    @MainActor func reset(description: String, saveIt: Bool = true, modelId: UUID? = nil) {
+        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+        guard editModel.description != description else { return }
+        editModel.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .description, itemId: model.id, text: model.description.markDownText())
         guard saveIt else { return }
-        save(with: String(localized: "Typing").localizedString)
+        save(updated: editModel, message: String(localized: "Typing").localizedString)
     }
 
-    @MainActor func reset(name: String, saveIt: Bool = true) {
-        guard model.name != name else { return }
-        model.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    @MainActor func reset(name: String, saveIt: Bool = true, modelId: UUID? = nil) {
+        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+        guard editModel.name != name else { return }
+        editModel.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: model.id, text: model.name.markDownText())
         guard saveIt else { return }
-        save(with: String(localized: "Typing").localizedString)
+        save(updated: editModel, message: String(localized: "Typing").localizedString)
     }
 
-    @MainActor func reset(tags: [String], saveIt: Bool = true) {
+    @MainActor func reset(tags: [String], saveIt: Bool = true, modelId: UUID? = nil) {
+        guard var editModel = editModel(for: modelId ?? model.id) else { return }
         let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
-        guard model.tags != sortedTags else { return }
-        model.tags = sortedTags
+        guard editModel.tags != sortedTags else { return }
+        editModel.tags = sortedTags
         guard saveIt else { return }
-        save(with: String(localized: "Changed tags").localizedString)
+        save(updated: editModel, message: String(localized: "Changed tags").localizedString)
     }
     
-    @MainActor func reset(hidden: Bool) {
-        guard model.isGroupHiddenToggle != hidden else { return }
-        model.isGroupHiddenToggle = hidden
-        save(with: String(localized: "Change to \(hidden ? "hide" : "show")").localizedString)
+    @MainActor func reset(hidden: Bool, modelId: UUID? = nil) {
+        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+        guard editModel.isGroupHiddenToggle != hidden else { return }
+        editModel.isGroupHiddenToggle = hidden
+        save(updated: editModel, message: String(localized: "Change to \(hidden ? "hide" : "show")").localizedString)
     }
 
     @MainActor func reset(fileUrl: FileUrl?, saveIt: Bool) {

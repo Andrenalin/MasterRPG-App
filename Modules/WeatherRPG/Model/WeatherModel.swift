@@ -256,7 +256,7 @@ extension WeatherModel: ItemDataAccessable {
         lightningForkProbability <=> model.lightningForkProbability
         photoId <=> model.photoId
         entries_ <=> model.entries_
-        parentId <=> parentId
+        parentId <=> model.parentId
         return true
     }
     

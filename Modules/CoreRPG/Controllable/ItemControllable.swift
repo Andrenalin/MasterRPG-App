@@ -283,6 +283,8 @@ public extension ItemControllable {
         }
     }
 
+    func didDelete(model: ModelType) async {}
+    func didUpdate(model: ModelType) async {}
     func childrenTree(for model: ItemRowModel) -> ItemRowModel? { nil }
     
     @MainActor

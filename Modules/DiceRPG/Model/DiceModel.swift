@@ -517,7 +517,7 @@ extension DiceModel: ItemDataAccessable {
         addDiceEvery <=> model.addDiceEvery
         resultCategory <=> model.resultCategory
         entries_ <=> model.entries_
-        parentId <=> parentId
+        parentId <=> model.parentId
         return true
     }
 

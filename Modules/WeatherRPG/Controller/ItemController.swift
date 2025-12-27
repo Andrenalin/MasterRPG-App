@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import CoreData
 
 struct ItemController: Sendable {
     @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
@@ -29,14 +28,7 @@ extension ItemController: ItemControllable {
         linkRegisterController
     }
 
-    @MainActor
-    func children(for model: ItemRowModel) -> [ItemRowModel] {
+    @MainActor func children(for model: ItemRowModel) -> [ItemRowModel] {
         [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: config.module)]
-    }
-
-    func didDelete(model: ModelType) async {
-    }
-    
-    func didUpdate(model: ModelType) async {
     }
 }
