@@ -5,10 +5,10 @@ import Foundation
 import SwiftData
 
 struct EditController {
-    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
         self.linkRegisterControllable = linkRegisterControllable
         self.itemController = itemController
-        self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
+        self.editorModel = ItemEditorModel()
         self.selectionReference = ItemSelectionModel()
     }
 

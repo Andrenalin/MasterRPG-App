@@ -29,7 +29,7 @@ final class ValueEditModel: Sendable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: CharacterRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    @MainActor init(root: CharacterRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
         self.root = root
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
@@ -39,7 +39,7 @@ struct EditController: Sendable {
         self.itemController = itemController
         self.linkRegisterControllable = linkRegisterControllable
         
-        self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel, categorySelection: itemController.itemDataModel.categoryTags.first ?? .all)
+        self.editorModel = ItemEditorModel()
         self.valueEditModel = ValueEditModel()
     }
 

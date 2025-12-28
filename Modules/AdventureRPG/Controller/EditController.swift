@@ -36,12 +36,12 @@ final class AdventureEditModel: Sendable {
 
 struct EditController: Sendable {
     @MainActor
-    init(root: AdventureRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    init(root: AdventureRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
         self.root = root
         self.itemController = itemController
         self.linkRegisterControllable = linkRegisterControllable
         
-        self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
+        self.editorModel = ItemEditorModel()
         self.adventureEditModel = AdventureEditModel()
     }
 

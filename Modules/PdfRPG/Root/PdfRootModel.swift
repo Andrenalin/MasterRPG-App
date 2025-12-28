@@ -34,7 +34,7 @@ public final class PdfRootModel: @unchecked Sendable {
         _dataController = dataController
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
-        _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
+        _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _exportController = ExportController(itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
         _gameController = GameController(config: config, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)

@@ -29,13 +29,13 @@ final class MapEditModel: Sendable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: MapRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    @MainActor init(root: MapRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
         self.root = root
         
         self.itemController = itemController
         self.linkRegisterControllable = linkRegisterControllable
 
-        self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
+        self.editorModel = ItemEditorModel()
         self.mapEditModel = MapEditModel()
     }
 
@@ -265,7 +265,6 @@ extension EditController {
     func addNewPin(at index: Int? = nil) -> MapEntryModel.ID {
         let pin = MapPinModel(id: UUID(), name: String(localized: "New Pin").localizedString, color: .random, photoId: nil, location: .zero, size: .normal, isShown: true, players: [], timeInterval: 0)
         add(pin: pin, at: index)
-        editorModel.activateDetailEditMode = false
         return pin.id
     }
 

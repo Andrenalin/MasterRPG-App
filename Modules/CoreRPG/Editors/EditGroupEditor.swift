@@ -79,29 +79,24 @@ struct EditGroupHeaderEditor<Model, ItemDataController: ItemControllable, ItemEd
         Section {
 #if os(macOS)
             HStack {
-                NameItemEditor(editController: editGroupController)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+//                NameItemEditor(editController: editGroupController)
+//                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                CategoryItemEditor(editController: editGroupController, allCategories: editGroupController.itemControllable.itemDataModel.categoryTags + [.all])
-                    .labelsHidden()
-                    .fixedSize()
-
-                HiddenToggleEditor(editController: editGroupController)
-                    .labelsHidden()
+                //HiddenToggleEditor(editController: editGroupController)
+//                    .labelsHidden()
                 Text("Hidden", bundle: .module)
             }
 #else
-            NameItemEditor(editController: editGroupController)
+//            NameItemEditor(editController: editGroupController)
 
-            CategoryItemEditor(editController: editGroupController, allCategories: editGroupController.itemControllable.itemDataModel.categoryTags + [.all])
 #endif
             TagsItemEditor(editController: editGroupController, module: editGroupController.itemControllable.config.module)
 
 #if !os(macOS)
-            HiddenToggleEditor(editController: editGroupController)
+//            HiddenToggleEditor(editController: editGroupController)
 #endif
 
-            DescriptionItemEditor(editController: editGroupController)
+            //DescriptionItemEditor(editController: editGroupController)
 
         } header: {
             Text("Group Editor", bundle: .module)

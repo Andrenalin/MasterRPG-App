@@ -104,7 +104,6 @@ public extension EntryDataEditable {
     func addNewEntry() -> UUID {
         let entry = Model.Entry.empty
         add(entry: entry)
-        editorModel.activateDetailEditMode = false
         return entry.id
     }
     

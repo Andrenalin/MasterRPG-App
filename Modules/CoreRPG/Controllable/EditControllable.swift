@@ -418,13 +418,7 @@ public extension EditControllable {
 
         editorModel.undoManaged.resetValue(model)
         editorModel.currentItemId = model.id
-        //editorModel.currentListItem = item
         editorModel.currentEntryId = entryId
-
-        editorModel.nameTextFieldModel.text = model.name
-        editorModel.categoryEditModel.selection = model.category
-        editorModel.hiddenToggleModel.state = model.isGroupHidden
-        editorModel.descriptionTextFieldModel.text = model.description
 
         didSetModel()
     }
@@ -484,11 +478,6 @@ public extension EditControllable {
     @MainActor
     var redoTitle: String {
         editorModel.undoManaged.redoTitles.last ?? ""
-    }
-
-    @MainActor func resetSearch(_ text: String) {
-        editorModel.searchText = text
-        editorModel.cacheItemListModel.reset(search: text)
     }
 }
 

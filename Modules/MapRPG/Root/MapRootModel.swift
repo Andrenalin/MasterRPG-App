@@ -50,7 +50,7 @@ public final class MapRootModel: @unchecked Sendable {
         _dataController = dataController
         let itemController = ItemController(root: self, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
-        _editController = EditController(root: self, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, currentListItem: nil, currentModel: nil)
+        _editController = EditController(root: self, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _exportController = ExportController(root: self, itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController, gameImporter: false)
         _gameController = GameController(root: self, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)

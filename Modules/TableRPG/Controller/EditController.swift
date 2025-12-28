@@ -33,13 +33,13 @@ struct LinkTableModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
         self.diceRoot = diceRoot
         
         self.itemController = itemController
         self.linkRegisterControllable = linkRegisterControllable
         
-        self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
+        self.editorModel = ItemEditorModel()
         self.tableEditModel = TableEditModel()
     }
 

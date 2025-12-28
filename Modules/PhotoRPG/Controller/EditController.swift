@@ -10,10 +10,10 @@ import UIKit
 #endif
 
 struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, currentListItem: ItemRowTreeModel?, currentModel: (ModelType)?) {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
         self.linkRegisterControllable = linkRegisterControllable
         self.itemController = itemController
-        self.editorModel = ItemEditorModel(currentListItem: currentListItem, currentModel: currentModel)
+        self.editorModel = ItemEditorModel()
     }
 
     let itemController: ItemController
