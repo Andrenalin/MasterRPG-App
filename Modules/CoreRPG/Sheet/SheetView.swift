@@ -35,6 +35,12 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
             SheetGroupView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
         }
+                
+        Color.accentColor.opacity(0.3)
+            .frame(height: 8)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .listRowBackground(Color.clear)
+        
         .onChange(of: model.searchText) {
             withAnimation { model.updateSearch() }
         }
@@ -119,9 +125,9 @@ struct SheetGroupView<LinkType: LinkDataTransferable>: View {
 #if !os(tvOS)
         .applyIf(isEditor && entry.sheetType == .item) {
             $0.dropDestination(for: linkTypes, isEnabled: true) { items, sessions in
-                guard let editCOntroller = root.editControllable as? (any EntryDataEditable), let entryId = entry.source.entryId else { return }
+                guard let editController = root.editControllable as? (any EntryDataEditable), let entryId = entry.source.entryId else { return }
                 items.forEach {
-                    editCOntroller.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: entry.source.itemId, destinationEntryId: entryId)
+                    editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: entry.source.itemId, destinationEntryId: entryId)
                 }
             }
         }

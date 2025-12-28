@@ -42,7 +42,7 @@ struct DetailListView: View {
                 detailFolderListController.listModel.subFolderRoute = nil
             }
             .onAppear {
-                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: .value))
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
             }
     }
     
@@ -114,7 +114,8 @@ private extension DetailListView {
                 }
                 Button {
                     withAnimation {
-                        let entryId = root.editController.addNewEntry()
+                        root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+                        let entryId = root.editController.addNewEntry(modelId: model.id)
                         root.editController.editorModel.currentEntryId = entryId
                         Task { @MainActor in
                             try? await Task.sleep(for: .seconds(0.25))

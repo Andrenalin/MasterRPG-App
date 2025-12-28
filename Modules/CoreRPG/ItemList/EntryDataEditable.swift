@@ -101,33 +101,29 @@ public extension EntryDataEditable {
     }
     
     @MainActor
-    func addNewEntry() -> UUID {
+    func addNewEntry(modelId: UUID? = nil) -> UUID {
         let entry = Model.Entry.empty
-        add(entry: entry)
+        add(entry: entry, modelId: modelId)
         return entry.id
     }
     
     @MainActor
-    func add(entry: Model.Entry) {
-        add(entry: entry, into: model)
+    func add(entry: Model.Entry, modelId: UUID? = nil) {
+        guard let editModel = editModel(for: modelId ?? model.id) else { return }
+        add(entry: entry, into: editModel)
     }
     
     @MainActor
     func add(entry: Model.Entry, into itemId: UUID, index: Int? = nil) {
-        let item = model.id == itemId ? model : itemControllable.itemOrEmpty(for: itemId).copy() as? Model
-        guard let item else { return }
-        add(entry: entry, into: item, index: index)
+        guard let editModel = editModel(for: itemId) else { return }
+        add(entry: entry, into: editModel, index: index)
     }
     
     @MainActor
     private func add(entry: Model.Entry, into item: Model, index: Int? = nil) {
         let validatedIndex = index ?? editEntries(for: item).count
         item.entries.insert(entry, at: validatedIndex)
-        if  item.id == model.id {
-            save(with: String(localized: "Add entry").localizedString)
-        } else {
-            itemControllable.replace(model: item, isInsert: false, shouldRepairLinks: true)
-        }
+        save(updated: item, message: String(localized: "Add entry").localizedString)
     }
     
     @MainActor

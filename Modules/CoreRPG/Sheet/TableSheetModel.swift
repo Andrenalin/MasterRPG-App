@@ -60,28 +60,30 @@ public final class TableSheetModel {
     
     @MainActor
     func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules) {
-        let rowModel = ItemRowModel(itemId: itemId, typeId: module)
-        
-        switch id {
-        case .name:
-            break
-        case .description:
-            let sheets = linkControllable.toggleSheet(itemId: itemId, level: 0, module: module)
-            sheetModel.entries.insert(contentsOf: sheets?.entries ?? [], at: 0)
-        case .entry(let uuid):
-            guard let entryIndex = sheetModel.entries.firstIndex(where: { $0.id == uuid }) else { return }
-            var entry = sheetModel.entries[entryIndex]
-            if entry.sheetIds.contains(rowModel) {
-                entry.sheetIds.removeAll(where: { $0 == rowModel })
-            } else {
-                guard let sheet = linkControllable.toggleSheet(itemId: itemId, level: entry.level + 1, module: module) else { return }
-                let tableSheetModel = TableSheetModel(linkControllable: linkControllable, sheetModel: sheet, searchText: searchText)
-                tableSheetModel.id = itemId
-                
-                sheets[rowModel] = tableSheetModel
-                entry.sheetIds.append(rowModel)
+        withAnimation {
+            let rowModel = ItemRowModel(itemId: itemId, typeId: module)
+            
+            switch id {
+            case .name:
+                break
+            case .description:
+                let sheets = linkControllable.toggleSheet(itemId: itemId, level: 0, module: module)
+                sheetModel.entries.insert(contentsOf: sheets?.entries ?? [], at: 0)
+            case .entry(let uuid):
+                guard let entryIndex = sheetModel.entries.firstIndex(where: { $0.id == uuid }) else { return }
+                var entry = sheetModel.entries[entryIndex]
+                if entry.sheetIds.contains(rowModel) {
+                    entry.sheetIds.removeAll(where: { $0 == rowModel })
+                } else {
+                    guard let sheet = linkControllable.toggleSheet(itemId: itemId, level: entry.level + 1, module: module) else { return }
+                    let tableSheetModel = TableSheetModel(linkControllable: linkControllable, sheetModel: sheet, searchText: searchText)
+                    tableSheetModel.id = itemId
+                    
+                    sheets[rowModel] = tableSheetModel
+                    entry.sheetIds.append(rowModel)
+                }
+                sheetModel.entries[entryIndex] = entry
             }
-            sheetModel.entries[entryIndex] = entry
         }
     }
 }

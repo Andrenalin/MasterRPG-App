@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import DiceRPG
 import SwiftUI
 
@@ -30,6 +29,9 @@ struct DetailListView: View {
                 guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
                 navigator.navigate(to: TableDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
+            }
+            .onAppear {
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
             }
     }
     
@@ -78,7 +80,7 @@ private extension DetailListView {
             Text("Entries", bundle: .module)
         }
     }
-
+    
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
             ControlGroup {
@@ -94,7 +96,8 @@ private extension DetailListView {
                 
                 Button {
                     withAnimation {
-                        let entryId = root.editController.addNewEntry()
+                        root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+                        let entryId = root.editController.addNewEntry(modelId: model.id)
                         root.editController.editorModel.currentEntryId = entryId
                         Task { @MainActor in
                             try? await Task.sleep(for: .seconds(0.25))
