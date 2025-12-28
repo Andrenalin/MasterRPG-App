@@ -72,6 +72,10 @@ struct SheetGroupView<LinkType: LinkDataTransferable>: View {
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
+                if isEditor && entry.sheetType == .item {
+                    editButton
+                }
+
                 switch entry.sheetType {
                 case .item:
                     LinkHighlightTextView(model: model.linkTextModel(for: .entry(entry.id), text: text, shareResults: shareResult))
@@ -99,20 +103,7 @@ struct SheetGroupView<LinkType: LinkDataTransferable>: View {
                 }
                 
                 if isEditor && entry.sheetType == .item {
-                    Button(role: .destructive) {
-                        withAnimation {
-                            root.editControllable.removeEntry(source: entry.source)
-                        }
-                    } label: {
-                        Image(systemName: "minus.circle.fill")
-                            .imageScale(.large)
-                            .foregroundStyle(.white, .red, .red)
-                    }
-                    .borderLessTVBottonStyle()
-                    .contentShape(.circle)
-    #if !os(visionOS)
-                    .glassEffect()
-    #endif
+                    deleteButton
                 }
             }
 
@@ -124,9 +115,6 @@ struct SheetGroupView<LinkType: LinkDataTransferable>: View {
                     EmptyView()
                 }
             }
-        }
-        .onTapGesture(count: 2) {
-            withAnimation { root.editControllable.editorModel.currentEntryId = entry.source.entryId }
         }
 #if !os(tvOS)
         .applyIf(isEditor && entry.sheetType == .item) {
@@ -149,6 +137,40 @@ struct SheetGroupView<LinkType: LinkDataTransferable>: View {
 }
 
 private extension SheetGroupView {
+    var editButton: some View {
+        Button {
+            withAnimation {
+                root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: entry.source.itemId, entryId: entry.source.entryId, typeId: entry.source.typeId))
+            }
+        } label: {
+            Image(systemName: "square.and.pencil")
+                .imageScale(.large)
+                .foregroundStyle(.foreground, .tint)
+        }
+        .borderLessTVBottonStyle()
+        .contentShape(.circle)
+#if !os(visionOS)
+        .glassEffect()
+#endif
+    }
+
+    var deleteButton: some View {
+        Button(role: .destructive) {
+            withAnimation {
+                root.editControllable.removeEntry(source: entry.source)
+            }
+        } label: {
+            Image(systemName: "minus.circle.fill")
+                .imageScale(.large)
+                .foregroundStyle(.white, .red, .red)
+        }
+        .borderLessTVBottonStyle()
+        .contentShape(.circle)
+#if !os(visionOS)
+        .glassEffect()
+#endif
+    }
+
     func rowColor(for level: Int) -> Color {
 #if os(macOS) || os(visionOS)
         .clear

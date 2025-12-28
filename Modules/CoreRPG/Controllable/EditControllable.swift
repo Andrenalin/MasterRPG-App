@@ -403,11 +403,15 @@ public extension EditControllable {
     }
 
     @MainActor func setCurrentItem(to item: ItemRowTreeModel) {
+        guard editorModel.currentItemId != item.model.itemId else {
+            editorModel.currentEntryId <=> item.model.entryId
+            return
+        }
         guard let model = itemControllable.copy(of: item.model.itemId) as? Model else { return }
-        setCurrentItem(model: model)
+        setCurrentItem(model: model, entryId: item.model.entryId)
     }
     
-    @MainActor func setCurrentItem(model: Model) {
+    @MainActor func setCurrentItem(model: Model, entryId: UUID? = nil) {
         save(with: "")
         resetCurrentModel()
         editorModel.reset()
@@ -415,7 +419,7 @@ public extension EditControllable {
         editorModel.undoManaged.resetValue(model)
         editorModel.currentItemId = model.id
         //editorModel.currentListItem = item
-        editorModel.currentEntryId = nil
+        editorModel.currentEntryId = entryId
 
         editorModel.nameTextFieldModel.text = model.name
         editorModel.categoryEditModel.selection = model.category

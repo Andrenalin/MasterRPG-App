@@ -22,7 +22,7 @@ struct DetailListView: View {
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.table.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
         content(listController: detailFolderListController)
