@@ -213,7 +213,7 @@ extension EditController: EntryDataEditable {
 extension EditController {
     @MainActor func add(selection: [WindowItemSelection], modelId: UUID?) {
         guard let editModel = editModel(for: modelId ?? model.id) else { return }
-        var photos = Set(editModel.photos)
+        let photos = Set(editModel.photos)
         var newPhotos = Set(selection.map { $0.itemId })
         newPhotos.subtract(photos)
         editModel.photos.append(contentsOf: newPhotos)
