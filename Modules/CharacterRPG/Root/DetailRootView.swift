@@ -85,12 +85,12 @@ private extension DetailListView {
                 withAnimation { root.editController.valueEditModel.selectionDice.resetSelection(itemId: model.diceId) }
             }
 
-        root.photoRoot.viewController.dropSelectionView(model: root.editController.valueEditModel.selectionPhoto)
-            .onChange(of: root.editController.valueEditModel.selectionPhoto.itemId) {
-                withAnimation { root.editController.add(photoId: root.editController.valueEditModel.selectionPhoto.itemId, modelId: model.id) }
+        root.photoRoot.viewController.carouselPhotos(root: root.photoRoot, photoSelection: root.editController.valueEditModel.selectionPhoto)
+            .onChange(of: root.editController.valueEditModel.selectionPhoto.selection) {
+                withAnimation { root.editController.add(selection: root.editController.valueEditModel.selectionPhoto.selection, modelId: model.id) }
             }
-            .onChange(of: model.photoId, initial: true) {
-                withAnimation { root.editController.valueEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
+            .onChange(of: model.photos, initial: true) {
+                withAnimation { root.editController.valueEditModel.selectionPhoto.resetSelection(selectionIds: model.photos) }
             }
 
         Section {

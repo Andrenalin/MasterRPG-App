@@ -35,7 +35,10 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
             SheetGroupView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
         }
-                
+        .onMove { indexSet, index in
+            entryDataEditable?.move(entryFrom: indexSet, to: index, modelId: model.sheetModel.source.itemId)
+        }
+
         Color.accentColor.opacity(0.3)
             .frame(height: 8)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -44,6 +47,10 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
         .onChange(of: model.searchText) {
             withAnimation { model.updateSearch() }
         }
+    }
+    
+    var entryDataEditable: (any EntryDataEditable)? {
+        root.editControllable as? (any EntryDataEditable)
     }
     
     func rowColor(for level: Int) -> Color {

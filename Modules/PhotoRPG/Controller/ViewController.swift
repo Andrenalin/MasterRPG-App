@@ -38,6 +38,10 @@ public extension ViewController {
                 .environment(root.editController.cacheItemListModel)
         }
     }
+
+    @ViewBuilder @MainActor func carouselPhotos(root: PhotoRootModel, photoSelection: ItemSelectionModel) -> some View {
+        CarouselPhotoView(photoIds: photoSelection, selection: GroupItemSelectionModel(selectedItem: nil))
+    }
 }
 
 // MARK: - List View

@@ -4,14 +4,14 @@ import SwiftUI
 
 public struct CarouselItemView<Content: View>: View {
     public init(root: any ItemRootControllable, model: any ItemDataAccessable, selection: GroupItemSelectionModel, @ViewBuilder content: () -> Content) {
-        self.model = model
         self.root = root
+        self.model = model
         self.selection = selection
         self.content = content()
     }
     
-    let model: any ItemDataAccessable
     let root: ItemRootControllable
+    let model: any ItemDataAccessable
     let selection: GroupItemSelectionModel
     let content: Content
     

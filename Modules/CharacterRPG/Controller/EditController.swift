@@ -19,7 +19,7 @@ final class ValueEditModel: Sendable {
 
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
-    let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
+    let selectionPhoto: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false)
     let selectionTable: ItemSelectionModel = ItemSelectionModel()
     
     func resetLinks() {
@@ -211,9 +211,13 @@ extension EditController: EntryDataEditable {
 // MARK: - New Editor Functions
 
 extension EditController {
-    @MainActor func add(photoId: UUID?, modelId: UUID?) {
+    @MainActor func add(selection: [WindowItemSelection], modelId: UUID?) {
         guard let editModel = editModel(for: modelId ?? model.id) else { return }
-        editModel.photoId = photoId
+        var photos = Set(editModel.photos)
+        var newPhotos = Set(selection.map { $0.itemId })
+        newPhotos.subtract(photos)
+        editModel.photos.append(contentsOf: newPhotos)
+        editModel.photoId = editModel.photos.first
         save(updated: editModel, message: String(localized: "Change Photo").localizedString)
     }
     

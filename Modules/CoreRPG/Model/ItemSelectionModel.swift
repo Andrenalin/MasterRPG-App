@@ -43,7 +43,11 @@ public final class ItemSelectionModel {
         }
         selection <=> [WindowItemSelection(itemId: itemId)]
     }
-    
+
+    public func resetSelection(selectionIds: [UUID]) {
+        selection <=> selectionIds.map { WindowItemSelection(itemId: $0) }
+    }
+
     func canSelect(isCollection: Bool) -> Bool {
         allowCollections || !isCollection
     }

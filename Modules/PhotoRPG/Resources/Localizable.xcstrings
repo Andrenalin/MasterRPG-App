@@ -239,6 +239,9 @@
         }
       }
     },
+    "Select" : {
+
+    },
     "Show image in the world space" : {
       "localizations" : {
         "de" : {

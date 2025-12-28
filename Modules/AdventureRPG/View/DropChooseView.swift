@@ -52,7 +52,7 @@ struct DropChooseView: View {
             .padding(4)
             .contentShape(.circle)
 #if !os(visionOS)
-            .glassEffect()
+            .glassEffect(.regular.interactive())
 #endif
             .opacity(selectionModel.itemId != nil ? 1.0 : 0.0)
         }

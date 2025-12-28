@@ -50,7 +50,7 @@ struct DropChooseView: View {
             .padding(4)
             .contentShape(.circle)
 #if !os(visionOS)
-            .glassEffect()
+            .glassEffect(.regular.interactive())
 #endif
             .opacity(selectionModel.itemId != nil ? 1.0 : 0.0)
         }
@@ -65,7 +65,7 @@ struct DropChooseView: View {
         Button {
             root.itemSelectionModel = selectionModel
 #if os(macOS)
-            openWindow(id: NetworkModules.value.linkWindowId)
+            openWindow(id: root.config.module.linkWindowId)
 #else
             navigator.navigate(to: SelectionCharacterRoute.selection, method: .managedSheet)
 #endif

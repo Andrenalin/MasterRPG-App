@@ -4,7 +4,7 @@ import SwiftData
 import SwiftUI
 
 public struct GroupedPhotoView: View {
-    public init(cacheController: any ImageCacheControllable, itemControllable: any ItemControllable, model: any ItemDataAccessable, highResolution: Bool = false) {
+    public init(cacheController: any ImageCacheControllable, itemControllable: any ItemControllable, model: (any ItemDataAccessable)?, highResolution: Bool = false) {
         self.cacheController = cacheController
         self.itemController = itemControllable
         self.model = model
@@ -13,18 +13,20 @@ public struct GroupedPhotoView: View {
     
     let cacheController: ImageCacheControllable
     let itemController: any ItemControllable
-    let model: any ItemDataAccessable
+    let model: (any ItemDataAccessable)?
     let highResolution: Bool
 
     @Environment(\.modelContext) var modelContext
     @Environment(GroupItemSelectionModel.self) var selection
 
     public var body: some View {
-        CachePhotoView(cacheController: cacheController, model: selectedModel, highResolution: highResolution)
-            .id(selection.selectedItem ?? model.id)
+        if let selectedModel {
+            CachePhotoView(cacheController: cacheController, model: selectedModel, highResolution: highResolution)
+                .id(selectedModel.id)
+        }
     }
 
-    var selectedModel: any ItemDataAccessable {
+    var selectedModel: (any ItemDataAccessable)? {
         item ?? model
     }
 

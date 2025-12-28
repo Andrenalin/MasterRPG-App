@@ -199,9 +199,14 @@ public extension EntryDataEditable {
     }
     
     @MainActor
-    func move(entryFrom: IndexSet, to: Array<UUID>.Index) {
-        model.entries.move(fromOffsets: entryFrom, toOffset: to)
-        save(with: String(localized: "Reorder entries").localizedString)
+    func move(entryFrom: IndexSet, to: Array<UUID>.Index, modelId: UUID) {
+        guard let editModel = editModel(for: modelId) else { return }
+        var destination = to
+        if destination >= editModel.entries.count {
+            destination = editModel.entries.count - 1
+        }
+        editModel.entries.move(fromOffsets: entryFrom, toOffset: destination)
+        save(updated: editModel, message: String(localized: "Reorder entries").localizedString)
     }
     
     @MainActor
