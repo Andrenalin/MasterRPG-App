@@ -9,7 +9,7 @@ struct InlineRowViewer: View, Equatable {
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        DiceInline(itemId: source.itemId, resultCategory: ResultCategory(source: source), onlyPrimaryAction: false)
+        DiceInline(itemId: source.itemId, resultCategory: ResultCategory(source: source))
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

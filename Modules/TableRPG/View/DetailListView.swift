@@ -11,10 +11,13 @@ struct DetailListView: View {
         self.model = model
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
+        let sheetModel = SheetController(itemController: root.itemController).sheet(for: model.id)
+        self.tableSheetModel = TableSheetModel(linkControllable: root.rootControllable.linkControllable, sheetModel: sheetModel, searchText: "")
     }
     
     let root: TableRootModel
     let model: TableModel
+    let tableSheetModel: TableSheetModel
     
     @Environment(\.navigator) private var navigator
     
@@ -69,7 +72,11 @@ private extension DetailListView {
                 withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId) }
             }
         
-        EntryListView(editController: root.editController, linkTypes: LinkTableModuleTransferable.self, headerTitle: "Entries")
+        Section {
+            SheetView(root: root.rootController, model: tableSheetModel, isEditor: true, linkTypes: LinkTableModuleTransferable.self)
+        } header: {
+            Text("Entries", bundle: .module)
+        }
     }
 
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {

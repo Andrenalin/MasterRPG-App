@@ -86,8 +86,8 @@ public extension ViewController {
     }
 
     @MainActor
-    func viewDice(root: DiceRootModel, with id: UUID?, for resultCategory: ResultCategory, onlyPrimaryAction: Bool = false) -> some View {
-        DiceInline(itemId: id ?? UUID(), resultCategory: resultCategory, onlyPrimaryAction: onlyPrimaryAction)
+    func viewDice(root: DiceRootModel, with id: UUID?, for resultCategory: ResultCategory) -> some View {
+        DiceInline(itemId: id ?? UUID(), resultCategory: resultCategory)
     }
 }
 

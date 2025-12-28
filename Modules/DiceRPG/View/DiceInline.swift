@@ -6,10 +6,10 @@ import SwiftUI
 struct DiceInline: View {
     let itemId: UUID
     let resultCategory: ResultCategory
-    var onlyPrimaryAction: Bool = false
 
     @Environment(DiceRootModel.self) private var root
 
+    @Environment(\.showGame) private var showGame
     @Environment(\.gameModus) private var gameModus
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingControlActions) private var playerSharingActions
@@ -18,7 +18,7 @@ struct DiceInline: View {
 
     var body: some View {
         HStack {
-            if onlyPrimaryAction {
+            if !showGame || gameModus == .player {
                 Button {
                     withAnimation {
                         root.gameController.gameModel.focusItemIds <=> [itemId]

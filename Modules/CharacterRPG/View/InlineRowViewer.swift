@@ -16,7 +16,8 @@ struct InlineRowViewer: View, Equatable {
         }
         
         if source.typeId == .dice {
-            root.diceRoot.viewController.viewDice(root: root.diceRoot, with: source.itemId, for: ResultCategory(source: source))
+            root.diceRoot.viewController.rowViewer(source: source)
+                .environment(\.gameModus, .player)
         }
     }
     
