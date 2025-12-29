@@ -36,39 +36,12 @@ extension ItemController: ItemControllable {
         linkRegisterController
     }
     
-    @MainActor
-    func children(for model: ItemRowModel) -> [ItemRowModel] {
-        guard let item = self.itemSync(for: model.itemId) else { return [] }
-
-        return [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: config.module)] +
-        item.entries.map { ItemRowModel(itemId: item.id, entryId: $0.spaceId, typeId: config.module) }
-    }
-
-    @MainActor
-    func createLink(model: ItemRowModel) -> String {
-        let itemId = model.entryId ?? model.itemId
-        guard let item = self.itemSync(for: itemId) else { return "" }
-        return item.url(linkNumber: 0)
-    }
-    
     func didDelete(model: ModelType) async {
         guard let model = model as? Model else { return }
         await didDelete(fileUrl: model.fileUrl)
     }
     
     func didUpdate(model: ModelType) async {
-    }
-    
-    func duplicate(model: ItemRowModel) async {
-        guard let item = await self.item(for: model.itemId) else { return }
-        let duplicate = item.duplicate()
-        duplicate.fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: item.fileUrl, for: duplicate.id)
-        await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
-    }
-
-    func fileUrl(for itemId: UUID) async -> FileUrl? {
-        guard let item = await self.item(for: itemId) else { return nil }
-        return item.fileUrl
     }
     
     func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {

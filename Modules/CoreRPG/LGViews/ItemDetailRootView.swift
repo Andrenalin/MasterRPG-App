@@ -202,7 +202,7 @@ private extension ItemDetailRootView {
     @ViewBuilder func initialFileImporterView(model: any ItemDataAccessable) -> some View {
         HStack {
             if root.viewControllable.fileImporterViewType == .file {
-                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.configurable.module)
+                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, modelId: model.id)
                     .padding(32)
                     .overlay {
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -343,11 +343,11 @@ private extension ItemDetailRootView {
     
     func overlayFileImporter(model: any ItemDataAccessable) -> some View {
         HStack {
-            Text(model.url?.absoluteString ?? "No file is set")
+            Text(model.url?.path(percentEncoded: false) ?? "No file is set")
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             if root.viewControllable.fileImporterViewType == .file {
-                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, module: root.configurable.module)
+                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, modelId: model.id)
             } else {
                 root.viewControllable.fileImporterView(for: model.id, preopen: false, layoutDown: true)
             }
@@ -359,7 +359,7 @@ private extension ItemDetailRootView {
     }
     
     func updateFile(url: URL, model: any ItemDataAccessable) {
-        root.editControllable.resetFile(url: url, module: root.configurable.module)
+        root.editControllable.resetFile(url: url, modelId: model.id)
     }
 }
 

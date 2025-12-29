@@ -27,8 +27,4 @@ extension ItemController: ItemControllable {
     @MainActor var linkRegisterControllable: LinkRegisterControllable {
         linkRegisterController
     }
-
-    @MainActor func children(for model: ItemRowModel) -> [ItemRowModel] {
-        [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: config.module)]
-    }
 }

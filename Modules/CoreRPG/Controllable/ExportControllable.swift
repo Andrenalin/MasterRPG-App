@@ -155,7 +155,7 @@ public extension ExportControllable {
     }
 
     func inlineFiles(for itemId: UUID) async -> Data? {
-        guard let fileUrlDataController, let fileUrl = await itemControllable.fileUrl(for: itemId) else { return nil }
+        guard let fileUrlDataController, let item = await itemControllable.item(for: itemId), let fileUrl = item.fileUrl else { return nil }        
         return try? await fileUrlDataController.loadData(for: fileUrl)
     }
 

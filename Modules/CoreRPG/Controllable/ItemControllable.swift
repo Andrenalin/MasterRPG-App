@@ -14,20 +14,10 @@ public protocol ItemControllable: Sendable  {
     @MainActor var linkRegisterControllable: LinkRegisterControllable { get }
     var itemDataModel: ItemDataModel { get }
     
-    // overwrites
-    @MainActor func children(for model: ItemRowModel) -> [ItemRowModel]
-    @MainActor func createLink(model: ItemRowModel) -> String
-    
     func didDelete(model: ModelType) async
     func didUpdate(model: ModelType) async
     func duplicate(model: ItemRowModel) async
-    func fileUrl(for itemId: UUID) async -> FileUrl?
     func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async
-    func loadableUrl(for model: ItemRowModel) async -> URL?
-    @MainActor func itemTree(from rootModel: ItemRowModel?, to childModel: ItemRowModel) -> [ItemRowModel]
-    
-    @MainActor func childrenTree(for model: ItemRowModel) -> ItemRowModel?
-    @MainActor func filterChildren(model: ItemRowModel, search: String, isHidden: Bool, filterTags: [TagFilterSelection], deep: Int) -> ListFilterOptions
 }
 
 // MARK: - Configuration
@@ -44,10 +34,6 @@ public extension ItemControllable {
         self.itemOrEmpty(for: itemId).copy()
     }
 
-    func fileUrl(for itemId: UUID) async -> FileUrl? {
-        nil
-    }
-    
     func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {}
 
     func merge(with model: ModelType) async -> ModelType? {
@@ -228,19 +214,10 @@ public extension ItemControllable {
         return ItemRowModel(itemId: model.id, typeId: config.module)
     }
 
-    @MainActor
-    func createLink(model: ItemRowModel) -> String {
-        guard let item = self.itemSync(for: model.itemId) else { return "" }
-        if let entryId = model.entryId {
-            return item.url(linkNumber: 0, entryId: entryId)
-        } else {
-            return item.url(linkNumber: 0)
-        }
-    }
-
     func duplicate(model: ItemRowModel) async {
         guard let item = await self.item(for: model.itemId) else { return }
-        let duplicate = item.duplicate()
+        var duplicate = item.duplicate()
+        duplicate.fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: item.fileUrl, for: duplicate.id)
         await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
     }
 
@@ -285,58 +262,7 @@ public extension ItemControllable {
 
     func didDelete(model: ModelType) async {}
     func didUpdate(model: ModelType) async {}
-    func childrenTree(for model: ItemRowModel) -> ItemRowModel? { nil }
     
-    @MainActor
-    func filter(model: ItemRowModel, search: String, isHidden: Bool, filterTags: [TagFilterSelection], enableFilterChildren: Bool = false, deep: Int = 0) -> ListFilterOptions {
-        guard deep < 4 else { return .notMatch }
-        guard let item = self.itemSync(for: model.itemId) else { return .match }
-        
-        if let entryId = model.entryId {
-            guard !(isHidden && item[entryId].isGroupHidden) else { return .notMatch }
-        } else {
-            guard !(isHidden && item.isGroupHidden) else { return .notMatch }
-        }
-
-        guard !search.isEmpty || !filterTags.isEmpty else { return .match }
-
-        if let entryId = model.entryId {
-            if enableFilterChildren || search.count > 4 {
-                let children = filterChildren(model: ItemRowModel(itemId: model.itemId, entryId: entryId, typeId: model.typeId), search: search, isHidden: false, filterTags: filterTags, deep: deep)
-                if children != .notMatch {
-                    return children
-                }
-                return item[entryId].filter(search, selectedTags: filterTags) ? .match : .notMatch
-            }
-            return .match
-        } else {
-            let result = TagFilterSelection.filter(for: item.tags + ["\(item.category.title)"], with: filterTags, exclude: "\(ItemListCategory.hide.title)")
-            let parent = result && item.filter(search)
-            if enableFilterChildren {
-                var children = item.entries.first { $0.filter(search, selectedTags: filterTags) }
-                if children == nil {
-                    for entry in item.entries {
-                        if filter(model: ItemRowModel(itemId: model.itemId, entryId: entry.id, typeId: model.typeId), search: search, isHidden: false, filterTags: filterTags, deep: deep + 1) != .notMatch {
-                            children = entry
-                            break
-                        }
-                    }
-                }
-                
-                if parent && children != nil {
-                    return .childrenMatch
-                } else if parent {
-                    return .match
-                }
-                return children != nil ? .onlyChildrenMatch : .notMatch
-                    
-            }
-            return parent ? .match : .notMatch
-        }
-    }
-    
-    @MainActor func filterChildren(model: ItemRowModel, search: String, isHidden: Bool, filterTags: [TagFilterSelection], deep: Int) -> ListFilterOptions { .notMatch }
-
     func name(model: ItemRowModel) async -> String {
         guard let item = await self.item(for: model.itemId) else { return "" }
         return item.name
@@ -379,12 +305,6 @@ public extension ItemControllable {
     func save() async {
         try? await dataControllable?.save()
     }
-
-    func itemTree(from rootModel: ItemRowModel?, to childModel: ItemRowModel) -> [ItemRowModel] {
-        []
-    }
-
-    func loadableUrl(for model: ItemRowModel) async -> URL? { nil }
 }
 
 // MARK - LinkRegister

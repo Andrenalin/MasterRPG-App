@@ -22,9 +22,9 @@ public protocol EditControllable: Sendable {
     var model: Model { get set }
 
     // reset / edit  extensions
-    @MainActor func reset(name: String, saveIt: Bool, modelId: UUID?)
-    @MainActor func reset(category: ItemListCategory, saveIt: Bool, modelId: UUID?)
-    @MainActor func reset(description: String, saveIt: Bool, modelId: UUID?)
+    @MainActor func reset(name: String, modelId: UUID?)
+    @MainActor func reset(category: ItemListCategory, modelId: UUID?)
+    @MainActor func reset(description: String, modelId: UUID?)
     @MainActor func reset(hidden: Bool, modelId: UUID?)
     @MainActor func add(tag: String)
     @MainActor func remove(tag: String)
@@ -76,38 +76,34 @@ public extension EditControllable {
         reset(tags: tags, modelId: id)
     }
 
-    @MainActor func reset(category: ItemListCategory, saveIt: Bool = true, modelId: UUID? = nil) {
+    @MainActor func reset(category: ItemListCategory, modelId: UUID? = nil) {
         guard var editModel = editModel(for: modelId ?? model.id) else { return }
         guard editModel.category != category else { return }
         editModel.category = category
-        guard saveIt else { return }
         save(updated: editModel, message: String(localized: "Change to \(category.title)").localizedString)
     }
 
-    @MainActor func reset(description: String, saveIt: Bool = true, modelId: UUID? = nil) {
+    @MainActor func reset(description: String, modelId: UUID? = nil) {
         guard var editModel = editModel(for: modelId ?? model.id) else { return }
         guard editModel.description != description else { return }
         editModel.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .description, itemId: model.id, text: model.description.markDownText())
-        guard saveIt else { return }
         save(updated: editModel, message: String(localized: "Typing").localizedString)
     }
 
-    @MainActor func reset(name: String, saveIt: Bool = true, modelId: UUID? = nil) {
+    @MainActor func reset(name: String, modelId: UUID? = nil) {
         guard var editModel = editModel(for: modelId ?? model.id) else { return }
         guard editModel.name != name else { return }
         editModel.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: model.id, text: model.name.markDownText())
-        guard saveIt else { return }
         save(updated: editModel, message: String(localized: "Typing").localizedString)
     }
 
-    @MainActor func reset(tags: [String], saveIt: Bool = true, modelId: UUID? = nil) {
+    @MainActor func reset(tags: [String], modelId: UUID? = nil) {
         guard var editModel = editModel(for: modelId ?? model.id) else { return }
         let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
         guard editModel.tags != sortedTags else { return }
         editModel.tags = sortedTags
-        guard saveIt else { return }
         save(updated: editModel, message: String(localized: "Changed tags").localizedString)
     }
     
@@ -118,11 +114,11 @@ public extension EditControllable {
         save(updated: editModel, message: String(localized: "Change to \(hidden ? "hide" : "show")").localizedString)
     }
 
-    @MainActor func reset(fileUrl: FileUrl?, saveIt: Bool) {
-        guard model.fileUrl != fileUrl else { return }
-        model.fileUrl = fileUrl
-        guard saveIt else { return }
-        save(with: String(localized: "Change file").localizedString)
+    @MainActor func reset(fileUrl: FileUrl?, modelId: UUID? = nil) {
+        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+        guard editModel.fileUrl != fileUrl else { return }
+        editModel.fileUrl = fileUrl
+        save(updated: editModel, message: String(localized: "Change file").localizedString)
     }
 
     @MainActor func add(tag: String) {
@@ -256,7 +252,16 @@ public extension EditControllable {
     }
     
     @MainActor func duplicate(item: any ItemDataAccessable) async {
-        await itemControllable.duplicate(model: ItemRowModel(itemId: item.id, typeId: itemControllable.config.module))
+        guard let model = itemControllable.itemSync(for: item.id) else { return }
+        let duplicate = model.duplicate()
+        itemControllable.replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
+        if let fileUrl = model.fileUrl, let fileUrlDataController, let data = try? await fileUrlDataController.loadData(for: fileUrl) {
+            var path = fileUrl.rawUrl.deletingLastPathComponent().path(percentEncoded: false)
+            if path == "./" {
+                path = ""
+            }
+            try? await resetFile(data: data, modelId: duplicate.id, path: path)
+        }
     }
     
     @MainActor func markForDeletion(itemId: UUID) {
@@ -346,10 +351,10 @@ public extension EditControllable {
 // MARK: - Files
 
 public extension EditControllable {
-    func resetFile(url: URL?, module: NetworkModules) {
+    func resetFile(url: URL?, modelId: UUID) {
         guard fileUrlDataController != nil else { return }
         Task.detached {
-            await resetFile(url: url, id: model.id, module: module)
+            await resetFile(url: url, modelId: modelId)
         }
     }
     
@@ -359,28 +364,48 @@ public extension EditControllable {
         let newName = await model.name
         let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, from: oldName, to: newName)
         if let newFileUrl {
-            await reset(fileUrl: newFileUrl, saveIt: true)
+            await reset(fileUrl: newFileUrl)
         }
     }
     
-    private func resetFile(url: URL?, id: UUID, module: NetworkModules) async {
-        guard let fileUrlDataController else { return }
+    private func resetFile(url: URL?, modelId: UUID) async {
+        guard let fileUrlDataController, let editModel = await editModel(for: modelId) else { return }
         await fileUrlDataController.delete(model.fileUrl)
         guard let url else {
-            await reset(fileUrl: nil, saveIt: true)
+            await reset(fileUrl: nil, modelId: modelId)
             return
         }
         _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
         
-        if await model.name.isEmpty {
+        if editModel.name.isEmpty {
             let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
-            await reset(name: name, saveIt: false)
+            await reset(name: name, modelId: modelId)
         }
-        let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: id, url: url, module: module.token, category: model.category.title)
-        await reset(fileUrl: updatedFileUrl, saveIt: true)
+        let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: modelId, url: url, module: itemControllable.config.module.token, category: model.category.title)
+        await reset(fileUrl: updatedFileUrl, modelId: modelId)
     }
+    
+    private func resetFile(data: Data?, modelId: UUID, path: String) async throws {
+        guard let itemModel = await editModel(for: modelId) else { return }
+        if itemModel.fileUrl != nil {
+            await resetFile(url: nil, modelId: modelId)
+        }
+        guard let data else { return }
+        
+        let module = itemControllable.config.module.token
+        let filePath = itemModel.name.isEmpty ? "\(path)NewData-\(itemModel.id.uuidString).\(itemControllable.config.filenameExtension)" : "\(path)\(itemModel.name).\(itemControllable.config.filenameExtension)"
+        var dataFileUrl = await FileUrl(fileId: model.id, url: URL(string: filePath)!, location: .newCloud, module: module, relativeUrl: nil)
+        dataFileUrl.resetData(data)
+        
+        let fileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: itemControllable.config.filenameExtension)
+        
+        guard var editModel = await editModel(for: modelId) else { return }
+        editModel.fileUrl = fileUrl
+        await save(updated: editModel, message: String(localized: "New File").localizedString)
+    }
+
 }
 
 // MARK: - controller mantainence

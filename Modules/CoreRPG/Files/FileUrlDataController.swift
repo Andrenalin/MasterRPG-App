@@ -246,36 +246,9 @@ public extension FileUrlDataController {
     }
 
     func duplicate(fileUrl: FileUrl?, for fileId: UUID) async throws -> FileUrl? {
-        guard let unconverted = fileUrl, let data = try await loadData(for: unconverted) else { return nil }
-        var fullURL: URL? = nil
-        switch unconverted.location {
-            case .appCloud, .local:
-                fullURL = try await locationFileManager.create(id: fileId, location: unconverted.location, pathExtension: filenameExtension, data: data)
-                break
-            case .other, .icloud, .newCloud:
-                // try to get access to the old location
-                let oldUrl = locationFileManager.absoluteUrl(for: unconverted.rawUrl, at: unconverted.location) ?? unconverted.rawUrl
-                let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
-                let hasAccess = await hasAccess(for: unconverted)
-                if exists && !isDir && (unconverted.location != .other || hasAccess) {
-                    let newUrl = await fileBookmarkController.loadBookmark(fileId: unconverted.fileId)
-                    fullURL = newUrl
-                }
-                break
-            case .url:
-                fullURL = unconverted.rawUrl
-                break
-        }
-        guard let fullURL else { return nil }
-        do {
-            defer { fullURL.stopAccessingSecurityScopedResource() }
-            _ = fullURL.startAccessingSecurityScopedResource()
-            try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullURL)
-            return FileUrl(fileId: fileId, url: fullURL, location: locationFileManager.fileLocation(for: fullURL), module: unconverted.module, relativeUrl: locationFileManager.relativeUrl(for: fullURL))
-        } catch {
-            print(error.localizedDescription)
-        }
-        return nil
+        guard var unconverted = fileUrl, let data = try await loadData(for: unconverted) else { return nil }
+        unconverted.resetData(data)
+        return try await createNewFileUrl(fileId: fileId, unconvertedFileUrl: unconverted, pathExtension: filenameExtension)
     }
 }
 

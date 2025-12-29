@@ -31,11 +31,6 @@ extension ItemController: ItemControllable {
         linkRegisterController
     }
 
-    @MainActor
-    func children(for model: ItemRowModel) -> [ItemRowModel] {
-        [ItemRowModel(itemId: model.itemId, entryId: model.itemId, typeId: config.module)]
-    }
-
     func didDelete(model: ModelType) async {
     }
     

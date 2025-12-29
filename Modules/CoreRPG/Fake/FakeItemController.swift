@@ -12,10 +12,6 @@ struct FakeItemController: ItemControllable {
     
     var itemDataModel: ItemDataModel
     
-    func children(for model: ItemRowModel) -> [ItemRowModel] {
-        []
-    }
-    
     func didDelete(model: any ModelType) async {}
     
     func didUpdate(model: any ModelType) async {}

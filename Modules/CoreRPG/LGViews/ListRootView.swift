@@ -79,7 +79,7 @@ private extension ListRootView {
             guard let model = await root.editControllable.addNew(type: .item) else { return }
             try? await Task.sleep(for: .seconds(0.5))
             withAnimation {
-                root.editControllable.resetFile(url: url, module: root.configurable.module)
+                root.editControllable.resetFile(url: url, modelId: model.id)
                 if parentModel != nil {
                     root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
                 }
