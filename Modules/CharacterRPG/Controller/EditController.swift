@@ -173,7 +173,7 @@ extension EditController: EntryDataEditable {
         var duplicate = model[entryId].duplicate()
         Task {
             if let subValueId = duplicate.valueId {
-                let newId = await itemController.duplicate(itemId: subValueId)
+                let newId = await duplicate(itemId: subValueId)
                 duplicate.valueId = newId
             }
             model.entries.append(duplicate)
@@ -211,6 +211,49 @@ extension EditController: EntryDataEditable {
 // MARK: - New Editor Functions
 
 extension EditController {
+    @MainActor public func duplicate(item: any ItemDataAccessable) async {
+        _ = await duplicate(itemId: item.id)
+    }
+    
+    func duplicate(itemId: UUID) async -> UUID {
+        await duplicate(itemId: itemId, withCopy: true)
+    }
+
+    func duplicate(itemId: UUID, withCopy: Bool) async -> UUID {
+        let (duplicates, copyId, mapper) = await duplicateSubValue(id: itemId, withCopy: withCopy)
+        //await root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)
+        for duplicate in duplicates {
+            await itemController.replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
+        }
+        return copyId
+    }
+
+    @MainActor
+    private func duplicateSubValue(id: UUID, withCopy: Bool) -> ([ValueModel], UUID, [UUID: UUID]) {
+        guard let item = itemController.itemSync(for: id) else { return ([], id, [:]) }
+        
+        var duplicates: [ValueModel] = []
+        let copyItem: ValueModel = withCopy ? item.duplicate() : item.duplicateWithoutCopy()
+        duplicates.append(copyItem)
+        
+        var mapper: [UUID: UUID] = [id: copyItem.id]
+        let subValueIds = item.duplicateSubValueIds()
+        subValueIds.forEach {
+            let (newDuplicates, newCopyId, newMapper) = duplicateSubValue(id: $0, withCopy: false)
+            mapper[$0] = newCopyId
+            mapper.merge(newMapper) { first, _ in return first }
+            duplicates.append(contentsOf: newDuplicates)
+        }
+        for (index, entry) in copyItem.entries.enumerated() {
+            guard let valueId = entry.valueId else { continue }
+            if let copyId = mapper[valueId] {
+                copyItem.entries[index].valueId = copyId
+                duplicates.first(where: { $0.id == copyId })?.parentId = copyItem.id
+            }
+        }
+        return (duplicates, copyItem.id, mapper)
+    }
+
     @MainActor func add(selection: [WindowItemSelection], modelId: UUID?) {
         guard let editModel = editModel(for: modelId ?? model.id) else { return }
         let photos = Set(editModel.photos)
@@ -580,7 +623,7 @@ extension EditController {
     }
 
     func copyAddChild(childId: UUID, into entryId: UUID) async {
-        let copiedChildId = await itemController.duplicate(itemId: childId)
+        let copiedChildId = await duplicate(itemId: childId)
         await addChild(childId: copiedChildId, into: entryId)
     }
 }

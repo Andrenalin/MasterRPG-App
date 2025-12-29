@@ -29,6 +29,9 @@ public protocol EditControllable: Sendable {
     @MainActor func add(tag: String)
     @MainActor func remove(tag: String)
 
+    // special edit
+    @MainActor func duplicate(item: any ItemDataAccessable) async
+    
     // overwrite extensions
     @MainActor func resetCurrentModel()
     @MainActor func didSetModel()

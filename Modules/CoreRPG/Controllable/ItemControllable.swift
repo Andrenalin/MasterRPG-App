@@ -16,7 +16,6 @@ public protocol ItemControllable: Sendable  {
     
     func didDelete(model: ModelType) async
     func didUpdate(model: ModelType) async
-    func duplicate(model: ItemRowModel) async
     func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async
 }
 
@@ -212,13 +211,6 @@ public extension ItemControllable {
         insertIntoItems(model: model)
         setModel(with: model)
         return ItemRowModel(itemId: model.id, typeId: config.module)
-    }
-
-    func duplicate(model: ItemRowModel) async {
-        guard let item = await self.item(for: model.itemId) else { return }
-        var duplicate = item.duplicate()
-        duplicate.fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: item.fileUrl, for: duplicate.id)
-        await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
     }
 
     @MainActor
