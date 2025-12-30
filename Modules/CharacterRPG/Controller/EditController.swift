@@ -211,6 +211,10 @@ extension EditController: EntryDataEditable {
 // MARK: - New Editor Functions
 
 extension EditController {
+    @MainActor public func duplicate(item: any ItemDataAccessable) async {
+        _ = await itemController.duplicate(itemId: item.id)
+    }
+    
     @MainActor func add(selection: [WindowItemSelection], modelId: UUID?) {
         guard let editModel = editModel(for: modelId ?? model.id) else { return }
         let photos = Set(editModel.photos)
