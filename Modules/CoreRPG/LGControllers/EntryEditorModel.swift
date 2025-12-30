@@ -10,7 +10,6 @@ public final class EntryEditorModel: Sendable {
     }
     
     public var currentEntryId: UUID?
-    public var zoomNamespaceId: Namespace.ID?
 }
 
 public protocol EntryPersistentModel: Identifiable {

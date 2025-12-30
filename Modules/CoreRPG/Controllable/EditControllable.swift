@@ -22,10 +22,6 @@ public protocol EditControllable: Sendable {
     var model: Model { get set }
 
     // reset / edit  extensions
-//    @MainActor func reset(name: String, modelId: UUID?)
-//    @MainActor func reset(category: ItemListCategory, modelId: UUID?)
-//    @MainActor func reset(description: String, modelId: UUID?)
-//    @MainActor func reset(hidden: Bool, modelId: UUID?)
     @MainActor func add(tag: String)
     @MainActor func remove(tag: String)
 

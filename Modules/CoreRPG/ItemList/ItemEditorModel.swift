@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import Foundation
-import Observation
 import SwiftUI
 
 @MainActor @Observable
@@ -17,8 +16,6 @@ public final class ItemEditorModel: Sendable {
     public internal(set) var currentItemId: UUID?
     public var currentEntryId: UUID?
     public var scrollEntryId: UUID?
-    
-    public var zoomNamespaceId: Namespace.ID?
     
     public var cacheItemListModel: CacheItemListModel = CacheItemListModel()
 

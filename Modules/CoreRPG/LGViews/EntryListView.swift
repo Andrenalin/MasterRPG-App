@@ -52,9 +52,6 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
             .onMove { indexSet, index in
                 editController.move(entryFrom: indexSet, to: index, modelId: editController.model.id)
             }
-            .onAppear {
-                editController.editorModel.zoomNamespaceId = zoomNamespace
-            }
         } header: {
             Text(headerTitle)
         }

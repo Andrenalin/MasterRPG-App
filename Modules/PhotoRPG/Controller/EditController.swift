@@ -27,11 +27,9 @@ extension EditController: EditControllable {
     var itemControllable: any ItemControllable {
         itemController
     }
-    
     var cacheController: CacheController? {
         itemController.cacheController
     }
-    
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
     }
