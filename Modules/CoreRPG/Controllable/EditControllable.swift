@@ -22,10 +22,10 @@ public protocol EditControllable: Sendable {
     var model: Model { get set }
 
     // reset / edit  extensions
-    @MainActor func reset(name: String, modelId: UUID?)
-    @MainActor func reset(category: ItemListCategory, modelId: UUID?)
-    @MainActor func reset(description: String, modelId: UUID?)
-    @MainActor func reset(hidden: Bool, modelId: UUID?)
+//    @MainActor func reset(name: String, modelId: UUID?)
+//    @MainActor func reset(category: ItemListCategory, modelId: UUID?)
+//    @MainActor func reset(description: String, modelId: UUID?)
+//    @MainActor func reset(hidden: Bool, modelId: UUID?)
     @MainActor func add(tag: String)
     @MainActor func remove(tag: String)
 
@@ -76,14 +76,14 @@ public extension EditControllable {
         reset(tags: tags, modelId: id)
     }
 
-    @MainActor func reset(category: ItemListCategory, modelId: UUID? = nil) {
+    @MainActor func reset(category: ItemListCategory, modelId: UUID?) {
         guard var editModel = editModel(for: modelId ?? model.id) else { return }
         guard editModel.category != category else { return }
         editModel.category = category
         save(updated: editModel, message: String(localized: "Change to \(category.title)").localizedString)
     }
 
-    @MainActor func reset(description: String, modelId: UUID? = nil) {
+    @MainActor func reset(description: String, modelId: UUID?) {
         guard var editModel = editModel(for: modelId ?? model.id) else { return }
         guard editModel.description != description else { return }
         editModel.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -91,7 +91,7 @@ public extension EditControllable {
         save(updated: editModel, message: String(localized: "Typing").localizedString)
     }
 
-    @MainActor func reset(name: String, modelId: UUID? = nil) {
+    @MainActor func reset(name: String, modelId: UUID?) {
         guard var editModel = editModel(for: modelId ?? model.id) else { return }
         guard editModel.name != name else { return }
         editModel.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -99,7 +99,7 @@ public extension EditControllable {
         save(updated: editModel, message: String(localized: "Typing").localizedString)
     }
 
-    @MainActor func reset(tags: [String], modelId: UUID? = nil) {
+    @MainActor func reset(tags: [String], modelId: UUID?) {
         guard var editModel = editModel(for: modelId ?? model.id) else { return }
         let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
         guard editModel.tags != sortedTags else { return }

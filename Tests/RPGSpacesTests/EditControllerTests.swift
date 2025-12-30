@@ -19,7 +19,7 @@ struct EditControllerTests {
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         let newName = "Updated Item Name"
-        await sut.reset(name: newName)
+        await sut.reset(name: newName, modelId: item.id)
 
         #expect(await sut.model.name == newName)
         #expect(item.name == newName)
@@ -34,7 +34,7 @@ struct EditControllerTests {
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         let newName = "  Trimmed Name  "
-        await sut.reset(name: newName)
+        await sut.reset(name: newName, modelId: item.id)
 
         #expect(await sut.model.name == "Trimmed Name")
         #expect(item.name == "Trimmed Name")
@@ -51,7 +51,7 @@ struct EditControllerTests {
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         let newCategory = ItemListCategory.building
-        await sut.reset(category: newCategory)
+        await sut.reset(category: newCategory, modelId: item.id)
 
         #expect(await sut.model.category == newCategory)
         #expect(item.category == newCategory)
@@ -67,7 +67,7 @@ struct EditControllerTests {
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         // Reset to the same category should not trigger changes
-        await sut.reset(category: originalCategory)
+        await sut.reset(category: originalCategory, modelId: item.id)
 
         #expect(await sut.model.category == originalCategory)
         #expect(item.category == originalCategory)
@@ -82,7 +82,7 @@ struct EditControllerTests {
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         let newFileUrl = FileUrl(fileId: UUID(), url: URL(fileURLWithPath: "/test/path"), location: .local, module: "TEST", relativeUrl: nil)
-        await sut.reset(fileUrl: newFileUrl, for: item.id)
+        await sut.reset(fileUrl: newFileUrl, modelId: item.id)
 
         #expect(await sut.model.fileUrl == newFileUrl)
         #expect(item.fileUrl == newFileUrl)
@@ -100,7 +100,7 @@ struct EditControllerTests {
         let targetItem = await root.itemController.itemOrEmpty(for: newItem.itemId)
 
         let newFileUrl = FileUrl(fileId: UUID(), url: URL(fileURLWithPath: "/test/path2"), location: .local, module: "TEST", relativeUrl: nil)
-        await sut.reset(fileUrl: newFileUrl, for: targetItem.id)
+        await sut.reset(fileUrl: newFileUrl, modelId: item.id)
 
         // The current model should remain unchanged
         #expect(await sut.model.id == item.id)
@@ -120,7 +120,7 @@ struct EditControllerTests {
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         // Reset space with nil URL should remove the file URL
-        sut.resetSpace(url: nil)
+        sut.resetFile(url: nil, modelId: item.id)
 
         #expect(await sut.model.fileUrl == nil)
         #expect(item.fileUrl == nil)
@@ -136,7 +136,7 @@ struct EditControllerTests {
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         // Reset to the same name should not trigger changes
-        await sut.reset(name: originalName)
+        await sut.reset(name: originalName, modelId: item.id)
 
         #expect(await sut.model.name == originalName)
         #expect(item.name == originalName)
@@ -706,7 +706,7 @@ struct EditControllerTests {
         let itemRowModel = await root.itemController.addNew(type: nil)
         let item = await root.itemController.itemOrEmpty(for: itemRowModel.itemId)
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
-        await sut.reset(name: "Original Item")
+        await sut.reset(name: "Original Item", modelId: item.id)
 
         let originalItem = await root.itemController.itemOrEmpty(for: item.id)
         let initialCount = await root.itemController.itemDataModel.items.count
