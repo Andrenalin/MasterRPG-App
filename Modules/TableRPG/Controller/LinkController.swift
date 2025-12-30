@@ -106,7 +106,7 @@ extension LinkController: LinkControllable {
 public extension LinkController {
     @MainActor
     func link(for name: String, entryName: String?) -> String? {
-        guard let itemId = itemController.itemDataModel.items.first(where: { itemController.nameSync(model: ItemRowModel(itemId: $0, typeId: itemController.config.module)) == name }) else { return nil }
+        guard let itemId = itemController.itemDataModel.items.first(where: { itemController.nameSync(itemId: $0) == name }) else { return nil }
         let item = itemController.itemOrEmpty(for: itemId)
         if let entryName = entryName {
             guard let entry = item.entries.first(where: { $0.name == entryName }) else { return nil }

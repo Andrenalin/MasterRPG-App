@@ -17,30 +17,80 @@ public protocol ItemControllable: Sendable  {
 }
 
 // MARK: - Configuration
+
 public extension ItemControllable {
     var cacheControllable: ImageCacheControllable? { nil }
     var collectionCategory: ItemListCategory { .collection }
     var fileUrlDataController: FileUrlDataController? { nil }
 }
 
-// MARK: - ImportControllable
+// MARK: - ContextMenuMultiController
 
 public extension ItemControllable {
-    func reset(fileUrl: FileUrl?, item: inout any ItemDataAccessable) async {
-        if let oldFileUlr = item.fileUrl {
-            await cacheControllable?.remove(itemId: oldFileUlr.fileId)
+    @MainActor func collections(isFolder: Bool, in parentId: UUID?) -> [Model] {
+        return itemDataModel.items.compactMap { itemId -> Model? in
+            guard let item = itemSync(for: itemId),
+                  item.displayState == 0 && item.parentId == parentId && (item.category == (isFolder ? .folder : collectionCategory)) else { return nil }
+            return item
         }
-        item.fileUrl = fileUrl
     }
 }
 
-// MARK: - Manipulate Model
+// MARK: - EditControllable
 
 public extension ItemControllable {
+    @MainActor func addNew(type: Int?) async -> ItemRowModel {
+        var model = Model.empty
+        if let type, let category = ItemListCategory(rawValue: type) {
+            model.category = category
+        }
+        let updatedModel = model
+        try? await dataControllable?.replace(id: updatedModel.id, with: updatedModel)
+        insertIntoItems(model: model)
+        setModel(with: model)
+        return ItemRowModel(itemId: model.id, typeId: config.module)
+    }
+
     @MainActor func copy(of itemId: UUID) -> Model? {
         self.itemOrEmpty(for: itemId).copy()
     }
+    
+    func delete(itemId: UUID) async {
+        guard let item = await self.item(for: itemId) else { return }
+        let entries = item.entries
+        for entry in entries {
+            await cacheControllable?.remove(itemId: entry.id)
+        }
+        
+        try? await dataControllable?.delete(id: item.id)
+        if let fileUrlDataController, let fileUrl = item.fileUrl {
+            await cacheControllable?.remove(itemId: itemId)
+            fileUrlDataController.delete(fileUrl)
+        }
+        
+        await itemDataModel.resetModel(id: item.id)
 
+        await repairLinks(for: [ItemRowModel(itemId: itemId, typeId: config.module)])
+        await resetUsedLink(for: ItemRowModel(itemId: itemId, typeId: config.module))
+        for entry in entries {
+            await resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: config.module))
+        }
+    }
+    
+    @MainActor func isEqual(with other: ModelType) -> Bool {
+        guard let other = other as? Model, let second = self.itemSync(for: other.id) else { return false }
+        return second.isEqual(other: other)
+    }
+}
+
+// MARK: - ImportControllable
+
+public extension ItemControllable {
+    func decode(data: Data, with decoder: JSONDecoder, version: Int) throws -> Model {
+        // default ignore any version numbers. Later a module can handle older version differently.
+        try decoder.decode(Model.self, from: data)
+    }
+    
     func merge(with model: ModelType) async -> ModelType? {
         guard let model = model as? Model, let current = await self.item(for: model.id) else { return model }
         if model.isSame(current) {
@@ -49,32 +99,101 @@ public extension ItemControllable {
         return model.merge(current)
     }
     
+    func reset(fileUrl: FileUrl?, item: inout any ItemDataAccessable) async {
+        if let oldFileUlr = item.fileUrl {
+            await cacheControllable?.remove(itemId: oldFileUlr.fileId)
+        }
+        item.fileUrl = fileUrl
+    }
+}
+
+// MARK: - SyncDataController
+
+public extension ItemControllable {
+    func resetData() async {
+        for id in await itemDataModel.items {
+            await delete(itemId: id)
+        }
+    }
+
+    func save() async {
+        try? await dataControllable?.save()
+    }
+
+    @MainActor func update(model: ModelType?) {
+        guard let model = model as? Model else { return }
+        if let orignal = self.itemSync(for: model.id) {
+            let updateHidden = orignal.isGroupHidden != model.isGroupHidden
+            let originalLinkModels = orignal.linkRegisterModels
+            var originalEntryIds = Set(orignal.entries.map { $0.id })
+            if orignal.replace(with: model) {
+                let linkModels = orignal.linkRegisterModels
+                if originalLinkModels != linkModels {
+                    linkRegisterControllable.deregister(links: originalLinkModels)
+                    linkRegisterControllable.register(links: linkModels)
+                }
+                originalEntryIds.subtract(orignal.entries.map { $0.id })
+                for entryId in originalEntryIds {
+                    resetUsedLink(for: ItemRowModel(itemId: orignal.id, entryId: entryId, typeId: config.module))
+                }
+                resortItem(changed: orignal)
+            }
+            if updateHidden {
+                itemDataModel.increaseHiddenCounter()
+            }
+        } else {
+            setModel(with: model)
+            insertIntoItems(model: model)
+        }
+        itemDataModel.updateTags(with: model.tags)
+    }
+    
+    func updates(_ models: [ModelType]) async {
+        let sortedModels = models.compactMap { $0 as? Model }.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+        let deletedIds = await itemDataModel.items.filter { id in !sortedModels.contains { $0.id == id } }
+        for id in deletedIds {
+            await delete(itemId: id)
+        }
+        var updatedItems: [UUID] = []
+        for item in sortedModels {
+            await setModel(with: item)
+            await itemDataModel.updateTags(with: item.tags)
+            updatedItems.append(item.id)
+        }
+        await itemDataModel.resetItems(updatedItems)
+    }
+}
+
+// MARK: - Viewer
+
+public extension ItemControllable {
     func item(for itemId: UUID) async -> Model? {
         await itemDataModel.item(for: itemId) as? Model
     }
-
+    
     func item(for itemId: UUID, version: Int) async -> Model? {
         let item = await self.item(for: itemId)
         guard version != 0, let item else { return item }
         return item.version == version ? item : nil
     }
-
+    
     @MainActor func itemSync(for itemId: UUID) -> Model? {
         itemDataModel.item(for: itemId) as? Model
     }
-
+    
     @MainActor func itemOrEmpty(for itemId: UUID) -> Model {
         guard let item = self.itemSync(for: itemId) else { return Model.empty(itemId) }
         return item
     }
-
-    @MainActor func isEqual(with other: ModelType) -> Bool {
-        guard let other = other as? Model, let second = self.itemSync(for: other.id) else { return false }
-        return second.isEqual(other: other)
+    
+    @MainActor func nameSync(itemId: UUID) -> String {
+        guard let item = self.itemSync(for: itemId) else { return "" }
+        return item.name
     }
+}
 
-    @MainActor
-    func replace(model: ModelType?, isInsert: Bool, shouldRepairLinks: Bool) {
+public extension ItemControllable {
+    @MainActor func replace(model: ModelType?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let model = model as? Model else { return }
         if let orignal = self.itemSync(for: model.id) {
             let updateHidden = orignal.isGroupHidden != model.isGroupHidden
@@ -117,105 +236,19 @@ public extension ItemControllable {
         itemDataModel.updateTags(with: model.tags)
     }
     
-    @MainActor
-    func setModel(with model: ModelType) {
+    @MainActor private func setModel(with model: ModelType) {
         guard let model = model as? Model else { return }
         let linkModels = model.linkRegisterModels
         linkRegisterControllable.register(links: linkModels)
         itemDataModel.setItem(id: model.id, item: model)
     }
 
-    @MainActor
-    func setNewItems(_ newItemData: [Model]) {
-        itemDataModel.items = newItemData.map { $0.id }
-        newItemData.forEach {
-            itemDataModel.itemData[$0.id] = $0
-        }
-    }
-
-    func decode(data: Data, with decoder: JSONDecoder, version: Int) throws -> Model {
-        // default ignore any version numbers. Later a module can handle older version differently.
-        try decoder.decode(Model.self, from: data)
-    }
-    
-    @MainActor
-    private func resortItem(changed model: Model) {
+    @MainActor private func resortItem(changed model: Model) {
         guard itemDataModel.removeItem(itemId: model.id) else { return }
         insertIntoItems(model: model)
     }
 
-    func updatesIds(_ itemIds: [UUID]) async {
-        let deletedIds = await itemDataModel.items.filter { id in !itemIds.contains { $0 == id } }
-        for id in deletedIds {
-            await delete(itemId: id)
-        }
-        for itemId in itemIds {
-            guard await itemDataModel.itemData[itemId] != nil else { continue }
-            guard let item = try? await dataControllable?.fetch(id: itemId) as? Model else { continue }
-            await setModel(with: item)
-            await itemDataModel.updateTags(with: item.tags)
-        }
-        await itemDataModel.resetItems(itemIds)
-    }
-
-    @MainActor func update(model: ModelType?) {
-        guard let model = model as? Model else { return }
-        if let orignal = self.itemSync(for: model.id) {
-            let updateHidden = orignal.isGroupHidden != model.isGroupHidden
-            let originalLinkModels = orignal.linkRegisterModels
-            var originalEntryIds = Set(orignal.entries.map { $0.id })
-            if orignal.replace(with: model) {
-                let linkModels = orignal.linkRegisterModels
-                if originalLinkModels != linkModels {
-                    linkRegisterControllable.deregister(links: originalLinkModels)
-                    linkRegisterControllable.register(links: linkModels)
-                }
-                originalEntryIds.subtract(orignal.entries.map { $0.id })
-                for entryId in originalEntryIds {
-                    resetUsedLink(for: ItemRowModel(itemId: orignal.id, entryId: entryId, typeId: config.module))
-                }
-                resortItem(changed: orignal)
-            }
-            if updateHidden {
-                itemDataModel.increaseHiddenCounter()
-            }
-        } else {
-            setModel(with: model)
-            insertIntoItems(model: model)
-        }
-        itemDataModel.updateTags(with: model.tags)
-    }
-
-    func updates(_ models: [ModelType]) async {
-        let sortedModels = models.compactMap { $0 as? Model }.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-        let deletedIds = await itemDataModel.items.filter { id in !sortedModels.contains { $0.id == id } }
-        for id in deletedIds {
-            await delete(itemId: id)
-        }
-        var updatedItems: [UUID] = []
-        for item in sortedModels {
-            await setModel(with: item)
-            await itemDataModel.updateTags(with: item.tags)
-            updatedItems.append(item.id)
-        }
-        await itemDataModel.resetItems(updatedItems)
-    }
-    
-    @MainActor
-    func addNew(type: Int?) async -> ItemRowModel {
-        var model = Model.empty
-        if let type, let category = ItemListCategory(rawValue: type) {
-            model.category = category
-        }
-        let updatedModel = model
-        try? await dataControllable?.replace(id: updatedModel.id, with: updatedModel)
-        insertIntoItems(model: model)
-        setModel(with: model)
-        return ItemRowModel(itemId: model.id, typeId: config.module)
-    }
-
-    @MainActor
-    func insertIntoItems(model: Model) {
+    @MainActor private func insertIntoItems(model: Model) {
         var foundIndex: Int?
         for (index, itemId) in itemDataModel.items.enumerated() {
             if itemSync(for: itemId)?.name.localizedCompare(model.name) == .orderedDescending {
@@ -225,96 +258,20 @@ public extension ItemControllable {
         }
         itemDataModel.insert(itemId: model.id, at: foundIndex)
     }
-
-    @MainActor func collections(isFolder: Bool, in parentId: UUID?) -> [Model] {
-        return itemDataModel.items.compactMap { itemId -> Model? in
-            guard let item = itemSync(for: itemId),
-                  item.displayState == 0 && item.parentId == parentId && (item.category == (isFolder ? .folder : collectionCategory)) else { return nil }
-            return item
-        }
-    }
-    
-    func delete(itemId: UUID) async {
-        guard let item = await self.item(for: itemId) else { return }
-        let entries = item.entries
-        for entry in entries {
-            await cacheControllable?.remove(itemId: entry.id)
-        }
-        
-        try? await dataControllable?.delete(id: item.id)
-        if let fileUrlDataController, let fileUrl = item.fileUrl {
-            await cacheControllable?.remove(itemId: itemId)
-            fileUrlDataController.delete(fileUrl)
-        }
-        
-        await itemDataModel.resetModel(id: item.id)
-
-        await repairLinks(for: [ItemRowModel(itemId: itemId, typeId: config.module)])
-        await resetUsedLink(for: ItemRowModel(itemId: itemId, typeId: config.module))
-        for entry in entries {
-            await resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: config.module))
-        }
-    }
-    
-    func name(model: ItemRowModel) async -> String {
-        guard let item = await self.item(for: model.itemId) else { return "" }
-        return item.name
-    }
-
-    @MainActor
-    func nameSync(model: ItemRowModel) -> String {
-        guard let item = self.itemSync(for: model.itemId) else { return "" }
-        return item.name
-    }
-
-    func name(itemId: UUID) async -> String {
-        guard let item = await self.item(for: itemId) else { return "" }
-        return item.name
-    }
-
-    @MainActor
-    func nameSync(itemId: UUID) -> String {
-        guard let item = self.itemSync(for: itemId) else { return "" }
-        return item.name
-    }
-
-    @MainActor
-    func start(model: ItemRowModel, with prefix: String) -> Bool {
-        nameSync(model: model).starts(with: prefix)
-    }
-
-    func toggleGroupHidden(on itemId: UUID) async {
-        guard var model = await copy(of: itemId) else { return }
-        model.displayState = DisplayStateMask.groupHidden.toggle(on: model.displayState)
-        await replace(model: model, isInsert: false, shouldRepairLinks: true)
-    }
-
-    func resetData() async {
-        for id in await itemDataModel.items {
-            await delete(itemId: id)
-        }
-    }
-
-    func save() async {
-        try? await dataControllable?.save()
-    }
 }
 
 // MARK - LinkRegister
 
 public extension ItemControllable {
-    @MainActor
-    func repairLinks(for models: [ItemRowModel]) {
+    @MainActor func repairLinks(for models: [ItemRowModel]) {
         linkRegisterControllable.repairLinks(for: models)
     }
     
-    @MainActor
-    func resetUsedLink(for model: ItemRowModel) {
+    @MainActor func resetUsedLink(for model: ItemRowModel) {
         linkRegisterControllable.resetUsedLink(for: model)
     }
     
-    @MainActor
-    func usedLinks(for model: ItemRowModel) -> [EffectedItemModel] {
+    @MainActor func usedLinks(for model: ItemRowModel) -> [EffectedItemModel] {
         linkRegisterControllable.used(for: model)
      }
 }
