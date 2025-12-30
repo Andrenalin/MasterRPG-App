@@ -19,12 +19,7 @@ public final class ItemDataModel: Sendable {
 
     public let categoryTags: [ItemListCategory]
     public let version: Int
-    public internal(set) var updateHiddenCounter: Int = 0
-    
-    public func copyWithoutItems() -> ItemDataModel {
-        ItemDataModel(categoryTags: categoryTags, version: version)
-    }
-    
+        
     func updateTags(with newTags: [String]) {
         let tags = newTags.map { $0.localizedUppercase }.filter { !allTags.contains($0) }
         guard !tags.isEmpty else { return }
@@ -36,10 +31,6 @@ public final class ItemDataModel: Sendable {
         itemData[itemId]
     }
     
-    func increaseHiddenCounter() {
-        updateHiddenCounter += 1
-    }
-
     func insert(itemId: UUID, at index: Int?) {
         if let index {
             items.insert(itemId, at: index)
@@ -68,11 +59,4 @@ public final class ItemDataModel: Sendable {
             items.remove(at: index)
         }
     }
-}
-
-public enum ListFilterOptions: Equatable, Hashable, Sendable {
-    case notMatch
-    case match
-    case childrenMatch
-    case onlyChildrenMatch
 }

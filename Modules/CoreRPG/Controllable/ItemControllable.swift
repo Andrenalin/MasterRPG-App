@@ -123,7 +123,6 @@ public extension ItemControllable {
     @MainActor func update(model: ModelType?) {
         guard let model = model as? Model else { return }
         if let orignal = self.itemSync(for: model.id) {
-            let updateHidden = orignal.isGroupHidden != model.isGroupHidden
             let originalLinkModels = orignal.linkRegisterModels
             var originalEntryIds = Set(orignal.entries.map { $0.id })
             if orignal.replace(with: model) {
@@ -137,9 +136,6 @@ public extension ItemControllable {
                     resetUsedLink(for: ItemRowModel(itemId: orignal.id, entryId: entryId, typeId: config.module))
                 }
                 resortItem(changed: orignal)
-            }
-            if updateHidden {
-                itemDataModel.increaseHiddenCounter()
             }
         } else {
             setModel(with: model)
@@ -220,9 +216,6 @@ public extension ItemControllable {
                 if resort {
                     resortItem(changed: orignal)
                 }
-            }
-            if updateHidden {
-                itemDataModel.increaseHiddenCounter()
             }
         } else {
             if isInsert {
