@@ -35,7 +35,6 @@ public extension SyncDataControllable {
             for updatedId in updatedIds {
                 guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
                 await itemControllable.update(model: model)
-                await itemControllable.didUpdate(model: model)
             }
         }
     }

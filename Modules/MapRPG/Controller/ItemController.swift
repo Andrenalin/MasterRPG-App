@@ -47,8 +47,4 @@ extension ItemController: ItemControllable {
             await cacheController?.remove(itemId: entry.id)
         }
     }
-    
-    func didUpdate(model: ModelType) async {
-    }
 }
-

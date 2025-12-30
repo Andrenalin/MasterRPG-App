@@ -274,7 +274,7 @@ extension EditController {
                 let subValue = itemController.itemOrEmpty(for: valueId)
                 guard subValue.isGroupHidden else { return }
                 Task {
-                    await itemController.delete(model: ItemRowModel(itemId: subValue.id, typeId: itemController.config.module))
+                    await itemController.delete(itemId: subValue.id)
                 }
             } else {
                 removeChild(childId: valueId)

@@ -11,11 +11,7 @@ struct FakeItemController: ItemControllable {
     var linkRegisterControllable: any LinkRegisterControllable
     
     var itemDataModel: ItemDataModel
-    
-    func didDelete(model: any ModelType) async {}
-    
-    func didUpdate(model: any ModelType) async {}
-    
+        
     @MainActor
     static let fake = FakeItemController(config: FakeModuleConfiguration(), linkRegisterControllable: FakeLinkRegisterController.fake, itemDataModel: ItemDataModel(categoryTags: [.all]))
 }

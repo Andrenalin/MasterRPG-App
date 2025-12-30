@@ -5,7 +5,8 @@ import Observation
 
 public protocol ItemControllable: Sendable  {
     associatedtype Model: ItemDataAccessable & ItemDiffComparable & ItemDuplicatable & ItemLinkRegistable & Identifiable & Equatable & Hashable & Codable & ModelType
-        
+    
+    var cacheControllable: ImageCacheControllable? { get }
     var config: ModuleConfigurable { get }
     var collectionCategory: ItemListCategory { get }
     var dataControllable: (any DataPersistenceControllable)? { get }
@@ -15,26 +16,33 @@ public protocol ItemControllable: Sendable  {
     var itemDataModel: ItemDataModel { get }
     
     func didDelete(model: ModelType) async
-    func didUpdate(model: ModelType) async
     func duplicate(model: ItemRowModel) async
-    func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async
 }
 
 // MARK: - Configuration
 public extension ItemControllable {
+    var cacheControllable: ImageCacheControllable? { nil }
     var collectionCategory: ItemListCategory { .collection }
     var fileUrlDataController: FileUrlDataController? { nil }
+}
+
+// MARK: - ImportControllable
+
+public extension ItemControllable {
+    func reset(fileUrl: FileUrl?, item: inout any ItemDataAccessable) async {
+        if let oldFileUlr = item.fileUrl {
+            await cacheControllable?.remove(itemId: oldFileUlr.fileId)
+        }
+        item.fileUrl = fileUrl
+    }
 }
 
 // MARK: - Manipulate Model
 
 public extension ItemControllable {
-    @MainActor
-    func copy(of itemId: UUID) -> Model? {
+    @MainActor func copy(of itemId: UUID) -> Model? {
         self.itemOrEmpty(for: itemId).copy()
     }
-
-    func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {}
 
     func merge(with model: ModelType) async -> ModelType? {
         guard let model = model as? Model, let current = await self.item(for: model.id) else { return model }
@@ -48,25 +56,22 @@ public extension ItemControllable {
         await itemDataModel.item(for: itemId) as? Model
     }
 
-    @MainActor
-    func itemSync(for itemId: UUID) -> Model? {
-        itemDataModel.item(for: itemId) as? Model
-    }
-
     func item(for itemId: UUID, version: Int) async -> Model? {
         let item = await self.item(for: itemId)
         guard version != 0, let item else { return item }
         return item.version == version ? item : nil
     }
 
-    @MainActor
-    func itemOrEmpty(for itemId: UUID) -> Model {
+    @MainActor func itemSync(for itemId: UUID) -> Model? {
+        itemDataModel.item(for: itemId) as? Model
+    }
+
+    @MainActor func itemOrEmpty(for itemId: UUID) -> Model {
         guard let item = self.itemSync(for: itemId) else { return Model.empty(itemId) }
         return item
     }
 
-    @MainActor
-    func isEqual(with other: ModelType) -> Bool {
+    @MainActor func isEqual(with other: ModelType) -> Bool {
         guard let other = other as? Model, let second = self.itemSync(for: other.id) else { return false }
         return second.isEqual(other: other)
     }
@@ -152,7 +157,6 @@ public extension ItemControllable {
             guard let item = try? await dataControllable?.fetch(id: itemId) as? Model else { continue }
             await setModel(with: item)
             await itemDataModel.updateTags(with: item.tags)
-            await didUpdate(model: item)
         }
         await itemDataModel.resetItems(itemIds)
     }
@@ -195,7 +199,6 @@ public extension ItemControllable {
         for item in sortedModels {
             await setModel(with: item)
             await itemDataModel.updateTags(with: item.tags)
-            await didUpdate(model: item)
             updatedItems.append(item.id)
         }
         await itemDataModel.resetItems(updatedItems)
@@ -242,26 +245,21 @@ public extension ItemControllable {
     }
     
     func delete(itemId: UUID) async {
-        await delete(model: ItemRowModel(itemId: itemId, typeId: config.module))
-    }
-
-    func delete(model: ItemRowModel) async {
-        guard let item = await self.item(for: model.itemId) else { return }
+        guard let item = await self.item(for: itemId) else { return }
         let entries = item.entries
         try? await dataControllable?.delete(id: item.id)
 
         await didDelete(model: item)
         await itemDataModel.resetModel(id: item.id)
 
-        await repairLinks(for: [model])
-        await resetUsedLink(for: model)
+        await repairLinks(for: [ItemRowModel(itemId: itemId, typeId: config.module)])
+        await resetUsedLink(for: ItemRowModel(itemId: itemId, typeId: config.module))
         for entry in entries {
             await resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: config.module))
         }
     }
 
     func didDelete(model: ModelType) async {}
-    func didUpdate(model: ModelType) async {}
     
     func name(model: ItemRowModel) async -> String {
         guard let item = await self.item(for: model.itemId) else { return "" }
@@ -298,7 +296,7 @@ public extension ItemControllable {
 
     func resetData() async {
         for id in await itemDataModel.items {
-            await delete(model: ItemRowModel(itemId: id, typeId: config.module))
+            await delete(itemId: id)
         }
     }
 

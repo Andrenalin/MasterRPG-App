@@ -16,42 +16,30 @@ struct ItemController: Sendable {
         self.collectionCategory = config.collectionCategory
 
         let fileUrlDataController = FileUrlDataController(moduleFolder: config.module.token, fileTypes: config.fileTypes, filenameExtension: config.filenameExtension, fileUrlAccess: self)
-        self.cacheController = CacheController(fileUrlDataController: fileUrlDataController)
         self.fileUrlDataController = fileUrlDataController
+        self.cacheController = CacheController(fileUrlDataController: fileUrlDataController)
     }
 
-    let config: ModuleConfigurable
     var cacheController: CacheController?
-    var fileUrlDataController: FileUrlDataController?
+    let config: ModuleConfigurable
     let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
+    var fileUrlDataController: FileUrlDataController?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
 }
 
 extension ItemController: ItemControllable {
     typealias Model = SpaceModel
-    
-    @MainActor var linkRegisterControllable: LinkRegisterControllable {
-        linkRegisterController
-    }
+
+    var cacheControllable: ImageCacheControllable? { cacheController }
+    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
     
     func didDelete(model: ModelType) async {
         guard let model = model as? Model else { return }
         await didDelete(fileUrl: model.fileUrl)
     }
     
-    func didUpdate(model: ModelType) async {
-    }
-    
-    func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {
-        guard let item = item as? SpaceModel else { return }
-        if let oldFileUlr = item.fileUrl {
-            await cacheController?.remove(itemId: oldFileUlr.fileId)
-        }
-        item.fileUrl = fileUrl
-    }
-
     public func loadableUrl(for model: ItemRowModel) async -> URL? {
         guard let fileUrl = await self.item(for: model.itemId)?.fileUrl else { return nil }
         return await fileUrlDataController?.url(for: fileUrl, action: { $0 })

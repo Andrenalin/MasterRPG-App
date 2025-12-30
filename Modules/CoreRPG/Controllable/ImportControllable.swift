@@ -196,14 +196,14 @@ private extension ImportControllable {
     }
 
     func addFile(data: Data, to item: any Observable) async throws {
-        guard let item = item as? (any ItemDataAccessable), let fileUrlDataController, var fileUrl = item.fileUrl else { return }
+        guard var item = item as? (any ItemDataAccessable), let fileUrlDataController, var fileUrl = item.fileUrl else { return }
         fileUrl.resetData(data)
         do {
             let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
-            await itemControllable.reset(fileUrl: updated, item: item)
+            await itemControllable.reset(fileUrl: updated, item: &item)
         } catch {
             await logImport(title: "Cannot save bookmark the file will be stored as data", count: 0)
-            await itemControllable.reset(fileUrl: fileUrl, item: item)
+            await itemControllable.reset(fileUrl: fileUrl, item: &item)
         }
     }
 }

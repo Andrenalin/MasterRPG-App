@@ -40,9 +40,6 @@ extension ItemController: ItemControllable {
 //        }
     }
     
-    func didUpdate(model: ModelType) async {
-    }
-
     func duplicate(itemId: UUID) async -> UUID {
         await duplicate(itemId: itemId, withCopy: true)
     }

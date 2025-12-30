@@ -29,10 +29,4 @@ extension ItemController: ItemControllable {
     @MainActor var linkRegisterControllable: LinkRegisterControllable {
         linkRegisterController
     }
-
-    func didDelete(model: ModelType) async {
-    }
-    
-    func didUpdate(model: ModelType) async {
-    }
 }

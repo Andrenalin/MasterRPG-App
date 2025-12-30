@@ -21,9 +21,9 @@ struct ItemController: Sendable {
     }
 
     let config: ModuleConfigurable
-    var fileUrlDataController: FileUrlDataController?
     let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
+    var fileUrlDataController: FileUrlDataController?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
 }
@@ -31,21 +31,11 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     typealias Model = AudioModel
     
-    @MainActor var linkRegisterControllable: LinkRegisterControllable {
-        linkRegisterController
-    }
+    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
 
     func didDelete(model: ModelType) async {
         guard let model = model as? Model else { return }
         await didDelete(fileUrl: model.fileUrl)
-    }
-    
-    func didUpdate(model: ModelType) async {
-    }
-
-    func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {
-        guard let item = item as? AudioModel else { return }
-        item.fileUrl = fileUrl
     }
 }
 

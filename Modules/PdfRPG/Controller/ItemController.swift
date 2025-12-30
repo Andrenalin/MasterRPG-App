@@ -9,10 +9,6 @@ import UniformTypeIdentifiers
 import PDFKit
 #endif
 
-//#if canImport(QuickLookThumbnailing)
-//import QuickLookThumbnailing
-//#endif
-
 struct ItemController: Sendable {
     @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.config = config
@@ -27,11 +23,11 @@ struct ItemController: Sendable {
         self.fileUrlDataController = fileUrlDataController
     }
     
-    let config: ModuleConfigurable
     var cacheController: CacheController?
-    var fileUrlDataController: FileUrlDataController?
+    let config: ModuleConfigurable
     let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
+    var fileUrlDataController: FileUrlDataController?
     let itemDataModel: ItemDataModel
     let linkRegisterController: LinkRegisterControllable
 }
@@ -39,6 +35,7 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     typealias Model = PdfModel
     
+    var cacheControllable: ImageCacheControllable? { cacheController }
     @MainActor var linkRegisterControllable: LinkRegisterControllable {
         linkRegisterController
     }
@@ -46,17 +43,6 @@ extension ItemController: ItemControllable {
     func didDelete(model: ModelType) async {
         guard let model = model as? Model else { return }
         await didDelete(fileUrl: model.fileUrl)
-    }
-    
-    func didUpdate(model: ModelType) async {
-    }
-    
-    func reset(fileUrl: FileUrl?, item: any ItemDataAccessable) async {
-        guard let item = item as? PdfModel else { return }
-        if let oldFileUlr = item.fileUrl {
-            await cacheController?.remove(itemId: oldFileUlr.fileId)
-        }
-        item.fileUrl = fileUrl
     }
 }
 
