@@ -137,6 +137,7 @@
 
     },
     "New Photo" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -219,6 +220,7 @@
       }
     },
     "Remove Photo" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

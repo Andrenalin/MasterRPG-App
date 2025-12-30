@@ -14,9 +14,6 @@ public protocol ItemControllable: Sendable  {
     
     @MainActor var linkRegisterControllable: LinkRegisterControllable { get }
     var itemDataModel: ItemDataModel { get }
-    
-    func didDelete(model: ModelType) async
-    func duplicate(model: ItemRowModel) async
 }
 
 // MARK: - Configuration
@@ -217,13 +214,6 @@ public extension ItemControllable {
         return ItemRowModel(itemId: model.id, typeId: config.module)
     }
 
-    func duplicate(model: ItemRowModel) async {
-        guard let item = await self.item(for: model.itemId) else { return }
-        var duplicate = item.duplicate()
-        duplicate.fileUrl = try? await fileUrlDataController?.duplicate(fileUrl: item.fileUrl, for: duplicate.id)
-        await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
-    }
-
     @MainActor
     func insertIntoItems(model: Model) {
         var foundIndex: Int?
@@ -247,9 +237,16 @@ public extension ItemControllable {
     func delete(itemId: UUID) async {
         guard let item = await self.item(for: itemId) else { return }
         let entries = item.entries
+        for entry in entries {
+            await cacheControllable?.remove(itemId: entry.id)
+        }
+        
         try? await dataControllable?.delete(id: item.id)
-
-        await didDelete(model: item)
+        if let fileUrlDataController, let fileUrl = item.fileUrl {
+            await cacheControllable?.remove(itemId: itemId)
+            fileUrlDataController.delete(fileUrl)
+        }
+        
         await itemDataModel.resetModel(id: item.id)
 
         await repairLinks(for: [ItemRowModel(itemId: itemId, typeId: config.module)])
@@ -258,8 +255,6 @@ public extension ItemControllable {
             await resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: config.module))
         }
     }
-
-    func didDelete(model: ModelType) async {}
     
     func name(model: ItemRowModel) async -> String {
         guard let item = await self.item(for: model.itemId) else { return "" }

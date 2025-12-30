@@ -214,7 +214,7 @@ public extension MapRootModel {
         for itemId in await itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {
-                await itemController.delete(itemId: model.id)
+                await editController.delete(itemId: model.id)
             }
         }
     }

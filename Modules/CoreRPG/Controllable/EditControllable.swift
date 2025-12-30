@@ -107,14 +107,14 @@ public extension EditControllable {
         save(updated: editModel, message: String(localized: "Changed tags").localizedString)
     }
     
-    @MainActor func reset(hidden: Bool, modelId: UUID? = nil) {
+    @MainActor func reset(hidden: Bool, modelId: UUID?) {
         guard var editModel = editModel(for: modelId ?? model.id) else { return }
         guard editModel.isGroupHiddenToggle != hidden else { return }
         editModel.isGroupHiddenToggle = hidden
         save(updated: editModel, message: String(localized: "Change to \(hidden ? "hide" : "show")").localizedString)
     }
 
-    @MainActor func reset(fileUrl: FileUrl?, modelId: UUID? = nil) {
+    @MainActor func reset(fileUrl: FileUrl?, modelId: UUID?) {
         guard var editModel = editModel(for: modelId ?? model.id) else { return }
         guard editModel.fileUrl != fileUrl else { return }
         editModel.fileUrl = fileUrl
@@ -235,9 +235,13 @@ public extension EditControllable {
     
     @MainActor func delete(itemId: UUID) {
         guard var item = editModel(for: itemId) else { return }
-        //        if let fileUrl = item.fileUrl, let fileUrlDataController = fileUrlDataController {
-        //            fileUrlDataController.delete(fileUrl)
-        //        } - file needs to be deleted if real delete comes
+        guard item.displayState != 2 else {
+            // real delete
+            Task {
+                await itemControllable.delete(itemId: itemId)
+            }
+            return
+        }
         for entry in item.entries {
             if var entryItem = editModel(for: entry.childId) {
                 if item.category == .folder {
@@ -364,7 +368,7 @@ public extension EditControllable {
         let newName = await model.name
         let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, from: oldName, to: newName)
         if let newFileUrl {
-            await reset(fileUrl: newFileUrl)
+            await reset(fileUrl: newFileUrl, modelId: model.id)
         }
     }
     
@@ -387,7 +391,7 @@ public extension EditControllable {
         await reset(fileUrl: updatedFileUrl, modelId: modelId)
     }
     
-    private func resetFile(data: Data?, modelId: UUID, path: String) async throws {
+    func resetFile(data: Data?, modelId: UUID, path: String) async throws {
         guard let itemModel = await editModel(for: modelId) else { return }
         if itemModel.fileUrl != nil {
             await resetFile(url: nil, modelId: modelId)

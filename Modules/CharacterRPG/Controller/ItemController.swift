@@ -32,31 +32,16 @@ extension ItemController: ItemControllable {
     @MainActor var linkRegisterControllable: LinkRegisterControllable {
         linkRegisterController
     }
+}
 
-    func didDelete(model: ModelType) async {
-        guard let model = model as? ValueModel else { return }
-//        for entry in model.entries {
-//            await root.editController.remove(entryId: entry.id, from: model, isDeepRemove: true)
-//        }
-    }
-    
-    func duplicate(itemId: UUID) async -> UUID {
-        await duplicate(itemId: itemId, withCopy: true)
-    }
-
-    func duplicate(itemId: UUID, withCopy: Bool) async -> UUID {
+extension ItemController {
+    func duplicate(itemId: UUID, withCopy: Bool = true) async -> UUID {
         let (duplicates, copyId, mapper) = await duplicateSubValue(id: itemId, withCopy: withCopy)
         //await root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)
         for duplicate in duplicates {
             await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
         }
         return copyId
-    }
-}
-
-extension ItemController {
-    func duplicate(model: ItemRowModel) async {
-        _ = await duplicate(itemId: model.itemId)
     }
 
     @MainActor

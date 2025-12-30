@@ -136,6 +136,7 @@
       }
     },
     "New Pdf" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -182,6 +183,7 @@
       }
     },
     "Remove Pdf" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

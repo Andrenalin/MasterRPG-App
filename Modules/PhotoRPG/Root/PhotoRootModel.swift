@@ -165,11 +165,9 @@ public extension PhotoRootModel {
     func addNewPhoto(data: Data, name: String, text: String) async -> (UUID, String) {
         let itemRowModel = await itemController.addNew(type: nil)
         await editController.setCurrentItem(to: ItemRowTreeModel(id: UUID(), model: itemRowModel))
-        await editController.model.name = name
-        await editController.model.description = text
-        
-        await editController.resetPhoto(data: data)
-        await editController.save(with: "Add new Photo from Sharing".localizedString)
+        await editController.reset(name: name, modelId: itemRowModel.itemId)
+        await editController.reset(description: text, modelId: itemRowModel.itemId)
+        try? await editController.resetFile(data: data, modelId: itemRowModel.itemId, path: "")
         
         return await (itemRowModel.itemId, editController.model.url(linkNumber: 0))
     }
@@ -183,7 +181,7 @@ public extension PhotoRootModel {
             guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
             do {
                 if let newFileUrl = try await fileUrlDataController?.move(fileUrl: fileUrl, name: item.name, category: item.category.title) {
-                    await editController.reset(fileUrl: newFileUrl, for: itemId)
+                    await editController.reset(fileUrl: newFileUrl, modelId: itemId)
                 }
             } catch {
                 print(error)
@@ -202,7 +200,7 @@ public extension PhotoRootModel {
         for itemId in await itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {
-                await itemController.delete(itemId: model.id)
+                await editController.delete(itemId: model.id)
             }
         }
     }

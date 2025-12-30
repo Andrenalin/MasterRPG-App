@@ -616,6 +616,7 @@
       }
     },
     "New Space" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -708,6 +709,7 @@
       }
     },
     "Remove Space" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

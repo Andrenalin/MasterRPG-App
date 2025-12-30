@@ -32,11 +32,6 @@ extension ItemController: ItemControllable {
     typealias Model = AudioModel
     
     @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
-
-    func didDelete(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        await didDelete(fileUrl: model.fileUrl)
-    }
 }
 
 extension ItemController: FileUrlAccessible {

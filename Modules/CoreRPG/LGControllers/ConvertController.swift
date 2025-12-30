@@ -83,7 +83,7 @@ public struct ConvertController: Sendable {
             editController.reset(category: .entry, modelId: model.id)
             editController.reset(tags: [addedTags] + model.tags, modelId: model.id)
             if model.parentId == nil && model.displayState != 0 {
-                editController.reset(hidden: false)
+                editController.reset(hidden: false, modelId: model.id)
             }
         }
         

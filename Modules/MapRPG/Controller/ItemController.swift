@@ -40,11 +40,4 @@ extension ItemController: ItemControllable {
     var linkRegisterControllable: LinkRegisterControllable {
         linkRegisterController
     }
-    
-    func didDelete(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        for entry in model.entries {
-            await cacheController?.remove(itemId: entry.id)
-        }
-    }
 }

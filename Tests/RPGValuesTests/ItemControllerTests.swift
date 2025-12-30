@@ -31,7 +31,7 @@ struct ItemControllerTests {
             #expect(subitem.parentId == originalId)
         }
 
-        await sut.duplicate(model: ItemRowModel(itemId: originalId, typeId: .value))
+        let _ = await sut.duplicate(itemId: originalId) 
         await #expect(root.itemController.itemDataModel.items.count == 30)
 
         let newItemIds = await root.itemController.itemDataModel.items.filter { !beforeItemIds.contains($0) }

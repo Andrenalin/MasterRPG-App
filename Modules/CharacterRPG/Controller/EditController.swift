@@ -261,8 +261,7 @@ extension EditController {
     }
 
     // deep delete after didDelete
-    @MainActor
-    func remove(entryId: UUID, from item: ValueModel, isDeepRemove: Bool = false) {
+    @MainActor func remove(entryId: UUID, from item: ValueModel, isDeepRemove: Bool = false) {
         guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }
         let entry = item.entries[index]
         item.entries.remove(at: index)
@@ -275,6 +274,9 @@ extension EditController {
                 guard subValue.isGroupHidden else { return }
                 Task {
                     await itemController.delete(itemId: subValue.id)
+                    for entry in model.entries {
+                        root.editController.remove(entryId: entry.id, from: model, isDeepRemove: true)
+                    }
                 }
             } else {
                 removeChild(childId: valueId)
@@ -464,9 +466,13 @@ extension EditController {
     private func ungroup(from entryId: UUID) async {
         let currentItem = model
         guard let groupIndex = model.entries.firstIndex(where: { $0.id == entryId }), let valueId = currentItem[entryId].valueId else { return }
-        let groupEntries = itemController.itemOrEmpty(for: valueId).entries
+        let valueGroupped = itemController.itemOrEmpty(for: valueId)
+        let groupEntries = valueGroupped.entries
         currentItem.entries.remove(at: groupIndex)
         await itemController.delete(itemId: valueId)
+//        for entry in groupEntries {
+//            remove(entryId: entry.id, from: valueGroupped, isDeepRemove: true)
+//        }
         groupEntries.reversed().forEach {
             currentItem.entries.insert($0, at: groupIndex)
         }
@@ -525,7 +531,11 @@ extension EditController {
         if let index = item.entries.firstIndex(where: { $0.id == entryId }) {
             item.entries.remove(at: index)
         }
+        guard let editModel = editModel(for: groupId) else { return }
         await itemController.delete(itemId: groupId)
+        for entry in editModel.entries {
+            remove(entryId: entry.id, from: editModel, isDeepRemove: true)
+        }
         if itemId == editorModel.currentItemId {
             save(with: String(localized: "Ungroup").localizedString)
         } else {

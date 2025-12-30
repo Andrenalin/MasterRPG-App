@@ -35,11 +35,6 @@ extension ItemController: ItemControllable {
     var cacheControllable: ImageCacheControllable? { cacheController }
     @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
     
-    func didDelete(model: ModelType) async {
-        guard let model = model as? Model else { return }
-        await didDelete(fileUrl: model.fileUrl)
-    }
-    
     public func loadableUrl(for model: ItemRowModel) async -> URL? {
         guard let fileUrl = await self.item(for: model.itemId)?.fileUrl else { return nil }
         return await fileUrlDataController?.url(for: fileUrl, action: { $0 })
@@ -54,13 +49,5 @@ extension ItemController: FileUrlAccessible {
         }
         item.fileUrl = fileUrl
         await replace(model: item, isInsert: false, shouldRepairLinks: true)
-    }
-}
-
-extension ItemController {
-    func didDelete(fileUrl: FileUrl?) async {
-        guard let fileUrl else { return }
-        await cacheController?.remove(itemId: fileUrl.fileId)
-        fileUrlDataController?.delete(fileUrl)
     }
 }

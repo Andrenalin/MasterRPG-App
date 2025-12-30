@@ -145,7 +145,7 @@ extension PdfRootModel {
                 let item = await itemController.itemOrEmpty(for: itemId)
                 guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
                 if let newFileUrl = try? await fileUrlDataController?.move(fileUrl: fileUrl, name: item.name, category: item.category.title) {
-                    await editController.reset(fileUrl: newFileUrl, for: itemId)
+                    await editController.reset(fileUrl: newFileUrl, modelId: itemId)
                 }
             }
         }
@@ -162,7 +162,7 @@ extension PdfRootModel {
         for itemId in await itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {
-                await itemController.delete(itemId: model.id)
+                await editController.delete(itemId: model.id)
             }
         }
     }
