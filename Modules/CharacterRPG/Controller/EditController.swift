@@ -151,7 +151,7 @@ extension EditController {
     }
     
     @MainActor public func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {
-        guard var item = editModel(for: itemId) else { return "" }
+        guard let item = editModel(for: itemId) else { return "" }
         return root.linkController.linkText(model: item, entryId: entry.id)
     }
 }
@@ -163,8 +163,8 @@ extension EditController {
         _ = await itemController.duplicate(itemId: item.id)
     }
     
-    @MainActor func add(selection: [WindowItemSelection], modelId: UUID) {
-        guard let editModel = editModel(for: modelId) else { return }
+    @MainActor func add(selection: [WindowItemSelection], itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
         let photos = Set(editModel.photos)
         var newPhotos = Set(selection.map { $0.itemId })
         newPhotos.subtract(photos)
@@ -173,8 +173,8 @@ extension EditController {
         save(updated: editModel, message: String(localized: "Change Photo").localizedString)
     }
     
-    @MainActor func add(diceId: UUID?, modelId: UUID) {
-        guard let editModel = editModel(for: modelId) else { return }
+    @MainActor func add(diceId: UUID?, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
         editModel.diceId = diceId
         save(updated: editModel, message: String(localized: "Change Dice").localizedString)
         //root.gameController.resetGameDiceId(itemId: model.id, entryId: entryId)
@@ -535,8 +535,8 @@ extension EditController {
 
 extension EditController {
     @MainActor
-    func merge(modelId: UUID, entries: [ValueEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
-        guard let item = editModel(for: modelId) else { return [] }
+    func merge(itemId: UUID, entries: [ValueEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+        guard let item = editModel(for: itemId) else { return [] }
         var newEntries = entries.map { entry in
             var foundEntry = item.entries.first(where: { $0.name == entry.name })
             foundEntry?.value = entry.value

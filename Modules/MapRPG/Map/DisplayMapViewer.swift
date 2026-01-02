@@ -29,7 +29,7 @@ struct DisplayMapViewer: View {
     }
 
     private var map: MapModel {
-        var map = root.itemController.itemOrEmpty(for: itemId)
+        let map = root.itemController.itemOrEmpty(for: itemId)
         map.entries = map.entries.filter { $0.id == entryId }
         return map
     }

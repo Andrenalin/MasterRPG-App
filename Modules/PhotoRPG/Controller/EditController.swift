@@ -36,8 +36,8 @@ extension EditController: EditControllable {
 }
 
 extension EditController {
-    func convert(modelId: UUID) async throws {
-        guard var editModel = await editModel(for: modelId) else  { return }
+    func convert(itemId: UUID) async throws {
+        guard let editModel = await editModel(for: itemId) else  { return }
         await cacheController?.photoId(for: editModel.id, item: editModel, shouldDownload: true)
         guard let image = await cacheController?.photo(for: editModel.id), let data = image.jpegData(compressionQuality: 0.9), let fileUrl = editModel.fileUrl else { return }
 
@@ -45,7 +45,7 @@ extension EditController {
         dataUrl.convertFile(data, fileExtension: itemController.config.filenameExtension)
 
         let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: editModel.id, unconvertedFileUrl: dataUrl, pathExtension: itemController.config.filenameExtension)
-        await reset(fileUrl: newFileUrl, modelId: editModel.id)
+        await reset(fileUrl: newFileUrl, itemId: editModel.id)
     }
     
     func loadImage(cacheType: CacheItemListModel.CacheType, item: Model, itemId: UUID, fileUrl: FileUrl?, reset: Bool = false) async -> AKImage? {
@@ -70,13 +70,13 @@ extension EditController {
         return cacheType == .image ? result : newThumbnail
     }
         
-    func resetPhoto(image: AKImage?, modelId: UUID) async {
+    func resetPhoto(image: AKImage?, itemId: UUID) async {
         let data = image?.jpegData(compressionQuality: 0.9)
-        try? await resetFile(data: data, modelId: modelId, path: "")
+        try? await resetFile(data: data, itemId: itemId, path: "")
     }
     
-    @MainActor func isNotJpegPhoto(modelId: UUID) -> Bool {
-        guard let editModel = editModel(for: modelId) else  { return false }
+    @MainActor func isNotJpegPhoto(itemId: UUID) -> Bool {
+        guard let editModel = editModel(for: itemId) else  { return false }
         guard let fileUrl = editModel.fileUrl else { return false }
         return !(fileUrl.fileExtension == itemController.config.filenameExtension || fileUrl.fileExtension == "jpeg")
     }

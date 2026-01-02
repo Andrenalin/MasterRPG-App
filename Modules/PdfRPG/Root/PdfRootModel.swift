@@ -145,7 +145,7 @@ extension PdfRootModel {
                 let item = await itemController.itemOrEmpty(for: itemId)
                 guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
                 if let newFileUrl = try? await fileUrlDataController?.move(fileUrl: fileUrl, name: item.name, category: item.category.title) {
-                    await editController.reset(fileUrl: newFileUrl, modelId: itemId)
+                    await editController.reset(fileUrl: newFileUrl, itemId: itemId)
                 }
             }
         }

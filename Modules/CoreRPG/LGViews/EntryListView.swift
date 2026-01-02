@@ -52,7 +52,7 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
                 editController.remove(entryIndexSet: indexSet)
             }
             .onMove { indexSet, index in
-                editController.move(entryFrom: indexSet, to: index, modelId: editController.model.id)
+                editController.move(entryFrom: indexSet, to: index, itemId: editController.model.id)
             }
         } header: {
             Text(headerTitle)

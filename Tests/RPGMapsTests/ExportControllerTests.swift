@@ -24,12 +24,12 @@ struct ExportControllerTests {
         try #require(ids.ids[.map] != nil)
         #expect(ids.ids[.map]!.isEmpty)
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
         ids = await sut.exportingAll()
         try #require(ids.ids[.map] != nil)
         #expect(ids.ids[.map]! == [itemId])
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let entry = await MapEntryModel(id: UUID(), name: "Nothing", content: root.linkController.generateLink(itemId: newId), coordinates: [])
         await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
@@ -44,9 +44,9 @@ struct ExportControllerTests {
 
         let sut = root.exportController
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let url = await root.itemController.itemOrEmpty(for: newId).url(linkNumber: 0)
         let entry = MapEntryModel(id: UUID(), name: "Nothing", content: "\(url)", coordinates: [])
         await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
@@ -58,7 +58,7 @@ struct ExportControllerTests {
         #expect(mapIds!.contains(itemId))
         #expect(mapIds!.contains(newId))
 
-        let notConnected = await root.itemController.addNew(type: nil).itemId
+        let notConnected = await root.itemController.addNew(type: .item)
         ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .map))
         mapIds = ids.ids[.map]
         try #require(mapIds != nil)

@@ -66,13 +66,13 @@ public extension FolderListControllable {
         listModel.originalItems = self.originalItems()
         resetFilter()
         
-        if let addedItem = listModel.item(modelId: listModel.addedModelId) {
+        if let addedItem = listModel.item(itemId: listModel.addedModelId) {
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(50))
                 listModel.listSelection = Set(arrayLiteral: addedItem.id)
             }
             listModel.addedModelId = nil
-        } else if let newSelected = listModel.item(modelId: previousSelectedId) {
+        } else if let newSelected = listModel.item(itemId: previousSelectedId) {
             listModel.listSelection = Set(arrayLiteral: newSelected.id)
             listModel.selected = newSelected.id
             

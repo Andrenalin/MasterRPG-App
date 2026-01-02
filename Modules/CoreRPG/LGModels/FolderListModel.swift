@@ -93,9 +93,9 @@ extension FolderListModel {
         displayedItems.remove(atOffsets: offsets)
     }
     
-    func item(modelId: UUID?) -> ListItemModel? {
-        guard let modelId else { return nil }
-        return displayedItems.first(where: { $0.model.id == modelId })
+    func item(itemId: UUID?) -> ListItemModel? {
+        guard let itemId else { return nil }
+        return displayedItems.first(where: { $0.model.id == itemId })
     }
 }
 

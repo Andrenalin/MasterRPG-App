@@ -36,7 +36,7 @@ public protocol EntryDataEditable: EditControllable {
     // MARK: - QuickEntryEditor
     
     @MainActor func create(name: String, content: String) -> Model.Entry
-    @MainActor func merge(modelId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
+    @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
     @MainActor func remove(entryId: UUID)
     @MainActor func remove(entryId: UUID, shouldSave: Bool)
 }
@@ -96,15 +96,15 @@ public extension EntryDataEditable {
     }
     
     @MainActor
-    func addNewEntry(modelId: UUID) -> UUID {
+    func addNewEntry(itemId: UUID) -> UUID {
         let entry = Model.Entry.empty
-        add(entry: entry, modelId: modelId)
+        add(entry: entry, itemId: itemId)
         return entry.id
     }
     
     @MainActor
-    func add(entry: Model.Entry, modelId: UUID) {
-        guard let editModel = editModel(for: modelId) else { return }
+    func add(entry: Model.Entry, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
         add(entry: entry, into: editModel)
     }
     
@@ -194,8 +194,8 @@ public extension EntryDataEditable {
     }
     
     @MainActor
-    func move(entryFrom: IndexSet, to: Array<UUID>.Index, modelId: UUID) {
-        guard let editModel = editModel(for: modelId) else { return }
+    func move(entryFrom: IndexSet, to: Array<UUID>.Index, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
         var destination = to
         if destination >= editModel.entries.count {
             destination = editModel.entries.count - 1

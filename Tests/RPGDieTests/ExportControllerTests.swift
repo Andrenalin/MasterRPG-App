@@ -17,12 +17,12 @@ struct ExportControllerTests {
         try #require(ids.ids[.dice] != nil)
         #expect(ids.ids[.dice]!.isEmpty)
         
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
         ids = await sut.exportingAll()
         try #require(ids.ids[.dice] != nil)
         #expect(ids.ids[.dice]! == [itemId])
         
-        let _ = await root.itemController.addNew(type: nil).itemId
+        let _ = await root.itemController.addNew(type: .item)
         ids = await sut.exportingAll()
         try #require(ids.ids[.dice] != nil)
         #expect(ids.ids[.dice]!.count == 2)
@@ -34,9 +34,9 @@ struct ExportControllerTests {
         
         let sut = root.exportController
         
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         var ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .dice))
         var diceIds = ids.ids[.dice]
         try #require(diceIds != nil)
@@ -44,7 +44,7 @@ struct ExportControllerTests {
         #expect(diceIds!.contains(itemId))
         #expect(!diceIds!.contains(newId))
 
-        let notConnected = await root.itemController.addNew(type: nil).itemId
+        let notConnected = await root.itemController.addNew(type: .item)
         ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .dice))
         diceIds = ids.ids[.dice]
         try #require(diceIds != nil)

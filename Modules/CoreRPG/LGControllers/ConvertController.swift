@@ -41,7 +41,7 @@ public struct ConvertController: Sendable {
                 
                 if folderId == nil, let newModel = await editController.addNew(type: .folder) {
                     // If not found, create
-                    editController.reset(name: folderName, modelId: newModel.id)
+                    editController.reset(name: folderName, itemId: newModel.id)
                     editController.addItem(itemId: newModel.id, parentId: currentParentId)
                     folderId = newModel.id
                 }
@@ -55,8 +55,8 @@ public struct ConvertController: Sendable {
             // If we found/created folders, add the photo to the deepest one
             if let folderModel = currentFolderModel {
                 let category = model.category
-                editController.reset(category: .entry, modelId: model.id)
-                editController.reset(tags: [category.title] + model.tags, modelId: model.id)
+                editController.reset(category: .entry, itemId: model.id)
+                editController.reset(tags: [category.title] + model.tags, itemId: model.id)
                 editController.addItem(itemId: model.id, parentId: folderModel.id)
             }
         }
@@ -80,10 +80,10 @@ public struct ConvertController: Sendable {
             categoryCounter[model.category, default: []] += [model.id]
             
             let addedTags = model.category.title
-            editController.reset(category: .entry, modelId: model.id)
-            editController.reset(tags: [addedTags] + model.tags, modelId: model.id)
+            editController.reset(category: .entry, itemId: model.id)
+            editController.reset(tags: [addedTags] + model.tags, itemId: model.id)
             if model.parentId == nil && model.displayState != 0 {
-                editController.reset(hidden: false, modelId: model.id)
+                editController.reset(hidden: false, itemId: model.id)
             }
         }
         
@@ -106,14 +106,14 @@ public struct ConvertController: Sendable {
             
             if folderId == nil, let newModel = await editController.addNew(type: .folder) {
                 // If not found, create
-                editController.reset(name: folderName, modelId: newModel.id)
+                editController.reset(name: folderName, itemId: newModel.id)
                 folderId = newModel.id
             }
             
             if let folderId {
                 if let currentFolderModel = itemController.itemSync(for: folderId) {
-                    for modelId in models {
-                        editController.addItem(itemId: modelId, parentId: currentFolderModel.id)
+                    for itemId in models {
+                        editController.addItem(itemId: itemId, parentId: currentFolderModel.id)
                     }
                 }
             }
@@ -139,13 +139,13 @@ public struct ConvertController: Sendable {
                 
             if collectionId == nil, let newModel = await editController.addNew(type: .collection) {
                     // If not found, create
-                editController.reset(name: tabName, modelId: newModel.id)
+                editController.reset(name: tabName, itemId: newModel.id)
                 collectionId = newModel.id
             }
 
             if let collectionId, let currentCollectionModel = itemController.itemSync(for: collectionId) {
-                for modelId in tagCounter[tag, default: []] {
-                    editController.addItem(itemId: modelId, parentId: currentCollectionModel.id)
+                for itemId in tagCounter[tag, default: []] {
+                    editController.addItem(itemId: itemId, parentId: currentCollectionModel.id)
                 }
             }
         }

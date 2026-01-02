@@ -17,7 +17,7 @@ struct LinkControllerTests {
         let root = try await MockRoot.importTestData()
         let sut = root.linkController
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
         let item = await root.itemController.item(for: itemId)?.copy()
         #expect(nil != item)
         let entryId = UUID()

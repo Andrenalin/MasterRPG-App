@@ -283,7 +283,7 @@ private extension EditToolBarViewModifier {
     func resetSelectedIndex(shouldIncrease: Bool) {
         guard let mapModel = model.mapModel else { return }
         if shouldIncrease && !canIncrease {
-            let entryId = editController.addNewEntry(modelId: mapModel.id)
+            let entryId = editController.addNewEntry(itemId: mapModel.id)
             withAnimation { editController.editorModel.currentEntryId = entryId }
             return
         }

@@ -39,8 +39,8 @@ extension EditController: EditControllable {
 // MARK: - Module Editor
 
 extension EditController {
-    @MainActor func add(photoId: UUID?, modelId: UUID) {
-        guard var editModel = editModel(for: modelId) else { return }
+    @MainActor func add(photoId: UUID?, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
         editModel.photoId = photoId
         save(updated: editModel, message: String(localized: "Change Photo").localizedString)
     }

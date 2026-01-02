@@ -18,19 +18,19 @@ struct EditControllerTests {
         let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 3)
         let sut = root.editController
 
-        let itemRowModel = await root.itemController.addNew(type: nil)
+        let itemId = await root.itemController.addNew(type: .item)
         
         let entryId = UUID()
         let entry = MapEntryModel(id: entryId, name: "Name Eingang und", content: "Was ist in 7a im Wurzelnest Ebene 1 und 11 Zugang aus Wurzelnest Ebene 2", coordinates: [])
-        await sut.add(entry: entry, into: itemRowModel.itemId)
+        await sut.add(entry: entry, into: itemId)
         
-        var result = await sut.scan(itemId: itemRowModel.itemId, with: nil, module: .map, caseInsensitive: true, words: false)
+        var result = await sut.scan(itemId: itemId, with: nil, module: .map, caseInsensitive: true, words: false)
         #expect(result.count == 1)
         var updatedEntry = result[0]
         #expect(updatedEntry.name == "Name Eingang und")
         #expect(updatedEntry.content == "Was ist in 7a im [Wurzelnest Ebene 1](RPG://MAPS/0/75E5264D-CE13-40F8-8C0B-091B0549701E) und 11 Zugang aus [Wurzelnest Ebene 2](RPG://MAPS/0/09C70ABC-93B1-4CC5-98A1-9810B018D18D)")
 
-        let item = await root.itemController.itemOrEmpty(for: itemRowModel.itemId).copy()
+        let item = await root.itemController.itemOrEmpty(for: itemId).copy()
         item.entries = [updatedEntry]
         await root.itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
 
@@ -43,7 +43,7 @@ struct EditControllerTests {
         }
         try #require(nil != scanId)
 
-        result = await sut.scan(itemId: itemRowModel.itemId, with: [scanId!], module: .map, caseInsensitive: true, words: false)
+        result = await sut.scan(itemId: itemId, with: [scanId!], module: .map, caseInsensitive: true, words: false)
         #expect(result.count == 1)
         updatedEntry = result[0]
 
@@ -53,26 +53,30 @@ struct EditControllerTests {
 
     @Test func addEntry() async throws {
         let root = try await MockRoot.importTestData()
+        let itemId = await root.itemController.itemDataModel.items[0]
+        let item = await root.itemController.itemOrEmpty(for: itemId)
+        
         let sut = root.editController
+        await sut.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: .map))
+        
+        let entries = item.entries
+        #expect(item.entries.count == 13)
 
-        await sut.setCurrentItem(to: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], typeId: .map))
-        let entries = await sut.model.entries
-        await #expect(sut.model.entries.count == 13)
-
-        let isHex = await sut.toggleHexMap()
+        let modifiedMap = item.copy()
+        let isHex = await sut.toggleHexMap(for: modifiedMap)
         #expect(isHex)
-        await #expect(sut.editEntries.count == 13)
-        await #expect(sut.editEntries == entries)
-        await #expect(sut.model.entries.count == 130)
+        #expect(sut.editEntries(for: item).count == 13)
+        #expect(sut.editEntries(for: item) == entries)
+        #expect(item.entries.count == 130)
 
         let entryId = UUID()
         let entry = MapEntryModel(id: entryId, name: "Name Eingang", content: "Was ist in 7a", coordinates: [])
-        await sut.add(entry: entry, into: sut.model.id)
+        await sut.add(entry: entry, into: item.id)
 
-        await #expect(sut.model.entries.count == 131)
-        await #expect(sut.model.entries[13].id == entryId)
-        await #expect(sut.model.entries[13].name == "Name Eingang")
-        await #expect(sut.model.entries[13].content == "Was ist in 7a")
+        #expect(item.entries.count == 131)
+        #expect(item.entries[13].id == entryId)
+        #expect(item.entries[13].name == "Name Eingang")
+        #expect(item.entries[13].content == "Was ist in 7a")
     }
 }
 #endif

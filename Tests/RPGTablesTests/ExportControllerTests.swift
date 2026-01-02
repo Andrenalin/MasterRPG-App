@@ -19,12 +19,12 @@ struct ExportControllerTests {
         try #require(ids.ids[.table] != nil)
         #expect(ids.ids[.table]!.isEmpty)
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
         ids = await sut.exportingAll()
         try #require(ids.ids[.table] != nil)
         #expect(ids.ids[.table]! == [itemId])
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let entry = await TableEntryModel(id: UUID(), name: "Nothing", content: root.linkController.generateLink(itemId: newId))
         await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
@@ -40,9 +40,9 @@ struct ExportControllerTests {
 
         let sut = root.exportController
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let url = await root.itemController.itemOrEmpty(for: newId).url(linkNumber: 0)
 
         let entry = TableEntryModel(id: UUID(), name: "Nothing", content: "Some text: \(url)")
@@ -55,7 +55,7 @@ struct ExportControllerTests {
         #expect(tableIds!.contains(itemId))
         #expect(tableIds!.contains(newId))
 
-        let notConnected = await root.itemController.addNew(type: nil).itemId
+        let notConnected = await root.itemController.addNew(type: .item)
         ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .table))
         tableIds = ids.ids[.table]
         try #require(tableIds != nil)

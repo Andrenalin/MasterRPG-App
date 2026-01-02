@@ -68,7 +68,7 @@ private extension DetailListView {
     @ViewBuilder var detailEditorView: some View {
         root.diceRoot.viewController.dropChooseView(model: root.editController.tableEditModel.selectionDice)
             .onChange(of: root.editController.tableEditModel.selectionDice.selection) {
-                withAnimation { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, modelId: model.id) }
+                withAnimation { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, itemId: model.id) }
             }
             .onChange(of: model.diceId, initial: true) {
                 withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId) }
@@ -97,7 +97,7 @@ private extension DetailListView {
                 Button {
                     withAnimation {
                         root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
-                        let entryId = root.editController.addNewEntry(modelId: model.id)
+                        let entryId = root.editController.addNewEntry(itemId: model.id)
                         root.editController.editorModel.currentEntryId = entryId
                         Task { @MainActor in
                             try? await Task.sleep(for: .seconds(0.25))

@@ -79,7 +79,7 @@ private extension DetailListView {
     @ViewBuilder var detailEditorView: some View {
         root.diceRoot.viewController.dropChooseView(model: root.editController.valueEditModel.selectionDice)
             .onChange(of: root.editController.valueEditModel.selectionDice.selection) {
-                withAnimation { root.editController.add(diceId: root.editController.valueEditModel.selectionDice.itemId, modelId: model.id) }
+                withAnimation { root.editController.add(diceId: root.editController.valueEditModel.selectionDice.itemId, itemId: model.id) }
             }
             .onChange(of: model.diceId, initial: true) {
                 withAnimation { root.editController.valueEditModel.selectionDice.resetSelection(itemId: model.diceId) }
@@ -87,7 +87,7 @@ private extension DetailListView {
 
         root.photoRoot.viewController.carouselPhotos(root: root.photoRoot, photoSelection: root.editController.valueEditModel.selectionPhoto)
             .onChange(of: root.editController.valueEditModel.selectionPhoto.selection) {
-                withAnimation { root.editController.add(selection: root.editController.valueEditModel.selectionPhoto.selection, modelId: model.id) }
+                withAnimation { root.editController.add(selection: root.editController.valueEditModel.selectionPhoto.selection, itemId: model.id) }
             }
             .onChange(of: model.photos, initial: true) {
                 withAnimation { root.editController.valueEditModel.selectionPhoto.resetSelection(selectionIds: model.photos) }
@@ -115,7 +115,7 @@ private extension DetailListView {
                 Button {
                     withAnimation {
                         root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
-                        let entryId = root.editController.addNewEntry(modelId: model.id)
+                        let entryId = root.editController.addNewEntry(itemId: model.id)
                         root.editController.editorModel.currentEntryId = entryId
                         Task { @MainActor in
                             try? await Task.sleep(for: .seconds(0.25))

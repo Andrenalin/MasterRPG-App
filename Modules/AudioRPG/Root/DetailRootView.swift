@@ -74,7 +74,7 @@ struct DetailListView: View {
     func fileAndPlayerView(model: AudioModel) -> some View {
         HStack {
             HStack {
-                FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], modelId: model.id)
+                FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], itemId: model.id)
                 
                 Text(model.url?.path(percentEncoded: false) ?? "No file is set")
                     .frame(maxWidth: .infinity, alignment: .leading)

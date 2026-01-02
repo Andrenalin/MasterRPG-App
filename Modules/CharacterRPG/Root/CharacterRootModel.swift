@@ -192,7 +192,7 @@ extension CharacterRootModel {
             let entry = model.entries.first {
                 $0.diceId != nil
             }
-            await editController.add(diceId: entry?.diceId, modelId: model.id)
+            await editController.add(diceId: entry?.diceId, itemId: model.id)
         }
     }
 }
@@ -200,10 +200,10 @@ extension CharacterRootModel {
 public extension CharacterRootModel {
     @MainActor
     func addNewValue(name: String, text: String, photoIds: [UUID]) async {
-        let itemRowModel = await itemController.addNew(type: nil)
-        editController.reset(name: name, modelId: itemRowModel.itemId)
-        editController.reset(description: text, modelId: itemRowModel.itemId)
-        //editController.add(photoId: photoId, modelId: itemRowModel.itemId)
+        let itemId = await itemController.addNew(type: .item)
+        editController.reset(name: name, itemId: itemId)
+        editController.reset(description: text, itemId: itemId)
+        //editController.add(photoId: photoId, itemId: itemId)
     }
 
     @MainActor

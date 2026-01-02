@@ -140,10 +140,10 @@ struct InlineImporterView: View, Equatable {
 #if !os(tvOS)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: root.config.fileTypes) { result in
             guard let url = try? result.get() else { return }
-            root.editController.resetFile(url: url, modelId: itemId)
+            root.editController.resetFile(url: url, itemId: itemId)
         }
         .imagePlaygroundSheet(isPresented: $showImagePlayground, concept: "Create a protrait of a fanatsy character") { url in
-            root.editController.resetFile(url: url, modelId: itemId)
+            root.editController.resetFile(url: url, itemId: itemId)
         }
         .photosPicker(isPresented: $showLibrary, selection: $selectedItem, matching: .images, photoLibrary: .shared())
         .onChange(of: selectedItem) {
@@ -166,7 +166,7 @@ struct InlineImporterView: View, Equatable {
     }
     
     private func update(id: UUID, image: AKImage?) async {
-        await root.editController.resetPhoto(image: image, modelId: id)
+        await root.editController.resetPhoto(image: image, itemId: id)
     }
     
     private func button(type: PhotoImporterButtonType) -> some View {

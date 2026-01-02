@@ -30,7 +30,7 @@ public struct CarouselItemView<Content: View>: View {
                         itemView(itemId: item.id, selectedItemId: item.id)
                             .overlay(alignment: .topTrailing) {
                                 Button {
-                                    withAnimation { root.editControllable.removeGroup(childId: item.id) }
+                                    withAnimation { root.editControllable.removeGroup(itemId: model.id, childId: item.id) }
                                 } label: {
                                     Image(systemName: "minus")
                                         .foregroundStyle(.white)
@@ -106,7 +106,7 @@ private extension CarouselItemView {
     }
     
     func linkHandler(name: String, itemId: UUID, entryId: UUID?) {
-        withAnimation { root.editControllable.addGroup(childId: itemId) }
+        withAnimation { root.editControllable.addGroup(itemId: model.id, childId: itemId) }
     }
     
     func itemView(itemId: UUID, selectedItemId: UUID?) -> some View {

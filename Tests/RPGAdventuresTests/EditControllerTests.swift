@@ -20,19 +20,19 @@ struct EditControllerTests {
         let root = try await MockRoot.importTestData()
         let sut = root.editController
 
-        let itemRowModel = await root.itemController.addNew(type: nil)
+        let itemId = await root.itemController.addNew(type: .item)
         
         let entryId = UUID()
         let entry = AdventureEntryModel(id: entryId, name: "Name Eingang und", content: "Bei der Untersuchung des Wurzelnestes findet ihr die Verbotene Türe und die 1. Kinder der Ratten erden in der Einleitung erwähnt")
-        await sut.add(entry: entry, into: itemRowModel.itemId)
+        await sut.add(entry: entry, into: itemId)
         
-        var result = await sut.scan(itemId: itemRowModel.itemId, with: nil, module: .adventure, caseInsensitive: true, words: false)
+        var result = await sut.scan(itemId: itemId, with: nil, module: .adventure, caseInsensitive: true, words: false)
         #expect(result.count == 1)
         var updatedEntry = result[0]
         #expect(updatedEntry.name == "Name Eingang und")
         #expect(updatedEntry.content == "Bei der [Untersuchung des Wurzelnestes](RPG://ADVENTURES/0/3DCA977D-00C2-4556-97D2-BFF83A05120E) findet ihr die Verbotene Türe und die [1. Kinder der Ratten](RPG://ADVENTURES/0/EC2C95BE-70CD-436F-B8F7-B4F962A70362) erden in der Einleitung erwähnt")
 
-        let item = await root.itemController.itemOrEmpty(for: itemRowModel.itemId).copy()
+        let item = await root.itemController.itemOrEmpty(for: itemId).copy()
         item.entries = [updatedEntry]
         await root.itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
         
@@ -45,7 +45,7 @@ struct EditControllerTests {
         }
         try #require(nil != scanId)
         
-        result = await sut.scan(itemId: itemRowModel.itemId, with: [scanId!], module: .adventure, caseInsensitive: true, words: false)
+        result = await sut.scan(itemId: itemId, with: [scanId!], module: .adventure, caseInsensitive: true, words: false)
         #expect(result.count == 1)
         updatedEntry = result[0]
 
@@ -56,69 +56,45 @@ struct EditControllerTests {
     @Test func mergeEntries() async throws {
         let root = try await MockRoot.importTestData()
         let sut = root.editController
+        let itemId = await root.itemController.itemDataModel.items[0]
 
-        await sut.setCurrentItem(to: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], typeId: .adventure))
-        let item = await sut.model.copy()
+        await sut.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: .adventure))
+        let item = await root.itemController.itemOrEmpty(for: itemId).copy()
         let originalEntries = item.entries
         
         item.entries[0].content = "New Content"
-        var result = await sut.merge(entries: item.entries, recoverEntries: nil)
+        var result = await sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
         #expect(result.isEmpty)
+        
+        let savedItem = await root.itemController.itemOrEmpty(for: itemId)
 
-        await #expect(sut.model.entries[0].id == originalEntries[0].id)
-        await #expect(sut.model.entries[0].content == "New Content")
+        #expect(savedItem.entries[0].id == originalEntries[0].id)
+        #expect(savedItem.entries[0].content == "New Content")
         
         let newEntry = AdventureEntryModel(id: UUID(), name: "Newbee", content: "Super")
         item.entries.append(newEntry)
-        result = await sut.merge(entries: item.entries, recoverEntries: nil)
+        result = await sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
         #expect(result.isEmpty)
 
         for (index, entry) in originalEntries.enumerated() {
-            await #expect(sut.model.entries[index].id == entry.id)
+            #expect(savedItem.entries[index].id == entry.id)
         }
-        await #expect(sut.model.entries.last?.id == newEntry.id)
+        #expect(savedItem.entries.last?.id == newEntry.id)
         
         let middleEntry = AdventureEntryModel(id: UUID(), name: "Middle", content: "Super")
         item.entries.insert(middleEntry, at: 4)
-        result = await sut.merge(entries: item.entries, recoverEntries: nil)
+        result = await sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
         #expect(result.isEmpty)
 
         for (index, entry) in originalEntries.enumerated() {
             if index < 4 {
-                await #expect(sut.model.entries[index].id == entry.id)
+                #expect(savedItem.entries[index].id == entry.id)
             } else if index == 4 {
-                await #expect(sut.model.entries[4].id == middleEntry.id)
+                #expect(savedItem.entries[4].id == middleEntry.id)
             } else {
-                await #expect(sut.model.entries[index + 1].id == entry.id)
+                #expect(savedItem.entries[index + 1].id == entry.id)
             }
         }
-    }
-
-    @Test func validateEntries() async throws {
-        let root = try await MockRoot.importTestData()
-        let sut = root.editController
-
-        await sut.setCurrentItem(to: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], typeId: .adventure))
-        let model = await sut.model
-
-        let entries = model.entries
-        #expect(entries.count == 4)
-
-        await sut.validateEntries()
-        #expect(model.entries.count == 4)
-        #expect(model.entries == entries)
-
-        let brokenEntries = entries.flatMap { [$0, $0] }
-        model.entries = brokenEntries
-        #expect(model.entries.count == 8)
-
-        await sut.validateEntries()
-        #expect(model.entries.count == 4)
-        #expect(model.entries == entries)
-
-        await sut.validateEntries()
-        #expect(model.entries.count == 4)
-        #expect(model.entries == entries)
     }
 }
 #endif

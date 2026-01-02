@@ -84,8 +84,8 @@ extension EditController {
 // MARK: - Module Editor
 
 extension EditController {
-    @MainActor func add(diceId: UUID?, modelId: UUID) {
-        guard let editModel = editModel(for: modelId) else { return }
+    @MainActor func add(diceId: UUID?, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
         editModel.diceId = diceId
         save(updated: editModel, message: String(localized: "Added Dice").localizedString)
     }
@@ -98,8 +98,8 @@ extension EditController {
         TableEntryModel(id: UUID(), name: name, content: content)
     }
 
-    @MainActor func merge(modelId: UUID, entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
-        guard let editModel = editModel(for: modelId) else { return [] }
+    @MainActor func merge(itemId: UUID, entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+        guard let editModel = editModel(for: itemId) else { return [] }
         var newEntries = entries.map { entry in
             let foundEntry = editModel.entries.first(where: { $0.name == entry.name })
             return TableEntryModel(id: foundEntry?.id ?? entry.id, name: entry.name, content: entry.content, displayState: entry.displayState, diceResult: entry.diceResult)

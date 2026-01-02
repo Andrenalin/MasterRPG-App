@@ -14,11 +14,11 @@ struct ItemControllerTests {
         let sut = root.itemController
         
         // Act
-        let itemRowModel = await sut.addNew(type: ItemListCategory.item.rawValue)
+        let itemId = await sut.addNew(type: .item)
         
         // Assert
         // Check that the new item was created
-        let item = await sut.item(for: itemRowModel.itemId)
+        let item = await sut.item(for: itemId)
         #expect(item != nil, "New item should exist")
         
         // Check that the item has the correct category
@@ -28,7 +28,7 @@ struct ItemControllerTests {
         
         // Check that the item was added to the data model
         let items = await sut.itemDataModel.items
-        #expect(items.contains(itemRowModel.itemId), "Item should be in the data model")
+        #expect(items.contains(itemId), "Item should be in the data model")
     }
     
     @Test func addNewFolder() async throws {
@@ -37,11 +37,11 @@ struct ItemControllerTests {
         let sut = root.itemController
         
         // Act
-        let itemRowModel = await sut.addNew(type: ItemListCategory.folder.rawValue)
+        let itemId = await sut.addNew(type: .folder)
         
         // Assert
         // Check that the new folder was created
-        let item = await sut.item(for: itemRowModel.itemId)
+        let item = await sut.item(for: itemId)
         #expect(item != nil, "New folder should exist")
         
         // Check that the folder has the correct category
@@ -56,15 +56,15 @@ struct ItemControllerTests {
         let sut = root.itemController
         
         // Create a test item
-        let itemRowModel = await sut.addNew(type: ItemListCategory.item.rawValue)
+        let itemId = await sut.addNew(type: .item)
         
         // Act
-        let copiedItem = await sut.copy(of: itemRowModel.itemId)
+        let copiedItem = await sut.copy(of: itemId)
         
         // Assert
         #expect(copiedItem != nil, "Copy should return a non-nil item")
         
-        if let copiedItem, let originalItem = await sut.item(for: itemRowModel.itemId) {
+        if let copiedItem, let originalItem = await sut.item(for: itemId) {
             // Copy should have same ID but should not be identical instance
             #expect(copiedItem.id == originalItem.id, "Copy should have the same ID")
             #expect(copiedItem !== originalItem as AnyObject, "Copy should be a new instance")
@@ -82,19 +82,19 @@ struct ItemControllerTests {
         let sut = root.itemController
         
         // Create a test item
-        let itemRowModel = await sut.addNew(type: ItemListCategory.item.rawValue)
+        let itemId = await sut.addNew(type: .item)
         let initialItemCount = await sut.itemDataModel.items.count
         
         // Verify item exists before deletion
-        let itemBeforeDelete = await sut.item(for: itemRowModel.itemId)
+        let itemBeforeDelete = await sut.item(for: itemId)
         #expect(itemBeforeDelete != nil, "Item should exist before deletion")
         
         // Act
-        await sut.delete(itemId: itemRowModel.itemId)
+        await sut.delete(itemId: itemId)
         
         // Assert
         // Check that item no longer exists
-        let itemAfterDelete = await sut.item(for: itemRowModel.itemId)
+        let itemAfterDelete = await sut.item(for: itemId)
         #expect(itemAfterDelete == nil, "Item should not exist after deletion")
         
         // Check that item was removed from data model
@@ -108,11 +108,11 @@ struct ItemControllerTests {
         let sut = root.itemController
         
         // Create a test item
-        let itemRowModel = await sut.addNew(type: ItemListCategory.item.rawValue)
+        let itemId = await sut.addNew(type: .item)
         
         // Get the item and a copy of it
-        let item = await sut.item(for: itemRowModel.itemId)
-        let copy = await sut.copy(of: itemRowModel.itemId)
+        let item = await sut.item(for: itemId)
+        let copy = await sut.copy(of: itemId)
         
         #expect(item != nil && copy != nil, "Both item and copy should exist")
         
@@ -131,18 +131,18 @@ struct ItemControllerTests {
         let sut = root.itemController
         
         // Create two different items
-        let firstItemRowModel = await sut.addNew(type: ItemListCategory.item.rawValue)
-        let secondItemRowModel = await sut.addNew(type: ItemListCategory.item.rawValue)
+        let itemId1 = await sut.addNew(type: .item)
+        let itemId2 = await sut.addNew(type: .item)
         
         // Get the second item
-        let secondItem = await sut.item(for: secondItemRowModel.itemId)
+        let secondItem = await sut.item(for: itemId2)
         #expect(secondItem != nil, "Second item should exist")
         
         // Act - compare first item with modified copy of second item
         if let secondItem {
             // Create a modified copy with the first item's ID to test isEqual
-            var modifiedCopy = secondItem
-            modifiedCopy.id = firstItemRowModel.itemId
+            let modifiedCopy = secondItem
+            modifiedCopy.id = itemId1
             
             let isEqual = await sut.isEqual(with: modifiedCopy)
             

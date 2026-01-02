@@ -39,16 +39,13 @@ public extension ItemControllable {
 // MARK: - EditControllable
 
 public extension ItemControllable {
-    @MainActor func addNew(type: Int?) async -> ItemRowModel {
-        var model = Model.empty
-        if let type, let category = ItemListCategory(rawValue: type) {
-            model.category = category
-        }
-        let updatedModel = model
-        try? await dataControllable?.replace(id: updatedModel.id, with: updatedModel)
+    @MainActor func addNew(type: ItemListCategory) async -> UUID {
+        var model = Model.empty.copy()
+        model.category = type
+        try? await dataControllable?.replace(id: model.id, with: model)
         insertIntoItems(model: model)
         setModel(with: model)
-        return ItemRowModel(itemId: model.id, typeId: config.module)
+        return model.id
     }
 
     @MainActor func copy(of itemId: UUID) -> Model? {

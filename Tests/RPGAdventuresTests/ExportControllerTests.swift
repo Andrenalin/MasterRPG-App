@@ -27,12 +27,12 @@ struct ExportControllerTests {
         try #require(ids.ids[.adventure] != nil)
         #expect(ids.ids[.adventure]!.isEmpty)
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
         ids = await sut.exportingAll()
         try #require(ids.ids[.adventure] != nil)
         #expect(ids.ids[.adventure]! == [itemId])
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let entry = await AdventureEntryModel(id: UUID(), name: "Nothing", content: root.linkController.generateLink(itemId: newId))
         await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
@@ -47,9 +47,9 @@ struct ExportControllerTests {
 
         let sut = root.exportController
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let url = await root.itemController.itemOrEmpty(for: newId).url(linkNumber: 0)
         let entry = AdventureEntryModel(id: UUID(), name: "Nothing", content: "\(url)")
         await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
@@ -61,7 +61,7 @@ struct ExportControllerTests {
         #expect(adventureIds!.contains(itemId))
         #expect(adventureIds!.contains(newId))
 
-        let notConnected = await root.itemController.addNew(type: nil).itemId
+        let notConnected = await root.itemController.addNew(type: .item)
         ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .adventure))
         adventureIds = ids.ids[.adventure]
         try #require(adventureIds != nil)

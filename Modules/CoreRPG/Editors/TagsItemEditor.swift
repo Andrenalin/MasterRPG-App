@@ -82,12 +82,12 @@ private extension TagsItemEditor {
     func addCurrentTag() {
         let tag = currentTag.localizedUppercase
         withAnimation {
-            editController.add(tag: tag, modelId: model.id)
+            editController.add(tag: tag, itemId: model.id)
             currentTag = ""
         }
     }
     
     func remove(tag: String) {
-        editController.remove(tag: tag, modelId: model.id)
+        editController.remove(tag: tag, itemId: model.id)
     }
 }

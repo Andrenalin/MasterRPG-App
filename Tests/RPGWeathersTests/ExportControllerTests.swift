@@ -20,12 +20,12 @@ struct ExportControllerTests {
         try #require(ids.ids[.weather] != nil)
         #expect(ids.ids[.weather]!.isEmpty)
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
         ids = await sut.exportingAll()
         try #require(ids.ids[.weather] != nil)
         #expect(ids.ids[.weather]! == [itemId])
 
-        let _ = await root.itemController.addNew(type: nil).itemId
+        let _ = await root.itemController.addNew(type: .item)
         ids = await sut.exportingAll()
         try #require(ids.ids[.weather] != nil)
         #expect(ids.ids[.weather]!.count == 2)
@@ -37,9 +37,9 @@ struct ExportControllerTests {
 
         let sut = root.exportController
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
 
         var ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .weather))
         var weatherIds = ids.ids[.weather]
@@ -48,7 +48,7 @@ struct ExportControllerTests {
         #expect(weatherIds!.contains(itemId))
         #expect(!weatherIds!.contains(newId))
 
-        let notConnected = await root.itemController.addNew(type: nil).itemId
+        let notConnected = await root.itemController.addNew(type: .item)
         ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .weather))
         weatherIds = ids.ids[.weather]
         try #require(weatherIds != nil)

@@ -10,10 +10,10 @@ struct ConvertImageEditor: View {
     
     var body: some View {
         Group {
-            if editController.isNotJpegPhoto(modelId: model.id) {
+            if editController.isNotJpegPhoto(itemId: model.id) {
                 Button {
                     Task {
-                        try? await editController.convert(modelId: model.id)
+                        try? await editController.convert(itemId: model.id)
                     }
                 } label: {
                     Label {

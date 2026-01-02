@@ -20,12 +20,12 @@ struct ExportControllerTests {
         try #require(ids.ids[.pdf] != nil)
         #expect(ids.ids[.pdf]!.isEmpty)
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
         ids = await sut.exportingAll()
         try #require(ids.ids[.pdf] != nil)
         #expect(ids.ids[.pdf]! == [itemId])
 
-        let _ = await root.itemController.addNew(type: nil).itemId
+        let _ = await root.itemController.addNew(type: .item)
         let entry = PdfEntryModel(id: UUID(), name: "Hello", content: "Mega", pageNumber: "2", bounds: .zero)
         await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
@@ -41,9 +41,9 @@ struct ExportControllerTests {
 
         let sut = root.exportController
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let _ = PdfEntryModel(id: UUID(), name: "Hello", content: "Mega", pageNumber: "2", bounds: .zero)
         var ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .pdf))
         var pdfIds = ids.ids[.pdf]
@@ -52,7 +52,7 @@ struct ExportControllerTests {
         #expect(pdfIds!.contains(itemId))
         #expect(!pdfIds!.contains(newId))
 
-        let notConnected = await root.itemController.addNew(type: nil).itemId
+        let notConnected = await root.itemController.addNew(type: .item)
         ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .pdf))
         pdfIds = ids.ids[.pdf]
         try #require(pdfIds != nil)

@@ -36,7 +36,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             SheetGroupView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
         }
         .onMove { indexSet, index in
-            entryDataEditable?.move(entryFrom: indexSet, to: index, modelId: model.sheetModel.source.itemId)
+            entryDataEditable?.move(entryFrom: indexSet, to: index, itemId: model.sheetModel.source.itemId)
         }
 
         Color.accentColor.opacity(0.3)

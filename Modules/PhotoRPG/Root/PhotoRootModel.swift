@@ -163,14 +163,14 @@ public extension PhotoRootModel {
     }
     
     func addNewPhoto(data: Data, name: String, text: String) async -> (UUID, String) {
-        let itemRowModel = await itemController.addNew(type: nil)
-        await editController.reset(name: name, modelId: itemRowModel.itemId)
-        await editController.reset(description: text, modelId: itemRowModel.itemId)
-        try? await editController.resetFile(data: data, modelId: itemRowModel.itemId, path: "")
+        let itemId = await itemController.addNew(type: .item)
+        await editController.reset(name: name, itemId: itemId)
+        await editController.reset(description: text, itemId: itemId)
+        try? await editController.resetFile(data: data, itemId: itemId, path: "")
 
-        let item = await itemController.item(for: itemRowModel.itemId)
+        let item = await itemController.item(for: itemId)
         
-        return (itemRowModel.itemId, item?.url(linkNumber: 0) ?? "")
+        return (itemId, item?.url(linkNumber: 0) ?? "")
     }
 
     static let thumbnailSize: CGSize = .init(width: 64.0, height: 64.0)
@@ -182,7 +182,7 @@ public extension PhotoRootModel {
             guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
             do {
                 if let newFileUrl = try await fileUrlDataController?.move(fileUrl: fileUrl, name: item.name, category: item.category.title) {
-                    await editController.reset(fileUrl: newFileUrl, modelId: itemId)
+                    await editController.reset(fileUrl: newFileUrl, itemId: itemId)
                 }
             } catch {
                 print(error)

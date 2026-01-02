@@ -14,7 +14,7 @@ struct EditControllerTests {
 //        let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 53)
 //        let sut = root.editController
 //
-//        let itemRowModel = await root.itemController.addNew(type: nil)
+//        let itemRowModel = await root.itemController.addNew(type: .item)
 //
 //        let entryId = UUID()
 //        let entry = TableEntryModel(id: entryId, name: "4W20, Adalbert Unheil, D20, 3W20xAxt, Fegel, 5d20, Armbruste", content: "4W20, Adalbert d20 Unheil, D20, 4W20xAxt, Fegel, 4d20, d20Armbruste")
@@ -43,7 +43,7 @@ struct EditControllerTests {
 //        let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 53)
 //        let sut = await root.editController
 //
-//        let itemRowModel = await root.itemController.addNew(type: nil)
+//        let itemRowModel = await root.itemController.addNew(type: .item)
 //
 //        let entryId = UUID()
 //        let entry = TableEntryModel(id: entryId, name: "Waffen , magische gegenstände, Mega Magische und Gegenstände Beutetabelle T", content: "BeuteWaffen , nichtMagische GegenständeAlles, 5xBeutetabelle T, Beutetabelle A")
@@ -72,7 +72,7 @@ struct EditControllerTests {
 //        let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 53)
 //        let sut = await root.editController
 //
-//        let itemRowModel = await root.itemController.addNew(type: nil)
+//        let itemRowModel = await root.itemController.addNew(type: .item)
 //
 //        let entryId = UUID()
 //        let entry = TableEntryModel(id: entryId, name: "Will not be scanned", content: "BeuteWaffenIn Deckung Axt, nichtMagische GegenständeAlles, 5xBeutetabelle T, Blutige Heilung Beutetabelle A")
@@ -109,7 +109,7 @@ struct EditControllerTests {
 //        let root = try await MockRoot.importTestData(ResourcesDebug.adventureTestData, itemCounter: 53)
 //        let sut = root.editController
 //
-//        let itemRowModel = await root.itemController.addNew(type: nil)
+//        let itemRowModel = await root.itemController.addNew(type: .item)
 //
 //        let entryId = UUID()
 //        let entry = TableEntryModel(id: entryId, name: "Nothing", content: "Wir [Waffen](RPG://TABLES/0/55E9FD60-A99E-4308-83E4-BCA0DF7DDF07) haben es")
@@ -133,41 +133,43 @@ struct EditControllerTests {
 
     @Test @MainActor func mergeEntries() async throws {
         let root = try await MockRoot.importTestData()
+        let itemId = root.itemController.itemDataModel.items[0]
         let sut = root.editController
 
-        sut.setCurrentItem(to: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], typeId: .table))
-        let item = sut.model.copy()
+        sut.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: .table))
+        let item = root.itemController.itemOrEmpty(for: itemId).copy()
         let originalEntries = item.entries
 
         item.entries[0].content = "New Content"
-        var result = await sut.merge(entries: item.entries, recoverEntries: nil)
+        var result = await sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
         #expect(result.isEmpty)
 
-        #expect(sut.model.entries[0].id == originalEntries[0].id)
-        #expect(sut.model.entries[0].content == "New Content")
+        let savedItem = root.itemController.itemOrEmpty(for: itemId)
+        #expect(savedItem.entries[0].id == originalEntries[0].id)
+        #expect(savedItem.entries[0].content == "New Content")
 
         let newEntry = TableEntryModel(id: UUID(), name: "Newbee", content: "Super", displayState: 1, diceResult: "Perfect")
         item.entries.append(newEntry)
-        result = await sut.merge(entries: item.entries, recoverEntries: nil)
+        result = await sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
         #expect(result.isEmpty)
 
         originalEntries.enumerated().forEach { index, entry in
-            #expect(sut.model.entries[index].id == entry.id)
+            #expect(savedItem.entries[index].id == entry.id)
         }
-        #expect(sut.model.entries.last?.id == newEntry.id)
+        #expect(savedItem.entries.last?.id == newEntry.id)
 
         let middleEntry = TableEntryModel(id: UUID(), name: "Middle", content: "Super", displayState: 1, diceResult: "Perfect")
         item.entries.insert(middleEntry, at: 4)
-        result = await sut.merge(entries: item.entries, recoverEntries: nil)
+        result = await sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
         #expect(result.isEmpty)
 
         originalEntries.enumerated().forEach { index, entry in
             if index < 4 {
-                #expect(sut.model.entries[index].id == entry.id)
+                #expect(savedItem.entries[index].id == entry.id)
             } else if index == 4 {
-                #expect(sut.model.entries[4].id == middleEntry.id)
+                #expect(savedItem.entries[4].id == middleEntry.id)
             } else {
-                #expect(sut.model.entries[index + 1].id == entry.id)
+                #expect(savedItem.entries[index + 1].id == entry.id)
             }
         }
     }

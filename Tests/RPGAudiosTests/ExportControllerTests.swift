@@ -18,12 +18,12 @@ struct ExportControllerTests {
         try #require(ids.ids[.audio] != nil)
         #expect(ids.ids[.audio]!.isEmpty)
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
         ids = await sut.exportingAll()
         try #require(ids.ids[.audio] != nil)
         #expect(ids.ids[.audio]! == [itemId])
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let entry = AudioEntryModel(id: UUID(), audioId: newId)
         await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
@@ -38,9 +38,9 @@ struct ExportControllerTests {
 
         let sut = root.exportController
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let entry = AudioEntryModel(id: UUID(), audioId: newId)
         await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
@@ -51,7 +51,7 @@ struct ExportControllerTests {
         #expect(audioIds!.contains(itemId))
         #expect(audioIds!.contains(newId))
 
-        let notConnected = await root.itemController.addNew(type: nil).itemId
+        let notConnected = await root.itemController.addNew(type: .item)
         ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .audio))
         audioIds = ids.ids[.audio]
         try #require(audioIds != nil)

@@ -17,8 +17,6 @@ import WeatherRPG
 
 @MainActor @Observable
 final class AdventureEditModel: Sendable {
-    var contentLinks: [UUID: LinkReplaceController] = [:]
-    
     let selectionAudio: ItemSelectionModel = ItemSelectionModel()
     let selectionCharacter: ItemSelectionModel = ItemSelectionModel()
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
@@ -28,10 +26,6 @@ final class AdventureEditModel: Sendable {
     let selectionSpace: ItemSelectionModel = ItemSelectionModel()
     let selectionTable: ItemSelectionModel = ItemSelectionModel()
     let selectionWeather: ItemSelectionModel = ItemSelectionModel()
-    
-    func resetCurrentModel() {
-        contentLinks = [:]
-    }
 }
 
 struct EditController: Sendable {
@@ -107,19 +101,13 @@ extension EditController: EntryDataEditable {
     func create(name: String, content: String) -> AdventureEntryModel {
         AdventureEntryModel(id: UUID(), name: name, content: content)
     }
-    
-    @MainActor func didSetModel() {}
-    
-    @MainActor func resetCurrentModel() {
-        adventureEditModel.resetCurrentModel()
-    }
 }
 
 // MARK: - New Editor Functions
 
 extension EditController {
-    @MainActor func add(photoId: UUID?, modelId: UUID) {
-        guard let editModel = editModel(for: modelId) else { return }
+    @MainActor func add(photoId: UUID?, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
         editModel.photoId = photoId
         save(updated: editModel, message: String(localized: "Changed Photo").localizedString)
     }
@@ -129,8 +117,8 @@ extension EditController {
 
 extension EditController {
     @MainActor
-    func merge(modelId: UUID, entries: [AdventureEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
-        guard let item = editModel(for: modelId) else { return [] }
+    func merge(itemId: UUID, entries: [AdventureEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+        guard let item = editModel(for: itemId) else { return [] }
         var newEntries = entries.map { entry in
             var foundEntry = item.entries.first(where: { $0.name == entry.name })
             foundEntry?.content = entry.content

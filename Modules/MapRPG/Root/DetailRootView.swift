@@ -77,7 +77,7 @@ private extension DetailListView {
     @ViewBuilder var detailEditorView: some View {
         root.photoRoot.viewController.dropSelectionView(model: root.editController.mapEditModel.selectionPhoto)
             .onChange(of: root.editController.mapEditModel.selectionPhoto.itemId) {
-                withAnimation { root.editController.add(photoId: root.editController.mapEditModel.selectionPhoto.itemId, modelId: model.id) }
+                withAnimation { root.editController.add(photoId: root.editController.mapEditModel.selectionPhoto.itemId, itemId: model.id) }
             }
             .onChange(of: model.photoId, initial: true) {
                 withAnimation { root.editController.mapEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
@@ -117,7 +117,7 @@ private extension DetailListView {
                 
                 Button {
                     withAnimation {
-                        let entryId = root.editController.addNewEntry(modelId: model.id)
+                        let entryId = root.editController.addNewEntry(itemId: model.id)
                         root.editController.editorModel.currentEntryId = entryId
                         Task { @MainActor in
                             try? await Task.sleep(for: .seconds(0.25))

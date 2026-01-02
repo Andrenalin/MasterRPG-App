@@ -12,7 +12,7 @@ struct WeatherEditor: View {
         Section {
             root.viewController.photoSelection(root: root, selectionModel: root.editController.weatherEditModel.selectionPhoto)
                 .onChange(of: root.editController.weatherEditModel.selectionPhoto.selection) {
-                    withAnimation { root.editController.add(photoId: root.editController.weatherEditModel.selectionPhoto.itemId, modelId: model.id) }
+                    withAnimation { root.editController.add(photoId: root.editController.weatherEditModel.selectionPhoto.itemId, itemId: model.id) }
                 }
                 .onChange(of: model.photoId, initial: true) {
                     withAnimation { root.editController.weatherEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }

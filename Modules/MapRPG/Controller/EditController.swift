@@ -124,8 +124,8 @@ extension EditController: EntryDataEditable {
 // MARK: - New Editor Functions
 
 extension EditController {
-    @MainActor func add(photoId: UUID?, modelId: UUID) {
-        guard var editModel = editModel(for: modelId) else { return }
+    @MainActor func add(photoId: UUID?, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
         editModel.photoId = photoId
         save(updated: editModel, message: String(localized: "Change Photo").localizedString)
     }
@@ -375,8 +375,8 @@ extension EditController {
 }
 
 extension EditController {
-    @MainActor func merge(modelId: UUID, entries: [MapEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
-        guard let item = editModel(for: modelId) else { return [] }
+    @MainActor func merge(itemId: UUID, entries: [MapEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+        guard let item = editModel(for: itemId) else { return [] }
         var newEntries = entries.map { entry in
             var foundEntry = item.entries.first(where: { $0.name == entry.name })
             foundEntry?.content = entry.content

@@ -19,12 +19,12 @@ struct ExportControllerTests {
         try #require(ids.ids[.photo] != nil)
         #expect(ids.ids[.photo]!.isEmpty)
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
         ids = await sut.exportingAll()
         try #require(ids.ids[.photo] != nil)
         #expect(ids.ids[.photo]! == [itemId])
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let entry = PhotoEntryModel(id: UUID(), photoId: newId)
         await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
@@ -39,9 +39,9 @@ struct ExportControllerTests {
 
         let sut = root.exportController
 
-        let itemId = await root.itemController.addNew(type: nil).itemId
+        let itemId = await root.itemController.addNew(type: .item)
 
-        let newId = await root.itemController.addNew(type: nil).itemId
+        let newId = await root.itemController.addNew(type: .item)
         let entry = PhotoEntryModel(id: UUID(), photoId: newId)
         await root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
@@ -52,7 +52,7 @@ struct ExportControllerTests {
         #expect(photoIds!.contains(itemId))
         #expect(photoIds!.contains(newId))
 
-        let notConnected = await root.itemController.addNew(type: nil).itemId
+        let notConnected = await root.itemController.addNew(type: .item)
         ids = await sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .photo))
         photoIds = ids.ids[.photo]
         try #require(photoIds != nil)
