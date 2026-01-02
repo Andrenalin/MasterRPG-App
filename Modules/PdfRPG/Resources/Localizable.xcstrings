@@ -39,6 +39,7 @@
       }
     },
     "Add bookmark" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

@@ -62,6 +62,7 @@
       }
     },
     "Create new" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

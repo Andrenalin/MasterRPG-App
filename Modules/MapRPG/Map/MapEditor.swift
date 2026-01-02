@@ -91,10 +91,10 @@ struct MapEditor: View {
             }
             .onChange(of: toolBarModel.hexScale) {
                 guard toolBarModel.hexScale != 0 && toolBarModel.hexScale != map.hexMapScale else { return }
-                editController.createHexMap(hexMapScale: toolBarModel.hexScale)
+                editController.createHexMap(model: map, hexMapScale: toolBarModel.hexScale)
             }
             .onChange(of: toolBarModel.pinScale) {
-                editController.model.pinScale = toolBarModel.pinScale
+                map.pinScale <=> toolBarModel.pinScale
             }
             .onChange(of: containerSize) {
                 resetZoom()
@@ -168,7 +168,7 @@ private extension MapEditor {
         if currentEntryId != editEntries.entries.first?.id {
             editController.save(with: String(localized: "Change entry coordinates").localizedString)
             if let currentEntryId {
-                let entry = editController.model[currentEntryId]
+                let entry = map[currentEntryId]
                 withAnimation(.bouncy) {
                     editEntries.entries = [entry]
                 }
@@ -348,15 +348,15 @@ private extension MapEditor {
                         nextPoint = nextPoint - (nextPoint - updatedEntry.coordinates[index]) / 2
                     }
                     updatedEntry.coordinates.insert(nextPoint, at: next)
-                    editController.model[updatedEntry.id] = updatedEntry
+                    map[updatedEntry.id] = updatedEntry
                 } removeAction: {
                     var updatedEntry = editEntries.entry(entry.id)
                     if index >= 0 && index < updatedEntry.coordinates.count {
                         updatedEntry.coordinates.remove(at: index)
-                        editController.model[updatedEntry.id] = updatedEntry
+                        map[updatedEntry.id] = updatedEntry
                     }
                 } dragEndAction: {
-                    editController.model[entry.id] = editEntries.entry(entry.id)
+                    map[entry.id] = editEntries.entry(entry.id)
                 }
                 .offset(x: point.x - 22, y: point.y - 110)
             }
@@ -593,7 +593,7 @@ private extension MapEditor {
             guard let point = editEntries.addedNewNeedlePoint, var updatedEntry = editEntries.entries.first else { return }
             editEntries.addedNewNeedlePoint = nil
             updatedEntry.coordinates.append(point)
-            editController.model[updatedEntry.id] = updatedEntry
+            map[updatedEntry.id] = updatedEntry // editController.model <- is this working?
         }
     }
 }

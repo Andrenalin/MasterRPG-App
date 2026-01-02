@@ -38,6 +38,7 @@
       }
     },
     "Add Dice" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -48,6 +49,7 @@
       }
     },
     "Add link" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -71,6 +73,9 @@
           }
         }
       }
+    },
+    "Added Dice" : {
+
     },
     "All" : {
       "extractionState" : "stale",
