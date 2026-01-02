@@ -65,7 +65,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                 .sizedSheet(isPresented: $showEffectedLinksAlert, idealSize: CGSize(width: 400, height: 600)) {
                     EffectedLinkAction(itemControllable: root.itemControllable, removeEntryList: editorModel, overwrite: true) { rowModels in
                         editorModel.removeItems.removeAll(where: { rowModels.contains($0) })
-                        _ = await editController.merge(entries: entries, recoverEntries: editorModel.removeItems)
+                        _ = await editController.merge(modelId: model.id, entries: entries, recoverEntries: editorModel.removeItems)
                         dismiss()
                     }
                 }
@@ -257,7 +257,7 @@ private extension QuickEntryEditorView {
             ControlGroup {
                 Button {
                     Task {
-                        editorModel.removeItems = await editController.merge(entries: entries, recoverEntries: nil)
+                        editorModel.removeItems = await editController.merge(modelId: model.id, entries: entries, recoverEntries: nil)
                         if editorModel.removeItems.isEmpty {
                             dismiss()
                         } else {

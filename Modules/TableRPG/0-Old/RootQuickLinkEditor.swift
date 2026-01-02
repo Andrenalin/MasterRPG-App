@@ -6,11 +6,12 @@ import DiceRPG
 
 struct RootQuickLinkEditor: View {
     let editController: EditController
+    let model: TableModel
     
     @Environment(TableRootModel.self) private var root
 
     var body: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         return QuickLinkEditor(editController: editController, linkController: root.rootControllable.linkControllable, model: $model.entries, title: model.name) { _ in
 //            QuickEditorAction(configs: configs, bundle: .module, afterEntries: $0) { _,_,_,_ in
 //                //editController.scan(itemId: model.id, with: $0, module: $1, caseInsensitive: $2, words: $3)

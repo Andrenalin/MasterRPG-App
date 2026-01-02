@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 struct AnimatedMap: View {
-    let editController: EditController
+    let itemId: UUID
     let image: AKImage
     let date: Date
     let size: CGSize
@@ -15,10 +15,8 @@ struct AnimatedMap: View {
     @State private var dropPinModel = DropPinModel()
 
     var body: some View {
-        @Bindable var model = editController.model
-
         VStack(alignment: .center) {
-            DisplayMapViewer(editController: editController, image: image, itemId: model.id, entryId: $entryId, size: size)
+            DisplayMapViewer(image: image, itemId: itemId, entryId: $entryId, size: size)
                 .environment(dropPinModel)
         }
         .onChange(of: date, initial: false) {
@@ -29,11 +27,11 @@ struct AnimatedMap: View {
     }
 
     private func randomEntries() -> UUID {
-        let count = editController.model.entries.count
+        let count = root.itemController.itemOrEmpty(for: itemId).entries.count
         guard count > 0 else { return UUID() }
         if count == 1 {
-            return editController.model.entries[0].id
+            return root.itemController.itemOrEmpty(for: itemId).entries[0].id
         }
-        return editController.model.entries[Int.random(in: 0..<count)].id
+        return root.itemController.itemOrEmpty(for: itemId).entries[Int.random(in: 0..<count)].id
     }
 }

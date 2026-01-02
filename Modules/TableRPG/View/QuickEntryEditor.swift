@@ -5,13 +5,15 @@ import PdfRPG
 import SwiftUI
 
 struct QuickEntryEditor: View {
+    let model: TableModel
+    
     @Environment(TableRootModel.self) private var root
     
     @State private var referenceText = DebouncerModel(initialValue: "", delay: 2)
 
     var body: some View {
         QuickEntryEditorView(editController: root.editController, referenceText: referenceText, pdfEditorRoute: EditorRoute.selectionPdf) {
-            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel)
+            EditorLinkView(root: root.rootController, model: model, editorLinkModel: root.editorLinkModel)
         } pdfOverlay: {
 #if os(iOS) || os(tvOS)
             if let selectedPdf = root.editController.tableEditModel.selectionPdf.itemId {

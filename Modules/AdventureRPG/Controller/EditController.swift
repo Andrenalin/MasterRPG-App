@@ -91,8 +91,8 @@ extension EditController: EntryDataEditable {
 
     public var linkModules: [NetworkModules] { [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather] }
     
-    public func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination {
-        EditorRoute.linkSelection(entryId)
+    public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        EditorRoute.linkSelection(itemRowModel)
     }
     
     public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
@@ -113,68 +113,15 @@ extension EditController: EntryDataEditable {
     @MainActor func resetCurrentModel() {
         adventureEditModel.resetCurrentModel()
     }
-
-    @MainActor func submitChanges() {
-        adventureEditModel.resetCurrentModel()
-    }
 }
 
 // MARK: - New Editor Functions
 
 extension EditController {
-    @MainActor func add(photoId: UUID?) {
-        model.photoId = photoId
-        save(with: String(localized: "Change Photo").localizedString)
-    }
-}
-
-// MARK: - Selection
-
-extension EditController {
-    @MainActor func selection(for module: NetworkModules) -> [ItemRowModel] {
-        guard module == .photo else { return [] }
-        if let id = model.photoId {
-            return [ItemRowModel(itemId: id, typeId: .photo)]
-        }
-        return []
-    }
-    
-    @MainActor func toggle(for module: NetworkModules, itemRowModel: ItemRowModel) async {
-        guard module == .photo else { return }
-        model.photoId = itemRowModel.itemId
-        save(with: String(localized: "Change Photo").localizedString)
-    }
-}
-
-// MARK: - Link Editor
-
-extension EditController {
-    @MainActor func contentEditLink(for entryId: UUID) -> LinkReplaceController {
-        guard let controller = adventureEditModel.contentLinks[entryId] else {
-            let controller = LinkReplaceController {
-                model[entryId].content
-            } setter: {
-                update(entryId: entryId, content: $0)
-            }
-            adventureEditModel.contentLinks[entryId] = controller
-            return controller
-        }
-        return controller
-    }
-    
-    @MainActor func updateContent(_ content: String, for entryId: UUID) {
-        if let contentLink = adventureEditModel.contentLinks[entryId] {
-            contentLink.editValue.wrappedValue = content
-        } else {
-            update(entryId: entryId, content: content)
-        }
-        save(with: String(localized: "Add link").localizedString)
-    }
-    
-    @MainActor func update(entryId: UUID, content: String) {
-        model[entryId].content = content
-        editorModel.cacheItemListModel.reset(cacheType: .content, itemId: entryId, text: content)
-        editorModel.cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: model[entryId].textLinkContent)
+    @MainActor func add(photoId: UUID?, modelId: UUID) {
+        guard let editModel = editModel(for: modelId) else { return }
+        editModel.photoId = photoId
+        save(updated: editModel, message: String(localized: "Changed Photo").localizedString)
     }
 }
 
@@ -182,8 +129,8 @@ extension EditController {
 
 extension EditController {
     @MainActor
-    func merge(entries: [AdventureEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
-        let item = model
+    func merge(modelId: UUID, entries: [AdventureEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+        guard let item = editModel(for: modelId) else { return [] }
         var newEntries = entries.map { entry in
             var foundEntry = item.entries.first(where: { $0.name == entry.name })
             foundEntry?.content = entry.content
@@ -205,7 +152,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(with: String(localized: "Entries replaced").localizedString)
+            save(updated: item, message: String(localized: "Entries replaced").localizedString)
             return []
         }
         return itemRowModels
@@ -263,11 +210,11 @@ extension EditController {
 
 extension EditController {
     
-    @MainActor func collectPhotos(entryId: UUID) {
-        let photoIds = root.linkController.collectLinks(of: .photo, from: model.id)
+    @MainActor func collectPhotos(itemId: UUID, entryId: UUID) {
+        let photoIds = root.linkController.collectLinks(of: .photo, from: itemId)
         let links = photoIds.map {
             root.photoRoot.linkController.generateLink(itemId: $0)
         }.sorted()
-        update(entryId: entryId, content: links.joined(separator: "\n"))
+        update(entryId: entryId, name: "Collection", content: links.joined(separator: "\n"))
     }
 }

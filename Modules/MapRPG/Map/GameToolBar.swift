@@ -161,28 +161,6 @@ struct GameToolBar: View {
             Image(systemName: "mappin\(showPinSelection ? ".and.ellipse" : "")")
                 .frame(width: 24, height: 24)
         }
-//#if !os(macOS)
-//        .sizedSheet(isPresented: $showPinSelection) {
-//            root.characterRoot.viewController.viewSelect(root: root.characterRoot, filter: .monster, isGroupHidden: true) {
-//                return pinSelection.map { ItemRowModel(itemId: $0, typeId: .value) }
-//            } toggleSelection: { selection, _ in
-//                if pinSelection.contains(selection.itemId) {
-//                    pinSelection.removeAll(where: { selection.itemId == $0 })
-//                } else {
-//                    pinSelection.append(selection.itemId)
-//                }
-//            } dismissAction: {
-//                withAnimation { showPinSelection = false }
-//            }
-//        }
-//        .onChange(of: showPinSelection, initial: false) {
-//            guard !showPinSelection, !pinSelection.isEmpty else { return }
-//            let map = root.gameController.currentItem()
-//            let entry = map.entries.reversed().first(where: { $0.isShown })
-//            withAnimation { editController.addMonsters(map: map, entryId: entry?.id, location: nil, monsters: pinSelection.map { ItemRowModel(itemId: $0, typeId: .value)}, number: 1) }
-//            pinSelection = []
-//        }
-//#endif
         
         Button {
             withAnimation { model.isPointing.toggle() }
@@ -221,7 +199,7 @@ struct GameToolBar: View {
                     model.hexScale = map.hexMapScale
                 }
             } label: {
-                Image(systemName: editController.isHexMap() ? "hexagon.fill" : "hexagon")
+                Image(systemName: editController.isHexMap(for: root.gameController.currentItem()) ? "hexagon.fill" : "hexagon")
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
                     .frame(width: 24, height: 24)
             }

@@ -6,10 +6,10 @@ import PdfRPG
 import SwiftUI
 
 enum EditorRoute: Equatable, Hashable, Codable {
-    case quickEditor
+    case quickEditor(UUID)
     case selectionPdf
-    case linkSelection(UUID)
-    case addLink(NetworkModules)
+    case linkSelection(ItemRowModel)
+    case addLink(ItemRowModel)
 }
 
 extension EditorRoute: NavigationDestination {
@@ -25,14 +25,14 @@ struct DestinationEditorRoute: View {
     
     var body: some View {
         switch route {
-        case .quickEditor:
-            QuickEntryEditor()
+        case .quickEditor(let itemId):
+            QuickEntryEditor(model: root.itemController.itemOrEmpty(for: itemId))
         case .selectionPdf:
             root.pdfRoot.viewController.linkListView(type: .selection, itemSelectionModel: root.editController.adventureEditModel.selectionPdf)
-        case .linkSelection(let entryId):
-            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel, selectedEntryId: entryId)
-        case .addLink(let module):
-            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel, selectedModule: module, selectedEntryId: root.editController.editorModel.currentEntryId)
+        case .linkSelection(let itemRowModel):
+            EditorLinkView(root: root.rootController, model: root.itemController.itemOrEmpty(for: itemRowModel.itemId), editorLinkModel: root.editorLinkModel, selectedEntryId: itemRowModel.entryId)
+        case .addLink(let itemRowModel):
+            EditorLinkView(root: root.rootController, model: root.itemController.itemOrEmpty(for: itemRowModel.itemId), editorLinkModel: root.editorLinkModel, selectedModule: itemRowModel.typeId, selectedEntryId: root.editController.editorModel.currentEntryId)
         }
     }
 }

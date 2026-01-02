@@ -14,6 +14,7 @@ final class EditToolBarModel {
         self.displayMode = displayMode
     }
     
+    var mapModel: MapModel?
     var pinScale: CGFloat = 1
     var hexScale: Double = 1
     
@@ -84,10 +85,9 @@ struct EditToolBarViewModifier: ViewModifier {
 #endif
             }
             .onChange(of: showPinSelection, initial: false) {
-                guard !showPinSelection, !selectedPin.selection.isEmpty else { return }
-                let map = editController.model
+                guard !showPinSelection, !selectedPin.selection.isEmpty, let mapModel = model.mapModel else { return }
                 let entryId = editController.editorModel.currentEntryId
-                withAnimation { editController.addMonsters(map: map, entryId: entryId, location: nil, monsters: selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }, number: 1) }
+                withAnimation { editController.addMonsters(map: mapModel, entryId: entryId, location: nil, monsters: selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }, number: 1) }
                 selectedPin.resetSelection(itemId: nil)
             }
         #if os(macOS)
@@ -157,18 +157,19 @@ private extension EditToolBarViewModifier {
     }
     
     var titlename: String {
-        editController.model.name
+        model.mapModel?.name ?? "Untitled"
     }
     
     var subtitleName: String {
-        guard let entryId = editController.editorModel.currentEntryId else { return "\(editController.editEntries.count) Entries" }
+        guard let mapModel = model.mapModel else { return "" }
+        guard let entryId = editController.editorModel.currentEntryId else { return "\(editController.editEntries(for: mapModel).count) Entries" }
         let current: String
         if let currentIndex {
             current = "\(currentIndex + 1)/"
         } else {
             current = ""
         }
-        return "\(editController.model[entryId].name) \(current)\(editController.editEntries.count)"
+        return "\(mapModel[entryId].name) \(current)\(editController.editEntries(for: mapModel).count)"
     }
     
     @ViewBuilder var nextEntryButton: some View {
@@ -232,12 +233,13 @@ private extension EditToolBarViewModifier {
     
     @ViewBuilder var hexCreationButton: some View {
         Button {
+            guard let mapModel = model.mapModel else { return }
             withAnimation {
-                let _ = editController.toggleHexMap()
+                let _ = editController.toggleHexMap(for: mapModel)
                 withAnimation { hideScales <=> false }
             }
         } label: {
-            Image(systemName: editController.isHexMap() ? "hexagon.fill" : "hexagon")
+            Image(systemName: editController.isHexMap(for: model.mapModel ?? MapModel.empty) ? "hexagon.fill" : "hexagon")
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
         }
     }
@@ -279,14 +281,16 @@ private extension EditToolBarViewModifier {
     }
     
     func resetSelectedIndex(shouldIncrease: Bool) {
+        guard let mapModel = model.mapModel else { return }
         if shouldIncrease && !canIncrease {
-            let entryId = editController.addNewEntry()
+            let entryId = editController.addNewEntry(modelId: mapModel.id)
             withAnimation { editController.editorModel.currentEntryId = entryId }
             return
         }
         
         guard editController.editorModel.currentEntryId != nil else {
-            if let first = editController.editEntries.first {
+            
+            if let first = editController.editEntries(for: mapModel).first {
                 withAnimation { editController.editorModel.currentEntryId = first.id }
             }
             return
@@ -294,24 +298,26 @@ private extension EditToolBarViewModifier {
         guard let index = currentIndex else { return }
         
         let nextIndex = shouldIncrease ? index.advanced(by: 1) : index.advanced(by: -1)
-        if nextIndex >= 0 && nextIndex < editController.editEntries.count {
-            withAnimation { editController.editorModel.currentEntryId = editController.editEntries[nextIndex].id }
+        if nextIndex >= 0 && nextIndex < editController.editEntries(for: mapModel).count {
+            withAnimation { editController.editorModel.currentEntryId = editController.editEntries(for: mapModel)[nextIndex].id }
         }
     }
     
     var canIncrease: Bool {
+        guard let mapModel = model.mapModel else { return false }
         guard editController.editorModel.currentEntryId != nil else {
-            return !editController.editEntries.isEmpty
+            return !editController.editEntries(for: mapModel).isEmpty
         }
         
         guard let index = currentIndex else { return false }
         
-        return index + 1 < editController.editEntries.count
+        return index + 1 < editController.editEntries(for: mapModel).count
     }
     
     var currentIndex: Int? {
+        guard let mapModel = model.mapModel else { return nil }
         guard let entryId = editController.editorModel.currentEntryId else { return nil }
-        return editController.editEntries.firstIndex(where: { $0.id == entryId })
+        return editController.editEntries(for: mapModel).firstIndex(where: { $0.id == entryId })
     }
     
     var bottomBarPlacement: ToolbarItemPlacement {

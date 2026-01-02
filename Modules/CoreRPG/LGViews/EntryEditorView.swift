@@ -4,12 +4,15 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditorView: View {
-    public init(editController: any EntryDataEditable) {
+    public init(editController: any EntryDataEditable, model: any ItemDataAccessable) {
         self.editController = editController
+        self.model = model
         self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: editController.linkRegisterControllable))
     }
     
     let editController: any EntryDataEditable
+    let model: any ItemDataAccessable
+    
     @FocusState private var currentFocus: EntryEditorFocusField?
     @State private var editModel: TextEditModel
     
@@ -18,7 +21,7 @@ public struct EntryEditorView: View {
             if isActive {
                 content(entry: entry)
                     .onAppear {
-                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.model.id, entryId: entry.id, typeId: editController.itemControllable.config.module))
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: model.id, entryId: entry.id, typeId: editController.itemControllable.config.module))
                     }
             }
         }
@@ -83,7 +86,7 @@ public struct EntryEditorView: View {
     }
         
     var entry: any EntryDataAccessable {
-        editController.model[editController.editorModel.currentEntryId ?? UUID()]
+        model[editController.editorModel.currentEntryId ?? UUID()]
     }
     
     func save() {

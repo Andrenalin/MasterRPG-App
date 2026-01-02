@@ -14,18 +14,12 @@ import CharacterRPG
 
 @MainActor @Observable
 final class MapEditModel: Sendable {
-    var contentLinks: [UUID: LinkReplaceController] = [:]
-    
     let selectionAudio: ItemSelectionModel = ItemSelectionModel()
     let selectionCharacter: ItemSelectionModel = ItemSelectionModel()
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
     let selectionTable: ItemSelectionModel = ItemSelectionModel()
-
-    func resetCurrentModel() {
-        contentLinks = [:]
-    }
 }
 
 struct EditController: Sendable {
@@ -78,8 +72,8 @@ extension EditController: EntryDataEditable {
     
     public var linkModules: [NetworkModules] { [.audio, .value, .dice, .map, .pdf, .photo, .table] }
     
-    public func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination {
-        EditorRoute.linkSelection(entryId)
+    public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        EditorRoute.linkSelection(itemRowModel)
     }
     
     public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
@@ -115,56 +109,29 @@ extension EditController: EntryDataEditable {
     public var additioanlEnrtryViewType: AdditionalEntryViewType { .custom }
 
     @MainActor public func additionalRowView(for entryId: UUID) -> AnyView {
-        AnyView(AddtionalEntryRow(entryId: entryId).equatable())
+        AnyView(AddtionalEntryRow(itemId: UUID(), entryId: entryId).equatable())
     }
 
     func create(name: String, content: String) -> MapEntryModel {
         MapEntryModel(id: UUID(), name: name, content: content, coordinates: [])
     }
-    
-    @MainActor
-    func resetCurrentModel() {
-        mapEditModel.resetCurrentModel()
-    }
-    
-    @MainActor func didSetModel() {}
-    
+        
     func editEntries(for item: MapModel) -> [MapEntryModel] {
         item.entries.filter { !$0.isHexGrid }
-    }
-    
-    @MainActor
-    func submitChanges() {
-        mapEditModel.resetCurrentModel()
     }
 }
 
 // MARK: - New Editor Functions
 
 extension EditController {
-    @MainActor func add(photoId: UUID?) {
-        model.photoId = photoId
-        save(with: String(localized: "Change Photo").localizedString)
+    @MainActor func add(photoId: UUID?, modelId: UUID) {
+        guard var editModel = editModel(for: modelId) else { return }
+        editModel.photoId = photoId
+        save(updated: editModel, message: String(localized: "Change Photo").localizedString)
     }
 }
 
 extension EditController {
-    @MainActor 
-    func selection(for module: NetworkModules) -> [ItemRowModel] {
-        guard module == .photo else { return [] }
-        if let id = model.photoId {
-            return [ItemRowModel(itemId: id, typeId: .photo)]
-        }
-        return []
-    }
-
-    @MainActor
-    func toggle(for module: NetworkModules, itemRowModel: ItemRowModel) async {
-        guard module == .photo else { return }
-        await resetImageSize(photoId: itemRowModel.itemId, updateModel: model)
-        save(with: String(localized: "Change Photo").localizedString)
-    }
-
     @MainActor
     func resetImageSize(photoId: UUID, updateModel: MapModel, save: Bool = false) async {
         if let (image, degrees) = await root.photoRoot.fetchPhotoImage(for: photoId, useGame: false) {
@@ -178,9 +145,6 @@ extension EditController {
     
     @MainActor
     func generateQuickMap(name: String, photoId: UUID) async -> UUID? {
-        if model.name == name && model.photoId == photoId {
-            return model.id
-        }
         if let itemId = itemController.itemDataModel.items.first(where: { itemController.itemSync(for: $0)?.name == name && itemController.itemSync(for: $0)?.photoId == photoId }) {
             return itemId
         }
@@ -192,7 +156,7 @@ extension EditController {
         return createMap.id
     }
 
-    @MainActor func validateBeforeSave() {
+    @MainActor func validateBeforeSave(model: MapModel) {
         let validateModel = model
         Task {
             for entry in validateModel.entries {
@@ -204,76 +168,21 @@ extension EditController {
     }
 }
 
-// MARK: - Selection
-
-extension EditController {
-    @MainActor
-    func selectedPinPhoto(for pinId: UUID) -> [ItemRowModel] {
-        if let photoId = model[MapPinId.id, pinId].photoId {
-            return [ItemRowModel(itemId: photoId, typeId: .photo)]
-        }
-        return []
-    }
-    
-    @MainActor
-    func toggleSelectedPinPhoto(for pinId: UUID, selection: ItemRowModel) {
-        if model[MapPinId.id, pinId].name.isEmpty {
-            model[MapPinId.id, pinId].name = root.photoRoot.itemControllable.nameSync(itemId: selection.itemId)
-        }
-        model[MapPinId.id, pinId].photoId = selection.itemId
-        save(with: String(localized: "Change pin photo").localizedString)
-    }
-}
-
-// MARK: - Link Editor
-
-extension EditController {
-    @MainActor func contentEditLink(for entryId: UUID) -> LinkReplaceController {
-        guard let controller = mapEditModel.contentLinks[entryId] else {
-            let controller = LinkReplaceController {
-                model[entryId].content
-            } setter: {
-                update(entryId: entryId, content: $0)
-            }
-            mapEditModel.contentLinks[entryId] = controller
-            return controller
-        }
-        return controller
-    }
-    
-    @MainActor
-    func updateContent(_ content: String, for entryId: UUID) {
-        if let contentLink = mapEditModel.contentLinks[entryId] {
-            contentLink.editValue.wrappedValue = content
-        } else {
-            update(entryId: entryId, content: content)
-        }
-        save(with: String(localized: "Add link").localizedString)
-    }
-    
-    @MainActor func update(entryId: UUID, content: String) {
-        model[entryId].content = content
-        editorModel.cacheItemListModel.reset(cacheType: .content, itemId: entryId, text: content)
-        editorModel.cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: model[entryId].textLinkContent)
-    }
-}
-
 // MARK: - Edit Pins
 
 extension EditController {
-    @MainActor
-    func addNewPin(at index: Int? = nil) -> MapEntryModel.ID {
+    @MainActor func addNewPin(at index: Int? = nil, itemId: UUID) -> MapEntryModel.ID {
         let pin = MapPinModel(id: UUID(), name: String(localized: "New Pin").localizedString, color: .random, photoId: nil, location: .zero, size: .normal, isShown: true, players: [], timeInterval: 0)
-        add(pin: pin, at: index)
+        add(pin: pin, at: index, itemId: itemId)
         return pin.id
     }
 
-    @MainActor
-    func add(pin: MapPinModel, at index: Int? = nil) {
-        add(pin: pin, at: index, to: model)
+    @MainActor func add(pin: MapPinModel, at index: Int? = nil, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
+        add(pin: pin, at: index, to: editModel)
     }
 
-    func add(pin: MapPinModel, at index: Int? = nil, to model: MapModel) {
+    @MainActor func add(pin: MapPinModel, at index: Int? = nil, to model: MapModel) {
         let validatedIndex: Int
         if let index {
             validatedIndex = min(max(0, index), model.mapPins.count)
@@ -281,67 +190,67 @@ extension EditController {
             validatedIndex = model.mapPins.count
         }
         model.mapPins.insert(pin, at: validatedIndex)
+        save(updated: model, message: String(localized: "Added pin").localizedString)
     }
 
     @MainActor
-    func copy(pinIds: [UUID]) {
-        pinIds.forEach { copy(pinId: $0, shouldSave: false) }
-        save(with: String(localized: "Copy pins").localizedString)
+    func copy(pinIds: [UUID], itemId: UUID) {
+        pinIds.forEach { copy(pinId: $0, itemId: itemId) }
     }
 
     @MainActor
-    func copy(pinId: UUID, shouldSave: Bool = true) {
-        let duplicate = model[MapPinId.id, pinId].duplicate()
-        model.mapPins.append(duplicate)
-        if shouldSave {
-            let name = String(duplicate.name.prefix(16))
-            save(with: String(localized: "Copy pin \(name)").localizedString)
-        }
+    func copy(pinId: UUID, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
+        let duplicate = editModel[MapPinId.id, pinId].duplicate()
+        editModel.mapPins.append(duplicate)
+        let name = String(duplicate.name.prefix(16))
+        save(updated: editModel, message: String(localized: "Copy pin \(name)").localizedString)
     }
 
     @MainActor
-    func remove(pinIds: [UUID]) {
-        pinIds.forEach { remove(pinId: $0, shouldSave: false) }
-        save(with: String(localized: "Remove pins").localizedString)
+    func remove(pinIds: [UUID], itemId: UUID) {
+        pinIds.forEach { remove(pinId: $0, itemId: itemId) }
     }
 
     @MainActor
-    func remove(pinId: UUID, shouldSave: Bool = true) {
-        guard let index = model.mapPins.firstIndex(where: { $0.id == pinId }) else { return }
-        model.mapPins.remove(at: index)
-        if shouldSave {
-            save(with: String(localized: "Remove pin").localizedString)
-        }
+    func remove(pinId: UUID, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
+        guard let index = editModel.mapPins.firstIndex(where: { $0.id == pinId }) else { return }
+        editModel.mapPins.remove(at: index)
+        save(updated: editModel, message: String(localized: "Remove pin").localizedString)
     }
 
     @MainActor
-    func move(pinId: UUID, up: Bool) {
-        guard let index = model.mapPins.firstIndex(where: { $0.id == pinId }) else { return }
+    func move(pinId: UUID, up: Bool, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
+        guard let index = editModel.mapPins.firstIndex(where: { $0.id == pinId }) else { return }
         if up {
             guard index > 0 else { return }
-            model.mapPins.move(fromOffsets: IndexSet(integer: index), toOffset: index - 1)
+            editModel.mapPins.move(fromOffsets: IndexSet(integer: index), toOffset: index - 1)
         } else {
-            guard index < model.mapPins.count - 1 else { return }
-            model.mapPins.move(fromOffsets: IndexSet(integer: index + 1), toOffset: index)
+            guard index < editModel.mapPins.count - 1 else { return }
+            editModel.mapPins.move(fromOffsets: IndexSet(integer: index + 1), toOffset: index)
         }
         let title = up ? String(localized: "Move pin up") : String(localized: "Move pin down")
         save(with: title.localizedString)
     }
     
     @MainActor
-    func move(pinFrom: IndexSet, to: Array<UUID>.Index) {
-        model.mapPins.move(fromOffsets: pinFrom, toOffset: to)
+    func move(pinFrom: IndexSet, to: Array<UUID>.Index, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
+        editModel.mapPins.move(fromOffsets: pinFrom, toOffset: to)
         save(with: String(localized: "Reorder pins").localizedString)
     }
 
     @MainActor
-    func replacePinData(pinId: UUID, with valueId: UUID) {
+    func replacePinData(pinId: UUID, with valueId: UUID, itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
         let name = root.characterRoot.linkController.name(for: valueId)
         let photoId = root.characterRoot.valueGameControllable.imageIds(for: valueId).randomElement()
-        var pin = model[MapPinId.id, pinId]
+        var pin = editModel[MapPinId.id, pinId]
         pin.name = name
         pin.photoId = photoId
-        model[MapPinId.id, pinId] = pin
+        editModel[MapPinId.id, pinId] = pin
         save(with: String(localized: "Updated pin from charakter").localizedString)
     }
 }
@@ -393,35 +302,20 @@ extension EditController {
 
     // MARK: HexGrid
     @MainActor
-    func isHexMap(for externalModel: MapModel? = nil) -> Bool {
-        let checkModel = externalModel ?? model
-        return checkModel.entries.contains(where: { $0.isHexGrid })
+    func isHexMap(for item: MapModel) -> Bool {
+        item.entries.contains(where: { $0.isHexGrid })
     }
 
     @MainActor
-    func toggleHexMap(for externalModel: MapModel? = nil) -> Bool {
-        let isHexGrid = isHexMap(for: externalModel)
+    func toggleHexMap(for item: MapModel) -> Bool {
+        let isHexGrid = isHexMap(for: item)
         if isHexGrid {
-            if let externalModel {
-                externalModel.entries.removeAll { $0.isHexGrid }
-                externalModel.hexMapScale = 0
-            } else {
-                model.entries.removeAll { $0.isHexGrid }
-                save(with: String(localized: "Remove hexgrid").localizedString)
-            }
+            item.entries.removeAll { $0.isHexGrid }
+            item.hexMapScale = 0
         } else {
-            if let externalModel {
-                createHexMap(model: externalModel, hexMapScale: max(0, externalModel.hexMapScale))
-            } else {
-                createHexMap(hexMapScale: max(0, model.hexMapScale))
-            }
+                createHexMap(model: item, hexMapScale: max(0, item.hexMapScale))
         }
         return !isHexGrid
-    }
-
-    @MainActor
-    func createHexMap(hexMapScale: Double = 0) {
-        createHexMap(model: model, hexMapScale: hexMapScale)
     }
 
     @MainActor
@@ -430,9 +324,6 @@ extension EditController {
         model.hexMapScale = size
         let entries = calculateGrid(for: size, in: CGRect(origin: .zero, size: CGSize(width: model.width, height: model.height)))
         replaceHexGrid(entries: entries, in: model)
-        if model.id == self.model.id {
-            save(with: String(localized: "Change to hexgrid").localizedString)
-        }
     }
 
     @MainActor
@@ -481,34 +372,11 @@ extension EditController {
 
         return [Point1, Point2, Point3, Point4, Point5, Point6]
     }
-
-    // MARK: Generate Values
-    @MainActor
-    func generateValues() async {
-        var parentId: UUID?
-        let text = model.description
-        for link in LinkReplaceController.links(for: text) {
-            guard link.module == .table else { return }
-
-            parentId = await root.characterRoot.linkController.generateItem(for: model.name, parentId: nil, tableId: link.itemId, entryId: link.entryId)
-        }
-        if parentId == nil {
-            parentId = await root.characterRoot.linkController.generateItem(for: model.name, parentId: nil, tableId: nil, entryId: nil)
-        }
-        for entry in model.entries {
-            let text = entry.content
-            for link in LinkReplaceController.links(for: text) {
-                guard link.module == .table else { return }
-                _ = await root.characterRoot.linkController.generateItem(for: entry.name, parentId: parentId, tableId: link.itemId, entryId: link.entryId)
-            }
-        }
-    }
 }
 
 extension EditController {
-    @MainActor
-    func merge(entries: [MapEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
-        let item = model
+    @MainActor func merge(modelId: UUID, entries: [MapEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+        guard let item = editModel(for: modelId) else { return [] }
         var newEntries = entries.map { entry in
             var foundEntry = item.entries.first(where: { $0.name == entry.name })
             foundEntry?.content = entry.content

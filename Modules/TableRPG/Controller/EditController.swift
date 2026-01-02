@@ -9,14 +9,8 @@ import UniformTypeIdentifiers
 
 @MainActor @Observable
 final class TableEditModel: Sendable {
-    var contentLinks: [UUID: LinkReplaceController] = [:]
-    
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
-
-    func resetLinks() {
-        contentLinks = [:]
-    }
 }
 
 struct LinkTableModuleTransferable: LinkDataTransferable {
@@ -62,15 +56,19 @@ extension EditController: EntryDataEditable {
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
     }
-            
+}
+    
+// MARK: - EntryList editor
+
+extension EditController {
     public var linkModules: [NetworkModules] { [.table, .dice] }
     
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
         module == .table || module == .dice
     }
     
-    public func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination {
-        EditorRoute.linkSelection(entryId)
+    public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        EditorRoute.linkSelection(itemRowModel)
     }
 
     public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
@@ -81,79 +79,34 @@ extension EditController: EntryDataEditable {
             SelectionTableRoute.selection
         }
     }
-
-    func create(name: String, content: String) -> TableEntryModel {
-        TableEntryModel(id: UUID(), name: name, content: content)
-    }
 }
 
 // MARK: - Module Editor
 
 extension EditController {
-    @MainActor func add(diceId: UUID?, model: TableModel) {
-        model.diceId = diceId
-        save(with: "Add Dice")
+    @MainActor func add(diceId: UUID?, modelId: UUID) {
+        guard let editModel = editModel(for: modelId) else { return }
+        editModel.diceId = diceId
+        save(updated: editModel, message: String(localized: "Added Dice").localizedString)
     }
 }
 
-extension EditController {
-    @MainActor func didSetModel() {}
-
-    @MainActor
-    func resetCurrentModel() {
-        tableEditModel.resetLinks()
-    }
-    
-    @MainActor 
-    func submitChanges() {
-        tableEditModel.resetLinks()
-    }
-}
-
-// MARK: - Link Editor
+// MARK: - QuickEntryEditor
 
 extension EditController {
-    @MainActor
-    func contentEditLink(for entryId: UUID) -> LinkReplaceController {
-        guard let controller = tableEditModel.contentLinks[entryId] else {
-            let controller = LinkReplaceController {
-                model[entryId].content
-            } setter: {
-                update(entryId: entryId, content: $0)
-            }
-            tableEditModel.contentLinks[entryId] = controller
-            return controller
-        }
-        return controller
+    func create(name: String, content: String) -> TableEntryModel {
+        TableEntryModel(id: UUID(), name: name, content: content)
     }
 
-    @MainActor
-    func updateContent(_ content: String, for entryId: UUID) {
-        if let contentLink = tableEditModel.contentLinks[entryId] {
-            contentLink.editValue.wrappedValue = content
-        } else {
-            update(entryId: entryId, content: content)
-        }
-        save(with: String(localized: "Add link").localizedString)
-    }
-    
-    @MainActor func update(entryId: UUID, content: String) {
-        model[entryId].content = content
-        editorModel.cacheItemListModel.reset(cacheType: .content, itemId: entryId, text: content)
-        editorModel.cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: model[entryId].textLinkContent)
-    }
-}
-
-extension EditController {
-    @MainActor func merge(entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
-        let item = model
+    @MainActor func merge(modelId: UUID, entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+        guard let editModel = editModel(for: modelId) else { return [] }
         var newEntries = entries.map { entry in
-            let foundEntry = item.entries.first(where: { $0.name == entry.name })
+            let foundEntry = editModel.entries.first(where: { $0.name == entry.name })
             return TableEntryModel(id: foundEntry?.id ?? entry.id, name: entry.name, content: entry.content, displayState: entry.displayState, diceResult: entry.diceResult)
         }
-        let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
+        let removedIds = Set(editModel.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
         let module = itemController.config.module
-        let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
+        let itemRowModels = removedIds.map { ItemRowModel(itemId: editModel.id, entryId: $0, typeId: module) }
 
         var effectedLinks = true
         for itemRowModel in itemRowModels {
@@ -164,10 +117,10 @@ extension EditController {
         }
         if recoverEntries != nil || effectedLinks {
             if let recoverEntries {
-                newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
+                newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { editModel[$0] })
             }
-            item.entries = newEntries
-            save(with: String(localized: "Entries replaced").localizedString)
+            editModel.entries = newEntries
+            save(updated: editModel, message: String(localized: "Entries replaced").localizedString)
             return []
         }
         return itemRowModels

@@ -34,11 +34,11 @@ struct DetailListView: View {
     func content(listController: any FolderListControllable) -> some View {
         ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: false) {
         } editor: {
-            WeatherEditor(editController: root.editController, model: model)
+            WeatherEditor(model: model)
         } inspector: {
             root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
         } overlay: {
-            OverlayViewer(animate: $animate)
+            OverlayViewer(model: model, animate: $animate)
         }
         .overlay {
             if openFileWindowModel.showItem {

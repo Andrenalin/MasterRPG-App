@@ -48,7 +48,7 @@ private extension RerollEditor {
                 HStack(spacing: 8) {
                     ForEach(model.rerollOptions) { reroll in
                         Button {
-                            withAnimation { root.editController.remove(reroll: reroll) }
+                            withAnimation { root.editController.remove(reroll: reroll, modelId: model.id) }
                         } label: {
                             HStack(spacing: 4) {
                                 Label {
@@ -122,7 +122,7 @@ private extension RerollEditor {
 
     func addCurrentReroll() async {
         withAnimation {
-            root.editController.add(reroll: currentReroll, value: currentValue, isMaxDiceValue: isMaxDiceValue)
+            root.editController.add(reroll: currentReroll, value: currentValue, isMaxDiceValue: isMaxDiceValue, modelId: model.id)
             currentReroll = 0
             currentValue = 0
         }

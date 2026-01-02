@@ -46,9 +46,9 @@ struct DetailListView: View {
         } editor: {
             detailEditorView
         } inspector: {
-            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel)
+            EditorLinkView(root: root.rootController, model: model, editorLinkModel: root.editorLinkModel)
         } entryEditor: {
-            EntryEditorView(editController: root.editController)
+            EntryEditorView(editController: root.editController, model: model)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -74,13 +74,13 @@ private extension DetailListView {
     @ViewBuilder var detailEditorView: some View {
         root.photoRoot.viewController.dropSelectionView(model: root.editController.adventureEditModel.selectionPhoto)
             .onChange(of: root.editController.adventureEditModel.selectionPhoto.itemId) {
-                withAnimation { root.editController.add(photoId: root.editController.adventureEditModel.selectionPhoto.itemId) }
+                withAnimation { root.editController.add(photoId: root.editController.adventureEditModel.selectionPhoto.itemId, modelId: model.id) }
             }
-            .onChange(of: root.editController.model.photoId, initial: true) {
-                withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: root.editController.model.photoId) }
+            .onChange(of: model.photoId, initial: true) {
+                withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
             }
         
-        EntryListView(editController: root.editController, linkTypes: LinkAdventureModuleTransferable.self, headerTitle: "Sections")
+        EntryListView(editController: root.editController, model: model, linkTypes: LinkAdventureModuleTransferable.self, headerTitle: "Sections")
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
@@ -88,7 +88,7 @@ private extension DetailListView {
             if !openFileWindowModel.showItem {
                 ControlGroup {
                     Button {
-                        navigator.navigate(to: EditorRoute.quickEditor, method: .cover)
+                        navigator.navigate(to: EditorRoute.quickEditor(model.id), method: .cover)
                     } label: {
                         Label {
                             Text("Quick Editor", bundle: .module)
@@ -99,7 +99,7 @@ private extension DetailListView {
                     
                     Button {
                         withAnimation {
-                            let entryId = root.editController.addNewEntry()
+                            let entryId = root.editController.addNewEntry(modelId: model.id)
                             root.editController.editorModel.currentEntryId = entryId
                             Task { @MainActor in
                                 try? await Task.sleep(for: .seconds(0.25))
@@ -128,7 +128,7 @@ private extension DetailListView {
     private func addLinkButton(module: NetworkModules) -> some View {
         Button {
             withAnimation {
-                navigator.navigate(to: EditorRoute.addLink(module), method: .managedSheet)
+                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)), method: .managedSheet)
             }
         } label: {
             Label {

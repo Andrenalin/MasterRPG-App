@@ -8,12 +8,13 @@ import TableRPG
 import CharacterRPG
 
 struct RootQuickLinkEditor: View {
+    let model: MapModel
     let editController: EditController
     
     @Environment(MapRootModel.self) private var root
     
     var body: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
 
         QuickLinkEditor(editController: editController, linkController: root.rootControllable.linkControllable, model: $model.entries, title: model.name) {
             QuickEditorAction(configs: configs, bundle: .module, afterEntries: $0) {

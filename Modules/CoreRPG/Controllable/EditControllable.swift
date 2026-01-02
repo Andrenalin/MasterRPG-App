@@ -3,12 +3,6 @@
 import Observation
 import SwiftUI
 
-public enum EditTypes: Equatable, Hashable {
-    case main
-    case link
-    case module(NetworkModules)
-}
-
 public protocol EditControllable: Sendable {
     associatedtype Model: ItemDataAccessable & ItemDiffComparable & ModelType
 
@@ -18,32 +12,19 @@ public protocol EditControllable: Sendable {
 
     var editorModel: ItemEditorModel { get }
 
-    @MainActor
-    var model: Model { get set }
-
-    // reset / edit  extensions
-    @MainActor func add(tag: String)
-    @MainActor func remove(tag: String)
-
     // special edit
     @MainActor func duplicate(item: any ItemDataAccessable) async
     
     // overwrite extensions
     @MainActor func resetCurrentModel()
     @MainActor func didSetModel()
-    @MainActor func validateBeforeSave()
+    @MainActor func validateBeforeSave(model: Model)
     @MainActor func validateEntries()
-    @MainActor func submitChanges()
     @MainActor func save(with name: String)
-
-    // selection edits
-    @MainActor func selection(for module: NetworkModules) -> [ItemRowModel]
-    @MainActor func toggle(for module: NetworkModules, itemRowModel: ItemRowModel) async
 }
 
 public extension EditControllable {
-    @MainActor
-    var model: Model {
+    @MainActor internal var model: Model {
         get { editorModel.undoManaged.value as? Model ?? .empty }
         nonmutating set {
             // it is a class an updated already
@@ -56,12 +37,8 @@ public extension EditControllable {
 
     @MainActor func resetCurrentModel() {}
     @MainActor func didSetModel() {}
-    @MainActor func validateBeforeSave() {}
+    @MainActor func validateBeforeSave(model: Model) {}
     @MainActor func validateEntries() {}
-    @MainActor func submitChanges() {}
-
-    @MainActor func selection(for module: NetworkModules) -> [ItemRowModel] { [] }
-    @MainActor func toggle(for module: NetworkModules, itemRowModel: ItemRowModel) async {}
 }
 
 // MARK: - Editor
@@ -75,66 +52,68 @@ public extension EditControllable {
         reset(tags: tags, modelId: id)
     }
 
-    @MainActor func reset(category: ItemListCategory, modelId: UUID?) {
-        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+    @MainActor func reset(category: ItemListCategory, modelId: UUID) {
+        guard var editModel = editModel(for: modelId) else { return }
         guard editModel.category != category else { return }
         editModel.category = category
         save(updated: editModel, message: String(localized: "Change to \(category.title)").localizedString)
     }
 
-    @MainActor func reset(description: String, modelId: UUID?) {
-        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+    @MainActor func reset(description: String, modelId: UUID) {
+        guard var editModel = editModel(for: modelId) else { return }
         guard editModel.description != description else { return }
         editModel.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .description, itemId: model.id, text: model.description.markDownText())
         save(updated: editModel, message: String(localized: "Typing").localizedString)
     }
 
-    @MainActor func reset(name: String, modelId: UUID?) {
-        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+    @MainActor func reset(name: String, modelId: UUID) {
+        guard var editModel = editModel(for: modelId) else { return }
         guard editModel.name != name else { return }
         editModel.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: model.id, text: model.name.markDownText())
         save(updated: editModel, message: String(localized: "Typing").localizedString)
     }
 
-    @MainActor func reset(tags: [String], modelId: UUID?) {
-        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+    @MainActor func reset(tags: [String], modelId: UUID) {
+        guard var editModel = editModel(for: modelId) else { return }
         let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
         guard editModel.tags != sortedTags else { return }
         editModel.tags = sortedTags
         save(updated: editModel, message: String(localized: "Changed tags").localizedString)
     }
     
-    @MainActor func reset(hidden: Bool, modelId: UUID?) {
-        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+    @MainActor func reset(hidden: Bool, modelId: UUID) {
+        guard var editModel = editModel(for: modelId) else { return }
         guard editModel.isGroupHiddenToggle != hidden else { return }
         editModel.isGroupHiddenToggle = hidden
         save(updated: editModel, message: String(localized: "Change to \(hidden ? "hide" : "show")").localizedString)
     }
 
-    @MainActor func reset(fileUrl: FileUrl?, modelId: UUID?) {
-        guard var editModel = editModel(for: modelId ?? model.id) else { return }
+    @MainActor func reset(fileUrl: FileUrl?, modelId: UUID) {
+        guard var editModel = editModel(for: modelId) else { return }
         guard editModel.fileUrl != fileUrl else { return }
         editModel.fileUrl = fileUrl
         save(updated: editModel, message: String(localized: "Change file").localizedString)
     }
 
-    @MainActor func add(tag: String) {
+    @MainActor func add(tag: String, modelId: UUID) {
+        guard var editModel = editModel(for: modelId) else { return }
         guard !tag.isEmpty else { return }
-        guard !model.tags.contains(where: { $0 == tag }) else { return }
-        var tags = model.tags
+        guard !editModel.tags.contains(where: { $0 == tag }) else { return }
+        var tags = editModel.tags
         tags.append(tag)
-        model.tags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
-        save(with: String(localized: "Add \(tag)").localizedString)
+        editModel.tags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
+        save(updated: editModel, message: String(localized: "Add \(tag)").localizedString)
     }
 
-    @MainActor func remove(tag: String) {
+    @MainActor func remove(tag: String, modelId: UUID) {
+        guard var editModel = editModel(for: modelId) else { return }
         var tags = model.tags
         guard let index = tags.firstIndex(of: tag) else { return }
         tags.remove(at: index)
-        model.tags = tags
-        save(with: String(localized: "Remove \(tag)").localizedString)
+        editModel.tags = tags
+        save(updated: editModel, message: String(localized: "Remove \(tag)").localizedString)
     }
 }
 
@@ -460,7 +439,7 @@ public extension EditControllable {
     @MainActor func save(with name: String) {
         guard editorModel.currentItemId != nil, let currentModel = editorModel.currentModel as? Model else { return }
         validateEntries()
-        validateBeforeSave()
+        validateBeforeSave(model: currentModel)
         guard !itemControllable.isEqual(with: currentModel) else { return }
         saveChanges(to: currentModel, name: name)
     }

@@ -279,13 +279,11 @@ public extension AdventureRootModel {
     func addNewAdventure(name: String, text: String, photoIds: [UUID], photoLinks: [String]) async {
         let itemRowModel = await itemController.addNew(type: nil)
         let editController = editController
-        editController.setCurrentItem(to: ItemRowTreeModel(id: UUID(), model: itemRowModel))
-        editController.model.name = name
-        editController.model.description = text
-        editController.model.photoId = photoIds.first
+        editController.reset(name: name, modelId: itemRowModel.itemId)
+        editController.reset(description: text, modelId: itemRowModel.itemId)
+        editController.add(photoId: photoIds.first, modelId: itemRowModel.itemId)
         let entry = AdventureEntryModel(id: UUID(), name: String(localized: "Photos").localizedString, content: photoLinks.joined(separator: ", "))
-        editController.model.entries = [entry]
-        editController.save(with: String(localized: "Create new").localizedString)
+        editController.add(entry: entry, modelId: itemRowModel.itemId)
     }
     
     @MainActor

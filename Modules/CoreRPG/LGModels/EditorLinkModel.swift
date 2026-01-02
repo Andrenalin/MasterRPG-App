@@ -128,24 +128,24 @@ public final class EditorLinkModel {
         }
     }
     
-    func addLinkAndReset(editController: any EntryDataEditable, destinationEntryId: UUID?) {
+    func addLinkAndReset(editController: any EntryDataEditable, destiantionItemId: UUID, destinationEntryId: UUID?) {
         guard let destinationEntryId else { return }
 
         for module in firstRow {
-            addLinkAndReset(editController: editController, destinationEntryId: destinationEntryId, module: module)
+            addLinkAndReset(editController: editController, destiantionItemId: destinationEntryId, destinationEntryId: destinationEntryId, module: module)
         }
         for module in secondRow {
-            addLinkAndReset(editController: editController, destinationEntryId: destinationEntryId, module: module)
+            addLinkAndReset(editController: editController, destiantionItemId: destinationEntryId, destinationEntryId: destinationEntryId, module: module)
         }
     }
 
-    private func addLinkAndReset(editController: any EntryDataEditable, destinationEntryId: UUID, module: NetworkModules) {
+    private func addLinkAndReset(editController: any EntryDataEditable, destiantionItemId: UUID, destinationEntryId: UUID, module: NetworkModules) {
         guard let rootController = rootManager.itemRootController(for: module) else { return }
 
         let model = selectionModel(for: module)
         for item in model.selection {
             let name = rootController.itemControllable.itemOrEmpty(for: item.itemId).name.withoutLink()
-            editController.add(link: name, module: module, itemId: item.itemId, entryId: item.entryId, destinationItemId: editController.model.id, destinationEntryId: destinationEntryId)
+            editController.add(link: name, module: module, itemId: item.itemId, entryId: item.entryId, destinationItemId: destiantionItemId, destinationEntryId: destinationEntryId)
         }
         model.resetSelection(itemId: nil)
     }

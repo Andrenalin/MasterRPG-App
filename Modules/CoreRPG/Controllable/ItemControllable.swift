@@ -192,7 +192,6 @@ public extension ItemControllable {
     @MainActor func replace(model: ModelType?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let model = model as? Model else { return }
         if let orignal = self.itemSync(for: model.id) {
-            let updateHidden = orignal.isGroupHidden != model.isGroupHidden
             let originalLinkModels = orignal.linkRegisterModels
             var originalEntryIds = Set(orignal.entries.map { $0.id })
             let resort = orignal.name != model.name

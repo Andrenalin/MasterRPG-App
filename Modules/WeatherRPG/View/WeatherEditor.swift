@@ -4,22 +4,15 @@ import CoreRPG
 import SwiftUI
 
 struct WeatherEditor: View {
-    init(editController: EditController, model: WeatherModel) {
-        //editController.setCurrentItem(model: model)
-    }
-    
+    let model: WeatherModel
+
     @Environment(WeatherRootModel.self) private var root
-    
-    var model: WeatherModel {
-        root.editController.model
-    }
-    
+        
     var body: some View {
         Section {
             root.viewController.photoSelection(root: root, selectionModel: root.editController.weatherEditModel.selectionPhoto)
                 .onChange(of: root.editController.weatherEditModel.selectionPhoto.selection) {
-                    withAnimation { root.editController
-                        .add(photoId: root.editController.weatherEditModel.selectionPhoto.itemId) }
+                    withAnimation { root.editController.add(photoId: root.editController.weatherEditModel.selectionPhoto.itemId, modelId: model.id) }
                 }
                 .onChange(of: model.photoId, initial: true) {
                     withAnimation { root.editController.weatherEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
@@ -239,5 +232,5 @@ private extension WeatherEditor {
 #Preview(traits: .mockData) {
     @Previewable @Environment(WeatherRootModel.self) var root
 
-    WeatherEditor(editController: root.editController, model: root.itemController.itemOrEmpty(for: MockData.previewId))
+    WeatherEditor(model: root.itemController.itemOrEmpty(for: MockData.previewId))
 }

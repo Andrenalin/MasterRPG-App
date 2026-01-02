@@ -40,9 +40,9 @@ struct DetailListView: View {
         } editor: {
             detailEditorView
         } inspector: {
-            EditorLinkView(root: root.rootController, editorLinkModel: root.editorLinkModel)
+            EditorLinkView(root: root.rootController, model: model, editorLinkModel: root.editorLinkModel)
         } entryEditor: {
-            EntryEditorView(editController: root.editController)
+            EntryEditorView(editController: root.editController, model: model)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -68,7 +68,7 @@ private extension DetailListView {
     @ViewBuilder var detailEditorView: some View {
         root.diceRoot.viewController.dropChooseView(model: root.editController.tableEditModel.selectionDice)
             .onChange(of: root.editController.tableEditModel.selectionDice.selection) {
-                withAnimation { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, model: model) }
+                withAnimation { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, modelId: model.id) }
             }
             .onChange(of: model.diceId, initial: true) {
                 withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId) }
@@ -85,7 +85,7 @@ private extension DetailListView {
         ToolbarItemGroup(placement: .secondaryActionAll) {
             ControlGroup {
                 Button {
-                    navigator.navigate(to: EditorRoute.quickEditor, method: .cover)
+                    navigator.navigate(to: EditorRoute.quickEditor(model.id), method: .cover)
                 } label: {
                     Label {
                         Text("Quick Editor", bundle: .module)
@@ -125,7 +125,7 @@ private extension DetailListView {
     private func addLinkButton(module: NetworkModules) -> some View {
         Button {
             withAnimation {
-                navigator.navigate(to: EditorRoute.addLink(module), method: .managedSheet)
+                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)), method: .managedSheet)
             }
         } label: {
             Label {

@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 struct DisplayConfigEditor: View {
-    let editController: EditController
+    let model: MapModel
     let constTime = Date.now
     
     @Environment(MapRootModel.self) private var root
@@ -13,7 +13,7 @@ struct DisplayConfigEditor: View {
     @State private var showTileEditor = false
     
     var body: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         Section {
 #if !os(tvOS)
             LabeledContent {
@@ -36,7 +36,7 @@ struct DisplayConfigEditor: View {
                 Text("Activate Border", bundle: .module)
             }
             
-            DisplayConfigBorderEditor(editController: editController)
+            DisplayConfigBorderEditor(model: model)
                 .disabled(!model.displayConfig.hasBorder)
 #endif
         } header: {
@@ -66,16 +66,16 @@ struct DisplayConfigEditor: View {
     }
     
     var tileEditorView: some View {
-        RootEditCanvasMap(editController: editController, tile: .empty)
+        RootEditCanvasMap(itemId: model.id, tile: .empty)
     }
 }
 
 struct DisplayConfigBorderEditor: View {
-    let editController: EditController
+    let model: MapModel
     @Environment(MapRootModel.self) private var root
     
     var body: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         Group {
             LabeledContent {
 #if !os(tvOS)
@@ -91,7 +91,7 @@ struct DisplayConfigBorderEditor: View {
                 Text("Border color", bundle: .module)
             }
             
-            TextDoubleEditor(editController: editController, model: $model.displayConfig.borderThicknessDouble, title: "Thickness", icon: "slider.horizontal.below.square.and.square.filled", prompt: "Thickness of the border", bundle: .module, range: 0...25)
+            TextDoubleEditor(editController: root.editController, model: $model.displayConfig.borderThicknessDouble, title: "Thickness", icon: "slider.horizontal.below.square.and.square.filled", prompt: "Thickness of the border", bundle: .module, range: 0...25)
         }
     }
 }

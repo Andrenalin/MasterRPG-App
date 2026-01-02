@@ -5,6 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct AddtionalEntryRow: View, Equatable {
+    let itemId: UUID
     let entryId: UUID
     
     @Environment(MapRootModel.self) private var root
@@ -27,7 +28,7 @@ struct AddtionalEntryRow: View, Equatable {
     }
     
     private var model: MapModel {
-        root.editController.model
+        root.itemController.itemOrEmpty(for: itemId)
     }
     
     private var entry: MapEntryModel {
@@ -44,8 +45,8 @@ struct AddtionalEntryRow: View, Equatable {
     }
 }
 
-#Preview(traits: .mockData) {
-    @Previewable @Environment(MapRootModel.self) var root
-
-    AddtionalEntryRow(entryId: root.editController.model.entries[0].id)
-}
+//#Preview(traits: .mockData) {
+//    @Previewable @Environment(MapRootModel.self) var root
+//
+//    AddtionalEntryRow(entryId: root.editController.model.entries[0].id)
+//}

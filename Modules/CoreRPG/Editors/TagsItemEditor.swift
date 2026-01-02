@@ -3,15 +3,15 @@
 import SwiftUI
 
 public struct TagsItemEditor: View {
-    public init(editController: any EditControllable, module: NetworkModules, title: LocalizedStringKey = "Tags", prompt: LocalizedStringKey = "New tag") {
+    public init(editController: any EditControllable, model: any ItemDataAccessable, title: LocalizedStringKey = "Tags", prompt: LocalizedStringKey = "New tag") {
         self.editController = editController
-        self.module = module
+        self.model = model
         self.title = title
         self.prompt = prompt
     }
     
     let editController: any EditControllable
-    let module: NetworkModules
+    let model: any ItemDataAccessable
     let title: LocalizedStringKey
     let prompt: LocalizedStringKey
     
@@ -20,30 +20,30 @@ public struct TagsItemEditor: View {
     
     public var body: some View {
         let _ = Self._printChanges()
-        LabeledContent {
-            tagsView
-        } label: {
-            Text(title, bundle: .module)
-        }
-        
-        LabeledContent {
-            addTagView
-        } label: {
-            Text("Add", bundle: .module)
-        }
+            LabeledContent {
+                tagsView
+            } label: {
+                Text(title, bundle: .module)
+            }
+            
+            LabeledContent {
+                addTagView
+            } label: {
+                Text("Add", bundle: .module)
+            }
     }
 }
 
 private extension TagsItemEditor {
     var tagsView: some View {
         HStack {
-            if editController.model.tags.isEmpty {
-                Text(editController.model.category.title)
+            if model.tags.isEmpty {
+                Text(model.category.title)
                     .rowColoredTag(backgroundColor: Color.accentColor)
                     .padding(.top, 4)
             }
             
-            ForEach(editController.model.tags, id: \.self) { tag in
+            ForEach(model.tags, id: \.self) { tag in
                 Text(tag)
                     .rowColoredTag(backgroundColor: Color.accentColor)
                     .removeItemImage {
@@ -82,12 +82,12 @@ private extension TagsItemEditor {
     func addCurrentTag() {
         let tag = currentTag.localizedUppercase
         withAnimation {
-            editController.add(tag: tag)
+            editController.add(tag: tag, modelId: model.id)
             currentTag = ""
         }
     }
     
     func remove(tag: String) {
-        editController.remove(tag: tag)
+        editController.remove(tag: tag, modelId: model.id)
     }
 }

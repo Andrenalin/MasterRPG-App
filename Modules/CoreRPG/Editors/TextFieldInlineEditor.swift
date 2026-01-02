@@ -41,7 +41,6 @@ public struct TextFieldInlineEditor: View {
         }
         .onChange(of: focusState, initial: true) {
             guard focusState == false else { return }
-            editController.submitChanges()
             editController.save(with: String(localized: "Typing").localizedString)
             submitAction?()
         }

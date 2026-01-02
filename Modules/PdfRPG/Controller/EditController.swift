@@ -42,7 +42,7 @@ extension EditController: EntryDataEditable {
     
     public var linkModules: [NetworkModules] { [] }
     
-    public func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination {
+    public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
         SelectionModuleRoute.selection
     }
 
@@ -54,27 +54,16 @@ extension EditController: EntryDataEditable {
         PdfEntryModel(id: UUID(), name: name, content: content, pageNumber: "", bounds: .zero)
     }
     
-    func merge(entries: [PdfEntryModel], recoverEntries: [CoreRPG.ItemRowModel]?) async -> [ItemRowModel] {
+    func merge(modelId: UUID, entries: [PdfEntryModel], recoverEntries: [CoreRPG.ItemRowModel]?) async -> [ItemRowModel] {
         []
     }
 }
 
 extension EditController {
-    @MainActor
-    func addBookmark(itemId: UUID, entry: PdfEntryModel) {
-        let item: PdfModel
-        if model.id == itemId {
-            item = model
-        } else {
-            item = itemController.itemOrEmpty(for: itemId)
-        }
-        item.entries.append(entry)
-
-        if model.id == itemId {
-            save(with: String(localized: "Add bookmark").localizedString)
-        } else {
-            itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
-        }
+    @MainActor func addBookmark(itemId: UUID, entry: PdfEntryModel) {
+        guard let editModel = editModel(for: itemId) else { return }
+        editModel.entries.append(entry)
+        save(updated: editModel, message: "Added Bookmark".localizedString)
     }
     
     func createBookmark(itemId: UUID, content: String, page: String, bounds: CGRect) -> PdfEntryModel {

@@ -27,7 +27,7 @@ struct DiceBag: View {
     func diceBagView(for diceBag: [DieModel]) -> some View {
         ForEach(diceBag) { die in
             Button {
-                withAnimation { root.editController.add(die: die) }
+                withAnimation { root.editController.add(die: die, modelId: model.id) }
             } label: {
                 ThumbnailDice(die: die)
                     .padding(4)

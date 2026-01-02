@@ -12,19 +12,25 @@ import TableRPG
 
 @MainActor @Observable
 final class ValueEditModel: Sendable {
-    var nameLinks: [UUID: LinkReplaceController] = [:]
-    var valueLinks: [UUID: LinkReplaceController] = [:]
-
     var childIds: [UUID: UUID] = [:]
 
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false)
     let selectionTable: ItemSelectionModel = ItemSelectionModel()
-    
-    func resetLinks() {
-        nameLinks = [:]
-        valueLinks = [:]
+}
+
+public struct LinkCharacterModuleTransferable: LinkDataTransferable {
+    public var module: NetworkModules
+    public let itemId: UUID
+    public let entryId: UUID?
+    public let name: String
+
+    public static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .characterLink)
+        CodableRepresentation(contentType: .diceLink)
+        CodableRepresentation(contentType: .pdfLink)
+        CodableRepresentation(contentType: .tableLink)
     }
 }
 
@@ -56,20 +62,6 @@ struct EditController: Sendable {
     let valueEditModel: ValueEditModel
 }
 
-public struct LinkCharacterModuleTransferable: LinkDataTransferable {
-    public var module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .characterLink)
-        CodableRepresentation(contentType: .diceLink)
-        CodableRepresentation(contentType: .pdfLink)
-        CodableRepresentation(contentType: .tableLink)
-    }
-}
-
 extension EditController: EntryDataEditable {
     typealias Model = ValueModel
     
@@ -80,26 +72,30 @@ extension EditController: EntryDataEditable {
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
     }
+}
+ 
+// MARK: - EntryList editor
 
+extension EditController {
     public var linkModules: [NetworkModules] { [.value, .dice, .pdf, .table] }
     
-    public func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination {
-        EditorRoute.linkSelection(entryId)
+    public var additioanlEnrtryViewType: AdditionalEntryViewType { .custom }
+    
+    @MainActor public func additionalRowView(for entryId: UUID) -> AnyView {
+        AnyView(AddtionalEntryRow(itemId: UUID(), entryId: entryId).equatable())
     }
     
-    public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
-        switch module {
-        case .dice:
-            SelectionDiceRoute.selection
-        default:
-            SelectionTableRoute.selection
-        }
+    @MainActor private func addLinkInName(link: String, module: NetworkModules, itemId: UUID, entryId: UUID, destinationItemId: UUID, destinationEntryId: UUID) {
+        guard let editModel = editModel(for: destinationItemId) else { return }
+        var entry = editModel[destinationEntryId]
+        
+        let entryLink = "/\(entryId.uuidString)"
+        let linkText = " [\(link)](\(URL.appScheme)://\(module.token)/0/\(itemId.uuidString)\(entryLink))"
+        entry.name = linkText
+        editModel[destinationEntryId] = entry
+        save(updated: editModel, message: String(localized: "Add Link").localizedString)
     }
-
-    public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
-        (module == .value && entryId != nil) || module == .dice || module == .pdf || (module == .table && entryId != nil)
-    }
-
+    
     @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
         guard canAddLink(module: module, entryId: entryId), let editModel = editModel(for: destinationItemId) else { return }
         
@@ -137,74 +133,26 @@ extension EditController: EntryDataEditable {
         }
     }
     
-    public var additioanlEnrtryViewType: AdditionalEntryViewType { .custom }
-
-    @MainActor public func additionalRowView(for entryId: UUID) -> AnyView {
-        AnyView(AddtionalEntryRow(entryId: entryId).equatable())
-    }
-
-    @MainActor private func addLinkInName(link: String, module: NetworkModules, itemId: UUID, entryId: UUID, destinationItemId: UUID, destinationEntryId: UUID) {
-        guard let editModel = editModel(for: destinationItemId) else { return }
-        var entry = editModel[destinationEntryId]
-        
-        let entryLink = "/\(entryId.uuidString)"
-        let linkText = " [\(link)](\(URL.appScheme)://\(module.token)/0/\(itemId.uuidString)\(entryLink))"
-        entry.name = linkText
-        editModel[destinationEntryId] = entry
-        save(updated: editModel, message: String(localized: "Add Link").localizedString)
-    }
-
-    @MainActor public func rowText(entry: any EntryDataAccessable) -> String {
-        root.linkController.linkText(model: model, entryId: entry.id)
+    public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
+        (module == .value && entryId != nil) || module == .dice || module == .pdf || (module == .table && entryId != nil)
     }
     
-    func create(name: String, content: String) -> ValueEntryModel {
-        ValueEntryModel(id: UUID(), name: name, type: .text, value: content)
+    public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        EditorRoute.linkSelection(itemRowModel)
     }
     
-    @MainActor
-    func add(model childModel: ValueModel, into itemId: UUID?) {
-        guard let itemId else { return }
-        let entry = ValueEntryModel(id: UUID(), name: "", type: .text, value: "", valueId: childModel.id)
-        add(entry: entry, into: itemId)
-    }
-
-    @discardableResult @MainActor func copy(entryId: UUID, shouldSave: Bool) -> UUID {
-        var duplicate = model[entryId].duplicate()
-        Task {
-            if let subValueId = duplicate.valueId {
-                let newId = await itemController.duplicate(itemId: subValueId)
-                duplicate.valueId = newId
-            }
-            model.entries.append(duplicate)
-            if shouldSave {
-                let name = String(duplicate.name.prefix(16))
-                save(with: String(localized: "Copy entry \(name)").localizedString)
-            }
-        }
-        return duplicate.id
-    }
-
-    @MainActor func didSetModel() {}
-
-    @MainActor
-    func resetCurrentModel() {
-        valueEditModel.resetLinks()
-    }
-
-    @MainActor
-    func remove(entryId: UUID, shouldSave: Bool) {
-        guard let index = model.entries.firstIndex(where: { $0.id == entryId }) else { return }
-        removeChild(childId: model[entryId].valueId)
-        model.entries.remove(at: index)
-        if shouldSave {
-            save(with: String(localized: "Remove entry").localizedString)
+    public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
+        switch module {
+        case .dice:
+            SelectionDiceRoute.selection
+        default:
+            SelectionTableRoute.selection
         }
     }
-
-    @MainActor
-    func submitChanges() {
-        valueEditModel.resetLinks()
+    
+    @MainActor public func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {
+        guard var item = editModel(for: itemId) else { return "" }
+        return root.linkController.linkText(model: item, entryId: entry.id)
     }
 }
 
@@ -215,8 +163,8 @@ extension EditController {
         _ = await itemController.duplicate(itemId: item.id)
     }
     
-    @MainActor func add(selection: [WindowItemSelection], modelId: UUID?) {
-        guard let editModel = editModel(for: modelId ?? model.id) else { return }
+    @MainActor func add(selection: [WindowItemSelection], modelId: UUID) {
+        guard let editModel = editModel(for: modelId) else { return }
         let photos = Set(editModel.photos)
         var newPhotos = Set(selection.map { $0.itemId })
         newPhotos.subtract(photos)
@@ -225,43 +173,46 @@ extension EditController {
         save(updated: editModel, message: String(localized: "Change Photo").localizedString)
     }
     
-    @MainActor func add(diceId: UUID?, modelId: UUID?) {
-        guard let editModel = editModel(for: modelId ?? model.id) else { return }
+    @MainActor func add(diceId: UUID?, modelId: UUID) {
+        guard let editModel = editModel(for: modelId) else { return }
         editModel.diceId = diceId
         save(updated: editModel, message: String(localized: "Change Dice").localizedString)
+        //root.gameController.resetGameDiceId(itemId: model.id, entryId: entryId)
     }
 }
 
-// MARK: - Edit Entry
-extension EditController {
+// MARK: - QuickEntryEditor
 
-    @MainActor func reset(entryId: UUID, type: ValueEntryModel.ValueType) {
-        guard type != model[entryId].type else { return }
-        model[entryId].valueTypeToggle = type
-        save(with: String(localized: "Change to \(type.title)").localizedString)
+extension EditController {
+    func create(name: String, content: String) -> ValueEntryModel {
+        ValueEntryModel(id: UUID(), name: name, type: .text, value: content)
     }
 }
 
-// MARK: - Quick Entry Edit
+// GameController
 
 extension EditController {
-    @MainActor
-    func addEntry(itemId: UUID, after entryId: UUID) {
+    @MainActor func add(model childModel: ValueModel, into itemId: UUID?) {
+        guard let itemId else { return }
+        let entry = ValueEntryModel(id: UUID(), name: "", type: .text, value: "", valueId: childModel.id)
+        add(entry: entry, into: itemId)
+    }
+}
+
+// MARK: - Quick Row Edit
+
+extension EditController {
+    @MainActor func addEntry(itemId: UUID, after entryId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
         let newEntry = ValueEntryModel.empty(UUID())
-        let model = editorModel.currentItemId == itemId ? self.model : (itemController.copy(of: itemId) ?? .empty)
-        let index = (model.entries.firstIndex(where: { $0.id == entryId }) ?? 0) + 1
+        let index = (editModel.entries.firstIndex(where: { $0.id == entryId }) ?? 0) + 1
         add(entry: newEntry, into: itemId, index: index)
     }
 
-    @MainActor
-    func remove(entryId: UUID, at itemId: UUID) {
-        let model = editorModel.currentItemId == itemId ? self.model : (itemController.copy(of: itemId) ?? .empty)
-        remove(entryId: entryId, from: model)
-        if editorModel.currentItemId == itemId {
-            save(with: String(localized: "Remove entry").localizedString)
-        } else {
-            itemController.replace(model: model, isInsert: false, shouldRepairLinks: true)
-        }
+    @MainActor func remove(entryId: UUID, at itemId: UUID) {
+        guard let editModel = editModel(for: itemId) else { return }
+        remove(entryId: entryId, from: editModel)
+        save(updated: editModel, message: String(localized: "Remove entry").localizedString)
     }
 
     // deep delete after didDelete
@@ -269,19 +220,11 @@ extension EditController {
         guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }
         let entry = item.entries[index]
         item.entries.remove(at: index)
-        if model.id == item.id {
-            remove(entryId: entryId, shouldSave: false)
-        }
         if let valueId = entry.valueId {
             if isDeepRemove == true {
                 let subValue = itemController.itemOrEmpty(for: valueId)
                 guard subValue.isGroupHidden else { return }
-                Task {
-                    await itemController.delete(itemId: subValue.id)
-                    for entry in model.entries {
-                        root.editController.remove(entryId: entry.id, from: model, isDeepRemove: true)
-                    }
-                }
+                delete(itemId: valueId)
             } else {
                 removeChild(childId: valueId)
             }
@@ -290,79 +233,49 @@ extension EditController {
 
     @MainActor
     func toggleSelected(itemId: UUID, entryId: UUID) {
-        let model = editorModel.currentItemId == itemId ? self.model : (itemController.copy(of: itemId) ?? .empty)
-        model[entryId].toggleSelection()
-        if model[entryId].valueSelected {
-            for entry in model.entries {
+        guard let editModel = editModel(for: itemId) else { return }
+        editModel[entryId].toggleSelection()
+        if editModel[entryId].valueSelected {
+            for entry in editModel.entries {
                 guard entry.id != entryId && entry.type == .selection && entry.valueSelected else { continue }
-                model[entry.id].toggleSelection()
+                editModel[entry.id].toggleSelection()
             }
         }
-        if editorModel.currentItemId == itemId {
-            save(with: String(localized: "Change selection").localizedString)
-        } else {
-            itemController.replace(model: model, isInsert: false, shouldRepairLinks: true)
-        }
+        save(updated: editModel, message: String(localized: "Changed selection").localizedString)
     }
 
     @MainActor
     func toggleType(itemId: UUID, entryId: UUID, updatedValue: ValueEntryModel.ValueType) {
-        let model = editorModel.currentItemId == itemId ? self.model : (itemController.copy(of: itemId) ?? .empty)
-        model[entryId].type = updatedValue
-        if editorModel.currentItemId == itemId {
-            save(with: String(localized: "Change type").localizedString)
-        } else {
-            itemController.replace(model: model, isInsert: false, shouldRepairLinks: true)
-        }
+        guard let editModel = editModel(for: itemId) else { return }
+        editModel[entryId].type = updatedValue
+        save(updated: editModel, message: String(localized: "Change type").localizedString)
     }
 
     @MainActor
     func updateDecimal(itemId: UUID, entryId: UUID, value: Double) {
-        let model = editorModel.currentItemId == itemId ? self.model : (itemController.copy(of: itemId) ?? .empty)
-        if model[entryId].valueDecimal != value {
-            model[entryId].valueDecimal = value
-            if editorModel.currentItemId == itemId {
-                save(with: String(localized: "Change selection").localizedString)
-            } else {
-                itemController.replace(model: model, isInsert: false, shouldRepairLinks: true)
-            }
+        guard let editModel = editModel(for: itemId) else { return }
+        if editModel[entryId].valueDecimal != value {
+            editModel[entryId].valueDecimal = value
+            save(updated: editModel, message: String(localized: "Update decimal").localizedString)
         }
     }
 
     @MainActor
     func updateNumber(itemId: UUID, entryId: UUID, value: Int) {
-        let model = editorModel.currentItemId == itemId ? self.model : (itemController.copy(of: itemId) ?? .empty)
-        if model[entryId].valueNumber != value {
-            model[entryId].valueNumber = value
-            if editorModel.currentItemId == itemId {
-                save(with: String(localized: "Change selection").localizedString)
-            } else {
-                itemController.replace(model: model, isInsert: false, shouldRepairLinks: true)
-            }
+        guard let editModel = editModel(for: itemId) else { return }
+        if editModel[entryId].valueNumber != value {
+            editModel[entryId].valueNumber = value
+            save(updated: editModel, message: String(localized: "Update number").localizedString)
         }
     }
 
     @MainActor
     func updateValue(itemId: UUID, entryId: UUID, value: String) {
-        let model = editorModel.currentItemId == itemId ? self.model : (itemController.copy(of: itemId) ?? .empty)
-        if model[entryId].value != value {
-            model[entryId].value = value
-            if editorModel.currentItemId == itemId {
-                save(with: String(localized: "Change selection").localizedString)
-            } else {
-                itemController.replace(model: model, isInsert: false, shouldRepairLinks: true)
-            }
+        guard let editModel = editModel(for: itemId) else { return }
+        if editModel[entryId].value != value {
+            editModel[entryId].value = value
+            save(updated: editModel, message: String(localized: "Update value").localizedString)
         }
-    }
-}
-
-// MARK: - Dice
-
-extension EditController {
-    @MainActor func removeDice(from entryId: UUID) {
-        model[entryId].diceId = nil
-        save(with: String(localized: "Remove dice").localizedString)
-        root.gameController.resetGameDiceId(itemId: model.id, entryId: entryId)
     }
 }
 
@@ -397,57 +310,58 @@ extension EditController {
     }
 
     @MainActor
-    func createGroup(from entryIds: [UUID]) {
-        guard entryIds.count > 0, model.entries.count > 0, var groupIndex = model.entries.firstIndex(where: { $0.id == entryIds[0] }) else { return }
+    func createGroup(itemId: UUID, entryIds: [UUID]) {
+        guard let editModel = editModel(for: itemId) else { return }
+        guard entryIds.count > 0, editModel.entries.count > 0, var groupIndex = editModel.entries.firstIndex(where: { $0.id == entryIds[0] }) else { return }
         let valueEntryIndice = entryIds.compactMap { entryId -> Int? in
-            model.entries.firstIndex(where: { $0.id == entryId })
+            editModel.entries.firstIndex(where: { $0.id == entryId })
         }
-        let valueEntries = valueEntryIndice.sorted().map { model.entries[$0] }
-        valueEntryIndice.sorted(by: >).forEach { model.entries.remove(at: $0) }
+        let valueEntries = valueEntryIndice.sorted().map { editModel.entries[$0] }
+        valueEntryIndice.sorted(by: >).forEach { editModel.entries.remove(at: $0) }
 
-        groupIndex = min(max(groupIndex, 0), model.entries.count)
+        groupIndex = min(max(groupIndex, 0), editModel.entries.count)
 
-        let newValue = ValueModel(id: UUID(), name: "\(model.name) \(String(localized: "Group").localizedString)", description: model.description, tags: model.tags, category: model.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: model.photoId, photos: model.photos, entries: valueEntries)
+        let newValue = ValueModel(id: UUID(), name: "\(editModel.name) \(String(localized: "Group").localizedString)", description: editModel.description, tags: editModel.tags, category: editModel.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: editModel.photoId, photos: editModel.photos, entries: valueEntries)
         let newEntry = ValueEntryModel(id: UUID(), name: String(localized: "Group").localizedString, type: .text, value: "", diceId: nil, valueId: newValue.id)
-        newValue.parentId = model.id
+        newValue.parentId = editModel.id
 
-        model.entries.insert(newEntry, at: groupIndex)
+        editModel.entries.insert(newEntry, at: groupIndex)
         itemController.replace(model: newValue, isInsert: true, shouldRepairLinks: true)
         save(with: String(localized: "Created group").localizedString)
     }
 
     @MainActor
-    func ungroup(from entryIds: [UUID]) async {
+    func ungroup(from itemId: UUID, entryIds: [UUID]) async {
         for entryId in entryIds {
-            await ungroup(from: entryId)
+            await ungroup(itemId: itemId, entryId: entryId)
         }
     }
 
     @MainActor
     func toggleGroup(for rootModel: ItemRowModel, models: [ItemRowModel]) async {
-        let item = rootModel.itemId == editorModel.currentItemId ? model : itemController.itemOrEmpty(for: rootModel.itemId)
-
+        guard let editModel = editModel(for: rootModel.itemId) else { return }
         // root is an entry
         if let entryId = rootModel.entryId {
             // is grouped
-            if let groupId = item[entryId].valueId {
+            if let groupId = editModel[entryId].valueId {
                 // ungrouping
-                await ungroup(groupId: groupId, from: entryId, into: item.id)
+                await ungroup(groupId: groupId, from: entryId, into: editModel.id)
             } else {
-                await group(itemId: item.id, entryId: entryId, models: models)
+                await group(itemId: editModel.id, entryId: entryId, models: models)
             }
         } else {
-            await group(itemId: item.id, entryId: nil, models: models)
+            await group(itemId: editModel.id, entryId: nil, models: models)
         }
     }
 
     @MainActor
-    func setGroupPhotos() async {
-        let allGroupIds = valueGroupIds(value: model)
+    func setGroupPhotos(itemId: UUID) async {
+        guard let editModel = editModel(for: itemId) else { return }
+        let allGroupIds = valueGroupIds(value: editModel)
         for allGroupId in allGroupIds {
-            guard allGroupId != model.id, let value = itemController.copy(of: allGroupId) else { return }
-            value.photoId = model.photoId
-            value.photos = model.photos
+            guard allGroupId != editModel.id, let value = itemController.copy(of: allGroupId) else { return }
+            value.photoId = editModel.photoId
+            value.photos = editModel.photos
             itemController.replace(model: value, isInsert: false, shouldRepairLinks: false)
         }
     }
@@ -467,25 +381,25 @@ extension EditController {
     }
 
     @MainActor
-    private func ungroup(from entryId: UUID) async {
-        let currentItem = model
-        guard let groupIndex = model.entries.firstIndex(where: { $0.id == entryId }), let valueId = currentItem[entryId].valueId else { return }
+    private func ungroup(itemId: UUID, entryId: UUID) async {
+        guard let editModel = editModel(for: itemId) else { return }
+        guard let groupIndex = editModel.entries.firstIndex(where: { $0.id == entryId }), let valueId = editModel[entryId].valueId else { return }
         let valueGroupped = itemController.itemOrEmpty(for: valueId)
         let groupEntries = valueGroupped.entries
-        currentItem.entries.remove(at: groupIndex)
+        editModel.entries.remove(at: groupIndex)
         await itemController.delete(itemId: valueId)
 //        for entry in groupEntries {
 //            remove(entryId: entry.id, from: valueGroupped, isDeepRemove: true)
 //        }
         groupEntries.reversed().forEach {
-            currentItem.entries.insert($0, at: groupIndex)
+            editModel.entries.insert($0, at: groupIndex)
         }
-        save(with: String(localized: "Insert group").localizedString)
+        save(updated: editModel, message: String(localized: "Insert group").localizedString)
     }
 
     @MainActor
     private func group(itemId: UUID, entryId: UUID?, models: [ItemRowModel]) async {
-        let item = itemId == editorModel.currentItemId ? model : itemController.itemOrEmpty(for: itemId)
+        guard let editModel = editModel(for: itemId) else { return }
 
         var entries: [ValueEntryModel] = []
         for model in models {
@@ -495,56 +409,46 @@ extension EditController {
             }
         }
         if let entryId {
-            entries.insert(item[entryId], at: 0)
+            entries.insert(editModel[entryId], at: 0)
         }
 
-        let value = ValueModel(id: UUID(), name: entries.first?.name ?? String(localized: "Unnamed").localizedString, description: "", tags: item.tags, category: item.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: item.photoId, photos: item.photoId != nil ? [item.photoId!] : [], entries: entries)
+        let value = ValueModel(id: UUID(), name: entries.first?.name ?? String(localized: "Unnamed").localizedString, description: "", tags: editModel.tags, category: editModel.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: editModel.photoId, photos: editModel.photoId != nil ? [editModel.photoId!] : [], entries: entries)
         itemControllable.replace(model: value, isInsert: true, shouldRepairLinks: true)
 
         let valueEntry = ValueEntryModel(id: UUID(), name: String(localized: "Group").localizedString, type: .text, value: "", valueId: value.id)
 
         if let entryId {
-            if let index = item.entries.firstIndex(where: { $0.id == entryId }) {
-                item.entries.insert(valueEntry, at: index)
+            if let index = editModel.entries.firstIndex(where: { $0.id == entryId }) {
+                editModel.entries.insert(valueEntry, at: index)
             }
             for entry in entries {
-                if let index = item.entries.firstIndex(where: { $0.id == entry.id }) {
-                    item.entries.remove(at: index)
+                if let index = editModel.entries.firstIndex(where: { $0.id == entry.id }) {
+                    editModel.entries.remove(at: index)
                 }
             }
         } else {
-            item.entries.append(valueEntry)
+            editModel.entries.append(valueEntry)
         }
-
-        if itemId == editorModel.currentItemId {
-            save(with: String(localized: "Group").localizedString)
-        } else {
-            itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
-        }
+        save(updated: editModel, message: String(localized: "Grouped").localizedString)
     }
 
     @MainActor
     private func ungroup(groupId: UUID, from entryId: UUID, into itemId: UUID) async {
-        let groupedItem = groupId == editorModel.currentItemId ? model : itemController.itemOrEmpty(for: groupId)
-        let item = itemId == editorModel.currentItemId ? model : itemController.itemOrEmpty(for: itemId)
+        guard let editModel = editModel(for: groupId) else { return }
+        guard let item = self.editModel(for: itemId) else { return }
         if let index = item.entries.firstIndex(where: { $0.id == entryId }) {
-            item.entries.insert(contentsOf: groupedItem.entries, at: index)
+            item.entries.insert(contentsOf: editModel.entries, at: index)
         } else {
-            item.entries.append(contentsOf: groupedItem.entries)
+            item.entries.append(contentsOf: editModel.entries)
         }
         if let index = item.entries.firstIndex(where: { $0.id == entryId }) {
             item.entries.remove(at: index)
         }
-        guard let editModel = editModel(for: groupId) else { return }
         await itemController.delete(itemId: groupId)
         for entry in editModel.entries {
             remove(entryId: entry.id, from: editModel, isDeepRemove: true)
         }
-        if itemId == editorModel.currentItemId {
-            save(with: String(localized: "Ungroup").localizedString)
-        } else {
-            itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
-        }
+        save(updated: item, message: String(localized: "Ungrouped").localizedString)
     }
 }
 
@@ -558,17 +462,19 @@ extension EditController {
     }
 
     @MainActor
-    func addChild(childId: UUID?, into entryId: UUID) {
+    func addChild(childId: UUID?, into itemId: UUID, entryId: UUID) {
         guard canAddChild(childId: childId) else { return }
-        if let existingChildId = model[entryId].valueId {
+        guard let parent = editModel(for: itemId) else { return }
+        if let existingChildId = parent[entryId].valueId {
+            // save is missing
             itemController.itemOrEmpty(for: existingChildId).parentId = nil
         }
-        model[entryId].valueId = childId
+        parent[entryId].valueId = childId
         if let childId {
-            itemController.itemOrEmpty(for: childId).parentId = model.id
+            // save is missing
+            itemController.itemOrEmpty(for: childId).parentId = itemId
         }
-
-        save(with: String(localized: "Add child item").localizedString)
+        save(updated: parent, message: String(localized: "Add child item").localizedString)
     }
 
     @MainActor
@@ -577,7 +483,7 @@ extension EditController {
         let child = itemController.itemOrEmpty(for: childId).copy()
         child.parentId = nil
         itemController.replace(model: child, isInsert: false, shouldRepairLinks: true)
-        let parent = model.id == parentId ? model : itemController.itemOrEmpty(for: parentId).copy()
+        guard let parent = editModel(for: parentId) else { return }
         let entries = parent.entries.map {
             var entry = $0
             if entry.valueId == childId {
@@ -586,16 +492,12 @@ extension EditController {
             return entry
         }
         parent.entries = entries
-        if model.id == parentId {
-            save(with: String(localized: "Remove child item").localizedString)
-        } else {
-            itemController.replace(model: parent, isInsert: false, shouldRepairLinks: true)
-        }
+        save(updated: parent, message: String(localized: "Remove child item").localizedString)
     }
 
-    func copyAddChild(childId: UUID, into entryId: UUID) async {
+    func copyAddChild(childId: UUID, into itemId: UUID, entryId: UUID) async {
         let copiedChildId = await itemController.duplicate(itemId: childId)
-        await addChild(childId: copiedChildId, into: entryId)
+        await addChild(childId: copiedChildId, into: itemId, entryId: entryId)
     }
 }
 
@@ -631,97 +533,10 @@ extension EditController {
     }
 }
 
-// MARK: - Link Editor
-
-extension EditController {
-    @MainActor func nameEditLink(for entryId: UUID) -> LinkReplaceController {
-        guard let controller = valueEditModel.nameLinks[entryId] else {
-            let controller = LinkReplaceController {
-                model[entryId].name
-            } setter: {
-                update(entryId: entryId, name: $0)
-            }
-            valueEditModel.nameLinks[entryId] = controller
-            return controller
-        }
-        return controller
-    }
-
-    @MainActor
-    func updateNameContent(_ content: String, for entryId: UUID) {
-        if let contentLink = valueEditModel.nameLinks[entryId] {
-            contentLink.editValue.wrappedValue = content
-        } else {
-            update(entryId: entryId, name: content)
-        }
-        save(with: String(localized: "Add link").localizedString)
-    }
-
-    @MainActor func update(entryId: UUID, name: String) {
-        model[entryId].name = name
-        editorModel.cacheItemListModel.reset(cacheType: .entryName, itemId: entryId, text: name)
-        let linkText = root.linkController.linkText(model: model, entryId: entryId)
-        editorModel.cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: linkText)
-    }
-
-    @MainActor func contentEditLink(for entryId: UUID) -> LinkReplaceController {
-        guard let controller = valueEditModel.valueLinks[entryId] else {
-            let controller = LinkReplaceController {
-                model[entryId].value
-            } setter: {
-                update(entryId: entryId, value: $0)
-            }
-            valueEditModel.valueLinks[entryId] = controller
-            return controller
-        }
-        return controller
-    }
-
-    @MainActor
-    func updateValueContent(_ content: String, for entryId: UUID) {
-        if let contentLink = valueEditModel.valueLinks[entryId] {
-            contentLink.editValue.wrappedValue = content
-        } else {
-            update(entryId: entryId, value: content)
-        }
-        save(with: String(localized: "Add link").localizedString)
-    }
-
-    @MainActor func update(entryId: UUID, value: String) {
-        model[entryId].value = value
-        let valueText = root.linkController.linkText(model: model, entryId: entryId, withoutName: true)
-        editorModel.cacheItemListModel.reset(cacheType: .content, itemId: entryId, text: valueText)
-        let linkText = root.linkController.linkText(model: model, entryId: entryId)
-        editorModel.cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: linkText)
-    }
-}
-
-// MARK: - LinkText
-
 extension EditController {
     @MainActor
-    func nameText(for entryId: ValueEntryModel.ID) -> String {
-        var otherValue = ""
-        if let valueId = model[entryId].valueId {
-            otherValue = itemController.itemOrEmpty(for: valueId).url(linkNumber: 0)
-        }
-
-        if let diceId = model[entryId].diceId {
-            if otherValue.isEmpty {
-                otherValue = diceRoot.linkController.generateLink(itemId: diceId)
-            } else {
-                otherValue = "\(otherValue), \(diceRoot.linkController.generateLink(itemId: diceId))"
-            }
-        }
-
-        return model[entryId].nameText(otherValue: " \(otherValue)")
-    }
-}
-
-extension EditController {
-    @MainActor
-    func merge(entries: [ValueEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
-        let item = model
+    func merge(modelId: UUID, entries: [ValueEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+        guard let item = editModel(for: modelId) else { return [] }
         var newEntries = entries.map { entry in
             var foundEntry = item.entries.first(where: { $0.name == entry.name })
             foundEntry?.value = entry.value
@@ -743,7 +558,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(with: String(localized: "Entries replaced").localizedString)
+            save(updated: item, message: String(localized: "Entries replaced").localizedString)
             return []
         }
         return itemRowModels

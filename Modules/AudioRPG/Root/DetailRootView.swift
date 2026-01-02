@@ -76,7 +76,7 @@ struct DetailListView: View {
             HStack {
                 FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], modelId: model.id)
                 
-                Text(model.url?.absoluteString ?? "No file is set")
+                Text(model.url?.path(percentEncoded: false) ?? "No file is set")
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
             }

@@ -46,7 +46,7 @@ private extension FumbleEditor {
                 HStack(spacing: 8) {
                     ForEach(model.fumbleValues) { fumble in
                         Button {
-                            withAnimation { root.editController.remove(fumble: fumble) }
+                            withAnimation { root.editController.remove(fumble: fumble, modelId: model.id) }
                         } label: {
                             HStack(spacing: 4) {
                                 Label(fumble.text, systemImage: fumble.icon)
@@ -108,7 +108,7 @@ private extension FumbleEditor {
 
     func addCurrentFumble() async {
         withAnimation {
-            root.editController.add(fumble: currentFumble, isDiceValueFumble: isDiceValueFumble)
+            root.editController.add(fumble: currentFumble, isDiceValueFumble: isDiceValueFumble, modelId: model.id)
             currentFumble = 0
         }
     }

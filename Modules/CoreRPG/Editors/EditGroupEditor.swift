@@ -90,7 +90,7 @@ struct EditGroupHeaderEditor<Model, ItemDataController: ItemControllable, ItemEd
 //            NameItemEditor(editController: editGroupController)
 
 #endif
-            TagsItemEditor(editController: editGroupController, module: editGroupController.itemControllable.config.module)
+            //TagsItemEditor(editController: editGroupController, model: model)
 
 #if !os(macOS)
 //            HiddenToggleEditor(editController: editGroupController)

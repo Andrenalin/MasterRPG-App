@@ -16,7 +16,7 @@ struct DiceViewer: View {
                 ForEach(model.dice) { die in
                     Button {
                         if isEditor {
-                            withAnimation { root.editController.remove(die: die) }
+                            withAnimation { root.editController.remove(die: die, modelId: model.id) }
                         }
                     } label: {
                         HStack(alignment: .top, spacing: 8) {

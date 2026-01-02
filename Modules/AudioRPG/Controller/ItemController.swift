@@ -43,13 +43,6 @@ extension ItemController: FileUrlAccessible {
 }
 
 extension ItemController {
-    func didDelete(fileUrl: FileUrl?) async {
-        guard let fileUrl else { return }
-        fileUrlDataController?.delete(fileUrl)
-    }
-}
-
-extension ItemController {
     @MainActor func hasAudio(itemId: UUID) -> Bool {
         guard let model = itemSync(for: itemId) else { return false }
         guard model.specialCategory else { return model.url != nil }

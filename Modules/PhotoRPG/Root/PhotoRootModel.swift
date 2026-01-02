@@ -164,12 +164,13 @@ public extension PhotoRootModel {
     
     func addNewPhoto(data: Data, name: String, text: String) async -> (UUID, String) {
         let itemRowModel = await itemController.addNew(type: nil)
-        await editController.setCurrentItem(to: ItemRowTreeModel(id: UUID(), model: itemRowModel))
         await editController.reset(name: name, modelId: itemRowModel.itemId)
         await editController.reset(description: text, modelId: itemRowModel.itemId)
         try? await editController.resetFile(data: data, modelId: itemRowModel.itemId, path: "")
+
+        let item = await itemController.item(for: itemRowModel.itemId)
         
-        return await (itemRowModel.itemId, editController.model.url(linkNumber: 0))
+        return (itemRowModel.itemId, item?.url(linkNumber: 0) ?? "")
     }
 
     static let thumbnailSize: CGSize = .init(width: 64.0, height: 64.0)

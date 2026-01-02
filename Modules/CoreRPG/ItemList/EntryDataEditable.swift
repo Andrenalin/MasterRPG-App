@@ -24,17 +24,19 @@ public protocol EntryDataEditable: EditControllable {
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool
         
     var linkModules: [NetworkModules] { get }
-    func linkSelectionDestination(for entryId: UUID) -> any NavigationDestination
+    func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination
     func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination
     
     var thumbnailEntryViewType: ThumbnailEntryViewType { get }
     var additioanlEnrtryViewType: AdditionalEntryViewType { get }
     
     @MainActor func additionalRowView(for entryId: UUID) -> AnyView
-    @MainActor func rowText(entry: any EntryDataAccessable) -> String
+    @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String
+    
+    // MARK: - QuickEntryEditor
     
     @MainActor func create(name: String, content: String) -> Model.Entry
-    @MainActor func merge(entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
+    @MainActor func merge(modelId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
     @MainActor func remove(entryId: UUID)
     @MainActor func remove(entryId: UUID, shouldSave: Bool)
 }
@@ -67,22 +69,15 @@ public extension EntryDataEditable {
 
     @MainActor func additionalRowView(for entryId: UUID) -> AnyView { AnyView(EmptyView()) }
     
-    @MainActor func rowText(entry: any EntryDataAccessable) -> String {
+    @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {
         entry.name.isEmpty ? entry.content : "\(entry.name.markDownText()): \(entry.content)"
     }
 
-
-    @MainActor
-    var editEntries: [Model.Entry] {
-        editEntries(for: model)
-    }
-    
     func editEntries(for item: Model) -> [Model.Entry] {
         item.entries
     }
     
-    @MainActor
-    func validateEntries() {
+    @MainActor func validateEntries(model: Model) {
         var seenIds: Set<UUID> = []
         guard !model.entries.allSatisfy({
             let result = !seenIds.contains($0.id)
@@ -101,15 +96,15 @@ public extension EntryDataEditable {
     }
     
     @MainActor
-    func addNewEntry(modelId: UUID? = nil) -> UUID {
+    func addNewEntry(modelId: UUID) -> UUID {
         let entry = Model.Entry.empty
         add(entry: entry, modelId: modelId)
         return entry.id
     }
     
     @MainActor
-    func add(entry: Model.Entry, modelId: UUID? = nil) {
-        guard let editModel = editModel(for: modelId ?? model.id) else { return }
+    func add(entry: Model.Entry, modelId: UUID) {
+        guard let editModel = editModel(for: modelId) else { return }
         add(entry: entry, into: editModel)
     }
     
@@ -193,7 +188,7 @@ public extension EntryDataEditable {
         changed = changed || model[entryId].content != newContent
         model[entryId].content <=> newContent
         if changed {
-            cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: rowText(entry: model[entryId]))
+            cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: rowText(itemId: model.id, entry: model[entryId]))
         }
         save(with: String(localized: "Edit entry").localizedString)
     }
@@ -226,7 +221,7 @@ public extension EntryDataEditable {
 
 public extension EntryDataEditable {
     @MainActor func linkTextModel(for entry: any EntryDataAccessable, linkController: LinkRootController, searchModel: SearchModel, toggler: ((UUID, NetworkModules) async -> Void)? = nil) -> LinkHighlightTextModel {
-        let nameText = rowText(entry: entry)
+        let nameText = rowText(itemId: model.id, entry: entry)
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entry.id) else {
             let model = LinkHighlightTextModel(linkControllable: linkController.linkControllable, text: nameText, highlightedText: searchModel.searchText, toggler: toggler)        
             cacheItemListModel.setItemLink(cacheType: .row, itemId: entry.id, linkModel: model)

@@ -44,7 +44,7 @@ struct CoupEditor: View {
                 HStack(spacing: 8) {
                     ForEach(model.coupValues) { coup in
                         Button {
-                            withAnimation { root.editController.remove(coup: coup) }
+                            withAnimation { root.editController.remove(coup: coup, modelId: model.id) }
                         } label: {
                             HStack(spacing: 4) {
                                 Label(coup.text, systemImage: coup.icon)
@@ -109,7 +109,7 @@ struct CoupEditor: View {
 
     func addCurrentCoup() {
         withAnimation {
-            root.editController.add(coup: currentCoup, isDiceValueCoup: isDiceValueCoup)
+            root.editController.add(coup: currentCoup, isDiceValueCoup: isDiceValueCoup, modelId: model.id)
             currentCoup = 0
         }
     }

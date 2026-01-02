@@ -9,12 +9,13 @@ import CharacterRPG
 import MapRPG
 
 struct RootQuickLinkEditor: View {
+    let model: AdventureModel
     let editController: EditController
     
     @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
-        @Bindable var model = editController.model
+        @Bindable var model = model
         
         QuickLinkEditor(editController: editController, linkController: root.linkControllable, model: $model.entries, title: model.name) {
             QuickEditorAction(configs: configs, bundle: .module, afterEntries: $0) {

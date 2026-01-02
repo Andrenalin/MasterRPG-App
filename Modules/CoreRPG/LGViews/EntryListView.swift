@@ -4,13 +4,15 @@ import Foundation
 import SwiftUI
 
 public struct EntryListView<LinkType: LinkDataTransferable>: View {
-    public init(editController: any EntryDataEditable, linkTypes: LinkType.Type, headerTitle: LocalizedStringKey) {
+    public init(editController: any EntryDataEditable, model: any ItemDataAccessable, linkTypes: LinkType.Type, headerTitle: LocalizedStringKey) {
         self.editController = editController
+        self.model = model
         self.linkTypes = linkTypes
         self.headerTitle = headerTitle
     }
     
     let editController: any EntryDataEditable
+    let model: any ItemDataAccessable
     let linkTypes: LinkType.Type
     let headerTitle: LocalizedStringKey
     
@@ -19,7 +21,7 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
     
     public var body: some View {
         Section {
-            ForEach(editController.editEntries, id: \.id) { entry in
+            ForEach(model.entries, id: \.id) { entry in
                 EntryEditRow(editController: editController, entry: entry, cacheItemListModel: editController.cacheItemListModel)
                     .id(entry.id)
 #if !os(tvOS)
@@ -97,7 +99,7 @@ private extension EntryListView {
     
     func linkButton(entry: any EntryDataAccessable, onlyIcon: Bool = false) -> some View {
         Button {
-            navigator.navigate(to: editController.linkSelectionDestination(for: entry.id), method: .sheet)
+            navigator.navigate(to: editController.linkSelectionDestination(itemRowModel: ItemRowModel(itemId: model.id, entryId: entry.id, typeId: editController.itemControllable.config.module)), method: .sheet)
         } label: {
             if onlyIcon {
                 Image(systemName: "link.badge.plus")
