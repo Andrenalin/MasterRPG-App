@@ -97,7 +97,7 @@ extension EditController {
     }
     
     @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
-        guard canAddLink(module: module, entryId: entryId), let editModel = editModel(for: destinationItemId) else { return }
+        guard canAddLink(module: module, entryId: entryId), let item = editModel(for: destinationItemId) else { return }
         
         switch module {
         case .table:
@@ -105,27 +105,27 @@ extension EditController {
                 addLinkInName(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId,  destinationEntryId: destinationEntryId)
             }
         case .dice:
-            var entry = editModel[destinationEntryId]
+            var entry = item[destinationEntryId]
             entry.diceId = itemId
             if entry.type != .number || entry.type != .decimal {
                 entry.type = .number
             }
-            editModel[destinationEntryId] = entry
-            save(updated: editModel, message: String(localized: "Add Dice").localizedString)
+            item[destinationEntryId] = entry
+            save(updated: item, message: String(localized: "Add Dice").localizedString)
         case .pdf:
-            var entry = editModel[destinationEntryId]
+            var entry = item[destinationEntryId]
             if entry.type != .text {
                 entry.type = .text
-                editModel[destinationEntryId] = entry
-                save(updated: editModel, message: String(localized: "Change Value Type").localizedString)
+                item[destinationEntryId] = entry
+                save(updated: item, message: String(localized: "Change Value Type").localizedString)
             }
             addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
         case .value:
-            var entry = editModel[destinationEntryId]
+            var entry = item[destinationEntryId]
             if entry.type != .number || entry.type != .decimal {
                 entry.type = .number
-                editModel[destinationEntryId] = entry
-                save(updated: editModel, message: String(localized: "Change Value Type").localizedString)
+                item[destinationEntryId] = entry
+                save(updated: item, message: String(localized: "Change Value Type").localizedString)
             }
             addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, separator: "+")
         default:
@@ -209,10 +209,10 @@ extension EditController {
         add(entry: newEntry, into: itemId, index: index)
     }
 
-    @MainActor func remove(entryId: UUID, at itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        remove(entryId: entryId, from: editModel)
-        save(updated: editModel, message: String(localized: "Remove entry").localizedString)
+    @MainActor func remove(itemId: UUID, entryId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        remove(entryId: entryId, from: item)
+        save(updated: item, message: String(localized: "Remove entry").localizedString)
     }
 
     // deep delete after didDelete

@@ -23,12 +23,14 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                 .font(.title)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                .moveDisabled(true)
             
             if let description = model.description(for: model.sheetModel), !description.isEmpty {
                 LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
                     .font(.subheadline)
                     .listRowBackground(rowColor(for: model.sheetModel.level))
                     .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                    .moveDisabled(true)
             }
         }
         
@@ -36,7 +38,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             SheetGroupView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
         }
         .onMove { indexSet, index in
-            entryDataEditable?.move(entryFrom: indexSet, to: index, itemId: model.sheetModel.source.itemId)
+            entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index - 2)
         }
 
         Color.accentColor.opacity(0.3)

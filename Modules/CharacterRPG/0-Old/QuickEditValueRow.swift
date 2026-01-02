@@ -48,7 +48,7 @@ struct QuickEditValueRow: View {
         .alert(alertTitle, isPresented: $showRemoveAlert) {
             Button(role: .destructive) {
                 withAnimation {
-                    editController.remove(entryId: entryId, at: itemId)
+                    editController.remove(itemId: itemId, entryId: entryId)
                 }
             } label: {
                 Label {

@@ -92,7 +92,7 @@ public struct EntryEditorView: View {
     func save() {
         editModel.resetText()
         withAnimation {
-            editController.update(entryId: entry.id, name: editModel.name, content: editModel.text)
+            editController.update(itemId: model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
             editController.editorModel.currentEntryId = nil
         }
     }

@@ -77,7 +77,7 @@ struct LinkControllerTests {
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry3.id].content == "\(entry2.content)Value")
 
         await root.tableRoot.editController.setCurrentItem(to: ItemRowTreeModel(itemId: tableId, typeId: .table))
-        await root.tableRoot.editController.remove(entryId: tableEntryId)
+        await root.tableRoot.editController.remove(itemId: tableId, entryId: tableEntryId)
         
         await #expect(root.tableRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: tableId, typeId: .table)).count == 0)
         await #expect(root.tableRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: tableId, entryId: tableEntryId, typeId: .table)).count == 0)

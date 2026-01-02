@@ -16,8 +16,6 @@ public enum AdditionalEntryViewType: Hashable, Sendable {
 public protocol EntryDataEditable: EditControllable {
     func editEntries(for item: Model) -> [Model.Entry]
 
-    @discardableResult @MainActor func copy(entryId: UUID, shouldSave: Bool) -> UUID
-
     // MARK: - EntryList editor
 
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID)
@@ -37,8 +35,7 @@ public protocol EntryDataEditable: EditControllable {
     
     @MainActor func create(name: String, content: String) -> Model.Entry
     @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
-    @MainActor func remove(entryId: UUID)
-    @MainActor func remove(entryId: UUID, shouldSave: Bool)
+    @MainActor func remove(itemId: UUID, entryId: UUID)
 }
 
 public extension EntryDataEditable {
@@ -49,9 +46,9 @@ public extension EntryDataEditable {
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool { false }
     
     @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, separator: String = " ") {
-        guard canAddLink(module: module, entryId: entryId), var editModel = editModel(for: destinationItemId) else { return }
+        guard canAddLink(module: module, entryId: entryId), var item = editModel(for: destinationItemId) else { return }
         
-        var entry = editModel[destinationEntryId]
+        var entry = item[destinationEntryId]
         var content = entry.content.trimmingCharacters(in: .whitespaces)
         
         let nextLinkNumer = LinkReplaceController.links(for: content).filter { $0.itemId == itemId && $0.entryId == entryId }.reduce(-1) { max($0, $1.linkNumber) } + 1
@@ -60,8 +57,8 @@ public extension EntryDataEditable {
         let linkText = "\(content.isEmpty ? "" : separator)[\(link)](\(URL.appScheme)://\(module.token)/\(nextLinkNumer)/\(itemId.uuidString)\(entryLink))"
         content.append(linkText)
         entry.content = content
-        editModel[destinationEntryId] = entry
-        save(updated: editModel, message: String(localized: "Add Link").localizedString)
+        item[destinationEntryId] = entry
+        save(updated: item, message: String(localized: "Add Link").localizedString)
     }
     
     var thumbnailEntryViewType: ThumbnailEntryViewType { .none }
@@ -104,8 +101,8 @@ public extension EntryDataEditable {
     
     @MainActor
     func add(entry: Model.Entry, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        add(entry: entry, into: editModel)
+        guard let item = editModel(for: itemId) else { return }
+        add(entry: entry, into: item)
     }
     
     @MainActor
@@ -121,57 +118,46 @@ public extension EntryDataEditable {
         save(updated: item, message: String(localized: "Add entry").localizedString)
     }
     
-    @MainActor
-    func copy(entryIds: [UUID]) {
+    @MainActor func copy(itemId: UUID, entryIds: [UUID]) {
         for entryId in entryIds {
-            copy(entryId: entryId, shouldSave: false)
+            _ = copy(itemId: itemId, entryId: entryId)
         }
-        save(with: String(localized: "Copy entries").localizedString)
     }
     
-    @discardableResult @MainActor func copy(entryId: UUID, shouldSave: Bool) -> UUID {
-        let duplicate = model[entryId].duplicate()
-        model.entries.append(duplicate)
-        if shouldSave {
-            let name = String(duplicate.name.prefix(16))
-            save(with: String(localized: "Copy entry \(name)").localizedString)
-        }
+    @MainActor func copy(itemId: UUID, entryId: UUID) -> UUID? {
+        guard let item = editModel(for: itemId) else { return nil }
+        let duplicate = item[entryId].duplicate()
+        item.entries.append(duplicate)
+        let name = String(duplicate.name.prefix(16))
+        save(updated: item, message: String(localized: "Copy entry \(name)").localizedString)
         return duplicate.id
     }
     
-    @MainActor
-    func remove(entryIndexSet: IndexSet) {
-        let ids = entryIndexSet.map { model.entries[$0].id }
-        remove(entryIds: ids)
+    @MainActor func remove(itemId: UUID, entryIndexSet: IndexSet) {
+        guard let item = editModel(for: itemId) else { return }
+        let ids = entryIndexSet.map { item.entries[$0].id }
+        remove(itemId: itemId, entryIds: ids)
     }
     
-    @MainActor
-    func remove(entryIds: [UUID]) {
+    @MainActor func remove(itemId: UUID, entryIds: [UUID]) {
         for entryId in entryIds {
-            remove(entryId: entryId, shouldSave: false)
-        }
-        save(with: String(localized: "Remove entries").localizedString)
-    }
-    
-    @MainActor
-    func remove(entryId: UUID) {
-        remove(entryId: entryId, shouldSave: true)
-    }
-    
-    @MainActor
-    func remove(entryId: UUID, shouldSave: Bool) {
-        guard let index = model.entries.firstIndex(where: { $0.id == entryId }) else { return }
-        model.entries.remove(at: index)
-        if shouldSave {
-            save(with: String(localized: "Remove entry").localizedString)
+            remove(itemId: itemId, entryId: entryId)
         }
     }
+        
+    @MainActor func remove(itemId: UUID, entryId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }
+        item.entries.remove(at: index)
+        save(updated: item, message: String(localized: "Remove entry").localizedString)
+    }
     
-    @MainActor func update(entryId: UUID, name: String, content: String) {
-        var changed = model[entryId].name != name.withoutLink()
-        model[entryId].name <=> name.withoutLink()
+    @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
+        guard var item = editModel(for: itemId) else { return }
+        var changed = item[entryId].name != name.withoutLink()
+        item[entryId].name <=> name.withoutLink()
 
-        let links = linkRegisterControllable.linkRegisterModel(in: content, for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
+        let links = linkRegisterControllable.linkRegisterModel(in: content, for: ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemControllable.config.module))
         var seenIds: Set<UUID> = []
         var newContent = content
         for link in links {
@@ -186,36 +172,35 @@ public extension EntryDataEditable {
             linkRegisterControllable.register(links: [newLink])
         }
         changed = changed || model[entryId].content != newContent
-        model[entryId].content <=> newContent
+        item[entryId].content <=> newContent
         if changed {
             cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: rowText(itemId: model.id, entry: model[entryId]))
         }
-        save(with: String(localized: "Edit entry").localizedString)
+        save(updated: item, message: String(localized: "Edit entry").localizedString)
     }
     
-    @MainActor
-    func move(entryFrom: IndexSet, to: Array<UUID>.Index, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
+    @MainActor func move(itemId: UUID, entryFrom: IndexSet, to: Array<UUID>.Index) {
+        guard let item = editModel(for: itemId) else { return }
         var destination = to
-        if destination >= editModel.entries.count {
-            destination = editModel.entries.count - 1
+        if destination >= item.entries.count {
+            destination = item.entries.count - 1
         }
-        editModel.entries.move(fromOffsets: entryFrom, toOffset: destination)
-        save(updated: editModel, message: String(localized: "Reorder entries").localizedString)
+        item.entries.move(fromOffsets: entryFrom, toOffset: destination)
+        save(updated: item, message: String(localized: "Reorder entries").localizedString)
     }
     
-    @MainActor
-    func move(entryId: UUID, up: Bool) {
-        guard let index = model.entries.firstIndex(where: { $0.id == entryId }) else { return }
+    @MainActor func move(itemId: UUID, entryId: UUID, up: Bool) {
+        guard let item = editModel(for: itemId) else { return }
+        guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }
         if up {
             guard index > 0 else { return }
-            model.entries.move(fromOffsets: IndexSet(integer: index), toOffset: index - 1)
+            item.entries.move(fromOffsets: IndexSet(integer: index), toOffset: index - 1)
         } else {
             guard index < model.entries.count - 1 else { return }
-            model.entries.move(fromOffsets: IndexSet(integer: index + 1), toOffset: index)
+            item.entries.move(fromOffsets: IndexSet(integer: index + 1), toOffset: index)
         }
         let title: LocalizedStringResource = up ? "Move entry up" : "Move entry down"
-        save(with: String(localized: title).localizedString)
+        save(updated: item, message: String(localized: title).localizedString)
     }
 }
 

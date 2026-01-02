@@ -203,6 +203,6 @@ extension EditController {
         let links = photoIds.map {
             root.photoRoot.linkController.generateLink(itemId: $0)
         }.sorted()
-        update(entryId: entryId, name: "Collection", content: links.joined(separator: "\n"))
+        update(itemId: itemId, entryId: entryId, name: "Collection", content: links.joined(separator: "\n"))
     }
 }

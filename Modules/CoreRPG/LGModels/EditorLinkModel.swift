@@ -132,10 +132,10 @@ public final class EditorLinkModel {
         guard let destinationEntryId else { return }
 
         for module in firstRow {
-            addLinkAndReset(editController: editController, destiantionItemId: destinationEntryId, destinationEntryId: destinationEntryId, module: module)
+            addLinkAndReset(editController: editController, destiantionItemId: destiantionItemId, destinationEntryId: destinationEntryId, module: module)
         }
         for module in secondRow {
-            addLinkAndReset(editController: editController, destiantionItemId: destinationEntryId, destinationEntryId: destinationEntryId, module: module)
+            addLinkAndReset(editController: editController, destiantionItemId: destiantionItemId, destinationEntryId: destinationEntryId, module: module)
         }
     }
 

@@ -27,7 +27,7 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
 #if !os(tvOS)
                     .dropDestination(for: linkTypes, isEnabled: true) { items, sessions in
                         items.forEach {
-                            editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: editController.model.id, destinationEntryId: entry.id)
+                            editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: model.id, destinationEntryId: entry.id)
                         }
                     }
 #endif
@@ -49,10 +49,10 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
 #endif
             }
             .onDelete { indexSet in
-                editController.remove(entryIndexSet: indexSet)
+                editController.remove(itemId: model.id, entryIndexSet: indexSet)
             }
             .onMove { indexSet, index in
-                editController.move(entryFrom: indexSet, to: index, itemId: editController.model.id)
+                editController.move(itemId: model.id, entryFrom: indexSet, to: index)
             }
         } header: {
             Text(headerTitle)
@@ -80,7 +80,7 @@ private extension EntryListView {
     func duplicateButton(entry: any EntryDataAccessable) -> some View {
         Button {
             withAnimation {
-                let newId = editController.copy(entryId: entry.id, shouldSave: true)
+                let newId = editController.copy(itemId: model.id, entryId: entry.id)
                 Task { @MainActor in
                     try? await Task.sleep(for: .seconds(0.25))
                     editController.editorModel.currentEntryId = newId
@@ -116,7 +116,7 @@ private extension EntryListView {
     func removeButton(entry: any EntryDataAccessable) -> some View {
         Button(role: .destructive) {
             withAnimation {
-                editController.remove(entryId: entry.id)
+                editController.remove(itemId: model.id, entryId: entry.id)
             }
         } label: {
             Label {
