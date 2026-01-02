@@ -21,7 +21,7 @@ public struct EntryEditorView: View {
             if isActive {
                 content(entry: entry)
                     .onAppear {
-                        editModel.reset(entry: entry, source: ItemRowModel(itemId: model.id, entryId: entry.id, typeId: editController.itemControllable.config.module))
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, typeId: editController.itemControllable.config.module))
                     }
             }
         }
@@ -86,13 +86,16 @@ public struct EntryEditorView: View {
     }
         
     var entry: any EntryDataAccessable {
-        model[editController.editorModel.currentEntryId ?? UUID()]
+        guard let currentItemId = editController.editorModel.currentItemId else {
+            return model[editController.editorModel.currentEntryId ?? UUID()]
+        }
+        return editController.itemControllable.itemOrEmpty(for: currentItemId)[editController.editorModel.currentEntryId ?? UUID()]
     }
     
     func save() {
         editModel.resetText()
         withAnimation {
-            editController.update(itemId: model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
+            editController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
             editController.editorModel.currentEntryId = nil
         }
     }

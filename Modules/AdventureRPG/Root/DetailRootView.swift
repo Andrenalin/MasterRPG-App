@@ -22,15 +22,18 @@ struct DetailListView: View {
         self.model = model
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
+        let sheetModel = SheetController(itemController: root.itemController).sheet(for: model.id)
+        self.tableSheetModel = TableSheetModel(linkControllable: root.linkController, sheetModel: sheetModel, searchText: "")
     }
     
     let root: AdventureRootModel
     let model: AdventureModel
+    let tableSheetModel: TableSheetModel
     
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
         content(listController: detailFolderListController)
@@ -80,7 +83,11 @@ private extension DetailListView {
                 withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
             }
         
-        EntryListView(editController: root.editController, model: model, linkTypes: LinkAdventureModuleTransferable.self, headerTitle: "Sections")
+        Section {
+            SheetView(root: root.rootController, model: tableSheetModel, isEditor: true, linkTypes: LinkAdventureModuleTransferable.self)
+        } header: {
+            Text("Sections", bundle: .module)
+        }
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
@@ -100,6 +107,7 @@ private extension DetailListView {
                     Button {
                         withAnimation {
                             let entryId = root.editController.addNewEntry(itemId: model.id)
+                            root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, entryId: entryId, typeId: root.config.module))
                             root.editController.editorModel.currentEntryId = entryId
                             Task { @MainActor in
                                 try? await Task.sleep(for: .seconds(0.25))

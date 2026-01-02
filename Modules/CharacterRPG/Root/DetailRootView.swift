@@ -32,7 +32,7 @@ struct DetailListView: View {
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.value.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
         content(listController: detailFolderListController)
@@ -40,9 +40,6 @@ struct DetailListView: View {
                 guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
                 navigator.navigate(to: CharacterDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
-            }
-            .onAppear {
-                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
             }
     }
     
@@ -114,7 +111,6 @@ private extension DetailListView {
                 }
                 Button {
                     withAnimation {
-                        root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
                         let entryId = root.editController.addNewEntry(itemId: model.id)
                         root.editController.editorModel.currentEntryId = entryId
                         Task { @MainActor in

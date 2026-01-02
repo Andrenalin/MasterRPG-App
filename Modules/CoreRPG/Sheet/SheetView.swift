@@ -38,7 +38,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             SheetGroupView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
         }
         .onMove { indexSet, index in
-            entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index - 2)
+            entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index)
         }
 
         Color.accentColor.opacity(0.3)
@@ -112,6 +112,7 @@ struct SheetGroupView<LinkType: LinkDataTransferable>: View {
                     switch inlineSheet.sheetType {
                     case .photoInline:
                         root.viewControllable.rowViewer(source: entry.source)
+                            .frame(height: 96)
                     default:
                         EmptyView()
                     }

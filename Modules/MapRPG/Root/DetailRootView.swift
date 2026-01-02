@@ -21,10 +21,13 @@ struct DetailListView: View {
         self.model = model
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
+        let sheetModel = SheetController(itemController: root.itemController).sheet(for: model.id)
+        self.tableSheetModel = TableSheetModel(linkControllable: root.rootControllable.linkControllable, sheetModel: sheetModel, searchText: "")
     }
     
     let root: MapRootModel
     let model: MapModel
+    let tableSheetModel: TableSheetModel
     
     @Environment(\.navigator) private var navigator
 #if os(visionOS) || os(macOS)
@@ -32,7 +35,7 @@ struct DetailListView: View {
 #endif
     
     @State private var detailFolderListController: FolderListController
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.map.viewerWindowId, canShow: true, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel()
     @State private var animate: Bool = false
     
     var body: some View {
@@ -85,7 +88,11 @@ private extension DetailListView {
         
         DisplayConfigEditor(model: model)
         
-        EntryListView(editController: root.editController, model: model, linkTypes: LinkMapModuleTransferable.self, headerTitle: "Rooms")
+        Section {
+            SheetView(root: root.rootController, model: tableSheetModel, isEditor: true, linkTypes: LinkMapModuleTransferable.self)
+        } header: {
+            Text("Rooms", bundle: .module)
+        }
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
