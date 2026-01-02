@@ -119,7 +119,7 @@ struct EditControllerTests {
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         // Reset space with nil URL should remove the file URL
-        sut.resetFile(url: nil, itemId: item.id)
+        await sut.resetFile(url: nil, itemId: item.id)
 
         #expect(item.fileUrl == nil)
         #expect(item.fileUrl == nil)
@@ -814,7 +814,7 @@ struct EditControllerTests {
         #expect(collection.entries.count == 3)
 
         // Remove the middle entry (index 1)
-        await sut.removeItem(offsets: IndexSet(integer: 1), item: collection)
+        await sut.removeItem(offsets: IndexSet(integer: 1), itemId: collection.id)
 
         // Verify entry was removed
         collection = await root.itemController.itemOrEmpty(for: collectionModel.id)
@@ -852,7 +852,7 @@ struct EditControllerTests {
         #expect(folder.entries.count == 3)
 
         // Remove the middle entry (index 1) from folder
-        await sut.removeItem(offsets: IndexSet(integer: 1), item: folder)
+        await sut.removeItem(offsets: IndexSet(integer: 1), itemId: folder.id)
 
         // Verify entry was removed
         folder = await root.itemController.itemOrEmpty(for: folderModel.id)
@@ -887,7 +887,7 @@ struct EditControllerTests {
         #expect(collection.entries.count == 4)
 
         // Remove multiple entries (indices 1 and 2)
-        await sut.removeItem(offsets: IndexSet([1, 2]), item: collection)
+        await sut.removeItem(offsets: IndexSet([1, 2]), itemId: collection.id)
 
         // Verify entries were removed
         collection = await root.itemController.itemOrEmpty(for: collectionModel.id)
@@ -928,7 +928,7 @@ struct EditControllerTests {
         #expect(collection.entries[2].spaceId == child3)
 
         // Move first item (index 0) to position 2 (after child2)
-        await sut.moveItems(source: IndexSet(integer: 0), destination: 2, item: collection)
+        await sut.moveItems(source: IndexSet(integer: 0), destination: 2, itemId: collection.id)
 
         // Verify order changed
         collection = await root.itemController.itemOrEmpty(for: collectionModel.id)
@@ -971,7 +971,7 @@ struct EditControllerTests {
         #expect(collection.entries[3].spaceId == child4)
 
         // Move items at indices 0 and 1 (child1, child2) to position 3
-        await sut.moveItems(source: IndexSet([0, 1]), destination: 3, item: collection)
+        await sut.moveItems(source: IndexSet([0, 1]), destination: 3, itemId: collection.id)
 
         // Verify order changed
         collection = await root.itemController.itemOrEmpty(for: collectionModel.id)

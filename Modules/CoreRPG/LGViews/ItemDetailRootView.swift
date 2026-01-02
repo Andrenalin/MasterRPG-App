@@ -359,7 +359,9 @@ private extension ItemDetailRootView {
     }
     
     func updateFile(url: URL, model: any ItemDataAccessable) {
-        root.editControllable.resetFile(url: url, itemId: model.id)
+        Task {
+            await root.editControllable.resetFile(url: url, itemId: model.id)
+        }
     }
 }
 

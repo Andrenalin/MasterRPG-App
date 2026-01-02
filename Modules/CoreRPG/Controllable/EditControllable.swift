@@ -44,74 +44,74 @@ public extension EditControllable {
     }
 
     @MainActor func reset(category: ItemListCategory, itemId: UUID) {
-        guard var editModel = editModel(for: itemId) else { return }
-        guard editModel.category != category else { return }
-        editModel.category = category
-        save(updated: editModel, message: String(localized: "Change to \(category.title)").localizedString)
+        guard var item = editModel(for: itemId) else { return }
+        guard item.category != category else { return }
+        item.category = category
+        save(updated: item, message: String(localized: "Change to \(category.title)").localizedString)
     }
 
     @MainActor func reset(description: String, itemId: UUID) {
-        guard var editModel = editModel(for: itemId) else { return }
-        guard editModel.description != description else { return }
-        editModel.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard var item = editModel(for: itemId) else { return }
+        guard item.description != description else { return }
+        item.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .description, itemId: model.id, text: model.description.markDownText())
-        save(updated: editModel, message: String(localized: "Typing").localizedString)
+        save(updated: item, message: String(localized: "Typing").localizedString)
     }
     
     @MainActor func reset(displayState: Int, itemId: UUID) {
-        guard var editModel = editModel(for: itemId) else { return }
-        guard editModel.displayState != displayState else { return }
-        editModel.displayState = displayState
-        save(updated: editModel, message: String(localized: "Change Display").localizedString)
+        guard var item = editModel(for: itemId) else { return }
+        guard item.displayState != displayState else { return }
+        item.displayState = displayState
+        save(updated: item, message: String(localized: "Change Display").localizedString)
     }
 
     @MainActor func reset(name: String, itemId: UUID) {
-        guard var editModel = editModel(for: itemId) else { return }
-        guard editModel.name != name else { return }
-        editModel.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard var item = editModel(for: itemId) else { return }
+        guard item.name != name else { return }
+        item.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: model.id, text: model.name.markDownText())
-        save(updated: editModel, message: String(localized: "Typing").localizedString)
+        save(updated: item, message: String(localized: "Typing").localizedString)
     }
 
     @MainActor func reset(tags: [String], itemId: UUID) {
-        guard var editModel = editModel(for: itemId) else { return }
+        guard var item = editModel(for: itemId) else { return }
         let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
-        guard editModel.tags != sortedTags else { return }
-        editModel.tags = sortedTags
-        save(updated: editModel, message: String(localized: "Changed tags").localizedString)
+        guard item.tags != sortedTags else { return }
+        item.tags = sortedTags
+        save(updated: item, message: String(localized: "Changed tags").localizedString)
     }
     
     @MainActor func reset(hidden: Bool, itemId: UUID) {
-        guard var editModel = editModel(for: itemId) else { return }
-        guard editModel.isGroupHiddenToggle != hidden else { return }
-        editModel.isGroupHiddenToggle = hidden
-        save(updated: editModel, message: String(localized: "Change to \(hidden ? "hide" : "show")").localizedString)
+        guard var item = editModel(for: itemId) else { return }
+        guard item.isGroupHiddenToggle != hidden else { return }
+        item.isGroupHiddenToggle = hidden
+        save(updated: item, message: String(localized: "Change to \(hidden ? "hide" : "show")").localizedString)
     }
 
     @MainActor func reset(fileUrl: FileUrl?, itemId: UUID) {
-        guard var editModel = editModel(for: itemId) else { return }
-        guard editModel.fileUrl != fileUrl else { return }
-        editModel.fileUrl = fileUrl
-        save(updated: editModel, message: String(localized: "Change file").localizedString)
+        guard var item = editModel(for: itemId) else { return }
+        guard item.fileUrl != fileUrl else { return }
+        item.fileUrl = fileUrl
+        save(updated: item, message: String(localized: "Change file").localizedString)
     }
 
     @MainActor func add(tag: String, itemId: UUID) {
-        guard var editModel = editModel(for: itemId) else { return }
+        guard var item = editModel(for: itemId) else { return }
         guard !tag.isEmpty else { return }
-        guard !editModel.tags.contains(where: { $0 == tag }) else { return }
-        var tags = editModel.tags
+        guard !item.tags.contains(where: { $0 == tag }) else { return }
+        var tags = item.tags
         tags.append(tag)
-        editModel.tags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
-        save(updated: editModel, message: String(localized: "Add \(tag)").localizedString)
+        item.tags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
+        save(updated: item, message: String(localized: "Add \(tag)").localizedString)
     }
 
     @MainActor func remove(tag: String, itemId: UUID) {
-        guard var editModel = editModel(for: itemId) else { return }
+        guard var item = editModel(for: itemId) else { return }
         var tags = model.tags
         guard let index = tags.firstIndex(of: tag) else { return }
         tags.remove(at: index)
-        editModel.tags = tags
-        save(updated: editModel, message: String(localized: "Remove \(tag)").localizedString)
+        item.tags = tags
+        save(updated: item, message: String(localized: "Remove \(tag)").localizedString)
     }
 }
 
@@ -119,29 +119,29 @@ public extension EditControllable {
 
 public extension EditControllable {
     @MainActor func addGroup(itemId: UUID, childId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        guard editModel.id != childId && editModel.hasEntry(entryId: childId) == false else { return }
+        guard let item = editModel(for: itemId) else { return }
+        guard item.id != childId && item.hasEntry(entryId: childId) == false else { return }
         let childItem = itemControllable.itemOrEmpty(for: childId)
         guard childItem.category != .folder && childItem.category != itemControllable.collectionCategory  else { return }
-        var entries = editModel.entries
+        var entries = item.entries
 
         let entry =  Model.Entry.newChild(id: childId)
         entries.append(entry)
-        editModel.entries = entries
+        item.entries = entries
 
         reset(displayState: 1, itemId: childId)
-        save(updated: editModel, message: String(localized: "Add groupped item").localizedString)
+        save(updated: item, message: String(localized: "Add groupped item").localizedString)
     }
 
     @MainActor func removeGroup(itemId: UUID, childId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        guard editModel.id != childId else { return }
-        var entries = editModel.entries
+        guard let item = editModel(for: itemId) else { return }
+        guard item.id != childId else { return }
+        var entries = item.entries
         entries.removeAll(where: { $0.childId == childId })
-        editModel.entries = entries
+        item.entries = entries
         
         reset(displayState: 0, itemId: childId)
-        save(updated: editModel, message: String(localized: "Remove groupped item").localizedString)
+        save(updated: item, message: String(localized: "Remove groupped item").localizedString)
     }
 }
 
@@ -149,23 +149,23 @@ public extension EditControllable {
 
 public extension EditControllable {
     @MainActor func addItem(itemId: UUID, parentId: UUID?) {
-        guard let parentId, itemId != parentId, let parentModel = editModel(for: parentId), var item = editModel(for: itemId) else { return }
-        if item.specialCategory && !parentModel.isFolder {
+        guard let parentId, itemId != parentId, let parentItem = editModel(for: parentId), var item = editModel(for: itemId) else { return }
+        if item.specialCategory && !parentItem.isFolder {
             return
         }
-        if parentModel.isFolder && item.parentId == parentId {
+        if parentItem.isFolder && item.parentId == parentId {
             return
         }
-        if parentModel.isFolder && item.parentId != nil {
+        if parentItem.isFolder && item.parentId != nil {
             removeItemFromParent(itemId: itemId)
         }
         let entry = Model.Entry.newChild(id: itemId)
-        var entries = parentModel.entries
-        if parentModel.category == .folder {
+        var entries = parentItem.entries
+        if parentItem.category == .folder {
             entries.removeAll { $0.childId == itemId }
         }
         entries.append(entry)
-        if parentModel.category == .folder {
+        if parentItem.category == .folder {
             entries = entries.sorted {
                 let name1 = itemControllable.nameSync(itemId: $0.childId)
                 let name2 = itemControllable.nameSync(itemId: $1.childId)
@@ -173,24 +173,24 @@ public extension EditControllable {
             }
         }
 
-        if parentModel.category == .folder {
-            item.parentId = parentModel.id
+        if parentItem.category == .folder {
+            item.parentId = parentItem.id
             save(updated: item, message: String(localized: "Added parent").localizedString)
         }
 
-        parentModel.entries = entries
-        save(updated: parentModel, message: String(localized: "Added item").localizedString)
+        parentItem.entries = entries
+        save(updated: parentItem, message: String(localized: "Added item").localizedString)
     }
     
     @MainActor func removeItemFromParent(itemId: UUID) {
-        guard var item = editModel(for: itemId), let parentId = item.parentId, let parentModel = editModel(for: parentId) else { return }
+        guard var item = editModel(for: itemId), let parentId = item.parentId, let parentItem = editModel(for: parentId) else { return }
         item.parentId = nil
         save(updated: item, message: String(localized: "Removed parent").localizedLowercase.localizedString)
 
-        var entries = parentModel.entries
+        var entries = parentItem.entries
         entries.removeAll(where: { $0.childId == itemId })
-        parentModel.entries = entries
-        save(updated: parentModel, message: String(localized: "Removed item").localizedLowercase.localizedString)
+        parentItem.entries = entries
+        save(updated: parentItem, message: String(localized: "Removed item").localizedLowercase.localizedString)
     }
 }
 
@@ -235,6 +235,7 @@ public extension EditControllable {
     @MainActor func duplicate(item: any ItemDataAccessable) async {
         guard let model = itemControllable.itemSync(for: item.id) else { return }
         let duplicate = model.duplicate()
+        // character dupplicate
         itemControllable.replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
         if let fileUrl = model.fileUrl, let fileUrlDataController, let data = try? await fileUrlDataController.loadData(for: fileUrl) {
             var path = fileUrl.rawUrl.deletingLastPathComponent().path(percentEncoded: false)
@@ -266,27 +267,27 @@ public extension EditControllable {
         save(updated: item, message: String(localized: "Restore item").localizedString)
     }
     
-    @MainActor func removeItem(offsets: IndexSet, item: any ItemDataAccessable) {
-        guard let updatedModel = editModel(for: item.id) else { return }
-        let removedEntries = updatedModel.entries.enumerated().filter { offsets.contains($0.offset) }
-        var entries = updatedModel.entries
+    @MainActor func removeItem(offsets: IndexSet, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        let removedEntries = item.entries.enumerated().filter { offsets.contains($0.offset) }
+        var entries = item.entries
         entries.remove(atOffsets: offsets)
-        updatedModel.entries = entries
+        item.entries = entries
         
-        if updatedModel.category == .folder {
+        if item.category == .folder {
             for (_, entry) in removedEntries {
                 delete(itemId: entry.childId)
             }
         }
-        save(updated: updatedModel, message: String(localized: "Delete item").localizedString)
+        save(updated: item, message: String(localized: "Delete item").localizedString)
     }
     
-    @MainActor func moveItems(source: IndexSet, destination: Int, item: any ItemDataAccessable) {
-        guard let updatedModel = editModel(for: item.id) else { return }
-        var entries = updatedModel.entries
+    @MainActor func moveItems(source: IndexSet, destination: Int, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        var entries = item.entries
         entries.move(fromOffsets: source, toOffset: destination)
-        updatedModel.entries = entries
-        save(updated: updatedModel, message: String(localized: "Move entries").localizedString)
+        item.entries = entries
+        save(updated: item, message: String(localized: "Move entries").localizedString)
     }
 }
 
@@ -294,37 +295,11 @@ public extension EditControllable {
 
 public extension EditControllable {
     @MainActor func removeEntry(source: ItemRowModel) {
-        guard source.typeId == itemControllable.config.module else { return }
-        guard let model = itemControllable.itemSync(for: source.itemId), let entryId = source.entryId else { return }
-        remove(entryId: entryId, item: model)
-    }
-}
-
-public extension EditControllable {
-    @MainActor func insert(entry: any EntryDataAccessable, item: any ItemDataAccessable) {
-        guard let updatedModel = editModel(for: item.id) else { return }
-        guard let entry = entry as? Model.Entry else { return }
-        var entries = updatedModel.entries
-        entries.append(entry)
-        updatedModel.entries = entries
-        save(updated: updatedModel, message: String(localized: "Append Entry").localizedString)
-    }
-    
-    @MainActor func remove(entry indexSet: IndexSet, item: any ItemDataAccessable) {
-        guard let updatedModel = editModel(for: item.id) else { return }
-        var entries = updatedModel.entries
-        entries.remove(atOffsets: indexSet)
-        updatedModel.entries = entries
+        guard source.typeId == itemControllable.config.module, let entryId = source.entryId, let updatedModel = editModel(for: source.itemId) else { return }
         
-        save(updated: updatedModel, message: String(localized: "Delete Entries").localizedString)
-    }
-    
-    @MainActor func remove(entryId: UUID, item: any ItemDataAccessable) {
-        guard let updatedModel = editModel(for: item.id) else { return }
         var entries = updatedModel.entries
         entries.removeAll(where: { $0.id == entryId})
         updatedModel.entries = entries
-        
         save(updated: updatedModel, message: String(localized: "Delete Entry").localizedString)
     }
 }
@@ -332,25 +307,18 @@ public extension EditControllable {
 // MARK: - Files
 
 public extension EditControllable {
-    func resetFile(url: URL?, itemId: UUID) {
-        guard fileUrlDataController != nil else { return }
-        Task.detached {
-            await resetFile(url: url, itemId: itemId)
-        }
-    }
-    
-    func moved(oldName: String) async {
-        guard let fileUrlDataController else { return }
-        let oldFileUrl = await model.fileUrl
-        let newName = await model.name
+    func moved(oldName: String, itemId: UUID) async {
+        guard let fileUrlDataController, let item = await editModel(for: itemId) else { return }
+        let oldFileUrl = item.fileUrl
+        let newName = item.name
         let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, from: oldName, to: newName)
         if let newFileUrl {
-            await reset(fileUrl: newFileUrl, itemId: model.id)
+            await reset(fileUrl: newFileUrl, itemId: item.id)
         }
     }
     
-    private func resetFile(url: URL?, itemId: UUID) async {
-        guard let fileUrlDataController, let editModel = await editModel(for: itemId) else { return }
+    func resetFile(url: URL?, itemId: UUID) async {
+        guard let fileUrlDataController, let item = await editModel(for: itemId) else { return }
         await fileUrlDataController.delete(model.fileUrl)
         guard let url else {
             await reset(fileUrl: nil, itemId: itemId)
@@ -359,7 +327,7 @@ public extension EditControllable {
         _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
         
-        if editModel.name.isEmpty {
+        if item.name.isEmpty {
             let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             await reset(name: name, itemId: itemId)
@@ -369,42 +337,44 @@ public extension EditControllable {
     }
     
     func resetFile(data: Data?, itemId: UUID, path: String) async throws {
-        guard let itemModel = await editModel(for: itemId) else { return }
-        if itemModel.fileUrl != nil {
+        guard let item = await editModel(for: itemId) else { return }
+        if item.fileUrl != nil {
             await resetFile(url: nil, itemId: itemId)
         }
         guard let data else { return }
         
         let module = itemControllable.config.module.token
-        let filePath = itemModel.name.isEmpty ? "\(path)NewData-\(itemModel.id.uuidString).\(itemControllable.config.filenameExtension)" : "\(path)\(itemModel.name).\(itemControllable.config.filenameExtension)"
+        let filePath = item.name.isEmpty ? "\(path)NewData-\(item.id.uuidString).\(itemControllable.config.filenameExtension)" : "\(path)\(item.name).\(itemControllable.config.filenameExtension)"
         var dataFileUrl = await FileUrl(fileId: model.id, url: URL(string: filePath)!, location: .newCloud, module: module, relativeUrl: nil)
         dataFileUrl.resetData(data)
         
         let fileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: itemControllable.config.filenameExtension)
         
-        guard var editModel = await editModel(for: itemId) else { return }
-        editModel.fileUrl = fileUrl
-        await save(updated: editModel, message: String(localized: "New File").localizedString)
+        guard var updatedItem = await editModel(for: itemId) else { return }
+        updatedItem.fileUrl = fileUrl
+        await save(updated: updatedItem, message: String(localized: "New File").localizedString)
     }
-
 }
 
 // MARK: - controller mantainence
 
 public extension EditControllable {
-    func didDelete(itemId: UUID) async {
-        guard await editorModel.currentItemId == itemId else { return }
-        await editorModel.reset()
+    @MainActor func editModel(for itemId: UUID) -> Model? {
+        guard model.id != itemId else { return model }
+        return itemControllable.itemSync(for: itemId)?.copy() as? Model
     }
 
-    func didUpdate(item: Model) async {
-        guard await editorModel.currentItemId == item.id else { return }
-        await setModel(await model.merge(item))
+    @MainActor func saveChanges(to newValue: Model, name: String) {
+        editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
+        itemControllable.replace(model: newValue, isInsert: false, shouldRepairLinks: true)
     }
 
-    @MainActor func setModel(_ update: Model) {
-        guard !model.isEqual(other: update) else { return }
-        editorModel.undoManaged.updateValue(update)
+    @MainActor func save(updated: Model, message: String) {
+        if updated.id == model.id {
+            save(with: message)
+        } else {
+            itemControllable.replace(model: updated, isInsert: false, shouldRepairLinks: false)
+        }
     }
 
     @MainActor func setCurrentItem(to item: ItemRowTreeModel) {
@@ -425,21 +395,11 @@ public extension EditControllable {
         editorModel.currentEntryId = entryId
     }
 
-    @MainActor func resetCurrentItem(with title: String) {
-        save(with: title)
-        editorModel.reset()
-    }
-
     @MainActor func save(with name: String) {
         guard editorModel.currentItemId != nil, let currentModel = editorModel.currentModel as? Model else { return }
         validateBeforeSave(model: currentModel)
         guard !itemControllable.isEqual(with: currentModel) else { return }
         saveChanges(to: currentModel, name: name)
-    }
-
-    func update(itemId: UUID) async {
-        guard await itemId == model.id, let updated = await itemControllable.item(for: model.id) as? Model else { return }
-        _ = await model.replace(with: updated)
     }
 }
 
@@ -480,26 +440,3 @@ public extension EditControllable {
         editorModel.undoManaged.redoTitles.last ?? ""
     }
 }
-
-// MARK: - General Edit
-
-extension EditControllable {
-    @MainActor public func editModel(for itemId: UUID) -> Model? {
-        guard model.id != itemId else { return model }
-        return itemControllable.itemSync(for: itemId)?.copy() as? Model
-    }
-
-    @MainActor private func saveChanges(to newValue: Model, name: String) {
-        editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
-        itemControllable.replace(model: newValue, isInsert: false, shouldRepairLinks: true)
-    }
-
-    @MainActor public func save(updated: Model, message: String) {
-        if updated.id == model.id {
-            save(with: message)
-        } else {
-            itemControllable.replace(model: updated, isInsert: false, shouldRepairLinks: false)
-        }
-    }
-}
-

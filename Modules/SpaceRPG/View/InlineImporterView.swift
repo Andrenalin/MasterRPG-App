@@ -117,7 +117,9 @@ struct InlineImporterView: View, Equatable {
 #if !os(tvOS)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: root.config.fileTypes) { result in
             guard let url = try? result.get() else { return }
-            root.editController.resetFile(url: url, itemId: itemId)
+            Task {
+                await root.editController.resetFile(url: url, itemId: itemId)
+            }
         }
 #endif
 #if os(iOS) && !targetEnvironment(simulator)

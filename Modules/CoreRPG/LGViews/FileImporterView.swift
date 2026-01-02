@@ -30,7 +30,9 @@ public struct FileImporterView: View {
         }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: fileTypes) { result in
             guard let url = try? result.get() else { return }
-            editControllable.resetFile(url: url, itemId: itemId)
+            Task {
+                await editControllable.resetFile(url: url, itemId: itemId)
+            }
         }
 #endif
     }

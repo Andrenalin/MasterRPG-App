@@ -79,7 +79,9 @@ private extension ListRootView {
             guard let model = await root.editControllable.addNew(type: .item) else { return }
             try? await Task.sleep(for: .seconds(0.5))
             withAnimation {
-                root.editControllable.resetFile(url: url, itemId: model.id)
+                Task {
+                    await root.editControllable.resetFile(url: url, itemId: model.id)
+                }
                 if parentModel != nil {
                     root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
                 }
@@ -168,7 +170,7 @@ private extension ListRootView {
     
     func deleteItems(offsets: IndexSet) {
         if let parentModel {
-            root.editControllable.removeItem(offsets: offsets, item: parentModel)
+            root.editControllable.removeItem(offsets: offsets, itemId: parentModel.id)
             listModel.deleteItems(offsets: offsets)
         } else {
             let removingItems = listController.delete(offsets: offsets)
@@ -183,7 +185,7 @@ private extension ListRootView {
     
     func moveItems(source: IndexSet, destination: Int) {
         guard let parentModel else { return }
-        root.editControllable.moveItems(source: source, destination: destination, item: parentModel)
+        root.editControllable.moveItems(source: source, destination: destination, itemId: parentModel.id)
     }
 
     var leadingPadding: CGFloat {
