@@ -46,7 +46,7 @@ public final class AdventureRootModel: @unchecked Sendable {
         _dataController = dataController
         let linkRegisterController = LinkRegisterController(root: self)
 
-        let itemController = ItemController(root: self, dataController: dataController, linkRegisterControllable: linkRegisterController)
+        let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: linkRegisterController)
         _itemController = itemController
         _editController = EditController(root: self, itemController: itemController, linkRegisterControllable: linkRegisterController)
         _exportController = ExportController(root: self, itemController: itemController, gameExporter: false)

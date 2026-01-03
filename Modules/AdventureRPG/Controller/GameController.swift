@@ -26,7 +26,7 @@ struct GameController: Sendable {
         self.root = root
         self.itemController = itemController
         self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(root: root, dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        let internItemController = ItemController(config: root.config, dataController: nil, linkRegisterControllable: linkRegisterControllable)
         self.importController = ImportController(root: root, itemController: internItemController, gameImporter: true)
         self.gameExportController = ExportController(root: root, itemController: internItemController, gameExporter: true)
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)

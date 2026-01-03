@@ -15,9 +15,8 @@ import TableRPG
 
 struct ItemController: Sendable {
     @MainActor
-    init(root: AdventureRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
-        self.root = root
-        self.config = root.config
+    init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.config = config
 
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
@@ -26,7 +25,6 @@ struct ItemController: Sendable {
         self.collectionCategory = config.collectionCategory
     }
 
-    let root: AdventureRootModel
     let config: ModuleConfigurable
     let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?

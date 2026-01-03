@@ -28,26 +28,6 @@ final class AdventureEditModel: Sendable {
     let selectionWeather: ItemSelectionModel = ItemSelectionModel()
 }
 
-struct EditController: Sendable {
-    @MainActor
-    init(root: AdventureRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
-        self.root = root
-        self.itemController = itemController
-        self.linkRegisterControllable = linkRegisterControllable
-        
-        self.editorModel = ItemEditorModel()
-        self.adventureEditModel = AdventureEditModel()
-    }
-
-    let root: AdventureRootModel
-
-    let itemController: ItemController
-    let linkRegisterControllable: any LinkRegisterControllable
-
-    let editorModel: ItemEditorModel
-    let adventureEditModel: AdventureEditModel
-}
-
 struct LinkAdventureModuleTransferable: LinkDataTransferable {
     let module: NetworkModules
     let itemId: UUID
@@ -68,6 +48,25 @@ struct LinkAdventureModuleTransferable: LinkDataTransferable {
     }
 }
 
+struct EditController: Sendable {
+    @MainActor init(root: AdventureRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
+        self.root = root
+        self.itemController = itemController
+        self.linkRegisterControllable = linkRegisterControllable
+        
+        self.editorModel = ItemEditorModel()
+        self.adventureEditModel = AdventureEditModel()
+    }
+
+    let root: AdventureRootModel
+
+    let itemController: ItemController
+    let linkRegisterControllable: any LinkRegisterControllable
+
+    let editorModel: ItemEditorModel
+    let adventureEditModel: AdventureEditModel
+}
+
 extension EditController: EntryDataEditable {
     typealias Model = AdventureModel
 
@@ -78,8 +77,12 @@ extension EditController: EntryDataEditable {
     var fileUrlDataController: FileUrlDataController? {
         itemControllable.fileUrlDataController
     }
+}
+    
+// MARK: - EntryList editor
 
-    public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
+extension EditController {
+    func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
         true
     }
 
@@ -97,25 +100,25 @@ extension EditController: EntryDataEditable {
             SelectionTableRoute.selection
         }
     }
-
-    func create(name: String, content: String) -> AdventureEntryModel {
-        AdventureEntryModel(id: UUID(), name: name, content: content)
-    }
 }
 
 // MARK: - New Editor Functions
 
 extension EditController {
     @MainActor func add(photoId: UUID?, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        editModel.photoId = photoId
-        save(updated: editModel, message: String(localized: "Changed Photo").localizedString)
+        guard let item = editModel(for: itemId) else { return }
+        item.photoId = photoId
+        save(updated: item, message: String(localized: "Changed Photo").localizedString)
     }
 }
 
 // MARK: - Quick Link Editor
 
 extension EditController {
+    func create(name: String, content: String) -> AdventureEntryModel {
+        AdventureEntryModel(id: UUID(), name: name, content: content)
+    }
+
     @MainActor
     func merge(itemId: UUID, entries: [AdventureEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
