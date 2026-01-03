@@ -82,7 +82,7 @@ public protocol LinkControllable: Sendable {
     @MainActor func name(for id: UUID, entryId: UUID?) -> String
     
     // Sheet Entries
-    @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel?
+    @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel
     
     // Collect Links
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID]
@@ -291,7 +291,7 @@ public extension LinkControllable {
 // MARK: - Sheets
 
 public extension LinkControllable {
-    @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? { nil }
+    @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel { .empty }
 }
 
 

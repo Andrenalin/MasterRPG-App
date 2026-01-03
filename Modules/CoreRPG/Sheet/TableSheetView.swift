@@ -2,12 +2,11 @@
 
 import SwiftUI
 
-struct TableSheetView<ImageContent: View>: View {
+struct TableSheetView: View {
     let root: ItemRootController
     let model: TableSheetModel
     let windowMode: Bool
     let dismissAction: (() -> Void)?
-    let imageContent: (CGSize) -> ImageContent
 
     @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.dismiss) var dismiss
@@ -62,8 +61,6 @@ private extension TableSheetView {
             searchText: "in"
         ),
         windowMode: true,
-        dismissAction: nil,
-        imageContent: { _ in Text("Empty")
-        }
+        dismissAction: nil
     )
 }

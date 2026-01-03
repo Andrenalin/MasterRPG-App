@@ -48,6 +48,9 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                 entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index)
             }
         }
+        .task(id: model.itemId) {
+            await model.updateStreamChanges()
+        }
 
         Color.accentColor.opacity(0.3)
             .frame(height: 8)

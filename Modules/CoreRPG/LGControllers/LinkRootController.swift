@@ -50,7 +50,7 @@ extension LinkRootController: LinkControllable {
         linkRegisterController.remove(linkId: linkModel.id)
     }
 
-    public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
+    public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel {
         linkController(for: module).toggleSheet(itemId: itemId, level: level, module: module)
     }
 }

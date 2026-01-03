@@ -365,15 +365,8 @@ extension LinkController {
 }
 
 public extension LinkController {
-    @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
-        switch module {
-        case .table:
-            return root.tableRoot.sheet(for: itemId, level: level)
-        case .value:
-            return SheetController(itemController: itemController, linkController: self).sheet(for: itemId, level: level)
-        default:
-            return nil
-        }
+    @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel {
+        SheetController(itemController: itemController, linkController: self).sheet(for: itemId, level: level)
     }
 }
 

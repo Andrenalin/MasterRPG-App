@@ -178,8 +178,7 @@ public extension LinkController {
 }
 
 public extension LinkController {
-    @MainActor
-    func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
+    @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel {
         switch module {
         case .audio:
             return root.audioRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)

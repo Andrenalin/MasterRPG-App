@@ -78,8 +78,8 @@ extension LinkController: LinkControllable {
         return itemControllable.itemOrEmpty(for: entryId).url(linkNumber: linkNumber)
     }
     
-    @MainActor public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel? {
-        guard module == itemController.config.module, let model = itemController.itemSync(for: itemId) else { return nil }
+    @MainActor public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel {
+        let model = itemController.itemOrEmpty(for: itemId)
         let entry = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .weather, name: "", description: "", entries: [])
         return SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .item, name: model.name, description: model.description, entries: [entry])
     }

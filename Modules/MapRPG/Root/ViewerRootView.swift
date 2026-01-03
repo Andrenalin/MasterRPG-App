@@ -2,7 +2,6 @@
 
 import CoreRPG
 import SwiftUI
-import PhotoRPG
 
 struct ViewerRootView: View {
     let model: MapModel
@@ -13,7 +12,7 @@ struct ViewerRootView: View {
     @State private var sheetModel: SheetModel = SheetModel.empty
 
     var body: some View {
-        TableRootSheet(root: root.rootController, model: sheetModel, dismissAction: dismissAction, imageContent: imageView(size:))
+        TableRootSheet(root: root.rootController, model: sheetModel, dismissAction: dismissAction)
             .onChange(of: model, initial: true) {
                 resetModels()
             }
@@ -23,10 +22,6 @@ struct ViewerRootView: View {
         withAnimation {
             sheetModel = SheetController(itemController: root.itemController).sheet(for: model.id)
         }
-    }
-
-    func imageView(size: CGSize) -> some View {
-        root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: model.photoId, useGame: false, size: size)
     }
 }
 

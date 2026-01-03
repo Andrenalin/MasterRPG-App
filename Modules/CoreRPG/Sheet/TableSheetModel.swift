@@ -4,13 +4,31 @@ import SwiftUI
 
 @Observable
 public final class TableSheetModel {
-    public init(linkControllable: any LinkControllable, sheetModel: SheetModel, searchText: String = "") {
+    @MainActor public init(linkControllable: any LinkControllable, itemId: UUID, level: Int, module: NetworkModules, searchText: String = "") {
         self.linkControllable = linkControllable
+        self.itemId = itemId
+        self.level = level
+        self.module = module
+        self.sheetModel = linkControllable.toggleSheet(itemId: itemId, level: level, module: module)
+        self.searchText = searchText
+        id = itemId
+    }
+
+    @MainActor public init(linkControllable: any LinkControllable, sheetModel: SheetModel, searchText: String = "") {
+        self.linkControllable = linkControllable
+        self.itemId = sheetModel.source.itemId
+        self.level = sheetModel.level
+        self.module = sheetModel.source.typeId
         self.sheetModel = sheetModel
         self.searchText = searchText
         id = UUID()
     }
-    var id: UUID
+
+    let id: UUID
+    let itemId: UUID
+    let level: Int
+    let module: NetworkModules
+    
     var sheetModel: SheetModel
     var searchText: String = ""
 
@@ -68,22 +86,32 @@ public final class TableSheetModel {
                 break
             case .description:
                 let sheets = linkControllable.toggleSheet(itemId: itemId, level: 0, module: module)
-                sheetModel.entries.insert(contentsOf: sheets?.entries ?? [], at: 0)
+                sheetModel.entries.insert(contentsOf: sheets.entries, at: 0)
             case .entry(let uuid):
                 guard let entryIndex = sheetModel.entries.firstIndex(where: { $0.id == uuid }) else { return }
                 var entry = sheetModel.entries[entryIndex]
                 if entry.sheetIds.contains(rowModel) {
                     entry.sheetIds.removeAll(where: { $0 == rowModel })
                 } else {
-                    guard let sheet = linkControllable.toggleSheet(itemId: itemId, level: entry.level + 1, module: module) else { return }
-                    let tableSheetModel = TableSheetModel(linkControllable: linkControllable, sheetModel: sheet, searchText: searchText)
-                    tableSheetModel.id = itemId
+                    let tableSheetModel = TableSheetModel(linkControllable: linkControllable, itemId: itemId, level: entry.level + 1, module: module, searchText: searchText)
                     
                     sheets[rowModel] = tableSheetModel
                     entry.sheetIds.append(rowModel)
                 }
                 sheetModel.entries[entryIndex] = entry
             }
+        }
+    }
+    
+    @MainActor func updateStreamChanges() async {
+        let obItemId = itemId
+        let itemControllable = linkControllable.itemControllable
+        let stream = Observations {
+            itemControllable.itemSync(for: obItemId)
+        }
+
+        for await _ in stream {
+            sheetModel = linkControllable.toggleSheet(itemId: obItemId, level: level, module: module)
         }
     }
 }
