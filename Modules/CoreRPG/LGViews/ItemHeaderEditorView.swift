@@ -122,13 +122,6 @@ private extension ItemHeaderEditorView {
             }
         }
     }
-    
-    private var isEqual: Bool {
-        model.name == name &&
-        model.description == information &&
-        model.category == category &&
-        model.tags == tags
-    }
 }
 
 #Preview {

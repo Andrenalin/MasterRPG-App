@@ -4,6 +4,7 @@ import SwiftUI
 
 enum InternalRoute: Equatable, Codable {
     case export(ids: [UUID])
+    case groupEditor(ids: [UUID])
     case removeAlert
 }
 
@@ -26,6 +27,9 @@ struct InternalRouteDestinationView: View {
                 return root.exportControllable.export(ids: exportIds)
             }
             .presentationDetents([.height(160)])
+        case .groupEditor(let ids):
+            GroupEditorView(groupEditorController: GroupEditorController(itemController: root.itemControllable, editController: root.editControllable, ids: ids))
+                .presentationDetents([.medium])
         case .removeAlert:
             EffectedLinkActionPanelView(root: root)
         }

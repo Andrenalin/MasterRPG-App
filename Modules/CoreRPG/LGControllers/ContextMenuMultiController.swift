@@ -74,6 +74,11 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
 #endif
     }
     
+    func groupEditor(currentSelected: UUID?) -> any NavigationDestination {
+        let selection = selection(currentSelected: currentSelected)
+        return InternalRoute.groupEditor(ids: selection)
+    }
+    
     func folderItems(currentSelected: UUID?) -> [FolderRepresentable] {
         let selection = selection(currentSelected: currentSelected)
         guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return [] }

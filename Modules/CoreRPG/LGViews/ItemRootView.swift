@@ -40,9 +40,10 @@ struct ItemRootSingleListView: View {
                 }
             }
             .onChange(of: listModel.itemRoute) {
-                guard appSizeMode == .compact, let itemId = listModel.itemRoute else { return }
-                navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
+                guard let itemId = listModel.itemRoute else { return }
                 listModel.itemRoute = nil
+                guard appSizeMode == .compact else { return }
+                navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
             }
     }
     
@@ -101,17 +102,3 @@ struct SplitContentDetailRootView: View {
         }
     }
 }
-
-//#Preview("Small", traits: .mockData) {
-//    @Previewable @Environment(FakeItemRootController.self) var root
-//
-//    ManagedNavigationStack {
-//        ItemRootView(root: root.rootController)
-//    }
-//}
-//
-//#Preview("Split", traits: .mockData) {
-//    @Previewable @Environment(FakeItemRootController.self) var root
-//
-//    ItemRootView(root: root.rootController)
-//}

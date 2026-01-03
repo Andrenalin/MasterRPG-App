@@ -891,6 +891,15 @@
     "Dice Bag" : {
 
     },
+    "Different Descriptions" : {
+
+    },
+    "Different Names" : {
+
+    },
+    "Different Tags" : {
+
+    },
     "Done" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1358,6 +1367,9 @@
           }
         }
       }
+    },
+    "Group Editor for %@" : {
+
     },
     "Hidden" : {
       "localizations" : {

@@ -11,6 +11,7 @@ public protocol ItemListContextMenuControllable {
     func deleteItem(currentSelected: UUID?) -> [ItemRowModel]
     func exportItem(currentSelected: UUID?) -> any NavigationDestination
     func generateLink(currentSelected: UUID?)
+    func groupEditor(currentSelected: UUID?) -> any NavigationDestination
     
     func folderItems(currentSelected: UUID?) -> [FolderRepresentable]
     func moveItem(currentSelected: UUID?, to folder: FolderRepresentable)

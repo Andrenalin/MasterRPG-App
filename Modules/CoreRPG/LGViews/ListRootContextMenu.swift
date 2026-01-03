@@ -23,7 +23,7 @@ public struct ListRootContextMenu: View {
             .disabled(listDisplayModel.isListMode)
         Divider()
         exportItemView
-        generateLinkView
+        groupEditView
         Divider()
         deleteItemView
     }
@@ -80,7 +80,7 @@ private extension ListRootContextMenu {
             }
         }
     }
-    
+
     var generateLinkView: some View {
         Button {
             withAnimation { controller.generateLink(currentSelected: currentSelected) }
@@ -89,6 +89,19 @@ private extension ListRootContextMenu {
                 Text("Link for \(title)", bundle: .module)
             } icon: {
                 Image(systemName: "link")
+            }
+        }
+    }
+
+    var groupEditView: some View {
+        Button {
+            let route = controller.groupEditor(currentSelected: currentSelected)
+            navigator.navigate(to: route, method: .sheet)
+        } label: {
+            Label {
+                Text("Group Editor for \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "long.text.page.and.pencil")
             }
         }
     }
