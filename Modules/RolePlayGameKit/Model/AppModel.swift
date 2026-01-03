@@ -39,7 +39,6 @@ public final class AppModel: Sendable {
     @ObservationIgnored public let optionKeyDownModel: OptionKeyDownModel
     @ObservationIgnored public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
     @ObservationIgnored public let settingsModel: AppSettingsModel
-    @ObservationIgnored public var selectionSheetLinkModel: SelectionSheetLinkModel
     @ObservationIgnored public let windowStateModel: WindowStateModel
     
     // Options
@@ -79,7 +78,6 @@ public final class AppModel: Sendable {
     @MainActor public init() {
         self.optionKeyDownModel = OptionKeyDownModel()
         self.settingsModel = AppSettingsModel()
-        self.selectionSheetLinkModel = SelectionSheetLinkModel()
         self.windowStateModel = WindowStateModel()
         
         self.inAppController = InAppController(model: inAppModel)

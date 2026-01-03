@@ -59,5 +59,4 @@ struct GameRootView<Content: View>: View {
     }
     .environment(\.wideMode, .small)
     .environment(AppSettingsModel())
-    .environment(SelectionSheetLinkModel())
 }

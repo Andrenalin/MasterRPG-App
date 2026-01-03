@@ -51,7 +51,6 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.listDisplayModel)
             .environment(root.rootController)
             .environment(CacheItemListModel())
-            .environment(SelectionSheetLinkModel())
             .environment(LinkRootController.fake)
             .environment(DetailInspectorModel())
             .environment(root.diceRoot)

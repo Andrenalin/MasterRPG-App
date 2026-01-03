@@ -16,7 +16,6 @@ struct OverlayPlayerTabBar: View {
 
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.wideMode) private var wideMode
-    @Environment(SelectionSheetLinkModel.self) private var selectionSheetLinkModel
 
     var body: some View {
         ZStack(alignment: .trailing) {

@@ -16,7 +16,6 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
         content
             .environment(appModel.optionKeyDownModel)
             .environment(appModel.settingsModel)
-            .environment(appModel.selectionSheetLinkModel)
             .environment(appModel.windowStateModel)
             .environment(appModel.adventureRoot)
             .environment(appModel.audioRoot)

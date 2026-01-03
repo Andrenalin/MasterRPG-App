@@ -19,11 +19,17 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     
     public var body: some View {
         if model.sheetModel.showHeader {
-            LinkHighlightTextView(model: model.linkTextModel(for: .name, text: model.sheetModel.name))
-                .font(.title)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-                .moveDisabled(true)
+            HStack {
+                if isEditor {
+                    plusButton
+                }
+                
+                LinkHighlightTextView(model: model.linkTextModel(for: .name, text: model.sheetModel.name))
+                    .font(.title)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                    .moveDisabled(true)
+            }
             
             if let description = model.description(for: model.sheetModel), !description.isEmpty {
                 LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
@@ -37,8 +43,10 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
             SheetGroupView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
         }
-        .onMove { indexSet, index in
-            entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index)
+        .applyIf(isEditor) {
+            $0.onMove { indexSet, index in
+                entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index)
+            }
         }
 
         Color.accentColor.opacity(0.3)
@@ -61,6 +69,31 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
 #else
         level.isMultiple(of: 2) ? (colorScheme == .dark ? .black : .white) : .secondary.opacity(0.3)
 #endif
+    }
+    
+    @ViewBuilder var plusButton: some View {
+        if let entryDataEditable {
+            Button {
+                withAnimation {
+                    let entryId = entryDataEditable.addNewEntry(itemId: model.sheetModel.source.itemId)
+                    root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: model.sheetModel.source.itemId, entryId: entryId, typeId: root.configurable.module))
+                    root.editControllable.editorModel.currentEntryId = entryId
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(0.25))
+                        root.editControllable.editorModel.scrollEntryId = entryId
+                    }
+                }
+            } label: {
+                Image(systemName: "note.text.badge.plus")
+                    .imageScale(.large)
+                    .foregroundStyle(.foreground, .tint)
+            }
+            .borderLessTVBottonStyle()
+            .contentShape(.circle)
+#if !os(visionOS)
+            .glassEffect()
+#endif
+        }
     }
 }
 

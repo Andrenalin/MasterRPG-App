@@ -12,8 +12,6 @@ import GameRPG
 struct OldWindowMacList: Scene {
     let appModel: AppModel
 
-    @State private var selectionSheetLinkModel = SelectionSheetLinkModel()
-
     var body: some Scene {
         WindowGroup("Editor", id: WindowIdentifier.additionalEditor.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in

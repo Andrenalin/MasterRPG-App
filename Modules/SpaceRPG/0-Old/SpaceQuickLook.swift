@@ -13,9 +13,7 @@ struct SpaceQuickLook: View {
     let startLoading: Bool
     let gameMode: Bool
     let dismiss: (() -> Void)?
-    
-    @Environment(SelectionSheetLinkModel.self) private var selectionSheetLinkModel
-    
+        
 #if os(visionOS)
     @Environment(WindowStateModel.self) private var windowStateModel
     @Environment(\.openImmersiveSpace) private var openImmersiveSpace
@@ -53,14 +51,6 @@ struct SpaceQuickLook: View {
             await openImmersiveSpace(id: WindowIdentifier.spaceViewer.rawValue, value: item)
             windowStateModel.spaceImmersiveView = true
         }
-#elseif os(tvOS)
-        // nothing
-#else
-        selectionSheetLinkModel.selectionFullView = AnyView(
-            SpaceViewer(root: root, id: item.itemId, isModal: true)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        )
-        selectionSheetLinkModel.selectionFullScreen = true
 #endif
     }
 }

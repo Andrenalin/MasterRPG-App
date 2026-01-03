@@ -92,8 +92,7 @@ public extension EntryDataEditable {
         model.entries = entries
     }
     
-    @MainActor
-    func addNewEntry(itemId: UUID) -> UUID {
+    @MainActor func addNewEntry(itemId: UUID) -> UUID {
         let entry = Model.Entry.empty
         add(entry: entry, itemId: itemId)
         return entry.id

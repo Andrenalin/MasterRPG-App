@@ -41,11 +41,9 @@ public extension ViewController {
 #if os(tvOS)
         SpaceQuickLook(root: root, item: ItemSelection(itemId: root.gameController.gameModel.currentItemId ?? UUID(), entryId: nil), startLoading: true, gameMode: true, dismiss: nil)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .environment(SelectionSheetLinkModel())
 #elseif os(visionOS)
         SpaceQuickLook(root: root, item: ItemSelection(itemId: root.gameController.gameModel.currentItemId ?? UUID(), entryId: nil), startLoading: true, gameMode: true, dismiss: nil)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .environment(SelectionSheetLinkModel())
 #else
         SpaceViewer(root: root, id: root.gameController.gameModel.currentItemId ?? UUID(), isModal: false)
             .padding()

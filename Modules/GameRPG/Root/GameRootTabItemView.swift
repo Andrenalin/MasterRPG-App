@@ -44,5 +44,4 @@ struct GameRootTabItemView: View {
     GameRootTabItemView(root: .preview)
         .environment(\.wideMode, .small)
         .environment(AppSettingsModel())
-        .environment(SelectionSheetLinkModel())
 }

@@ -19,7 +19,6 @@ public struct QuickEditorAction<EntryViewModel, SelectionView: View>: View {
     let selectionView: (Binding<[UUID]?>, NetworkModules, @escaping () -> Void) -> SelectionView
 
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(SelectionSheetLinkModel.self) private var selectionSheetLinkModel
 
     @State private var selectedLinkModule: NetworkModules = .none
     @State private var linkScanId: [NetworkModules: [UUID]] = [:]
@@ -52,13 +51,13 @@ public struct QuickEditorAction<EntryViewModel, SelectionView: View>: View {
                 Spacer()
 
                 Button {
-                    selectionSheetLinkModel.selectionView = AnyView(
-                        selectionView($linkScanId[selectedLinkModule], selectedLinkModule) {
-                            selectionSheetLinkModel.selection = false
-                        }
-                        .environment(\.colorScheme, colorScheme)
-                    )
-                    selectionSheetLinkModel.selection = true
+//                    selectionSheetLinkModel.selectionView = AnyView(
+//                        selectionView($linkScanId[selectedLinkModule], selectedLinkModule) {
+//                            selectionSheetLinkModel.selection = false
+//                        }
+//                        .environment(\.colorScheme, colorScheme)
+//                    )
+//                    selectionSheetLinkModel.selection = true
                 } label: {
                     Text(linkScanId[selectedLinkModule] == nil ? "Select" : "Change", bundle: .module)
                 }
