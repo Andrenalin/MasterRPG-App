@@ -42,6 +42,9 @@ struct DetailListView: View {
                 navigator.navigate(to: AdventureDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
             }
+            .onAppear {
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+            }
     }
     
     func content(listController: any FolderListControllable) -> some View {

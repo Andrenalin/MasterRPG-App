@@ -5,6 +5,12 @@ import PhotoRPG
 import SwiftUI
 
 struct RootEditCanvasMap: View {
+    init(itemId: UUID, tile: MapEntryModel? = nil, isPinEdit: Bool = false) {
+        self.itemId = itemId
+        self.tile = tile
+        self.isPinEdit = isPinEdit
+    }
+    
     let itemId: UUID
     var tile: MapEntryModel?
     var isPinEdit: Bool = false
@@ -14,16 +20,20 @@ struct RootEditCanvasMap: View {
     @State private var image: AKImage?
     @State private var degrees: Double = 0
     @State private var dropPinModel = DropPinModel()
+    @State private var model: MapModel = .empty
 
     var body: some View {
-        @Bindable var model = root.itemController.itemOrEmpty(for: itemId).copy()
-
         GeometryReader { geo in
             if let image {
                 MapEditor(editController: root.editController, image: image, photoDegrees: degrees, map: model, viewMode: .master, tile: tile, isPinEdit: isPinEdit, containerSize: geo.size)
                         .environment(dropPinModel)
             } else {
                 Color.clear
+            }
+        }
+        .onAppear {
+            if model.id != itemId {
+                model = root.itemController.itemOrEmpty(for: itemId).copy()
             }
         }
         .onChange(of: model.photoId, initial: true) {
@@ -43,9 +53,9 @@ struct RootEditCanvasMap: View {
         }
 #endif
     }
-
+    
     func reloadImage() async {
-        let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(for: root.itemController.itemOrEmpty(for: itemId).photoId, useGame: false) ?? (nil, 0)
+        let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(for: model.photoId, useGame: false) ?? (nil, 0)
         Task { @MainActor in
             self.image = updateImage
             self.degrees <=> updateDegrees

@@ -52,7 +52,7 @@ public extension ViewController {
     }
     
     @MainActor func mapEditWindow(root: MapRootModel) -> some View {
-        MapEditWindow(editController: root.editController)
+        MapEditWindow(itemId: root.editController.editorModel.currentItemId)
     }
     
     @MainActor func gameView(root: MapRootModel) -> some View {

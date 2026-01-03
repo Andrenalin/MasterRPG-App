@@ -36,7 +36,6 @@ struct DetailListView: View {
     
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel()
-    @State private var animate: Bool = false
     
     var body: some View {
         content(listController: detailFolderListController)
@@ -44,6 +43,9 @@ struct DetailListView: View {
                 guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
                 navigator.navigate(to: MapDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
+            }
+            .onAppear {
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
             }
     }
     
@@ -112,7 +114,7 @@ private extension DetailListView {
 #if os(visionOS) || os(macOS)
                     openWindow(id: WindowIdentifier.mapEditor.rawValue)
 #else
-                    navigator.navigate(to: EditorRoute.mapEditor, method: .cover)
+                    navigator.navigate(to: EditorRoute.mapEditor(model.id), method: .cover)
 #endif
                 } label: {
                     Label {

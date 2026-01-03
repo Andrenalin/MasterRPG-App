@@ -7,7 +7,8 @@ import CharacterRPG
 
 @Observable
 final class EditToolBarModel {
-    init(pinScale: CGFloat = 1, hexScale: Double = 1, hideCloseButton: Bool = false, displayMode: MapDisplayMode = .master) {
+    init(mapModel: MapModel, pinScale: CGFloat = 1, hexScale: Double = 1, hideCloseButton: Bool = false, displayMode: MapDisplayMode = .master) {
+        self.mapModel = mapModel
         self.pinScale = pinScale
         self.hexScale = hexScale
         self.hideCloseButton = hideCloseButton
@@ -346,7 +347,7 @@ private extension EditToolBarViewModifier {
 }
 
 #Preview("New Modifier") {
-    @Previewable var model = EditToolBarModel()
+    @Previewable var model = EditToolBarModel(mapModel: .empty)
     @Previewable var editController: EditController = .preview
     
     NavigationStack {

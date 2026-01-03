@@ -34,11 +34,6 @@ struct ItemRootSingleListView: View {
         let _ = Self._printChanges()
         
         ItemRootListView(root: root)
-            .onChange(of: listModel.selected) {
-                if let itemId = listModel.selectedItemId {
-                    root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: root.configurable.module))
-                }
-            }
             .onChange(of: listModel.itemRoute) {
                 guard let itemId = listModel.itemRoute else { return }
                 listModel.itemRoute = nil

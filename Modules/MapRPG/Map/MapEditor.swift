@@ -10,7 +10,7 @@ struct MapEditor: View {
         self.image = image
         self.photoDegrees = photoDegrees
         self.map = map
-        self.toolBarModel = EditToolBarModel(pinScale: map.pinScale, hexScale: map.hexMapScale, hideCloseButton: false)
+        self.toolBarModel = EditToolBarModel(mapModel: map, pinScale: map.pinScale, hexScale: map.hexMapScale, hideCloseButton: false)
         self.viewMode = viewMode
         self.tile = tile
         self.isPinEdit = isPinEdit
@@ -105,6 +105,9 @@ struct MapEditor: View {
             .onAppear {
                 firstAppear()
             }
+            .onDisappear {
+                editController.save(updated: map, message: String(localized: "Change entry coordinates").localizedString)
+            }
             .modifier(EditToolBarViewModifier(editController: editController, model: toolBarModel))
        }
     }
@@ -166,7 +169,7 @@ private extension MapEditor {
     func changeMap() {
         let currentEntryId = editController.editorModel.currentEntryId
         if currentEntryId != editEntries.entries.first?.id {
-            editController.save(with: String(localized: "Change entry coordinates").localizedString)
+            editController.save(updated: map, message: String(localized: "Change entry coordinates").localizedString)
             if let currentEntryId {
                 let entry = map[currentEntryId]
                 withAnimation(.bouncy) {
