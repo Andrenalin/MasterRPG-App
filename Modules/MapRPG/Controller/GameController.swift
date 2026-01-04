@@ -40,7 +40,7 @@ struct GameController: Sendable {
         self.root = root
         self.itemController = itemController
         self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(root: root, dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        let internItemController = ItemController(config: root.config, photoRoot: root.photoRoot, dataController: nil, linkRegisterControllable: linkRegisterControllable)
         self.importController = ImportController(itemController: internItemController, gameImporter: true)
         self.rootExportControllable = rootExportControllable
         self.rootImportControllable = rootImportControllable

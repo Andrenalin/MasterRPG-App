@@ -2,12 +2,10 @@
 
 import CoreRPG
 import Foundation
-import os.log
 import UniformTypeIdentifiers
 
 struct ItemController: Sendable {
-    @MainActor
-    init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
         self.config = config
         
         self.dataControllable = dataController

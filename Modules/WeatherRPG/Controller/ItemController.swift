@@ -9,8 +9,7 @@ struct ItemController: Sendable {
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
 
-        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
-        
+        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)        
         self.collectionCategory = config.collectionCategory
     }
 
@@ -24,7 +23,5 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     typealias Model = WeatherModel
     
-    @MainActor var linkRegisterControllable: LinkRegisterControllable {
-        linkRegisterController
-    }
+    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
 }

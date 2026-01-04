@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import os.log
 import UniformTypeIdentifiers
 
 struct ItemController: Sendable {
@@ -34,11 +33,6 @@ extension ItemController: ItemControllable {
 
     var cacheControllable: ImageCacheControllable? { cacheController }
     @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
-    
-    public func loadableUrl(for model: ItemRowModel) async -> URL? {
-        guard let fileUrl = await self.item(for: model.itemId)?.fileUrl else { return nil }
-        return await fileUrlDataController?.url(for: fileUrl, action: { $0 })
-    }
 }
 
 extension ItemController: FileUrlAccessible {

@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import os.log
 import UniformTypeIdentifiers
 
 #if canImport(PDFKit)
@@ -36,9 +35,7 @@ extension ItemController: ItemControllable {
     typealias Model = PdfModel
     
     var cacheControllable: ImageCacheControllable? { cacheController }
-    @MainActor var linkRegisterControllable: LinkRegisterControllable {
-        linkRegisterController
-    }
+    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
 }
 
 extension ItemController: FileUrlAccessible {

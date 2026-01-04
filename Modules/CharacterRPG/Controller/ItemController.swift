@@ -29,12 +29,12 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     typealias Model = ValueModel
     
-    @MainActor var linkRegisterControllable: LinkRegisterControllable {
-        linkRegisterController
-    }
+    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
 }
 
 extension ItemController {
+    
+    // TODO: move to editController?
     func duplicate(itemId: UUID, withCopy: Bool = true) async -> UUID {
         let (duplicates, copyId, mapper) = await duplicateSubValue(id: itemId, withCopy: withCopy)
         //await root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)

@@ -27,7 +27,5 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     typealias Model = DiceModel
     
-    @MainActor var linkRegisterControllable: LinkRegisterControllable {
-        linkRegisterController
-    }
+    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
 }

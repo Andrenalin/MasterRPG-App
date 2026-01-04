@@ -2,29 +2,21 @@
 
 import CoreRPG
 import Foundation
-import CoreData
-import AudioRPG
-import DiceRPG
-import PdfRPG
 import PhotoRPG
-import TableRPG
-import CharacterRPG
 
 struct ItemController: Sendable {
-    @MainActor
-    init(root: MapRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
-        self.root = root
-        self.config = root.config
+    @MainActor init(config: ModuleConfiguration, photoRoot: PhotoRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+        self.config = config
 
         self.dataControllable = dataController
         self.linkRegisterController = linkRegisterControllable
 
         self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         self.collectionCategory = config.collectionCategory
-        self.cacheController = CacheController(photoRoot: root.photoRoot)
+        
+        self.cacheController = CacheController(photoRoot: photoRoot)
     }
 
-    let root: MapRootModel
     let config: ModuleConfigurable
     var cacheController: CacheController?
     let collectionCategory: ItemListCategory
@@ -36,8 +28,5 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     typealias Model = MapModel
     
-    @MainActor
-    var linkRegisterControllable: LinkRegisterControllable {
-        linkRegisterController
-    }
+    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
 }

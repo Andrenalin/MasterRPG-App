@@ -48,7 +48,7 @@ public final class MapRootModel: @unchecked Sendable {
         
         let dataController = context.map { DataController(context: $0, token: config.module.token) }
         _dataController = dataController
-        let itemController = ItemController(root: self, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        let itemController = ItemController(config: config, photoRoot: photoRoot, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
         _editController = EditController(root: self, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _exportController = ExportController(root: self, itemController: itemController, gameExporter: false)

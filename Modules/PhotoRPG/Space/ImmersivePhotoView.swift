@@ -44,7 +44,7 @@ public struct ImmersivePhotoView: View {
 extension Entity {
     func addSkybox(root: PhotoRootModel, for photoSelection: PhotoWorldSelection) {
         let subscription = Task {
-            guard let url = await root.itemController.loadableUrl(for: ItemRowModel(itemId: photoSelection.id, typeId: .photo)) else { return }
+            guard let url = await root.itemController.loadableUrl(itemId: photoSelection.id) else { return }
             guard let texture = try? await TextureResource(contentsOf: url) else { return }
             
             var material = UnlitMaterial()
@@ -64,7 +64,7 @@ extension Entity {
 
     func updateTexture(root: PhotoRootModel, for photoSelection: PhotoWorldSelection) {
         let subscription = Task {
-            guard let url = await root.itemController.loadableUrl(for: ItemRowModel(itemId: photoSelection.id, typeId: .photo)) else { return }
+            guard let url = await root.itemController.loadableUrl(itemId: photoSelection.id) else { return }
             guard let texture = try? await TextureResource(contentsOf: url) else { return }
             guard var modelComponent = self.components[ModelComponent.self] else {
                 var material = UnlitMaterial()

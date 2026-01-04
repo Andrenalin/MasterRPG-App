@@ -1,17 +1,7 @@
 // @copyright André Trettin
 
-import AudioRPG
-import CharacterRPG
-import CoreData
 import CoreRPG
-import DiceRPG
 import Foundation
-import MapRPG
-import PdfRPG
-import PhotoRPG
-import SpaceRPG
-import WeatherRPG
-import TableRPG
 
 struct ItemController: Sendable {
     @MainActor
@@ -35,8 +25,5 @@ struct ItemController: Sendable {
 extension ItemController: ItemControllable {
     typealias Model = AdventureModel
     
-    @MainActor
-    var linkRegisterControllable: LinkRegisterControllable {
-        linkRegisterController
-    }
+    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
 }
