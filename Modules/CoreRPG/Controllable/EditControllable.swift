@@ -307,6 +307,14 @@ public extension EditControllable {
 // MARK: - Files
 
 public extension EditControllable {
+    func folderPath(itemId: UUID?) async -> String {
+        guard let itemId, let item = await editModel(for: itemId) else { return "" }
+        if let parentId = item.parentId {
+            return await folderPath(itemId: parentId) + "/"
+        }
+        return item.name
+    }
+    
     func moved(oldName: String, itemId: UUID) async {
         guard let fileUrlDataController, let item = await editModel(for: itemId) else { return }
         let oldFileUrl = item.fileUrl
@@ -319,11 +327,14 @@ public extension EditControllable {
     
     func resetFile(url: URL?, itemId: UUID) async {
         guard let fileUrlDataController, let item = await editModel(for: itemId) else { return }
-        await fileUrlDataController.delete(model.fileUrl)
-        guard let url else {
+        if item.fileUrl != nil {
+            await cacheItemListModel.resetImageCache(itemId: itemId)
+            await itemControllable.cacheControllable?.remove(itemId: itemId)
+            fileUrlDataController.delete(item.fileUrl)
             await reset(fileUrl: nil, itemId: itemId)
-            return
         }
+        guard let url else { return }
+        
         _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
         
@@ -332,7 +343,8 @@ public extension EditControllable {
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             await reset(name: name, itemId: itemId)
         }
-        let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: itemId, url: url, module: itemControllable.config.module.token, category: model.category.title)
+            
+        let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: itemId, url: url, module: itemControllable.config.module.token, category: folderPath(itemId: item.parentId))
         await reset(fileUrl: updatedFileUrl, itemId: itemId)
     }
     
@@ -344,15 +356,16 @@ public extension EditControllable {
         guard let data else { return }
         
         let module = itemControllable.config.module.token
-        let filePath = item.name.isEmpty ? "\(path)NewData-\(item.id.uuidString).\(itemControllable.config.filenameExtension)" : "\(path)\(item.name).\(itemControllable.config.filenameExtension)"
+        var folder = await folderPath(itemId: item.parentId)
+        if !folder.isEmpty {
+            folder.append("/")
+        }
+        let filePath = item.name.isEmpty ? "\(folder)NewData-\(item.id.uuidString).\(itemControllable.config.filenameExtension)" : "\(folder)\(item.name).\(itemControllable.config.filenameExtension)"
         var dataFileUrl = await FileUrl(fileId: model.id, url: URL(string: filePath)!, location: .newCloud, module: module, relativeUrl: nil)
         dataFileUrl.resetData(data)
         
         let fileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: itemControllable.config.filenameExtension)
-        
-        guard var updatedItem = await editModel(for: itemId) else { return }
-        updatedItem.fileUrl = fileUrl
-        await save(updated: updatedItem, message: String(localized: "New File").localizedString)
+        await reset(fileUrl: fileUrl, itemId: itemId)
     }
 }
 

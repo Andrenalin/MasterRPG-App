@@ -24,30 +24,32 @@ struct EditController: Sendable {
 extension EditController: EditControllable {
     typealias Model = PhotoModel
 
-    var itemControllable: any ItemControllable {
-        itemController
-    }
-    var cacheController: CacheController? {
-        itemController.cacheController
-    }
-    var fileUrlDataController: FileUrlDataController? {
-        itemControllable.fileUrlDataController
-    }
+    var cacheController: CacheController? { itemController.cacheController }
+    var itemControllable: any ItemControllable { itemController }
+    var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
 }
 
 extension EditController {
     func convert(itemId: UUID) async throws {
-        guard let editModel = await editModel(for: itemId) else  { return }
-        await cacheController?.photoId(for: editModel.id, item: editModel, shouldDownload: true)
-        guard let image = await cacheController?.photo(for: editModel.id), let data = image.jpegData(compressionQuality: 0.9), let fileUrl = editModel.fileUrl else { return }
+        guard let item = await editModel(for: itemId), let fileUrl = item.fileUrl else { return }
+        await cacheController?.photoId(for: item.id, item: item, shouldDownload: true)
+        guard let image = await cacheController?.photo(for: item.id), let data = image.jpegData(compressionQuality: 0.9) else { return }
 
         var dataUrl = fileUrl
         dataUrl.convertFile(data, fileExtension: itemController.config.filenameExtension)
 
-        let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: editModel.id, unconvertedFileUrl: dataUrl, pathExtension: itemController.config.filenameExtension)
-        await reset(fileUrl: newFileUrl, itemId: editModel.id)
+        let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataUrl, pathExtension: itemController.config.filenameExtension)
+        await cacheItemListModel.resetImageCache(itemId: itemId)
+        await itemControllable.cacheControllable?.remove(itemId: itemId)
+        await reset(fileUrl: newFileUrl, itemId: item.id)
     }
     
+    @MainActor func isNotJpegPhoto(itemId: UUID) -> Bool {
+        guard let item = editModel(for: itemId) else { return false }
+        guard let fileUrl = item.fileUrl else { return false }
+        return !(fileUrl.fileExtension == itemController.config.filenameExtension || fileUrl.fileExtension == "jpeg")
+    }
+
     func loadImage(cacheType: CacheItemListModel.CacheType, item: Model, itemId: UUID, fileUrl: FileUrl?, reset: Bool = false) async -> AKImage? {
         guard fileUrl != nil else { return nil }
         if reset {
@@ -73,11 +75,5 @@ extension EditController {
     func resetPhoto(image: AKImage?, itemId: UUID) async {
         let data = image?.jpegData(compressionQuality: 0.9)
         try? await resetFile(data: data, itemId: itemId, path: "")
-    }
-    
-    @MainActor func isNotJpegPhoto(itemId: UUID) -> Bool {
-        guard let editModel = editModel(for: itemId) else  { return false }
-        guard let fileUrl = editModel.fileUrl else { return false }
-        return !(fileUrl.fileExtension == itemController.config.filenameExtension || fileUrl.fileExtension == "jpeg")
     }
 }

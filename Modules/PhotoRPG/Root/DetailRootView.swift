@@ -50,6 +50,9 @@ struct DetailListView: View {
                 }
             }
         }
+        .toolbar {
+            toolbarContent
+        }
         .environment(openFileWindowModel)
         .environment(root.folderListController.cacheListItemModel)
         .environment(root.listDisplayModel)
@@ -58,29 +61,15 @@ struct DetailListView: View {
         .tint(root.configurable.module.tint)
         .accentColor(root.configurable.module.tint)
     }
-}
-
-struct SelectedPhotoViewerView: View {
-    let model: PhotoModel
     
-    @Environment(PhotoRootModel.self) var root
-    @Environment(GroupItemSelectionModel.self) var selection
-    
-    var body: some View {
-        ViewerRootView(model: selectedModel, externalViewer: false)
-            .id(selection.selectedItem ?? model.id)
-    }
-    
-    var selectedModel: PhotoModel {
-        item ?? model
-    }
-    
-    var item: PhotoModel? {
-        guard let id = selection.selectedItem else { return nil }
-        return root.itemController.itemSync(for: id)
+    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
+        ToolbarItemGroup(placement: .secondaryActionAll) {
+            ControlGroup {
+                ConvertImageEditor(model: model)
+            }
+        }
     }
 }
-
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(PhotoRootModel.self) var root

@@ -26,6 +26,11 @@ public final class CacheItemListModel: Sendable {
     public func setImageCache(cacheType: CacheType, itemId: UUID, image: AKImage?) {
         CacheItemListModel.imageCache[cacheId(for: cacheType, itemId: itemId)] = image
     }
+    
+    public func resetImageCache(itemId: UUID) {
+        setImageCache(cacheType: .image, itemId: itemId, image: nil)
+        setImageCache(cacheType: .thumbnail, itemId: itemId, image: nil)
+    }
 
     @ObservationIgnored
     private var itemLinkCache: [String: LinkHighlightTextModel] = [:]
@@ -44,10 +49,6 @@ public final class CacheItemListModel: Sendable {
 
     public func reset(cacheType: CacheType, itemId: UUID, text: String) {
         itemLinkCache[cacheId(for: cacheType, itemId: itemId)]?.reset(text: text)
-    }
-
-    public func resetLinks(cacheType: CacheType, itemId: UUID) {
-        
     }
 
     public func reset(search: String) {

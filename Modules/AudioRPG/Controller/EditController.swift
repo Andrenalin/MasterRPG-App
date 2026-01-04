@@ -2,11 +2,9 @@
 
 import CoreRPG
 import Foundation
-import Observation
 
 struct EditController: Sendable {
-    @MainActor
-    init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
         self.linkRegisterControllable = linkRegisterControllable
         self.itemController = itemController
         self.editorModel = ItemEditorModel()
@@ -20,11 +18,6 @@ struct EditController: Sendable {
 extension EditController: EditControllable {
     typealias Model = AudioModel
     
-    var itemControllable: any ItemControllable {
-        itemController
-    }
-    
-    var fileUrlDataController: FileUrlDataController? {
-        itemControllable.fileUrlDataController
-    }
+    var itemControllable: any ItemControllable { itemController }
+    var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
 }

@@ -88,6 +88,7 @@
 
     },
     "Convert Photo to JPEG" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -96,6 +97,9 @@
           }
         }
       }
+    },
+    "Convert to JPEG" : {
+
     },
     "Create" : {
       "extractionState" : "stale",

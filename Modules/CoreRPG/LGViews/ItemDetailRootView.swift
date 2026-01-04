@@ -343,7 +343,7 @@ private extension ItemDetailRootView {
     
     func overlayFileImporter(model: any ItemDataAccessable) -> some View {
         HStack {
-            Text(model.url?.path(percentEncoded: false) ?? "No file is set")
+            Text(model.url?.path(percentEncoded: false) ?? String(localized: "No file is set").localizedString)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             if root.viewControllable.fileImporterViewType == .file {
@@ -387,7 +387,13 @@ private extension ItemDetailRootView {
                     inspector
                 }
             } else {
-                ContentUnavailableView("No Inspector for this item", image: "spyglass")
+                ContentUnavailableView {
+                    Label {
+                        Text("No Inspector for this item", bundle: .module)
+                    } icon: {
+                        Image(systemName: "scope")
+                    }
+                }
             }
         }
     }
