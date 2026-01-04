@@ -14,17 +14,7 @@ public final class TableSheetModel {
         self.searchText = searchText
         id = model.id
     }
-
-//    @MainActor public init(linkControllable: any LinkControllable, sheetModel: SheetModel, searchText: String = "") {
-//        self.linkControllable = linkControllable
-//        self.itemId = sheetModel.source.itemId
-//        self.level = sheetModel.level
-//        self.module = sheetModel.source.typeId
-//        self.sheetModel = sheetModel
-//        self.searchText = searchText
-//        id = UUID()
-//    }
-
+    
     let model: any ItemDataAccessable
     let id: UUID
     let itemId: UUID
@@ -68,6 +58,10 @@ public final class TableSheetModel {
         }
     }
     
+    @MainActor func reset() {
+        resetModel(model: linkControllable.toggleSheet(itemId: itemId, level: level, module: module))
+    }
+    
     func resetModel(model: SheetModel) {
         linkTextModel.removeAll()
         sheets.removeAll()
@@ -105,20 +99,33 @@ public final class TableSheetModel {
             }
         }
     }
-    
-    @MainActor func updateStreamChanges() async {
-//        let obItemId = itemId
-//        let itemControllable = linkControllable.itemControllable
-        let obModel = model
-        let stream = Observations {
-            obModel
-//            itemControllable.itemSync(for: obItemId)
-        }
 
-        for await item in stream {
-            print("*** has changed", item.name)
-            sheetModel = linkControllable.toggleSheet(itemId: item.id, level: level, module: module)
+    @MainActor func add(entryId: UUID) {
+        let updatedModel = linkControllable.toggleSheet(itemId: itemId, level: level, module: module)
+        if let entryIndex = updatedModel.entries.firstIndex(where: { $0.source.entryId == entryId }) {
+            let entry = updatedModel.entries[entryIndex]
+            if entryIndex < sheetModel.entries.count {
+                sheetModel.entries.insert(entry, at: entryIndex)
+            } else {
+                sheetModel.entries.append(entry)
+            }
         }
+    }
+
+    @MainActor func update(entryId: UUID) {
+        let updatedModel = linkControllable.toggleSheet(itemId: itemId, level: level, module: module)
+        if let entryIndex = updatedModel.entries.firstIndex(where: { $0.source.entryId == entryId }) {
+            let entry = updatedModel.entries[entryIndex]
+            if entryIndex < sheetModel.entries.count {
+                sheetModel.entries[entryIndex] = entry
+                linkTextModel[.entry(entry.id)] = nil
+            }
+        }
+    }
+
+    func remove(entry: SheetModel) {
+        sheetModel.entries.removeAll(where: { $0.id == entry.id })
+        linkTextModel[.entry(entry.id)] = nil
     }
 }
 

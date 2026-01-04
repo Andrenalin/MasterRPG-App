@@ -4,6 +4,7 @@ import CoreRPG
 import DiceRPG
 import SwiftUI
 import MapRPG
+import SpaceRPG
 
 struct PlayerGameScreen: View {
     let root: GameRoot
@@ -18,6 +19,9 @@ struct PlayerGameScreen: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(WindowStateModel.self) private var windowStateModel
+    
+    @Environment(\.openImmersiveSpace) private var openImmersiveSpace
+    @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
 #endif
     @State private var diceShowOptionModel = DiceDisplayModel()
 
@@ -48,6 +52,15 @@ struct PlayerGameScreen: View {
             prepareWindows()
         }
 #if os(visionOS)
+        .onChange(of: root.networkStore.sharePlayStore.switchToImmersive) {
+            Task {
+                if root.networkStore.sharePlayStore.switchToImmersive {
+                    await openImmersiveSpace(id: WindowIdentifier.spaceViewer.rawValue, value: ItemSelection(itemId: root.spaceRoot.gameControllable.currentId, entryId: nil))
+                } else {
+                    await dismissImmersiveSpace()
+                }
+            }
+        }
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
             root.diceRoot.viewController.dicePlayerView(root: root.diceRoot)
                 .environment(diceShowOptionModel)

@@ -47,9 +47,10 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             $0.onMove { indexSet, index in
                 entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index)
             }
-            .task(id: model.itemId) {
-                await model.updateStreamChanges()
-            }
+        }
+        .onChange(of: root.editControllable.editorModel.currentEntryId) { previousEntryId, _ in
+            guard let previousEntryId, root.editControllable.editorModel.currentItemId == model.itemId else { return }
+            withAnimation { model.update(entryId: previousEntryId) }
         }
 
         Color.accentColor.opacity(0.3)
@@ -81,6 +82,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                     let entryId = entryDataEditable.addNewEntry(itemId: model.sheetModel.source.itemId)
                     root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: model.sheetModel.source.itemId, entryId: entryId, typeId: root.configurable.module))
                     root.editControllable.editorModel.currentEntryId = entryId
+                    model.add(entryId: entryId)
                     Task { @MainActor in
                         try? await Task.sleep(for: .seconds(0.25))
                         root.editControllable.editorModel.scrollEntryId = entryId
@@ -210,6 +212,7 @@ private extension SheetGroupView {
         Button(role: .destructive) {
             withAnimation {
                 root.editControllable.removeEntry(source: entry.source)
+                model.remove(entry: entry)
             }
         } label: {
             Image(systemName: "minus.circle.fill")

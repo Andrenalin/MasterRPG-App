@@ -31,6 +31,8 @@ final class RPGSharePlayController {
     var gameModel: GameModel?
     var packageSender: SharePlaySingleQueuePackageSender?
     var packageReceiver = SharePlayPackageReceiver()
+    
+    var switchToImmersive: Bool = false
 
     private let groupStateObserver = GroupStateObserver()
     private var cancellables: Set<AnyCancellable> = []
@@ -164,7 +166,21 @@ extension RPGSharePlayController {
                 var configuration = SystemCoordinator.Configuration()
                 configuration.supportsGroupImmersiveSpace = true
 //                configuration.spatialTemplatePreference = .sideBySide.contentExtent(200)
+                configuration.spatialTemplatePreference = .conversational
                 systemCoordinator.configuration = configuration
+                
+                let vpTask = Task { @MainActor in
+                    for await immersionStyle in systemCoordinator.groupImmersionStyle {
+                        if let immersionStyle {
+                            switchToImmersive = true
+                        } else {
+                            switchToImmersive = false
+                        }
+                    }
+                }
+
+                tasks.insert(vpTask)
+
                 #endif
 
                 self.configureGroupSession(session)
@@ -222,7 +238,7 @@ extension RPGSharePlayController {
             }
         }
         tasks.insert(journalTask)
-
+        
         groupSession.join()
         playBack?.coordinateWithSession(groupSession)
     }
