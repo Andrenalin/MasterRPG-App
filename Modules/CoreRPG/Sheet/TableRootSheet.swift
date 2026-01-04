@@ -3,16 +3,15 @@
 import SwiftUI
 
 public struct TableRootSheet: View {
-    public init(root: ItemRootController, model: SheetModel, windowMode: Bool = false, dismissAction: (() -> Void)? = nil) {
+    public init(root: ItemRootController, itemId: UUID, module: NetworkModules, windowMode: Bool = false, dismissAction: (() -> Void)? = nil) {
         self.root = root
-        self.model = model
         self.windowMode = windowMode
         self.dismissAction = dismissAction
-        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: root.linkControllable, sheetModel: model))
+        let model = root.itemControllable.itemOrEmpty(for: itemId)
+        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: root.linkControllable, model: model, level: 0, module: module))
     }
         
     let root: ItemRootController
-    let model: SheetModel
     let windowMode: Bool
     let dismissAction: (() -> Void)?
     
@@ -36,7 +35,7 @@ public struct TableRootSheet: View {
             .toolbar {
                 toolbarContent
             }
-            .navigationTitle(Text(model.name))
+            .navigationTitle(Text(tableSheetModel.sheetModel.name))
     }
 }
 

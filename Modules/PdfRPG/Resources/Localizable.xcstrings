@@ -49,6 +49,9 @@
         }
       }
     },
+    "Bookmarks" : {
+
+    },
     "Change to %@" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -237,6 +240,9 @@
           }
         }
       }
+    },
+    "Unnamed" : {
+
     },
     "Which pdf?" : {
       "comment" : "Title of the dialog that appears when requesting the target of the intent.",

@@ -4,26 +4,28 @@ import SwiftUI
 
 @Observable
 public final class TableSheetModel {
-    @MainActor public init(linkControllable: any LinkControllable, itemId: UUID, level: Int, module: NetworkModules, searchText: String = "") {
+    @MainActor public init(linkControllable: any LinkControllable, model: any ItemDataAccessable, level: Int, module: NetworkModules, searchText: String = "") {
         self.linkControllable = linkControllable
-        self.itemId = itemId
+        self.model = model
+        self.itemId = model.id
         self.level = level
         self.module = module
         self.sheetModel = linkControllable.toggleSheet(itemId: itemId, level: level, module: module)
         self.searchText = searchText
-        id = itemId
+        id = model.id
     }
 
-    @MainActor public init(linkControllable: any LinkControllable, sheetModel: SheetModel, searchText: String = "") {
-        self.linkControllable = linkControllable
-        self.itemId = sheetModel.source.itemId
-        self.level = sheetModel.level
-        self.module = sheetModel.source.typeId
-        self.sheetModel = sheetModel
-        self.searchText = searchText
-        id = UUID()
-    }
+//    @MainActor public init(linkControllable: any LinkControllable, sheetModel: SheetModel, searchText: String = "") {
+//        self.linkControllable = linkControllable
+//        self.itemId = sheetModel.source.itemId
+//        self.level = sheetModel.level
+//        self.module = sheetModel.source.typeId
+//        self.sheetModel = sheetModel
+//        self.searchText = searchText
+//        id = UUID()
+//    }
 
+    let model: any ItemDataAccessable
     let id: UUID
     let itemId: UUID
     let level: Int
@@ -93,7 +95,8 @@ public final class TableSheetModel {
                 if entry.sheetIds.contains(rowModel) {
                     entry.sheetIds.removeAll(where: { $0 == rowModel })
                 } else {
-                    let tableSheetModel = TableSheetModel(linkControllable: linkControllable, itemId: itemId, level: entry.level + 1, module: module, searchText: searchText)
+                    let model = linkControllable.itemControllable.itemOrEmpty(for: itemId)
+                    let tableSheetModel = TableSheetModel(linkControllable: linkControllable, model: model, level: entry.level + 1, module: module, searchText: searchText)
                     
                     sheets[rowModel] = tableSheetModel
                     entry.sheetIds.append(rowModel)
@@ -104,14 +107,17 @@ public final class TableSheetModel {
     }
     
     @MainActor func updateStreamChanges() async {
-        let obItemId = itemId
-        let itemControllable = linkControllable.itemControllable
+//        let obItemId = itemId
+//        let itemControllable = linkControllable.itemControllable
+        let obModel = model
         let stream = Observations {
-            itemControllable.itemSync(for: obItemId)
+            obModel
+//            itemControllable.itemSync(for: obItemId)
         }
 
-        for await _ in stream {
-            sheetModel = linkControllable.toggleSheet(itemId: obItemId, level: level, module: module)
+        for await item in stream {
+            print("*** has changed", item.name)
+            sheetModel = linkControllable.toggleSheet(itemId: item.id, level: level, module: module)
         }
     }
 }

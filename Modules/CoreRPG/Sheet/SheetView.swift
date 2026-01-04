@@ -20,7 +20,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     public var body: some View {
         if model.sheetModel.showHeader {
             HStack {
-                if isEditor {
+                if isEditor && model.sheetModel.canAdd {
                     plusButton
                 }
                 
@@ -47,9 +47,9 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             $0.onMove { indexSet, index in
                 entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index)
             }
-        }
-        .task(id: model.itemId) {
-            await model.updateStreamChanges()
+            .task(id: model.itemId) {
+                await model.updateStreamChanges()
+            }
         }
 
         Color.accentColor.opacity(0.3)

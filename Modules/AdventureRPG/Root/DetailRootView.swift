@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 import DiceRPG
 import PhotoRPG
@@ -22,18 +21,15 @@ struct DetailListView: View {
         self.model = model
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
-        let sheetModel = SheetController(itemController: root.itemController).sheet(for: model.id)
-        self.tableSheetModel = TableSheetModel(linkControllable: root.linkController, sheetModel: sheetModel, searchText: "")
     }
     
     let root: AdventureRootModel
     let model: AdventureModel
-    let tableSheetModel: TableSheetModel
     
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
-    @State private var openFileWindowModel = OpenFileWindowModel()
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
     
     var body: some View {
         content(listController: detailFolderListController)
@@ -86,11 +82,7 @@ private extension DetailListView {
                 withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
             }
         
-        Section {
-            SheetView(root: root.rootController, model: tableSheetModel, isEditor: true, linkTypes: LinkAdventureModuleTransferable.self)
-        } header: {
-            Text("Sections", bundle: .module)
-        }
+        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Sections").localizedString, linkTypes: LinkAdventureModuleTransferable.self)
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {

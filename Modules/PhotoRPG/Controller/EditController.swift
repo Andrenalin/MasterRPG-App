@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import Observation
 #if os(macOS)
 import AppKit
 #else

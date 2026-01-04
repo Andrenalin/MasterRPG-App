@@ -21,13 +21,10 @@ struct DetailListView: View {
         self.model = model
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
-        let sheetModel = SheetController(itemController: root.itemController).sheet(for: model.id)
-        self.tableSheetModel = TableSheetModel(linkControllable: root.rootControllable.linkControllable, sheetModel: sheetModel, searchText: "")
     }
     
     let root: MapRootModel
     let model: MapModel
-    let tableSheetModel: TableSheetModel
     
     @Environment(\.navigator) private var navigator
 #if os(visionOS) || os(macOS)
@@ -90,11 +87,7 @@ private extension DetailListView {
         
         DisplayConfigEditor(model: model)
         
-        Section {
-            SheetView(root: root.rootController, model: tableSheetModel, isEditor: true, linkTypes: LinkMapModuleTransferable.self)
-        } header: {
-            Text("Rooms", bundle: .module)
-        }
+        SheetRootEditorView(root: root.rootController, linkControllable: root.rootControllable.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Rooms").localizedString, linkTypes: LinkMapModuleTransferable.self)
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {

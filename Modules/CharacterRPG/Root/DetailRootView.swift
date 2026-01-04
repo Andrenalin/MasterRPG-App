@@ -21,13 +21,10 @@ struct DetailListView: View {
         self.model = model
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
-        let sheetModel = SheetController(itemController: root.itemController, linkController: root.linkController).sheet(for: model.id)
-        self.tableSheetModel = TableSheetModel(linkControllable: root.rootControllable.linkControllable, sheetModel: sheetModel, searchText: "")
     }
     
     let root: CharacterRootModel
     let model: ValueModel
-    let tableSheetModel: TableSheetModel
     
     @Environment(\.navigator) private var navigator
     
@@ -93,11 +90,7 @@ private extension DetailListView {
                 withAnimation { root.editController.valueEditModel.selectionPhoto.resetSelection(selectionIds: model.photos) }
             }
 
-        Section {
-            SheetView(root: root.rootController, model: tableSheetModel, isEditor: true, linkTypes: LinkCharacterModuleTransferable.self)
-        } header: {
-            Text("Values", bundle: .module)
-        }
+        SheetRootEditorView(root: root.rootController, linkControllable: root.rootControllable.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Values").localizedString, linkTypes: LinkCharacterModuleTransferable.self)
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {

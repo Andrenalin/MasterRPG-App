@@ -9,7 +9,11 @@ public struct ViewController {
     public let thumbnailRowViewType: ThumbnailRowViewType = .photo
 }
 
-extension ViewController: ViewControllable {}
+extension ViewController: ViewControllable {
+    @MainActor public func rowViewer(source: ItemRowModel) -> AnyView {
+        AnyView(InlineRowViewer(source: source).equatable())
+    }
+}
 
 // MARK: Viewer
 

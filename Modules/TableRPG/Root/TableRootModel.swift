@@ -64,7 +64,7 @@ public final class TableRootModel: @unchecked Sendable {
             rootManager: RootManager(diceRoot: diceRoot, generatorRoot: self, pdfRoot: pdfRoot, tableRoot: self),
             folderListController: folderListController.copy(parentModel: nil),
             diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             firstRow: [.table, .dice],
             selection: .table

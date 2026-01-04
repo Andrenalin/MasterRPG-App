@@ -3,11 +3,12 @@
 import Foundation
 
 public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
-    public init(source: ItemRowModel, level: Int = 0, type: SheetModelType = .item, showHeader: Bool = true, name: String, description: String, entries: [SheetModel]) {
+    public init(source: ItemRowModel, level: Int = 0, type: SheetModelType = .item, canAdd: Bool = true, showHeader: Bool = true, name: String, description: String, entries: [SheetModel]) {
         self.id = "\(level)!\(source.entryId ?? source.itemId)"
         self.source = source
         self.level = level
         self.sheetType = type
+        self.canAdd = canAdd
         self.showHeader = showHeader
         self.name = name
         self.description = description
@@ -20,6 +21,7 @@ public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
     public let level: Int
     
     public let sheetType: SheetModelType
+    public let canAdd: Bool
     public let showHeader: Bool
     public let name: String
     public let description: String

@@ -19,11 +19,6 @@ struct EditController: Sendable {
 extension EditController: EditControllable {
     typealias Model = SpaceModel
     
-    var itemControllable: any ItemControllable {
-        itemController
-    }
-    
-    var fileUrlDataController: FileUrlDataController? {
-        itemControllable.fileUrlDataController
-    }
+    var itemControllable: any ItemControllable { itemController }
+    var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
 }

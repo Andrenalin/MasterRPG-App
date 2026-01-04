@@ -7,6 +7,7 @@ import SpaceRPG
 import SwiftUI
 import WeatherRPG
 import DiceRPG
+import PdfRPG
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
@@ -19,6 +20,8 @@ struct InlineRowViewer: View, Equatable {
             root.diceRoot.viewController.rowViewer(source: source)
         case .map:
             root.mapRoot.viewController.rowViewer(source: source)
+        case .pdf:
+            root.pdfRoot.viewController.rowViewer(source: source)
         case .space:
             root.spaceRoot.viewController.rowViewer(source: source)
         case .weather:

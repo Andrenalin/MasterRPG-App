@@ -27,14 +27,17 @@ struct DetailListView: View {
                 navigator.navigate(to: PdfDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
             }
+            .onAppear {
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+            }
     }
     
     func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: true) {
+        ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: false) {
         } editor: {
-            if let cacheController = root.cacheController {
-                CachePhotoView(cacheController: cacheController, model: model, highResolution: false)
-            }
+            SheetRootEditorView(root: root.rootController, linkControllable: root.rootControllable.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks").localizedString, linkTypes: LinkPdfModuleTransferable.self)
+        } entryEditor: {
+            EntryEditorView(editController: root.editController, model: model)
         }
         .overlay {
             if openFileWindowModel.showItem {
