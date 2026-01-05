@@ -27,13 +27,7 @@ struct EditController: Sendable {
 extension EditController: EditControllable {
     typealias Model = WeatherModel
     
-    var itemControllable: any ItemControllable {
-        itemController
-    }
-    
-    var fileUrlDataController: FileUrlDataController? {
-        itemControllable.fileUrlDataController
-    }
+    var itemControllable: any ItemControllable { itemController }
 }
 
 // MARK: - Module Editor

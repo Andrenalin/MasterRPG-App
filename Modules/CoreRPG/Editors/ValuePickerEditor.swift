@@ -46,7 +46,7 @@ public struct ValuePickerEditor<Value: Hashable, Content: View>: View where Valu
         } set: {
             if $0 != model.wrappedValue {
                 model.wrappedValue = $0
-                editController.save(with: String(localized: "Change value").localizedString)
+                //editController.save(with: String(localized: "Change value").localizedString)
             }
         }
     }

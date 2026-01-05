@@ -18,12 +18,14 @@ public protocol EditControllable: Sendable {
 }
 
 public extension EditControllable {
-    @MainActor internal var model: Model {
-        get { editorModel.undoManaged.value as? Model ?? .empty }
-        nonmutating set {
-            // it is a class an updated already
-        }
-    }
+    var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
+    
+//    @MainActor internal var model: Model {
+//        get { editorModel.undoManaged.value as? Model ?? .empty }
+//        nonmutating set {
+//            // it is a class an updated already
+//        }
+//    }
 
     @MainActor var cacheItemListModel: CacheItemListModel {
         editorModel.cacheItemListModel
@@ -54,7 +56,7 @@ public extension EditControllable {
         guard var item = editModel(for: itemId) else { return }
         guard item.description != description else { return }
         item.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        editorModel.cacheItemListModel.reset(cacheType: .description, itemId: model.id, text: model.description.markDownText())
+        editorModel.cacheItemListModel.reset(cacheType: .description, itemId: item.id, text: item.description.markDownText())
         save(updated: item, message: String(localized: "Typing").localizedString)
     }
     
@@ -69,7 +71,7 @@ public extension EditControllable {
         guard var item = editModel(for: itemId) else { return }
         guard item.name != name else { return }
         item.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        editorModel.cacheItemListModel.reset(cacheType: .name, itemId: model.id, text: model.name.markDownText())
+        editorModel.cacheItemListModel.reset(cacheType: .name, itemId: item.id, text: item.name.markDownText())
         save(updated: item, message: String(localized: "Typing").localizedString)
     }
 
@@ -107,7 +109,7 @@ public extension EditControllable {
 
     @MainActor func remove(tag: String, itemId: UUID) {
         guard var item = editModel(for: itemId) else { return }
-        var tags = model.tags
+        var tags = item.tags
         guard let index = tags.firstIndex(of: tag) else { return }
         tags.remove(at: index)
         item.tags = tags
@@ -361,10 +363,10 @@ public extension EditControllable {
             folder.append("/")
         }
         let filePath = item.name.isEmpty ? "\(folder)NewData-\(item.id.uuidString).\(itemControllable.config.filenameExtension)" : "\(folder)\(item.name).\(itemControllable.config.filenameExtension)"
-        var dataFileUrl = await FileUrl(fileId: model.id, url: URL(string: filePath)!, location: .newCloud, module: module, relativeUrl: nil)
+        var dataFileUrl = FileUrl(fileId: item.id, url: URL(string: filePath)!, location: .newCloud, module: module, relativeUrl: nil)
         dataFileUrl.resetData(data)
         
-        let fileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: itemControllable.config.filenameExtension)
+        let fileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataFileUrl, pathExtension: itemControllable.config.filenameExtension)
         await reset(fileUrl: fileUrl, itemId: itemId)
     }
 }
@@ -373,7 +375,6 @@ public extension EditControllable {
 
 public extension EditControllable {
     @MainActor func editModel(for itemId: UUID) -> Model? {
-        guard model.id != itemId else { return model }
         return itemControllable.itemSync(for: itemId)?.copy() as? Model
     }
 
@@ -383,11 +384,7 @@ public extension EditControllable {
     }
 
     @MainActor func save(updated: Model, message: String) {
-        if updated.id == model.id {
-            save(with: message)
-        } else {
-            itemControllable.replace(model: updated, isInsert: false, shouldRepairLinks: false)
-        }
+        save(with: message, currentModel: updated)
     }
 
     @MainActor func setCurrentItem(to item: ItemRowTreeModel) {
@@ -400,16 +397,15 @@ public extension EditControllable {
     }
     
     @MainActor func setCurrentItem(model: Model, entryId: UUID? = nil) {
-        save(with: "")
-        editorModel.reset()
-
+        //editorModel.reset()
+        editorModel.cacheItemListModel.resetItemLink()
         editorModel.undoManaged.resetValue(model)
         editorModel.currentItemId = model.id
         editorModel.currentEntryId = entryId
     }
 
-    @MainActor func save(with name: String) {
-        guard editorModel.currentItemId != nil, let currentModel = editorModel.currentModel as? Model else { return }
+    @MainActor func save(with name: String, currentModel: Model) {
+        guard editorModel.currentItemId != nil else { return }
         validateBeforeSave(model: currentModel)
         guard !itemControllable.isEqual(with: currentModel) else { return }
         saveChanges(to: currentModel, name: name)
@@ -432,15 +428,19 @@ public extension EditControllable {
     @MainActor
     func undo() {
         editorModel.undoManaged.undo()
-        itemControllable.replace(model: editorModel.undoManaged.value, isInsert: false, shouldRepairLinks: true)
-        editorModel.cacheItemListModel.reset(itemId: model.id)
+        if let model = editorModel.undoManaged.value as? Model {
+            itemControllable.replace(model: model, isInsert: false, shouldRepairLinks: true)
+            editorModel.cacheItemListModel.reset(itemId: model.id)
+        }
     }
 
     @MainActor
     func redo() {
         editorModel.undoManaged.redo()
-        itemControllable.replace(model: editorModel.undoManaged.value, isInsert: false, shouldRepairLinks: true)
-        editorModel.cacheItemListModel.reset(itemId: model.id)
+        if let model = editorModel.undoManaged.value as? Model {
+            itemControllable.replace(model: model, isInsert: false, shouldRepairLinks: true)
+            editorModel.cacheItemListModel.reset(itemId: model.id)
+        }
     }
 
     @MainActor

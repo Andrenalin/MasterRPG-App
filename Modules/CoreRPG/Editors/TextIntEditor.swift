@@ -33,7 +33,7 @@ public struct TextIntEditor: View {
         }
         .onChange(of: focusState, initial: false) {
             guard focusState == false else { return }
-            editController.save(with: String(localized: "Typing").localizedString)
+            //editController.save(with: String(localized: "Typing").localizedString)
         }
     }
 }
@@ -54,7 +54,7 @@ private extension TextIntEditor{
             .submitLabel(.next)
             .focused($focusState)
             .onSubmit {
-                editController.save(with: String(localized: "Typing").localizedString)
+                //editController.save(with: String(localized: "Typing").localizedString)
             }
     }
     

@@ -13,7 +13,7 @@ struct DiceOptionEditor: View {
         Section {
             ToggleEditor(editController: root.editController, model: $model.sumUp, title: "Sum up dice", bundle: .module, icon: "sum")
 
-            TextDoubleEditor(editController: root.editController, model: $model.modifier, title: "Modifier", icon: "plus.forwardslash.minus", prompt: "+/- 5", bundle: .module, range: -10...10)
+            TextDoubleEditor(editController: root.editController, value: $model.modifier, title: "Modifier", icon: "plus.forwardslash.minus", prompt: "+/- 5", bundle: .module, range: -10...10)
                 .padding(.bottom, 8)
             
             if model.canPercentDice {
@@ -27,7 +27,7 @@ struct DiceOptionEditor: View {
             }
 
             if model.compareOption != .off {
-                TextDoubleEditor(editController: root.editController, model: $model.compareValue, title: "Value", icon: model.compareOption.icon, prompt: "Value to compare against", bundle: .module, range: 1...41)
+                TextDoubleEditor(editController: root.editController, value: $model.compareValue, title: "Value", icon: model.compareOption.icon, prompt: "Value to compare against", bundle: .module, range: 1...41)
             }
         } header: {
 #if os(macOS)

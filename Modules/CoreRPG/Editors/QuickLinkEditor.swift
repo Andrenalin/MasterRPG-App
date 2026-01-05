@@ -73,7 +73,7 @@ public struct QuickLinkEditor<EntryViewModel: ItemLinkEditable, ActionView: View
                             withAnimation {
                                 model.wrappedValue = afterEntries
                             }
-                            editController.save(with: String(localized: "Quick links added").localizedString)
+                            //editController.save(with: String(localized: "Quick links added").localizedString)
                             dismiss()
                         } label: {
                             Image(systemName: "square.and.arrow.down")

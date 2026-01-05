@@ -24,13 +24,7 @@ struct EditController {
 extension EditController: EditControllable {
     typealias Model = GeneratorModel
     
-    var itemControllable: any ItemControllable {
-        itemController
-    }
-    
-    var fileUrlDataController: FileUrlDataController? {
-        itemControllable.fileUrlDataController
-    }
+    var itemControllable: any ItemControllable { itemController }
 }
 
 // MARK: - Module Editor
@@ -38,7 +32,6 @@ extension EditController: EditControllable {
 extension EditController {
     @MainActor func add(referenceId: UUID?, model: GeneratorModel) {
         model.referenceId = referenceId
-        save(with: "Reference added")
+        save(updated: model, message: "Reference added")
     }
 }
-

@@ -4,13 +4,15 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditRow: View {
-    public init(editController: any EntryDataEditable, entry: any EntryDataAccessable , cacheItemListModel: CacheItemListModel) {
+    public init(editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessable, cacheItemListModel: CacheItemListModel) {
         self.editController = editController
+        self.itemId = itemId
         self.entry = entry
         self.cacheItemListModel = cacheItemListModel
     }
     
     let editController: any EntryDataEditable
+    let itemId: UUID
     let entry: any EntryDataAccessable
     let cacheItemListModel: CacheItemListModel
     
@@ -48,11 +50,11 @@ public struct EntryEditRow: View {
 
 private extension EntryEditRow {
     var model: any ItemDataAccessable {
-        editController.model
+        editController.itemControllable.itemOrEmpty(for: itemId)
     }
     
     var linkTextModel: LinkHighlightTextModel {
-        editController.linkTextModel(for: entry, linkController: linkController, searchModel: searchModel) { itemId, module in
+        editController.linkTextModel(itemId: itemId, for: entry, linkController: linkController, searchModel: searchModel) { itemId, module in
             guard module == .value else { return }
             navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
         }

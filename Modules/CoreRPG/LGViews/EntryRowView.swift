@@ -13,7 +13,7 @@ struct EntryRowView: View {
     }
     var body: some View {
         if let editController {
-            EntryEditRow(editController: editController, entry: item.model[entryId], cacheItemListModel: root.editControllable.cacheItemListModel)
+            EntryEditRow(editController: editController, itemId: item.model.id, entry: item.model[entryId], cacheItemListModel: root.editControllable.cacheItemListModel)
         } else {
             Text("\(item.model[entryId].name): \(item.model[entryId].content)")
         }

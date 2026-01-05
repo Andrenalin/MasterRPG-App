@@ -171,7 +171,7 @@ extension RPGSharePlayController {
                 
                 let vpTask = Task { @MainActor in
                     for await immersionStyle in systemCoordinator.groupImmersionStyle {
-                        if let immersionStyle {
+                        if immersionStyle != nil {
                             switchToImmersive = true
                         } else {
                             switchToImmersive = false

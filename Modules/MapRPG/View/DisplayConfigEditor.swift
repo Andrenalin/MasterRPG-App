@@ -91,7 +91,7 @@ struct DisplayConfigBorderEditor: View {
                 Text("Border color", bundle: .module)
             }
             
-            TextDoubleEditor(editController: root.editController, model: $model.displayConfig.borderThicknessDouble, title: "Thickness", icon: "slider.horizontal.below.square.and.square.filled", prompt: "Thickness of the border", bundle: .module, range: 0...25)
+            TextDoubleEditor(editController: root.editController, value: $model.displayConfig.borderThicknessDouble, title: "Thickness", icon: "slider.horizontal.below.square.and.square.filled", prompt: "Thickness of the border", bundle: .module, range: 0...25)
         }
     }
 }

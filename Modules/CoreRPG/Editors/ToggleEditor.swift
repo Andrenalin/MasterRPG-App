@@ -43,7 +43,7 @@ private extension ToggleEditor {
         } set: {
             if $0 != model.wrappedValue {
                 model.wrappedValue = $0
-                editController.save(with: String(localized: "Change toggle").localizedString)
+                //editController.save(with: String(localized: "Change toggle").localizedString)
             }
         }
     }

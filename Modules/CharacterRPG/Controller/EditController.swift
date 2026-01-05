@@ -311,23 +311,23 @@ extension EditController {
 
     @MainActor
     func createGroup(itemId: UUID, entryIds: [UUID]) {
-        guard let editModel = editModel(for: itemId) else { return }
-        guard entryIds.count > 0, editModel.entries.count > 0, var groupIndex = editModel.entries.firstIndex(where: { $0.id == entryIds[0] }) else { return }
+        guard let item = editModel(for: itemId) else { return }
+        guard entryIds.count > 0, item.entries.count > 0, var groupIndex = item.entries.firstIndex(where: { $0.id == entryIds[0] }) else { return }
         let valueEntryIndice = entryIds.compactMap { entryId -> Int? in
-            editModel.entries.firstIndex(where: { $0.id == entryId })
+            item.entries.firstIndex(where: { $0.id == entryId })
         }
-        let valueEntries = valueEntryIndice.sorted().map { editModel.entries[$0] }
-        valueEntryIndice.sorted(by: >).forEach { editModel.entries.remove(at: $0) }
+        let valueEntries = valueEntryIndice.sorted().map { item.entries[$0] }
+        valueEntryIndice.sorted(by: >).forEach { item.entries.remove(at: $0) }
 
-        groupIndex = min(max(groupIndex, 0), editModel.entries.count)
+        groupIndex = min(max(groupIndex, 0), item.entries.count)
 
-        let newValue = ValueModel(id: UUID(), name: "\(editModel.name) \(String(localized: "Group").localizedString)", description: editModel.description, tags: editModel.tags, category: editModel.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: editModel.photoId, photos: editModel.photos, entries: valueEntries)
+        let newValue = ValueModel(id: UUID(), name: "\(item.name) \(String(localized: "Group").localizedString)", description: item.description, tags: item.tags, category: item.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: item.photoId, photos: item.photos, entries: valueEntries)
         let newEntry = ValueEntryModel(id: UUID(), name: String(localized: "Group").localizedString, type: .text, value: "", diceId: nil, valueId: newValue.id)
-        newValue.parentId = editModel.id
+        newValue.parentId = item.id
 
-        editModel.entries.insert(newEntry, at: groupIndex)
+        item.entries.insert(newEntry, at: groupIndex)
         itemController.replace(model: newValue, isInsert: true, shouldRepairLinks: true)
-        save(with: String(localized: "Created group").localizedString)
+        save(updated: item, message: String(localized: "Created group").localizedString)
     }
 
     @MainActor

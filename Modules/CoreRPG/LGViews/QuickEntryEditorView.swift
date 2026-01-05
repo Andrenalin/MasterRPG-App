@@ -3,14 +3,14 @@
 import SwiftUI
 
 public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector: View, PDFOverlay: View>: View {
-    public init(editController: EditController, referenceText: DebouncerModel<String>, pdfEditorRoute: any NavigationDestination, @ViewBuilder inspector: () -> Inspector, @ViewBuilder pdfOverlay: () -> PDFOverlay) {
+    public init(editController: EditController, model: EditController.Model, referenceText: DebouncerModel<String>, pdfEditorRoute: any NavigationDestination, @ViewBuilder inspector: () -> Inspector, @ViewBuilder pdfOverlay: () -> PDFOverlay) {
         self.editController = editController
         self.referenceText = referenceText
         self.pdfEditorRoute = pdfEditorRoute
         self.inspector = inspector()
         self.pdfOverlay = pdfOverlay()
         self.textEditModel = TextEditModel(linkRegisterController: editController.linkRegisterControllable)
-        self.model = editController.model.copy()
+        self.model = model.copy()
     }
     
     let editController: EditController
@@ -69,7 +69,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                         dismiss()
                     }
                 }
-                .navigationTitle(editController.model.name)
+                .navigationTitle(model.name)
                 .navigationBarBackButtonHidden(true)
 #if os(iOS) || os(visionOS)
                 .navigationBarTitleDisplayMode(.inline)
@@ -81,9 +81,9 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
 #if !os(tvOS)
                 .toolbarRole(.editor)
 #endif
-                .onChange(of: editController.model, initial: true) {
-                    model = editController.model.copy()
-                }
+//                .onChange(of: model, initial: true) {
+//                    model = editController.model.copy()
+//                }
         }
 #if os(macOS)
         .frame(minWidth: 800, minHeight: 600)
@@ -118,7 +118,7 @@ private extension QuickEntryEditorView {
     private var entryListView: some View {
         List {
             ForEach(model.entries, id: \.id) { entry in
-                EntryEditRow(editController: editController, entry: entry, cacheItemListModel: editController.cacheItemListModel)
+                EntryEditRow(editController: editController, itemId: model.id, entry: entry, cacheItemListModel: editController.cacheItemListModel)
             }
         }
 #if !os(tvOS)
@@ -147,7 +147,7 @@ private extension QuickEntryEditorView {
     }
     
     private var initialText: String {
-        editController.model.entries.map {
+        model.entries.map {
             "\($0.name)\n\($0.content)"
         }.joined(separator: "\n\n")
     }

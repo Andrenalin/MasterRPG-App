@@ -170,10 +170,10 @@ public extension EntryDataEditable {
             newContent = newContent.replacingOccurrences(of: oldLinkText, with: newLink.markDown ?? oldLinkText, range: range)
             linkRegisterControllable.register(links: [newLink])
         }
-        changed = changed || model[entryId].content != newContent
+        changed = changed || item[entryId].content != newContent
         item[entryId].content <=> newContent
         if changed {
-            cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: rowText(itemId: model.id, entry: model[entryId]))
+            cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: rowText(itemId: item.id, entry: item[entryId]))
         }
         save(updated: item, message: String(localized: "Edit entry").localizedString)
     }
@@ -195,7 +195,7 @@ public extension EntryDataEditable {
             guard index > 0 else { return }
             item.entries.move(fromOffsets: IndexSet(integer: index), toOffset: index - 1)
         } else {
-            guard index < model.entries.count - 1 else { return }
+            guard index < item.entries.count - 1 else { return }
             item.entries.move(fromOffsets: IndexSet(integer: index + 1), toOffset: index)
         }
         let title: LocalizedStringResource = up ? "Move entry up" : "Move entry down"
@@ -204,8 +204,8 @@ public extension EntryDataEditable {
 }
 
 public extension EntryDataEditable {
-    @MainActor func linkTextModel(for entry: any EntryDataAccessable, linkController: LinkRootController, searchModel: SearchModel, toggler: ((UUID, NetworkModules) async -> Void)? = nil) -> LinkHighlightTextModel {
-        let nameText = rowText(itemId: model.id, entry: entry)
+    @MainActor func linkTextModel(itemId: UUID, for entry: any EntryDataAccessable, linkController: LinkRootController, searchModel: SearchModel, toggler: ((UUID, NetworkModules) async -> Void)? = nil) -> LinkHighlightTextModel {
+        let nameText = rowText(itemId: itemId, entry: entry)
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entry.id) else {
             let model = LinkHighlightTextModel(linkControllable: linkController.linkControllable, text: nameText, highlightedText: searchModel.searchText, toggler: toggler)        
             cacheItemListModel.setItemLink(cacheType: .row, itemId: entry.id, linkModel: model)
@@ -217,25 +217,25 @@ public extension EntryDataEditable {
         return linkModel
     }
     
-    @MainActor
-    func isUsed(rowModels: [ItemRowModel]) -> Bool {
-        for rowModel in rowModels {
-            if linkRegisterControllable.isUsed(link: rowModel) {
-                return true
-            }
-        }
-        return false
-    }
+//    @MainActor
+//    func isUsed(rowModels: [ItemRowModel]) -> Bool {
+//        for rowModel in rowModels {
+//            if linkRegisterControllable.isUsed(link: rowModel) {
+//                return true
+//            }
+//        }
+//        return false
+//    }
 
-    @MainActor
-    func isUsed(entryId: UUID) -> Bool {
-        linkRegisterControllable.isUsed(link: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
-    }
-
-    @MainActor
-    func used(entryId: UUID) -> [EffectedItemModel] {
-        linkRegisterControllable.used(for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
-    }
+//    @MainActor
+//    func isUsed(entryId: UUID) -> Bool {
+//        linkRegisterControllable.isUsed(link: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
+//    }
+//
+//    @MainActor
+//    func used(entryId: UUID) -> [EffectedItemModel] {
+//        linkRegisterControllable.used(for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
+//    }
     
     func scanReplace(entry: Model.Entry, linkEntry: LinkEntryModel, getLink: @Sendable @escaping (Model.Entry) -> String, setLink: @Sendable @escaping (String, Model.Entry) -> Model.Entry, caseInsensitive: Bool, words: Bool) -> Model.Entry {
         var replacedEntry = entry

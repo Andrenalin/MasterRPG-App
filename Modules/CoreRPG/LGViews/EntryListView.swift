@@ -22,7 +22,7 @@ public struct EntryListView<LinkType: LinkDataTransferable>: View {
     public var body: some View {
         Section {
             ForEach(model.entries, id: \.id) { entry in
-                EntryEditRow(editController: editController, entry: entry, cacheItemListModel: editController.cacheItemListModel)
+                EntryEditRow(editController: editController, itemId: model.id, entry: entry, cacheItemListModel: editController.cacheItemListModel)
                     .id(entry.id)
 #if !os(tvOS)
                     .dropDestination(for: linkTypes, isEnabled: true) { items, sessions in

@@ -222,36 +222,36 @@ extension EditController {
 
     @MainActor
     func move(pinId: UUID, up: Bool, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        guard let index = editModel.mapPins.firstIndex(where: { $0.id == pinId }) else { return }
+        guard let item = editModel(for: itemId) else { return }
+        guard let index = item.mapPins.firstIndex(where: { $0.id == pinId }) else { return }
         if up {
             guard index > 0 else { return }
-            editModel.mapPins.move(fromOffsets: IndexSet(integer: index), toOffset: index - 1)
+            item.mapPins.move(fromOffsets: IndexSet(integer: index), toOffset: index - 1)
         } else {
-            guard index < editModel.mapPins.count - 1 else { return }
-            editModel.mapPins.move(fromOffsets: IndexSet(integer: index + 1), toOffset: index)
+            guard index < item.mapPins.count - 1 else { return }
+            item.mapPins.move(fromOffsets: IndexSet(integer: index + 1), toOffset: index)
         }
         let title = up ? String(localized: "Move pin up") : String(localized: "Move pin down")
-        save(with: title.localizedString)
+        save(updated: item, message: title.localizedString)
     }
     
     @MainActor
     func move(pinFrom: IndexSet, to: Array<UUID>.Index, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        editModel.mapPins.move(fromOffsets: pinFrom, toOffset: to)
-        save(with: String(localized: "Reorder pins").localizedString)
+        guard let item = editModel(for: itemId) else { return }
+        item.mapPins.move(fromOffsets: pinFrom, toOffset: to)
+        save(updated: item, message: String(localized: "Reorder pins").localizedString)
     }
 
     @MainActor
     func replacePinData(pinId: UUID, with valueId: UUID, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
+        guard let item = editModel(for: itemId) else { return }
         let name = root.characterRoot.linkController.name(for: valueId)
         let photoId = root.characterRoot.valueGameControllable.imageIds(for: valueId).randomElement()
-        var pin = editModel[MapPinId.id, pinId]
+        var pin = item[MapPinId.id, pinId]
         pin.name = name
         pin.photoId = photoId
-        editModel[MapPinId.id, pinId] = pin
-        save(with: String(localized: "Updated pin from charakter").localizedString)
+        item[MapPinId.id, pinId] = pin
+        save(updated: item, message: String(localized: "Updated pin from charakter").localizedString)
     }
 }
 
@@ -398,7 +398,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(with: String(localized: "Entries replaced").localizedString)
+            save(updated: item, message: String(localized: "Entries replaced").localizedString)
             return []
         }
         return itemRowModels

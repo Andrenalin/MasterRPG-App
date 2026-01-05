@@ -3,9 +3,10 @@
 import SwiftUI
 
 public struct TextDoubleEditor: View {
-    public init(editController: any EditControllable, model: Binding<Double>, title: LocalizedStringKey, icon: String, prompt: LocalizedStringKey, bundle: Bundle?, range: ClosedRange<Double>) {
+    public init(editController: any EditControllable, value: Binding<Double>, title: LocalizedStringKey, icon: String, prompt: LocalizedStringKey, bundle: Bundle?, range: ClosedRange<Double>) {
         self.editController = editController
-        self.model = model
+        //self.model = model
+        self.value = value
         self.title = title
         self.icon = icon
         self.prompt = prompt
@@ -14,7 +15,8 @@ public struct TextDoubleEditor: View {
     }
 
     let editController: any EditControllable
-    let model: Binding<Double>
+    //let model: any ItemDataAccessable
+    let value: Binding<Double>
     let title: LocalizedStringKey
     let icon: String
     let prompt: LocalizedStringKey
@@ -31,7 +33,7 @@ public struct TextDoubleEditor: View {
         }
         .onChange(of: focusState, initial: false) {
             guard focusState == false else { return }
-            editController.save(with: String(localized: "Typing").localizedString)
+            //editController.save(updated: model, message: String(localized: "Typing").localizedString)
         }
 
         LabeledContent {
@@ -59,13 +61,13 @@ private extension TextDoubleEditor{
         .submitLabel(.next)
         .focused($focusState)
         .onSubmit {
-            editController.save(with: String(localized: "Typing").localizedString)
+            //editController.save(with: String(localized: "Typing").localizedString)
         }
     }
 
     var sliderView: some View {
 #if !os(tvOS)
-        Slider(value: model, in: range, step: 1, minimumValueLabel: Text("\(Int(range.lowerBound))"), maximumValueLabel: Text("\(Int(range.upperBound))")) {
+        Slider(value: value, in: range, step: 1, minimumValueLabel: Text("\(Int(range.lowerBound))"), maximumValueLabel: Text("\(Int(range.upperBound))")) {
             Text(title, bundle: bundle)
         }
         .labelsHidden()
@@ -80,10 +82,10 @@ private extension TextDoubleEditor{
     
     var text: Binding<String> {
         Binding {
-            format(number: model.wrappedValue)
+            format(number: value.wrappedValue)
         } set: {
-            if let number = Double($0), number != model.wrappedValue {
-                model.wrappedValue = number
+            if let number = Double($0), number != value.wrappedValue {
+                value.wrappedValue = number
             }
         }
     }
