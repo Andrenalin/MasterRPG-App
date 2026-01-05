@@ -142,6 +142,14 @@ struct SheetGroupView<LinkType: LinkDataTransferable>: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowBackground(Color.clear)
                         .frame(height: 256)
+                case .audioInline:
+                    HStack {
+                        root.viewControllable.rowViewer(source: entry.source)
+                        LinkHighlightTextView(model: model.linkTextModel(for: .entry(entry.id), text: text, shareResults: shareResult))
+                    }
+                    .font(.body)
+                    .listRowBackground(rowColor(for: entry.level))
+                    .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entry.level * 4), bottom: 8, trailing: 8))
                 case .photoInline:
                     EmptyView()
                 }

@@ -12,7 +12,11 @@ public struct ViewController: Sendable {
 
 extension ViewController: ViewControllable {
     @MainActor public func sharingView(for itemId: UUID) -> AnyView {
-        AnyView(SharingActionView(itemId: itemId))
+        AnyView(SharingActionView(itemId: itemId, showPlayControl: false))
+    }
+    
+    @MainActor public func rowViewer(source: ItemRowModel) -> AnyView {
+        AnyView(InlineRowViewer(source: source).equatable())
     }
 }
 

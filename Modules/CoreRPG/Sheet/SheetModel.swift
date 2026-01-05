@@ -44,6 +44,7 @@ public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
 
 public enum SheetModelType: Equatable, Hashable, Sendable {
     case item
+    case audioInline
     case dice
     case photo
     case photoInline

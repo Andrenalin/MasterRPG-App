@@ -1,13 +1,14 @@
 // @copyright André Trettin
 
 import CoreRPG
+import AudioRPG
+import DiceRPG
 import MapRPG
+import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
 import WeatherRPG
-import DiceRPG
-import PdfRPG
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
@@ -16,6 +17,8 @@ struct InlineRowViewer: View, Equatable {
     
     var body: some View {
         switch source.typeId {
+        case .audio:
+            root.audioRoot.viewController.rowViewer(source: source)
         case .dice:
             root.diceRoot.viewController.rowViewer(source: source)
         case .map:

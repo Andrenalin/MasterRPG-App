@@ -12,9 +12,7 @@ public struct LinkController: Sendable {
     let itemController: ItemController
     let gameController: GameController
     
-    public var itemControllable: any ItemControllable {
-        itemController
-    }
+    public var itemControllable: any ItemControllable { itemController }
 }
 
 extension LinkController: LinkControllable {
@@ -69,8 +67,7 @@ extension LinkController: LinkControllable {
         return itemControllable.itemOrEmpty(for: entryId).url(linkNumber: linkNumber)
     }
     
-    @MainActor
-    public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel {
+    @MainActor public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel {
         SheetController(itemController: itemController).sheet(for: itemId, level: level)
     }
 }
