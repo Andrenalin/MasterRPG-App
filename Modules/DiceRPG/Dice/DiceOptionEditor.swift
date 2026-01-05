@@ -10,7 +10,8 @@ struct DiceOptionEditor: View {
     
     @State private var modifierEditModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
     @State private var compareValueEditModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
-    
+    @State private var optionValueEditModel: EditIdentifierModel<DiceModel.CompareValue> = EditIdentifierModel(value: .off)
+
     var body: some View {
         @Bindable var model = model
         Section {
@@ -23,10 +24,9 @@ struct DiceOptionEditor: View {
                 ToggleEditor(editController: root.editController, model: $model.percentDice, title: "Percent dice", bundle: .module, icon: "percent")
             }
 
-            ValuePickerEditor(editController: root.editController, model: $model.compareOption, allCategories: DiceModel.CompareValue.allCases, title: "Check for", bundle: .module) { option in
+            ValuePickerEditor(model: optionValueEditModel, allCategories: DiceModel.CompareValue.allCases, title: "Check for", bundle: .module) { option in
                 Text(option.text, bundle: .module)
                     .tag(option)
-
             }
 
             if model.compareOption != .off {
@@ -48,6 +48,10 @@ struct DiceOptionEditor: View {
             compareValueEditModel.reset(valueId: model.id, value: model.compareValue) {
                 root.editController.reset(compareValue: compareValueEditModel.value, itemId: compareValueEditModel.valueId)
             }
+            optionValueEditModel.reset(valueId: model.id, value: model.compareOption) {
+                root.editController.reset(compareOption: optionValueEditModel.value, itemId: optionValueEditModel.valueId)
+            }
+
         }
     }
     

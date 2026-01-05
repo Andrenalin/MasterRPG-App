@@ -38,4 +38,16 @@ extension EditController {
         item.photoId = photoId
         save(updated: item, message: String(localized: "Change Photo").localizedString)
     }
+    
+    @MainActor func reset(cloudThickness: Cloud.Thickness, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        item.cloudThickness <=> cloudThickness
+        save(updated: item, message: String(localized: "change cloud thickness").localizedString)
+    }
+    
+    @MainActor func reset(stormType: Storm.Contents, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        item.stormType <=> stormType
+        save(updated: item, message: String(localized: "change storm type").localizedString)
+    }
 }

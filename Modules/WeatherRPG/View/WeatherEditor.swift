@@ -8,6 +8,10 @@ struct WeatherEditor: View {
 
     @Environment(WeatherRootModel.self) private var root
         
+    @State private var cloudEditModel: EditIdentifierModel<Cloud.Thickness> = EditIdentifierModel(value: .none)
+
+    @State private var stormEditModel: EditIdentifierModel<Storm.Contents> = EditIdentifierModel(value: .none)
+
     var body: some View {
         Section {
             root.viewController.photoSelection(root: root, selectionModel: root.editController.weatherEditModel.selectionPhoto)
@@ -26,7 +30,14 @@ struct WeatherEditor: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
-
+        .onChange(of: model.id, initial: true) {
+            cloudEditModel.reset(valueId: model.id, value: model.cloudThickness) {
+                root.editController.reset(cloudThickness: cloudEditModel.value, itemId: cloudEditModel.valueId)
+            }
+            stormEditModel.reset(valueId: model.id, value: model.stormType) {
+                root.editController.reset(stormType: stormEditModel.value, itemId: stormEditModel.valueId)
+            }
+        }
         Section {
             timeEditorView
             
@@ -99,37 +110,15 @@ private extension WeatherEditor {
         }
     }
 
-    @ViewBuilder
-    var cloudsEditorView: some View {
-        @Bindable var model = model
-        
-        LabeledContent {
-            Picker("Thickness", selection: $model.cloudThickness) {
-                ForEach(Cloud.Thickness.allCases, id: \.self) { thickness in
-                    Text(thickness.localizedTitle, bundle: .module).tag(thickness)
-                }
-            }
-            .pickerStyle(.automatic)
-            .labelsHidden()
-        } label: {
-            Text("Clouds", bundle: .module)
+    @ViewBuilder var cloudsEditorView: some View {
+        ValuePickerEditor(model: cloudEditModel, allCategories: Cloud.Thickness.allCases, title: "Clouds", bundle: .module) { thickness in
+            Text(thickness.localizedTitle, bundle: .module)
         }
     }
 
-    @ViewBuilder
-    var precipitationEditorView: some View {
-        @Bindable var model = model
-        
-        LabeledContent {
-            Picker("Precipitation", selection: $model.stormType) {
-                ForEach(Storm.Contents.allCases, id: \.self) { stormType in
-                    Text(stormType.localizedTitle, bundle: .module).tag(stormType)
-                }
-            }
-            .pickerStyle(.automatic)
-            .labelsHidden()
-        } label: {
-            Text("Precipitation", bundle: .module)
+    @ViewBuilder var precipitationEditorView: some View {
+        ValuePickerEditor(model: stormEditModel, allCategories: Storm.Contents.allCases, title: "Precipitation", bundle: .module) { stormType in
+            Text(stormType.localizedTitle, bundle: .module)
         }
     }
 
