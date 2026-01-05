@@ -2,11 +2,29 @@
 
 import SwiftUI
 
-public struct TextDoubleEditor: View {
-    public init(editController: any EditControllable, value: Binding<Double>, title: LocalizedStringKey, icon: String, prompt: LocalizedStringKey, bundle: Bundle?, range: ClosedRange<Double>) {
-        self.editController = editController
-        //self.model = model
+@Observable
+public final class EditIdentifierModel<Value> {
+    public init(valueId: UUID = UUID(), value: Value, save: (() -> Void)? = nil) {
+        self.valueId = valueId
         self.value = value
+        self.save = save
+    }
+    
+    public private(set) var valueId: UUID
+    public internal(set) var value: Value
+    public private(set) var save: (() -> Void)?
+    
+    public func reset(valueId: UUID, value: Value, saveHandler: (() -> Void)?) {
+        save?()
+        self.valueId = valueId
+        self.value = value
+        self.save = saveHandler
+    }
+}
+
+public struct TextDoubleEditor: View {
+    public init(model: EditIdentifierModel<Double>, title: LocalizedStringKey, icon: String, prompt: LocalizedStringKey, bundle: Bundle?, range: ClosedRange<Double>) {
+        self.model = model
         self.title = title
         self.icon = icon
         self.prompt = prompt
@@ -14,9 +32,7 @@ public struct TextDoubleEditor: View {
         self.range = range
     }
 
-    let editController: any EditControllable
-    //let model: any ItemDataAccessable
-    let value: Binding<Double>
+    let model: EditIdentifierModel<Double>
     let title: LocalizedStringKey
     let icon: String
     let prompt: LocalizedStringKey
@@ -24,7 +40,8 @@ public struct TextDoubleEditor: View {
     let range: ClosedRange<Double>
 
     @FocusState private var focusState: Bool
-
+    @State private var text: String = ""
+    
     public var body: some View {
         LabeledContent {
             textInputView
@@ -33,9 +50,15 @@ public struct TextDoubleEditor: View {
         }
         .onChange(of: focusState, initial: false) {
             guard focusState == false else { return }
-            //editController.save(updated: model, message: String(localized: "Typing").localizedString)
+            model.save?()
         }
-
+        .onChange(of: model.valueId, initial: true) {
+            text = format(number: model.value)
+        }
+        .onChange(of: model.value) {
+            text = format(number: model.value)
+        }
+        
         LabeledContent {
             sliderView
         } label: {
@@ -48,7 +71,7 @@ public struct TextDoubleEditor: View {
 
 private extension TextDoubleEditor{
     var textInputView: some View {
-        TextField(text: text, prompt: Text(prompt, bundle: bundle)) {
+        TextField(text: $text, prompt: Text(prompt, bundle: bundle)) {
             Text(title, bundle: bundle)
         }
 #if os(iOS) || os(visionOS)
@@ -56,18 +79,24 @@ private extension TextDoubleEditor{
         .keyboardType(.numbersAndPunctuation)
 #endif
         .disableAutocorrection(true)
-        .numericInput(text, includeDecimal: true)
+        .numericInput($text, includeDecimal: true)
         .labelsHidden()
         .submitLabel(.next)
         .focused($focusState)
         .onSubmit {
-            //editController.save(with: String(localized: "Typing").localizedString)
+            let formatter = NumberFormatter()
+            formatter.locale = Locale.current
+            if let value = formatter.number(from: text)?.doubleValue {
+                model.value <=> value
+            }
+            model.save?()
         }
     }
 
-    var sliderView: some View {
+    @ViewBuilder var sliderView: some View {
+        @Bindable var model = model
 #if !os(tvOS)
-        Slider(value: value, in: range, step: 1, minimumValueLabel: Text("\(Int(range.lowerBound))"), maximumValueLabel: Text("\(Int(range.upperBound))")) {
+        Slider(value: $model.value, in: range, step: 1, minimumValueLabel: Text("\(Int(range.lowerBound))"), maximumValueLabel: Text("\(Int(range.upperBound))")) {
             Text(title, bundle: bundle)
         }
         .labelsHidden()
@@ -78,15 +107,5 @@ private extension TextDoubleEditor{
 
     func format(number: Double) -> String {
         number.formatted(.number.precision(.fractionLength(1)))
-    }
-    
-    var text: Binding<String> {
-        Binding {
-            format(number: value.wrappedValue)
-        } set: {
-            if let number = Double($0), number != value.wrappedValue {
-                value.wrappedValue = number
-            }
-        }
     }
 }

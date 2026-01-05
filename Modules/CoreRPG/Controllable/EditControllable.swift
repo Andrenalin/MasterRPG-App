@@ -405,7 +405,7 @@ public extension EditControllable {
     }
 
     @MainActor func save(with name: String, currentModel: Model) {
-        guard editorModel.currentItemId != nil else { return }
+        //guard editorModel.currentItemId != nil else { return }
         validateBeforeSave(model: currentModel)
         guard !itemControllable.isEqual(with: currentModel) else { return }
         saveChanges(to: currentModel, name: name)

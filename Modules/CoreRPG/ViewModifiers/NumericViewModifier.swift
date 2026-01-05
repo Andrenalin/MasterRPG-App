@@ -14,7 +14,7 @@ struct NumericOnlyViewModifier: ViewModifier {
         #endif
         .onReceive(Just(text)) { newValue in
             var numbers = "-0123456789"
-            let decimnalSeparator: String = "." // Locale.current.decimalSeparator ?? "."
+            let decimnalSeparator: String = Locale.current.decimalSeparator ?? "."
             if includeDecimal {
                 numbers += decimnalSeparator
             }

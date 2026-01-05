@@ -8,12 +8,15 @@ struct DiceOptionEditor: View {
 
     @Environment(DiceRootModel.self) private var root
     
+    @State private var modifierEditModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
+    @State private var compareValueEditModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
+    
     var body: some View {
         @Bindable var model = model
         Section {
             ToggleEditor(editController: root.editController, model: $model.sumUp, title: "Sum up dice", bundle: .module, icon: "sum")
 
-            TextDoubleEditor(editController: root.editController, value: $model.modifier, title: "Modifier", icon: "plus.forwardslash.minus", prompt: "+/- 5", bundle: .module, range: -10...10)
+            TextDoubleEditor(model: modifierEditModel, title: "Modifier", icon: "plus.forwardslash.minus", prompt: "+/- 5", bundle: .module, range: -10...10)
                 .padding(.bottom, 8)
             
             if model.canPercentDice {
@@ -27,7 +30,7 @@ struct DiceOptionEditor: View {
             }
 
             if model.compareOption != .off {
-                TextDoubleEditor(editController: root.editController, value: $model.compareValue, title: "Value", icon: model.compareOption.icon, prompt: "Value to compare against", bundle: .module, range: 1...41)
+                TextDoubleEditor(model: compareValueEditModel, title: "Value", icon: model.compareOption.icon, prompt: "Value to compare against", bundle: .module, range: 1...41)
             }
         } header: {
 #if os(macOS)
@@ -37,6 +40,14 @@ struct DiceOptionEditor: View {
             Text("Options", bundle: .module)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
+        }
+        .onChange(of: model.id, initial: true) {
+            modifierEditModel.reset(valueId: model.id, value: model.modifier) {
+                root.editController.reset(modifer: modifierEditModel.value, itemId: modifierEditModel.valueId)
+            }
+            compareValueEditModel.reset(valueId: model.id, value: model.compareValue) {
+                root.editController.reset(compareValue: compareValueEditModel.value, itemId: compareValueEditModel.valueId)
+            }
         }
     }
     

@@ -74,6 +74,8 @@ struct DisplayConfigBorderEditor: View {
     let model: MapModel
     @Environment(MapRootModel.self) private var root
     
+    @State private var borderThicknessModel = EditIdentifierModel(value: 0.0)
+    
     var body: some View {
         @Bindable var model = model
         Group {
@@ -91,7 +93,13 @@ struct DisplayConfigBorderEditor: View {
                 Text("Border color", bundle: .module)
             }
             
-            TextDoubleEditor(editController: root.editController, value: $model.displayConfig.borderThicknessDouble, title: "Thickness", icon: "slider.horizontal.below.square.and.square.filled", prompt: "Thickness of the border", bundle: .module, range: 0...25)
+            TextDoubleEditor(model: borderThicknessModel, title: "Thickness", icon: "slider.horizontal.below.square.and.square.filled", prompt: "Thickness of the border", bundle: .module, range: 0...25)
+        }
+        .onChange(of: model.id, initial: true) {
+            borderThicknessModel.reset(valueId: model.id, value: model.displayConfig.borderThicknessDouble) {
+                root.editController.reset(borderThickness: borderThicknessModel.value, itemId: borderThicknessModel.valueId)
+            }
+
         }
     }
 }
