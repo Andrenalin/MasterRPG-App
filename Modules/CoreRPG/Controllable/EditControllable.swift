@@ -397,7 +397,6 @@ public extension EditControllable {
     }
     
     @MainActor func setCurrentItem(model: Model, entryId: UUID? = nil) {
-        //editorModel.reset()
         editorModel.cacheItemListModel.resetItemLink()
         editorModel.undoManaged.resetValue(model)
         editorModel.currentItemId = model.id
@@ -405,7 +404,6 @@ public extension EditControllable {
     }
 
     @MainActor func save(with name: String, currentModel: Model) {
-        //guard editorModel.currentItemId != nil else { return }
         validateBeforeSave(model: currentModel)
         guard !itemControllable.isEqual(with: currentModel) else { return }
         saveChanges(to: currentModel, name: name)

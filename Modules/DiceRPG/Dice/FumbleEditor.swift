@@ -8,8 +8,8 @@ struct FumbleEditor: View {
     
     @Environment(DiceRootModel.self) private var root
 
-    @State private var currentFumble = 0
     @State private var isDiceValueFumble = false
+    @State private var fumbleValueModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
     
     var body: some View {
         @Bindable var model = model
@@ -65,24 +65,6 @@ private extension FumbleEditor {
         }
     }
 
-    var fumbleValueText: Binding<String> {
-        Binding {
-            "\(currentFumble)"
-        } set: {
-            if let number = Int($0) {
-                currentFumble = number
-            }
-        }
-    }
-
-    var fumbleValueDouble: Binding<Double> {
-        Binding {
-            Double(currentFumble)
-        } set: {
-            currentFumble = Int($0)
-        }
-    }
-
     @ViewBuilder
     var fumbleEditorView: some View {
         LabeledContent {
@@ -96,9 +78,9 @@ private extension FumbleEditor {
                         .imageScale(.large)
                 }
                 .padding(.horizontal, 16)
-                .disabled(currentFumble == 0)
+                .disabled(fumbleValueModel.value == 0)
 
-                TextIntEditor(editController: root.editController, model: $currentFumble, title: "Fumble Dice Value", icon: "plus", prompt: "fumble", bundle: .module, range: model.minValue...model.maxValue)
+                TextIntEditor(model: fumbleValueModel, title: "Fumble Dice Value", icon: "plus", prompt: "fumble", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
@@ -108,8 +90,8 @@ private extension FumbleEditor {
 
     func addCurrentFumble() async {
         withAnimation {
-            root.editController.add(fumble: currentFumble, isDiceValueFumble: isDiceValueFumble, itemId: model.id)
-            currentFumble = 0
+            root.editController.add(fumble: Int(fumbleValueModel.value), isDiceValueFumble: isDiceValueFumble, itemId: model.id)
+            fumbleValueModel.reset(valueId: UUID(), value: 0.0, saveHandler: nil)
         }
     }
 }

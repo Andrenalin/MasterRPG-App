@@ -69,7 +69,7 @@ public struct TextDoubleEditor: View {
     }
 }
 
-private extension TextDoubleEditor{
+private extension TextDoubleEditor {
     var textInputView: some View {
         TextField(text: $text, prompt: Text(prompt, bundle: bundle)) {
             Text(title, bundle: bundle)

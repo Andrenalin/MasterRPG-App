@@ -3,8 +3,7 @@
 import SwiftUI
 
 public struct TextIntEditor: View {
-    public init(editController: any EditControllable, model: Binding<Int>, title: LocalizedStringKey, icon: String, prompt: LocalizedStringKey, bundle: Bundle?, range: ClosedRange<Int>) {
-        self.editController = editController
+    public init(model: EditIdentifierModel<Double>, title: LocalizedStringKey, icon: String, prompt: LocalizedStringKey, bundle: Bundle?, range: ClosedRange<Int>) {
         self.model = model
         self.title = title
         self.icon = icon
@@ -14,8 +13,7 @@ public struct TextIntEditor: View {
         self.range = ClosedRange(uncheckedBounds: (Double(range.lowerBound), Double(uppperBound)))
     }
     
-    let editController: any EditControllable
-    let model: Binding<Int>
+    let model: EditIdentifierModel<Double>
     let title: LocalizedStringKey
     let icon: String
     let prompt: LocalizedStringKey
@@ -23,6 +21,7 @@ public struct TextIntEditor: View {
     let range: ClosedRange<Double>
     
     @FocusState private var focusState: Bool
+    @State private var text: String = ""
     
     public var body: some View {
         HStack {
@@ -33,15 +32,20 @@ public struct TextIntEditor: View {
         }
         .onChange(of: focusState, initial: false) {
             guard focusState == false else { return }
-            //editController.save(with: String(localized: "Typing").localizedString)
+            model.save?()
+        }
+        .onChange(of: model.valueId, initial: true) {
+            text = model.value.formatted(.number.precision(.fractionLength(0)))
+        }
+        .onChange(of: model.value) {
+            text = model.value.formatted(.number.precision(.fractionLength(0)))
         }
     }
 }
 
 private extension TextIntEditor{
     var textInputView: some View {
-        
-        TextField(text: text, prompt: Text(prompt, bundle: bundle)) {
+        TextField(text: $text, prompt: Text(prompt, bundle: bundle)) {
             Text(title, bundle: bundle)
         }
 #if os(iOS) || os(visionOS)
@@ -49,44 +53,27 @@ private extension TextIntEditor{
             .keyboardType(.numbersAndPunctuation)
 #endif
             .disableAutocorrection(true)
-            .numericInput(text, includeDecimal: false)
+            .numericInput($text, includeDecimal: false)
             .labelsHidden()
             .submitLabel(.next)
             .focused($focusState)
             .onSubmit {
-                //editController.save(with: String(localized: "Typing").localizedString)
+                if let value = Int(text) {
+                    model.value <=> Double(value)
+                }
+                model.save?()
             }
     }
     
-    var text: Binding<String> {
-        Binding {
-            "\(model.wrappedValue)"
-        } set: {
-            if let number = Int($0), number != model.wrappedValue {
-                model.wrappedValue = number
-            }
-        }
-    }
-    
-    var sliderView: some View {
+    @ViewBuilder var sliderView: some View {
+        @Bindable var model = model
 #if !os(tvOS)
-        Slider(value: sliderBinding, in: range, step: 1, minimumValueLabel: Text("\(Int(range.lowerBound))"), maximumValueLabel: Text("\(Int(range.upperBound))")) {
+        Slider(value: $model.value, in: range, step: 1, minimumValueLabel: Text("\(Int(range.lowerBound))"), maximumValueLabel: Text("\(Int(range.upperBound))")) {
             Text(title, bundle: bundle)
         }
         .labelsHidden()
 #else
         EmptyView()
 #endif
-    }
-    
-    var sliderBinding: Binding<Double> {
-        Binding {
-            Double(model.wrappedValue)
-        } set: {
-            let number = Int($0)
-            if number != model.wrappedValue {
-                model.wrappedValue = number
-            }
-        }
     }
 }

@@ -8,9 +8,9 @@ struct CoupEditor: View {
     
     @Environment(DiceRootModel.self) private var root
 
-    @State private var currentCoup = 0
     @State private var isDiceValueCoup = false
-
+    @State private var coupValueModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
+    
     var body: some View {
         @Bindable var model = model
         Section {
@@ -63,24 +63,6 @@ struct CoupEditor: View {
         }
     }
 
-    var coupValueText: Binding<String> {
-        Binding {
-            "\(currentCoup)"
-        } set: {
-            if let number = Int($0) {
-                currentCoup = number
-            }
-        }
-    }
-
-    var coupValueDouble: Binding<Double> {
-        Binding {
-            Double(currentCoup)
-        } set: {
-            currentCoup = Int($0)
-        }
-    }
-
     @ViewBuilder
     var coupEditorView: some View {
         LabeledContent {
@@ -102,15 +84,15 @@ struct CoupEditor: View {
                 .imageScale(.large)
         }
         .padding(.horizontal, 16)
-        .disabled(currentCoup == 0)
+        .disabled(coupValueModel.value == 0)
 
-        TextIntEditor(editController: root.editController,  model: $currentCoup, title: "Coup Dice Value", icon: "plus", prompt: "coup", bundle: .module, range: model.minValue...model.maxValue)
+        TextIntEditor(model: coupValueModel, title: "Coup Dice Value", icon: "plus", prompt: "coup", bundle: .module, range: model.minValue...model.maxValue)
     }
 
     func addCurrentCoup() {
         withAnimation {
-            root.editController.add(coup: currentCoup, isDiceValueCoup: isDiceValueCoup, itemId: model.id)
-            currentCoup = 0
+            root.editController.add(coup: Int(coupValueModel.value), isDiceValueCoup: isDiceValueCoup, itemId: model.id)
+            coupValueModel.reset(valueId: UUID(), value: 0.0, saveHandler: nil)
         }
     }
 }

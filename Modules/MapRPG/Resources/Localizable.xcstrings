@@ -143,6 +143,9 @@
         }
       }
     },
+    "Change border thickness" : {
+
+    },
     "Change dice links" : {
       "extractionState" : "stale",
       "localizations" : {

@@ -102,15 +102,21 @@ extension EditController {
 }
 
 extension EditController {
-    @MainActor func reset(modifer: Double, itemId: UUID) {
+    @MainActor func reset(addValue: Double, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
-        item.modifier <=> modifer
-        save(updated: item, message: String(localized: "Changed modifier").localizedString)
+        item.addDiceEvery <=> Int(addValue)
+        save(updated: item, message: String(localized: "Changed add dice value").localizedString)
     }
-    
+
     @MainActor func reset(compareValue: Double, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.compareValue <=> compareValue
         save(updated: item, message: String(localized: "Changed compare value").localizedString)
+    }
+
+    @MainActor func reset(modifer: Double, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        item.modifier <=> modifer
+        save(updated: item, message: String(localized: "Changed modifier").localizedString)
     }
 }

@@ -8,8 +8,8 @@ struct RerollEditor: View {
     
     @Environment(DiceRootModel.self) private var root
 
-    @State private var currentReroll = 0
-    @State private var currentValue = 0
+    @State private var rerollValueModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
+    @State private var replaceValueModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
     @State private var isMaxDiceValue = false
 
     var body: some View {
@@ -78,24 +78,6 @@ private extension RerollEditor {
         return "\(reroll.number) → \(reroll.value)"
     }
 
-    var rerollText: Binding<String> {
-        Binding {
-            "\(currentReroll)"
-        } set: {
-            if let number = Int($0) {
-                currentReroll = number
-            }
-        }
-    }
-
-    var rerollDouble: Binding<Double> {
-        Binding {
-            Double(currentReroll)
-        } set: {
-            currentReroll = Int($0)
-        }
-    }
-
     @ViewBuilder
     var rerollEditorView: some View {
         @Bindable var model = model
@@ -110,9 +92,9 @@ private extension RerollEditor {
                         .imageScale(.large)
                 }
                 .padding(.horizontal, 16)
-                .disabled(!isMaxDiceValue && currentReroll == 0)
+                .disabled(!isMaxDiceValue && rerollValueModel.value == 0)
 
-                TextIntEditor(editController: root.editController, model: $currentReroll, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: model.minValue...model.maxValue)
+                TextIntEditor(model: rerollValueModel, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
@@ -122,27 +104,9 @@ private extension RerollEditor {
 
     func addCurrentReroll() async {
         withAnimation {
-            root.editController.add(reroll: currentReroll, value: currentValue, isMaxDiceValue: isMaxDiceValue, itemId: model.id)
-            currentReroll = 0
-            currentValue = 0
-        }
-    }
-
-    var rerollValueText: Binding<String> {
-        Binding {
-            "\(currentValue)"
-        } set: {
-            if let number = Int($0) {
-                currentValue = number
-            }
-        }
-    }
-
-    var rerollValueDouble: Binding<Double> {
-        Binding {
-            Double(currentValue)
-        } set: {
-            currentValue = Int($0)
+            root.editController.add(reroll: Int(rerollValueModel.value), value: Int(replaceValueModel.value), isMaxDiceValue: isMaxDiceValue, itemId: model.id)
+            rerollValueModel.reset(valueId: UUID(), value: 0.0, saveHandler: nil)
+            replaceValueModel.reset(valueId: UUID(), value: 0.0, saveHandler: nil)
         }
     }
 
@@ -160,9 +124,9 @@ private extension RerollEditor {
                         .imageScale(.large)
                 }
                 .padding(.horizontal, 16)
-                .disabled(currentReroll == 0 && currentValue == 0)
+                .disabled(rerollValueModel.value == 0 && replaceValueModel.value == 0)
 
-                TextIntEditor(editController: root.editController, model: $currentValue, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: model.minValue...model.maxValue)
+                TextIntEditor(model: replaceValueModel, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
