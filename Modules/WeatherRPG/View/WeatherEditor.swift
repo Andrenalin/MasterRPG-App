@@ -9,9 +9,9 @@ struct WeatherEditor: View {
     @Environment(WeatherRootModel.self) private var root
         
     @State private var cloudEditModel: EditIdentifierModel<Cloud.Thickness> = EditIdentifierModel(value: .none)
-
     @State private var stormEditModel: EditIdentifierModel<Storm.Contents> = EditIdentifierModel(value: .none)
-
+    @State private var directionEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
+    
     var body: some View {
         Section {
             root.viewController.photoSelection(root: root, selectionModel: root.editController.weatherEditModel.selectionPhoto)
@@ -153,17 +153,26 @@ private extension WeatherEditor {
         }
     }
 
-    @ViewBuilder
-    var rainDirectionEditorView: some View {
-        @Bindable var model = model
-        
-        LabeledContent {
-            Toggle(isOn: $model.rainDirection) {
-                Label("", systemImage: model.rainDirection ? "chevron.right" : "chevron.left")
+    @ViewBuilder var rainDirectionEditorView: some View {
+        ToggleEditor(model: directionEditModel, title: "Direction", bundle: .module, icon: model.rainDirection ? "chevron.right" : "chevron.left")
+            .onChange(of: model, initial: true) {
+                updateToggleValue()
             }
-            .tint(Color.accentColor)
-        } label: {
-            Text("Direction", bundle: .module)
+            .onChange(of: model.rainDirection) {
+                updateToggleValue()
+            }
+    }
+    
+    func updateToggleValue() {
+        let toggleValue = model.rainDirection
+        guard model.id != directionEditModel.valueId || toggleValue != directionEditModel.value else { return }
+        let editController = root.editController
+        directionEditModel.reset(valueId: model.id, value: toggleValue) { itemId, value in
+            guard let item = editController.editModel(for: itemId) else { return }
+            if value != item.rainDirection {
+                item.rainDirection = value
+                editController.save(updated: item, message: String(localized: "toggle rain direction").localizedString)
+            }
         }
     }
 

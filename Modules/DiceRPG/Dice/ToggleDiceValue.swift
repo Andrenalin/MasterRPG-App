@@ -33,7 +33,7 @@ struct ToggleDiceValue: View {
         guard model.id != toggleEditModel.valueId || toggleValue != toggleEditModel.value else { return }
         let editController = root.editController
         toggleEditModel.reset(valueId: model.id, value: toggleValue) { itemId, value in
-            guard var item = root.editController.editModel(for: itemId) else { return }
+            guard var item = editController.editModel(for: itemId) else { return }
             if value != item[keyPath: toggleKetpath] {
                 item[keyPath: toggleKetpath] = value
                 editController.save(updated: item, message: saveMessage)

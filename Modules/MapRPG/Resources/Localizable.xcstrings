@@ -1041,6 +1041,9 @@
     "ToDO" : {
 
     },
+    "toggle border" : {
+
+    },
     "Undo %@" : {
       "extractionState" : "stale",
       "localizations" : {

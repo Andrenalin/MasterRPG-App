@@ -12,6 +12,8 @@ struct DisplayConfigEditor: View {
     @State private var isAnimating = false
     @State private var showTileEditor = false
     
+    @State private var borderToggleEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
+    
     var body: some View {
         @Bindable var model = model
         Section {
@@ -26,15 +28,7 @@ struct DisplayConfigEditor: View {
                 Text("Cover color", bundle: .module)
             }
             
-            LabeledContent {
-                Toggle(isOn: $model.displayConfig.hasBorder) {
-                    Label { Text("Activate Border", bundle: .module) } icon: { Image(systemName: "rectangle") }
-                }
-                .labelsHidden()
-                .tint(root.configurable.module.tint)
-            } label: {
-                Text("Activate Border", bundle: .module)
-            }
+            activateBorderView
             
             DisplayConfigBorderEditor(model: model)
                 .disabled(!model.displayConfig.hasBorder)
@@ -48,6 +42,29 @@ struct DisplayConfigEditor: View {
         }
         .sheetFullScreen(isPresented: $showTileEditor, idealSize: model.mapIdealSize) {
             tileEditorView
+        }
+    }
+    
+    @ViewBuilder var activateBorderView: some View {
+        ToggleEditor(model: borderToggleEditModel, title: "Activate Border", bundle: .module, icon: "rectangle")
+            .onChange(of: model, initial: true) {
+                updateToggleValue()
+            }
+            .onChange(of: model.displayConfig.hasBorder) {
+                updateToggleValue()
+            }
+    }
+    
+    func updateToggleValue() {
+        let toggleValue = model.displayConfig.hasBorder
+        guard model.id != borderToggleEditModel.valueId || toggleValue != borderToggleEditModel.value else { return }
+        let editController = root.editController
+        borderToggleEditModel.reset(valueId: model.id, value: toggleValue) { itemId, value in
+            guard let item = editController.editModel(for: itemId) else { return }
+            if value != item.displayConfig.hasBorder {
+                item.displayConfig.hasBorder = value
+                editController.save(updated: item, message: String(localized: "toggle border").localizedString)
+            }
         }
     }
     

@@ -299,6 +299,9 @@
         }
       }
     },
+    "toggle rain direction" : {
+
+    },
     "Ultra" : {
       "localizations" : {
         "de" : {
