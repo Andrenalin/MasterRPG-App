@@ -3,8 +3,15 @@
 import SwiftUI
 
 public struct ToggleEditor: View {
-    public init(editController: any EditControllable, model: Binding<Bool>, canToggle: Bool = true, title: LocalizedStringKey = "Hidden", bundle: Bundle?, icon: String = "eye.slash") {
-        self.editController = editController
+    public init(value: Binding<Bool>, canToggle: Bool = true, title: LocalizedStringKey = "Hidden", bundle: Bundle?, icon: String = "eye.slash") {
+        self.model = EditIdentifierModel(value: value)
+        self.canToggle = canToggle
+        self.title = title
+        self.bundle = bundle
+        self.icon = icon
+    }
+
+    public init(model: EditIdentifierModel<Bool>, canToggle: Bool = true, title: LocalizedStringKey = "Hidden", bundle: Bundle?, icon: String = "eye.slash") {
         self.model = model
         self.canToggle = canToggle
         self.title = title
@@ -12,8 +19,7 @@ public struct ToggleEditor: View {
         self.icon = icon
     }
 
-    let editController: any EditControllable
-    let model: Binding<Bool>
+    let model: EditIdentifierModel<Bool>
     let canToggle: Bool
     let title: LocalizedStringKey
     let bundle: Bundle?
@@ -22,29 +28,22 @@ public struct ToggleEditor: View {
     public var body: some View {
         toggleEditorView
             .disabled(!canToggle)
+            .onChange(of: model.value) {
+                model.save()
+            }
     }
 }
 
 private extension ToggleEditor {
-    var toggleEditorView: some View {
+    @ViewBuilder var toggleEditorView: some View {
+        @Bindable var model = model
         LabeledContent {
-            Toggle(isOn: calculatedBinding) {
+            Toggle(isOn: $model.value) {
                 Text(title, bundle: bundle)
             }
             .tint(Color.accentColor)
         } label: {
             Image(systemName: icon)
-        }
-    }
-
-    var calculatedBinding: Binding<Bool> {
-        Binding {
-            model.wrappedValue
-        } set: {
-            if $0 != model.wrappedValue {
-                model.wrappedValue = $0
-                //editController.save(with: String(localized: "Change toggle").localizedString)
-            }
         }
     }
 }

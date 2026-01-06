@@ -31,11 +31,12 @@ struct WeatherEditor: View {
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .onChange(of: model.id, initial: true) {
-            cloudEditModel.reset(valueId: model.id, value: model.cloudThickness) {
-                root.editController.reset(cloudThickness: cloudEditModel.value, itemId: cloudEditModel.valueId)
+            let editController = root.editController
+            cloudEditModel.reset(valueId: model.id, value: model.cloudThickness) { itemId, value in
+                editController.reset(cloudThickness: value, itemId: itemId)
             }
-            stormEditModel.reset(valueId: model.id, value: model.stormType) {
-                root.editController.reset(stormType: stormEditModel.value, itemId: stormEditModel.valueId)
+            stormEditModel.reset(valueId: model.id, value: model.stormType) { itemId, value in
+                editController.reset(stormType: value, itemId: itemId)
             }
         }
         Section {

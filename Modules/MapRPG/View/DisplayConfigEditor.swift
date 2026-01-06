@@ -96,10 +96,10 @@ struct DisplayConfigBorderEditor: View {
             TextDoubleEditor(model: borderThicknessModel, title: "Thickness", icon: "slider.horizontal.below.square.and.square.filled", prompt: "Thickness of the border", bundle: .module, range: 0...25)
         }
         .onChange(of: model.id, initial: true) {
-            borderThicknessModel.reset(valueId: model.id, value: model.displayConfig.borderThicknessDouble) {
-                root.editController.reset(borderThickness: borderThicknessModel.value, itemId: borderThicknessModel.valueId)
+            let editController = root.editController
+            borderThicknessModel.reset(valueId: model.id, value: model.displayConfig.borderThicknessDouble) { itemId, value in
+                editController.reset(borderThickness: value, itemId: itemId)
             }
-
         }
     }
 }

@@ -9,19 +9,19 @@ struct CoupEditor: View {
     @Environment(DiceRootModel.self) private var root
 
     @State private var isDiceValueCoup = false
-    @State private var coupValueModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
+    @State private var coupValue = 0.0
     
     var body: some View {
         @Bindable var model = model
         Section {
             coupValueView
 
-            ToggleEditor(editController: root.editController, model: $model.coupOnlyOnFirstDie, title: "Only first die can coup", bundle: .module, icon: "dice")
+            ToggleDiceValue(model: model, toggleKetpath: \.coupOnlyOnFirstDie, title: "Only first die can coup", bundle: .module, icon: "dice", saveMessage: String(localized: "change coup option").localizedString)
                 .disabled(model.coupValues.contains(where: { $0.isResult }))
 
             coupEditorView
 
-            ToggleEditor(editController: root.editController, model: $isDiceValueCoup, title: isCoupMatchTitle, bundle: .module, icon: "123.rectangle")
+            ToggleEditor(value: $isDiceValueCoup, title: isCoupMatchTitle, bundle: .module, icon: "123.rectangle")
         } header: {
 #if os(macOS)
             Divider()
@@ -84,15 +84,15 @@ struct CoupEditor: View {
                 .imageScale(.large)
         }
         .padding(.horizontal, 16)
-        .disabled(coupValueModel.value == 0)
+        .disabled(coupValue == 0)
 
-        TextIntEditor(model: coupValueModel, title: "Coup Dice Value", icon: "plus", prompt: "coup", bundle: .module, range: model.minValue...model.maxValue)
+        TextIntEditor(value: $coupValue, title: "Coup Dice Value", icon: "plus", prompt: "coup", bundle: .module, range: model.minValue...model.maxValue)
     }
 
     func addCurrentCoup() {
         withAnimation {
-            root.editController.add(coup: Int(coupValueModel.value), isDiceValueCoup: isDiceValueCoup, itemId: model.id)
-            coupValueModel.reset(valueId: UUID(), value: 0.0, saveHandler: nil)
+            root.editController.add(coup: Int(coupValue), isDiceValueCoup: isDiceValueCoup, itemId: model.id)
+            coupValue = 0.0
         }
     }
 }

@@ -13,9 +13,9 @@ struct SpecialOptionEditor: View {
     var body: some View {
         @Bindable var model = model
         Section {
-            ToggleEditor(editController: root.editController, model: $model.reorderDice, title: "Reorder dice by value", bundle: .module, icon: "textformat.123")
+            ToggleDiceValue(model: model, toggleKetpath: \.reorderDice, title: "Reorder dice by value", bundle: .module, icon: "textformat.123", saveMessage: String(localized: "change reorder dice option").localizedString)
 
-            ToggleEditor(editController: root.editController, model: $model.addDiceActivate, title: "Add dice", bundle: .module, icon: "dice")
+            ToggleDiceValue(model: model, toggleKetpath: \.addDiceActivate, title: "Add dice", bundle: .module, icon: "dice", saveMessage: String(localized: "change add dice").localizedString)
 
             if model.addDiceActivate {
                 addDiceEditorView
@@ -30,8 +30,9 @@ struct SpecialOptionEditor: View {
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .onChange(of: model.id, initial: true) {
-            addValueModel.reset(valueId: model.id, value: Double(model.addDiceEvery)) {
-                root.editController.reset(addValue: addValueModel.value, itemId: addValueModel.valueId)
+            let editController = root.editController
+            addValueModel.reset(valueId: model.id, value: Double(model.addDiceEvery)) { itemId, value in
+                editController.reset(addValue: value, itemId: itemId)
             }
         }
 

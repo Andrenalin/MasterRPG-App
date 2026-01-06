@@ -3,6 +3,16 @@
 import SwiftUI
 
 public struct TextIntEditor: View {
+    public init(value: Binding<Double>, title: LocalizedStringKey, icon: String, prompt: LocalizedStringKey, bundle: Bundle?, range: ClosedRange<Int>) {
+        self.model = EditIdentifierModel(value: value)
+        self.title = title
+        self.icon = icon
+        self.prompt = prompt
+        self.bundle = bundle
+        let uppperBound = range.upperBound <= range.lowerBound ? range.lowerBound + 1 : range.upperBound
+        self.range = ClosedRange(uncheckedBounds: (Double(range.lowerBound), Double(uppperBound)))
+    }
+
     public init(model: EditIdentifierModel<Double>, title: LocalizedStringKey, icon: String, prompt: LocalizedStringKey, bundle: Bundle?, range: ClosedRange<Int>) {
         self.model = model
         self.title = title
@@ -32,13 +42,14 @@ public struct TextIntEditor: View {
         }
         .onChange(of: focusState, initial: false) {
             guard focusState == false else { return }
-            model.save?()
+            model.save()
         }
         .onChange(of: model.valueId, initial: true) {
             text = model.value.formatted(.number.precision(.fractionLength(0)))
         }
         .onChange(of: model.value) {
             text = model.value.formatted(.number.precision(.fractionLength(0)))
+            model.save()
         }
     }
 }
@@ -61,7 +72,7 @@ private extension TextIntEditor{
                 if let value = Int(text) {
                     model.value <=> Double(value)
                 }
-                model.save?()
+                model.save()
             }
     }
     

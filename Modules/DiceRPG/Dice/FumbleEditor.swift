@@ -9,19 +9,19 @@ struct FumbleEditor: View {
     @Environment(DiceRootModel.self) private var root
 
     @State private var isDiceValueFumble = false
-    @State private var fumbleValueModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
+    @State private var fumbleValue: Double = 0.0
     
     var body: some View {
         @Bindable var model = model
         Section {
             fumbleValueView
             
-            ToggleEditor(editController: root.editController, model: $model.fumbleOnlyOnFirstDie, title: "Only first die can fumble", bundle: .module, icon: "dice")
+            ToggleDiceValue(model: model, toggleKetpath: \.fumbleOnlyOnFirstDie, title: "Only first die can fumble", bundle: .module, icon: "dice", saveMessage: String(localized: "change fumble option").localizedString)
                 .disabled(model.fumbleValues.contains(where: { $0.isResult }))
             
             fumbleEditorView
             
-            ToggleEditor(editController: root.editController, model: $isDiceValueFumble, title: isFumbleMatchTitle, bundle: .module, icon: "123.rectangle")
+            ToggleEditor(value: $isDiceValueFumble, title: isFumbleMatchTitle, bundle: .module, icon: "123.rectangle")
         } header: {
 #if os(macOS)
             Divider()
@@ -78,9 +78,9 @@ private extension FumbleEditor {
                         .imageScale(.large)
                 }
                 .padding(.horizontal, 16)
-                .disabled(fumbleValueModel.value == 0)
+                .disabled(fumbleValue == 0)
 
-                TextIntEditor(model: fumbleValueModel, title: "Fumble Dice Value", icon: "plus", prompt: "fumble", bundle: .module, range: model.minValue...model.maxValue)
+                TextIntEditor(value: $fumbleValue, title: "Fumble Dice Value", icon: "plus", prompt: "fumble", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
@@ -90,8 +90,8 @@ private extension FumbleEditor {
 
     func addCurrentFumble() async {
         withAnimation {
-            root.editController.add(fumble: Int(fumbleValueModel.value), isDiceValueFumble: isDiceValueFumble, itemId: model.id)
-            fumbleValueModel.reset(valueId: UUID(), value: 0.0, saveHandler: nil)
+            root.editController.add(fumble: Int(fumbleValue), isDiceValueFumble: isDiceValueFumble, itemId: model.id)
+            fumbleValue = 0.0
         }
     }
 }

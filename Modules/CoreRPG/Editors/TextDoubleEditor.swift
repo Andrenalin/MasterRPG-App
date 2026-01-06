@@ -4,21 +4,49 @@ import SwiftUI
 
 @Observable
 public final class EditIdentifierModel<Value> {
-    public init(valueId: UUID = UUID(), value: Value, save: (() -> Void)? = nil) {
-        self.valueId = valueId
-        self.value = value
-        self.save = save
+    public init(value: Binding<Value>) {
+        self.valueId = UUID()
+        self._value = value.wrappedValue
+        self.bindingValue = value
     }
     
-    public private(set) var valueId: UUID
-    public internal(set) var value: Value
-    public private(set) var save: (() -> Void)?
+    public init(valueId: UUID = UUID(), value: Value, save: ((UUID, Value) -> Void)? = nil) {
+        self.valueId = valueId
+        self._value = value
+        self._save = save
+    }
     
-    public func reset(valueId: UUID, value: Value, saveHandler: (() -> Void)?) {
-        save?()
+    private var bindingValue: Binding<Value>?
+    private var _value: Value
+    private var _save: ((UUID, Value) -> Void)?
+    
+    public private(set) var valueId: UUID
+    public internal(set) var value: Value {
+        get {
+            if let bindingValue {
+                return bindingValue.wrappedValue
+            } else {
+                return _value
+            }
+        }
+        set {
+            if let bindingValue {
+                bindingValue.wrappedValue = newValue
+            } else {
+                _value = newValue
+            }
+        }
+    }
+    
+    public func reset(valueId: UUID, value: Value, saveHandler: ((UUID, Value) -> Void)?) {
+        save()
         self.valueId = valueId
         self.value = value
-        self.save = saveHandler
+        self._save = saveHandler
+    }
+    
+    func save() {
+        _save?(valueId, value)
     }
 }
 
@@ -50,7 +78,7 @@ public struct TextDoubleEditor: View {
         }
         .onChange(of: focusState, initial: false) {
             guard focusState == false else { return }
-            model.save?()
+            model.save()
         }
         .onChange(of: model.valueId, initial: true) {
             text = format(number: model.value)
@@ -89,7 +117,7 @@ private extension TextDoubleEditor {
             if let value = formatter.number(from: text)?.doubleValue {
                 model.value <=> value
             }
-            model.save?()
+            model.save()
         }
     }
 

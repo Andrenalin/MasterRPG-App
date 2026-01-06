@@ -31,7 +31,7 @@ public struct ValuePickerEditor<Value: Hashable, Content: View>: View where Valu
         }
         .onChange(of: selection) {
             model.value <=> selection
-            model.save?()
+            model.save()
         }
     }
 

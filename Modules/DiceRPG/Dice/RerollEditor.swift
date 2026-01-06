@@ -8,8 +8,8 @@ struct RerollEditor: View {
     
     @Environment(DiceRootModel.self) private var root
 
-    @State private var rerollValueModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
-    @State private var replaceValueModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
+    @State private var rerollValue = 0.0
+    @State private var replaceValue = 0.0
     @State private var isMaxDiceValue = false
 
     var body: some View {
@@ -18,7 +18,7 @@ struct RerollEditor: View {
 
             rerollEditorView
 
-            ToggleEditor(editController: root.editController, model: $isMaxDiceValue, title: isMaxDiceTitle, bundle: .module, icon: "123.rectangle")
+            ToggleEditor(value: $isMaxDiceValue, title: isMaxDiceTitle, bundle: .module, icon: "123.rectangle")
 
             if !isMaxDiceValue {
                 rerollReplaceEditorView
@@ -37,7 +37,7 @@ struct RerollEditor: View {
 
 private extension RerollEditor {
     var isMaxDiceTitle: LocalizedStringKey {
-        isMaxDiceValue ? "On: preplace with max value" : "Off: replace with value"
+        isMaxDiceValue ? "On: replace with max value" : "Off: replace with value"
     }
 
     @ViewBuilder
@@ -92,9 +92,9 @@ private extension RerollEditor {
                         .imageScale(.large)
                 }
                 .padding(.horizontal, 16)
-                .disabled(!isMaxDiceValue && rerollValueModel.value == 0)
+                .disabled(!isMaxDiceValue && rerollValue == 0)
 
-                TextIntEditor(model: rerollValueModel, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: model.minValue...model.maxValue)
+                TextIntEditor(value: $rerollValue, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
@@ -104,9 +104,9 @@ private extension RerollEditor {
 
     func addCurrentReroll() async {
         withAnimation {
-            root.editController.add(reroll: Int(rerollValueModel.value), value: Int(replaceValueModel.value), isMaxDiceValue: isMaxDiceValue, itemId: model.id)
-            rerollValueModel.reset(valueId: UUID(), value: 0.0, saveHandler: nil)
-            replaceValueModel.reset(valueId: UUID(), value: 0.0, saveHandler: nil)
+            root.editController.add(reroll: Int(rerollValue), value: Int(replaceValue), isMaxDiceValue: isMaxDiceValue, itemId: model.id)
+            rerollValue = 0.0
+            replaceValue = 0.0
         }
     }
 
@@ -124,9 +124,9 @@ private extension RerollEditor {
                         .imageScale(.large)
                 }
                 .padding(.horizontal, 16)
-                .disabled(rerollValueModel.value == 0 && replaceValueModel.value == 0)
+                .disabled(rerollValue == 0 && replaceValue == 0)
 
-                TextIntEditor(model: replaceValueModel, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: model.minValue...model.maxValue)
+                TextIntEditor(value: $replaceValue, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: model.minValue...model.maxValue)
             }
             .labelsHidden()
         } label: {
