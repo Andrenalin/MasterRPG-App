@@ -3,7 +3,7 @@
 import SwiftUI
 
 @Observable
-public final class EditIdentifierModel<Value> {
+public final class EditIdentifierModel<Value: Equatable> {
     public init(value: Binding<Value>) {
         self.valueId = UUID()
         self._value = value.wrappedValue
@@ -31,9 +31,9 @@ public final class EditIdentifierModel<Value> {
         }
         set {
             if let bindingValue {
-                bindingValue.wrappedValue = newValue
+                bindingValue.wrappedValue <=> newValue
             } else {
-                _value = newValue
+                _value <=> newValue
             }
         }
     }

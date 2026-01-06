@@ -18,10 +18,14 @@ struct ToggleDiceValue: View {
     @State private var toggleEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
     
     var body: some View {
+        let _ = Self._printChanges()
         ToggleEditor(model: toggleEditModel, canToggle: canToggle, title: title, bundle: bundle, icon: icon)
-        .onChange(of: model, initial: true) {
-            updateToggleValue()
-        }
+            .onChange(of: model, initial: true) {
+                updateToggleValue()
+            }
+            .onChange(of: model[keyPath: toggleKetpath]) {
+                updateToggleValue()
+            }
     }
     
     func updateToggleValue() {
@@ -30,8 +34,10 @@ struct ToggleDiceValue: View {
         let editController = root.editController
         toggleEditModel.reset(valueId: model.id, value: toggleValue) { itemId, value in
             guard var item = root.editController.editModel(for: itemId) else { return }
-            item[keyPath: toggleKetpath] <=> value
-            editController.save(updated: item, message: saveMessage)
+            if value != item[keyPath: toggleKetpath] {
+                item[keyPath: toggleKetpath] = value
+                editController.save(updated: item, message: saveMessage)
+            }
         }
     }
 }
