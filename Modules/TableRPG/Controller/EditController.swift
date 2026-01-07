@@ -21,6 +21,7 @@ struct LinkTableModuleTransferable: LinkDataTransferable {
 
     public static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .diceLink)
+        CodableRepresentation(contentType: .pdfLink)
         CodableRepresentation(contentType: .tableLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
@@ -61,10 +62,10 @@ extension EditController: EntryDataEditable {
 // MARK: - EntryList editor
 
 extension EditController {
-    public var linkModules: [NetworkModules] { [.table, .dice] }
+    public var linkModules: [NetworkModules] { [.dice, .pdf, .table] }
     
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
-        module == .table || module == .dice
+        module == .table || module == .dice || module == .pdf
     }
     
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {

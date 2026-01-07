@@ -66,7 +66,7 @@ public final class TableRootModel: @unchecked Sendable {
             diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            firstRow: [.table, .dice],
+            firstRow: [.dice, .pdf, .table],
             selection: .table
         )
     }()
