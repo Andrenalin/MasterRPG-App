@@ -11,8 +11,8 @@ public struct ViewController: Sendable {
 }
 
 extension ViewController: ViewControllable {
-    @MainActor public func rowViewer(source: ItemRowModel) -> AnyView {
-        AnyView(InlineRowViewer(source: source))
+    @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView {
+        AnyView(InlineRowViewer(source: source, destination: destination))
     }
 
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {

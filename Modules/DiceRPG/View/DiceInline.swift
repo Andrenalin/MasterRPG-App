@@ -23,9 +23,7 @@ struct DiceInline: View {
                     withAnimation {
                         root.gameController.gameModel.focusItemIds <=> [itemId]
                     }
-                    Task {
-                        await roleAndShareDiceResult()
-                    }
+                    roleAndShareDiceResult()
                 } label: {
                     HStack {
                         Text(root.gameController.gameItem(for: itemId).inlineText)
@@ -40,9 +38,7 @@ struct DiceInline: View {
             } else {
                 MenuTV {
                     Button {
-                        Task {
-                            await roleAndShareDiceResult()
-                        }
+                        roleAndShareDiceResult()
                     } label: {
                         Label { Text(roleShareTitle, bundle: .module) } icon: { Image(systemName: root.itemController.config.module.icon) }
                     }
@@ -104,6 +100,7 @@ struct DiceInline: View {
             }
             if showResult {
                 Text("\(Image(systemName: root.itemController.config.module.icon))\(root.gameController.resultText(itemId: itemId))")
+                    .animation(.bouncy, value: showResult)
             }
         }
     }
@@ -116,9 +113,11 @@ struct DiceInline: View {
         networkActions != nil ? "Roll" : "Roll & Share"
     }
 
-    private func roleAndShareDiceResult() async {
-        root.gameController.rollDice(itemId: itemId, networkActions: networkActions, resultCategopry: resultCategory)
-        showResult <=> true
+    private func roleAndShareDiceResult() {
+        withAnimation {
+            root.gameController.rollDice(itemId: itemId, networkActions: networkActions, resultCategopry: resultCategory)
+            showResult <=> true
+        }
     }
 }
 

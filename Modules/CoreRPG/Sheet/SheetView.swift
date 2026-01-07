@@ -25,18 +25,25 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                 }
                 
                 LinkHighlightTextView(model: model.linkTextModel(for: .name, text: model.sheetModel.name))
-                    .font(.title)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-                    .moveDisabled(true)
             }
-            
-            if let description = model.description(for: model.sheetModel), !description.isEmpty {
-                LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
-                    .font(.subheadline)
-                    .listRowBackground(rowColor(for: model.sheetModel.level))
-                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-                    .moveDisabled(true)
+            .font(.title)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+            .moveDisabled(true)
+
+            if !model.sheetModel.inlineEntries.isEmpty || model.description(for: model.sheetModel)?.isEmpty ?? false {
+                VStack(alignment: .leading) {
+                    if let description = model.description(for: model.sheetModel) {
+                        LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
+                    }
+                    ForEach(model.sheetModel.inlineEntries) { inlineEntry in
+                        SheetGroupView(root: root, model: model, entry: inlineEntry, isEditor: isEditor, linkTypes: linkTypes)
+                    }
+                }
+                .font(.subheadline)
+                .listRowBackground(rowColor(for: model.sheetModel.level))
+                .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                .moveDisabled(true)
             }
         }
         
@@ -94,6 +101,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                     .foregroundStyle(.foreground, .tint)
             }
             .borderLessTVBottonStyle()
+            .padding(4)
             .contentShape(.circle)
 #if !os(visionOS)
             .glassEffect()
@@ -136,15 +144,15 @@ struct SheetGroupView<LinkType: LinkDataTransferable>: View {
                         .listRowBackground(rowColor(for: entry.level))
                         .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entry.level * 4), bottom: 8, trailing: 8))
                 case .dice:
-                    root.viewControllable.rowViewer(source: entry.source)
+                    root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
                 case .photo, .space, .weather:
-                    root.viewControllable.rowViewer(source: entry.source)
+                    root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowBackground(Color.clear)
                         .frame(height: 256)
                 case .audioInline:
                     HStack {
-                        root.viewControllable.rowViewer(source: entry.source)
+                        root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
                         LinkHighlightTextView(model: model.linkTextModel(for: .entry(entry.id), text: text, shareResults: shareResult))
                     }
                     .font(.body)
@@ -157,7 +165,7 @@ struct SheetGroupView<LinkType: LinkDataTransferable>: View {
                 ForEach(entry.entries) { inlineSheet in
                     switch inlineSheet.sheetType {
                     case .photoInline:
-                        root.viewControllable.rowViewer(source: entry.source)
+                        root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
                             .frame(height: 96)
                     default:
                         EmptyView()
@@ -172,7 +180,7 @@ struct SheetGroupView<LinkType: LinkDataTransferable>: View {
             ForEach(entry.entries) { inlineSheet in
                 switch inlineSheet.sheetType {
                 case .dice:
-                    root.viewControllable.rowViewer(source: inlineSheet.source)
+                    root.viewControllable.rowViewer(source: inlineSheet.source, destination: entry.destination)
                 default:
                     EmptyView()
                 }

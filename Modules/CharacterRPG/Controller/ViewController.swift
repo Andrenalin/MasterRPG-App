@@ -12,8 +12,8 @@ public struct ViewController {
 }
 
 extension ViewController: ViewControllable {
-    @MainActor public func rowViewer(source: ItemRowModel) -> AnyView {
-        AnyView(InlineRowViewer(source: source).equatable())
+    @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView {
+        AnyView(InlineRowViewer(source: source, destination: destination).equatable())
     }
 
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {

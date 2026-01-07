@@ -12,23 +12,24 @@ import WeatherRPG
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
+    let destination: ItemRowModel
     
     @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
         switch source.typeId {
         case .audio:
-            root.audioRoot.viewController.rowViewer(source: source)
+            root.audioRoot.viewController.rowViewer(source: source, destination: destination)
         case .dice:
-            root.diceRoot.viewController.rowViewer(source: source)
+            root.diceRoot.viewController.rowViewer(source: source, destination: destination)
         case .map:
-            root.mapRoot.viewController.rowViewer(source: source)
+            root.mapRoot.viewController.rowViewer(source: source, destination: destination)
         case .pdf:
-            root.pdfRoot.viewController.rowViewer(source: source)
+            root.pdfRoot.viewController.rowViewer(source: source, destination: destination)
         case .space:
-            root.spaceRoot.viewController.rowViewer(source: source)
+            root.spaceRoot.viewController.rowViewer(source: source, destination: destination)
         case .weather:
-            root.weatherRoot.viewController.rowViewer(source: source)
+            root.weatherRoot.viewController.rowViewer(source: source, destination: destination)
         default:
             root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
         }
@@ -40,5 +41,5 @@ struct InlineRowViewer: View, Equatable {
 }
 
 #Preview(traits: .mockData) {
-    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .photo))
+    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .photo), destination: ItemRowModel(itemId: UUID(), entryId: nil, typeId: .table))
 }

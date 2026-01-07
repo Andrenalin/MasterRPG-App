@@ -6,13 +6,14 @@ import SwiftUI
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
+    let destination: ItemRowModel
     
     @Environment(TableRootModel.self) private var root
     
     var body: some View {
         let _ = Self._printChanges()
         if source.typeId == .dice {
-            root.diceRoot.viewController.rowViewer(source: source)
+            root.diceRoot.viewController.rowViewer(source: source, destination: destination)
         }
     }
     
@@ -22,5 +23,5 @@ struct InlineRowViewer: View, Equatable {
 }
 
 #Preview(traits: .mockData) {
-    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .dice))
+    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .dice), destination: ItemRowModel(itemId: UUID(), entryId: nil, typeId: .table))
 }

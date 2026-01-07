@@ -8,12 +8,12 @@ struct SheetController {
 
     @MainActor func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
         let model = itemController.itemOrEmpty(for: itemId)
-        var entries: [SheetModel] = []
+        var inlineEntries: [SheetModel] = []
         if let diceId = model.diceId {
-            entries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), level: level, type: .dice, name: "", description: "", entries: []))
+            inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, typeId: .table), level: level, type: .dice, name: "", description: "", entries: []))
         }
-        entries.append(contentsOf: sheetEntries(for: itemId, level: level))
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, name: model.name, description: model.description, entries: entries)
+        let entries: [SheetModel] = sheetEntries(for: itemId, level: level)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
         return sheetModel
     }
     

@@ -5,6 +5,7 @@ import SwiftUI
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
+    let destination: ItemRowModel
     
     @Environment(AudioRootModel.self) private var root
     
@@ -29,5 +30,5 @@ struct InlineRowViewer: View, Equatable {
 }
 
 #Preview(traits: .mockData) {
-    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .pdf))
+    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .pdf), destination: ItemRowModel(itemId: UUID(), entryId: nil, typeId: .table))
 }

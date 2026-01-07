@@ -7,13 +7,14 @@ import SwiftUI
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
+    let destination: ItemRowModel
     
     @Environment(MapRootModel.self) private var root
     
     var body: some View {
         switch source.typeId {
         case .dice:
-            root.diceRoot.viewController.rowViewer(source: source)
+            root.diceRoot.viewController.rowViewer(source: source, destination: destination)
         case .photo:
             root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
         default:
@@ -35,5 +36,5 @@ struct InlineRowViewer: View, Equatable {
 }
 
 #Preview(traits: .mockData) {
-    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .photo))
+    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .photo), destination: ItemRowModel(itemId: UUID(), entryId: nil, typeId: .table))
 }
