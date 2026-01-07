@@ -2,6 +2,7 @@
 
 import CoreRPG
 import DiceRPG
+import PdfRPG
 import SwiftUI
 
 struct InlineRowViewer: View, Equatable {
@@ -12,8 +13,13 @@ struct InlineRowViewer: View, Equatable {
     
     var body: some View {
         let _ = Self._printChanges()
-        if source.typeId == .dice {
+        switch source.typeId {
+        case .dice:
             root.diceRoot.viewController.rowViewer(source: source, destination: destination)
+        case .pdf:
+            root.pdfRoot.viewController.rowViewer(source: source, destination: destination)
+        default:
+            EmptyView()
         }
     }
     

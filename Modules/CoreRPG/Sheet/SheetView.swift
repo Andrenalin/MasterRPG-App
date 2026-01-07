@@ -29,7 +29,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             .font(.title)
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-            .moveDisabled(true)
+            //.moveDisabled(true)
 
             if !model.sheetModel.inlineEntries.isEmpty || model.description(for: model.sheetModel)?.isEmpty ?? false {
                 VStack(alignment: .leading) {
@@ -43,18 +43,18 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                 .font(.subheadline)
                 .listRowBackground(rowColor(for: model.sheetModel.level))
                 .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-                .moveDisabled(true)
+                //.moveDisabled(true)
             }
         }
         
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
             SheetGroupView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
         }
-        .applyIf(isEditor) {
-            $0.onMove { indexSet, index in
-                entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index)
-            }
-        }
+//        .applyIf(isEditor) {
+//            $0.onMove { indexSet, index in
+//                entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index)
+//            }
+//        }
         .onChange(of: root.editControllable.editorModel.currentEntryId) { previousEntryId, _ in
             guard let previousEntryId, root.editControllable.editorModel.currentItemId == model.itemId else { return }
             withAnimation { model.update(entryId: previousEntryId) }
