@@ -42,7 +42,7 @@ public extension EntryDataEditable {
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
         addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
     }
-
+    
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool { false }
     
     @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, separator: String = " ") {
@@ -63,13 +63,13 @@ public extension EntryDataEditable {
     
     var thumbnailEntryViewType: ThumbnailEntryViewType { .none }
     var additioanlEnrtryViewType: AdditionalEntryViewType { .none }
-
+    
     @MainActor func additionalRowView(for entryId: UUID) -> AnyView { AnyView(EmptyView()) }
     
     @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {
         entry.name.isEmpty ? entry.content : "\(entry.name.markDownText()): \(entry.content)"
     }
-
+    
     func editEntries(for item: Model) -> [Model.Entry] {
         item.entries
     }
@@ -143,7 +143,7 @@ public extension EntryDataEditable {
             remove(itemId: itemId, entryId: entryId)
         }
     }
-        
+    
     @MainActor func remove(itemId: UUID, entryId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }
@@ -155,7 +155,7 @@ public extension EntryDataEditable {
         guard var item = editModel(for: itemId) else { return }
         var changed = item[entryId].name != name.withoutLink()
         item[entryId].name <=> name.withoutLink()
-
+        
         let links = linkRegisterControllable.linkRegisterModel(in: content, for: ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemControllable.config.module))
         var seenIds: Set<UUID> = []
         var newContent = content
@@ -165,7 +165,7 @@ public extension EntryDataEditable {
                 continue
             }
             let newLink = link.duplicate()
-             // linkRegisterControllable.markDown(for: link)
+            // linkRegisterControllable.markDown(for: link)
             guard let oldLinkText = link.markDown, let range = content.firstRange(of: oldLinkText) else { continue }
             newContent = newContent.replacingOccurrences(of: oldLinkText, with: newLink.markDown ?? oldLinkText, range: range)
             linkRegisterControllable.register(links: [newLink])
@@ -200,6 +200,15 @@ public extension EntryDataEditable {
         }
         let title: LocalizedStringResource = up ? "Move entry up" : "Move entry down"
         save(updated: item, message: String(localized: title).localizedString)
+    }
+    
+    @MainActor func move(itemId: UUID, entryId: UUID, into: ItemRowModel) {
+        guard let item = editModel(for: into.itemId) else { return }
+        guard let otherItem = editModel(for: itemId), let index = otherItem.entries.firstIndex(where: { $0.id == entryId }) else { return }
+        let entry = otherItem.entries.remove(at: index)
+        item.entries.append(entry)
+        save(updated: otherItem, message: String(localized: "remove entry").localizedString)
+        save(updated: item, message: String(localized: "add entry").localizedString)
     }
 }
 

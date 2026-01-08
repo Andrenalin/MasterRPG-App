@@ -15,7 +15,6 @@ extension View {
     public func dropDestination(for module: NetworkModules, handler: @escaping (_ name: String, _ itenId: UUID, _ entryId: UUID?) -> Void, isTargeted: @escaping (Bool) -> Void) -> some View {
         modifier(LinkDropDestinationTargetedViewModifier(module: module, handler: handler, isTargeted: isTargeted))
     }
-
 }
 
 struct LinkDragViewModifier: ViewModifier {

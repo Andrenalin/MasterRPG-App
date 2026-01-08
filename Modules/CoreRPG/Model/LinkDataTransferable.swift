@@ -25,6 +25,7 @@ extension LinkDataTransferable {
         case .audio: LinkAudioData(itemId: UUID(), name: "")
         case .value: LinkCharacterData(itemId: UUID(), name: "")
         case .dice: LinkDiceData(itemId: UUID(), name: "")
+        case .editor: LinkEntryData(itemId: UUID(), name: "", module: module)
         case .map: LinkMapData(itemId: UUID(), name: "")
         case .pdf: LinkPdfData(itemId: UUID(), name: "")
         case .photo: LinkPhotoData(itemId: UUID(), name: "")
@@ -47,6 +48,27 @@ extension UTType {
     public static var spaceLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Space") }
     public static var tableLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Table") }
     public static var weatherLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Weather") }
+    
+    public static var entryLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Entry") }
+}
+
+public struct LinkEntryData: LinkDataTransferable {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules) {
+        self.itemId = itemId
+        self.entryId = entryId
+        self.name = name
+        self.module = module
+    }
+
+    public static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .entryLink)
+        ProxyRepresentation(exporting: \.linkRepresentation)
+    }
+
+    public let module: NetworkModules
+    public let itemId: UUID
+    public let entryId: UUID?
+    public let name: String
 }
 
 public struct LinkAdventureData: LinkDataTransferable {
