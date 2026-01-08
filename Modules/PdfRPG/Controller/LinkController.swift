@@ -48,7 +48,7 @@ extension LinkController: LinkControllable {
             }
             let item = itemController.itemOrEmpty(for: itemId)
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? "\(specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
-            let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
+            let showAction = (toggler != nil && entryId != nil) ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module)) ?? false
             let removeAction = editLine ? " \(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             var description = item.description
@@ -59,12 +59,6 @@ extension LinkController: LinkControllable {
             let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
             return text.toggleLink(url: url, with: result)
         }
-    }
-    
-    @MainActor
-    public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
-        guard let entryId else { return itemControllable.itemOrEmpty(for: itemId).url(linkNumber: linkNumber) }
-        return itemControllable.itemOrEmpty(for: entryId).url(linkNumber: linkNumber)
     }
     
     @MainActor public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel {

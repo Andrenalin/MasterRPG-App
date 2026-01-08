@@ -141,6 +141,7 @@ private extension LinkItemListView {
             Group {
                 if let entryId = item.entryId {
                     EntryRowView(root: root, item: item)
+                        .contentShape(.rect)
 #if !os(tvOS)
                         .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name)
 #endif
@@ -175,13 +176,14 @@ private extension LinkItemListView {
                     ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
                 }
             }
+            .contentShape(.rect)
 #if !os(tvOS)
             .draggable(for: root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)
 #endif
             
             specialCategoryFolderIndicator(item: item)
         }
-        .contentShape(.rect)
+        //.contentShape(.rect)
     }
     
     func openDetail(for item: ListItemModel) {

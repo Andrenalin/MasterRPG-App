@@ -24,9 +24,9 @@ struct SheetController {
             guard !entry.isHexGrid else { return nil }
             let name = entry.name
             let description = entry.content
-            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: [
+            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, inlineEntries: [
                 SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), type: .photoInline, name: "", description: "", entries: [])
-            ])
+            ], entries: [])
         }
     }
 }

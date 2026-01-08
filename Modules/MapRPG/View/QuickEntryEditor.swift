@@ -17,7 +17,7 @@ struct QuickEntryEditor: View {
         } pdfOverlay: {
 #if os(iOS) || os(tvOS)
             if let selectedPdf = root.editController.mapEditModel.selectionPdf.itemId {
-                root.pdfRoot.viewController.inlineViewer(root: root.pdfRoot, with: selectedPdf, withoutBookmark: true) {
+                root.pdfRoot.viewController.inlineViewer(root: root.pdfRoot, with: selectedPdf, entryId: nil, withoutBookmark: true) {
                     withAnimation { root.editController.mapEditModel.selectionPdf.resetSelection(itemId: nil) }
                 }
                 .background(.primary)

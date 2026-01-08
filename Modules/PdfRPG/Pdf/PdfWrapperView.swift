@@ -67,7 +67,10 @@ struct PdfWrapperView: CustomViewRepresentable {
         
         if let entry, let pageNo = Int(entry.pageLabel) {
             if let page = pdfDocument?.page(at: pageNo - 1), let selection = page.selection(for: entry.bounds) {
-                pdfView.go(to: page)
+                Task { @MainActor in
+                    try await Task.sleep(for: .seconds(0.25))
+                    pdfView.go(to: page)
+                }
                 selection.color = AKColor.yellow
                 pdfView.highlightedSelections = [selection]
             }

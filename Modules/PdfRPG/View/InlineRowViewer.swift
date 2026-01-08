@@ -9,11 +9,29 @@ struct InlineRowViewer: View, Equatable {
     
     @Environment(PdfRootModel.self) private var root
     
+#if !os(tvOS)
+    @Environment(\.openWindow) private var openWindow
+#endif
+    @Environment(\.navigator) private var navigator
+
+
     var body: some View {
         if source.typeId == root.config.module, let cacheController = root.cacheController {
-            ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: source.entryId)
-                .environment(root.editController.cacheItemListModel)
-                .environment(root.listDisplayModel)
+            HStack {
+                if source.entryId == nil {
+                    ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: source.entryId)
+                        .environment(root.editController.cacheItemListModel)
+                        .environment(root.listDisplayModel)
+                }
+                Button {
+                    actionHandler()
+                } label: {
+                    Image(systemName: root.configurable.module.icon)
+                        .imageScale(.large)
+                }
+                .font(source.entryId == nil ? .largeTitle : .default)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
         }
     }
     
@@ -23,6 +41,14 @@ struct InlineRowViewer: View, Equatable {
     
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source
+    }
+    
+    private func actionHandler() {
+#if os(visionOS) || os(macOS)
+        openWindow(id: root.configurable.module.viewerWindowId, value: WindowItemSelection(itemId: destination.itemId, entryId: destination.entryId))
+#else
+        navigator.navigate(to: DetailRoute.viewer(destination.itemId, destination.entryId), method: .managedSheet)
+#endif
     }
 }
 

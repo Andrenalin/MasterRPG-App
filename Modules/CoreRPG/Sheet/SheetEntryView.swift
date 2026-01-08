@@ -37,7 +37,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                         .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entry.level * 4), bottom: 8, trailing: 8))
                 case .dice:
                     root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
-                case .photo, .space, .weather:
+                case .pdf, .photo, .space, .weather:
                     root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowBackground(Color.clear)
@@ -54,7 +54,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                     EmptyView()
                 }
                 
-                ForEach(entry.entries) { inlineSheet in
+                ForEach(entry.inlineEntries) { inlineSheet in
                     switch inlineSheet.sheetType {
                     case .photoInline:
                         root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
@@ -69,9 +69,11 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 }
             }
 
-            ForEach(entry.entries) { inlineSheet in
+            ForEach(entry.inlineEntries) { inlineSheet in
                 switch inlineSheet.sheetType {
                 case .dice:
+                    root.viewControllable.rowViewer(source: inlineSheet.source, destination: entry.destination)
+                case .pdf:
                     root.viewControllable.rowViewer(source: inlineSheet.source, destination: entry.destination)
                 default:
                     EmptyView()

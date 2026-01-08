@@ -23,9 +23,9 @@ public extension ViewController {
             .environment(itemSelectionModel)
     }
 
-    @MainActor func inlineViewer(root: PdfRootModel, with id: UUID, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
+    @MainActor func inlineViewer(root: PdfRootModel, with id: UUID, entryId: UUID?, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
-        return ViewerRootView(model: model, entryId: nil, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
+        return ViewerRootView(model: model, entryId: entryId, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
     }
     
     @MainActor func windowViewer(root: PdfRootModel, selection: WindowItemSelection) -> some View {

@@ -19,7 +19,7 @@ struct FolderListController: FolderListControllable {
     }
     
     func viewerDestination(for itemId: UUID) -> any NavigationDestination {
-        DetailRoute.viewer(itemId)
+        DetailRoute.viewer(itemId, nil)
     }
 
     func copy(parentModel: (any ItemDataAccessable)?) -> FolderListController {

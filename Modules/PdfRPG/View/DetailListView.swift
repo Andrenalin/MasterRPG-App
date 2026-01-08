@@ -18,7 +18,7 @@ struct DetailListView: View {
     @Environment(\.navigator) private var navigator
     
     @State private var detailFolderListController: FolderListController
-    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.pdf.viewerWindowId, route: { DetailRoute.viewer($0) })
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.pdf.viewerWindowId, route: { DetailRoute.viewer($0, nil) })
 
     var body: some View {
         content(listController: detailFolderListController)
@@ -41,7 +41,7 @@ struct DetailListView: View {
         }
         .overlay {
             if openFileWindowModel.showItem {
-                root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId, withoutBookmark: false) {
+                root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId, entryId: nil, withoutBookmark: false) {
                     openFileWindowModel.showItem = false
                 }
             }

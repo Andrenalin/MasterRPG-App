@@ -30,8 +30,10 @@ struct InlineRowViewer: View, Equatable {
             root.spaceRoot.viewController.rowViewer(source: source, destination: destination)
         case .weather:
             root.weatherRoot.viewController.rowViewer(source: source, destination: destination)
-        default:
+        case .photo:
             root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
+        default:
+            EmptyView()
         }
     }
     

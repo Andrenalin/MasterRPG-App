@@ -103,8 +103,8 @@ private extension ViewerRootView {
     }
     
     var entry: PdfEntryModel? {
-        guard entryId == nil else { return nil }
-        return PdfEntryModel.empty(UUID())
+        guard let entryId else { return nil }
+        return model[entryId]
     }
     
     var closeButton: some View {

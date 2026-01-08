@@ -41,12 +41,12 @@ struct SheetController {
                     description += " = \(valueCalculate)"
                 }
             }
-            var entries: [SheetModel] = []
+            var inlineEntries: [SheetModel] = []
             if let diceId = entry.diceId {
-                entries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), level: level, type: .dice, name: "", description: "", entries: []))
+                inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), level: level, type: .dice, name: "", description: "", entries: []))
             }
 
-            let result = [SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: entries)]
+            let result = [SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, inlineEntries: inlineEntries, entries: [])]
 
             return result
         }
