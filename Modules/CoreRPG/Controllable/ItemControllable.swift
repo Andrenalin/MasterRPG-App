@@ -14,6 +14,8 @@ public protocol ItemControllable: Sendable  {
     
     @MainActor var linkRegisterControllable: LinkRegisterControllable { get }
     var itemDataModel: ItemDataModel { get }
+    
+    @MainActor func children(itemId: UUID) -> [Model]
 }
 
 // MARK: - Configuration
@@ -199,6 +201,13 @@ public extension ItemControllable {
 // MARK: - Viewer
 
 public extension ItemControllable {
+    @MainActor func children(itemId: UUID) -> [Model] {
+        guard let parent = itemSync(for: itemId) else { return [] }
+        return parent.entries.map(\.childId).compactMap {
+            itemSync(for: $0)
+        }
+    }
+    
     func item(for itemId: UUID) async -> Model? {
         await itemDataModel.item(for: itemId) as? Model
     }

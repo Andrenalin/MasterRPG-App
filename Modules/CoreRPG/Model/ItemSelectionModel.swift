@@ -4,20 +4,20 @@ import Foundation
 
 @MainActor @Observable
 public final class ItemSelectionModel {
-    public init(selection: [WindowItemSelection] = [], isSingleSelection: Bool = true, allowCollections: Bool = false, allowEntrySelection: Bool = false) {
+    public init(selection: [WindowItemSelection] = [], isSingleSelection: Bool = true, allowCollections: Bool = false, allowEntrySelection: Bool = false, onlyEntrySelection: Bool = false) {
         self.selection = selection
         self.isSingleSelection = isSingleSelection
         self.allowCollections = allowCollections
         self.allowEntrySelection = allowEntrySelection
+        self.onlyEntrySelection = onlyEntrySelection
     }
     
     public var selection: [WindowItemSelection] = []
     public var isSingleSelection: Bool = true
     public var allowCollections: Bool = false
     public var allowEntrySelection: Bool = false
-    
-    public var selectionFinished: Bool = false
-    public var selectedLinkEntryId: UUID? 
+    public var onlyEntrySelection: Bool = false
+    public var onlyChildrenFrom: UUID? = nil
     
     public var itemId: UUID? {
         selection.first?.itemId

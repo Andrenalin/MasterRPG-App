@@ -44,16 +44,16 @@ public final class EditorLinkModel {
     let rootManager: RootManager
     let folderListController: FolderListControllable
     
-    let adventureSelectionModel: ItemSelectionModel
-    let audioSelectionModel: ItemSelectionModel
-    let characterSelectionModel: ItemSelectionModel
-    let diceSelectionModel: ItemSelectionModel
-    let mapSelectionModel: ItemSelectionModel
-    let pdfSelectionModel: ItemSelectionModel
-    let photoSelectionModel: ItemSelectionModel
-    let spaceSelectionModel: ItemSelectionModel
-    let tableSelectionModel: ItemSelectionModel
-    let weatherSelectionModel: ItemSelectionModel
+    public let adventureSelectionModel: ItemSelectionModel
+    public let audioSelectionModel: ItemSelectionModel
+    public let characterSelectionModel: ItemSelectionModel
+    public let diceSelectionModel: ItemSelectionModel
+    public let mapSelectionModel: ItemSelectionModel
+    public let pdfSelectionModel: ItemSelectionModel
+    public let photoSelectionModel: ItemSelectionModel
+    public let spaceSelectionModel: ItemSelectionModel
+    public let tableSelectionModel: ItemSelectionModel
+    public let weatherSelectionModel: ItemSelectionModel
 
     public let firstRow: [NetworkModules]
     let secondRow: [NetworkModules]

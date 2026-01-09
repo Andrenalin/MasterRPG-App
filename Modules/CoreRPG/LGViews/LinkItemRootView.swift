@@ -18,8 +18,10 @@ public struct LinkItemRootView: View {
     let root: any ItemRootControllable
     let type: LinkRootType
         
+    @Environment(ItemSelectionModel.self) private var selectionModel
+    
     public var body: some View {
-        LinkItemListView(root: root, type: type, parentModel: nil)
+        LinkItemListView(root: root, type: type, parentModel: parentModel)
             .environment(root.folderLinkControllable.listDisplayModel)
             .environment(root.folderLinkControllable.searchModel)
             .environment(root.folderLinkControllable.cacheListItemModel)
@@ -29,5 +31,10 @@ public struct LinkItemRootView: View {
                 guard type == .inspector else { return }
                 root.folderLinkControllable.listDisplayModel.displayMode <=> root.listDisplayModel.displayMode
             }
+    }
+    
+    var parentModel: (any ItemDataAccessable)? {
+        guard let parentId = selectionModel.onlyChildrenFrom else { return nil }
+        return root.itemControllable.itemSync(for: parentId)
     }
 }

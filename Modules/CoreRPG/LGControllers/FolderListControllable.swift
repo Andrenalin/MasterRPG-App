@@ -41,9 +41,7 @@ public extension FolderListControllable {
     private func originalItems() -> [ListItemModel] {
         var currentItems: [any ItemDataAccessable] = []
         if let parentModel = listModel.parentModel {
-            currentItems = parentModel.entries.compactMap {
-                itemControllable.itemSync(for: $0.childId)
-            }
+            currentItems = itemControllable.children(itemId: parentModel.id)
         } else {
             currentItems = itemControllable.itemDataModel.items.compactMap {
                 itemControllable.itemSync(for: $0)
@@ -125,11 +123,7 @@ extension FolderListControllable {
 private extension FolderListControllable {
     func filter(item: ListItemModel, level: Int) -> ListItemModel? {
         guard item.model.displayState != 2 else { return nil }
-        if let parentModel = listModel.parentModel {
-            if !parentModel.entries.contains(where: { $0.childId == item.model.id }) {
-                return nil
-            }
-        } else {
+        if listModel.parentModel == nil {
             guard item.model.displayState == 0 else { return nil }
             if listDisplayModel.listMode == .list {
                 if item.model.specialCategory {

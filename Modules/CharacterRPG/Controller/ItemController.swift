@@ -33,6 +33,19 @@ extension ItemController: ItemControllable {
 }
 
 extension ItemController {
+    @MainActor func children(itemId: UUID) -> [Model] {
+        guard let parent = itemSync(for: itemId) else { return [] }
+        return parent.entries.compactMap(\.valueId).flatMap {
+            subchildren(itemId: $0, deep: 1)
+        }
+    }
+    
+    @MainActor private func subchildren(itemId: UUID, deep: Int) -> [Model] {
+        guard deep < 25, let parent = itemSync(for: itemId) else { return [] }
+        return [parent] + parent.entries.compactMap(\.valueId).flatMap {
+            subchildren(itemId: $0, deep: deep + 1)
+        }
+    }
     
     // TODO: move to editController?
     func duplicate(itemId: UUID, withCopy: Bool = true) async -> UUID {

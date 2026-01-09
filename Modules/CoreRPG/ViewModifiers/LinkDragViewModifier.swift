@@ -38,7 +38,7 @@ struct LinkDragViewModifier: ViewModifier {
         case .space: content.draggable(LinkSpaceData(itemId: itemId, entryId: entryId, name: name))
         case .table: content.draggable(LinkTableData(itemId: itemId, entryId: entryId, name: name))
         case .weather: content.draggable(LinkWeatherData(itemId: itemId, entryId: entryId, name: name))
-        default: content.draggable(LinkAdventureData(itemId: itemId, entryId: entryId, name: name))
+        default: content.draggable(LinkEntryData(itemId: itemId, entryId: entryId, name: name, module: module))
         }
 #endif
     }

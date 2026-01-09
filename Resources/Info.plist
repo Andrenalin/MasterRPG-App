@@ -440,6 +440,36 @@
 
     </dict>
 
+    <dict>
+
+        <key>UTTypeIdentifier</key>
+
+        <string>de.andretrettin.MasterRPG.Link.Entry</string>
+
+        <key>UTTypeDescription</key>
+
+        <string>MasterRPG Entry Link</string>
+
+        <key>UTTypeConformsTo</key>
+
+        <array>
+
+            <string>public.text</string>
+
+        </array>
+
+        <key>UTTypeTagSpecification</key>
+
+        <dict>
+
+            <key>public.mime-type</key>
+
+            <string>application/vnd.masterrpg.link.entry</string>
+
+        </dict>
+
+    </dict>
+
     </array>
 
 	<key>UTImportedTypeDeclarations</key>

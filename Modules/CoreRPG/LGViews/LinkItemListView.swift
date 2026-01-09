@@ -8,6 +8,7 @@ public struct LinkItemListView: View {
         self.root = root
         self.type = type
         root.folderLinkControllable.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
+        root.folderLinkControllable.resetParentModel(model: parentModel)
     }
     
     let root: any ItemRootControllable
@@ -178,12 +179,11 @@ private extension LinkItemListView {
             }
             .contentShape(.rect)
 #if !os(tvOS)
-            .draggable(for: root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)
+            .draggable(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)
 #endif
             
             specialCategoryFolderIndicator(item: item)
         }
-        //.contentShape(.rect)
     }
     
     func openDetail(for item: ListItemModel) {

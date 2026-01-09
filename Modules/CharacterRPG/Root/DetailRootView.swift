@@ -91,6 +91,9 @@ private extension DetailListView {
             }
 
         SheetRootEditorView(root: root.rootController, linkControllable: root.rootControllable.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Values").localizedString, linkTypes: LinkCharacterModuleTransferable.self)
+            .onChange(of: model.id, initial: true) {
+                withAnimation { root.editorLinkModel.characterSelectionModel.onlyChildrenFrom = model.id }
+            }
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
@@ -107,6 +110,7 @@ private extension DetailListView {
                 }
                 Button {
                     withAnimation {
+                        root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
                         let entryId = root.editController.addNewEntry(itemId: model.id)
                         root.editController.editorModel.currentEntryId = entryId
                         Task { @MainActor in
