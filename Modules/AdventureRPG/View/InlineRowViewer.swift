@@ -26,12 +26,12 @@ struct InlineRowViewer: View, Equatable {
             root.mapRoot.viewController.rowViewer(source: source, destination: destination)
         case .pdf:
             root.pdfRoot.viewController.rowViewer(source: source, destination: destination)
+        case .photo:
+            root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
         case .space:
             root.spaceRoot.viewController.rowViewer(source: source, destination: destination)
         case .weather:
             root.weatherRoot.viewController.rowViewer(source: source, destination: destination)
-        case .photo:
-            root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
         default:
             EmptyView()
         }
