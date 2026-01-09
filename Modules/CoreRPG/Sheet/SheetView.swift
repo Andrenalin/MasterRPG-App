@@ -29,17 +29,20 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                                 
                 if isEditor && model.sheetModel.canAdd {
                     dropButton
+                        .dropDestination(for: model.sheetModel.source.typeId, isEnabled: isEditor) { name, itemId, entryId in
+                            guard let entryDataEditable else { return }
+                            if let entryId  {
+                                withAnimation {
+                                    let isMoved = entryDataEditable.move(itemId: itemId, entryId: entryId, into: model.sheetModel.source)
+                                    if isMoved {
+                                        model.move(itemId: itemId, entryId: entryId, into: model.sheetModel.source)
+                                    }
+                                }
+                            }
+                        }
                 }
             }
             .contentShape(.rect)
-            .dropDestination(for: LinkEntryData.self, isEnabled: true) { items, sessions in
-                guard let entryDataEditable else { return }
-                items.forEach {
-                    if let entryId = $0.entryId {
-                        entryDataEditable.move(itemId: $0.itemId, entryId: entryId, into: model.sheetModel.source)
-                    }
-                }
-            }
             .font(.title)
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
@@ -64,11 +67,14 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
             SheetEntryView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
                 .contentShape(.rect)
-                .draggable(LinkEntryData(itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name, module: entry.source.typeId))
+//                .draggable(LinkEntryData(itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name, module: entry.source.typeId))
         }
         .applyIf(isEditor) {
             $0.onMove { indexSet, index in
-                entryDataEditable?.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index)
+                guard let entryDataEditable else { return }
+                if entryDataEditable.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index) {
+                    model.move(itemId: model.sheetModel.source.itemId, indexSet: indexSet, to: index)
+                }
             }
         }
         .onChange(of: root.editControllable.editorModel.currentEntryId) { previousEntryId, _ in

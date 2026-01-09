@@ -108,8 +108,8 @@ extension EditController: EntryDataEditable {
     public var thumbnailEntryViewType: ThumbnailEntryViewType { .photo }
     public var additioanlEnrtryViewType: AdditionalEntryViewType { .custom }
 
-    @MainActor public func additionalRowView(for entryId: UUID) -> AnyView {
-        AnyView(AddtionalEntryRow(itemId: UUID(), entryId: entryId).equatable())
+    @MainActor public func additionalRowView(for source: ItemRowModel, textModel: LinkHighlightTextModel?) -> AnyView {
+        AnyView(AddtionalEntryRow(source: source).equatable())
     }
 
     func create(name: String, content: String) -> MapEntryModel {

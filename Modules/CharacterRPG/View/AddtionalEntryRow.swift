@@ -4,8 +4,8 @@ import CoreRPG
 import SwiftUI
 
 struct AddtionalEntryRow: View, Equatable {
-    let itemId: UUID
-    let entryId: UUID
+    let source: ItemRowModel
+    let textModel: LinkHighlightTextModel?
     
     @Environment(CharacterRootModel.self) private var root
     
@@ -13,20 +13,38 @@ struct AddtionalEntryRow: View, Equatable {
         let _ = Self._printChanges()
         VStack(alignment: .leading) {
             HStack {
-                Text(entry.type.title)
                 
-                EntryListDiceRow(itemId: itemId, entryId: entryId)
+                Image(systemName: entry.type.icon)
+                    .imageScale(.large)
+                    .foregroundStyle(.foreground, .tint)
+                    .padding(4)
+                    .background {
+                        Circle().fill(root.configurable.module.tint.opacity(0.3))
+                    }
+                
+                if let textModel {
+                    LinkHighlightTextView(model: textModel)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            
+            EntryListDiceRow(itemId: source.itemId, entryId: entryId)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     private var model: ValueModel {
-        root.itemController.itemOrEmpty(for: itemId)
+        root.itemController.itemOrEmpty(for: source.itemId)
     }
     
     private var entry: ValueEntryModel {
         model[entryId]
+    }
+    
+    private var entryId: UUID {
+        source.entryId ?? UUID()
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {
@@ -37,5 +55,5 @@ struct AddtionalEntryRow: View, Equatable {
 #Preview(traits: .mockData) {
     @Previewable @Environment(CharacterRootModel.self) var root
     
-    AddtionalEntryRow(itemId: root.itemController.itemDataModel.items.first!, entryId: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first!).entries[0].id)
+    AddtionalEntryRow(source: ItemRowModel(itemId: root.itemController.itemDataModel.items.first!, entryId: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first!).entries[0].id, typeId: .value), textModel: nil)
 }

@@ -13,10 +13,6 @@ struct SheetController {
         var entries: [SheetModel] = []
         let showHeader: Bool = model.displayState == 0
         
-//        if let parentId = model.parentId, let parentModel = itemController.itemSync(for: parentId) {
-//            showHeader = parentModel.isFolder
-//        }
-        
         if showHeader, let photoId = model.photoId {
             entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), level: level, type: .photo, name: "", description: "", entries: []))
         }

@@ -29,19 +29,23 @@ public struct EntryEditRow: View {
                     ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: entry.id)
                     
                     if editController.additioanlEnrtryViewType == .custom {
-                        editController.additionalRowView(for: entry.id)
+                        editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemRootController.configurable.module), textModel: nil)
                     }
                 }
             }
-                        
-            LinkHighlightTextView(model: linkTextModel)
-                .multilineTextAlignment(.leading)
-                .lineLimit(nil)
-                .fixedSize(horizontal: false, vertical: true)
+            
+            if editController.additioanlEnrtryViewType == .inline {
+                editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemRootController.configurable.module), textModel: linkTextModel)
+            } else {
+                LinkHighlightTextView(model: linkTextModel)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             
             if !hasThumbnail {
                 if editController.additioanlEnrtryViewType == .custom {
-                    editController.additionalRowView(for: entry.id)
+                    editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemRootController.configurable.module), textModel: nil)
                 }
             }
         }

@@ -11,6 +11,7 @@ public enum ThumbnailEntryViewType: Hashable, Sendable {
 public enum AdditionalEntryViewType: Hashable, Sendable {
     case none
     case custom
+    case inline
 }
 
 public protocol EntryDataEditable: EditControllable {
@@ -28,7 +29,8 @@ public protocol EntryDataEditable: EditControllable {
     var thumbnailEntryViewType: ThumbnailEntryViewType { get }
     var additioanlEnrtryViewType: AdditionalEntryViewType { get }
     
-    @MainActor func additionalRowView(for entryId: UUID) -> AnyView
+    @MainActor func additionalRowView(for source: ItemRowModel, textModel: LinkHighlightTextModel?) -> AnyView
+    
     @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String
     
     // MARK: - QuickEntryEditor
@@ -64,7 +66,7 @@ public extension EntryDataEditable {
     var thumbnailEntryViewType: ThumbnailEntryViewType { .none }
     var additioanlEnrtryViewType: AdditionalEntryViewType { .none }
     
-    @MainActor func additionalRowView(for entryId: UUID) -> AnyView { AnyView(EmptyView()) }
+    @MainActor func additionalRowView(for source: ItemRowModel, textModel: LinkHighlightTextModel?) -> AnyView { AnyView(EmptyView()) }
     
     @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {
         entry.name.isEmpty ? entry.content : "\(entry.name.markDownText()): \(entry.content)"
@@ -178,14 +180,15 @@ public extension EntryDataEditable {
         save(updated: item, message: String(localized: "Edit entry").localizedString)
     }
     
-    @MainActor func move(itemId: UUID, entryFrom: IndexSet, to: Array<UUID>.Index) {
-        guard let item = editModel(for: itemId) else { return }
+    @MainActor func move(itemId: UUID, entryFrom: IndexSet, to: Array<UUID>.Index) -> Bool {
+        guard let item = editModel(for: itemId) else { return false }
         var destination = to
         if destination >= item.entries.count {
             destination = item.entries.count - 1
         }
         item.entries.move(fromOffsets: entryFrom, toOffset: destination)
         save(updated: item, message: String(localized: "Reorder entries").localizedString)
+        return true
     }
     
     @MainActor func move(itemId: UUID, entryId: UUID, up: Bool) {
@@ -202,13 +205,14 @@ public extension EntryDataEditable {
         save(updated: item, message: String(localized: title).localizedString)
     }
     
-    @MainActor func move(itemId: UUID, entryId: UUID, into: ItemRowModel) {
-        guard let item = editModel(for: into.itemId) else { return }
-        guard let otherItem = editModel(for: itemId), let index = otherItem.entries.firstIndex(where: { $0.id == entryId }) else { return }
+    @MainActor func move(itemId: UUID, entryId: UUID, into: ItemRowModel) -> Bool {
+        guard let item = editModel(for: into.itemId) else { return false }
+        guard let otherItem = editModel(for: itemId), let index = otherItem.entries.firstIndex(where: { $0.id == entryId }) else { return false }
         let entry = otherItem.entries.remove(at: index)
         item.entries.append(entry)
         save(updated: otherItem, message: String(localized: "remove entry").localizedString)
         save(updated: item, message: String(localized: "add entry").localizedString)
+        return true
     }
 }
 

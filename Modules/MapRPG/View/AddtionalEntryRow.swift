@@ -5,8 +5,7 @@ import SwiftData
 import SwiftUI
 
 struct AddtionalEntryRow: View, Equatable {
-    let itemId: UUID
-    let entryId: UUID
+    let source: ItemRowModel
     
     @Environment(MapRootModel.self) private var root
     
@@ -28,11 +27,15 @@ struct AddtionalEntryRow: View, Equatable {
     }
     
     private var model: MapModel {
-        root.itemController.itemOrEmpty(for: itemId)
+        root.itemController.itemOrEmpty(for: source.itemId)
     }
     
     private var entry: MapEntryModel {
         model[entryId]
+    }
+    
+    private var entryId: UUID {
+        source.entryId ?? UUID()
     }
     
     private var pinsCounter: Int {
@@ -41,7 +44,7 @@ struct AddtionalEntryRow: View, Equatable {
         
     }
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.entryId == rhs.entryId
+        lhs.source == rhs.source
     }
 }
 

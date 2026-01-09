@@ -290,7 +290,10 @@ extension LinkController {
         if let valueText = calculate(entry: model[entryId], deep: 0), model[entryId].value != valueText {
             otherValue = "= \(valueText)"
         }
-        return model[entryId].valueLinkText(otherValue: " \(otherValue)", withoutName: withoutName)
+        
+        var rowText = model[entryId].valueLinkText(otherValue: " \(otherValue)", withoutName: withoutName)
+        
+        return rowText
     }
     
     @MainActor

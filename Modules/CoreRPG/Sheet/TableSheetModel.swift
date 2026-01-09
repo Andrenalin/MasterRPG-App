@@ -111,6 +111,32 @@ public final class TableSheetModel {
             }
         }
     }
+    
+    @MainActor func subTableModel(source: ItemRowModel) -> TableSheetModel? {
+        if let subModel = sheets[source] {
+            return subModel
+        }
+        for subModel in sheets.values {
+            if let model = subModel.subTableModel(source: source) {
+                return model
+            }
+        }
+        return nil
+    }
+
+    @MainActor func move(itemId: UUID, entryId: UUID, into source: ItemRowModel) {
+        let otherSource = ItemRowModel(itemId: itemId, entryId: nil, typeId: source.typeId)
+        if let subSheetModel = subTableModel(source: otherSource) {
+            if let entry = subSheetModel.sheetModel.entries.first(where: { $0.source.entryId == entryId }) {
+                subSheetModel.remove(entry: entry)
+            }
+        }
+        add(entryId: entryId)
+    }
+
+    @MainActor func move(itemId: UUID, indexSet: IndexSet, to: Int) {
+        sheetModel.entries.move(fromOffsets: indexSet, toOffset: to)
+    }
 
     @MainActor func update(entryId: UUID) {
         let updatedModel = linkControllable.toggleSheet(itemId: itemId, level: level, module: module)
