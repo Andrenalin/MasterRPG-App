@@ -24,6 +24,7 @@ public struct LinkItemListView: View {
     @State private var showDetailsView: (any NavigationDestination)? = nil
         
     public var body: some View {
+        let _ = Self._printChanges()
         ManagedNavigationStack(name: "LinkInspector") { navigator in
             VStack {
                 if type == .inspector {

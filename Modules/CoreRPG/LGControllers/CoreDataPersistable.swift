@@ -21,6 +21,13 @@ public protocol CoreDataPersistable: Sendable {
 }
 
 public extension CoreDataPersistable {
+    func replaceSync(id: UUID, with viewModel: any ModelType) throws {
+        guard let viewModel = viewModel as? Model else { return }
+        Task {
+            try await replace(id: id, with: viewModel, updater: mapModel(_:into:))
+        }
+    }
+
     func replace(id: UUID, with viewModel: any ModelType) async throws {
         guard let viewModel = viewModel as? Model else { return }
         try await replace(id: id, with: viewModel, updater: mapModel(_:into:))

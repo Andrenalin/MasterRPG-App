@@ -39,7 +39,7 @@ public final class EditIdentifierModel<Value: Equatable> {
     }
     
     public func reset(valueId: UUID, value: Value, saveHandler: ((UUID, Value) -> Void)?) {
-        save()
+        //save()
         self.valueId = valueId
         self.value = value
         self._save = saveHandler

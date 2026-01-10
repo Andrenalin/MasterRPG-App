@@ -132,8 +132,35 @@ extension EditController {
     
     @MainActor func reset(borderThickness: Double, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
-        item.displayConfig.borderThickness = CGFloat(borderThickness)
-        save(updated: item, message: String(localized: "Change border thickness").localizedString)
+        let updatedBorderThickness: CGFloat = CGFloat(borderThickness)
+        if item.displayConfig.borderThickness != updatedBorderThickness {
+            item.displayConfig.borderThickness = updatedBorderThickness
+            save(updated: item, message: String(localized: "Change border thickness").localizedString)
+        }
+    }
+
+    @MainActor func reset(hasBorder: Bool, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        if item.displayConfig.hasBorder != hasBorder {
+            item.displayConfig.hasBorder = hasBorder
+            save(updated: item, message: String(localized: "toggle border").localizedString)
+        }
+    }
+
+    @MainActor func reset(borderColor: Color, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        if item.displayConfig.borderColor != borderColor {
+            item.displayConfig.borderColor = borderColor
+            save(updated: item, message: String(localized: "Change border color").localizedString)
+        }
+    }
+    
+    @MainActor func reset(coverColor: Color, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        if item.displayConfig.color != coverColor {
+            item.displayConfig.color = coverColor
+            save(updated: item, message: String(localized: "Change cover color").localizedString)
+        }
     }
 }
 
@@ -163,12 +190,13 @@ extension EditController {
     }
 
     @MainActor func validateBeforeSave(model: MapModel) {
-        let validateModel = model
+        let itemId = model.id
+        let changedEntryIds = model.entries.compactMap { entry in
+            itemController.itemOrEmpty(for: itemId)[entry.id].coordinates != entry.coordinates ? entry.id : nil
+        }
         Task {
-            for entry in validateModel.entries {
-                if itemController.itemSync(for: validateModel.id)?[entry.id].coordinates != entry.coordinates {
-                    await root.cacheController?.remove(itemId: entry.id)
-                }
+            for entryId in changedEntryIds {
+                await root.cacheController?.remove(itemId: entryId)
             }
         }
     }

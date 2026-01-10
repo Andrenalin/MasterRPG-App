@@ -21,6 +21,7 @@ public struct LinkItemRootView: View {
     @Environment(ItemSelectionModel.self) private var selectionModel
     
     public var body: some View {
+        let _ = Self._printChanges()
         LinkItemListView(root: root, type: type, parentModel: parentModel)
             .environment(root.folderLinkControllable.listDisplayModel)
             .environment(root.folderLinkControllable.searchModel)

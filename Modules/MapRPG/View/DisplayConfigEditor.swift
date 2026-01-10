@@ -12,21 +12,13 @@ struct DisplayConfigEditor: View {
     @State private var isAnimating = false
     @State private var showTileEditor = false
     
+    @State private var color = Color.black
     @State private var borderToggleEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
     
     var body: some View {
-        @Bindable var model = model
         Section {
 #if !os(tvOS)
-            LabeledContent {
-                ColorPicker(selection: $model.displayConfig.color, supportsOpacity: false) {
-                    Text("Cover color", bundle: .module)
-                }
-                .labelsHidden()
-                .tint(root.configurable.module.tint)
-            } label: {
-                Text("Cover color", bundle: .module)
-            }
+            coverColorView
             
             activateBorderView
             
@@ -34,22 +26,47 @@ struct DisplayConfigEditor: View {
                 .disabled(!model.displayConfig.hasBorder)
 #endif
         } header: {
-#if os(macOS)
-            Divider()
-                .padding(.top)
-#endif
-            configHeaderView
+            Text("Config", bundle: .module)
+        }
+        .onChange(of: model.id, initial: true) {
+            resetColor()
+            updateToggleValue()
         }
         .sheetFullScreen(isPresented: $showTileEditor, idealSize: model.mapIdealSize) {
             tileEditorView
         }
     }
     
+#if !os(tvOS)
+    @ViewBuilder var coverColorView: some View {
+        LabeledContent {
+            ColorPicker(selection: $color, supportsOpacity: false) {
+                Text("Cover color", bundle: .module)
+            }
+            .labelsHidden()
+            .tint(root.configurable.module.tint)
+        } label: {
+            Text("Cover color", bundle: .module)
+        }
+        .onChange(of: color) {
+            saveColor()
+        }
+        .onChange(of: model.displayConfig.color) {
+            resetColor()
+        }
+    }
+    
+    private func resetColor() {
+        color <=> model.displayConfig.color
+    }
+
+    private func saveColor() {
+        root.editController.reset(coverColor: color, itemId: model.id)
+    }
+#endif
+    
     @ViewBuilder var activateBorderView: some View {
         ToggleEditor(model: borderToggleEditModel, title: "Activate Border", bundle: .module, icon: "rectangle")
-            .onChange(of: model, initial: true) {
-                updateToggleValue()
-            }
             .onChange(of: model.displayConfig.hasBorder) {
                 updateToggleValue()
             }
@@ -57,23 +74,16 @@ struct DisplayConfigEditor: View {
     
     func updateToggleValue() {
         let toggleValue = model.displayConfig.hasBorder
-        guard model.id != borderToggleEditModel.valueId || toggleValue != borderToggleEditModel.value else { return }
-        let editController = root.editController
-        borderToggleEditModel.reset(valueId: model.id, value: toggleValue) { itemId, value in
-            guard let item = editController.editModel(for: itemId) else { return }
-            if value != item.displayConfig.hasBorder {
-                item.displayConfig.hasBorder = value
-                editController.save(updated: item, message: String(localized: "toggle border").localizedString)
+        if model.id != borderToggleEditModel.valueId || toggleValue != borderToggleEditModel.value {
+            let editController = root.editController
+            borderToggleEditModel.reset(valueId: model.id, value: toggleValue) { itemId, value in
+                editController.reset(hasBorder: value, itemId: itemId)
             }
         }
     }
     
-    var configHeaderView: some View {
-        HStack {
-            Text("Config", bundle: .module)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .center)
-            
+    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .secondaryActionAll) {
             Button {
                 withAnimation { showTileEditor.toggle() }
             } label: {
@@ -81,42 +91,8 @@ struct DisplayConfigEditor: View {
             }
         }
     }
-    
+        
     var tileEditorView: some View {
         RootEditCanvasMap(itemId: model.id, tile: .empty)
-    }
-}
-
-struct DisplayConfigBorderEditor: View {
-    let model: MapModel
-    @Environment(MapRootModel.self) private var root
-    
-    @State private var borderThicknessModel = EditIdentifierModel(value: 0.0)
-    
-    var body: some View {
-        @Bindable var model = model
-        Group {
-            LabeledContent {
-#if !os(tvOS)
-                ColorPicker(selection: $model.displayConfig.borderColor) {
-                    Text("Border color", bundle: .module)
-                }
-                .labelsHidden()
-                .tint(root.configurable.module.tint)
-#else
-                Text("Color Picker not available", bundle: .module)
-#endif
-            } label: {
-                Text("Border color", bundle: .module)
-            }
-            
-            TextDoubleEditor(model: borderThicknessModel, title: "Thickness", icon: "slider.horizontal.below.square.and.square.filled", prompt: "Thickness of the border", bundle: .module, range: 0...25)
-        }
-        .onChange(of: model.id, initial: true) {
-            let editController = root.editController
-            borderThicknessModel.reset(valueId: model.id, value: model.displayConfig.borderThicknessDouble) { itemId, value in
-                editController.reset(borderThickness: value, itemId: itemId)
-            }
-        }
     }
 }

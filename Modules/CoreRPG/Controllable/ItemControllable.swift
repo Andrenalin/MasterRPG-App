@@ -88,9 +88,8 @@ public extension ItemControllable {
             var originalEntryIds = Set(orignal.entries.map { $0.id })
             let resort = orignal.name != model.name
             if orignal.replace(with: model) {
-                Task {
-                    try? await dataControllable?.replace(id: orignal.id, with: orignal)
-                }
+                try? dataControllable?.replaceSync(id: orignal.id, with: orignal.copy())
+            
                 let linkModels = orignal.linkRegisterModels
                 if originalLinkModels != linkModels {
                     linkRegisterControllable.deregister(links: originalLinkModels)
@@ -110,9 +109,7 @@ public extension ItemControllable {
             }
         } else {
             if isInsert {
-                Task {
-                    try? await dataControllable?.replace(id: model.id, with: model)
-                }
+                try? dataControllable?.replaceSync(id: model.id, with: model.copy())
             }
             setModel(with: model)
             insertIntoItems(model: model)

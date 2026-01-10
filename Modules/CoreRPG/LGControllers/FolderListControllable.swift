@@ -20,8 +20,10 @@ public protocol FolderListControllable: Sendable {
 
 extension FolderListControllable {
     func resetParentModel(model: (any ItemDataAccessable)?) {
-        listModel.parentModel = model
-        listModel.originalItems = originalItems()
+        if listModel.parentModel?.id != model?.id {
+            listModel.parentModel = model
+        }
+        _ = originalItems()
         resetFilter()
     }
     
@@ -54,7 +56,7 @@ public extension FolderListControllable {
         let updatedItems = currentItems.enumerated().map { (index, model) in
             map(model: model, index: index, level: 0)
         }
-        listModel.originalItems = updatedItems
+        listModel.originalItems <=> updatedItems
         return updatedItems
     }
 
