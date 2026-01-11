@@ -4,13 +4,16 @@ import CoreRPG
 import SwiftUI
 
 struct MapEditWindow: View {
-    let itemId: UUID?
-
+    @Environment(MapRootModel.self) private var root
+    
     var body: some View {
-        if let itemId {
-            RootEditCanvasMap(itemId: itemId)
-        } else {
-            ContentUnavailableView(String(localized: "No map item is selected").localizedString, image: NetworkModules.map.icon)
+        Group {
+            if let itemId = root.editController.editorModel.currentItemId {
+                RootEditCanvasMap(itemId: itemId)
+                    .id(itemId)
+            } else {
+                ContentUnavailableView(String(localized: "No map item is selected").localizedString, image: root.configurable.module.icon)
+            }
         }
     }
 }
@@ -18,7 +21,7 @@ struct MapEditWindow: View {
 #Preview(traits: .mockData) {
     @Previewable @Environment(MapRootModel.self) var root
     
-    MapEditWindow(itemId: root.editController.editorModel.currentItemId)
+    MapEditWindow()
         .onAppear {
             root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: root.itemController.itemDataModel.items[0], typeId: .map))
         }

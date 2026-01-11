@@ -21,17 +21,19 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     @Environment(\.showGame) private var showGame
     @Environment(\.gameModus) private var gameModus
     @Environment(\.colorScheme) private var colorScheme
-    
+    @Environment(\.navigator) private var navigator
+        
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
                 if isEditor && entry.sheetType == .item {
-                    editButton
+                    editButton(onlyIcon: true)
                 }
 
                 switch entry.sheetType {
                 case .item:
                     LinkHighlightTextView(model: model.linkTextModel(for: .entry(entry.id), text: text, shareResults: shareResult))
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.body)
                         .listRowBackground(rowColor(for: entry.level))
                         .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entry.level * 4), bottom: 8, trailing: 8))
@@ -65,7 +67,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 }
                 
                 if isEditor && entry.sheetType == .item {
-                    deleteButton
+                    deleteButton(onlyIcon: true)
                 }
             }
 
@@ -80,6 +82,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 }
             }
         }
+        .contentShape(.rect)
 #if !os(tvOS)
         .applyIf(isEditor && entry.sheetType == .item) {
             $0.dropDestination(for: linkTypes, isEnabled: true) { items, sessions in
@@ -87,6 +90,16 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 items.forEach {
                     editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: entry.source.itemId, destinationEntryId: entryId)
                 }
+            }
+            .contextMenu {
+                editButton(onlyIcon: false)
+                Divider()
+                duplicateButton
+#if os(iOS)
+                linkButton
+#endif
+                Divider()
+                deleteButton(onlyIcon: false)
             }
         }
 #endif
@@ -101,39 +114,83 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
 }
 
 private extension SheetEntryView {
-    var editButton: some View {
+    var entryEditable: (any EntryDataEditable)? {
+        root.editControllable as? (any EntryDataEditable)
+    }
+    
+    func editButton(onlyIcon: Bool) -> some View {
         Button {
             withAnimation {
                 root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: entry.source.itemId, entryId: entry.source.entryId, typeId: entry.source.typeId))
             }
         } label: {
-            Image(systemName: "square.and.pencil")
-                .imageScale(.large)
-                .foregroundStyle(.foreground, .tint)
+            Label {
+                Text("Edit \(entry.name)", bundle: .module)
+            } icon: {
+                Image(systemName: "square.and.pencil")
+                    .imageScale(.large)
+                    .foregroundStyle(.foreground, .tint)
+            }
+            .applyIf(onlyIcon) {
+                $0.labelStyle(.iconOnly)
+            }
         }
         .borderLessTVBottonStyle()
-        .contentShape(.circle)
-#if !os(visionOS)
-        .glassEffect()
-#endif
+        .keyboardShortcut("e", modifiers: .shift)
     }
-
-    var deleteButton: some View {
+    
+    var duplicateButton: some View {
+        Button {
+            guard let entryId = entry.source.entryId, let newId = entryEditable?.copy(itemId: entry.source.itemId, entryId: entryId) else { return }
+            
+            withAnimation {
+                model.add(entryId: newId)
+                root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: entry.source.itemId, entryId: newId, typeId: entry.source.typeId))
+            }
+        } label: {
+            Label {
+                Text("Duplicate \(entry.name)", bundle: .module)
+            } icon: {
+                Image(systemName: "doc.on.doc")
+            }
+        }
+        //.borderLessTVBottonStyle()
+        .keyboardShortcut("d", modifiers: .shift)
+    }
+    
+    var linkButton: some View {
+        Button {
+            guard let entryEditable, let entryId = entry.source.entryId else { return }
+            navigator.navigate(to: entryEditable.linkSelectionDestination(itemRowModel: ItemRowModel(itemId: entry.source.itemId, entryId: entryId, typeId: entry.source.typeId)), method: .sheet)
+        } label: {
+            Label {
+                Text("Add Links", bundle: .module)
+            } icon: {
+                Image(systemName: "link.badge.plus")
+            }
+        }
+    }
+    
+    func deleteButton(onlyIcon: Bool) -> some View {
         Button(role: .destructive) {
             withAnimation {
                 root.editControllable.removeEntry(source: entry.source)
                 model.remove(entry: entry)
             }
         } label: {
-            Image(systemName: "minus.circle.fill")
-                .imageScale(.large)
-                .foregroundStyle(.white, .red, .red)
+            Label {
+                Text("Delete \(entry.name)", bundle: .module)
+            } icon: {
+                Image(systemName: "minus.circle.fill")
+                    .imageScale(.large)
+                    .foregroundStyle(.white, .red, .red)
+            }
+            .applyIf(onlyIcon) {
+                $0.labelStyle(.iconOnly)
+            }
         }
         .borderLessTVBottonStyle()
-        .contentShape(.circle)
-#if !os(visionOS)
-        .glassEffect()
-#endif
+        .keyboardShortcut("r", modifiers: .shift)
     }
 
     func rowColor(for level: Int) -> Color {

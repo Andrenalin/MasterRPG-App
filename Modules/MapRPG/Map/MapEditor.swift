@@ -39,8 +39,8 @@ struct MapEditor: View {
     @Environment(DropPinModel.self) private var dropPinModel
     
     @State private var pins: MapPinViewModel = MapPinViewModel(mapPins: [], pointer: .empty)
-    @State private var entries: MapEntryViewerModel = MapEntryViewerModel(entries: [])
-    @State private var editEntries: MapEntryViewerModel = MapEntryViewerModel(entries: [])
+    @State private var entries: MapEntryViewerModel = MapEntryViewerModel(mapId: UUID(), entries: [])
+    @State private var editEntries: MapEntryViewerModel = MapEntryViewerModel(mapId: UUID(), entries: [])
     @State private var scalePinId: UUID?
     @State private var focusId: MapEntryModel.ID? = nil
     @State private var appeared = false
@@ -106,7 +106,7 @@ struct MapEditor: View {
                 firstAppear()
             }
             .onDisappear {
-                editController.save(updated: map, message: String(localized: "Change entry coordinates").localizedString)
+                //editController.save(updated: map, message: String(localized: "Change entry coordinates").localizedString)
             }
             .modifier(EditToolBarViewModifier(editController: editController, model: toolBarModel))
        }
@@ -169,15 +169,22 @@ private extension MapEditor {
     func changeMap() {
         let currentEntryId = editController.editorModel.currentEntryId
         if currentEntryId != editEntries.entries.first?.id {
-            editController.save(updated: map, message: String(localized: "Change entry coordinates").localizedString)
+            if map.id == entries.mapId && !editEntries.entries.isEmpty {
+                let mapEdit = map.copy()
+                for entry in editEntries.entries {
+                    entries.setEntry(entry: entry)
+                }
+                mapEdit.entries = entries.entries
+                editController.save(updated: mapEdit, message: String(localized: "Change entry coordinates").localizedString)
+            }
             if let currentEntryId {
                 let entry = map[currentEntryId]
                 withAnimation(.bouncy) {
-                    editEntries.entries = [entry]
+                    editEntries.resetEntries(mapId: map.id, entries: [entry])
                 }
             } else {
                 withAnimation(.bouncy) {
-                    editEntries.entries = []
+                    editEntries.resetEntries(mapId: map.id, entries: [])
                 }
             }
         }
@@ -222,14 +229,14 @@ private extension MapEditor {
     func resetEntries(newEntries: [MapEntryModel]) {
         if let editEntry = editEntries.entries.first, let index = newEntries.firstIndex(where: { $0.id == editEntry.id }), editEntry != newEntries[index] {
             withAnimation(.bouncy) {
-                editEntries.entries = [newEntries[index]]
+                editEntries.resetEntries(mapId: map.id, entries: [newEntries[index]])
             }
         }
         
         guard entries.entries != newEntries else { return }
         
         withAnimation(.bouncy) {
-            entries.entries = newEntries
+            entries.resetEntries(mapId: map.id, entries: newEntries)
         }
         
         let focus = newEntries.first(where: { $0.focused })?.id

@@ -17,7 +17,7 @@ struct MapViewer: View {
         self.focused = focused
         
         _focusId = State(wrappedValue: focusedId)
-        _entries = State(wrappedValue: MapEntryViewerModel(entries: map.entries))
+        _entries = State(wrappedValue: MapEntryViewerModel(mapId: map.id, entries: map.entries))
         _appeared = State(wrappedValue: false)
 
         self._model = State(wrappedValue: ImageViewerModel(offset: .zero, scale: 1))
@@ -153,7 +153,7 @@ extension MapViewer {
         guard entries.entries != newEntries else { return }
 
         withAnimation(.bouncy) {
-            entries.entries = newEntries
+            entries.resetEntries(mapId: map.id, entries: newEntries)
         }
 
         let focus = newEntries.first(where: { $0.focused })?.id

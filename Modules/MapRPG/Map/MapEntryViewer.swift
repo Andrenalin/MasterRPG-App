@@ -5,18 +5,25 @@ import SwiftUI
 
 @Observable
 final class MapEntryViewerModel {
-    init(entries: [MapEntryModel] = [], selectedNeedleIndex: Int? = nil) {
+    init(mapId: UUID, entries: [MapEntryModel] = [], selectedNeedleIndex: Int? = nil) {
+        self.mapId = mapId
         self.entries = entries
         self.selectedNeedleIndex = selectedNeedleIndex
     }
     
-    var entries: [MapEntryModel]
+    var mapId: UUID
+    private(set) var entries: [MapEntryModel]
     var selectedNeedleIndex: Int?
     var selectedNeedleCoordinate: CGPoint?
 
     var addedNewNeedlePoint: CGPoint?
     var eaten: Bool = false
 
+    func resetEntries(mapId: UUID, entries: [MapEntryModel]) {
+        self.mapId = mapId
+        self.entries = entries
+    }
+    
     func entry(_ entryId: UUID) -> MapEntryModel {
         entries.first { $0.id == entryId }  ?? .empty(entryId)
     }

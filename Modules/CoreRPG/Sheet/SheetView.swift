@@ -66,7 +66,6 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
         
         ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
             SheetEntryView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
-                .contentShape(.rect)
 //                .draggable(LinkEntryData(itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name, module: entry.source.typeId))
         }
         .applyIf(isEditor) {

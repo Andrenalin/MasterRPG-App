@@ -31,9 +31,9 @@ struct RootEditCanvasMap: View {
                 Color.clear
             }
         }
-        .onAppear {
+        .onChange(of: model.id, initial: true) {
             if model.id != itemId {
-                model = root.itemController.itemOrEmpty(for: itemId).copy()
+                model = root.itemController.itemOrEmpty(for: itemId)
             }
         }
         .onChange(of: model.photoId, initial: true) {

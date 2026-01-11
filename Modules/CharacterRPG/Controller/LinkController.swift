@@ -291,8 +291,7 @@ extension LinkController {
             otherValue = "= \(valueText)"
         }
         
-        var rowText = model[entryId].valueLinkText(otherValue: " \(otherValue)", withoutName: withoutName)
-        
+        let rowText = model[entryId].valueLinkText(otherValue: " \(otherValue)", withoutName: withoutName)
         return rowText
     }
     

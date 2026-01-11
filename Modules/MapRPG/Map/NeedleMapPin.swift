@@ -183,7 +183,7 @@ struct NeedleMapPin: View {
 }
 
 #Preview {
-    @Previewable var entries = MapEntryViewerModel(entries: [.empty(MapModel.previewId)])
+    @Previewable var entries = MapEntryViewerModel(mapId: MapModel.previewId, entries: [.empty(MapModel.previewId)])
     
     VStack {
         ForEach(entries.entries[0].coordinates.indexed(), id: \.index) { (index, point) in

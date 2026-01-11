@@ -1,9 +1,9 @@
 // @copyright André Trettin
 
-import CoreRPG
-import SwiftUI
-import DiceRPG
 import CharacterRPG
+import CoreRPG
+import DiceRPG
+import SwiftUI
 
 public struct ViewController {
     public let goupViewType: GroupViewType = .none
@@ -52,7 +52,7 @@ public extension ViewController {
     }
     
     @MainActor func mapEditWindow(root: MapRootModel) -> some View {
-        MapEditWindow(itemId: root.editController.editorModel.currentItemId)
+        MapEditWindow()
     }
     
     @MainActor func gameView(root: MapRootModel) -> some View {

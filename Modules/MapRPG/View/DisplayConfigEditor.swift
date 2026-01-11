@@ -32,9 +32,6 @@ struct DisplayConfigEditor: View {
             resetColor()
             updateToggleValue()
         }
-        .sheetFullScreen(isPresented: $showTileEditor, idealSize: model.mapIdealSize) {
-            tileEditorView
-        }
     }
     
 #if !os(tvOS)
@@ -80,19 +77,5 @@ struct DisplayConfigEditor: View {
                 editController.reset(hasBorder: value, itemId: itemId)
             }
         }
-    }
-    
-    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .secondaryActionAll) {
-            Button {
-                withAnimation { showTileEditor.toggle() }
-            } label: {
-                Label { Text("Edit Tile", bundle: .module) } icon: { Image(systemName: "skew") }
-            }
-        }
-    }
-        
-    var tileEditorView: some View {
-        RootEditCanvasMap(itemId: model.id, tile: .empty)
     }
 }

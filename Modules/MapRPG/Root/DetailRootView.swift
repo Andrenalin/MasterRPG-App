@@ -41,7 +41,7 @@ struct DetailListView: View {
                 navigator.navigate(to: MapDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
             }
-            .onAppear {
+            .onChange(of: model.id, initial: true) {
                 root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
             }
     }
@@ -117,6 +117,18 @@ private extension DetailListView {
                     }
                 }
                 
+                Button {
+#if os(visionOS) || os(macOS)
+                    openWindow(id: WindowIdentifier.mapEditor.rawValue)
+#else
+                    navigator.navigate(to: EditorRoute.mapEditor(model.id), method: .cover)
+#endif
+                    //RootEditCanvasMap(itemId: model.id, tile: .empty)
+
+                } label: {
+                    Label { Text("Edit Tile", bundle: .module) } icon: { Image(systemName: "skew") }
+                }
+
                 Button {
                     withAnimation {
                         let entryId = root.editController.addNewEntry(itemId: model.id)
