@@ -12,7 +12,7 @@ struct ChatRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     
-    @State private var prompt: String = "Give me some dwarven names"
+    @State private var prompt: String = "Eine Zwergenfestung für Elfen erbaut, hat 7 verschieden farbige Räume. Was könnten sie bedeuten?"
     
     var body: some View {
         checkView
@@ -141,8 +141,10 @@ struct CharacterGenView: View {
         VStack(alignment: .leading) {
             Text(value.name)
                 .font(.headline)
+                .textSelection(.enabled)
             Text(value.information)
                 .foregroundStyle(.secondary)
+                .textSelection(.enabled)
             
             TagItemRow(tags: value.tags)
             
@@ -178,6 +180,7 @@ struct SegmentsView: View {
                                 CharacterGenView(value: value, level: 0)
                             } else {
                                 Text(LocalizedStringKey(sturcture.description))
+                                    .textSelection(.enabled)
                             }
                         }
                             .padding(8)
@@ -195,6 +198,7 @@ struct SegmentsView: View {
                             .cornerRadius(8)
                             .contentTransition(.interpolate)
                             .animation(.easeInOut(duration: 0.3), value: text)
+                            .textSelection(.enabled)
                     }
                     .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
                 @unknown default:
@@ -202,6 +206,7 @@ struct SegmentsView: View {
                 }
             }
         }
+        .textSelection(.enabled)
     }
 }
 

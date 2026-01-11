@@ -39,6 +39,9 @@ struct DetailListView: View {
                 navigator.navigate(to: GeneratorDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
             }
+            .onChange(of: model.id, initial: true) {
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+            }
     }
     
     func content(listController: any FolderListControllable) -> some View {
@@ -49,6 +52,7 @@ struct DetailListView: View {
             detailEditorView(model: model)
         } inspector: {
             LinkRootView(type: .inspector)
+                .environment(selection)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -57,10 +61,6 @@ struct DetailListView: View {
                 }
             }
         }
-//        .navigationDestination(for: SelectionCharacterRoute.self) { route in
-//            route
-//                .environment(root.editController.selectionReference)
-//        }
         .environment(openFileWindowModel)
         .environment(root.folderListController.cacheListItemModel)
         .environment(root.listDisplayModel)
