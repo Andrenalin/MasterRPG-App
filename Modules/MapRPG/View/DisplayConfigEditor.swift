@@ -51,8 +51,9 @@ struct DisplayConfigEditor: View {
         .onChange(of: model.displayConfig.color) {
             resetColor()
         }
-    }
-    
+    }    
+#endif
+
     private func resetColor() {
         color <=> model.displayConfig.color
     }
@@ -60,8 +61,7 @@ struct DisplayConfigEditor: View {
     private func saveColor() {
         root.editController.reset(coverColor: color, itemId: model.id)
     }
-#endif
-    
+
     @ViewBuilder var activateBorderView: some View {
         ToggleEditor(model: borderToggleEditModel, title: "Activate Border", bundle: .module, icon: "rectangle")
             .onChange(of: model.displayConfig.hasBorder) {

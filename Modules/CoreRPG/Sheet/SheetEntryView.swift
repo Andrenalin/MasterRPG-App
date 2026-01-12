@@ -22,14 +22,14 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     @Environment(\.gameModus) private var gameModus
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
-        
+    
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
                 if isEditor && entry.sheetType == .item {
                     editButton(onlyIcon: true)
                 }
-
+                
                 switch entry.sheetType {
                 case .item:
                     LinkHighlightTextView(model: model.linkTextModel(for: .entry(entry.id), text: text, shareResults: shareResult))
@@ -70,7 +70,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                     deleteButton(onlyIcon: true)
                 }
             }
-
+            
             ForEach(entry.inlineEntries) { inlineSheet in
                 switch inlineSheet.sheetType {
                 case .dice:
@@ -103,7 +103,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             }
         }
 #endif
-
+        
         
         ForEach(entry.sheetIds, id: \.self) { sheetId in
             if let sheetModel = model.sheets[sheetId] {
@@ -136,7 +136,9 @@ private extension SheetEntryView {
             }
         }
         .borderLessTVBottonStyle()
+#if !os(tvOS)
         .keyboardShortcut("e", modifiers: .shift)
+#endif
     }
     
     var duplicateButton: some View {
@@ -154,8 +156,9 @@ private extension SheetEntryView {
                 Image(systemName: "doc.on.doc")
             }
         }
-        //.borderLessTVBottonStyle()
+#if !os(tvOS)
         .keyboardShortcut("d", modifiers: .shift)
+#endif
     }
     
     var linkButton: some View {
@@ -190,9 +193,11 @@ private extension SheetEntryView {
             }
         }
         .borderLessTVBottonStyle()
+#if !os(tvOS)
         .keyboardShortcut("r", modifiers: .shift)
+#endif
     }
-
+    
     func rowColor(for level: Int) -> Color {
 #if os(macOS) || os(visionOS)
         .clear
@@ -204,7 +209,7 @@ private extension SheetEntryView {
     var shareResult: ShareValueResult {
         ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: entry.source.itemId, childId: entry.source.entryId, module: entry.source.typeId), showGame: showGame, gameModus: gameModus)
     }
-        
+    
     var text: String {
         if entry.description.isEmpty {
             entry.name
