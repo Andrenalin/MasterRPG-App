@@ -101,7 +101,7 @@ private extension CarouselItemView {
         .onChange(of: showSelection) {
             guard showSelection == false, let itemId = root.itemSelectionModel.itemId else { return }
             linkHandler(name: "", itemId: itemId, entryId: nil)
-            root.itemSelectionModel.resetSelection(itemId: nil)
+            root.itemSelectionModel.resetSelection(itemId: nil, entryId: nil)
         }
     }
     

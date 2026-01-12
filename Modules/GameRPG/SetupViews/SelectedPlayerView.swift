@@ -33,7 +33,7 @@ struct SelectedPlayerView: View {
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(2)) {
                 root.resetSelectedCharacter(uuidString: playerUUID)
-                selection.resetSelection(itemId: root.gameModel.selectedCharacter)
+                selection.resetSelection(itemId: root.gameModel.selectedCharacter, entryId: nil)
             }
         }
         .onChange(of: playerUUID, initial: true) {
@@ -44,7 +44,7 @@ struct SelectedPlayerView: View {
         }
         .onChange(of: root.gameModel.selectedCharacter, initial: false) {
             if let playerId = root.gameModel.selectedCharacter {
-                selection.resetSelection(itemId: playerId)
+                selection.resetSelection(itemId: playerId, entryId: nil)
                 playerUUID <=> playerId.uuidString
             }
         }

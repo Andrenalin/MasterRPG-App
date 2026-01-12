@@ -18,7 +18,7 @@ struct QuickEntryEditor: View {
 #if os(iOS) || os(tvOS)
             if let selectedPdf = root.editController.adventureEditModel.selectionPdf.itemId {
                 root.pdfRoot.viewController.inlineViewer(root: root.pdfRoot, with: selectedPdf, entryId: nil, withoutBookmark: true) {
-                    withAnimation { root.editController.adventureEditModel.selectionPdf.resetSelection(itemId: nil) }
+                    withAnimation { root.editController.adventureEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil) }
                 }
                 .background(.primary)
                 .pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))

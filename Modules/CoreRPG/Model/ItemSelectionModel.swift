@@ -22,33 +22,38 @@ public final class ItemSelectionModel {
     public var itemId: UUID? {
         selection.first?.itemId
     }
-    
-    public func toggleSelection(itemId: UUID, isCollection: Bool) {
+
+    public var entryId: UUID? {
+        selection.first?.entryId
+    }
+
+    public func toggleSelection(itemId: UUID, entryId: UUID?, isCollection: Bool) {
         guard allowCollections == true || isCollection == false else { return }
-        if let index = selection.firstIndex(where: { $0.itemId == itemId }) {
+        guard (onlyEntrySelection && entryId != nil) || onlyEntrySelection == false else { return }
+        if let index = selection.firstIndex(where: { $0.itemId == itemId && $0.entryId == entryId }) {
             selection.remove(at: index)
         } else {
             if isSingleSelection {
-                selection = [WindowItemSelection(itemId: itemId)]
+                selection = [WindowItemSelection(itemId: itemId, entryId: entryId)]
             } else {
-                selection.append(WindowItemSelection(itemId: itemId))
+                selection.append(WindowItemSelection(itemId: itemId, entryId: entryId))
             }
         }
     }
     
-    public func resetSelection(itemId: UUID?) {
+    public func resetSelection(itemId: UUID?, entryId: UUID?) {
         guard let itemId else {
             selection <=> []
             return
         }
-        selection <=> [WindowItemSelection(itemId: itemId)]
+        selection <=> [WindowItemSelection(itemId: itemId, entryId: entryId)]
     }
 
     public func resetSelection(selectionIds: [UUID]) {
         selection <=> selectionIds.map { WindowItemSelection(itemId: $0) }
     }
 
-    func canSelect(isCollection: Bool) -> Bool {
-        allowCollections || !isCollection
+    func canSelect(isCollection: Bool, entryId: UUID?) -> Bool {
+        (allowCollections || !isCollection) && (!onlyEntrySelection || onlyEntrySelection && entryId != nil)
     }
 }

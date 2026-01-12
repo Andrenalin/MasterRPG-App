@@ -79,7 +79,7 @@ private extension DetailListView {
                 withAnimation { root.editController.add(photoId: root.editController.adventureEditModel.selectionPhoto.itemId, itemId: model.id) }
             }
             .onChange(of: model.photoId, initial: true) {
-                withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
+                withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil) }
             }
         
         SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Sections").localizedString, linkTypes: LinkAdventureModuleTransferable.self)

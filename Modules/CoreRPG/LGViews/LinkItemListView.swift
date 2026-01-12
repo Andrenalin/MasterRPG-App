@@ -155,9 +155,9 @@ private extension LinkItemListView {
                 }
             }
             .selectListItem(isActive: isSelectionActive(item: item)) {
-                withAnimation { selectionModel.toggleSelection(itemId: item.model.id, isCollection: item.model.specialCategory) }
+                withAnimation { selectionModel.toggleSelection(itemId: item.model.id, entryId: item.entryId, isCollection: item.model.specialCategory) }
             } isSelected: {
-                selectionModel.itemId == item.model.id
+                selectionModel.itemId == item.model.id && selectionModel.entryId == item.entryId
             }
             .padding(.leading, CGFloat(item.level * 16))
             .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
@@ -166,7 +166,7 @@ private extension LinkItemListView {
     }
     
     func isSelectionActive(item: ListItemModel) -> Bool {
-        (type == .selection || type == .selectionInline) && selectionModel.canSelect(isCollection: item.model.specialCategory)
+        (type == .selection || type == .selectionInline) && selectionModel.canSelect(isCollection: item.model.specialCategory, entryId: item.entryId)
     }
     
     func itemRow(item: ListItemModel) -> some View {

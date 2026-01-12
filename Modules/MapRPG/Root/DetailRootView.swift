@@ -82,7 +82,7 @@ private extension DetailListView {
                 withAnimation { root.editController.add(photoId: root.editController.mapEditModel.selectionPhoto.itemId, itemId: model.id) }
             }
             .onChange(of: model.photoId, initial: true) {
-                withAnimation { root.editController.mapEditModel.selectionPhoto.resetSelection(itemId: model.photoId) }
+                withAnimation { root.editController.mapEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil) }
             }
         
         DisplayConfigEditor(model: model)

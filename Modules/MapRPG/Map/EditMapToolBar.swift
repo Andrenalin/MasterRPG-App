@@ -89,7 +89,7 @@ struct EditToolBarViewModifier: ViewModifier {
                 guard !showPinSelection, !selectedPin.selection.isEmpty, let mapModel = model.mapModel else { return }
                 let entryId = editController.editorModel.currentEntryId
                 withAnimation { editController.addMonsters(map: mapModel, entryId: entryId, location: nil, monsters: selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }, number: 1) }
-                selectedPin.resetSelection(itemId: nil)
+                selectedPin.resetSelection(itemId: nil, entryId: nil)
             }
         #if os(macOS)
             .navigationTitle(navTitle)

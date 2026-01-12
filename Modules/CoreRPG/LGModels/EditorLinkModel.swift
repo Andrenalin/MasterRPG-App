@@ -147,6 +147,6 @@ public final class EditorLinkModel {
             let name = rootController.itemControllable.itemOrEmpty(for: item.itemId).name.withoutLink()
             editController.add(link: name, module: module, itemId: item.itemId, entryId: item.entryId, destinationItemId: destiantionItemId, destinationEntryId: destinationEntryId)
         }
-        model.resetSelection(itemId: nil)
+        model.resetSelection(itemId: nil, entryId: nil)
     }
 }

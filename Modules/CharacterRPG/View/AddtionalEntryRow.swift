@@ -12,14 +12,15 @@ struct AddtionalEntryRow: View, Equatable {
     var body: some View {
         let _ = Self._printChanges()
         VStack(alignment: .leading) {
-            HStack {
+            HStack(spacing: 4) {
                 
                 Image(systemName: entry.type.icon)
-                    .imageScale(.large)
+                    .imageScale(.small)
                     .foregroundStyle(.foreground, .tint)
                     .padding(4)
                     .background {
-                        Circle().fill(root.configurable.module.tint.opacity(0.3))
+                        Circle().stroke(
+                            root.configurable.module.tint.opacity(0.3))
                     }
                 
                 if let textModel {
@@ -55,5 +56,5 @@ struct AddtionalEntryRow: View, Equatable {
 #Preview(traits: .mockData) {
     @Previewable @Environment(CharacterRootModel.self) var root
     
-    AddtionalEntryRow(source: ItemRowModel(itemId: root.itemController.itemDataModel.items.first!, entryId: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first!).entries[0].id, typeId: .value), textModel: nil)
+    AddtionalEntryRow(source: ItemRowModel(itemId: root.itemController.itemDataModel.items.first!, entryId: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first!).entries[0].id, typeId: .value), textModel: LinkHighlightTextModel(linkControllable: nil, text: "Hello Links", highlightedText: "in", toggler: nil, shareResult: nil, editAction: nil))
 }

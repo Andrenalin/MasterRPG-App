@@ -33,7 +33,7 @@ struct SelectedAdventureView: View {
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(2)) {
                 root.resetSelectedAdventure(uuidString: lastAdventureUUID)
-                selection.resetSelection(itemId: root.gameModel.selectedAdventure)
+                selection.resetSelection(itemId: root.gameModel.selectedAdventure, entryId: nil)
             }
         }
         .onChange(of: lastAdventureUUID, initial: true) {
@@ -44,7 +44,7 @@ struct SelectedAdventureView: View {
         }
         .onChange(of: root.gameModel.selectedAdventure) {
             if let adventureId = root.gameModel.selectedAdventure {
-                selection.resetSelection(itemId: adventureId)
+                selection.resetSelection(itemId: adventureId, entryId: nil)
                 lastAdventureUUID <=> adventureId.uuidString
             }
         }
