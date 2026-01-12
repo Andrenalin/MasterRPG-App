@@ -210,14 +210,7 @@ public extension LinkController {
 extension LinkController {
     @MainActor
     public func validate(id: UUID?, isCharacter: Bool = false, isGameMaster: Bool = false) -> UUID? {
-        guard let validId = itemController.itemDataModel.items.first(where: { $0 == id }) else { return nil }
-        if isCharacter {
-            return itemController.itemSync(for: validId)?.category == .character ? validId : nil
-        }
-        if isGameMaster {
-            return itemController.itemSync(for: validId)?.category == .gameMaster ? validId : nil
-        }
-        return validId
+        itemController.itemDataModel.items.first(where: { $0 == id })
     }
     
     @MainActor

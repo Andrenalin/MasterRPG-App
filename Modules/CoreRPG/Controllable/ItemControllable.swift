@@ -16,6 +16,7 @@ public protocol ItemControllable: Sendable  {
     var itemDataModel: ItemDataModel { get }
     
     @MainActor func children(itemId: UUID) -> [Model]
+    @MainActor func subChildren(itemId: UUID, entryId: UUID?) -> [Model]
 }
 
 // MARK: - Configuration
@@ -205,6 +206,8 @@ public extension ItemControllable {
         }
     }
     
+    @MainActor func subChildren(itemId: UUID, entryId: UUID?) -> [Model] { return [] }
+        
     func item(for itemId: UUID) async -> Model? {
         await itemDataModel.item(for: itemId) as? Model
     }

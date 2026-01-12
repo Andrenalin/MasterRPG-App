@@ -142,10 +142,14 @@ private extension LinkItemListView {
         ForEach(listModel.displayedItems) { item in
             Group {
                 if let entryId = item.entryId {
-                    EntryRowView(root: root, item: item)
-                        .contentShape(.rect)
+                    HStack {
+                        EntryRowView(root: root, item: item)
+                        
+                        specialCategoryFolderIndicator(item: item)
+                    }
+                    .contentShape(.rect)
 #if !os(tvOS)
-                        .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name)
+                    .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name)
 #endif
                 } else {
                     itemRow(item: item)
@@ -221,6 +225,6 @@ private extension LinkItemListView {
     }
     
     func showFolderIndicator(item: ListItemModel) -> Bool {
-        item.model.specialCategory || (selectionModel.allowEntrySelection && !item.model.entries.isEmpty)
+        item.model.specialCategory || (selectionModel.allowEntrySelection && !item.model.entries.isEmpty && item.entryId == nil) || !root.itemControllable.subChildren(itemId: item.model.id, entryId: item.entryId).isEmpty
     }
 }

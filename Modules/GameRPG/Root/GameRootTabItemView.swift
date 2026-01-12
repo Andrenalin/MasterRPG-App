@@ -6,7 +6,6 @@ import SwiftUI
 struct GameRootTabItemView: View {
     let root: GameRoot
 
-    @Environment(\.wideMode) private var wideMode
 #if os(macOS)
     @Environment(\.openWindow) private var openWindow
 #endif
@@ -19,18 +18,17 @@ struct GameRootTabItemView: View {
             
             ScrollView {
 #if os(macOS)
-                if wideMode != .small {
-                    Button {
-                        withAnimation {
-                            openWindow(id: WindowIdentifier.editor.rawValue)
-                        }
-                    } label: {
-                        Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }
+                Button {
+                    withAnimation {
+                        openWindow(id: WindowIdentifier.editor.rawValue)
                     }
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                } label: {
+                    Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }
                 }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .trailing)
 #endif
+                
                 GameOptionView(root: root)
             }
             .task {

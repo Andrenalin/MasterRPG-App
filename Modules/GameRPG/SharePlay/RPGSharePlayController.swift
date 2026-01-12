@@ -1,12 +1,12 @@
 // @copyright André Trettin
 
-import CoreRPG
+import AudioRPG
 import AVFoundation
+import CoreRPG
 import Combine
 import Foundation
-@preconcurrency import GroupActivities
+import GroupActivities
 import os.log
-import AudioRPG
 import SwiftUI
 
 protocol SharePlayControllerDelegate: AnyObject {
@@ -20,8 +20,7 @@ enum RPGSharePlay {
     static let store = RPGSharePlayController()
 }
 
-@MainActor
-@Observable
+@MainActor @Observable
 final class RPGSharePlayController {
     var groupSession: GroupSession<RPGActivity>?
     var isActive: Bool = false

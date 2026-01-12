@@ -18,7 +18,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
     @Environment(\.colorScheme) private var colorScheme
     
     public var body: some View {
-        if model.sheetModel.showHeader {
+        if model.sheetModel.showHeader || isEditor {
             HStack {
                 if isEditor && model.sheetModel.canAdd {
                     plusButton

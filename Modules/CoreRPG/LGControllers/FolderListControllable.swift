@@ -116,7 +116,11 @@ extension FolderListControllable {
     }
     
     func toggleFolder(item: ListItemModel) {
-        listModel.toggleFolder(itemId: item.model.id)
+        var accessId = item.model.id
+        if let entryId = item.entryId, let subItemId = itemControllable.subChildren(itemId: item.model.id, entryId: entryId).first?.id {
+            accessId = subItemId
+        }
+        listModel.toggleFolder(itemId: accessId)
         item.isOpen.toggle()
         resetFilter()
     }
