@@ -21,13 +21,13 @@ struct QuickEntryEditor: View {
                     withAnimation { root.editController.tableEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil) }
                 }
                 .background(.primary)
-                .pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
+//                .pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
             }
 #endif
         }
     }
     
-    private func usePdfSelection(selection: NSAttributedString) {
-        withAnimation { referenceText.input.append(selection.string) }
-    }
+//    private func usePdfSelection(selection: NSAttributedString) {
+//        withAnimation { referenceText.input.append(selection.string) }
+//    }
 }

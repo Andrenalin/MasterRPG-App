@@ -16,13 +16,6 @@ public struct PdfViewerActions {
     public let selectedText: ((NSAttributedString) -> Void)?
 }
 
-struct PdfViewerActionsKey: EnvironmentKey {
-    static var defaultValue: PdfViewerActions { PdfViewerActions() }
-}
-
 extension EnvironmentValues {
-    var pdfViewerActions: PdfViewerActions {
-        get { self[PdfViewerActionsKey.self] }
-        set { self[PdfViewerActionsKey.self] = newValue }
-    }
+    @Entry var pdfViewerActions: PdfViewerActions = PdfViewerActions()
 }

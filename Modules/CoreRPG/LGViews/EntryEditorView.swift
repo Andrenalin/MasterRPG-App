@@ -20,7 +20,10 @@ public struct EntryEditorView: View {
         Group {
             if isActive {
                 content(entry: entry)
-                    .onAppear {
+                    .onChange(of: entry.content, initial: true) {
+                        editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, typeId: editController.itemControllable.config.module))
+                    }
+                    .onChange(of: entry.name) {
                         editModel.reset(entry: entry, source: ItemRowModel(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, typeId: editController.itemControllable.config.module))
                     }
             }

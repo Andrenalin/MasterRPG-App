@@ -71,15 +71,6 @@ extension EditController {
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
         EditorRoute.linkSelection(itemRowModel)
     }
-
-    public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
-        switch module {
-        case .dice:
-            SelectionDiceRoute.selection
-        default:
-            SelectionTableRoute.selection
-        }
-    }
 }
 
 // MARK: - Module Editor

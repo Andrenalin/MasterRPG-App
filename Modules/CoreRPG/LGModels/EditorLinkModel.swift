@@ -142,11 +142,13 @@ public final class EditorLinkModel {
     private func addLinkAndReset(editController: any EntryDataEditable, destiantionItemId: UUID, destinationEntryId: UUID, module: NetworkModules) {
         guard let rootController = rootManager.itemRootController(for: module) else { return }
 
-        let model = selectionModel(for: module)
-        for item in model.selection {
-            let name = rootController.itemControllable.itemOrEmpty(for: item.itemId).name.withoutLink()
-            editController.add(link: name, module: module, itemId: item.itemId, entryId: item.entryId, destinationItemId: destiantionItemId, destinationEntryId: destinationEntryId)
+        let selection = selectionModel(for: module)
+        for itemSelection in selection.selection {
+            let item = rootController.itemControllable.itemOrEmpty(for: itemSelection.itemId)
+            let entryId = itemSelection.entryId
+            let name = entryId == nil ? item.urlName() : item.urlName(entryId: entryId!)
+            editController.add(link: name, module: module, itemId: itemSelection.itemId, entryId: itemSelection.entryId, destinationItemId: destiantionItemId, destinationEntryId: destinationEntryId)
         }
-        model.resetSelection(itemId: nil, entryId: nil)
+        selection.resetSelection(itemId: nil, entryId: nil)
     }
 }

@@ -125,6 +125,23 @@ private extension DetailListView {
                         Image(systemName: "note.text.badge.plus")
                     }
                 }
+
+                Button {
+                    root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+                    let itemId = model.id
+                    Task {
+                        let entryId = await root.editController.addNewGroup(itemId: itemId)
+                        withAnimation {
+                            root.editController.editorModel.currentEntryId = entryId
+                        }
+                    }
+                } label: {
+                    Label {
+                        Text("Add new Group", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus.square.fill.on.square.fill")
+                    }
+                }
             }
         }
 #if os(iOS)

@@ -81,9 +81,6 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
 #if !os(tvOS)
                 .toolbarRole(.editor)
 #endif
-//                .onChange(of: model, initial: true) {
-//                    model = editController.model.copy()
-//                }
         }
 #if os(macOS)
         .frame(minWidth: 800, minHeight: 600)

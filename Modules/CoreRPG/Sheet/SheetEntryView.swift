@@ -89,6 +89,9 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 guard let editController = root.editControllable as? (any EntryDataEditable), let entryId = entry.source.entryId else { return }
                 items.forEach {
                     editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: entry.source.itemId, destinationEntryId: entryId)
+                    withAnimation {
+                        model.update(entryId: entryId)
+                    }
                 }
             }
             .contextMenu {
@@ -164,7 +167,7 @@ private extension SheetEntryView {
     var linkButton: some View {
         Button {
             guard let entryEditable, let entryId = entry.source.entryId else { return }
-            navigator.navigate(to: entryEditable.linkSelectionDestination(itemRowModel: ItemRowModel(itemId: entry.source.itemId, entryId: entryId, typeId: entry.source.typeId)), method: .sheet)
+            navigator.navigate(to: entryEditable.linkSelectionDestination(itemRowModel: ItemRowModel(itemId: entry.source.itemId, entryId: entryId, typeId: entry.source.typeId)), method: .managedSheet)
         } label: {
             Label {
                 Text("Add Links", bundle: .module)

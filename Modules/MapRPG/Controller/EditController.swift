@@ -76,15 +76,6 @@ extension EditController: EntryDataEditable {
         EditorRoute.linkSelection(itemRowModel)
     }
     
-    public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
-        switch module {
-        case .dice:
-            SelectionDiceRoute.selection
-        default:
-            SelectionTableRoute.selection
-        }
-    }
-
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
         module == .audio || (module == .value && entryId == nil) || module == .dice || module == .map || module == .pdf || module == .photo || (module == .table && entryId == nil)
     }

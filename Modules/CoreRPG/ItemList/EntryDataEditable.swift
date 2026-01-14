@@ -24,7 +24,6 @@ public protocol EntryDataEditable: EditControllable {
         
     var linkModules: [NetworkModules] { get }
     func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination
-    func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination
     
     var thumbnailEntryViewType: ThumbnailEntryViewType { get }
     var additioanlEnrtryViewType: AdditionalEntryViewType { get }
@@ -38,6 +37,10 @@ public protocol EntryDataEditable: EditControllable {
     @MainActor func create(name: String, content: String) -> Model.Entry
     @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
     @MainActor func remove(itemId: UUID, entryId: UUID)
+    
+    // MARK: - Entry Editor
+    
+    @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String)
 }
 
 public extension EntryDataEditable {
@@ -154,6 +157,10 @@ public extension EntryDataEditable {
     }
     
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
+        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content)
+    }
+    
+    @MainActor func updateDefault(itemId: UUID, entryId: UUID, name: String, content: String) {
         guard var item = editModel(for: itemId) else { return }
         var changed = item[entryId].name != name.withoutLink()
         item[entryId].name <=> name.withoutLink()

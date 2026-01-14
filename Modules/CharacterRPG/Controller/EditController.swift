@@ -141,15 +141,6 @@ extension EditController {
         EditorRoute.linkSelection(itemRowModel)
     }
     
-    public func linkSelectionDestination(for module: NetworkModules) -> any NavigationDestination {
-        switch module {
-        case .dice:
-            SelectionDiceRoute.selection
-        default:
-            SelectionTableRoute.selection
-        }
-    }
-    
     @MainActor public func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {
         guard let item = editModel(for: itemId) else { return "" }
         return root.linkController.linkText(model: item, entryId: entry.id)
@@ -178,6 +169,27 @@ extension EditController {
         editModel.diceId = diceId
         save(updated: editModel, message: String(localized: "Change Dice").localizedString)
         //root.gameController.resetGameDiceId(itemId: model.id, entryId: entryId)
+    }
+    
+    @MainActor func addNewGroup(itemId: UUID) async -> UUID {
+        let groupId = await itemController.addNew(type: .item)
+        reset(hidden: true, itemId: groupId)
+        guard let group = editModel(for: groupId) else { return groupId }
+        group.parentId = itemId
+        save(updated: group, message: String(localized: "prepare group").localizedString)
+        var entry = Model.Entry.empty
+        entry.name = group.name
+        entry.valueId = groupId
+        add(entry: entry, itemId: itemId)
+        return entry.id
+    }
+    
+    @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
+        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content)
+        guard let item = editModel(for: itemId), let valueId = item[entryId].valueId else { return }
+        let fixedName = name.withoutLink()
+        reset(name: fixedName, itemId: valueId)
+        reset(description: content, itemId: valueId)
     }
 }
 
