@@ -14,7 +14,7 @@ struct AddtionalEntryRow: View, Equatable {
         VStack(alignment: .leading) {
             HStack(spacing: 4) {
                 
-                Image(systemName: entry.type.icon)
+                Image(systemName: typeIcon)
                     .imageScale(.small)
                     .foregroundStyle(.foreground, .tint)
                     .padding(4)
@@ -46,6 +46,13 @@ struct AddtionalEntryRow: View, Equatable {
     
     private var entryId: UUID {
         source.entryId ?? UUID()
+    }
+    
+    private var typeIcon: String {
+        guard entry.valueId != nil else {
+            return entry.type.icon
+        }
+        return "square.on.square.squareshape.controlhandles"
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

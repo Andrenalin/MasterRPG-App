@@ -29,27 +29,29 @@ public final class FolderListModel {
     // MARK: - List navigation
     public var selectedParentId: UUID?
     public var lastFolderId: UUID?
-    private var subItemModels: [UUID: ListSubItemModel] = [:]
+    private var subItemModels: [UUID: [UUID: ListSubItemModel]] = [:]
     var level: Int = 0
         
-    public func isFolderOpen(itemId: UUID) -> Bool {
-        subItemModels[itemId]?.isOpen ?? false
+    public func isFolderOpen(itemId: UUID, entryId: UUID?) -> Bool {
+        if let models = subItemModels[itemId], let model = models[entryId ?? itemId] {
+            return model.isOpen
+        }
+        return false
     }
     
-    func toggleFolder(itemId: UUID) {
-        guard let model = subItemModels[itemId] else {
-            subItemModels[itemId] = ListSubItemModel(id: itemId, isOpen: true, level: level)
-            return
-        }
+    func toggleFolder(itemId: UUID, entryId: UUID?) {
+        let model = subItemModel(for: itemId, entryId: entryId, isOpen: true, level: level)
         model.isOpen.toggle()
     }
     
-    func subItemModel(for itemId: UUID) -> ListSubItemModel {
-        if let model = subItemModels[itemId] {
+    func subItemModel(for itemId: UUID, entryId: UUID?, isOpen: Bool, level: Int) -> ListSubItemModel {
+        if let models = subItemModels[itemId], let model = models[entryId ?? itemId] {
            return model
         }
-        let model = ListSubItemModel(id: itemId, level: level + 1)
-        subItemModels[itemId] = model
+        let model = ListSubItemModel(id: itemId, entryId: entryId, isOpen: isOpen, level: level)
+        var models = subItemModels[itemId, default: [:]]
+        models[entryId ?? itemId] = model
+        subItemModels[itemId] = models
         return model
     }
         
@@ -162,13 +164,15 @@ public extension FolderListModel {
 
 @Observable
 final class ListSubItemModel {
-    init(id: UUID, isOpen: Bool = false, level: Int = 0) {
+    init(id: UUID, entryId: UUID?, isOpen: Bool = false, level: Int = 0) {
         self.id = id
+        self.entryId = entryId
         self.isOpen = isOpen
         self.level = 0
     }
     
-    var id: UUID
+    let id: UUID
+    let entryId: UUID?
     var isOpen: Bool
     let level: Int
 }

@@ -54,7 +54,7 @@ public extension FolderListControllable {
         }
             
         let updatedItems = currentItems.enumerated().map { (index, model) in
-            map(model: model, index: index, level: 0)
+            map(model: model, entryId: nil, index: index, level: 0)
         }
         listModel.originalItems <=> updatedItems
         return updatedItems
@@ -107,7 +107,7 @@ extension FolderListControllable {
     func filterSub(item: ListItemModel, index: Int, level: Int) -> [ListItemModel] {
         guard let itemModel = filter(item: item, level: item.level) else { return [] }
         if itemModel.isOpen {
-            let newItems = mapSub(model: itemModel.model, index: index, level: itemModel.level)
+            let newItems = mapSub(model: itemModel.model, entryId: item.entryId, index: index, level: itemModel.level)
             return [itemModel] + newItems.enumerated().flatMap { (index, item) in
                 filterSub(item: item, index: index, level: item.level)
             }
@@ -116,11 +116,7 @@ extension FolderListControllable {
     }
     
     func toggleFolder(item: ListItemModel) {
-        var accessId = item.model.id
-        if let entryId = item.entryId, let subItemId = itemControllable.subChildren(itemId: item.model.id, entryId: entryId).first?.id {
-            accessId = subItemId
-        }
-        listModel.toggleFolder(itemId: accessId)
+        listModel.toggleFolder(itemId: item.model.id, entryId: item.entryId)
         item.isOpen.toggle()
         resetFilter()
     }
@@ -161,20 +157,27 @@ private extension FolderListControllable {
         item.model.description.localizedStandardContains(searchModel.searchText) ? item : nil
     }
     
-    func map(model: any ItemDataAccessable, index: Int, level: Int) -> ListItemModel {
-        let folderOpened = model.specialCategory ? listModel.isFolderOpen(itemId: model.id) : false
-        return ListItemModel(id: "\(level)-\(index)-\(model.id)", model: model, isOpen: folderOpened, level: level)
+    func map(model: any ItemDataAccessable, entryId: UUID?, index: Int, level: Int) -> ListItemModel {
+        let folderOpened = model.specialCategory ? listModel.isFolderOpen(itemId: model.id, entryId: entryId) : false
+        return ListItemModel(id: "\(level)-\(index)-\(model.id)", model: model, isOpen: folderOpened, entryId: entryId, level: level)
     }
     
-    func mapSub(model: any ItemDataAccessable, index: Int, level: Int) -> [ListItemModel] {
+    func mapSub(model: any ItemDataAccessable, entryId: UUID?, index: Int, level: Int) -> [ListItemModel] {
+        if let entryId {
+            if let model = itemControllable.subChildren(itemId: model.id, entryId: entryId).first {
+                return mapSub(model: model, entryId: nil, index: 0, level: level + 1)
+            }
+            return []
+        }
         guard model.specialCategory else {
             return model.entries.enumerated().map { (subIndex, subModel) in
-                ListItemModel(id: "\(level)-\(subIndex)-\(subModel.id)", model: model, isOpen: false, entryId: subModel.id, level: level + 1)
+                let folderOpened = listModel.isFolderOpen(itemId: model.id, entryId: subModel.id)
+                return ListItemModel(id: "\(level)-\(subIndex)-\(subModel.id)", model: model, isOpen: folderOpened, entryId: subModel.id, level: level + 1)
             }
         }
         let subModels = model.entries.compactMap { itemControllable.itemSync(for: $0.childId ) }
         return subModels.enumerated().map { (subIndex, subModel) in
-            map(model: subModel, index: subIndex, level: level + 1)
+            map(model: subModel, entryId: entryId, index: subIndex, level: level + 1)
         }
     }
 }
