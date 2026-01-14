@@ -80,10 +80,16 @@ struct EditToolBarViewModifier: ViewModifier {
                 .padding(.bottom, bottomPadding)
             }
             .sheet(isPresented: $showPinSelection) {
-                    root.viewController.characterSelection(root: root, selectionModel: selectedPin)
+                root.viewController.characterSelection(root: root, selectionModel: selectedPin)
 #if !os(macOS)
                 .navigationTransition(.zoom(sourceID: "pin", in: pinSpace))
 #endif
+            }
+            .onChange(of: model.pinScale, initial: true) {
+                pinScale <=> model.pinScale
+            }
+            .onChange(of: model.hexScale, initial: true) {
+                hexScale <=> model.hexScale
             }
             .onChange(of: showPinSelection, initial: false) {
                 guard !showPinSelection, !selectedPin.selection.isEmpty, let mapModel = model.mapModel else { return }
@@ -107,10 +113,12 @@ struct EditToolBarViewModifier: ViewModifier {
 #else
                 ToolbarItem(placement: titlePlacement) {
                     Text(titlename)
+                        .foregroundStyle(.white)
                 }
                 
                 ToolbarItem(placement: subtitlePlacement) {
                     Text(subtitleName)
+                        .foregroundStyle(.white)
                 }
 #endif
                 
@@ -250,6 +258,7 @@ private extension EditToolBarViewModifier {
         HStack {
 #if !os(tvOS)
             Text("Pin Scale", bundle: .module)
+                .foregroundStyle(.white)
             
             Slider(value: $pinScale, in: 0.5 ... 3.5) {
                 Text("Pin Scale", bundle: .module)
@@ -268,6 +277,7 @@ private extension EditToolBarViewModifier {
         HStack {
 #if !os(tvOS)
             Text("Hex Scale", bundle: .module)
+                .foregroundStyle(.white)
             
             Slider(value: $hexScale, in: 20 ... 200) {
                 Text("Hex Scale", bundle: .module)

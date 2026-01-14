@@ -25,6 +25,17 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     
     var body: some View {
         VStack(alignment: .leading) {
+            ForEach(entry.inlineEntries) { inlineSheet in
+                switch inlineSheet.sheetType {
+                case .photoInline:
+                    root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
+                        .frame(height: 96)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                default:
+                    EmptyView()
+                }
+            }
+
             HStack {
                 if isEditor && entry.sheetType == .item {
                     editButton(onlyIcon: true)
@@ -55,17 +66,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 case .photoInline:
                     EmptyView()
                 }
-                
-                ForEach(entry.inlineEntries) { inlineSheet in
-                    switch inlineSheet.sheetType {
-                    case .photoInline:
-                        root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
-                            .frame(height: 96)
-                    default:
-                        EmptyView()
-                    }
-                }
-                
+                                
                 if isEditor && entry.sheetType == .item {
                     deleteButton(onlyIcon: true)
                 }
