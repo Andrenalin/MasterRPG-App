@@ -73,6 +73,9 @@ public extension EditControllable {
         guard var item = editModel(for: itemId) else { return }
         let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
         guard item.tags != sortedTags else { return }
+        let addedTags = Array(Set(sortedTags).subtracting(item.tags))
+        let removedTags = Array(Set(item.tags).subtracting(sortedTags))
+        updateTags(addedTags: addedTags, removedTags: removedTags)
         item.tags = sortedTags
         save(updated: item, message: String(localized: "Changed tags").localizedString)
     }
@@ -97,6 +100,7 @@ public extension EditControllable {
         guard !item.tags.contains(where: { $0 == tag }) else { return }
         var tags = item.tags
         tags.append(tag)
+        updateTags(addedTags: [tag], removedTags: [])
         item.tags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
         save(updated: item, message: String(localized: "Add \(tag)").localizedString)
     }
@@ -107,7 +111,12 @@ public extension EditControllable {
         guard let index = tags.firstIndex(of: tag) else { return }
         tags.remove(at: index)
         item.tags = tags
+        updateTags(addedTags: [], removedTags: [tag])
         save(updated: item, message: String(localized: "Remove \(tag)").localizedString)
+    }
+    
+    @MainActor private func updateTags(addedTags: [String], removedTags: [String]) {
+        tagController.add(tags: addedTags, module: itemControllable.config.module)
     }
 }
 
@@ -224,6 +233,7 @@ public extension EditControllable {
                 save(updated: entryItem, message: String(localized: "Remove parent").localizedString)
             }
         }
+        tagController.remove(tags: item.tags, module: itemControllable.config.module)
         item.displayState = 2
         save(updated: item, message: String(localized: "Delete").localizedString)
     }
@@ -244,6 +254,7 @@ public extension EditControllable {
     
     @MainActor func markForDeletion(itemId: UUID) {
         guard var item = editModel(for: itemId) else { return }
+        tagController.remove(tags: item.tags, module: itemControllable.config.module)
         item.displayState = 2
         save(updated: item, message: String(localized: "Delete").localizedString)
     }
@@ -259,6 +270,7 @@ public extension EditControllable {
                 save(updated: entryItem, message: String(localized: "Restore parent").localizedString)
             }
         }
+        tagController.add(tags: item.tags, module: itemControllable.config.module)
         item.displayState = 0
         save(updated: item, message: String(localized: "Restore item").localizedString)
     }

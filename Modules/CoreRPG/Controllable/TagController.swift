@@ -27,7 +27,7 @@ public struct TagController: Sendable {
     @MainActor public func setup(context: NSManagedObjectContext) {
         model.context = context
         
-        Task {
+        Task.detached(priority: .userInitiated) {
             await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
@@ -45,12 +45,30 @@ public struct TagController: Sendable {
         }
     }
     
-    public func add(tag: String, module: NetworkModules) {
-        
+    @MainActor public func add(tags: [String], module: NetworkModules) {
+        var storedTags = model.tags[module, default: [:]]
+        for tag in tags {
+            var tagModel = storedTags[tag, default: TagModel(module: module, title: tag, count: 0)]
+            tagModel.count += 1
+            storedTags[tag] = tagModel
+            updateDatabase(tag: tag, count: tagModel.count, module: module)
+        }
+        model.tags[module] = storedTags
     }
     
-    public func remove(tag: String, module: NetworkModules) {
-        
+    @MainActor public func remove(tags: [String], module: NetworkModules) {
+        var storedTags = model.tags[module, default: [:]]
+        for tag in tags {
+            guard var tagModel = storedTags[tag] else { continue }
+            tagModel.count -= 1
+            if tagModel.count > 0 {
+                storedTags[tag] = tagModel
+            } else {
+                storedTags[tag] = nil
+            }
+            updateDatabase(tag: tag, count: tagModel.count, module: module)
+        }
+        model.tags[module] = storedTags
     }
     
     private func update(tag: String, count: Int, module: NetworkModules) {
@@ -66,16 +84,25 @@ public struct TagController: Sendable {
         tags[tag] = TagModel(module: module, title: tag, count: count)
         model.tags[module] = tags
         
+        updateDatabase(tag: tag, count: count, module: module)
+    }
+    
+    @MainActor private func updateDatabase(tag: String, count: Int, module: NetworkModules) {
         guard let context = model.context else { return }
-        Task  {
+        Task.detached(priority: .userInitiated) {
             await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
                     request.predicate = NSPredicate(format: "module == %@ AND title == %@", NSNumber(value: module.rawValue), tag as CVarArg)
                     let tagModels = try context.fetch(request)
                     if let tagModel = tagModels.first as? TagDataModel {
-                        tagModel.count = Int32(count)
+                        if count > 0 {
+                            tagModel.count = Int32(count)
+                        } else {
+                            context.delete(tagModel)
+                        }
                     } else {
+                        guard count > 0 else { return }
                         let tagModel = TagDataModel(context: context)
                         tagModel.module = Int16(module.rawValue)
                         tagModel.title = tag
