@@ -9,7 +9,7 @@ import SwiftUI
 
 @Observable
 public final class WeatherRootModel: @unchecked Sendable {
-    @MainActor init(container: ModelContainer, photoRoot: PhotoRootModel) {
+    @MainActor init(tagController: TagController, photoRoot: PhotoRootModel) {
         self.photoRoot = photoRoot
         
         let config = ModuleConfiguration()
@@ -17,7 +17,7 @@ public final class WeatherRootModel: @unchecked Sendable {
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()

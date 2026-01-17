@@ -2,15 +2,13 @@
 
 import CoreRPG
 import Foundation
-import SwiftData
 import RPGResources
 import PhotoRPG
 
 public extension WeatherRootModel {
     @MainActor
     static let preview: WeatherRootModel = {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = WeatherRootModel(container: modelContainer, photoRoot: PhotoFactory.root(container: modelContainer))
+        let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
         root.photoRoot.setUp(context: nil, rootControllable: root.photoRoot)
         root.setUp(context: nil, rootControllable: root)
         root.editController.setCurrentItem(to: .preview)
@@ -43,8 +41,7 @@ public extension WeatherRootModel {
 #if DEBUG
     @MainActor
     static func testRoot(photoRoot: PhotoRootModel) -> WeatherRootModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = WeatherRootModel(container: modelContainer, photoRoot: PhotoFactory.root(container: modelContainer))
+        let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
         root.photoRoot.setUp(context: nil, rootControllable: root.photoRoot)
         root.setUp(context: nil, rootControllable: root)
         return root

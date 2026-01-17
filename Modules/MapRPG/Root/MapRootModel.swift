@@ -21,7 +21,7 @@ public final class RootModel: Sendable {
 public final class MapRootModel: @unchecked Sendable {
     
     @MainActor
-    init(container: ModelContainer, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel) {
+    init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel) {
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
@@ -36,7 +36,7 @@ public final class MapRootModel: @unchecked Sendable {
 
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()

@@ -69,6 +69,8 @@ public final class AppModel: Sendable {
 #if !os(tvOS)
     @ObservationIgnored public let generatorRoot: GeneratorRootModel
 #endif
+    
+    @ObservationIgnored let tagController: TagController
 
     private let root: RootManager
     
@@ -91,21 +93,22 @@ public final class AppModel: Sendable {
             )
         )
         
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let tagController = TagController()
+        self.tagController = tagController
         
-        let diceRoot = DiceFactory.root(container: modelContainer)
-        let photoRoot = PhotoFactory.root(container: modelContainer)
-        let audioRoot = AudioFactory.root(container: modelContainer)
-        let pdfRoot = PdfFactory.root(container: modelContainer)
-        let spaceRoot = SpaceFactory.root(container: modelContainer)
+        let diceRoot = DiceFactory.root(tagController: tagController)
+        let photoRoot = PhotoFactory.root(tagController: tagController)
+        let audioRoot = AudioFactory.root(tagController: tagController)
+        let pdfRoot = PdfFactory.root(tagController: tagController)
+        let spaceRoot = SpaceFactory.root(tagController: tagController)
         
-        let tableRoot = TableFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot)
-        let weatherRoot = WeatherRootFactory.root(container: modelContainer, photoRoot: photoRoot)
+        let tableRoot = TableFactory.root(tagController: tagController, diceRoot: diceRoot, pdfRoot: pdfRoot)
+        let weatherRoot = WeatherRootFactory.root(tagController: tagController, photoRoot: photoRoot)
         
-        let characterRoot = CharacterRootFactory.root(container: modelContainer, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+        let characterRoot = CharacterRootFactory.root(tagController: tagController, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         
-        let mapRoot = MapRootFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot)
-        let adventureRoot = AdventureFactory.root(container: modelContainer, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
+        let mapRoot = MapRootFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot)
+        let adventureRoot = AdventureFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
         let gameRoot = GameRoot(adventureRoot: adventureRoot, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
         
         self.adventureRoot = adventureRoot
@@ -137,7 +140,7 @@ public final class AppModel: Sendable {
         
 #else
         
-        let generatorRoot = GeneratorRootFactory.rootModel(container: modelContainer)
+        let generatorRoot = GeneratorRootFactory.rootModel(tagController: tagController)
         self.generatorRoot = generatorRoot
 
         root = RootManager(
@@ -155,6 +158,7 @@ public final class AppModel: Sendable {
         )
 #endif
         
+        let modelContainer = try! ModelContainer(for: LinkDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         self.linkRootController = LinkRootController(container: modelContainer, root: root)
     }
 }
@@ -242,6 +246,7 @@ extension AppModel {
 
 extension AppModel {
     @MainActor public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
+        tagController.setup(context: context)
         adventureRoot.setUp(context: context)
         #if !os(tvOS)
         generatorRoot.setUp(context: context, rootControllable: adventureRoot)

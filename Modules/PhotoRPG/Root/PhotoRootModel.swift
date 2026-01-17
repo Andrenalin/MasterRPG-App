@@ -7,13 +7,13 @@ import SwiftUI
 
 @Observable
 public final class PhotoRootModel: @unchecked Sendable {    
-    @MainActor init(container: ModelContainer) {
+    @MainActor init(tagController: TagController) {
         let config = ModuleConfiguration()
         self.config = config
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()

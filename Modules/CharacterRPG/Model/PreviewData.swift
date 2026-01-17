@@ -7,15 +7,13 @@ import PdfRPG
 import PhotoRPG
 import RPGResources
 import TableRPG
-import SwiftData
 
 public extension CharacterRootModel {
     static let previewValueId = ValueModel.previewId
 
     @MainActor
     static let preview: CharacterRootModel = {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = CharacterRootModel(container: modelContainer, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
+        let root = CharacterRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.itemController.replace(model: ValueModel.preview, isInsert: true, shouldRepairLinks: false)
         root.editController.setCurrentItem(to: .preview)
@@ -43,8 +41,7 @@ public extension CharacterRootModel {
 #if DEBUG
     @MainActor
     static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) -> CharacterRootModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = CharacterRootModel(container: modelContainer, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
+        let root = CharacterRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
         root.setUp(context: nil, rootControllable: root)
         return root
     }

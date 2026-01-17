@@ -5,23 +5,22 @@ import SwiftData
 
 @MainActor
 public struct LinkRegisterController {
-    public init(container: ModelContainer, itemControllable: any ItemControllable) {
-        self.container = container
+    public init(itemControllable: any ItemControllable) {
         self.itemControllable = itemControllable
     }
     
-    let container: ModelContainer
     let itemControllable: any ItemControllable
 }
 
 public extension LinkRegisterController {
     func linkDataModel(linkId: UUID) -> LinkDataModel? {
-        let predicate = #Predicate<LinkDataModel> {
-            $0.id == linkId
-        }
-        let fetchDescription = FetchDescriptor<LinkDataModel>(predicate: predicate)
-        let models = try? container.mainContext.fetch(fetchDescription)
-        return models?.first
+//        let predicate = #Predicate<LinkDataModel> {
+//            $0.id == linkId
+//        }
+//        let fetchDescription = FetchDescriptor<LinkDataModel>(predicate: predicate)
+//        let models = try? container.mainContext.fetch(fetchDescription)
+//        return models?.first
+        return nil
     }
     
     func markDown(for link: LinkDataModel) -> String {
@@ -82,8 +81,8 @@ public extension LinkRegisterController {
 public extension LinkRegisterController {
     func register(link: LinkReplaceModel, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> LinkDataModel {
         let model = LinkDataModel(name: link.name, sourceId: link.itemId, sourceEntryId: link.entryId, sourceModule: link.module, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModel: destinationModule)
-        container.mainContext.insert(model)
-        try? container.mainContext.save()
+//        container.mainContext.insert(model)
+//        try? container.mainContext.save()
         return model
     }
     
@@ -97,15 +96,15 @@ public extension LinkRegisterController {
             destinationEntryId: destinationEntryId,
             destinationModel: destinationModule
         )
-        container.mainContext.insert(model)
-        try? container.mainContext.save()
+//        container.mainContext.insert(model)
+//        try? container.mainContext.save()
         return model
     }
     
     func remove(linkId: UUID) {
         guard let model = linkDataModel(linkId: linkId) else { return }
-        container.mainContext.delete(model)
-        try? container.mainContext.save()
+//        container.mainContext.delete(model)
+//        try? container.mainContext.save()
     }
 }
     
@@ -122,11 +121,12 @@ public extension LinkRegisterController {
             }
         }
         let fetchDescription = FetchDescriptor<LinkDataModel>(predicate: predicate)
-        guard let models = try? container.mainContext.fetch(fetchDescription) else { return [] }
-        
-        return models.map {
-            let item = itemControllable.itemSync(for: $0.destinationId)
-            return EffectedItemModel(id: $0.id, name: item?.name ?? $0.name, entryName: targetEntryId != nil ? $0.name : nil, module: $0.destinationModule)
-        }
+        return []
+//        guard let models = try? container.mainContext.fetch(fetchDescription) else { return [] }
+//        
+//        return models.map {
+//            let item = itemControllable.itemSync(for: $0.destinationId)
+//            return EffectedItemModel(id: $0.id, name: item?.name ?? $0.name, entryName: targetEntryId != nil ? $0.name : nil, module: $0.destinationModule)
+//        }
     }
 }

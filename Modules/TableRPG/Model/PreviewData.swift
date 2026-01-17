@@ -5,15 +5,13 @@ import DiceRPG
 import Foundation
 import PdfRPG
 import RPGResources
-import SwiftData
 
 // MARK: Preview
 
 public extension TableRootModel {
     @MainActor
     static let preview: TableRootModel = {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = TableRootModel(container: modelContainer, diceRoot: DiceFactory.root(container: modelContainer), pdfRoot: .preview)
+        let root = TableRootModel(tagController: .preview, diceRoot: DiceFactory.root(tagController: .preview), pdfRoot: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.diceRoot.setUp(context: nil, rootControllable: root)
         root.editController.setCurrentItem(to: .preview)
@@ -51,8 +49,7 @@ public extension TableRootModel {
 #if DEBUG
     @MainActor
     static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = TableRootModel(container: modelContainer, diceRoot: .preview, pdfRoot: .preview)
+        let root = TableRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview)
         root.setUp(context: nil, rootControllable: root)
         return root
     }

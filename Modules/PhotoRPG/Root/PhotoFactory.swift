@@ -7,8 +7,8 @@ import SwiftUI
 
 public enum PhotoFactory {
     @MainActor
-    public static func root(container: ModelContainer) -> PhotoRootModel {
-        PhotoRootModel(container: container)
+    public static func root(tagController: TagController) -> PhotoRootModel {
+        PhotoRootModel(tagController: tagController)
     }
 
     @MainActor

@@ -25,7 +25,7 @@ public struct FakeLinkRegisterController: LinkRegisterControllable {
 }
 
 public extension LinkRegisterController {
-    static let fake = LinkRegisterController(container: try! ModelContainer(for: LinkDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true)), itemControllable: FakeItemController.fake)
+    static let fake = LinkRegisterController(itemControllable: FakeItemController.fake)
 }
 
 

@@ -3,15 +3,13 @@
 import CoreRPG
 import Foundation
 import RPGResources
-import SwiftData
 
 public extension DiceRootModel {
     static let previewDiceId = DiceModel.previewId
     
     @MainActor
     static let preview: DiceRootModel = {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = DiceRootModel(container: modelContainer)
+        let root = DiceRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.itemController.replace(model: DiceModel.preview, isInsert: true, shouldRepairLinks: false)
         root.editController.setCurrentItem(to: .preview)
@@ -24,8 +22,7 @@ public extension DiceRootModel {
     
     @MainActor
     static func preview(id: UUID) -> DiceRootModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = DiceRootModel(container: modelContainer)
+        let root = DiceRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.itemController.replace(model: DiceModel.preview, isInsert: true, shouldRepairLinks: false)
         root.editController.setCurrentItem(to: .preview)
@@ -65,8 +62,7 @@ public extension DiceRootModel {
 #if DEBUG
     @MainActor
     static func testRoot() -> DiceRootModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = DiceRootModel(container: modelContainer)
+        let root = DiceRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         return root
     }

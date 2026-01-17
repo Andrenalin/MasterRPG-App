@@ -18,7 +18,7 @@ import WeatherRPG
 public final class AdventureRootModel: @unchecked Sendable {
 
     @MainActor
-    init(container: ModelContainer, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
+    init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
         self.mapRoot = mapRoot
@@ -34,7 +34,7 @@ public final class AdventureRootModel: @unchecked Sendable {
         
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()

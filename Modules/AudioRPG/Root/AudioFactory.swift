@@ -6,8 +6,8 @@ import SwiftData
 import SwiftUI
 
 public enum AudioFactory {
-    @MainActor public static func root(container: ModelContainer) -> AudioRootModel {
-        AudioRootModel(container: container)
+    @MainActor public static func root(tagController: TagController) -> AudioRootModel {
+        AudioRootModel(tagController: tagController)
     }
 
     @MainActor public static func rootView() -> some View {

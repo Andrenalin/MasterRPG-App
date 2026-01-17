@@ -6,8 +6,8 @@ import SwiftData
 import SwiftUI
 
 public enum PdfFactory {
-    @MainActor public static func root(container: ModelContainer) -> PdfRootModel {
-        PdfRootModel(container: container)
+    @MainActor public static func root(tagController: TagController) -> PdfRootModel {
+        PdfRootModel(tagController: tagController)
     }
     
     public static func rootView() -> some View {

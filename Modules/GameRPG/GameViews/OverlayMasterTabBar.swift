@@ -32,7 +32,6 @@ struct OverlayMasterTabBar: View {
 #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-        .focusedSceneValue(\.selectedGameModule, tabSelectedModule)
     }
     
     var onlyGameView: some View {

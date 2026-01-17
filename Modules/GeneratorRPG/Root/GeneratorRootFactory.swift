@@ -6,8 +6,8 @@ import SwiftUI
 
 @MainActor
 public struct GeneratorRootFactory {
-    public static func rootModel(container: ModelContainer) -> GeneratorRootModel {
-        GeneratorRootModel(container: container)
+    public static func rootModel(tagController: TagController) -> GeneratorRootModel {
+        GeneratorRootModel(tagController: tagController)
     }
     
     public static func rootView() -> some View {

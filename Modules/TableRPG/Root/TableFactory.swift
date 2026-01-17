@@ -7,8 +7,8 @@ import SwiftData
 import SwiftUI
 
 public enum TableFactory {
-    @MainActor public static func root(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
-        TableRootModel(container: container, diceRoot: diceRoot, pdfRoot: pdfRoot)
+    @MainActor public static func root(tagController: TagController, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
+        TableRootModel(tagController: tagController, diceRoot: diceRoot, pdfRoot: pdfRoot)
     }
 
     @MainActor public static func rootView() -> some View {

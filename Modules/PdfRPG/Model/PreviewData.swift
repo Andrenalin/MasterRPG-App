@@ -4,15 +4,13 @@ import CoreRPG
 import Foundation
 import RPGResources
 import CoreGraphics
-import SwiftData
 
 public extension PdfRootModel {
     static let previewSpaceId = PdfModel.previewId
     
     @MainActor
     static let preview: PdfRootModel = {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = PdfRootModel(container: modelContainer)
+        let root = PdfRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.editController.setCurrentItem(to: .preview)
         return root
@@ -45,8 +43,7 @@ public extension PdfRootModel {
 #if DEBUG
     @MainActor
     static func testRoot() -> PdfRootModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = PdfRootModel(container: modelContainer)
+        let root = PdfRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         return root
     }

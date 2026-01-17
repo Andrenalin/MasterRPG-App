@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import SwiftData
 import RPGResources
 
 public extension SpaceRootModel {
@@ -10,8 +9,7 @@ public extension SpaceRootModel {
     
     @MainActor
     static let preview: SpaceRootModel = {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = SpaceRootModel(container: modelContainer)
+        let root = SpaceRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.editController.setCurrentItem(to: .preview)
         return root
@@ -38,8 +36,7 @@ public extension SpaceRootModel {
 #if DEBUG
     @MainActor
     static func testRoot() -> SpaceRootModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = SpaceRootModel(container: modelContainer)
+        let root = SpaceRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         return root
     }

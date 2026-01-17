@@ -9,7 +9,7 @@ import SwiftUI
 
 @Observable
 public final class TableRootModel: @unchecked Sendable {
-    @MainActor init(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) {
+    @MainActor init(tagController: TagController, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) {
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
 
@@ -18,7 +18,7 @@ public final class TableRootModel: @unchecked Sendable {
 
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()

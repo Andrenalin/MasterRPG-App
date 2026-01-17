@@ -2,14 +2,12 @@
 
 import CoreRPG
 import Foundation
-import SwiftData
 import RPGResources
 
 public extension AudioRootModel {
     @MainActor
     static let preview: AudioRootModel = {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = AudioRootModel(container: modelContainer)
+        let root = AudioRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.editController.setCurrentItem(to: .preview)
         return root
@@ -40,8 +38,7 @@ public extension AudioRootModel {
 #if DEBUG
     @MainActor
     static func testRoot() -> AudioRootModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = AudioRootModel(container: modelContainer)
+        let root = AudioRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         return root
     }

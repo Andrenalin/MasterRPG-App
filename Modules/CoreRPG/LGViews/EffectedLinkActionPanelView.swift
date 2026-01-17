@@ -71,7 +71,7 @@ public struct EffectedLinkActionPanelView: View {
         }
         .onChange(of: removeEntryList.removeItems, initial: true) {
             Task {
-                removeEntryList.linkTree = await EffectedLinkActionPanelView.linkTree(container: root.searchModel.modelContainer, itemControllable: root.itemControllable, removeItems: removeEntryList.removeItems)
+                removeEntryList.linkTree = await EffectedLinkActionPanelView.linkTree(itemControllable: root.itemControllable, removeItems: removeEntryList.removeItems)
             }
         }
     }
@@ -174,16 +174,16 @@ private extension EffectedLinkActionPanelView {
         return name
     }
     
-    static func effectedItems(container: ModelContainer, itemControllable: any ItemControllable, for item: ItemRowModel) async -> [EffectedItemModel] {
-        let controller = LinkRegisterController(container: container, itemControllable: itemControllable)
+    static func effectedItems(itemControllable: any ItemControllable, for item: ItemRowModel) async -> [EffectedItemModel] {
+        let controller = LinkRegisterController(itemControllable: itemControllable)
         return controller.effectedItems(targetId: item.itemId, targetEntryId: item.entryId, targetModule: item.typeId)
         
     }
     
-    static func linkTree(container: ModelContainer, itemControllable: any ItemControllable, removeItems: [ItemRowModel]) async -> [RemoveLinkTreeModel] {
+    static func linkTree(itemControllable: any ItemControllable, removeItems: [ItemRowModel]) async -> [RemoveLinkTreeModel] {
         var result: [RemoveLinkTreeModel] = []
         for item in removeItems {
-            let links = await effectedItems(container: container, itemControllable: itemControllable, for: item)
+            let links = await effectedItems(itemControllable: itemControllable, for: item)
             var items = [RemoveLinkTreeModel(item: item, link: nil, canRemoved: links.isEmpty, counter: links.count)]
             items.append(contentsOf: links.map {
                 RemoveLinkTreeModel(item: ItemRowModel(itemId: $0.id, typeId: item.typeId), link: $0, canRemoved: false, counter: 0)

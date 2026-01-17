@@ -5,8 +5,8 @@ import SwiftData
 import SwiftUI
 
 public enum DiceFactory {
-    @MainActor public static func root(container: ModelContainer) -> DiceRootModel {
-        DiceRootModel(container: container)
+    @MainActor public static func root(tagController: TagController) -> DiceRootModel {
+        DiceRootModel(tagController: tagController)
     }
 
     @MainActor public static func rootView() -> some View {

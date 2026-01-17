@@ -8,9 +8,7 @@ import SwiftData
 public extension GeneratorRootModel {
     @MainActor
     static let preview: GeneratorRootModel = {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-
-        let root = GeneratorRootModel(container: modelContainer)
+        let root = GeneratorRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.editController.setCurrentItem(to: .preview)
         return root
@@ -42,9 +40,7 @@ public extension GeneratorRootModel {
 #if DEBUG
     @MainActor
     static func testRoot() -> GeneratorRootModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = GeneratorRootModel(container: modelContainer)
-        //root.setUp(context: nil, rootControllable: root)
+        let root = GeneratorRootModel(tagController: .preview)
         root.editController.setCurrentItem(to: .preview)
         return root
     }

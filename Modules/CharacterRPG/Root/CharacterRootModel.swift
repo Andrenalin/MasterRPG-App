@@ -11,7 +11,7 @@ import SwiftUI
 
 @Observable
 public final class CharacterRootModel: @unchecked Sendable {
-    @MainActor init(container: ModelContainer, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
+    @MainActor init(tagController: TagController, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
@@ -22,7 +22,7 @@ public final class CharacterRootModel: @unchecked Sendable {
 
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
-        let searchModel = SearchModel(modelContainer: container, module: config.module, categoryTags: config.categoryTags)
+        let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()

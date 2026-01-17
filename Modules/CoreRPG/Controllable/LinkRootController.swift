@@ -14,7 +14,7 @@ public final class LinkRootController {
     public let module: NetworkModules = .none
     @ObservationIgnored let root: RootManager
     @ObservationIgnored lazy var linkRegisterController: LinkRegisterController = {
-        LinkRegisterController(container: container, itemControllable: root.adventureRoot.itemControllable)
+        LinkRegisterController(itemControllable: root.adventureRoot.itemControllable)
     }()
 }
 

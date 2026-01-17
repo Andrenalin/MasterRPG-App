@@ -5,8 +5,8 @@ import SwiftData
 import SwiftUI
 
 public enum SpaceFactory {
-    @MainActor public static func root(container: ModelContainer) -> SpaceRootModel {
-        SpaceRootModel(container: container)
+    @MainActor public static func root(tagController: TagController) -> SpaceRootModel {
+        SpaceRootModel(tagController: tagController)
     }
     
     public static func rootView() -> some View {

@@ -16,7 +16,7 @@ import WeatherRPG
 
 public enum AdventureFactory {
     @MainActor public static func root(
-        container: ModelContainer,
+        tagController: TagController,
         audioRoot: AudioRootModel,
         diceRoot: DiceRootModel,
         mapRoot: MapRootModel,
@@ -28,7 +28,7 @@ public enum AdventureFactory {
         weatherRoot: WeatherRootModel
     ) -> AdventureRootModel {
         AdventureRootModel(
-            container: container,
+            tagController: tagController,
             audioRoot: audioRoot,
             diceRoot: diceRoot,
             mapRoot: mapRoot,

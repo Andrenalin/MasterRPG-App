@@ -5,8 +5,8 @@ import SwiftUI
 
 @MainActor @Observable
 public final class SearchModel: Sendable {
-    public init(modelContainer: ModelContainer, module: NetworkModules, searchText: String = "", searchToken: ItemListCategory = .all, selectedTokens: [SearchTags] = [], categoryTags: [ItemListCategory] = [.adventure, .character, .photo, .weather]) {
-        self.modelContainer = modelContainer
+    public init(tagController: TagController, module: NetworkModules, searchText: String = "", searchToken: ItemListCategory = .all, selectedTokens: [SearchTags] = [], categoryTags: [ItemListCategory] = [.adventure, .character, .photo, .weather]) {
+        self.tagController = tagController
         self.module = module
         self.searchText = searchText
         self.searchToken = searchToken
@@ -14,7 +14,7 @@ public final class SearchModel: Sendable {
         self.categoryTags = categoryTags
     }
     
-    let modelContainer: ModelContainer
+    let tagController: TagController
     let module: NetworkModules
     
     public var searchText: String
@@ -40,12 +40,10 @@ public final class SearchModel: Sendable {
         }
     }
     
-    nonisolated private func updateTagSuggestions(tagSearch: String.SubSequence) async {
-        let modelContext = ModelContext(modelContainer)
-        let predicate = #Predicate<TagDataModel>{ tag in tag.module == module.rawValue }
-        let fetchDesc = FetchDescriptor<TagDataModel>(predicate: predicate, sortBy: [SortDescriptor(\.name)])
-        let tags = try? modelContext.fetch(fetchDesc)
-        let filteredSearchTags = tags?.filter { $0.name.localizedCaseInsensitiveContains(tagSearch) }.map { SearchTags(tag: $0.name) } ?? []
+    private func updateTagSuggestions(tagSearch: String.SubSequence) async {
+        let tagController = TagController()
+        let filteredSearchTags = tagController.sugguestionTags(module: module, search: String(tagSearch)).map { SearchTags(tag: $0) }
+
         Task { @MainActor in
             if searchTags != filteredSearchTags {
                 searchTags = filteredSearchTags
@@ -54,18 +52,13 @@ public final class SearchModel: Sendable {
     }
     
     public var newSearchModel: SearchModel {
-        SearchModel(modelContainer: modelContainer, module: module, searchText: "", searchToken: searchToken, selectedTokens: [], categoryTags: categoryTags)
+        SearchModel(tagController: tagController, module: module, searchText: "", searchToken: searchToken, selectedTokens: [], categoryTags: categoryTags)
     }
 }
 
 public extension SearchModel {
-    static func preview(search: String = "") -> SearchModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        return SearchModel(modelContainer: modelContainer, module: .photo, searchText: search)
-    }
-
-    static func preview(modelContainer: ModelContainer, module: NetworkModules, search: String = "") -> SearchModel {
-        SearchModel(modelContainer: modelContainer, module: module, searchText: search)
+    static func preview(tagController: TagController = .preview, module: NetworkModules = .photo, search: String = "") -> SearchModel {
+        SearchModel(tagController: tagController, module: module, searchText: search)
     }
 }
 

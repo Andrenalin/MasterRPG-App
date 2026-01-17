@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import SwiftData
 import RPGResources
 
 public extension PhotoRootModel {
@@ -10,8 +9,7 @@ public extension PhotoRootModel {
 
     @MainActor
     static let preview: PhotoRootModel = {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = PhotoRootModel(container: modelContainer)
+        let root = PhotoRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         root.editController.setCurrentItem(to: .preview)
         return root
@@ -42,8 +40,7 @@ public extension PhotoRootModel {
 #if DEBUG
     @MainActor
     static func testRoot() -> PhotoRootModel {
-        let modelContainer = try! ModelContainer(for: TagDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let root = PhotoRootModel(container: modelContainer)
+        let root = PhotoRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
         return root
     }
