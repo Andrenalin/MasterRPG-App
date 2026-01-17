@@ -28,7 +28,7 @@ public final class DiceRootModel: @unchecked Sendable {
         _dataController = dataController
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
         _itemController = itemController
-        _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, tagController: searchModel.tagController)
         _exportController = ExportController(itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
         _gameController = GameController(config: config, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)

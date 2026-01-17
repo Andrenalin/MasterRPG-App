@@ -4,16 +4,18 @@ import CoreRPG
 import Foundation
 import SwiftData
 
-struct EditController {
-    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
+struct EditController: Sendable {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, tagController: TagController) {
         self.linkRegisterControllable = linkRegisterControllable
         self.itemController = itemController
+        self.tagController = tagController
         self.editorModel = ItemEditorModel()
         self.selectionReference = ItemSelectionModel()
     }
 
     let itemController: ItemController
     let linkRegisterControllable: any LinkRegisterControllable
+    let tagController: TagController
     let editorModel: ItemEditorModel
 
     let selectionReference: ItemSelectionModel

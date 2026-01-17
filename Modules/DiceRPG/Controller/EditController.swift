@@ -5,14 +5,16 @@ import Foundation
 import Observation
 
 struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, tagController: TagController) {
         self.linkRegisterControllable = linkRegisterControllable
+        self.tagController = tagController
         self.itemController = itemController
         self.editorModel = ItemEditorModel()
     }
 
     let itemController: ItemController
     let linkRegisterControllable: any LinkRegisterControllable
+    let tagController: TagController
     let editorModel: ItemEditorModel
 }
 

@@ -38,17 +38,27 @@ struct SearchItemListViewModifier: ViewModifier {
 #endif
             .searchPresentationToolbarBehavior(.avoidHidingContent)
             .onChange(of: searchModel.searchFieldText) {
-                guard searchModel.searchFieldText.starts(with: "@") == false else { return }
+                guard searchModel.searchFieldText.starts(with: "@") == false || searchModel.searchFieldText.count > 1 else {
+                    return
+                }
                 withAnimation { searchModel.searchText = searchModel.searchFieldText }
             }
             .onChange(of: searchModel.searchText, initial: true) {
-                withAnimation {
-                    listControllable.resetFilter()
-                    cacheItemListModel.reset(search: searchModel.searchText)
-                    searchModel.updateTagSuggestions()
-                    searchModel.searchFieldText <=> searchModel.searchText
-                }
+                updateSearch()
             }
+            .onChange(of: searchModel.selectedTokens) {
+                guard searchModel.selectedTokens.isEmpty else { return }
+                updateSearch()
+            }
+    }
+    
+    func updateSearch() {
+        withAnimation {
+            listControllable.resetFilter()
+            cacheItemListModel.reset(search: listControllable.searchModel.searchText)
+            listControllable.searchModel.updateTagSuggestions()
+            listControllable.searchModel.searchFieldText <=> listControllable.searchModel.searchText
+        }
     }
     
     var searchPlacement: SearchFieldPlacement {

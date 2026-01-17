@@ -9,7 +9,8 @@ public protocol EditControllable: Sendable {
     var itemControllable: any ItemControllable { get }
     var fileUrlDataController: FileUrlDataController? { get }
     @MainActor var linkRegisterControllable: LinkRegisterControllable { get }
-
+    var tagController: TagController { get }
+    
     var editorModel: ItemEditorModel { get }
 
     // overwrite extensions
@@ -20,13 +21,6 @@ public protocol EditControllable: Sendable {
 public extension EditControllable {
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
     
-//    @MainActor internal var model: Model {
-//        get { editorModel.undoManaged.value as? Model ?? .empty }
-//        nonmutating set {
-//            // it is a class an updated already
-//        }
-//    }
-
     @MainActor var cacheItemListModel: CacheItemListModel {
         editorModel.cacheItemListModel
     }

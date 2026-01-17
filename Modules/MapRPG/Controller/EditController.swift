@@ -23,12 +23,13 @@ final class MapEditModel: Sendable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: MapRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(root: MapRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, tagController: TagController) {
         self.root = root
         
         self.itemController = itemController
         self.linkRegisterControllable = linkRegisterControllable
-
+        self.tagController = tagController
+        
         self.editorModel = ItemEditorModel()
         self.mapEditModel = MapEditModel()
     }
@@ -37,7 +38,8 @@ struct EditController: Sendable {
 
     let itemController: ItemController
     let linkRegisterControllable: any LinkRegisterControllable
-
+    let tagController: TagController
+    
     let editorModel: ItemEditorModel
     let mapEditModel: MapEditModel
 }

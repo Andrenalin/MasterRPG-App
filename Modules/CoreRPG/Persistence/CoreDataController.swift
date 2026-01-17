@@ -176,6 +176,6 @@ private extension CoreDataController {
     }
 }
 
-private extension Logger {
+extension Logger {
     static let coreDataController = Logger(subsystem: subsystem, category: "CoreDataController")
 }

@@ -43,7 +43,7 @@ struct ListRootView: View {
 #endif
 
             .overlay {
-                if displayItems.isEmpty && !listController.searchModel.searchText.isEmpty {
+                if displayItems.isEmpty && !listController.searchModel.searchText.isEmpty && !listController.searchModel.searchText.starts(with: "@") {
                     ContentUnavailableView.search
                 }
             }

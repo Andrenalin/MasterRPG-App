@@ -15,7 +15,7 @@ public struct ConvertController: Sendable {
         var tagCounter: [String: [UUID]] = [:]
         
         for itemId in itemController.itemDataModel.items {
-            guard let model = itemController.itemSync(for: itemId), model.specialCategory == false, model.category != .entry else { continue }
+            guard let model = itemController.itemSync(for: itemId) else { continue }
 
             if model.parentId == nil && model.displayState == 0 {
                 for tag in model.tags {
@@ -23,7 +23,8 @@ public struct ConvertController: Sendable {
                 }
                 tagCounter[model.category.title, default: []] += [model.id]
             }
-            
+
+            guard model.specialCategory == false, model.category != .entry else { continue }   
             guard model.displayState == 0 else { continue }
             guard let url = model.fileUrl?.rawUrl else { continue }
             
@@ -61,6 +62,7 @@ public struct ConvertController: Sendable {
             }
         }
         
+        await createTags(tagCounter: tagCounter)
         await createCollections(tagCounter: tagCounter)
     }
     
@@ -69,14 +71,16 @@ public struct ConvertController: Sendable {
         var categoryCounter: [ItemListCategory: [UUID]] = [:]
         
         for itemId in itemController.itemDataModel.items {
-            guard let model = itemController.itemSync(for: itemId), model.specialCategory == false, model.category != .entry else { continue }
-            guard model.parentId == nil else { continue }
+            guard let model = itemController.itemSync(for: itemId) else { continue }
             guard !excludeHidden || model.displayState == 0 else { continue }
-            
+
             for tag in model.tags {
                 tagCounter[tag, default: []] += [model.id]
             }
 
+            guard model.specialCategory == false, model.category != .entry else { continue }
+            guard model.parentId == nil else { continue }
+            
             categoryCounter[model.category, default: []] += [model.id]
             
             let addedTags = model.category.title
@@ -87,6 +91,7 @@ public struct ConvertController: Sendable {
             }
         }
         
+        await createTags(tagCounter: tagCounter)
         await createFolders(categoryConunter: categoryCounter)
         await createCollections(tagCounter: tagCounter)
     }
@@ -117,6 +122,12 @@ public struct ConvertController: Sendable {
                     }
                 }
             }
+        }
+    }
+    
+    @MainActor func createTags(tagCounter: [String: [UUID]]) async {
+        for (key, values) in tagCounter {
+            editController.tagController.reset(tag: key, count: values.count, module: itemController.config.module)
         }
     }
     

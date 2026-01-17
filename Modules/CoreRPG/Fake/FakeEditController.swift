@@ -11,6 +11,7 @@ struct FakeEditController: EditControllable {
     
     var itemControllable: any ItemControllable
     var fileUrlDataController: FileUrlDataController?
+    var tagController: TagController
 
     var rootControllable: any RootControllable
 
@@ -19,5 +20,5 @@ struct FakeEditController: EditControllable {
     var cacheItemListModel: CacheItemListModel
     
     @MainActor
-    static let fake = FakeEditController(itemControllable: FakeItemController.fake, rootControllable: FakeRootController.fake, editorModel: ItemEditorModel(), cacheItemListModel: CacheItemListModel())
+    static let fake = FakeEditController(itemControllable: FakeItemController.fake, tagController: TagController(), rootControllable: FakeRootController.fake, editorModel: ItemEditorModel(), cacheItemListModel: CacheItemListModel())
 }

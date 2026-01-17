@@ -28,11 +28,12 @@ struct LinkTableModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, tagController: TagController) {
         self.diceRoot = diceRoot
         
         self.itemController = itemController
         self.linkRegisterControllable = linkRegisterControllable
+        self.tagController = tagController
         
         self.editorModel = ItemEditorModel()
         self.tableEditModel = TableEditModel()
@@ -42,6 +43,7 @@ struct EditController: Sendable {
 
     let itemController: ItemController
     let linkRegisterControllable: any LinkRegisterControllable
+    let tagController: TagController
     
     let editorModel: ItemEditorModel
     let tableEditModel: TableEditModel

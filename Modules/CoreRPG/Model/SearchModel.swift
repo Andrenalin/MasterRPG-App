@@ -14,7 +14,7 @@ public final class SearchModel: Sendable {
         self.categoryTags = categoryTags
     }
     
-    let tagController: TagController
+    public let tagController: TagController
     let module: NetworkModules
     
     public var searchText: String
@@ -41,7 +41,6 @@ public final class SearchModel: Sendable {
     }
     
     private func updateTagSuggestions(tagSearch: String.SubSequence) async {
-        let tagController = TagController()
         let filteredSearchTags = tagController.sugguestionTags(module: module, search: String(tagSearch)).map { SearchTags(tag: $0) }
 
         Task { @MainActor in

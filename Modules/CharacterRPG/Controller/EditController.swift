@@ -35,7 +35,7 @@ public struct LinkCharacterModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: CharacterRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(root: CharacterRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, tagController: TagController) {
         self.root = root
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot
@@ -44,6 +44,7 @@ struct EditController: Sendable {
                 
         self.itemController = itemController
         self.linkRegisterControllable = linkRegisterControllable
+        self.tagController = tagController
         
         self.editorModel = ItemEditorModel()
         self.valueEditModel = ValueEditModel()
@@ -57,6 +58,7 @@ struct EditController: Sendable {
 
     let itemController: ItemController
     let linkRegisterControllable: any LinkRegisterControllable
+    let tagController: TagController
 
     let editorModel: ItemEditorModel
     let valueEditModel: ValueEditModel

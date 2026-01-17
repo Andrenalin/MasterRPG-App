@@ -11,15 +11,17 @@ final class WeatherEditModel: Sendable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, tagController: TagController) {
         self.itemController = itemController
         self.linkRegisterControllable = linkRegisterControllable
+        self.tagController = tagController
         self.editorModel = ItemEditorModel()
         self.weatherEditModel = WeatherEditModel()
     }
 
     let itemController: ItemController
     let linkRegisterControllable: any LinkRegisterControllable
+    let tagController: TagController
     let editorModel: ItemEditorModel
     let weatherEditModel: WeatherEditModel
 }
