@@ -25,7 +25,7 @@ public struct FakeLinkRegisterController: LinkRegisterControllable {
 }
 
 public extension LinkRegisterController {
-    static let fake = LinkRegisterController(itemControllable: FakeItemController.fake)
+    static let fake = LinkRegisterController(root: nil)
 }
 
 

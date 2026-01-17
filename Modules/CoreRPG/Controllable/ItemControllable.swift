@@ -69,12 +69,6 @@ public extension ItemControllable {
         }
         
         await itemDataModel.resetModel(id: item.id)
-
-        await repairLinks(for: [ItemRowModel(itemId: itemId, typeId: config.module)])
-        await resetUsedLink(for: ItemRowModel(itemId: itemId, typeId: config.module))
-        for entry in entries {
-            await resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: config.module))
-        }
     }
     
     @MainActor func isEqual(with other: ModelType) -> Bool {
@@ -85,25 +79,9 @@ public extension ItemControllable {
     @MainActor func replace(model: ModelType?, isInsert: Bool, shouldRepairLinks: Bool) {
         guard let model = model as? Model else { return }
         if let orignal = self.itemSync(for: model.id) {
-            let originalLinkModels = orignal.linkRegisterModels
-            var originalEntryIds = Set(orignal.entries.map { $0.id })
             let resort = orignal.name != model.name
             if orignal.replace(with: model) {
-                try? dataControllable?.replaceSync(id: orignal.id, with: orignal.copy())
-            
-                let linkModels = orignal.linkRegisterModels
-                if originalLinkModels != linkModels {
-                    linkRegisterControllable.deregister(links: originalLinkModels)
-                    linkRegisterControllable.register(links: linkModels)
-                }
-                originalEntryIds.subtract(orignal.entries.map { $0.id })
-                if shouldRepairLinks {
-                    repairLinks(for: originalEntryIds.map { ItemRowModel(itemId: orignal.id, entryId: $0, typeId: config.module) })
-                }
-                for entryId in originalEntryIds {
-                    resetUsedLink(for: ItemRowModel(itemId: orignal.id, entryId: entryId, typeId: config.module))
-                }
-
+                try? dataControllable?.replaceSync(id: orignal.id, with: orignal.copy())            
                 if resort {
                     resortItem(changed: orignal)
                 }
@@ -115,7 +93,6 @@ public extension ItemControllable {
             setModel(with: model)
             insertIntoItems(model: model)
         }
-        itemDataModel.updateTags(with: model.tags)
     }
 }
 
@@ -156,30 +133,6 @@ public extension ItemControllable {
         try? await dataControllable?.save()
     }
 
-    @MainActor func update(model: ModelType?) {
-        guard let model = model as? Model else { return }
-        if let orignal = self.itemSync(for: model.id) {
-            let originalLinkModels = orignal.linkRegisterModels
-            var originalEntryIds = Set(orignal.entries.map { $0.id })
-            if orignal.replace(with: model) {
-                let linkModels = orignal.linkRegisterModels
-                if originalLinkModels != linkModels {
-                    linkRegisterControllable.deregister(links: originalLinkModels)
-                    linkRegisterControllable.register(links: linkModels)
-                }
-                originalEntryIds.subtract(orignal.entries.map { $0.id })
-                for entryId in originalEntryIds {
-                    resetUsedLink(for: ItemRowModel(itemId: orignal.id, entryId: entryId, typeId: config.module))
-                }
-                resortItem(changed: orignal)
-            }
-        } else {
-            setModel(with: model)
-            insertIntoItems(model: model)
-        }
-        itemDataModel.updateTags(with: model.tags)
-    }
-    
     func updates(_ models: [ModelType]) async {
         let sortedModels = models.compactMap { $0 as? Model }.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         let deletedIds = await itemDataModel.items.filter { id in !sortedModels.contains { $0.id == id } }
@@ -189,7 +142,6 @@ public extension ItemControllable {
         var updatedItems: [UUID] = []
         for item in sortedModels {
             await setModel(with: item)
-            await itemDataModel.updateTags(with: item.tags)
             updatedItems.append(item.id)
         }
         await itemDataModel.resetItems(updatedItems)
@@ -263,20 +215,4 @@ private extension ItemControllable {
         }
         itemDataModel.insert(itemId: model.id, at: foundIndex)
     }
-}
-
-// MARK: - LinkRegister (moving?)
-
-public extension ItemControllable {
-    @MainActor func repairLinks(for models: [ItemRowModel]) {
-        linkRegisterControllable.repairLinks(for: models)
-    }
-    
-    @MainActor func resetUsedLink(for model: ItemRowModel) {
-        linkRegisterControllable.resetUsedLink(for: model)
-    }
-    
-    @MainActor func usedLinks(for model: ItemRowModel) -> [EffectedItemModel] {
-        linkRegisterControllable.used(for: model)
-     }
 }

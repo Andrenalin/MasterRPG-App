@@ -125,7 +125,7 @@ extension EditController {
 
         var effectedLinks = true
         for itemRowModel in itemRowModels {
-            if !root.itemController.usedLinks(for: itemRowModel).isEmpty {
+            if !linkRegisterControllable.used(for: itemRowModel).isEmpty {
                 effectedLinks = false
                 break;
             }

@@ -39,7 +39,7 @@ public final class TableRootModel: @unchecked Sendable {
         _linkController = LinkController(diceRoot: diceRoot, itemController: itemController, gameController: gameController)
 
         if let dataController, let context {
-            _syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
+            _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
                 syncDataController?.start()
             }

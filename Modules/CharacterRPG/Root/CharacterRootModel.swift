@@ -43,7 +43,7 @@ public final class CharacterRootModel: @unchecked Sendable {
         _linkController = LinkController(root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, gameController: gameController)
 
         if let dataController, let context {
-            _syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
+            _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
                 syncDataController?.start()
             }
@@ -183,17 +183,39 @@ extension CharacterRootModel {
     }
     
     public func checkFolders() async {
-        let cc = ConvertController(itemController: itemController, editController: editController)
-        await cc.createFoldersAndCollections(excludeHidden: true)
-        
         for id in await itemController.itemDataModel.items {
-            guard let model = await itemController.item(for: id) else { return }
+            guard let model = await itemController.item(for: id) else { continue  }
+            var entries: [ValueEntryModel] = []
+            for entry in model.entries {
+                guard let valueId = entry.valueId, let value = await itemController.item(for: valueId) else {
+                    entries.append(entry)
+                    continue
+                }
+                await editController.addItem(itemId: valueId, parentId: model.id)
+                await editController.reset(tags: [], itemId: valueId)
+                await editController.removePhotos(itemId: valueId)
+                
+                if entry.name != value.name {
+                    var updatedEntry = entry
+                    updatedEntry.name = value.name.withoutLink()
+                    updatedEntry.content = value.description
+                    entries.append(updatedEntry)
+                }
+            }
+            if model.entries != entries {
+                guard let item = await editController.editModel(for: id) else { continue }
+                item.entries <=> entries
+                await editController.save(updated: item, message: String(localized: "update entries").localizedString)
+            }
             guard model.diceId == nil else { continue }
             let entry = model.entries.first {
                 $0.diceId != nil
             }
             await editController.add(diceId: entry?.diceId, itemId: model.id)
         }
+
+        let cc = ConvertController(itemController: itemController, editController: editController)
+        await cc.createFoldersAndCollections(excludeHidden: true)
     }
 }
 

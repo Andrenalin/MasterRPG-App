@@ -138,7 +138,8 @@ private extension EffectedLinkAction {
     }
     
     static func effectedItems(itemControllable: any ItemControllable, for item: ItemRowModel) async -> [EffectedItemModel] {
-        itemControllable.usedLinks(for: item)
+        []
+        //itemControllable.usedLinks(for: item)
     }
     
     static func linkTree(itemControllable: any ItemControllable, removeItems: [ItemRowModel]) async -> [RemoveLinkTreeModel] {

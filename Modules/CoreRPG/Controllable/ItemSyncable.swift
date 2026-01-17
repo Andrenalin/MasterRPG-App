@@ -7,6 +7,7 @@ import Observation
 public protocol SyncDataControllable: Sendable {
     var dataControllable: any CoreDataPersistable { get }
     var itemControllable: any ItemControllable { get }
+    var editControllable: any EditControllable { get }
 }
 
 // MARK: Core Data --> CloudKit Sync
@@ -30,11 +31,11 @@ public extension SyncDataControllable {
             }
             for insertedId in insertedIds {
                 guard let model = try await dataControllable.fetch(id: insertedId) else { continue }
-                await itemControllable.update(model: model)
+                await editControllable.save(updated: model)
             }
             for updatedId in updatedIds {
                 guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
-                await itemControllable.update(model: model)
+                await editControllable.save(updated: model)
             }
         }
     }

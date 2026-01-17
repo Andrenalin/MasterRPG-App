@@ -60,16 +60,16 @@ struct LinkControllerTests {
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry2.id] == entry2)
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry3.id] == entry3)
 
-        await #expect(root.photoRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: photoId, typeId: .photo)).count == 4)
-        await #expect(root.tableRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: tableId, typeId: .table)).count == 2)
-        await #expect(root.tableRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: tableId, entryId: tableEntryId, typeId: .table)).count == 2)
-        await #expect(root.characterRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, typeId: .value)).count == 1)
-        await #expect(root.characterRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, entryId: valueEntryId, typeId: .value)).count == 1)
+        await #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: photoId, typeId: .photo)).count == 4)
+        await #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: tableId, typeId: .table)).count == 2)
+        await #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: tableId, entryId: tableEntryId, typeId: .table)).count == 2)
+        await #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: valueId, typeId: .value)).count == 1)
+        await #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: valueId, entryId: valueEntryId, typeId: .value)).count == 1)
 
         await root.characterRoot.itemController.delete(itemId: valueId)
 
-        await #expect(root.characterRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, typeId: .value)).count == 0)
-        await #expect(root.characterRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: valueId, entryId: valueEntryId, typeId: .value)).count == 0)
+        await #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: valueId, typeId: .value)).count == 0)
+        await #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: valueId, entryId: valueEntryId, typeId: .value)).count == 0)
 
         await #expect(root.itemController.itemOrEmpty(for: itemId).photoId == photoId)
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry1.id] == entry1)
@@ -79,8 +79,8 @@ struct LinkControllerTests {
         await root.tableRoot.editController.setCurrentItem(to: ItemRowTreeModel(itemId: tableId, typeId: .table))
         await root.tableRoot.editController.remove(itemId: tableId, entryId: tableEntryId)
         
-        await #expect(root.tableRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: tableId, typeId: .table)).count == 0)
-        await #expect(root.tableRoot.itemControllable.usedLinks(for: ItemRowModel(itemId: tableId, entryId: tableEntryId, typeId: .table)).count == 0)
+        await #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: tableId, typeId: .table)).count == 0)
+        await #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: tableId, entryId: tableEntryId, typeId: .table)).count == 0)
 
         await #expect(root.itemController.itemOrEmpty(for: itemId).photoId == photoId)
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry1.id] == entry1)

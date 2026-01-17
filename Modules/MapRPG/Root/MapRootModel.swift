@@ -57,10 +57,8 @@ public final class MapRootModel: @unchecked Sendable {
         _linkController = LinkController(root: self, itemController: itemController)
 
         if let dataController, let context {
-            _syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
-            Task {
-                syncDataController?.start()
-            }
+            _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
+            syncDataController?.start()
         }
     }
 

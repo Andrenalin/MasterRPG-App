@@ -45,7 +45,7 @@ public final class AudioRootModel: @unchecked Sendable {
         _linkController = LinkController(itemController: itemController, audioController: audioController, gameController: gameController)
 
         if let dataController, let context {
-            _syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
+            _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
                 syncDataController?.start()
             }

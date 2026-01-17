@@ -41,10 +41,10 @@ public final class AdventureRootModel: @unchecked Sendable {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?) {
+    @MainActor public func setUp(root: RootManager, context: NSManagedObjectContext?) {
         let dataController = context.map { DataController(context: $0, token: config.module.token) }
         _dataController = dataController
-        let linkRegisterController = LinkRegisterController(root: self)
+        let linkRegisterController = LinkRegisterController(root: root)
 
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: linkRegisterController)
         _itemController = itemController
@@ -67,7 +67,7 @@ public final class AdventureRootModel: @unchecked Sendable {
         mapRoot.setUp(context: context, rootControllable: self)
 
         if let dataController, let context {
-            _syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
+            _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
                 syncDataController?.start()
             }

@@ -247,7 +247,7 @@ extension AppModel {
 extension AppModel {
     @MainActor public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
         tagController.setup(context: context)
-        adventureRoot.setUp(context: context)
+        adventureRoot.setUp(root: root, context: context)
         #if !os(tvOS)
         generatorRoot.setUp(context: context, rootControllable: adventureRoot)
         #endif

@@ -4,7 +4,7 @@ import Observation
 import SwiftUI
 
 public protocol EditControllable: Sendable {
-    associatedtype Model: ItemDataAccessable & ItemDiffComparable & ModelType
+    associatedtype Model: ItemDataAccessable & ItemDiffComparable & ItemLinkRegistable & ModelType
 
     var itemControllable: any ItemControllable { get }
     var fileUrlDataController: FileUrlDataController? { get }
@@ -155,35 +155,40 @@ public extension EditControllable {
 public extension EditControllable {
     @MainActor func addItem(itemId: UUID, parentId: UUID?) {
         guard let parentId, itemId != parentId, let parentItem = editModel(for: parentId), var item = editModel(for: itemId) else { return }
-        if item.specialCategory && !parentItem.isFolder {
-            return
-        }
-        if parentItem.isFolder && item.parentId == parentId {
+        if (parentItem.isFolder && parentItem.category == .item) && item.parentId == parentId {
             return
         }
         if parentItem.isFolder && item.parentId != nil {
             removeItemFromParent(itemId: itemId)
         }
-        let entry = Model.Entry.newChild(id: itemId)
+
         var entries = parentItem.entries
-        if parentItem.category == .folder {
-            entries.removeAll { $0.childId == itemId }
-        }
-        entries.append(entry)
-        if parentItem.category == .folder {
-            entries = entries.sorted {
-                let name1 = itemControllable.nameSync(itemId: $0.childId)
-                let name2 = itemControllable.nameSync(itemId: $1.childId)
-                return name1.localizedStandardCompare(name2) == .orderedAscending
+        if parentItem.category != .item {
+            let entry = Model.Entry.newChild(id: itemId)
+            if parentItem.category == .folder {
+                entries.removeAll { $0.childId == itemId }
+            }
+            entries.append(entry)
+            if parentItem.category == .folder {
+                entries = entries.sorted {
+                    let name1 = itemControllable.nameSync(itemId: $0.childId)
+                    let name2 = itemControllable.nameSync(itemId: $1.childId)
+                    return name1.localizedStandardCompare(name2) == .orderedAscending
+                }
             }
         }
-
-        if parentItem.category == .folder {
-            item.parentId = parentItem.id
+        
+        if parentItem.category == .folder || parentItem.category == .item {
+            item.parentId <=> parentItem.id
+            if parentItem.category == .item {
+                item.displayState <=> 1
+            }
             save(updated: item, message: String(localized: "Added parent").localizedString)
         }
 
-        parentItem.entries = entries
+        if parentItem.category != .item {
+            parentItem.entries <=> entries
+        }
         save(updated: parentItem, message: String(localized: "Added item").localizedString)
     }
     
@@ -233,7 +238,14 @@ public extension EditControllable {
                 save(updated: entryItem, message: String(localized: "Remove parent").localizedString)
             }
         }
+        
         tagController.remove(tags: item.tags, module: itemControllable.config.module)
+        linkRegisterControllable.repairLinks(for: [ItemRowModel(itemId: itemId, typeId: itemControllable.config.module)])
+        linkRegisterControllable.resetUsedLink(for: ItemRowModel(itemId: itemId, typeId: itemControllable.config.module))
+        for entry in item.entries {
+            linkRegisterControllable.resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemControllable.config.module))
+        }
+
         item.displayState = 2
         save(updated: item, message: String(localized: "Delete").localizedString)
     }
@@ -385,8 +397,33 @@ public extension EditControllable {
     }
 
     @MainActor func saveChanges(to newValue: Model, name: String) {
+        let linkModels = newValue.linkRegisterModels
+
+        if let previous = itemControllable.itemSync(for: newValue.id) {
+            let previousLinkModels = previous.linkRegisterModels
+            var previousEntryIds = Set(previous.entries.map { $0.id })
+            
+            if previousLinkModels != linkModels {
+                linkRegisterControllable.deregister(links: previousLinkModels)
+            }
+            
+            previousEntryIds.subtract(newValue.entries.map { $0.id })
+            linkRegisterControllable.repairLinks(for: previousEntryIds.map { ItemRowModel(itemId: previous.id, entryId: $0, typeId: itemControllable.config.module) })
+            
+        }
+
+        linkRegisterControllable.register(links: linkModels)
+        for entry in newValue.entries {
+            linkRegisterControllable.resetUsedLink(for: ItemRowModel(itemId: newValue.id, entryId: entry.id, typeId: itemControllable.config.module))
+        }
+
         editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
         itemControllable.replace(model: newValue, isInsert: false, shouldRepairLinks: true)
+    }
+
+    @MainActor func save(updated: any Observable) {
+        guard let updated = updated as? Model else { return }
+        save(with: String(localized: "update from sync").localizedString, currentModel: updated)
     }
 
     @MainActor func save(updated: Model, message: String) {

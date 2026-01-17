@@ -173,6 +173,13 @@ extension EditController {
         //root.gameController.resetGameDiceId(itemId: model.id, entryId: entryId)
     }
     
+    @MainActor func removePhotos(itemId: UUID) async {
+        guard let item = editModel(for: itemId) else { return }
+        item.photoId = nil
+        item.photos.removeAll()
+        save(updated: item, message: String(localized: "remove photos").localizedString)
+    }
+
     @MainActor func addNewGroup(itemId: UUID) async -> UUID {
         let groupId = await itemController.addNew(type: .item)
         reset(hidden: true, itemId: groupId)
@@ -296,33 +303,6 @@ extension EditController {
 // MARK: - Group Edit
 
 extension EditController {
-    var groupEdit: Bool {
-        true
-    }
-
-    @MainActor
-    func groupTitle(for models: [ItemRowModel], rootModel: ItemRowModel?) -> LocalizedStringKey {
-        guard let rootModel else { return "Group" }
-        let item = itemController.itemOrEmpty(for: rootModel.itemId)
-        let count = models.count
-        if let entryId = rootModel.entryId {
-            // is grouped
-            if let groupId = item[entryId].valueId {
-                return "Ungroup \"\(itemController.itemOrEmpty(for: groupId).name)\" into \(itemController.itemOrEmpty(for: groupId).entries.count) item"
-            } else {
-                return "Group \"\(item[entryId].name)\" with \(count) item"
-            }
-        } else {
-            if item.entries.isEmpty {
-                if count == 0 {
-                    return "Group \"\(item.name)\""
-                }
-                return "Group \"\(item.name)\" with \(count) item"
-            }
-            return "Ungroup \"\(item.name)\" into \(item.entries.count) item"
-        }
-    }
-
     @MainActor
     func createGroup(itemId: UUID, entryIds: [UUID]) {
         guard let item = editModel(for: itemId) else { return }
@@ -365,18 +345,6 @@ extension EditController {
             }
         } else {
             await group(itemId: editModel.id, entryId: nil, models: models)
-        }
-    }
-
-    @MainActor
-    func setGroupPhotos(itemId: UUID) async {
-        guard let editModel = editModel(for: itemId) else { return }
-        let allGroupIds = valueGroupIds(value: editModel)
-        for allGroupId in allGroupIds {
-            guard allGroupId != editModel.id, let value = itemController.copy(of: allGroupId) else { return }
-            value.photoId = editModel.photoId
-            value.photos = editModel.photos
-            itemController.replace(model: value, isInsert: false, shouldRepairLinks: false)
         }
     }
 
@@ -562,7 +530,7 @@ extension EditController {
 
         var effectedLinks = true
         for itemRowModel in itemRowModels {
-            if !itemController.usedLinks(for: itemRowModel).isEmpty {
+            if !linkRegisterControllable.used(for: itemRowModel).isEmpty {
                 effectedLinks = false
                 break;
             }

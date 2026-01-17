@@ -4,7 +4,6 @@ import CoreRPG
 import CoreData
 import Foundation
 import PhotoRPG
-import SwiftData
 import SwiftUI
 
 @Observable
@@ -38,7 +37,7 @@ public final class WeatherRootModel: @unchecked Sendable {
         _linkController = LinkController(photoRoot: photoRoot, itemController: itemController, gameController: gameController)
 
         if let dataController, let context {
-            _syncDataController = SyncDataController(context: context, dataController: dataController, itemController: itemController)
+            _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
                 syncDataController?.start()
             }

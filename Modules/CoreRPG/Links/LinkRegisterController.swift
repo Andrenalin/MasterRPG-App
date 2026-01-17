@@ -1,15 +1,51 @@
-// © André Trettin
+// @copyright André Trettin
 
 import Foundation
-import SwiftData
 
-@MainActor
-public struct LinkRegisterController {
-    public init(itemControllable: any ItemControllable) {
-        self.itemControllable = itemControllable
+@MainActor public struct LinkRegisterController: Sendable {
+    public init(root: RootManager?) {
+        self.root = root
+        self.model = LinkRegisterListModel()
     }
     
-    let itemControllable: any ItemControllable
+    let root: RootManager?
+    @MainActor public let model: LinkRegisterListModel
+}
+
+extension LinkRegisterController: LinkRegisterControllable {
+    @MainActor public func used(for link: ItemRowModel) -> [EffectedItemModel] {
+        let links: [LinkRegisterModel]
+        if let entryId = link.entryId {
+            links = model.entries[entryId, default: []]
+        } else {
+            links = model.items[link.itemId, default: []]
+        }
+        return links.map {
+            guard let rootController = root?.itemRootController(for: $0.source.typeId), let item = rootController.itemControllable.itemSync(for: $0.source.itemId) else {
+                return EffectedItemModel(id: $0.destination.itemId, name: "Module \($0.source.typeId) registered but item is gone", module: $0.source.typeId)
+            }
+            var entryName: String? = nil
+            if let entryId = $0.source.entryId {
+                entryName = item[entryId].name
+            }
+            return EffectedItemModel(id: UUID(), name: item.name, entryName: entryName, module: $0.source.typeId)
+        }
+    }
+    
+    @MainActor public func repairLinks(for items: [ItemRowModel]) {
+        for item in items {
+            let links: [LinkRegisterModel]
+            if let entryId = item.entryId {
+                links = model.entries[entryId, default: []]
+            } else {
+                links = model.items[item.itemId, default: []]
+            }
+            for link in links {
+                guard let linkController = root?.itemRootController(for: link.source.typeId)?.linkControllable else { continue }
+                linkController.validateLinks(on: link.source.itemId)
+            }
+        }
+    }
 }
 
 public extension LinkRegisterController {
@@ -110,20 +146,20 @@ public extension LinkRegisterController {
     
 public extension LinkRegisterController {
     func effectedItems(targetId: UUID, targetEntryId: UUID? = nil, targetModule: NetworkModules) -> [EffectedItemModel] {
-        let predicate: Predicate<LinkDataModel>
-        if let targetEntryId {
-            predicate = #Predicate<LinkDataModel> {
-                $0.sourceId == targetId && $0.sourceEntryId == targetEntryId && $0.sourceModule == targetModule
-            }
-        } else {
-            predicate = #Predicate<LinkDataModel> {
-                $0.sourceId == targetId && $0.sourceModule == targetModule
-            }
-        }
-        let fetchDescription = FetchDescriptor<LinkDataModel>(predicate: predicate)
+//        let predicate: Predicate<LinkDataModel>
+//        if let targetEntryId {
+//            predicate = #Predicate<LinkDataModel> {
+//                $0.sourceId == targetId && $0.sourceEntryId == targetEntryId && $0.sourceModule == targetModule
+//            }
+//        } else {
+//            predicate = #Predicate<LinkDataModel> {
+//                $0.sourceId == targetId && $0.sourceModule == targetModule
+//            }
+//        }
+//        let fetchDescription = FetchDescriptor<LinkDataModel>(predicate: predicate)
         return []
 //        guard let models = try? container.mainContext.fetch(fetchDescription) else { return [] }
-//        
+//
 //        return models.map {
 //            let item = itemControllable.itemSync(for: $0.destinationId)
 //            return EffectedItemModel(id: $0.id, name: item?.name ?? $0.name, entryName: targetEntryId != nil ? $0.name : nil, module: $0.destinationModule)

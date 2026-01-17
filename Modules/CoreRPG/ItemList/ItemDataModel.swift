@@ -15,18 +15,9 @@ public final class ItemDataModel: Sendable {
     public var items: [UUID] = []
     public var itemData: [UUID: ModelType] = [:]
 
-    public var allTags: [String] = []
-
     public let categoryTags: [ItemListCategory]
     public let version: Int
-        
-    func updateTags(with newTags: [String]) {
-        let tags = newTags.map { $0.localizedUppercase }.filter { !allTags.contains($0) }
-        guard !tags.isEmpty else { return }
-        allTags.append(contentsOf: tags)
-        allTags.sort { $0.localizedCompare($1) == .orderedAscending }
-    }
-    
+            
     func item(for itemId: UUID) -> ModelType? {
         itemData[itemId]
     }

@@ -311,6 +311,7 @@
       }
     },
     "Module %@ not supported" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
