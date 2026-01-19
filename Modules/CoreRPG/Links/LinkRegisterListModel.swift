@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreData
 import Foundation
 
 public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
@@ -39,29 +40,31 @@ public extension ItemLinkRegistable {
 public final class LinkRegisterListModel: Sendable {
     public init() {}
     
+    var context: NSManagedObjectContext?
+    
     public var items: [UUID: [LinkRegisterModel]] = [:]
-    public var entries: [UUID: [LinkRegisterModel]] = [:]
-    public var links: [UUID: (UUID, Bool)] = [:]
+//    public var entries: [UUID: [LinkRegisterModel]] = [:]
+//    public var links: [UUID: (UUID, Bool)] = [:]
     
     func reset() {
-        entries = [:]
+//        entries = [:]
         items = [:]
-        links = [:]
+//        links = [:]
     }
     
-    func setEntry(entryId: UUID, with entryLinks: [LinkRegisterModel]) {
-        let oldEntryLinks = entries[entryId, default: []]
-        oldEntryLinks.forEach { links.removeValue(forKey: $0.id)}
-        
-        entries[entryId] = entryLinks
-        entryLinks.forEach { links[$0.id] = (entryId, true) }
-    }
+//    func setEntry(entryId: UUID, with entryLinks: [LinkRegisterModel]) {
+//        let oldEntryLinks = entries[entryId, default: []]
+//        oldEntryLinks.forEach { links.removeValue(forKey: $0.id)}
+//        
+//        entries[entryId] = entryLinks
+//        entryLinks.forEach { links[$0.id] = (entryId, true) }
+//    }
     
     func setItem(itemId: UUID, with itemLinks: [LinkRegisterModel]) {
-        let oldItemsLinks = items[itemId, default: []]
-        oldItemsLinks.forEach { links.removeValue(forKey: $0.id) }
+        //let oldItemsLinks = items[itemId, default: []]
+        //oldItemsLinks.forEach { links.removeValue(forKey: $0.id) }
 
         items[itemId] = itemLinks
-        itemLinks.forEach { links[$0.id] = (itemId, false) }
+        //itemLinks.forEach { links[$0.id] = (itemId, false) }
     }
 }

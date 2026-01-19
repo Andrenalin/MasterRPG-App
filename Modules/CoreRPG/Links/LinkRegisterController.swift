@@ -1,6 +1,8 @@
 // @copyright André Trettin
 
+import CoreData
 import Foundation
+import os.log
 
 @MainActor public struct LinkRegisterController: Sendable {
     public init(root: RootManager?) {
@@ -10,16 +12,55 @@ import Foundation
     
     let root: RootManager?
     @MainActor public let model: LinkRegisterListModel
+    
+    @MainActor public func setup(context: NSManagedObjectContext) {
+        model.context = context
+        
+        Task.detached(priority: .userInitiated) {
+            await context.perform {
+                do {
+                    let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
+                    guard let linkReferenceModels = try context.fetch(request) as? [LinkReferenceDataModel] else { return }
+                    for linkReferenceModel in linkReferenceModels {
+                        let source = ItemRowModel(itemId: linkReferenceModel.sourceId ?? UUID(), entryId: linkReferenceModel.sourceEntryId, typeId: NetworkModules(rawValue: Int(linkReferenceModel.sourceModule)) ?? .none)
+                        let destination = ItemRowModel(itemId: linkReferenceModel.destinationId ?? UUID(), entryId: linkReferenceModel.destinationEntryId, typeId: NetworkModules(rawValue: Int(linkReferenceModel.destinationModule)) ?? .none)
+                        
+                        let newModel = LinkRegisterModel(name: linkReferenceModel.name ?? "", source: source, destination: destination)
+                        
+                        let keyId = destination.itemId
+                        updateLink(keyId: keyId, addedModel: newModel)
+                    }
+                } catch {
+                    Logger.coreDataController.error("tagdata error \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
+    }
+    
+    nonisolated private func updateLink(keyId: UUID, addedModel: LinkRegisterModel) {
+        Task {
+            await updateLinkSync(keyId: keyId, addedModel: addedModel)
+        }
+    }
+
+    @MainActor private func updateLinkSync(keyId: UUID, addedModel: LinkRegisterModel) {
+        var current = model.items[keyId, default: []]
+        current.append(addedModel)
+        model.items[keyId] = current
+    }
+
+    @MainActor private func updateLinkSync(keyId: UUID, removedModel: LinkRegisterModel) {
+        var current = model.items[keyId, default: []]
+        current.removeAll(where: { $0.source == removedModel.source && $0.destination == removedModel.destination })
+        model.items[keyId] = current
+    }
+
 }
 
 extension LinkRegisterController {
     @MainActor public func used(for link: ItemRowModel) -> [EffectedItemModel] {
-        let links: [LinkRegisterModel]
-        if let entryId = link.entryId {
-            links = model.entries[entryId, default: []]
-        } else {
-            links = model.items[link.itemId, default: []]
-        }
+        let keyId = link.itemId
+        let links = model.items[keyId, default: []]
         return links.map {
             guard let rootController = root?.itemRootController(for: $0.source.typeId), let item = rootController.itemControllable.itemSync(for: $0.source.itemId) else {
                 return EffectedItemModel(id: $0.destination.itemId, name: "Module \($0.source.typeId) registered but item is gone", module: $0.source.typeId)
@@ -34,12 +75,8 @@ extension LinkRegisterController {
     
     @MainActor public func repairLinks(for items: [ItemRowModel]) {
         for item in items {
-            let links: [LinkRegisterModel]
-            if let entryId = item.entryId {
-                links = model.entries[entryId, default: []]
-            } else {
-                links = model.items[item.itemId, default: []]
-            }
+            let keyId = item.itemId
+            let links = model.items[keyId, default: []]
             for link in links {
                 guard let linkController = root?.itemRootController(for: link.source.typeId)?.linkControllable else { continue }
                 linkController.validateLinks(on: link.source.itemId)
@@ -50,42 +87,24 @@ extension LinkRegisterController {
 
 public extension LinkRegisterController {
     @MainActor func isUsed(link: ItemRowModel) -> Bool {
-        let used = !(model.items[link.itemId]?.isEmpty ?? true)
-        guard !used, let entryId = link.entryId else { return used }
-        return !(model.entries[entryId]?.isEmpty ?? true)
+        let keyId = link.itemId
+        let used = !(model.items[keyId]?.isEmpty ?? true)
+        return used
+//        guard !used, link.entryId != nil else { return used }
+//        return !(model.items[link.itemId]?.isEmpty ?? true)
     }
     
     @MainActor func register(links: [LinkRegisterModel]) {
         for link in links {
-            if let entryId = link.destination.entryId {
-                var entryLinks = model.entries[entryId, default: []]
-                if !entryLinks.contains(where: { $0.source == link.source }) {
-                    entryLinks.append(link)
-                    model.setEntry(entryId: entryId, with: entryLinks)
-                }
-            }
-            var itemLinks = model.items[link.destination.itemId, default: []]
-            if !itemLinks.contains(where: { $0.source == link.source }) {
-                itemLinks.append(link)
-                model.setItem(itemId: link.destination.itemId, with: itemLinks)
-            }
+            let keyId = link.destination.itemId
+            updateLinkSync(keyId: keyId, addedModel: link)
         }
     }
 
     @MainActor func deregister(links: [LinkRegisterModel]) {
         for link in links {
-            if let entryId = link.destination.entryId {
-                var entryLinks = model.entries[entryId, default: []]
-                if let index = entryLinks.firstIndex(where: { $0.source == link.source }) {
-                    entryLinks.remove(at: index)
-                    model.setEntry(entryId: entryId, with: entryLinks)
-                }
-            }
-            var itemLinks = model.items[link.destination.itemId, default: []]
-            if let index = itemLinks.firstIndex(where: { $0.source == link.source }) {
-                itemLinks.remove(at: index)
-                model.setItem(itemId: link.destination.itemId, with: itemLinks)
-            }
+            let keyId = link.destination.itemId
+            updateLinkSync(keyId: keyId, removedModel: link)
         }
     }
 
@@ -94,14 +113,9 @@ public extension LinkRegisterController {
     }
     
     @MainActor func resetUsedLink(for item: ItemRowModel) {
-        if let entryId = item.entryId {
-            var entryLinks = model.entries[entryId, default: []]
-            entryLinks.removeAll(where: { $0.destination == item })
-            model.setEntry(entryId: entryId, with: entryLinks)
-        }
-        var itemLinks = model.items[item.itemId, default: []]
-        itemLinks.removeAll { $0.destination.itemId == item.itemId }
-        model.setItem(itemId: item.itemId, with: itemLinks)
+        let keyId = item.itemId
+        var itemLinks = model.items[keyId, default: []]
+        itemLinks.removeAll(where: { $0.destination == item })
     }
 }
 
@@ -109,35 +123,37 @@ public extension LinkRegisterController {
 
 public extension LinkRegisterController {
     @MainActor func linkRegisterModel(linkId: UUID) -> LinkRegisterModel? {
-        guard let (lookupId, isEntry) = model.links[linkId] else { return nil }
-        if isEntry {
-            return model.entries[lookupId, default: []].first(where: { $0.id == linkId} )
-        } else {
-            return model.items[lookupId, default: []].first(where: { $0.id == linkId} )
-        }
+//        guard let (lookupId, isEntry) = model.links[linkId] else { return nil }
+//        if isEntry {
+//            return model.entries[lookupId, default: []].first(where: { $0.id == linkId} )
+//        } else {
+//            return model.items[lookupId, default: []].first(where: { $0.id == linkId} )
+//        }
+        return nil
     }
 
     @MainActor func linkRegisterModel(in text: String, for source: ItemRowModel) -> [LinkRegisterModel] {
-        let links = LinkReplaceController.links(for: text)
-        return links.map { rawLink -> LinkRegisterModel in
-            if let destinationEntryId = rawLink.entryId {
-                let entryLinks = model.entries[destinationEntryId, default: []]
-                if var linkRegisterModel = entryLinks.first(where: { $0.source.itemId == source.itemId && $0.source.entryId == source.entryId  }) {
-                    linkRegisterModel.markDown = rawLink.markDown
-                    return linkRegisterModel
-                }
-            } else {
-                let itemLinks = model.items[rawLink.itemId, default: []]
-                if var linkRegisterModel = itemLinks.first(where: { $0.source.itemId == source.itemId }) {
-                    linkRegisterModel.markDown = rawLink.markDown
-                    return linkRegisterModel
-                }
-            }
-            var newModel = LinkRegisterModel(name: rawLink.name, source: source, destination: ItemRowModel(itemId: rawLink.itemId, entryId: rawLink.entryId, typeId: rawLink.module))
-            register(links: [newModel])
-            newModel.markDown = rawLink.markDown
-            return newModel
-        }
+//        let links = LinkReplaceController.links(for: text)
+//        return links.map { rawLink -> LinkRegisterModel in
+//            if let destinationEntryId = rawLink.entryId {
+//                let entryLinks = model.entries[destinationEntryId, default: []]
+//                if var linkRegisterModel = entryLinks.first(where: { $0.source.itemId == source.itemId && $0.source.entryId == source.entryId  }) {
+//                    linkRegisterModel.markDown = rawLink.markDown
+//                    return linkRegisterModel
+//                }
+//            } else {
+//                let itemLinks = model.items[rawLink.itemId, default: []]
+//                if var linkRegisterModel = itemLinks.first(where: { $0.source.itemId == source.itemId }) {
+//                    linkRegisterModel.markDown = rawLink.markDown
+//                    return linkRegisterModel
+//                }
+//            }
+//            var newModel = LinkRegisterModel(name: rawLink.name, source: source, destination: ItemRowModel(itemId: rawLink.itemId, entryId: rawLink.entryId, typeId: rawLink.module))
+//            register(links: [newModel])
+//            newModel.markDown = rawLink.markDown
+//            return newModel
+//        }
+        return []
     }
     
     func markDownLinkDataModel(for link: LinkRegisterModel) -> String {
