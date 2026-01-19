@@ -9,7 +9,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
         self.pdfEditorRoute = pdfEditorRoute
         self.inspector = inspector()
         self.pdfOverlay = pdfOverlay()
-        self.textEditModel = TextEditModel(linkRegisterController: editController.linkRegisterControllable)
+        self.textEditModel = TextEditModel(linkRegisterController: editController.linkRegisterController)
         self.model = model.copy()
     }
     

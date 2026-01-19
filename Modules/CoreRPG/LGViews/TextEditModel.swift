@@ -5,11 +5,11 @@ import SwiftData
 import SwiftUI
 
 @Observable public final class TextEditModel {
-    @MainActor public init(linkRegisterController: LinkRegisterControllable) {
+    @MainActor public init(linkRegisterController: LinkRegisterController) {
         self.linkRegisterController = linkRegisterController
     }
     
-    let linkRegisterController: LinkRegisterControllable
+    let linkRegisterController: LinkRegisterController
     var source: ItemRowModel = ItemRowModel(itemId: UUID(), typeId: .none)
     
     public var name: String = ""

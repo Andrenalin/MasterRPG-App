@@ -5,11 +5,11 @@ import Foundation
 import TableRPG
 
 struct ItemController: Sendable {
-    @MainActor init(config: ModuleConfiguration, tableRoot: TableRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(config: ModuleConfiguration, tableRoot: TableRootModel, dataController: DataController?, linkRegisterController: LinkRegisterController) {
         self.config = config
         
         self.dataControllable = dataController
-        self.linkRegisterController = linkRegisterControllable
+        self.linkRegisterController = linkRegisterController
         
         self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         self.collectionCategory = config.collectionCategory
@@ -21,15 +21,13 @@ struct ItemController: Sendable {
     let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
-    let linkRegisterController: LinkRegisterControllable
+    let linkRegisterController: LinkRegisterController
 
     let tableRoot: TableRootModel
 }
 
 extension ItemController: ItemControllable {
     typealias Model = ValueModel
-    
-    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
 }
 
 extension ItemController {

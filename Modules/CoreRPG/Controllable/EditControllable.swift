@@ -8,7 +8,7 @@ public protocol EditControllable: Sendable {
 
     var itemControllable: any ItemControllable { get }
     var fileUrlDataController: FileUrlDataController? { get }
-    @MainActor var linkRegisterControllable: LinkRegisterControllable { get }
+    @MainActor var linkRegisterController: LinkRegisterController { get }
     var tagController: TagController { get }
     
     var editorModel: ItemEditorModel { get }
@@ -240,10 +240,10 @@ public extension EditControllable {
         }
         
         tagController.remove(tags: item.tags, module: itemControllable.config.module)
-        linkRegisterControllable.repairLinks(for: [ItemRowModel(itemId: itemId, typeId: itemControllable.config.module)])
-        linkRegisterControllable.resetUsedLink(for: ItemRowModel(itemId: itemId, typeId: itemControllable.config.module))
+        linkRegisterController.repairLinks(for: [ItemRowModel(itemId: itemId, typeId: itemControllable.config.module)])
+        linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: itemId, typeId: itemControllable.config.module))
         for entry in item.entries {
-            linkRegisterControllable.resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemControllable.config.module))
+            linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemControllable.config.module))
         }
 
         item.displayState = 2
@@ -404,17 +404,17 @@ public extension EditControllable {
             var previousEntryIds = Set(previous.entries.map { $0.id })
             
             if previousLinkModels != linkModels {
-                linkRegisterControllable.deregister(links: previousLinkModels)
+                linkRegisterController.deregister(links: previousLinkModels)
             }
             
             previousEntryIds.subtract(newValue.entries.map { $0.id })
-            linkRegisterControllable.repairLinks(for: previousEntryIds.map { ItemRowModel(itemId: previous.id, entryId: $0, typeId: itemControllable.config.module) })
+            linkRegisterController.repairLinks(for: previousEntryIds.map { ItemRowModel(itemId: previous.id, entryId: $0, typeId: itemControllable.config.module) })
             
         }
 
-        linkRegisterControllable.register(links: linkModels)
+        linkRegisterController.register(links: linkModels)
         for entry in newValue.entries {
-            linkRegisterControllable.resetUsedLink(for: ItemRowModel(itemId: newValue.id, entryId: entry.id, typeId: itemControllable.config.module))
+            linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: newValue.id, entryId: entry.id, typeId: itemControllable.config.module))
         }
 
         editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)

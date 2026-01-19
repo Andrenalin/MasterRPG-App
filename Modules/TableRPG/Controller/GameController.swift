@@ -10,11 +10,11 @@ public protocol TableGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(config: ModuleConfiguration, diceRoot: DiceRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+    @MainActor init(config: ModuleConfiguration, diceRoot: DiceRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.diceRoot = diceRoot
         self.itemController = itemController
         self.exportController = ExportController(diceRoot: diceRoot, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(config: config, dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        let internItemController = ItemController(config: config, dataController: nil, linkRegisterController: linkRegisterController)
         self.importController = ImportController(itemController: internItemController)
         self.rootExportControllable = rootExportControllable
         self.rootImportControllable = rootImportControllable

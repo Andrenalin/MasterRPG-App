@@ -29,10 +29,10 @@ struct ItemControllerTests {
         let photoId = model.photoId
         #expect(nil != photoId)
         await #expect(root.photoRoot.itemController.itemOrEmpty(for: photoId!).name == "Ratten")
-        let isUsed = await sut.linkRegisterControllable.isUsed(link: ItemRowModel(itemId: photoId!, typeId: .photo))
+        let isUsed = await sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: photoId!, typeId: .photo))
         #expect(isUsed)
 
-        let effectedLinks = await sut.linkRegisterControllable.used(for: ItemRowModel(itemId: photoId!, typeId: .photo))
+        let effectedLinks = await sut.linkRegisterController.used(for: ItemRowModel(itemId: photoId!, typeId: .photo))
         #expect(effectedLinks.count == 1)
         #expect(effectedLinks[0].module == .adventure)
         #expect(effectedLinks[0].name == model.name)
@@ -53,9 +53,9 @@ struct ItemControllerTests {
             }
         }
         try #require(nil != tableId)
-        let isUsed = await sut.linkRegisterControllable.isUsed(link: ItemRowModel(itemId: tableId!, typeId: .table))
+        let isUsed = await sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: tableId!, typeId: .table))
         #expect(isUsed)
-        let effectedLinks = await sut.linkRegisterControllable.used(for: ItemRowModel(itemId: tableId!, typeId: .table))
+        let effectedLinks = await sut.linkRegisterController.used(for: ItemRowModel(itemId: tableId!, typeId: .table))
         #expect(effectedLinks.count == 107)
     }
 }

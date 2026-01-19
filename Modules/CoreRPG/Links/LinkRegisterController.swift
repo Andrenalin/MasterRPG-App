@@ -12,7 +12,7 @@ import Foundation
     @MainActor public let model: LinkRegisterListModel
 }
 
-extension LinkRegisterController: LinkRegisterControllable {
+extension LinkRegisterController {
     @MainActor public func used(for link: ItemRowModel) -> [EffectedItemModel] {
         let links: [LinkRegisterModel]
         if let entryId = link.entryId {
@@ -47,6 +47,106 @@ extension LinkRegisterController: LinkRegisterControllable {
         }
     }
 }
+
+public extension LinkRegisterController {
+    @MainActor func isUsed(link: ItemRowModel) -> Bool {
+        let used = !(model.items[link.itemId]?.isEmpty ?? true)
+        guard !used, let entryId = link.entryId else { return used }
+        return !(model.entries[entryId]?.isEmpty ?? true)
+    }
+    
+    @MainActor func register(links: [LinkRegisterModel]) {
+        for link in links {
+            if let entryId = link.destination.entryId {
+                var entryLinks = model.entries[entryId, default: []]
+                if !entryLinks.contains(where: { $0.source == link.source }) {
+                    entryLinks.append(link)
+                    model.setEntry(entryId: entryId, with: entryLinks)
+                }
+            }
+            var itemLinks = model.items[link.destination.itemId, default: []]
+            if !itemLinks.contains(where: { $0.source == link.source }) {
+                itemLinks.append(link)
+                model.setItem(itemId: link.destination.itemId, with: itemLinks)
+            }
+        }
+    }
+
+    @MainActor func deregister(links: [LinkRegisterModel]) {
+        for link in links {
+            if let entryId = link.destination.entryId {
+                var entryLinks = model.entries[entryId, default: []]
+                if let index = entryLinks.firstIndex(where: { $0.source == link.source }) {
+                    entryLinks.remove(at: index)
+                    model.setEntry(entryId: entryId, with: entryLinks)
+                }
+            }
+            var itemLinks = model.items[link.destination.itemId, default: []]
+            if let index = itemLinks.firstIndex(where: { $0.source == link.source }) {
+                itemLinks.remove(at: index)
+                model.setItem(itemId: link.destination.itemId, with: itemLinks)
+            }
+        }
+    }
+
+    @MainActor func reset() {
+        model.reset()
+    }
+    
+    @MainActor func resetUsedLink(for item: ItemRowModel) {
+        if let entryId = item.entryId {
+            var entryLinks = model.entries[entryId, default: []]
+            entryLinks.removeAll(where: { $0.destination == item })
+            model.setEntry(entryId: entryId, with: entryLinks)
+        }
+        var itemLinks = model.items[item.itemId, default: []]
+        itemLinks.removeAll { $0.destination.itemId == item.itemId }
+        model.setItem(itemId: item.itemId, with: itemLinks)
+    }
+}
+
+// MARK: - Editor
+
+public extension LinkRegisterController {
+    @MainActor func linkRegisterModel(linkId: UUID) -> LinkRegisterModel? {
+        guard let (lookupId, isEntry) = model.links[linkId] else { return nil }
+        if isEntry {
+            return model.entries[lookupId, default: []].first(where: { $0.id == linkId} )
+        } else {
+            return model.items[lookupId, default: []].first(where: { $0.id == linkId} )
+        }
+    }
+
+    @MainActor func linkRegisterModel(in text: String, for source: ItemRowModel) -> [LinkRegisterModel] {
+        let links = LinkReplaceController.links(for: text)
+        return links.map { rawLink -> LinkRegisterModel in
+            if let destinationEntryId = rawLink.entryId {
+                let entryLinks = model.entries[destinationEntryId, default: []]
+                if var linkRegisterModel = entryLinks.first(where: { $0.source.itemId == source.itemId && $0.source.entryId == source.entryId  }) {
+                    linkRegisterModel.markDown = rawLink.markDown
+                    return linkRegisterModel
+                }
+            } else {
+                let itemLinks = model.items[rawLink.itemId, default: []]
+                if var linkRegisterModel = itemLinks.first(where: { $0.source.itemId == source.itemId }) {
+                    linkRegisterModel.markDown = rawLink.markDown
+                    return linkRegisterModel
+                }
+            }
+            var newModel = LinkRegisterModel(name: rawLink.name, source: source, destination: ItemRowModel(itemId: rawLink.itemId, entryId: rawLink.entryId, typeId: rawLink.module))
+            register(links: [newModel])
+            newModel.markDown = rawLink.markDown
+            return newModel
+        }
+    }
+    
+    func markDownLinkDataModel(for link: LinkRegisterModel) -> String {
+        "[\(link.name)](\(URL.appScheme)://\(link.id))"
+    }
+}
+
+
+
 
 //public extension LinkRegisterController {
 //    func linkDataModel(linkId: UUID) -> LinkDataModel? {

@@ -12,7 +12,7 @@ public protocol ItemControllable: Sendable  {
     var dataControllable: (any DataPersistenceControllable)? { get }
     var fileUrlDataController: FileUrlDataController? { get }
     
-    @MainActor var linkRegisterControllable: LinkRegisterControllable { get }
+    @MainActor var linkRegisterController: LinkRegisterController { get }
     var itemDataModel: ItemDataModel { get }
     
     @MainActor func children(itemId: UUID) -> [Model]
@@ -197,7 +197,7 @@ private extension ItemControllable {
         guard let model = model as? Model else { return }
         // this will be removed later and replace with the db
         let linkModels = model.linkRegisterModels
-        linkRegisterControllable.register(links: linkModels)
+        linkRegisterController.register(links: linkModels)
         itemDataModel.setItem(id: model.id, item: model)
     }
 

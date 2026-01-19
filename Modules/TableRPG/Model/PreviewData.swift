@@ -12,8 +12,8 @@ public extension TableRootModel {
     @MainActor
     static let preview: TableRootModel = {
         let root = TableRootModel(tagController: .preview, diceRoot: DiceFactory.root(tagController: .preview), pdfRoot: .preview)
-        root.setUp(context: nil, rootControllable: root)
-        root.diceRoot.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
+        root.diceRoot.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -50,13 +50,10 @@ public extension TableRootModel {
     @MainActor
     static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
         let root = TableRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif
-
-    @MainActor
-    static let linkRegisterController = FakeLinkRegisterController()
 }
 
 extension TableRootModel: RootControllable {
@@ -64,11 +61,6 @@ extension TableRootModel: RootControllable {
         linkController
     }
 
-    @MainActor
-    public var linkRegisterControllable: LinkRegisterControllable {
-        TableRootModel.linkRegisterController
-    }
-    
     public var gameExportControllable: any ExportControllable {
         exportController
     }

@@ -165,7 +165,7 @@ public extension EntryDataEditable {
         var changed = item[entryId].name != name.withoutLink()
         item[entryId].name <=> name.withoutLink()
         
-        let links = linkRegisterControllable.linkRegisterModel(in: content, for: ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemControllable.config.module))
+        let links = linkRegisterController.linkRegisterModel(in: content, for: ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemControllable.config.module))
         var seenIds: Set<UUID> = []
         var newContent = content
         for link in links {
@@ -174,10 +174,10 @@ public extension EntryDataEditable {
                 continue
             }
             let newLink = link.duplicate()
-            // linkRegisterControllable.markDown(for: link)
+            // linkRegisterController.markDown(for: link)
             guard let oldLinkText = link.markDown, let range = content.firstRange(of: oldLinkText) else { continue }
             newContent = newContent.replacingOccurrences(of: oldLinkText, with: newLink.markDown ?? oldLinkText, range: range)
-            linkRegisterControllable.register(links: [newLink])
+            linkRegisterController.register(links: [newLink])
         }
         changed = changed || item[entryId].content != newContent
         item[entryId].content <=> newContent
@@ -240,7 +240,7 @@ public extension EntryDataEditable {
 //    @MainActor
 //    func isUsed(rowModels: [ItemRowModel]) -> Bool {
 //        for rowModel in rowModels {
-//            if linkRegisterControllable.isUsed(link: rowModel) {
+//            if linkRegisterController.isUsed(link: rowModel) {
 //                return true
 //            }
 //        }
@@ -249,12 +249,12 @@ public extension EntryDataEditable {
 
 //    @MainActor
 //    func isUsed(entryId: UUID) -> Bool {
-//        linkRegisterControllable.isUsed(link: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
+//        linkRegisterController.isUsed(link: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
 //    }
 //
 //    @MainActor
 //    func used(entryId: UUID) -> [EffectedItemModel] {
-//        linkRegisterControllable.used(for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
+//        linkRegisterController.used(for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
 //    }
     
     func scanReplace(entry: Model.Entry, linkEntry: LinkEntryModel, getLink: @Sendable @escaping (Model.Entry) -> String, setLink: @Sendable @escaping (String, Model.Entry) -> Model.Entry, caseInsensitive: Bool, words: Bool) -> Model.Entry {

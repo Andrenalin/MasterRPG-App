@@ -5,8 +5,8 @@ import Foundation
 import SwiftData
 
 struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, tagController: TagController) {
-        self.linkRegisterControllable = linkRegisterControllable
+    @MainActor init(itemController: ItemController, linkRegisterController: LinkRegisterController, tagController: TagController) {
+        self.linkRegisterController = linkRegisterController
         self.itemController = itemController
         self.tagController = tagController
         self.editorModel = ItemEditorModel()
@@ -14,7 +14,7 @@ struct EditController: Sendable {
     }
 
     let itemController: ItemController
-    let linkRegisterControllable: any LinkRegisterControllable
+    let linkRegisterController: LinkRegisterController
     let tagController: TagController
     let editorModel: ItemEditorModel
 

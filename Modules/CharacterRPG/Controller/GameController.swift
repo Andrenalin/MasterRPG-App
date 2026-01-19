@@ -33,7 +33,7 @@ public protocol ValueGameStorable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+    init(root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.root = root
         self.diceRoot = diceRoot
         self.photoRoot = photoRoot
@@ -41,7 +41,7 @@ struct GameController: Sendable {
         
         self.itemController = itemController
         self.exportController = ExportController(diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(config: root.config, tableRoot: tableRoot, dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        let internItemController = ItemController(config: root.config, tableRoot: tableRoot, dataController: nil, linkRegisterController: linkRegisterController)
         self.importController = ImportController(itemController: internItemController)
         self.rootExportControllable = rootExportControllable
         self.rootImportControllable = rootImportControllable

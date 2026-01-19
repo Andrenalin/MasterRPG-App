@@ -14,7 +14,7 @@ public extension CharacterRootModel {
     @MainActor
     static let preview: CharacterRootModel = {
         let root = CharacterRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         root.itemController.replace(model: ValueModel.preview, isInsert: true)
         root.editController.setCurrentItem(to: .preview)
         return root
@@ -42,13 +42,10 @@ public extension CharacterRootModel {
     @MainActor
     static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) -> CharacterRootModel {
         let root = CharacterRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif
-
-    @MainActor
-    static let linkRegisterController = FakeLinkRegisterController()
 }
 
 extension CharacterRootModel: RootControllable {
@@ -56,11 +53,6 @@ extension CharacterRootModel: RootControllable {
         linkController
     }
 
-    @MainActor
-    public var linkRegisterControllable: LinkRegisterControllable {
-        CharacterRootModel.linkRegisterController
-    }
-    
     public var gameExportControllable: any ExportControllable {
         exportController
     }

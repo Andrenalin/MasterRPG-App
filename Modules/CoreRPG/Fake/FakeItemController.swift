@@ -8,10 +8,10 @@ struct FakeItemController: ItemControllable {
     var config: any ModuleConfigurable
     var dataControllable: (any DataPersistenceControllable)?
     var fileUrlDataController: FileUrlDataController? 
-    var linkRegisterControllable: any LinkRegisterControllable
+    var linkRegisterController: LinkRegisterController
     
     var itemDataModel: ItemDataModel
         
     @MainActor
-    static let fake = FakeItemController(config: FakeModuleConfiguration(), linkRegisterControllable: FakeLinkRegisterController.fake, itemDataModel: ItemDataModel(categoryTags: [.all]))
+    static let fake = FakeItemController(config: FakeModuleConfiguration(), linkRegisterController: LinkRegisterController.fake, itemDataModel: ItemDataModel(categoryTags: [.all]))
 }

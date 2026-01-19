@@ -5,11 +5,11 @@ import Foundation
 import PhotoRPG
 
 struct ItemController: Sendable {
-    @MainActor init(config: ModuleConfiguration, photoRoot: PhotoRootModel, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(config: ModuleConfiguration, photoRoot: PhotoRootModel, dataController: DataController?, linkRegisterController: LinkRegisterController) {
         self.config = config
 
         self.dataControllable = dataController
-        self.linkRegisterController = linkRegisterControllable
+        self.linkRegisterController = linkRegisterController
 
         self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         self.collectionCategory = config.collectionCategory
@@ -22,11 +22,9 @@ struct ItemController: Sendable {
     let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
-    let linkRegisterController: LinkRegisterControllable
+    let linkRegisterController: LinkRegisterController
 }
 
 extension ItemController: ItemControllable {
     typealias Model = MapModel
-    
-    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
 }

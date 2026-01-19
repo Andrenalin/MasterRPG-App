@@ -43,17 +43,17 @@ public final class MapRootModel: @unchecked Sendable {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable, linkRegisterController: LinkRegisterController) {
         self._rootControllable = rootControllable
         
         let dataController = context.map { DataController(context: $0, token: config.module.token) }
         _dataController = dataController
-        let itemController = ItemController(config: config, photoRoot: photoRoot, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        let itemController = ItemController(config: config, photoRoot: photoRoot, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        _editController = EditController(root: self, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, tagController: searchModel.tagController)
+        _editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(root: self, itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController, gameImporter: false)
-        _gameController = GameController(root: self, itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+        _gameController = GameController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
         _linkController = LinkController(root: self, itemController: itemController)
 
         if let dataController, let context {

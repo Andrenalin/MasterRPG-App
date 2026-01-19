@@ -9,8 +9,8 @@ public extension WeatherRootModel {
     @MainActor
     static let preview: WeatherRootModel = {
         let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
-        root.photoRoot.setUp(context: nil, rootControllable: root.photoRoot)
-        root.setUp(context: nil, rootControllable: root)
+        root.photoRoot.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -42,14 +42,11 @@ public extension WeatherRootModel {
     @MainActor
     static func testRoot(photoRoot: PhotoRootModel) -> WeatherRootModel {
         let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
-        root.photoRoot.setUp(context: nil, rootControllable: root.photoRoot)
-        root.setUp(context: nil, rootControllable: root)
+        root.photoRoot.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif
-
-    @MainActor
-    static let linkRegisterController = FakeLinkRegisterController()
 }
 
 extension WeatherRootModel: RootControllable {
@@ -57,11 +54,6 @@ extension WeatherRootModel: RootControllable {
         linkController
     }
 
-    @MainActor
-    public var linkRegisterControllable: LinkRegisterControllable {
-        WeatherRootModel.linkRegisterController
-    }
-    
     public var gameExportControllable: any ExportControllable {
         exportController
     }

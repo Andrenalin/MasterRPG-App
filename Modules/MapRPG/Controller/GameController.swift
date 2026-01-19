@@ -36,11 +36,11 @@ public protocol MapGameStorable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: MapRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+    init(root: MapRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.root = root
         self.itemController = itemController
         self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(config: root.config, photoRoot: root.photoRoot, dataController: nil, linkRegisterControllable: linkRegisterControllable)
+        let internItemController = ItemController(config: root.config, photoRoot: root.photoRoot, dataController: nil, linkRegisterController: linkRegisterController)
         self.importController = ImportController(itemController: internItemController, gameImporter: true)
         self.rootExportControllable = rootExportControllable
         self.rootImportControllable = rootImportControllable

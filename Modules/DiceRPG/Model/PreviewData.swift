@@ -10,7 +10,7 @@ public extension DiceRootModel {
     @MainActor
     static let preview: DiceRootModel = {
         let root = DiceRootModel(tagController: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         root.itemController.replace(model: DiceModel.preview, isInsert: true)
         root.editController.setCurrentItem(to: .preview)
 
@@ -23,7 +23,7 @@ public extension DiceRootModel {
     @MainActor
     static func preview(id: UUID) -> DiceRootModel {
         let root = DiceRootModel(tagController: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         root.itemController.replace(model: DiceModel.preview, isInsert: true)
         root.editController.setCurrentItem(to: .preview)
         Task {
@@ -63,22 +63,15 @@ public extension DiceRootModel {
     @MainActor
     static func testRoot() -> DiceRootModel {
         let root = DiceRootModel(tagController: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif
-
-    @MainActor
-    static let linkRegisterController = FakeLinkRegisterController()
 }
 
 extension DiceRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
-    }
-    
-    @MainActor public var linkRegisterControllable: LinkRegisterControllable {
-        DiceRootModel.linkRegisterController
     }
     
     public var gameExportControllable: any ExportControllable {

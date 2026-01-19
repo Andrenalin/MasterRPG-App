@@ -4,10 +4,10 @@ import CoreRPG
 import Foundation
 
 struct ItemController: Sendable {
-    @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterControllable: LinkRegisterControllable) {
+    @MainActor init(config: ModuleConfiguration, dataController: DataController?, linkRegisterController: LinkRegisterController) {
         self.config = config
         self.dataControllable = dataController
-        self.linkRegisterController = linkRegisterControllable
+        self.linkRegisterController = linkRegisterController
 
         self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)        
         self.collectionCategory = config.collectionCategory
@@ -17,11 +17,9 @@ struct ItemController: Sendable {
     let collectionCategory: ItemListCategory
     let dataControllable: (any DataPersistenceControllable)?
     let itemDataModel: ItemDataModel
-    let linkRegisterController: LinkRegisterControllable
+    let linkRegisterController: LinkRegisterController
 }
 
 extension ItemController: ItemControllable {
     typealias Model = WeatherModel
-    
-    @MainActor var linkRegisterControllable: LinkRegisterControllable { linkRegisterController }
 }

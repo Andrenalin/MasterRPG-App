@@ -79,7 +79,7 @@ public struct ConvertController: Sendable {
             }
             
             let linkModels = model.linkRegisterModels
-            editController.linkRegisterControllable.register(links: linkModels)
+            editController.linkRegisterController.register(links: linkModels)
 
             guard model.specialCategory == false, model.category != .entry else { continue }
             guard model.parentId == nil else { continue }

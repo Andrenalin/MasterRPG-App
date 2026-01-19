@@ -24,22 +24,22 @@ public final class AudioRootModel: @unchecked Sendable {
         self.audioPlayerModel = audioPlayerModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable) {
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable, linkRegisterController: LinkRegisterController) {
         self._rootControllable = rootControllable
 
         let dataController = context.map { DataController(context: $0, token: config.module.token) }
         _dataController = dataController
 
-        let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: rootControllable.linkRegisterControllable)
+        let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        _editController = EditController(itemController: itemController, linkRegisterControllable: rootControllable.linkRegisterControllable, tagController: searchModel.tagController)
+        _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
 
         let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
         _audioController = audioController
 
-        let gameController = GameController(config: config, itemController: itemController, audioController: audioController, linkRegisterControllable: rootControllable.linkRegisterControllable, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
+        let gameController = GameController(config: config, itemController: itemController, audioController: audioController, linkRegisterController: linkRegisterController, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
         _gameController = gameController
 
         _linkController = LinkController(itemController: itemController, audioController: audioController, gameController: gameController)

@@ -10,7 +10,7 @@ public extension SpaceRootModel {
     @MainActor
     static let preview: SpaceRootModel = {
         let root = SpaceRootModel(tagController: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -37,12 +37,10 @@ public extension SpaceRootModel {
     @MainActor
     static func testRoot() -> SpaceRootModel {
         let root = SpaceRootModel(tagController: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif
-
-    @MainActor static let linkRegisterController = FakeLinkRegisterController()
 }
 
 extension SpaceRootModel: RootControllable {
@@ -50,10 +48,6 @@ extension SpaceRootModel: RootControllable {
         linkController
     }
 
-    public var linkRegisterControllable: LinkRegisterControllable {
-        SpaceRootModel.linkRegisterController
-    }
-    
     public var gameExportControllable: any ExportControllable {
         exportController
     }

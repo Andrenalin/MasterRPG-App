@@ -17,7 +17,7 @@ public extension MapRootModel {
     @MainActor
     static let preview: MapRootModel = {
         var root = MapRootModel(tagController: .preview, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, characterRoot: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         //root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -50,22 +50,15 @@ public extension MapRootModel {
     @MainActor
     static func testRoot(audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel) -> MapRootModel {
         let root = MapRootModel(tagController: .preview, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, characterRoot: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif
-
-    @MainActor
-    static let linkRegisterController = FakeLinkRegisterController()
 }
 
 extension MapRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
-    }
-    
-    @MainActor public var linkRegisterControllable: LinkRegisterControllable {
-        MapRootModel.linkRegisterController
     }
     
     public var gameExportControllable: any ExportControllable {

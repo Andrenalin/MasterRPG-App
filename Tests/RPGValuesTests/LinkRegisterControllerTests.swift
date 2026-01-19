@@ -16,14 +16,14 @@ struct LinkRegisterControllerTests {
     func setUp() async throws -> CharacterRootModel {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = await root.linkRegisterControllable
+        let sut = await root.linkRegisterController
         await sut.reset()
         return root
     }
 
     @Test func addModelWithLinks() async throws {
         let root = try await setUp()
-        let sut = await root.linkRegisterControllable
+        let sut = await root.linkRegisterController
 
         let diceId = UUID()
         let diceLink = await root.diceRoot.linkControllable.generateLink(itemId: diceId)
@@ -63,7 +63,7 @@ struct LinkRegisterControllerTests {
 
     func isUsed() async throws {
         let root = try await setUp()
-        let sut = await root.linkRegisterControllable
+        let sut = await root.linkRegisterController
 
         let diceId = UUID()
         let diceLink = await root.diceRoot.linkControllable.generateLink(itemId: diceId)

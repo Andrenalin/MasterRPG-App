@@ -243,7 +243,7 @@ extension AppModel {
         tagController.setup(context: context)
         adventureRoot.setUp(root: root, context: context)
         #if !os(tvOS)
-        generatorRoot.setUp(context: context, rootControllable: adventureRoot)
+        generatorRoot.setUp(context: context, rootControllable: adventureRoot, linkRegisterController: LinkRegisterController(root: root))
         #endif
         
         self.rpgSpotlightIndexer = spotlightIndexer

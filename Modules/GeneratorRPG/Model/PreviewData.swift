@@ -9,7 +9,7 @@ public extension GeneratorRootModel {
     @MainActor
     static let preview: GeneratorRootModel = {
         let root = GeneratorRootModel(tagController: .preview)
-        root.setUp(context: nil, rootControllable: root)
+        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -45,16 +45,9 @@ public extension GeneratorRootModel {
         return root
     }
 #endif
-    
-    @MainActor static let linkRegisterController = FakeLinkRegisterController()
 }
 
 extension GeneratorRootModel: @preconcurrency RootControllable {
-    @MainActor
-    public var linkRegisterControllable: LinkRegisterControllable {
-        GeneratorRootModel.linkRegisterController
-    }
-    
     public var gameExportControllable: any ExportControllable {
         exportController
     }

@@ -33,11 +33,11 @@ public struct LinkCharacterModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: CharacterRootModel, itemController: ItemController, linkRegisterControllable: LinkRegisterControllable, tagController: TagController) {
+    @MainActor init(root: CharacterRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, tagController: TagController) {
         self.root = root
                 
         self.itemController = itemController
-        self.linkRegisterControllable = linkRegisterControllable
+        self.linkRegisterController = linkRegisterController
         self.tagController = tagController
         
         self.editorModel = ItemEditorModel()
@@ -47,7 +47,7 @@ struct EditController: Sendable {
     let root: CharacterRootModel
 
     let itemController: ItemController
-    let linkRegisterControllable: any LinkRegisterControllable
+    let linkRegisterController: LinkRegisterController
     let tagController: TagController
 
     let editorModel: ItemEditorModel
@@ -243,7 +243,7 @@ extension EditController {
         
         var effectedLinks = true
         for itemRowModel in itemRowModels {
-            if !linkRegisterControllable.used(for: itemRowModel).isEmpty {
+            if !linkRegisterController.used(for: itemRowModel).isEmpty {
                 effectedLinks = false
                 break;
             }

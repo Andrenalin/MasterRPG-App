@@ -46,31 +46,29 @@ public final class AdventureRootModel: @unchecked Sendable {
         _dataController = dataController
         let linkRegisterController = LinkRegisterController(root: root)
 
-        let itemController = ItemController(config: config, dataController: dataController, linkRegisterControllable: linkRegisterController)
+        let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        _editController = EditController(root: self, itemController: itemController, linkRegisterControllable: linkRegisterController, tagController: searchModel.tagController)
+        _editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(root: self, itemController: itemController, gameExporter: false)
         _importController = ImportController(root: self, itemController: itemController, gameImporter: false)
-        _gameController = GameController(root: self, itemController: itemController, linkRegisterControllable: linkRegisterController)
+        _gameController = GameController(root: self, itemController: itemController, linkRegisterController: linkRegisterController)
         _linkController = LinkController(root: self, itemController: itemController)
 
         _linkRegisterController = linkRegisterController
         
-        audioRoot.setUp(context: context, rootControllable: self)
-        diceRoot.setUp(context: context, rootControllable: self)
-        pdfRoot.setUp(context: context, rootControllable: self)
-        photoRoot.setUp(context: context, rootControllable: self)
-        spaceRoot.setUp(context: context, rootControllable: self)
-        weatherRoot.setUp(context: context, rootControllable: self)
-        tableRoot.setUp(context: context, rootControllable: self)
-        characterRoot.setUp(context: context, rootControllable: self)
-        mapRoot.setUp(context: context, rootControllable: self)
+        audioRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
+        diceRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
+        pdfRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
+        photoRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
+        spaceRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
+        weatherRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
+        tableRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
+        characterRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
+        mapRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
 
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
-            Task {
-                syncDataController?.start()
-            }
+            syncDataController?.start()
         }
     }
 
@@ -213,9 +211,6 @@ extension AdventureRootModel: RootControllable {
 
     public var linkControllable: any LinkControllable {
         linkController as LinkControllable
-    }
-    @MainActor public var linkRegisterControllable: LinkRegisterControllable {
-        linkRegisterController
     }
     public var gameExportControllable: any ExportControllable {
         gameController.gameExportController as ExportControllable

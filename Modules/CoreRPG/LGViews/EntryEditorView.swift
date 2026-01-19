@@ -7,7 +7,7 @@ public struct EntryEditorView: View {
     public init(editController: any EntryDataEditable, model: any ItemDataAccessable) {
         self.editController = editController
         self.model = model
-        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: editController.linkRegisterControllable))
+        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: editController.linkRegisterController))
     }
     
     let editController: any EntryDataEditable
