@@ -269,7 +269,7 @@ extension EditController {
     }
 
 //    func copyAddChild(childId: UUID, into itemId: UUID, entryId: UUID) async {
-//        let copiedChildId = await itemController.duplicate(itemId: childId)
+//        let copiedChildId = await duplicate(itemId: childId)
 //        await addChild(childId: copiedChildId, into: itemId, entryId: entryId)
 //    }
 }

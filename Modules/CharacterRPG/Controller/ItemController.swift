@@ -50,40 +50,4 @@ extension ItemController {
             subchildren(itemId: $0, deep: deep + 1)
         }
     }
-    
-    // TODO: move to editController?
-    func duplicate(itemId: UUID, withCopy: Bool = true) async -> UUID {
-        let (duplicates, copyId, mapper) = await duplicateSubValue(id: itemId, withCopy: withCopy)
-        //await root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)
-        for duplicate in duplicates {
-            await replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
-        }
-        return copyId
-    }
-
-    @MainActor
-    private func duplicateSubValue(id: UUID, withCopy: Bool) -> ([ValueModel], UUID, [UUID: UUID]) {
-        guard let item = itemSync(for: id) else { return ([], id, [:]) }
-        
-        var duplicates: [ValueModel] = []
-        let copyItem: ValueModel = withCopy ? item.duplicate() : item.duplicateWithoutCopy()
-        duplicates.append(copyItem)
-        
-        var mapper: [UUID: UUID] = [id: copyItem.id]
-        let subValueIds = item.duplicateSubValueIds()
-        subValueIds.forEach {
-            let (newDuplicates, newCopyId, newMapper) = duplicateSubValue(id: $0, withCopy: false)
-            mapper[$0] = newCopyId
-            mapper.merge(newMapper) { first, _ in return first }
-            duplicates.append(contentsOf: newDuplicates)
-        }
-        for (index, entry) in copyItem.entries.enumerated() {
-            guard let valueId = entry.valueId else { continue }
-            if let copyId = mapper[valueId] {
-                copyItem.entries[index].valueId = copyId
-                duplicates.first(where: { $0.id == copyId })?.parentId = copyItem.id
-            }
-        }
-        return (duplicates, copyItem.id, mapper)
-    }
 }

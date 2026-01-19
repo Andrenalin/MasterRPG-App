@@ -52,13 +52,8 @@ struct EditController: Sendable {
 extension EditController: EntryDataEditable {
     typealias Model = TableModel
     
-    var itemControllable: any ItemControllable {
-        itemController
-    }
-    
-    var fileUrlDataController: FileUrlDataController? {
-        itemControllable.fileUrlDataController
-    }
+    var itemControllable: any ItemControllable { itemController }
+    var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
 }
     
 // MARK: - EntryList editor

@@ -161,10 +161,9 @@ extension GameController: ValueGameStorable {
         
         let hasItem = await itemController.itemDataModel.items.contains { $0 == id }
         try? await updateGame(data: data, hide: false, deep: true)
-        let valueId = await itemController.duplicate(itemId: id, withCopy: false)
+        let valueId = await root.editController.duplicate(itemId: id, withCopy: false)
         if !hasItem {
-            // better to call editController -->  deep delete?
-            await itemController.delete(itemId: id)
+            await root.editController.delete(itemId: id)
         }
         let entry = ValueEntryModel(id: UUID(), name: "", type: .text, value: "", valueId: valueId)
         await root.editController.add(entry: entry, into: adventureValue.id)

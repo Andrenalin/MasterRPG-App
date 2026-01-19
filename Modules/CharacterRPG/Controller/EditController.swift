@@ -12,8 +12,6 @@ import TableRPG
 
 @MainActor @Observable
 final class ValueEditModel: Sendable {
-    var childIds: [UUID: UUID] = [:]
-
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false)
@@ -59,13 +57,8 @@ struct EditController: Sendable {
 extension EditController: EntryDataEditable {
     typealias Model = ValueModel
     
-    var itemControllable: any ItemControllable {
-        itemController
-    }
-    
-    var fileUrlDataController: FileUrlDataController? {
-        itemControllable.fileUrlDataController
-    }
+    var itemControllable: any ItemControllable { itemController }
+    var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
 }
  
 // MARK: - EntryList editor
@@ -145,7 +138,42 @@ extension EditController {
 
 extension EditController {
     @MainActor public func duplicate(item: any ItemDataAccessable) async {
-        _ = await itemController.duplicate(itemId: item.id)
+        _ = await duplicate(itemId: item.id, withCopy: true)
+    }
+    
+    func duplicate(itemId: UUID, withCopy: Bool) async -> UUID {
+        let (duplicates, copyId, mapper) = await duplicateSubValue(id: itemId, withCopy: withCopy)
+        await root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)
+        for duplicate in duplicates {
+            await itemController.replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
+        }
+        return copyId
+    }
+
+    @MainActor
+    private func duplicateSubValue(id: UUID, withCopy: Bool) -> ([ValueModel], UUID, [UUID: UUID]) {
+        guard let item = itemController.itemSync(for: id) else { return ([], id, [:]) }
+        
+        var duplicates: [ValueModel] = []
+        let copyItem: ValueModel = withCopy ? item.duplicate() : item.duplicateWithoutCopy()
+        duplicates.append(copyItem)
+        
+        var mapper: [UUID: UUID] = [id: copyItem.id]
+        let subValueIds = item.duplicateSubValueIds()
+        subValueIds.forEach {
+            let (newDuplicates, newCopyId, newMapper) = duplicateSubValue(id: $0, withCopy: false)
+            mapper[$0] = newCopyId
+            mapper.merge(newMapper) { first, _ in return first }
+            duplicates.append(contentsOf: newDuplicates)
+        }
+        for (index, entry) in copyItem.entries.enumerated() {
+            guard let valueId = entry.valueId else { continue }
+            if let copyId = mapper[valueId] {
+                copyItem.entries[index].valueId = copyId
+                duplicates.first(where: { $0.id == copyId })?.parentId = copyItem.id
+            }
+        }
+        return (duplicates, copyItem.id, mapper)
     }
     
     @MainActor func add(selection: [WindowItemSelection], itemId: UUID) {
