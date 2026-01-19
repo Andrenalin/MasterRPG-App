@@ -110,7 +110,7 @@ extension EditController {
 //        newValue.parentId = item.id
 //
 //        item.entries.insert(newEntry, at: groupIndex)
-//        itemController.replace(model: newValue, isInsert: true, shouldRepairLinks: true)
+//        itemController.replace(model: newValue, isInsert: true)
 //        save(updated: item, message: String(localized: "Created group").localizedString)
 //    }
 //
@@ -185,7 +185,7 @@ extension EditController {
 //        }
 //
 //        let value = ValueModel(id: UUID(), name: entries.first?.name ?? String(localized: "Unnamed").localizedString, description: "", tags: editModel.tags, category: editModel.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: editModel.photoId, photos: editModel.photoId != nil ? [editModel.photoId!] : [], entries: entries)
-//        itemControllable.replace(model: value, isInsert: true, shouldRepairLinks: true)
+//        itemControllable.replace(model: value, isInsert: true)
 //
 //        let valueEntry = ValueEntryModel(id: UUID(), name: String(localized: "Group").localizedString, type: .text, value: "", valueId: value.id)
 //

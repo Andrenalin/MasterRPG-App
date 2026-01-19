@@ -34,7 +34,7 @@ struct EditControllerTests {
 
         let item = await root.itemController.itemOrEmpty(for: itemId).copy()
         item.entries = [updatedEntry]
-        await root.itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
+        await root.itemController.replace(model: item, isInsert: false)
         
         var scanId: UUID? = nil
         for itemId in await root.itemController.itemDataModel.items {

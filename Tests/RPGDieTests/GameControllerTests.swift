@@ -307,7 +307,7 @@ private extension GameControllerTests {
             addDiceEvery: 20,
             resultCategory: ResultCategory(id: UUID(), module: .table)
         )
-        root.itemController.replace(model: dice, isInsert: true, shouldRepairLinks: true)
+        root.itemController.replace(model: dice, isInsert: true)
         let gameDice = root.gameController.gameItem(for: dice.id)
         #expect(gameDice == dice)
         root.gameController.setGame(item: gameDice, itemId: dice.id)

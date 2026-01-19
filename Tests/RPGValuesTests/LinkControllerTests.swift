@@ -22,19 +22,19 @@ struct LinkControllerTests {
         #expect(nil != item)
         let entryId = UUID()
         item!.entries.append(ValueEntryModel(id: entryId, name: "Some Value", type: .number, isGenerator: false, value: "27", diceId: nil, valueId: nil))
-        await root.itemController.replace(model: item!, isInsert: false, shouldRepairLinks: true)
+        await root.itemController.replace(model: item!, isInsert: false)
 
         var result = "**Some Value**: 27 "
         await #expect(sut.linkText(model: root.itemController.itemOrEmpty(for: itemId), entryId: entryId) == result)
 
         item![entryId].value = "27+2"
-        await root.itemController.replace(model: item!, isInsert: false, shouldRepairLinks: true)
+        await root.itemController.replace(model: item!, isInsert: false)
 
         result = "**Some Value**: 27+2 = 29"
         await #expect(sut.linkText(model: root.itemController.itemOrEmpty(for: itemId), entryId: entryId) == result)
 
         item![entryId].value = "27+2+3"
-        await root.itemController.replace(model: item!, isInsert: false, shouldRepairLinks: true)
+        await root.itemController.replace(model: item!, isInsert: false)
 
         result = "**Some Value**: 27+2+3 = 32"
         await #expect(sut.linkText(model: root.itemController.itemOrEmpty(for: itemId), entryId: entryId) == result)

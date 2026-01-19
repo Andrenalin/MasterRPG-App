@@ -373,7 +373,7 @@ struct EditControllerTests {
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
-        await root.itemController.replace(model: folderModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: folderModel, isInsert: true)
 
         // Create a regular item
         let itemId = await root.itemController.addNew(type: .item)
@@ -400,7 +400,7 @@ struct EditControllerTests {
 
         // Create a collection (album for spaces)
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
-        await root.itemController.replace(model: collectionModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: collectionModel, isInsert: true)
 
         // Create a regular item
         let itemId = await root.itemController.addNew(type: .item)
@@ -426,7 +426,7 @@ struct EditControllerTests {
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
-        await root.itemController.replace(model: folderModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: folderModel, isInsert: true)
 
         // Create multiple items
         let item1 = await root.itemController.addNew(type: .item)
@@ -460,7 +460,7 @@ struct EditControllerTests {
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
-        await root.itemController.replace(model: folderModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: folderModel, isInsert: true)
 
         // Try to add folder to itself
         await sut.addItem(itemId: folderModel.id, parentId: folderModel.id)
@@ -477,7 +477,7 @@ struct EditControllerTests {
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
-        await root.itemController.replace(model: folderModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: folderModel, isInsert: true)
 
         // Create an item
         let itemId = await root.itemController.addNew(type: .item)
@@ -501,11 +501,11 @@ struct EditControllerTests {
 
         // Create a collection
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
-        await root.itemController.replace(model: collectionModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: collectionModel, isInsert: true)
 
         // Create a folder (special category)
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
-        await root.itemController.replace(model: folderModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: folderModel, isInsert: true)
 
         // Try to add folder to collection - should be ignored (special category can't be in non-folder)
         await sut.addItem(itemId: folderModel.id, parentId: collectionModel.id)
@@ -521,11 +521,11 @@ struct EditControllerTests {
 
         // Create parent folder
         let parentFolderModel = SpaceModel(id: UUID(), name: "Parent Folder", category: .folder, displayState: 0)
-        await root.itemController.replace(model: parentFolderModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: parentFolderModel, isInsert: true)
 
         // Create child folder (special category)
         let childFolderModel = SpaceModel(id: UUID(), name: "Child Folder", category: .folder, displayState: 0)
-        await root.itemController.replace(model: childFolderModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: childFolderModel, isInsert: true)
 
         // Add child folder to parent folder - should work (folders can contain folders)
         await sut.addItem(itemId: childFolderModel.id, parentId: parentFolderModel.id)
@@ -667,7 +667,7 @@ struct EditControllerTests {
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
-        await root.itemController.replace(model: folderModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: folderModel, isInsert: true)
 
         // Create children
         let child1 = await root.itemController.addNew(type: .item)
@@ -763,7 +763,7 @@ struct EditControllerTests {
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
-        await root.itemController.replace(model: folderModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: folderModel, isInsert: true)
 
         // Create children
         let child1 = await root.itemController.addNew(type: .item)
@@ -798,7 +798,7 @@ struct EditControllerTests {
 
         // Create a collection
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
-        await root.itemController.replace(model: collectionModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: collectionModel, isInsert: true)
 
         // Create children
         let child1 = await root.itemController.addNew(type: .item)
@@ -836,7 +836,7 @@ struct EditControllerTests {
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
-        await root.itemController.replace(model: folderModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: folderModel, isInsert: true)
 
         // Create children
         let child1 = await root.itemController.addNew(type: .item)
@@ -869,7 +869,7 @@ struct EditControllerTests {
 
         // Create a collection
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
-        await root.itemController.replace(model: collectionModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: collectionModel, isInsert: true)
 
         // Create children
         let child1 = await root.itemController.addNew(type: .item)
@@ -907,7 +907,7 @@ struct EditControllerTests {
 
         // Create a collection
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
-        await root.itemController.replace(model: collectionModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: collectionModel, isInsert: true)
 
         // Create children
         let child1 = await root.itemController.addNew(type: .item)
@@ -947,7 +947,7 @@ struct EditControllerTests {
 
         // Create a collection
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
-        await root.itemController.replace(model: collectionModel, isInsert: true, shouldRepairLinks: true)
+        await root.itemController.replace(model: collectionModel, isInsert: true)
 
         // Create children
         let child1 = await root.itemController.addNew(type: .item)

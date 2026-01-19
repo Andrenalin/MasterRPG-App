@@ -42,8 +42,8 @@ public extension WeatherRootModel {
     @MainActor
     static func testRoot(photoRoot: PhotoRootModel) -> WeatherRootModel {
         let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
-        root.photoRoot.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
+        root.photoRoot.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif

@@ -35,7 +35,7 @@ struct DiceRootTests {
             resultCategory: ResultCategory(id: UUID(), module: .table)
         )
 
-        await sut.itemController.replace(model: dice, isInsert: true, shouldRepairLinks: true)
+        await sut.itemController.replace(model: dice, isInsert: true)
 
         #expect(await sut.itemController.itemDataModel.items.count == 1)
         
