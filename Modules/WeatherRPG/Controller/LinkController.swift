@@ -68,7 +68,7 @@ extension LinkController: LinkControllable {
         
         if !replacedItem.isSame(inspectedItem) {
             Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .public) will be replaced from reparing links.")
-            itemController.replace(model: replacedItem, isInsert: false, shouldRepairLinks: true)
+            itemController.replace(model: replacedItem, isInsert: false)
         }
     }
 

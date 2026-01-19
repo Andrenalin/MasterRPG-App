@@ -15,7 +15,7 @@ public extension CharacterRootModel {
     static let preview: CharacterRootModel = {
         let root = CharacterRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
         root.setUp(context: nil, rootControllable: root)
-        root.itemController.replace(model: ValueModel.preview, isInsert: true, shouldRepairLinks: false)
+        root.itemController.replace(model: ValueModel.preview, isInsert: true)
         root.editController.setCurrentItem(to: .preview)
         return root
     }()

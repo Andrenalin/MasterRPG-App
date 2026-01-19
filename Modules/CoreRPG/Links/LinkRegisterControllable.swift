@@ -89,6 +89,8 @@ public extension LinkRegisterControllable {
     @MainActor
     func register(links: [LinkRegisterModel]) {
         for link in links {
+            
+            
             if let entryId = link.destination.entryId {
                 var entryLinks = model.entries[entryId, default: []]
                 if !entryLinks.contains(where: { $0.source == link.source }) {

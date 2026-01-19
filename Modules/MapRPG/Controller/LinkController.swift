@@ -88,7 +88,7 @@ extension LinkController: LinkControllable {
         }
         if !replacedItem.isSame(inspectedItem) {
             Logger.linkController.info("Map: \(replacedItem.name, privacy: .public) will be replaced from reparing links.")
-            itemController.replace(model: replacedItem, isInsert: false, shouldRepairLinks: true)
+            itemController.replace(model: replacedItem, isInsert: false)
         }
 
         guard let photoId = inspectedItem.photoId, let replacedItem = itemController.copy(of: itemId) else { return }
@@ -99,7 +99,7 @@ extension LinkController: LinkControllable {
         } else {
                 Logger.linkController.warning("Map: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
-                itemController.replace(model: replacedItem, isInsert: false, shouldRepairLinks: true)
+                itemController.replace(model: replacedItem, isInsert: false)
         }
     }
 }

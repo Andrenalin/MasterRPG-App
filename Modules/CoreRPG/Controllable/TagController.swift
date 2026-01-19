@@ -34,7 +34,7 @@ public struct TagController: Sendable {
                     guard let tagModels = try context.fetch(request) as? [TagDataModel] else { return }
                     for tagModel in tagModels {
                         let module = NetworkModules(rawValue: Int(tagModel.module)) ?? .none
-                        let tag = tagModel.title ?? "Not set"
+                        let tag = tagModel.title ?? String(localized: "Not set").localizedString
                         let count = Int(tagModel.count)
                         update(tag: tag, count: count, module: module)
                     }

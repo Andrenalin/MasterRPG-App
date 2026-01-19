@@ -157,7 +157,7 @@ extension LinkController: LinkControllable {
         }
         if !replacedItem.isSame(inspectedItem) {
             Logger.linkController.info("Value: \(replacedItem.name, privacy: .public) will be replaced from reparing links.")
-            itemController.replace(model: replacedItem, isInsert: false, shouldRepairLinks: true)
+            itemController.replace(model: replacedItem, isInsert: false)
         }
     }
     
@@ -174,7 +174,7 @@ extension LinkController: LinkControllable {
                 } else {
                     let updateChild = child.copy()
                     updateChild.parentId = item.id
-                    itemController.replace(model: updateChild, isInsert: false, shouldRepairLinks: true)
+                    itemController.replace(model: updateChild, isInsert: false)
                 }
             }
         }
@@ -221,7 +221,7 @@ extension LinkController {
             }
             
             let item = ValueModel(id: UUID(), name: name, entries: [])
-            itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
+            itemController.replace(model: item, isInsert: false)
             return item.id
         }
         
@@ -249,12 +249,12 @@ extension LinkController {
         let valueEntry = ValueEntryModel(id: UUID(), name:  root.tableRoot.linkController.name(for: tableId).withoutLink(), type: .text, value: url)
         item.entries = item.entries + [valueEntry]
         
-        itemController.replace(model: item, isInsert: false, shouldRepairLinks: true)
+        itemController.replace(model: item, isInsert: false)
         
         if let parentId, let parentItem = itemController.itemSync(for: parentId), !parentItem.entries.contains(where: { $0.valueId == item.id }) {
             let valueEntry = ValueEntryModel(id: UUID(), name: "Group", type: .text, value: "", valueId: item.id)
             root.editController.add(entry: valueEntry, into: parentId)
-            itemController.replace(model: parentItem, isInsert: false, shouldRepairLinks: true)
+            itemController.replace(model: parentItem, isInsert: false)
         }
         
         return item.id
@@ -267,7 +267,7 @@ extension LinkController {
             return ValueEntryModel(id: UUID(), name:  root.tableRoot.linkController.name(for: $0.itemId), type: .text, value: value)
         }
         let newValue = ValueModel(id: UUID(), name: name.withoutLink(), description: value, entries: entries)
-        itemController.replace(model: newValue, isInsert: false, shouldRepairLinks: true)
+        itemController.replace(model: newValue, isInsert: false)
         return (nil, newValue.id)
     }
 }

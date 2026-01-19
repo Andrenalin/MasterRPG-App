@@ -45,7 +45,7 @@ extension ItemController: FileUrlAccessible {
             await cacheController?.remove(itemId: fileId)
         }
         item.fileUrl = fileUrl
-        await replace(model: item, isInsert: false, shouldRepairLinks: true)
+        await replace(model: item, isInsert: false)
     }
 }
 

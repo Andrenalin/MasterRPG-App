@@ -254,7 +254,7 @@ public extension EditControllable {
         guard let model = itemControllable.itemSync(for: item.id) else { return }
         let duplicate = model.duplicate()
         // character dupplicate
-        itemControllable.replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
+        itemControllable.replace(model: duplicate, isInsert: true)
         if let fileUrl = model.fileUrl, let fileUrlDataController, let data = try? await fileUrlDataController.loadData(for: fileUrl) {
             var path = fileUrl.rawUrl.deletingLastPathComponent().path(percentEncoded: false)
             if path == "./" {
@@ -418,7 +418,7 @@ public extension EditControllable {
         }
 
         editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
-        itemControllable.replace(model: newValue, isInsert: false, shouldRepairLinks: true)
+        itemControllable.replace(model: newValue, isInsert: false)
     }
 
     @MainActor func save(updated: any Observable) {
@@ -470,7 +470,7 @@ public extension EditControllable {
     func undo() {
         editorModel.undoManaged.undo()
         if let model = editorModel.undoManaged.value as? Model {
-            itemControllable.replace(model: model, isInsert: false, shouldRepairLinks: true)
+            itemControllable.replace(model: model, isInsert: false)
             editorModel.cacheItemListModel.reset(itemId: model.id)
         }
     }
@@ -479,7 +479,7 @@ public extension EditControllable {
     func redo() {
         editorModel.undoManaged.redo()
         if let model = editorModel.undoManaged.value as? Model {
-            itemControllable.replace(model: model, isInsert: false, shouldRepairLinks: true)
+            itemControllable.replace(model: model, isInsert: false)
             editorModel.cacheItemListModel.reset(itemId: model.id)
         }
     }

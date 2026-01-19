@@ -165,7 +165,7 @@ private extension ImportControllable {
             await counterUpdater()
             return
         }
-        await itemController.replace(model: finalItem, isInsert: true, shouldRepairLinks: false)
+        await itemController.replace(model: finalItem, isInsert: true)
         await counterUpdater()
         try Task.checkCancellation()
     }

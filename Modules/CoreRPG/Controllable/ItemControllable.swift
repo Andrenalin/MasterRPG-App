@@ -76,7 +76,7 @@ public extension ItemControllable {
         return second.isEqual(other: other)
     }
     
-    @MainActor func replace(model: ModelType?, isInsert: Bool, shouldRepairLinks: Bool) {
+    @MainActor func replace(model: ModelType?, isInsert: Bool) {
         guard let model = model as? Model else { return }
         if let orignal = self.itemSync(for: model.id) {
             let resort = orignal.name != model.name

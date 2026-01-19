@@ -36,7 +36,7 @@ extension ItemController: FileUrlAccessible {
     func saveFileUrl(fileUrl: FileUrl) async {
         guard let item = await item(for: fileUrl.fileId)?.copy() else { return }
         item.fileUrl = fileUrl
-        await replace(model: item, isInsert: false, shouldRepairLinks: true)
+        await replace(model: item, isInsert: false)
     }
 }
 

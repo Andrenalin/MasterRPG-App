@@ -145,7 +145,8 @@ extension EditController {
         let (duplicates, copyId, mapper) = await duplicateSubValue(id: itemId, withCopy: withCopy)
         await root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)
         for duplicate in duplicates {
-            await itemController.replace(model: duplicate, isInsert: true, shouldRepairLinks: true)
+            // this will not add the links to the database linkregister is missing
+            await itemController.replace(model: duplicate, isInsert: true)
         }
         return copyId
     }

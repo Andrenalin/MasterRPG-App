@@ -11,7 +11,7 @@ public extension DiceRootModel {
     static let preview: DiceRootModel = {
         let root = DiceRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
-        root.itemController.replace(model: DiceModel.preview, isInsert: true, shouldRepairLinks: false)
+        root.itemController.replace(model: DiceModel.preview, isInsert: true)
         root.editController.setCurrentItem(to: .preview)
 
         Task {
@@ -24,7 +24,7 @@ public extension DiceRootModel {
     static func preview(id: UUID) -> DiceRootModel {
         let root = DiceRootModel(tagController: .preview)
         root.setUp(context: nil, rootControllable: root)
-        root.itemController.replace(model: DiceModel.preview, isInsert: true, shouldRepairLinks: false)
+        root.itemController.replace(model: DiceModel.preview, isInsert: true)
         root.editController.setCurrentItem(to: .preview)
         Task {
             _ = await root.gameController.setCurrent(itemId: id)
@@ -107,9 +107,9 @@ extension ItemController {
     
     @MainActor
     static func setPreviewData(for controller: ItemController) async {
-        controller.replace(model: DiceModel.preview, isInsert: false, shouldRepairLinks: true)
-        controller.replace(model: DiceModel.diceERPS, isInsert: false, shouldRepairLinks: true)
-        controller.replace(model: DiceModel.diceCoC, isInsert: false, shouldRepairLinks: true)
+        controller.replace(model: DiceModel.preview, isInsert: false)
+        controller.replace(model: DiceModel.diceERPS, isInsert: false)
+        controller.replace(model: DiceModel.diceCoC, isInsert: false)
     }
 }
 

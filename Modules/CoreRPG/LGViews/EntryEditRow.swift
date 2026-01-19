@@ -17,7 +17,6 @@ public struct EntryEditRow: View {
     let cacheItemListModel: CacheItemListModel
     
     @Environment(ItemRootController.self) private var itemRootController
-    @Environment(LinkRootController.self) private var linkController
     @Environment(SearchModel.self) private var searchModel
     @Environment(ItemRootController.self) private var root
     @Environment(\.navigator) private var navigator
@@ -58,7 +57,7 @@ private extension EntryEditRow {
     }
     
     var linkTextModel: LinkHighlightTextModel {
-        editController.linkTextModel(itemId: itemId, for: entry, linkController: linkController, searchModel: searchModel) { itemId, module in
+        editController.linkTextModel(itemId: itemId, for: entry, linkController: itemRootController.linkControllable, searchModel: searchModel) { itemId, module in
             guard module == .value else { return }
             navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
         }

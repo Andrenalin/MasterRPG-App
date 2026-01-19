@@ -255,7 +255,7 @@ extension EditController {
         guard let childId, let parentId = itemController.itemOrEmpty(for: childId).parentId else { return }
         let child = itemController.itemOrEmpty(for: childId).copy()
         child.parentId = nil
-        itemController.replace(model: child, isInsert: false, shouldRepairLinks: true)
+        itemController.replace(model: child, isInsert: false)
         guard let parent = editModel(for: parentId) else { return }
         let entries = parent.entries.map {
             var entry = $0

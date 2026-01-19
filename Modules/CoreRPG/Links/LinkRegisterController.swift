@@ -48,101 +48,101 @@ extension LinkRegisterController: LinkRegisterControllable {
     }
 }
 
-public extension LinkRegisterController {
-    func linkDataModel(linkId: UUID) -> LinkDataModel? {
-//        let predicate = #Predicate<LinkDataModel> {
-//            $0.id == linkId
+//public extension LinkRegisterController {
+//    func linkDataModel(linkId: UUID) -> LinkDataModel? {
+////        let predicate = #Predicate<LinkDataModel> {
+////            $0.id == linkId
+////        }
+////        let fetchDescription = FetchDescriptor<LinkDataModel>(predicate: predicate)
+////        let models = try? container.mainContext.fetch(fetchDescription)
+////        return models?.first
+//        return nil
+//    }
+//    
+//    func markDown(for link: LinkReferenceDataModel) -> String {
+//        "[\(link.name)](\(URL.appScheme)://\(link.id))"
+//    }
+//
+//    func linkDataModel(in text: String) -> [LinkReferenceDataModel] {
+//        let links = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
+//        return links.compactMap { rawLink -> LinkReferenceDataModel? in
+//            linkDataModel(linkId: rawLink.linkId)
 //        }
-//        let fetchDescription = FetchDescriptor<LinkDataModel>(predicate: predicate)
-//        let models = try? container.mainContext.fetch(fetchDescription)
-//        return models?.first
-        return nil
-    }
-    
-    func markDown(for link: LinkDataModel) -> String {
-        "[\(link.name)](\(URL.appScheme)://\(link.id))"
-    }
-
-    func linkDataModel(in text: String) -> [LinkDataModel] {
-        let links = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
-        return links.compactMap { rawLink -> LinkDataModel? in
-            linkDataModel(linkId: rawLink.linkId)
-        }
-    }
-    
-    /// Scans the given text for links of the form `[name](SCHEME://UUID/COMMAND)` and `[name](SCHEME://UUID)`, then fetches matching LinkDataModel rows by ID.
-    /// - Parameters:
-    ///   - text: The text to scan.
-    /// - Returns: All LinkDataModel instances whose `id` is referenced in the text.
-    func links(in text: String) -> [LinkReplaceModel] {
-        let links = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
-        return links.compactMap { rawLink -> LinkReplaceModel? in
-            guard let link = linkDataModel(linkId: rawLink.linkId) else { return nil }
-            let markDown = rawLink.markDown(for: URL.appScheme)
-            let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
-            let command = rawLink.command
-            return LinkReplaceModel(name: rawLink.name, module: link.sourceModule, linkNumber: 0, itemId: link.sourceId, entryId: link.sourceEntryId, markDown: markDown, command: command, range: range)
-        }
-    }
-
-    func linksLong(in text: String) -> [LinkReplaceModel] {
-        let links = ReferenceScanner.allUuidUrls(for: URL.appScheme, in: text)
-        let result = links.tables.compactMap { rawLink -> LinkReplaceModel? in
-            let markDown = rawLink.markDown(for: URL.appScheme)
-            let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
-            return LinkReplaceModel(name: rawLink.name, module: NetworkModules.dice, linkNumber: 0, itemId: rawLink.table, entryId: nil, markDown: rawLink.markDown(for: URL.appScheme), command: rawLink.command, range: range)
-        }
-        return result
-    }
-
-    
-    func replaceLinks(in text: String, newItemId: UUID, newEntryId: UUID?) -> String {
-        let rawLinks = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
-        guard !rawLinks.isEmpty else { return text }
-        var resultText = text
-        for rawLink in rawLinks {
-            let markDown = rawLink.markDown(for: URL.appScheme)
-            guard let link = linkDataModel(linkId: rawLink.linkId) else {
-                resultText = resultText.replacingOccurrences(of: markDown, with: rawLink.name)
-                continue
-            }
-            let newLink = register(name: rawLink.name, sourceId: link.sourceId, sourceEntryId: link.sourceEntryId, sourceModule: link.sourceModule, destinationId: newItemId, destinationEntryId: newEntryId, destinationModule: link.destinationModule)
-            let newMarkDown = self.markDown(for: newLink)
-            resultText = resultText.replacingOccurrences(of: markDown, with: newMarkDown)
-        }
-        return resultText
-    }
-}
-
-public extension LinkRegisterController {
-    func register(link: LinkReplaceModel, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> LinkDataModel {
-        let model = LinkDataModel(name: link.name, sourceId: link.itemId, sourceEntryId: link.entryId, sourceModule: link.module, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModel: destinationModule)
-//        container.mainContext.insert(model)
-//        try? container.mainContext.save()
-        return model
-    }
-    
-    func register(name: String = "", sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> LinkDataModel {
-        let model = LinkDataModel(
-            name: name,
-            sourceId: sourceId,
-            sourceEntryId: sourceEntryId,
-            sourceModule: sourceModule,
-            destinationId: destinationId,
-            destinationEntryId: destinationEntryId,
-            destinationModel: destinationModule
-        )
-//        container.mainContext.insert(model)
-//        try? container.mainContext.save()
-        return model
-    }
-    
-    func remove(linkId: UUID) {
-        guard let model = linkDataModel(linkId: linkId) else { return }
-//        container.mainContext.delete(model)
-//        try? container.mainContext.save()
-    }
-}
+//    }
+//    
+//    /// Scans the given text for links of the form `[name](SCHEME://UUID/COMMAND)` and `[name](SCHEME://UUID)`, then fetches matching LinkDataModel rows by ID.
+//    /// - Parameters:
+//    ///   - text: The text to scan.
+//    /// - Returns: All LinkDataModel instances whose `id` is referenced in the text.
+//    func links(in text: String) -> [LinkReplaceModel] {
+//        let links = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
+//        return links.compactMap { rawLink -> LinkReplaceModel? in
+//            guard let link = linkDataModel(linkId: rawLink.linkId) else { return nil }
+//            let markDown = rawLink.markDown(for: URL.appScheme)
+//            let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
+//            let command = rawLink.command
+//            return LinkReplaceModel(name: rawLink.name, module: link.sourceModule, linkNumber: 0, itemId: link.sourceId, entryId: link.sourceEntryId, markDown: markDown, command: command, range: range)
+//        }
+//    }
+//
+//    func linksLong(in text: String) -> [LinkReplaceModel] {
+//        let links = ReferenceScanner.allUuidUrls(for: URL.appScheme, in: text)
+//        let result = links.tables.compactMap { rawLink -> LinkReplaceModel? in
+//            let markDown = rawLink.markDown(for: URL.appScheme)
+//            let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
+//            return LinkReplaceModel(name: rawLink.name, module: NetworkModules.dice, linkNumber: 0, itemId: rawLink.table, entryId: nil, markDown: rawLink.markDown(for: URL.appScheme), command: rawLink.command, range: range)
+//        }
+//        return result
+//    }
+//
+//    
+//    func replaceLinks(in text: String, newItemId: UUID, newEntryId: UUID?) -> String {
+//        let rawLinks = ReferenceScanner.parseUrlsUuid(for: URL.appScheme, in: text)
+//        guard !rawLinks.isEmpty else { return text }
+//        var resultText = text
+//        for rawLink in rawLinks {
+//            let markDown = rawLink.markDown(for: URL.appScheme)
+//            guard let link = linkDataModel(linkId: rawLink.linkId) else {
+//                resultText = resultText.replacingOccurrences(of: markDown, with: rawLink.name)
+//                continue
+//            }
+//            let newLink = register(name: rawLink.name, sourceId: link.sourceId, sourceEntryId: link.sourceEntryId, sourceModule: link.sourceModule, destinationId: newItemId, destinationEntryId: newEntryId, destinationModule: link.destinationModule)
+//            let newMarkDown = self.markDown(for: newLink)
+//            resultText = resultText.replacingOccurrences(of: markDown, with: newMarkDown)
+//        }
+//        return resultText
+//    }
+//}
+//
+//public extension LinkRegisterController {
+//    func register(link: LinkReplaceModel, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> LinkReferenceDataModel {
+//        let model = LinkDataModel(name: link.name, sourceId: link.itemId, sourceEntryId: link.entryId, sourceModule: link.module, destinationId: destinationId, destinationEntryId: destinationEntryId, destinationModel: destinationModule)
+////        container.mainContext.insert(model)
+////        try? container.mainContext.save()
+//        return model
+//    }
+//    
+//    func register(name: String = "", sourceId: UUID, sourceEntryId: UUID? = nil, sourceModule: NetworkModules, destinationId: UUID, destinationEntryId: UUID? = nil, destinationModule: NetworkModules) -> LinkDataModel {
+//        let model = LinkReferenceDataModel(
+//            name: name,
+//            sourceId: sourceId,
+//            sourceEntryId: sourceEntryId,
+//            sourceModule: sourceModule,
+//            destinationId: destinationId,
+//            destinationEntryId: destinationEntryId,
+//            destinationModel: destinationModule
+//        )
+////        container.mainContext.insert(model)
+////        try? container.mainContext.save()
+//        return model
+//    }
+//    
+//    func remove(linkId: UUID) {
+//        guard let model = linkDataModel(linkId: linkId) else { return }
+////        container.mainContext.delete(model)
+////        try? container.mainContext.save()
+//    }
+//}
     
 public extension LinkRegisterController {
     func effectedItems(targetId: UUID, targetEntryId: UUID? = nil, targetModule: NetworkModules) -> [EffectedItemModel] {

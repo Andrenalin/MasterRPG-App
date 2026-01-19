@@ -216,7 +216,7 @@ public extension GameControllable {
         guard await hasItem(id: itemId, version: data.version) == false else {
             _ = await setCurrent(itemId: itemId)
             if save, let model = await gameModel.itemData[itemId] {
-                await itemControllable.replace(model: model, isInsert: true, shouldRepairLinks: true)
+                await itemControllable.replace(model: model, isInsert: true)
             }
             return true
         }
@@ -251,12 +251,12 @@ public extension GameControllable {
         }
         await gameModel.append(itemId: data.id, item: item, onlyItem: true)
         if !hide {
-            await itemControllable.replace(model: item, isInsert: true, shouldRepairLinks: true)
+            await itemControllable.replace(model: item, isInsert: true)
             var otherIds = await Set(gameModel.items).subtracting(beforeIds)
             otherIds = otherIds.subtracting([data.id])
             for otherId in otherIds {
                 let otherItem = await gameModel.itemData[otherId]
-                await itemControllable.replace(model: otherItem, isInsert: true, shouldRepairLinks: true)
+                await itemControllable.replace(model: otherItem, isInsert: true)
             }
         }
     }

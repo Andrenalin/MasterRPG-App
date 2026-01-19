@@ -242,7 +242,7 @@ extension GameController: ValueGameStorable {
         }
         for valueModel in valueResult.valueModels {
             let model = valueModel.duplicateWithoutCopy()
-            await root.itemController.replace(model: model, isInsert: true, shouldRepairLinks: false)
+            await root.itemController.replace(model: model, isInsert: true)
             await root.editController.add(model: model, into: adventureValue?.id)
         }
         guard let adventureValue else { return }
@@ -263,7 +263,7 @@ extension GameController: ValueGameStorable {
         let adventureValue = ValueModel(id: UUID(), name: name, description: description, tags: [name], category: .item, photoId: character.photoId, photos: character.photos)
         adventureValue.isGroupHiddenToggle.toggle()
         
-        await itemController.replace(model: adventureValue, isInsert: true, shouldRepairLinks: true)
+        await itemController.replace(model: adventureValue, isInsert: true)
         let entry = ValueEntryModel(id: UUID(), name: name, type: .text, isGenerator: false, value: description, diceId: nil, valueId: adventureValue.id)
         await root.editController.add(entry: entry, into: character.id)
         return adventureValue

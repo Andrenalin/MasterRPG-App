@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24512" systemVersion="25C56" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24512" systemVersion="25B78" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="LinkReferenceDataModel" representedClassName="LinkReferenceDataModel" syncable="YES" codeGenerationType="class">
+        <attribute name="destinationEntryId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="destinationId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="destinationModule" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="sourceEntryId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="sourceId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="sourceModule" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+    </entity>
     <entity name="TagDataModel" representedClassName="TagDataModel" syncable="YES" codeGenerationType="class">
         <attribute name="count" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="module" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>

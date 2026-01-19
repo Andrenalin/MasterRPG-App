@@ -164,7 +164,7 @@ extension EditController {
             let size = image.size
             updateModel.resetImage(with: photoId, size: size, degrees: degrees)
             if save {
-                itemController.replace(model: updateModel, isInsert: false, shouldRepairLinks: false)
+                itemController.replace(model: updateModel, isInsert: false)
             }
         }
     }
@@ -178,7 +178,7 @@ extension EditController {
         await resetImageSize(photoId: photoId, updateModel: createMap)
         createHexMap(model: createMap, hexMapScale: 0)
 
-        itemController.replace(model:createMap, isInsert: true, shouldRepairLinks: true)
+        itemController.replace(model:createMap, isInsert: true)
         return createMap.id
     }
 

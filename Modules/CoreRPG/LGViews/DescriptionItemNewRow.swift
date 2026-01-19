@@ -8,7 +8,6 @@ struct DescriptionItemNewRow: View {
     let cacheItemListModel: CacheItemListModel
 
     @Environment(SearchModel.self) private var searchModel
-    //@Environment(LinkRootController.self) private var linkController
 
     var body: some View {    
         Group {

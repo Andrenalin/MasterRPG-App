@@ -74,9 +74,6 @@ public final class AppModel: Sendable {
 
     private let root: RootManager
     
-    // Root Controllers
-    public let linkRootController: LinkRootController
-
     @MainActor public init() {
         self.optionKeyDownModel = OptionKeyDownModel()
         self.settingsModel = AppSettingsModel()
@@ -156,10 +153,7 @@ public final class AppModel: Sendable {
             tableRoot: tableRoot,
             weatherRoot: weatherRoot
         )
-#endif
-        
-        let modelContainer = try! ModelContainer(for: LinkDataModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        self.linkRootController = LinkRootController(container: modelContainer, root: root)
+#endif        
     }
 }
  
