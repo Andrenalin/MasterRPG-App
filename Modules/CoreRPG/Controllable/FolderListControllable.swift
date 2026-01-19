@@ -89,7 +89,7 @@ extension FolderListControllable {
     @MainActor func delete(offsets: IndexSet) -> [ItemRowModel] {
         let removed = offsets.map {
             let model = displayItems[$0].model
-            return ItemRowModel(itemId: model.id, typeId: NetworkModules.none)
+            return ItemRowModel(itemId: model.id, typeId: itemControllable.config.module)
         }
         listModel.deleteItems(offsets: offsets)
         return removed

@@ -30,9 +30,10 @@ struct MockRoot {
         let characterRoot = await CharacterRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         let mapRoot = await MapRootModel.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot)
         let root = await AdventureRootModel.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
-
+        
         await root.itemController.resetData()
-        await root.setUp(context: nil)
+        
+        await root.setUp(root:  context: nil)
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: name, withExtension: "gmz").unsafelyUnwrapped

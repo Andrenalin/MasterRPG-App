@@ -44,9 +44,7 @@ public final class CharacterRootModel: @unchecked Sendable {
 
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
-            Task {
-                syncDataController?.start()
-            }
+            syncDataController?.start()
         }
     }
 

@@ -81,7 +81,7 @@ public extension ItemControllable {
         if let orignal = self.itemSync(for: model.id) {
             let resort = orignal.name != model.name
             if orignal.replace(with: model) {
-                try? dataControllable?.replaceSync(id: orignal.id, with: orignal.copy())            
+                try? dataControllable?.replaceSync(id: orignal.id, with: orignal.copy())
                 if resort {
                     resortItem(changed: orignal)
                 }
@@ -195,6 +195,7 @@ public extension ItemControllable {
 private extension ItemControllable {
     @MainActor func setModel(with model: ModelType) {
         guard let model = model as? Model else { return }
+        // this will be removed later and replace with the db
         let linkModels = model.linkRegisterModels
         linkRegisterControllable.register(links: linkModels)
         itemDataModel.setItem(id: model.id, item: model)

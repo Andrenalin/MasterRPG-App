@@ -24,7 +24,7 @@ public struct ConvertController: Sendable {
                 tagCounter[model.category.title, default: []] += [model.id]
             }
 
-            guard model.specialCategory == false, model.category != .entry else { continue }   
+            guard model.specialCategory == false, model.category != .entry else { continue }
             guard model.displayState == 0 else { continue }
             guard let url = model.fileUrl?.rawUrl else { continue }
             
@@ -77,6 +77,9 @@ public struct ConvertController: Sendable {
             for tag in model.tags {
                 tagCounter[tag, default: []] += [model.id]
             }
+            
+            let linkModels = model.linkRegisterModels
+            editController.linkRegisterControllable.register(links: linkModels)
 
             guard model.specialCategory == false, model.category != .entry else { continue }
             guard model.parentId == nil else { continue }
@@ -124,7 +127,7 @@ public struct ConvertController: Sendable {
             }
         }
     }
-    
+        
     @MainActor func createTags(tagCounter: [String: [UUID]]) async {
         for (key, values) in tagCounter {
             editController.tagController.reset(tag: key, count: values.count, module: itemController.config.module)
