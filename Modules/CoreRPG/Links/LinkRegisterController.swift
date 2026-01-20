@@ -13,7 +13,8 @@ import os.log
     let root: RootManager?
     @MainActor public let model: LinkRegisterListModel
     
-    @MainActor public func setup(context: NSManagedObjectContext) {
+    @MainActor public func setup(context: NSManagedObjectContext?) {
+        guard let context else { return }
         model.context = context
         
         Task.detached(priority: .userInitiated) {
@@ -36,28 +37,23 @@ import os.log
             }
         }
     }
-    
-    nonisolated private func updateLink(keyId: UUID, addedModel: LinkRegisterModel) {
-        Task {
-            await updateLinkSync(keyId: keyId, addedModel: addedModel)
-        }
-    }
-
-    @MainActor private func updateLinkSync(keyId: UUID, addedModel: LinkRegisterModel) {
-        var current = model.items[keyId, default: []]
-        current.append(addedModel)
-        model.items[keyId] = current
-    }
-
-    @MainActor private func updateLinkSync(keyId: UUID, removedModel: LinkRegisterModel) {
-        var current = model.items[keyId, default: []]
-        current.removeAll(where: { $0.source == removedModel.source && $0.destination == removedModel.destination })
-        model.items[keyId] = current
-    }
-
 }
 
 extension LinkRegisterController {
+    @MainActor func isUsed(link: ItemRowModel) -> Bool {
+        let keyId = link.itemId
+        let used = !(model.items[keyId]?.isEmpty ?? true)
+        return used
+//        guard !used, link.entryId != nil else { return used }
+//        return !(model.items[link.itemId]?.isEmpty ?? true)
+    }
+    
+    @MainActor func resetUsedLink(for item: ItemRowModel) {
+        let keyId = item.itemId
+        var itemLinks = model.items[keyId, default: []]
+        itemLinks.removeAll(where: { $0.destination == item })
+    }
+
     @MainActor public func used(for link: ItemRowModel) -> [EffectedItemModel] {
         let keyId = link.itemId
         let links = model.items[keyId, default: []]
@@ -86,36 +82,102 @@ extension LinkRegisterController {
 }
 
 public extension LinkRegisterController {
-    @MainActor func isUsed(link: ItemRowModel) -> Bool {
-        let keyId = link.itemId
-        let used = !(model.items[keyId]?.isEmpty ?? true)
-        return used
-//        guard !used, link.entryId != nil else { return used }
-//        return !(model.items[link.itemId]?.isEmpty ?? true)
-    }
-    
     @MainActor func register(links: [LinkRegisterModel]) {
         for link in links {
             let keyId = link.destination.itemId
             updateLinkSync(keyId: keyId, addedModel: link)
         }
     }
-
+    
     @MainActor func deregister(links: [LinkRegisterModel]) {
         for link in links {
             let keyId = link.destination.itemId
             updateLinkSync(keyId: keyId, removedModel: link)
         }
     }
+}
 
-    @MainActor func reset() {
-        model.reset()
+private extension LinkRegisterController {
+    nonisolated func updateLink(keyId: UUID, addedModel: LinkRegisterModel) {
+        Task {
+            await updateLinkSync(keyId: keyId, addedModel: addedModel)
+        }
+    }
+
+    @MainActor func updateLinkSync(keyId: UUID, addedModel: LinkRegisterModel) {
+        var current = model.items[keyId, default: []]
+        current.append(addedModel)
+        model.items[keyId] = current
+        updateDatabase(keyId: keyId, addedModel: addedModel)
+    }
+
+    @MainActor func updateLinkSync(keyId: UUID, removedModel: LinkRegisterModel) {
+        var current = model.items[keyId, default: []]
+        current.removeAll(where: { $0.source == removedModel.source && $0.destination == removedModel.destination })
+        model.items[keyId] = current
+        updateDatabase(keyId: keyId, removedModel: removedModel)
     }
     
-    @MainActor func resetUsedLink(for item: ItemRowModel) {
-        let keyId = item.itemId
-        var itemLinks = model.items[keyId, default: []]
-        itemLinks.removeAll(where: { $0.destination == item })
+    @MainActor func updateDatabase(keyId: UUID, removedModel: LinkRegisterModel) {
+        guard let context = model.context else { return }
+        Task.detached(priority: .userInitiated) {
+            await context.perform {
+                do {
+                    let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
+                    if let sourceEntryId = removedModel.source.entryId, let destinationEntryId = removedModel.destination.entryId {
+                        request.predicate = NSPredicate(format: "sourceId == %@ AND sourceEntryId == %@ AND destinationId == %@ AND destinationEntryId == %@", removedModel.source.itemId as CVarArg, sourceEntryId as CVarArg, removedModel.destination.itemId as CVarArg, destinationEntryId as CVarArg)
+                    } else if let sourceEntryId = removedModel.source.entryId {
+                        request.predicate = NSPredicate(format: "sourceId == %@ AND sourceEntryId == %@ AND destinationId == %@", removedModel.source.itemId as CVarArg, sourceEntryId as CVarArg, removedModel.destination.itemId as CVarArg)
+                    } else if let destinationEntryId = removedModel.destination.entryId {
+                        request.predicate = NSPredicate(format: "sourceId == %@ AND destinationId == %@ AND destinationEntryId == %@", removedModel.source.itemId as CVarArg, removedModel.destination.itemId as CVarArg, destinationEntryId as CVarArg)
+                    } else {
+                        request.predicate = NSPredicate(format: "sourceId == %@ AND destinationId == %@", removedModel.source.itemId as CVarArg, removedModel.destination.itemId as CVarArg)
+                    }
+                    
+                    let removingModels = try context.fetch(request) as? [LinkReferenceDataModel]
+                    for dbModel in removingModels ?? [] {
+                        context.delete(dbModel)
+                    }
+                } catch {
+                    Logger.coreDataController.error("tagdata error \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
+    }
+    
+    @MainActor func updateDatabase(keyId: UUID, addedModel: LinkRegisterModel) {
+        guard let context = model.context else { return }
+        Task.detached(priority: .userInitiated) {
+            await context.perform {
+                do {
+                    let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
+                    if let sourceEntryId = addedModel.source.entryId, let destinationEntryId = addedModel.destination.entryId {
+                        request.predicate = NSPredicate(format: "sourceId == %@ AND sourceEntryId == %@ AND destinationId == %@ AND destinationEntryId == %@", addedModel.source.itemId as CVarArg, sourceEntryId as CVarArg, addedModel.destination.itemId as CVarArg, destinationEntryId as CVarArg)
+                    } else if let sourceEntryId = addedModel.source.entryId {
+                        request.predicate = NSPredicate(format: "sourceId == %@ AND sourceEntryId == %@ AND destinationId == %@", addedModel.source.itemId as CVarArg, sourceEntryId as CVarArg, addedModel.destination.itemId as CVarArg)
+                    } else if let destinationEntryId = addedModel.destination.entryId {
+                        request.predicate = NSPredicate(format: "sourceId == %@ AND destinationId == %@ AND destinationEntryId == %@", addedModel.source.itemId as CVarArg, addedModel.destination.itemId as CVarArg, destinationEntryId as CVarArg)
+                    } else {
+                        request.predicate = NSPredicate(format: "sourceId == %@ AND destinationId == %@", addedModel.source.itemId as CVarArg, addedModel.destination.itemId as CVarArg)
+                    }
+                    
+                    let alreadyAddedModels = try context.fetch(request) as? [LinkReferenceDataModel]
+                    guard (alreadyAddedModels?.isEmpty ?? true) else { return }
+                    
+                    let dbModel = LinkReferenceDataModel(context: context)
+                    dbModel.uuid = addedModel.id
+                    dbModel.name = addedModel.name
+                    dbModel.sourceId = addedModel.source.itemId
+                    dbModel.sourceEntryId = addedModel.source.entryId
+                    dbModel.sourceModule = Int16(addedModel.source.typeId.rawValue)
+                    dbModel.destinationId = addedModel.destination.itemId
+                    dbModel.destinationEntryId = addedModel.destination.entryId
+                    dbModel.destinationModule = Int16(addedModel.destination.typeId.rawValue)
+                } catch {
+                    Logger.coreDataController.error("tagdata error \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
     }
 }
 

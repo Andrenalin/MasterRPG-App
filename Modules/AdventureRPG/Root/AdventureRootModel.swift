@@ -45,6 +45,7 @@ public final class AdventureRootModel: @unchecked Sendable {
         let dataController = context.map { DataController(context: $0, token: config.module.token) }
         _dataController = dataController
         let linkRegisterController = LinkRegisterController(root: root)
+        linkRegisterController.setup(context: context)
 
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController

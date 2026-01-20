@@ -24,16 +24,11 @@ public struct TabbedNavigation: View {
                 Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
                     ManagedNavigationStack(name: tab.title) { navigator in
                         tab
-                            .environment(appModel.itemRootController(for: selectedModule))
+                            .environment(appModel.itemRootController(for: tab.module))
                             .tint(tab.module.tint)
                             .accentColor(tab.module.tint)
-//                            .navigationModifier { destination in
-//                                destination()
-//                                    .tint(tab.module.tint)
-//                                    .accentColor(tab.module.tint)
-//                            }
                     }
-                    .environment(appModel.itemRootController(for: selectedModule))
+                    .environment(appModel.itemRootController(for: tab.module))
                     .tint(tab.module.tint)
                     .accentColor(tab.module.tint)
                 }
