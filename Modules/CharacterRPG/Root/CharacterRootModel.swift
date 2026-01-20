@@ -180,7 +180,8 @@ extension CharacterRootModel {
         }
     }
     
-    public func checkFolders() async {
+    public func checkFolders(reportModel: ValidateRepairModel) async {
+        await reportModel.update(section: "Validating Character Data")
         for id in await itemController.itemDataModel.items {
             guard let model = await itemController.item(for: id) else { continue  }
             var entries: [ValueEntryModel] = []
@@ -213,7 +214,7 @@ extension CharacterRootModel {
         }
 
         let cc = ConvertController(itemController: itemController, editController: editController)
-        await cc.createFoldersAndCollections(excludeHidden: true)
+        await cc.createFoldersAndCollections(reportModel: reportModel, excludeHidden: true)
     }
 }
 

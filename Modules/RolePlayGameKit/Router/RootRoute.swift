@@ -175,7 +175,9 @@ struct RouteRouteDestionationView: View {
             case .space:
                 SpaceFactory.rootView()
             case .settings:
-                SettingsView(store: appModel)
+                ManagedNavigationStack {
+                    SettingsView(store: appModel)
+                }
             case .tables:
                 TableFactory.rootView()
             case .values:

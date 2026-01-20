@@ -21,7 +21,7 @@ public struct SettingsView: View {
     let store: AppModel
 
     @Environment(\.navigator) private var navigator
-
+    
     public var body: some View {
         CoreRPG.SettingsView(store: store.adventureRoot, exportController: store.adventureRoot.exportControllable, importController: store.adventureRoot.importControllable, audioFileStore: store.audioRoot.fileUrlDataController!, pdfFileStore: store.pdfRoot.fileUrlDataController!, photoFileStore: store.photoRoot.fileUrlDataController!, spaceFileStore: store.spaceRoot.fileUrlDataController!) {
 
@@ -33,18 +33,7 @@ public struct SettingsView: View {
 
             SectionGroupEditorView {
                 Button {
-                    Task {
-                        await store.adventureRoot.checkFolders()
-                        await store.audioRoot.checkFolders()
-                        await store.characterRoot.checkFolders()
-                        await store.diceRoot.checkFolders()
-                        await store.mapRoot.checkFolders()
-                        await store.pdfRoot.checkFolders()
-                        await store.photoRoot.checkFolders()
-                        await store.spaceRoot.checkFolders()
-                        await store.tableRoot.checkFolders()
-                        await store.weatherRoot.checkFolders()
-                    }
+                    navigator.navigate(to: ValidateRoute.validate, method: .managedSheet)
                 } label: {
                     Label("Create Folders", systemImage: "folder")
                 }

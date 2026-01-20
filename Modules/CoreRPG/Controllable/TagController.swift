@@ -24,7 +24,8 @@ public struct TagController: Sendable {
     
     let model: TagInternalControllerModel
     
-    @MainActor public func setup(context: NSManagedObjectContext) {
+    @MainActor public func setup(context: NSManagedObjectContext?) {
+        guard let context else { return }
         model.context = context
         
         Task.detached(priority: .userInitiated) {

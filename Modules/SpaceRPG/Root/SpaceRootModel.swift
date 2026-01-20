@@ -158,8 +158,8 @@ extension SpaceRootModel {
         }
     }
     
-    public func checkFolders() async {
+    public func checkFolders(reportModel: ValidateRepairModel) async {
         let cc = ConvertController(itemController: itemController, editController: editController)
-        await cc.createFilepathFoldersAndCollections()
+        await cc.createFilepathFoldersAndCollections(reportModel: reportModel)
     }
 }

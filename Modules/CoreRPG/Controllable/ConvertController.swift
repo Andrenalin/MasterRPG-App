@@ -11,10 +11,12 @@ public struct ConvertController: Sendable {
     let itemController: any ItemControllable
     let editController: any EditControllable
     
-    @MainActor public func createFilepathFoldersAndCollections() async {
+    @MainActor public func createFilepathFoldersAndCollections(reportModel: ValidateRepairModel) async {
         var tagCounter: [String: [UUID]] = [:]
         
+        reportModel.currentSection = "Create Folders"
         for itemId in itemController.itemDataModel.items {
+            reportModel.increaseCurrent()
             guard let model = itemController.itemSync(for: itemId) else { continue }
 
             if model.parentId == nil && model.displayState == 0 {
@@ -62,15 +64,21 @@ public struct ConvertController: Sendable {
             }
         }
         
+        reportModel.currentSection = "Create Tags"
         await createTags(tagCounter: tagCounter)
+        reportModel.currentSection = "Create Collections"
         await createCollections(tagCounter: tagCounter)
     }
     
-    @MainActor public func createFoldersAndCollections(excludeHidden: Bool = false) async {
+    @MainActor public func createFoldersAndCollections(reportModel: ValidateRepairModel, excludeHidden: Bool = false) async {
         var tagCounter: [String: [UUID]] = [:]
         var categoryCounter: [ItemListCategory: [UUID]] = [:]
         
+        reportModel.currentSection = "Processing Items"
+        
         for itemId in itemController.itemDataModel.items {
+            reportModel.increaseCurrent()
+            
             guard let model = itemController.itemSync(for: itemId) else { continue }
             guard !excludeHidden || model.displayState == 0 else { continue }
 
@@ -94,8 +102,11 @@ public struct ConvertController: Sendable {
             }
         }
         
+        reportModel.currentSection = "Create Tags"
         await createTags(tagCounter: tagCounter)
+        reportModel.currentSection = "Create Folders"
         await createFolders(categoryConunter: categoryCounter)
+        reportModel.currentSection = "Create Collection"
         await createCollections(tagCounter: tagCounter)
     }
     

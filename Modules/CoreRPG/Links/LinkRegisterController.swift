@@ -99,8 +99,10 @@ public extension LinkRegisterController {
 
 private extension LinkRegisterController {
     nonisolated func updateLink(keyId: UUID, addedModel: LinkRegisterModel) {
-        Task {
-            await updateLinkSync(keyId: keyId, addedModel: addedModel)
+        Task { @MainActor in
+            var current = model.items[keyId, default: []]
+            current.append(addedModel)
+            model.items[keyId] = current
         }
     }
 
