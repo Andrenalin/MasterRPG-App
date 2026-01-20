@@ -39,7 +39,7 @@ import os.log
     }
 }
 
-extension LinkRegisterController {
+public extension LinkRegisterController {
     @MainActor func isUsed(link: ItemRowModel) -> Bool {
         let keyId = link.itemId
         let used = !(model.items[keyId]?.isEmpty ?? true)
@@ -54,7 +54,7 @@ extension LinkRegisterController {
         itemLinks.removeAll(where: { $0.destination == item })
     }
 
-    @MainActor public func used(for link: ItemRowModel) -> [EffectedItemModel] {
+    @MainActor func used(for link: ItemRowModel) -> [EffectedItemModel] {
         let keyId = link.itemId
         let links = model.items[keyId, default: []]
         return links.map {
@@ -69,7 +69,7 @@ extension LinkRegisterController {
         }
     }
     
-    @MainActor public func repairLinks(for items: [ItemRowModel]) {
+    @MainActor func repairLinks(for items: [ItemRowModel]) {
         for item in items {
             let keyId = item.itemId
             let links = model.items[keyId, default: []]

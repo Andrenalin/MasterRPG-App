@@ -17,7 +17,7 @@ struct ConverterControllerTests {
         let model = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         model.fileUrl = FileUrl(fileId: model.id, url: URL(filePath: "/Rollenspiel/Example/3dmodel/3ditem.usdz"), location: .other, module: "Test", relativeUrl: nil)
         
-        await sut.createFilepathFoldersAndCollections()
+        await sut.createFilepathFoldersAndCollections(reportModel: ValidateRepairModel())
         try #require(await root.itemController.itemDataModel.items.count == 4)
         
         let model1 = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
@@ -48,7 +48,7 @@ struct ConverterControllerTests {
 
         try #require(model1.entries.count == 0)
         
-        await sut.createFilepathFoldersAndCollections()
+        await sut.createFilepathFoldersAndCollections(reportModel: ValidateRepairModel())
         try #require(await root.itemController.itemDataModel.items.count == 4)
 
         #expect(model4.parentId == nil)

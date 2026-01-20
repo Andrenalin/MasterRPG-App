@@ -33,7 +33,7 @@ struct ItemControllerTests {
         #expect(isUsed)
 
         let effectedLinks = await sut.linkRegisterController.used(for: ItemRowModel(itemId: photoId!, typeId: .photo))
-        #expect(effectedLinks.count == 1)
+        try #require(effectedLinks.count == 1)
         #expect(effectedLinks[0].module == .adventure)
         #expect(effectedLinks[0].name == model.name)
     }

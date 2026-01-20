@@ -17,7 +17,6 @@ struct LinkRegisterControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
         let sut = root.editController.linkRegisterController
-        await sut.reset()
         return root
     }
 
