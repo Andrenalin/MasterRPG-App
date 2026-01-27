@@ -6,6 +6,8 @@ import PdfRPG
 import PhotoRPG
 import SwiftUI
 import AudioRPG
+import TableRPG
+import CharacterRPG
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
@@ -14,7 +16,7 @@ struct InlineRowViewer: View, Equatable {
     @Environment(MapRootModel.self) private var root
     
     var body: some View {
-        switch source.typeId {
+        switch module {
         case .audio:
             root.audioRoot.viewController.rowViewer(source: source, destination: destination)
         case .dice:
@@ -23,6 +25,10 @@ struct InlineRowViewer: View, Equatable {
             root.pdfRoot.viewController.rowViewer(source: source, destination: destination)
         case .photo:
             root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
+        case .table:
+            root.tableRoot.viewController.rowViewer(source: source, destination: destination)
+        case .value:
+            root.characterRoot.viewController.rowViewer(source: source, destination: destination)
         case .map:
             if let cacheController = root.cacheController {
                 ThumbnailRowPhotoView(cacheController: cacheController, model: model, entryId: source.entryId)
@@ -32,6 +38,10 @@ struct InlineRowViewer: View, Equatable {
         default:
             EmptyView()
         }
+    }
+    
+    var module: NetworkModules {
+        destination.typeId == .map ? source.typeId : destination.typeId
     }
     
     var model: MapModel {

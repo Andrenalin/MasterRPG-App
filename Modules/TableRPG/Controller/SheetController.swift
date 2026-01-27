@@ -10,7 +10,7 @@ struct SheetController {
         let model = itemController.itemOrEmpty(for: itemId)
         var inlineEntries: [SheetModel] = []
         if let diceId = model.diceId {
-            inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, typeId: .table), level: level, type: .dice, name: "", description: "", entries: []))
+            inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .dice, name: "", description: "", entries: []))
         }
         let entries: [SheetModel] = sheetEntries(for: itemId, level: level)
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)

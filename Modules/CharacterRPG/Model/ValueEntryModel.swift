@@ -206,6 +206,16 @@ extension ValueEntryModel {
         }
         return "0 Error"
     }
+    
+    var editType: SheetModelEditType {
+        guard valueId == nil else { return .none }
+        return switch type {
+        case .text: .text
+        case .number: .number
+        case .decimal: .decimal
+        case .selection: .selection
+        }
+    }
 }
 
 extension ValueEntryModel: EntryDataAccessable, ItemDuplicatable {

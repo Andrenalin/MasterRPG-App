@@ -288,6 +288,7 @@ private extension ItemDetailRootView {
                         root.editControllable.editorModel.scrollEntryId = nil
                     }
             }
+            .scrollClipDisabled(true)
         }
         .formStyle(.grouped)
         .scrollBounceBehavior(.basedOnSize)

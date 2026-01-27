@@ -9,6 +9,8 @@ import PhotoRPG
 import SpaceRPG
 import SwiftUI
 import WeatherRPG
+import TableRPG
+import CharacterRPG
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
@@ -17,7 +19,7 @@ struct InlineRowViewer: View, Equatable {
     @Environment(AdventureRootModel.self) private var root
     
     var body: some View {
-        switch source.typeId {
+        switch module {
         case .audio:
             root.audioRoot.viewController.rowViewer(source: source, destination: destination)
         case .dice:
@@ -30,11 +32,19 @@ struct InlineRowViewer: View, Equatable {
             root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
         case .space:
             root.spaceRoot.viewController.rowViewer(source: source, destination: destination)
+        case .table:
+            root.tableRoot.viewController.rowViewer(source: source, destination: destination)
+        case .value:
+            root.characterRoot.viewController.rowViewer(source: source, destination: destination)
         case .weather:
             root.weatherRoot.viewController.rowViewer(source: source, destination: destination)
         default:
             EmptyView()
         }
+    }
+    
+    var module: NetworkModules {
+        destination.typeId == .adventure ? source.typeId : destination.typeId
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

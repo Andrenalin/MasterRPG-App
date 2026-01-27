@@ -5,6 +5,7 @@ import DiceRPG
 import PdfRPG
 import PhotoRPG
 import SwiftUI
+import TableRPG
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
@@ -14,18 +15,36 @@ struct InlineRowViewer: View, Equatable {
     
     var body: some View {
         let _ = Self._printChanges()
-        switch source.typeId {
+        switch module {
         case .dice:
-            root.diceRoot.viewController.rowViewer(source: source, destination: destination)
-                .environment(\.gameModus, .player)
+            if let entryId = destination.entryId {
+                EntryListDiceRow(itemId: destination.itemId, entryId: entryId)
+            } else {
+                root.diceRoot.viewController.rowViewer(source: diceSource, destination: destination)
+                    .environment(\.gameModus, .player)
+            }
         case .pdf:
             root.pdfRoot.viewController.rowViewer(source: source, destination: destination)
         case .photo:
             root.photoRoot.viewController.photoRow(root: root.photoRoot, for: source.itemId)
+        case .table:
+            root.tableRoot.viewController.rowViewer(source: source, destination: destination)
         default:
             EmptyView()
         }
     }
+    
+    var diceSource: ItemRowModel {
+        guard let newDiceId = root.gameController.gameDiceId(itemId: destination.itemId, entryId: destination.entryId ?? UUID()) else {
+            return source
+        }
+        return ItemRowModel(itemId: newDiceId, typeId: .dice)
+    }
+    
+    var module: NetworkModules {
+        destination.typeId == .value ? source.typeId : destination.typeId
+    }
+
     
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source

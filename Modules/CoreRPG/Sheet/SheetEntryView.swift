@@ -70,6 +70,9 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 if isEditor && entry.sheetType == .item {
                     deleteButton(onlyIcon: true)
                 }
+                if entry.editType == .number {
+                    InlineQuickEditView(itemId: entry.source.itemId, preopen: false, layoutDown: false)
+                }
             }
             
             ForEach(entry.inlineEntries) { inlineSheet in

@@ -10,7 +10,7 @@ struct SheetController {
         let model = itemController.itemOrEmpty(for: itemId)
         var entries: [SheetModel] = []
         if let photoId = model.photoId {
-            entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), level: level, type: .photo, name: "", description: "", entries: []))
+            entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: []))
         }
         entries.append(contentsOf: sheetEntries(for: itemId, level: level + 1))
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, name: model.name, description: model.description, entries: entries)

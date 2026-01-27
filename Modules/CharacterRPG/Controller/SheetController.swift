@@ -14,7 +14,7 @@ struct SheetController {
         let showHeader: Bool = model.displayState == 0
         
         if showHeader, let photoId = model.photoId {
-            entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), level: level, type: .photo, name: "", description: "", entries: []))
+            entries.append(SheetModel(source: ItemRowModel(itemId: photoId, typeId: .photo), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .photo, name: "", description: "", entries: []))
         }
         entries.append(contentsOf: sheetEntries(for: itemId, level: level + 1))
         let sheetModel = SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .item, showHeader: showHeader, name: model.name, description: model.description, entries: entries)
@@ -39,10 +39,10 @@ struct SheetController {
             }
             var inlineEntries: [SheetModel] = []
             if let diceId = entry.diceId {
-                inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), level: level, type: .dice, name: "", description: "", entries: []))
+                inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, type: .dice, name: "", description: "", entries: []))
             }
 
-            let result = [SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, inlineEntries: inlineEntries, entries: [])]
+            let result = [SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, editType: entry.editType, name: name, description: description, inlineEntries: inlineEntries, entries: [])]
 
             return result
         }

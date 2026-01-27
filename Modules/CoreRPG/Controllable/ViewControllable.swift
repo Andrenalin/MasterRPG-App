@@ -31,11 +31,12 @@ public protocol ViewControllable: Sendable {
     var goupViewType: GroupViewType { get }
     var sharingViewType: SharingViewType { get }
     var thumbnailRowViewType: ThumbnailRowViewType { get }
-        
+    
     @MainActor func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView
     @MainActor func sharingView(for itemId: UUID) -> AnyView
     @MainActor func thumbnailRowView(for itemId: UUID) -> AnyView
-    @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView
+    @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView    
+    @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView
 }
 
 public extension ViewControllable {
@@ -47,6 +48,7 @@ public extension ViewControllable {
 
     @MainActor func thumbnailRowView(for itemId: UUID) -> AnyView { AnyView(EmptyView()) }
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
+    @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
     
     @MainActor func linkListView(rootController: ItemRootController, type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> AnyView {
         AnyView(
