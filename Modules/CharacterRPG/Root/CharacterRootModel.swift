@@ -190,7 +190,12 @@ extension CharacterRootModel {
                     entries.append(entry)
                     continue
                 }
-                await editController.addItem(itemId: valueId, parentId: model.id)
+                if let valueItem = await editController.editModel(for: valueId) {
+                    valueItem.parentId <=> model.id
+                    valueItem.displayState <=> 1
+                    await editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues").localizedString)
+                }
+                
                 await editController.reset(tags: [], itemId: valueId)
                 await editController.removePhotos(itemId: valueId)
                 

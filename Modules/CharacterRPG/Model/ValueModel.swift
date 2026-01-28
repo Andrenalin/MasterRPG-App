@@ -130,6 +130,72 @@ extension ValueModel: ItemLinkRegistable {
         }
         return linkModels + entryModels
     }
+    
+    @MainActor public func changedLinkRegisterModels(oldValue: ValueModel) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
+        var added: [LinkRegisterModel] = []
+        var removed: [LinkRegisterModel] = []
+        
+        if oldValue.photos != photos {
+            let modelSource = ItemRowModel(itemId: id, typeId: .value)
+            let addedPhotos = Set(photos).subtracting(Set(oldValue.photos))
+            let removedPhotos = Set(oldValue.photos).subtracting(Set(photos))
+            addedPhotos.forEach {
+                added.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: $0, typeId: .photo)))
+            }
+            removedPhotos.forEach {
+                removed.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: $0, typeId: .photo)))
+            }
+        }
+
+        if oldValue.diceId != diceId {
+            let modelSource = ItemRowModel(itemId: id, typeId: .value)
+            if let diceId = diceId {
+                added.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: diceId, typeId: .dice)))
+            }
+            if let oldDiceId = oldValue.diceId {
+                removed.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: oldDiceId, typeId: .dice)))
+            }
+        }
+
+        if oldValue.entries != entries {
+            let addedEntryIds = Set(entries.map(\.id)).subtracting(Set(oldValue.entries.map(\.id)))
+            let removedEntryIds = Set(oldValue.entries.map(\.id)).subtracting(Set(entries.map(\.id)))
+            addedEntryIds.forEach {
+                added.append(contentsOf: linkRegisterModels(entry: self[$0]))
+            }
+            removedEntryIds.forEach {
+                removed.append(contentsOf: linkRegisterModels(entry: oldValue[$0]))
+            }
+            let sameEntryIds = Set(entries.map(\.id)).intersection(Set(oldValue.entries.map(\.id)))
+            sameEntryIds.forEach {
+                let oldEntry = oldValue[$0]
+                let newEntry = self[$0]
+                if oldEntry != newEntry {
+                    removed.append(contentsOf: linkRegisterModels(entry: oldEntry, nameChanged: oldEntry.name != newEntry.name, valueChanged: oldEntry.value != newEntry.value))
+                    added.append(contentsOf: linkRegisterModels(entry: oldEntry, nameChanged: oldEntry.name != newEntry.name, valueChanged: oldEntry.value != newEntry.value))
+                }
+            }
+        }
+        
+        return (added, removed)
+    }
+    
+    
+    @MainActor func linkRegisterModels(entry: ValueEntryModel, nameChanged: Bool = false, valueChanged: Bool = false) -> [LinkRegisterModel] {
+        let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .value)
+        var total: [LinkRegisterModel] = []
+        if nameChanged {
+            total += entry.links(for: entry.name).map {
+                LinkRegisterModel(name: $0.name, source: source, destination: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), markDown: $0.markDown)
+            }
+        }
+        if valueChanged {
+            total += entry.links(for: entry.value).map {
+                LinkRegisterModel(name: $0.name, source: source, destination: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), markDown: $0.markDown)
+            }
+        }
+        return total
+    }
 }
 
 extension ValueModel: ItemDiffComparable {

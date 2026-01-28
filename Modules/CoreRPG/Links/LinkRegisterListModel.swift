@@ -30,10 +30,12 @@ public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
 
 public protocol ItemLinkRegistable {
     @MainActor var linkRegisterModels: [LinkRegisterModel] { get }
+    @MainActor func changedLinkRegisterModels(oldValue: Self) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel])
 }
 
 public extension ItemLinkRegistable {
     @MainActor var linkRegisterModels: [LinkRegisterModel] { [] }
+    @MainActor func changedLinkRegisterModels(oldValue: Self) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) { (linkRegisterModels, oldValue.linkRegisterModels) }
 }
 
 @MainActor

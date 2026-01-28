@@ -397,26 +397,16 @@ public extension EditControllable {
     }
 
     @MainActor func saveChanges(to newValue: Model, name: String) {
-        let linkModels = newValue.linkRegisterModels
-
-        if let previous = itemControllable.itemSync(for: newValue.id) {
-            let previousLinkModels = previous.linkRegisterModels
-            var previousEntryIds = Set(previous.entries.map { $0.id })
+        if let previous = itemControllable.itemSync(for: newValue.id) as? Model {
+            let (added, removed) = newValue.changedLinkRegisterModels(oldValue: previous)
             
-            if previousLinkModels != linkModels {
-                linkRegisterController.deregister(links: previousLinkModels)
-            }
-            
-            previousEntryIds.subtract(newValue.entries.map { $0.id })
-            linkRegisterController.repairLinks(for: previousEntryIds.map { ItemRowModel(itemId: previous.id, entryId: $0, typeId: itemControllable.config.module) })
-            
+            linkRegisterController.deregister(links: removed)
+            linkRegisterController.register(links: added)
+        } else {
+            let added = newValue.linkRegisterModels
+            linkRegisterController.register(links: added)
         }
-
-        linkRegisterController.register(links: linkModels)
-        for entry in newValue.entries {
-            linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: newValue.id, entryId: entry.id, typeId: itemControllable.config.module))
-        }
-
+        
         editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
         itemControllable.replace(model: newValue, isInsert: false)
     }

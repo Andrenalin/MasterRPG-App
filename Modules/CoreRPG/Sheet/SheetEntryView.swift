@@ -132,7 +132,7 @@ private extension SheetEntryView {
             }
         } label: {
             Label {
-                Text("Edit \(entry.name)", bundle: .module)
+                Text("Edit \(entry.name.withoutLink())", bundle: .module)
             } icon: {
                 Image(systemName: "square.and.pencil")
                     .imageScale(.large)
@@ -158,7 +158,7 @@ private extension SheetEntryView {
             }
         } label: {
             Label {
-                Text("Duplicate \(entry.name)", bundle: .module)
+                Text("Duplicate \(entry.name.withoutLink())", bundle: .module)
             } icon: {
                 Image(systemName: "doc.on.doc")
             }
@@ -189,7 +189,7 @@ private extension SheetEntryView {
             }
         } label: {
             Label {
-                Text("Delete \(entry.name)", bundle: .module)
+                Text("Delete \(entry.name.withoutLink())", bundle: .module)
             } icon: {
                 Image(systemName: "minus.circle.fill")
                     .imageScale(.large)
