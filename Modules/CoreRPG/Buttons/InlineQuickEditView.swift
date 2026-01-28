@@ -31,25 +31,15 @@ enum InlineQuickButtonType: String {
         guard expanded else { return .zero }
         
         return switch self {
-        case .one: offset(atIndex: 0, layoutDown: layoutDown)
-        case .two: offset(atIndex: 1, layoutDown: layoutDown)
-        case .five: offset(atIndex: 2, layoutDown: layoutDown)
-        case .ten: offset(atIndex: 3, layoutDown: layoutDown)
+        case .one: offset(atIndex: 1, layoutDown: layoutDown)
+        case .two: offset(atIndex: 2, layoutDown: layoutDown)
+        case .five: offset(atIndex: 3, layoutDown: layoutDown)
+        case .ten: offset(atIndex: 4, layoutDown: layoutDown)
         }
     }
     
     private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
-        let radius: CGFloat = 120
-        let startAngleDeg = -180.0
-        let step = 90.0 / Double(4 - 1)
-        
-        let angleDeg = startAngleDeg + (Double(index) * step)
-        let angleRad = angleDeg * .pi / 180
-        
-        let x = cos(angleRad) * radius
-        let y = sin(angleRad) * radius * (layoutDown ? -1 : 1)
-        
-        return CGSize(width: x, height: y)
+        CGSize(width: index * 55, height: 0)
     }
 }
 
@@ -65,7 +55,7 @@ struct InlineQuickEditView: View, Equatable {
     let preopen: Bool
     let layoutDown: Bool
     
-    @Environment(ItemRootController.self) private var root
+    //@Environment(ItemRootController.self) private var root
     
     @Namespace var glassNamespace
     
@@ -137,3 +127,9 @@ struct InlineQuickEditView: View, Equatable {
     }
 }
 
+#Preview {
+    VStack(alignment: .leading) {
+        InlineQuickEditView(itemId: UUID(), preopen: true, layoutDown: true)
+        Text("Hello")
+    }
+}
