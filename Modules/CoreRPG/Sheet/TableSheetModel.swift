@@ -4,13 +4,14 @@ import SwiftUI
 
 @Observable
 public final class TableSheetModel {
-    @MainActor public init(linkControllable: any LinkControllable, model: any ItemDataAccessable, level: Int, module: NetworkModules, searchText: String = "") {
+    @MainActor public init(linkControllable: any LinkControllable, model: any ItemDataAccessable, entryId: UUID? = nil, level: Int, module: NetworkModules, searchText: String = "") {
         self.linkControllable = linkControllable
         self.model = model
         self.itemId = model.id
+        self.entryId = entryId
         self.level = level
         self.module = module
-        self.sheetModel = linkControllable.toggleSheet(itemId: itemId, level: level, module: module)
+        self.sheetModel = linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         self.searchText = searchText
         id = model.id
     }
@@ -18,6 +19,7 @@ public final class TableSheetModel {
     let model: any ItemDataAccessable
     let id: UUID
     let itemId: UUID
+    let entryId: UUID?
     let level: Int
     let module: NetworkModules
     
@@ -59,7 +61,7 @@ public final class TableSheetModel {
     }
     
     @MainActor func reset() {
-        resetModel(model: linkControllable.toggleSheet(itemId: itemId, level: level, module: module))
+        resetModel(model: linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module))
     }
     
     func resetModel(model: SheetModel) {
@@ -81,7 +83,7 @@ public final class TableSheetModel {
             case .name:
                 break
             case .description:
-                let sheets = linkControllable.toggleSheet(itemId: itemId, level: 0, module: module)
+                let sheets = linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: 0, module: module)
                 sheetModel.entries.insert(contentsOf: sheets.entries, at: 0)
             case .entry(let uuid):
                 guard let entryIndex = sheetModel.entries.firstIndex(where: { $0.id == uuid }) else { return }
@@ -101,7 +103,7 @@ public final class TableSheetModel {
     }
 
     @MainActor func add(entryId: UUID) {
-        let updatedModel = linkControllable.toggleSheet(itemId: itemId, level: level, module: module)
+        let updatedModel = linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         if let entryIndex = updatedModel.entries.firstIndex(where: { $0.source.entryId == entryId }) {
             let entry = updatedModel.entries[entryIndex]
             if entryIndex < sheetModel.entries.count {
@@ -139,7 +141,7 @@ public final class TableSheetModel {
     }
 
     @MainActor func update(entryId: UUID) {
-        let updatedModel = linkControllable.toggleSheet(itemId: itemId, level: level, module: module)
+        let updatedModel = linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         if let entryIndex = updatedModel.entries.firstIndex(where: { $0.source.entryId == entryId }) {
             let entry = updatedModel.entries[entryIndex]
             if entryIndex < sheetModel.entries.count {
@@ -152,6 +154,23 @@ public final class TableSheetModel {
     func remove(entry: SheetModel) {
         sheetModel.entries.removeAll(where: { $0.id == entry.id })
         linkTextModel[.entry(entry.id)] = nil
+    }
+    
+    // Quick Editor
+    @MainActor func toggleEdit(entry: SheetModel) {
+        guard let entryIndex = sheetModel.entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        var entry = entry
+        let rowModel = ItemRowModel(itemId: itemId, typeId: module)
+        if entry.sheetIds.contains(rowModel) {
+            entry.sheetIds.removeAll(where: { $0 == rowModel })
+        } else {
+            let model = linkControllable.itemControllable.itemOrEmpty(for: itemId)
+            let tableSheetModel = TableSheetModel(linkControllable: linkControllable, model: model, entryId: entry.source.entryId, level: entry.level + 1, module: module, searchText: searchText)
+            
+            sheets[rowModel] = tableSheetModel
+            entry.sheetIds.append(rowModel)
+        }
+        sheetModel.entries[entryIndex] = entry
     }
 }
 

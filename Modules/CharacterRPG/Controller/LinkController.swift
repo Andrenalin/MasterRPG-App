@@ -360,8 +360,8 @@ extension LinkController {
 }
 
 public extension LinkController {
-    @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel {
-        SheetController(itemController: itemController, linkController: self).sheet(for: itemId, level: level)
+    @MainActor func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetModel {
+        SheetController(itemController: itemController, linkController: self).sheet(for: itemId, entryId: entryId, level: level)
     }
 }
 

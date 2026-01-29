@@ -37,11 +37,8 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             }
 
             HStack {
-                if isEditor && entry.sheetType == .item {
+                if (isEditor || entry.editType != .none) && entry.sheetType == .item {
                     editButton(onlyIcon: true)
-                }
-                if !isEditor && entry.editType != .none {
-                    InlineEditorView(entry: entry)
                 }
                 
                 switch entry.sheetType {
@@ -66,7 +63,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                     .font(.body)
                     .listRowBackground(rowColor(for: entry.level))
                     .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entry.level * 4), bottom: 8, trailing: 8))
-                case .photoInline:
+                case .photoInline, .edit:
                     EmptyView()
                 }
                                 
@@ -128,7 +125,11 @@ private extension SheetEntryView {
     func editButton(onlyIcon: Bool) -> some View {
         Button {
             withAnimation {
-                root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: entry.source.itemId, entryId: entry.source.entryId, typeId: entry.source.typeId))
+                if isEditor {
+                    root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: entry.source.itemId, entryId: entry.source.entryId, typeId: entry.source.typeId))
+                } else {
+                    model.toggleEdit(entry: entry)
+                }
             }
         } label: {
             Label {

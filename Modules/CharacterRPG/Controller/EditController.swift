@@ -223,6 +223,39 @@ extension EditController {
     }
 }
 
+// MARK: - Inline Quick Editor
+
+extension EditController {
+    @MainActor func entryValue(itemId: UUID, entryId: UUID?) -> String {
+        guard let entryId else { return "" }
+        return itemController.itemOrEmpty(for: itemId)[entryId].value
+    }
+    
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String) {
+        guard let entryId, let item = editModel(for: itemId) else { return }
+        if item[entryId].value != value {
+            item[entryId].value = value
+            save(updated: item, message: String(localized: "Update value").localizedString)
+        }
+    }
+    
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, decimal: Double) {
+        guard let entryId, let item = editModel(for: itemId) else { return }
+        if item[entryId].valueDecimal != decimal {
+            item[entryId].valueDecimal = decimal
+            save(updated: item, message: String(localized: "Update decimal").localizedString)
+        }
+    }
+
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int) {
+        guard let entryId, let item = editModel(for: itemId) else { return }
+        if item[entryId].valueNumber != number {
+            item[entryId].valueNumber = number
+            save(updated: item, message: String(localized: "Update number").localizedString)
+        }
+    }
+}
+
 // MARK: - QuickEntryEditor
 
 extension EditController {

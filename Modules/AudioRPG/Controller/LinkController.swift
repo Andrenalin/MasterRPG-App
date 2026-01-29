@@ -81,7 +81,7 @@ extension LinkController: LinkControllable {
         return itemControllable.itemOrEmpty(for: entryId).url(linkNumber: linkNumber)
     }
     
-    @MainActor public func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel {
+    @MainActor public func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetModel {
         SheetController(itemController: itemController).sheet(for: itemId, level: level)
     }
 }

@@ -231,9 +231,4 @@ public extension CharacterRootModel {
         editController.reset(description: text, itemId: itemId)
         //editController.add(photoId: photoId, itemId: itemId)
     }
-
-    @MainActor
-    func sheet(for itemId: UUID, level: Int = 0) -> SheetModel {
-        SheetController(itemController: itemController, linkController: linkController).sheet(for: itemId, level: level)
-    }
 }

@@ -178,26 +178,26 @@ public extension LinkController {
 }
 
 public extension LinkController {
-    @MainActor func toggleSheet(itemId: UUID, level: Int, module: NetworkModules) -> SheetModel {
+    @MainActor func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetModel {
         switch module {
         case .audio:
-            return root.audioRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
+            return root.audioRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .dice:
-            return root.diceRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
+            return root.diceRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .map:
-            return root.mapRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
+            return root.mapRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .pdf:
-            return root.pdfRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
+            return root.pdfRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .photo:
-            return root.photoRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
+            return root.photoRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .space:
-            return root.spaceRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
+            return root.spaceRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .table:
-            return root.tableRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
+            return root.tableRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .value:
-            return root.characterRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
+            return root.characterRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .weather:
-            return root.weatherRoot.linkController.toggleSheet(itemId: itemId, level: level, module: module)
+            return root.weatherRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         default:
             return SheetController(itemController: itemController).sheet(for: itemId, level: level)
         }

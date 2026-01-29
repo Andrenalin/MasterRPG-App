@@ -61,32 +61,6 @@ extension EditController {
         save(updated: editModel, message: String(localized: "Change type").localizedString)
     }
 
-    @MainActor
-    func updateDecimal(itemId: UUID, entryId: UUID, value: Double) {
-        guard let editModel = editModel(for: itemId) else { return }
-        if editModel[entryId].valueDecimal != value {
-            editModel[entryId].valueDecimal = value
-            save(updated: editModel, message: String(localized: "Update decimal").localizedString)
-        }
-    }
-
-    @MainActor
-    func updateNumber(itemId: UUID, entryId: UUID, value: Int) {
-        guard let editModel = editModel(for: itemId) else { return }
-        if editModel[entryId].valueNumber != value {
-            editModel[entryId].valueNumber = value
-            save(updated: editModel, message: String(localized: "Update number").localizedString)
-        }
-    }
-
-    @MainActor
-    func updateValue(itemId: UUID, entryId: UUID, value: String) {
-        guard let editModel = editModel(for: itemId) else { return }
-        if editModel[entryId].value != value {
-            editModel[entryId].value = value
-            save(updated: editModel, message: String(localized: "Update value").localizedString)
-        }
-    }
 }
 
 

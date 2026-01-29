@@ -41,6 +41,13 @@ public protocol EntryDataEditable: EditControllable {
     // MARK: - Entry Editor
     
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String)
+    
+    // MARK: - Inline Quick Editor
+    
+    @MainActor func entryValue(itemId: UUID, entryId: UUID?) -> String
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String)
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int)
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, decimal: Double)
 }
 
 public extension EntryDataEditable {
@@ -223,6 +230,15 @@ public extension EntryDataEditable {
     }
 }
 
+// MARK: - Inline Quick Editor
+
+public extension EntryDataEditable {
+    @MainActor func entryValue(itemId: UUID, entryId: UUID?) -> String { "" }
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String) {}
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int) {}
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, decimal: Double) {}
+}
+
 public extension EntryDataEditable {
     @MainActor func linkTextModel(itemId: UUID, for entry: any EntryDataAccessable, linkController: any LinkControllable, searchModel: SearchModel, toggler: ((UUID, NetworkModules) async -> Void)? = nil) -> LinkHighlightTextModel {
         let nameText = rowText(itemId: itemId, entry: entry)
@@ -236,26 +252,6 @@ public extension EntryDataEditable {
         }
         return linkModel
     }
-    
-//    @MainActor
-//    func isUsed(rowModels: [ItemRowModel]) -> Bool {
-//        for rowModel in rowModels {
-//            if linkRegisterController.isUsed(link: rowModel) {
-//                return true
-//            }
-//        }
-//        return false
-//    }
-
-//    @MainActor
-//    func isUsed(entryId: UUID) -> Bool {
-//        linkRegisterController.isUsed(link: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
-//    }
-//
-//    @MainActor
-//    func used(entryId: UUID) -> [EffectedItemModel] {
-//        linkRegisterController.used(for: ItemRowModel(itemId: model.id, entryId: entryId, typeId: itemControllable.config.module))
-//    }
     
     func scanReplace(entry: Model.Entry, linkEntry: LinkEntryModel, getLink: @Sendable @escaping (Model.Entry) -> String, setLink: @Sendable @escaping (String, Model.Entry) -> Model.Entry, caseInsensitive: Bool, words: Bool) -> Model.Entry {
         var replacedEntry = entry

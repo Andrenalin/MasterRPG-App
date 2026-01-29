@@ -32,10 +32,10 @@ struct QuickEditValueRow: View {
             switch valueType {
             case .number:
                 textFieldEditor(text: textValue)
-                QuickEditorIntView(number: numberValue)
+                //QuickEditorIntView(number: numberValue)
             case .decimal:
                 textFieldEditor(text: textValue)
-                QuickEditorDoubleView(number: decimalValue)
+                //QuickEditorDoubleView(number: decimalValue)
             case .selection:
                 selectionEditor
             default:
@@ -82,22 +82,6 @@ private extension QuickEditValueRow {
             root.itemController.itemOrEmpty(for: itemId)[entryId].valueSelected
         } set: { _ in
             withAnimation { editController.toggleSelected(itemId: itemId, entryId: entryId) }
-        }
-    }
-    
-    var numberValue: Binding<Int> {
-        Binding {
-            root.itemController.itemOrEmpty(for: itemId)[entryId].valueNumber
-        } set: { newValue in
-            withAnimation { editController.updateNumber(itemId: itemId, entryId: entryId, value: newValue) }
-        }
-    }
-    
-    var decimalValue: Binding<Double> {
-        Binding {
-            root.itemController.itemOrEmpty(for: itemId)[entryId].valueDecimal
-        } set: { newValue in
-            withAnimation { editController.updateDecimal(itemId: itemId, entryId: entryId, value: newValue) }
         }
     }
     

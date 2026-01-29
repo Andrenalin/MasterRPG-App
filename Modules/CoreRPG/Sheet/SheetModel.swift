@@ -63,6 +63,7 @@ public enum SheetModelEditType: Equatable, Hashable, Sendable {
 
 public enum SheetModelType: Equatable, Hashable, Sendable {
     case item
+    case edit
     case audioInline
     case dice
     case pdf
