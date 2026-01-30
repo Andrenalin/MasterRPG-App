@@ -45,9 +45,13 @@ public protocol EntryDataEditable: EditControllable {
     // MARK: - Inline Quick Editor
     
     @MainActor func entryValue(itemId: UUID, entryId: UUID?) -> String
-    @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String)
-    @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int)
+    @MainActor func entryValueAsDecimal(itemId: UUID, entryId: UUID?) -> Double
+    @MainActor func entryValueAsNumber(itemId: UUID, entryId: UUID?) -> Int
+    @MainActor func entryValueAsSelected(itemId: UUID, entryId: UUID?) -> Bool
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, decimal: Double)
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int)
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, selected: Bool)
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String)
 }
 
 public extension EntryDataEditable {
@@ -234,9 +238,13 @@ public extension EntryDataEditable {
 
 public extension EntryDataEditable {
     @MainActor func entryValue(itemId: UUID, entryId: UUID?) -> String { "" }
-    @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String) {}
-    @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int) {}
+    @MainActor func entryValueAsDecimal(itemId: UUID, entryId: UUID?) -> Double { 0.0 }
+    @MainActor func entryValueAsNumber(itemId: UUID, entryId: UUID?) -> Int { 0 }
+    @MainActor func entryValueAsSelected(itemId: UUID, entryId: UUID?) -> Bool { false }
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, decimal: Double) {}
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int) {}
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, selected: Bool) {}
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String) {}
 }
 
 public extension EntryDataEditable {

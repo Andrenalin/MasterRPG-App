@@ -31,8 +31,15 @@ struct InlineEditorView: View {
             }
         }
         .onChange(of: entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId), initial: true) {
-            let newValue = entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId)
-            withAnimation { textValue <=> newValue }
+            withAnimation {
+                textValue <=> entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId)
+                doubleValue <=> entryDataEditable.entryValueAsDecimal(itemId: entry.source.itemId, entryId: entry.source.entryId)
+                intValue <=> entryDataEditable.entryValueAsNumber(itemId: entry.source.itemId, entryId: entry.source.entryId)
+                selectedValue <=> entryDataEditable.entryValueAsSelected(itemId: entry.source.itemId, entryId: entry.source.entryId)
+            }
+        }
+        .onChange(of: selectedValue) {
+            entryDataEditable.updateValue(itemId: entry.source.itemId, entryId: entry.source.entryId, selected: selectedValue)
         }
         .onChange(of: intValue) {
             entryDataEditable.updateValue(itemId: entry.source.itemId, entryId: entry.source.entryId, number: intValue)
@@ -43,13 +50,16 @@ struct InlineEditorView: View {
             updateValue()
         }
     }
-    
 }
 
 private extension InlineEditorView {
     func updateValue() {
-        textValue <=> entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId)
-        withAnimation { model.reset() }
+        withAnimation {
+            textValue <=> entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId)
+            if let entryId = entry.source.entryId {
+                model.update(entryId: entryId)
+            }
+        }
     }
     
     var selectionEditor: some View {
@@ -57,7 +67,7 @@ private extension InlineEditorView {
             Label { Text("Selected", bundle: .module) } icon: { Image(systemName: "checkmark.square") }
         }
         .labelsHidden()
-        .tint(Color.accentColor)
+        .tint(entryDataEditable.itemControllable.config.module.tint)
         .toggleStyle(.automatic)
         .fixedSize(horizontal: true, vertical: true)
     }
@@ -75,16 +85,19 @@ private extension InlineEditorView {
         }
 #endif
         .disableAutocorrection(true)
-        //.foregroundStyle(.white)
         .labelsHidden()
-        //.textFieldStyle(.plain)
         .submitLabel(.return)
+        .textFieldStyle(.plain)
+        .padding(6)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(.secondary, lineWidth: 1)
+        }
+        .padding(.horizontal)
         .onSubmit {
             textValue = textValue.trimmingCharacters(in: .whitespacesAndNewlines)
             entryDataEditable.updateValue(itemId: entry.source.itemId, entryId: entry.source.entryId, value: textValue)
-            withAnimation { model.reset() }
         }
-        //.rowEditColor()
     }
 }
 

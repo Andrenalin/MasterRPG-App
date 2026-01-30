@@ -231,12 +231,19 @@ extension EditController {
         return itemController.itemOrEmpty(for: itemId)[entryId].value
     }
     
-    @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String) {
-        guard let entryId, let item = editModel(for: itemId) else { return }
-        if item[entryId].value != value {
-            item[entryId].value = value
-            save(updated: item, message: String(localized: "Update value").localizedString)
-        }
+    @MainActor func entryValueAsDecimal(itemId: UUID, entryId: UUID?) -> Double {
+        guard let entryId else { return 0.0 }
+        return itemController.itemOrEmpty(for: itemId)[entryId].valueDecimal
+    }
+    
+    @MainActor func entryValueAsNumber(itemId: UUID, entryId: UUID?) -> Int {
+        guard let entryId else { return 0 }
+        return itemController.itemOrEmpty(for: itemId)[entryId].valueNumber
+    }
+    
+    @MainActor func entryValueAsSelected(itemId: UUID, entryId: UUID?) -> Bool {
+        guard let entryId else { return false }
+        return itemController.itemOrEmpty(for: itemId)[entryId].valueSelected
     }
     
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, decimal: Double) {
@@ -246,12 +253,28 @@ extension EditController {
             save(updated: item, message: String(localized: "Update decimal").localizedString)
         }
     }
-
+    
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int) {
         guard let entryId, let item = editModel(for: itemId) else { return }
         if item[entryId].valueNumber != number {
             item[entryId].valueNumber = number
             save(updated: item, message: String(localized: "Update number").localizedString)
+        }
+    }
+    
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, selected: Bool) {
+        guard let entryId, let item = editModel(for: itemId) else { return }
+        if item[entryId].valueSelected != selected {
+            item[entryId].toggleSelection()
+            save(updated: item, message: String(localized: "Update Selection").localizedString)
+        }
+    }
+    
+    @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String) {
+        guard let entryId, let item = editModel(for: itemId) else { return }
+        if item[entryId].value != value {
+            item[entryId].value = value
+            save(updated: item, message: String(localized: "Update value").localizedString)
         }
     }
 }

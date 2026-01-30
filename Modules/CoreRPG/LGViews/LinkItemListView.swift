@@ -90,7 +90,13 @@ private extension LinkItemListView {
         TextField(text: $searchModel.searchText, prompt: textFieldText) {
             textFieldText
         }
+#if os(iOS)
+        .autocapitalization(.none)
+        .textContentType(.name)
+#endif
+        .disableAutocorrection(true)
         .labelsHidden()
+        .submitLabel(.return)
         .textFieldStyle(.plain)
         .padding(6)
         .background {

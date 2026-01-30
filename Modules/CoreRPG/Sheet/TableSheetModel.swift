@@ -172,6 +172,10 @@ public final class TableSheetModel {
         }
         sheetModel.entries[entryIndex] = entry
     }
+    
+    func isEditing(entry: SheetModel) -> Bool {
+        entry.sheetIds.contains(ItemRowModel(itemId: itemId, typeId: module))
+    }
 }
 
 enum LinkHighlightTextModelId: Hashable {

@@ -135,9 +135,10 @@ private extension SheetEntryView {
             Label {
                 Text("Edit \(entry.name.withoutLink())", bundle: .module)
             } icon: {
-                Image(systemName: "square.and.pencil")
+                Image(systemName: model.isEditing(entry: entry) ? "square.and.pencil" : "pencil")
                     .imageScale(.large)
-                    .foregroundStyle(.foreground, .tint)
+                    .foregroundStyle(.tint, .foreground, .tint)
+                    .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
             }
             .applyIf(onlyIcon) {
                 $0.labelStyle(.iconOnly)
