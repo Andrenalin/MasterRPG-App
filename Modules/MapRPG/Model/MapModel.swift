@@ -259,27 +259,71 @@ extension MapModel: Comparable {
 }
 
 extension MapModel: ItemLinkRegistable {
-    @MainActor
-    public var linkRegisterModels: [LinkRegisterModel] {
-        let modelSource = ItemRowModel(itemId: id, typeId: .map)
-        var linkModels = mapPins.compactMap { pin -> LinkRegisterModel? in
-            guard let photoId = pin.photoId else { return nil }
-            return LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo))
-        }
-        if let photoId {
-            linkModels.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo)))
+    @MainActor public var linkRegisterModels: [LinkRegisterModel] {
+        changedLinkRegisterModels(oldValue: .empty).0
+    }
 
+    @MainActor public func changedLinkRegisterModels(oldValue: MapModel) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
+        var added: [LinkRegisterModel] = []
+        var removed: [LinkRegisterModel] = []
+        
+        let oldPinIds = Set(oldValue.mapPins.compactMap(\.photoId))
+        let newPinIds = Set(mapPins.compactMap(\.photoId))
+        
+        if oldPinIds != newPinIds {
+            let modelSource = ItemRowModel(itemId: id, typeId: .value)
+            let addedPhotos = newPinIds.subtracting(oldPinIds)
+            let removedPhotos = oldPinIds.subtracting(newPinIds)
+            addedPhotos.forEach {
+                added.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: $0, typeId: .photo)))
+            }
+            removedPhotos.forEach {
+                removed.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: $0, typeId: .photo)))
+            }
         }
-        let entryModels = entries.reduce([]) { total, entry -> [LinkRegisterModel] in
-            let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .map)
-            let models = entry.links(for: entry.content).map {
+
+        if oldValue.photoId != photoId {
+            let modelSource = ItemRowModel(itemId: id, typeId: .map)
+            if let photoId {
+                added.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo)))
+            }
+            if let oldPhotoId = oldValue.photoId {
+                removed.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: oldPhotoId, typeId: .photo)))
+            }
+        }
+
+        if oldValue.entries != entries {
+            let addedEntryIds = Set(entries.map(\.id)).subtracting(Set(oldValue.entries.map(\.id)))
+            let removedEntryIds = Set(oldValue.entries.map(\.id)).subtracting(Set(entries.map(\.id)))
+            addedEntryIds.forEach {
+                added.append(contentsOf: linkRegisterModels(entry: self[$0]))
+            }
+            removedEntryIds.forEach {
+                removed.append(contentsOf: linkRegisterModels(entry: oldValue[$0]))
+            }
+            let sameEntryIds = Set(entries.map(\.id)).intersection(Set(oldValue.entries.map(\.id)))
+            sameEntryIds.forEach {
+                let oldEntry = oldValue[$0]
+                let newEntry = self[$0]
+                if oldEntry != newEntry {
+                    removed.append(contentsOf: linkRegisterModels(entry: oldEntry, valueChanged: oldEntry.content != newEntry.content))
+                    added.append(contentsOf: linkRegisterModels(entry: oldEntry, valueChanged: oldEntry.content != newEntry.content))
+                }
+            }
+        }
+        
+        return (added, removed)
+    }
+    
+    @MainActor func linkRegisterModels(entry: MapEntryModel, valueChanged: Bool = false) -> [LinkRegisterModel] {
+        let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .map)
+        var total: [LinkRegisterModel] = []
+        if valueChanged {
+            total += entry.links(for: entry.content).map {
                 LinkRegisterModel(name: $0.name, source: source, destination: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), markDown: $0.markDown)
             }
-            var newTotal = total
-            newTotal.append(contentsOf: models)
-            return newTotal
         }
-        return linkModels + entryModels
+        return total
     }
 }
 

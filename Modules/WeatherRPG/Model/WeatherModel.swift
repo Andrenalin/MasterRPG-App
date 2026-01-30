@@ -140,13 +140,21 @@ extension WeatherModel: Comparable {
 }
 
 extension WeatherModel: ItemLinkRegistable {
-    @MainActor
-    public var linkRegisterModels: [LinkRegisterModel] {
-        let source = ItemRowModel(itemId: id, typeId: .weather)
-        if let photoId {
-            return [LinkRegisterModel(name: "", source: source, destination: ItemRowModel(itemId: photoId, typeId: .photo))]
+    @MainActor public func changedLinkRegisterModels(oldValue: WeatherModel) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
+        var added: [LinkRegisterModel] = []
+        var removed: [LinkRegisterModel] = []
+        
+        if oldValue.photoId != photoId {
+            let modelSource = ItemRowModel(itemId: id, typeId: .adventure)
+            if let photoId {
+                added.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo)))
+            }
+            if let oldPhotoId = oldValue.photoId {
+                removed.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: oldPhotoId, typeId: .photo)))
+            }
         }
-        return []
+        
+        return (added, removed)
     }
 }
 

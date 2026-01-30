@@ -35,7 +35,7 @@ public protocol ItemLinkRegistable {
 
 public extension ItemLinkRegistable {
     @MainActor var linkRegisterModels: [LinkRegisterModel] { [] }
-    @MainActor func changedLinkRegisterModels(oldValue: Self) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) { (linkRegisterModels, oldValue.linkRegisterModels) }
+    @MainActor func changedLinkRegisterModels(oldValue: Self) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) { ([], []) }
 }
 
 @MainActor

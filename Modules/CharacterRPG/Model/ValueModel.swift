@@ -109,26 +109,8 @@ extension ValueModel: Comparable {
 }
 
 extension ValueModel: ItemLinkRegistable {
-    @MainActor
-    public var linkRegisterModels: [LinkRegisterModel] {
-        let modelSource = ItemRowModel(itemId: id, typeId: .value)
-        let linkModels = photos.map {
-            LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: $0, typeId: .photo))
-        }
-        let entryModels = entries.reduce([]) { total, entry -> [LinkRegisterModel] in
-            let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .value)
-            let nameModels = entry.links(for: entry.name).map {
-                LinkRegisterModel(name: $0.name, source: source, destination: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), markDown: $0.markDown)
-            }
-            let valueModels = entry.links(for: entry.value).map {
-                LinkRegisterModel(name: $0.name, source: source, destination: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), markDown: $0.markDown)
-            }
-            var newTotal = total
-            newTotal.append(contentsOf: nameModels)
-            newTotal.append(contentsOf: valueModels)
-            return newTotal
-        }
-        return linkModels + entryModels
+    @MainActor public var linkRegisterModels: [LinkRegisterModel] {
+        changedLinkRegisterModels(oldValue: .empty).0
     }
     
     @MainActor public func changedLinkRegisterModels(oldValue: ValueModel) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
@@ -179,8 +161,7 @@ extension ValueModel: ItemLinkRegistable {
         
         return (added, removed)
     }
-    
-    
+        
     @MainActor func linkRegisterModels(entry: ValueEntryModel, nameChanged: Bool = false, valueChanged: Bool = false) -> [LinkRegisterModel] {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .value)
         var total: [LinkRegisterModel] = []
