@@ -56,9 +56,7 @@ private extension InlineEditorView {
     func updateValue() {
         withAnimation {
             textValue <=> entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId)
-            if let entryId = entry.source.entryId {
-                model.update(entryId: entryId)
-            }
+            model.updateParent()
         }
     }
     
@@ -97,6 +95,7 @@ private extension InlineEditorView {
         .onSubmit {
             textValue = textValue.trimmingCharacters(in: .whitespacesAndNewlines)
             entryDataEditable.updateValue(itemId: entry.source.itemId, entryId: entry.source.entryId, value: textValue)
+            updateValue()
         }
     }
 }

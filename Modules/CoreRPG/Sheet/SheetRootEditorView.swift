@@ -10,7 +10,7 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
         self.module = module
         self.headerTitle = headerTitle
         self.linkTypes = linkTypes
-        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: linkControllable, model: model, level: 0, module: module))
+        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: linkControllable, parent: nil, model: model, level: 0, module: module))
     }
     
     let root: ItemRootController
@@ -29,7 +29,7 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
             Text(headerTitle)
         }
         .onChange(of: model.id) {
-            tableSheetModel = TableSheetModel(linkControllable: linkControllable, model: model, level: 0, module: module)
+            tableSheetModel = TableSheetModel(linkControllable: linkControllable, parent: nil, model: model, level: 0, module: module)
         }
     }
 }

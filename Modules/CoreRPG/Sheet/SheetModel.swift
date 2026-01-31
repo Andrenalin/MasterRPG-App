@@ -24,13 +24,13 @@ public struct SheetModel: Equatable, Hashable, Identifiable, Sendable {
     public let level: Int
     
     public let destination: ItemRowModel
-    
+        
     public let sheetType: SheetModelType
     public let canAdd: Bool
     public let editType: SheetModelEditType
     public let showHeader: Bool
-    public let name: String
-    public let description: String
+    public var name: String
+    public var description: String
     
     public var inlineEntries: [SheetModel]
     public var entries: [SheetModel]

@@ -48,6 +48,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                         .font(.body)
                         .listRowBackground(rowColor(for: entry.level))
                         .listRowInsets(EdgeInsets(top: 8, leading: 8 + CGFloat(entry.level * 4), bottom: 8, trailing: 8))
+                    
                 case .dice:
                     root.viewControllable.rowViewer(source: entry.source, destination: entry.destination)
                 case .pdf, .photo, .space, .weather:
@@ -135,10 +136,15 @@ private extension SheetEntryView {
             Label {
                 Text("Edit \(entry.name.withoutLink())", bundle: .module)
             } icon: {
-                Image(systemName: model.isEditing(entry: entry) ? "square.and.pencil" : "pencil")
+                Image(systemName: "square.and.pencil")
+                    .opacity(0)
                     .imageScale(.large)
-                    .foregroundStyle(.tint, .foreground, .tint)
-                    .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                    .overlay {
+                        Image(systemName: model.isEditing(entry: entry) ? "square.and.pencil" : "pencil")
+                            .imageScale(.large)
+                            .foregroundStyle(.tint, .foreground, .tint)
+                            .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                    }
             }
             .applyIf(onlyIcon) {
                 $0.labelStyle(.iconOnly)
