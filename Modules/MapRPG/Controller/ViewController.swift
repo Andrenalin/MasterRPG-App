@@ -96,12 +96,3 @@ public extension ViewController {
             .environment(root)
     }
 }
-
-// MARK: Links
-
-public extension ViewController {
-    @MainActor 
-    func selectForScan(root: MapRootModel, ids: Binding<[UUID]?>, entryId: Binding<UUID?>? = nil, entryOnly: Bool = false, dismissAction: @escaping () -> Void) -> some View {
-        Text("ToDO")
-    }
-}

@@ -83,7 +83,7 @@ private extension AdventureGenRootView {
         List(root.generatorController.model.session.transcript) { entry in
             switch entry {
                 case .prompt(let prompt):
-                SegmentsView(segments: prompt.segments, isUser: true)
+                GenericSegmentsView(segments: prompt.segments, isUser: true)
                     .listRowSeparator(.hidden)
                 case .response(_):
                 if let campaign = root.generatorController.model.campaign {
@@ -289,5 +289,82 @@ struct EntryGenView: View {
             }
         }
         .animation(.easeOut, value: entry)
+    }
+}
+
+struct CharacterGenView: View {
+    let value: CharacterGenModel
+    let level: Int
+    
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(value.name)
+                .font(.headline)
+                .textSelection(.enabled)
+            Text(value.information)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+            
+            TagItemRow(tags: value.tags)
+            
+            ForEach(value.entries.enumerated(), id: \.self.offset) { index, element in
+                Text("**\(element.name)**: \(element.content)")
+                if let subvalue = element.groupedValues.first {
+                    Divider()
+                    CharacterGenView(value: subvalue, level: level + 1)
+                }
+            }
+        }
+        .padding(.leading, CGFloat(level * 8))
+    }
+}
+
+struct GenericSegmentsView: View {
+    let segments: [Transcript.Segment]
+    let isUser: Bool
+ 
+    @Environment(GeneratorRootModel.self) private var root
+    
+    var body: some View {
+        VStack {
+            ForEach(segments, id: \.id) { segment in
+                switch segment {
+                case .structure(let sturcture):
+                    VStack {
+                        if let value = root.generatorController.model.result {
+                            CharacterGenView(value: value, level: 0)
+                        }
+                        Group {
+                            if let value = try? CharacterGenModel(sturcture.content) {
+                                CharacterGenView(value: value, level: 0)
+                            } else {
+                                Text(LocalizedStringKey(sturcture.description))
+                                    .textSelection(.enabled)
+                            }
+                        }
+                        .padding(8)
+                        .background(isUser ? Color.blue.opacity(0.2) : nil)
+                        .cornerRadius(8)
+                        .contentTransition(.interpolate)
+                        .animation(.easeInOut(duration: 0.3), value: sturcture.description)
+                    }
+                    .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
+                case .text(let text):
+                    VStack {
+                        Text(LocalizedStringKey(text.content))
+                            .padding(8)
+                            .background(isUser ? Color.blue.opacity(0.2) : nil)
+                            .cornerRadius(8)
+                            .contentTransition(.interpolate)
+                            .animation(.easeInOut(duration: 0.3), value: text)
+                            .textSelection(.enabled)
+                    }
+                    .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
+                @unknown default:
+                    EmptyView()
+                }
+            }
+        }
+        .textSelection(.enabled)
     }
 }

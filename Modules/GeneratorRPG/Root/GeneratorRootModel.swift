@@ -10,7 +10,7 @@ public final class GeneratorRootModel: @unchecked Sendable {
     @MainActor init(tagController: TagController) {
         let config = ModuleConfiguration()
         self.config = config
-
+        
         let listDisplayModel = ListDisplayModel()
         self.listDisplayModel = listDisplayModel
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
@@ -30,7 +30,7 @@ public final class GeneratorRootModel: @unchecked Sendable {
         _importController = ImportController(itemController: itemController)
         _gameController = GameController(config: config, itemController: itemController, linkRegisterController: linkRegisterController, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
         _linkController = LinkController(itemController: itemController, gameController: gameController)
-
+        
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
@@ -38,7 +38,7 @@ public final class GeneratorRootModel: @unchecked Sendable {
             }
         }
     }
-
+    
     public let config: ModuleConfiguration
     
     public let listDisplayModel: ListDisplayModel
@@ -48,7 +48,7 @@ public final class GeneratorRootModel: @unchecked Sendable {
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()
-
+    
     @ObservationIgnored private(set) var _dataController: DataController?
     var dataController: DataController? { _dataController }
     public var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
@@ -72,16 +72,16 @@ public final class GeneratorRootModel: @unchecked Sendable {
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
     }()
-        @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
+    @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
         rootController.folderLinkControllable
     }
-
+    
     @ObservationIgnored public lazy var viewController: ViewController = {
         ViewController()
     }()
     
     @ObservationIgnored private(set) var _rootControllable: RootControllable?
-    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }    
+    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
     
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
@@ -103,6 +103,10 @@ public final class GeneratorRootModel: @unchecked Sendable {
     
     @MainActor @ObservationIgnored lazy var generatorController: GeneratorController = {
         GeneratorController()
+    }()
+    
+    @MainActor @ObservationIgnored lazy var adventureGeneratorController: AdventureGeneratorController = {
+        AdventureGeneratorController()
     }()
 }
 

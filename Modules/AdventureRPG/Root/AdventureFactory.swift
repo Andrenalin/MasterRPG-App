@@ -1,24 +1,27 @@
 // @copyright André Trettin
 
+import AudioRPG
+import CharacterRPG
 import CoreRPG
 import DiceRPG
-import AudioRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import TableRPG
-import CharacterRPG
 import SwiftData
 import SwiftUI
 import WeatherRPG
-
 
 public enum AdventureFactory {
     @MainActor public static func root(
         tagController: TagController,
         audioRoot: AudioRootModel,
         diceRoot: DiceRootModel,
+        generatorRoot: GeneratorRootModel?,
         mapRoot: MapRootModel,
         pdfRoot: PdfRootModel,
         photoRoot: PhotoRootModel,
@@ -31,6 +34,7 @@ public enum AdventureFactory {
             tagController: tagController,
             audioRoot: audioRoot,
             diceRoot: diceRoot,
+            generatorRoot: generatorRoot,
             mapRoot: mapRoot,
             pdfRoot: pdfRoot,
             photoRoot: photoRoot,

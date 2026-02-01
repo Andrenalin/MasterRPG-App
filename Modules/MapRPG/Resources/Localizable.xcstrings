@@ -438,6 +438,7 @@
       }
     },
     "Dice" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1004,6 +1005,7 @@
       }
     },
     "Table" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1044,9 +1046,6 @@
         }
       }
     },
-    "ToDO" : {
-
-    },
     "toggle border" : {
 
     },
@@ -1072,6 +1071,7 @@
       }
     },
     "Value" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

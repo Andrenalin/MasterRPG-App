@@ -1,26 +1,29 @@
 // @copyright André Trettin
 
+import AudioRPG
+import CharacterRPG
 import CoreRPG
 import CoreData
 import DiceRPG
-import AudioRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
-import TableRPG
-import CharacterRPG
-import SwiftData
 import SwiftUI
+import TableRPG
 import WeatherRPG
 
 @Observable
 public final class AdventureRootModel: @unchecked Sendable {
 
     @MainActor
-    init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
+    init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel?, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
+        self.generatorRoot = generatorRoot
         self.mapRoot = mapRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
@@ -75,6 +78,7 @@ public final class AdventureRootModel: @unchecked Sendable {
 
     let audioRoot: AudioRootModel
     let diceRoot: DiceRootModel
+    let generatorRoot: GeneratorRootModel?
     let mapRoot: MapRootModel
     let pdfRoot: PdfRootModel
     let photoRoot: PhotoRootModel

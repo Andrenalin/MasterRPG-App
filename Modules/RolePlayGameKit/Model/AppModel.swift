@@ -93,6 +93,11 @@ public final class AppModel: Sendable {
         let tagController = TagController()
         self.tagController = tagController
         
+#if !os(tvOS)
+        let generatorRoot = GeneratorRootFactory.rootModel(tagController: tagController)
+        self.generatorRoot = generatorRoot
+#endif
+        
         let diceRoot = DiceFactory.root(tagController: tagController)
         let photoRoot = PhotoFactory.root(tagController: tagController)
         let audioRoot = AudioFactory.root(tagController: tagController)
@@ -105,7 +110,12 @@ public final class AppModel: Sendable {
         let characterRoot = CharacterRootFactory.root(tagController: tagController, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
         
         let mapRoot = MapRootFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot)
-        let adventureRoot = AdventureFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
+
+#if os(tvOS)
+        let adventureRoot = AdventureFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, generatorRoot: nil, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
+#else
+        let adventureRoot = AdventureFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, generatorRoot: generatorRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
+#endif
         let gameRoot = GameRoot(adventureRoot: adventureRoot, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
         
         self.adventureRoot = adventureRoot
@@ -136,10 +146,6 @@ public final class AppModel: Sendable {
         )
         
 #else
-        
-        let generatorRoot = GeneratorRootFactory.rootModel(tagController: tagController)
-        self.generatorRoot = generatorRoot
-
         root = RootManager(
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,

@@ -20,7 +20,7 @@ public extension ViewController {
             case .adventure:
                 AdventureGenRootView(model: model)
             case .character:
-                ChatRootView(model: model)
+                AdventureChatRootView(sheetModel: SheetModel.empty)
             case .extractor:
                 ExtractorGenRootView(model: model)
             }
@@ -34,10 +34,14 @@ public extension ViewController {
             case .adventure:
                 AdventureGenRootView(model: model, dismissAction: dismissAction)
             case .character:
-                ChatRootView(model: model, dismissAction: dismissAction)
+                AdventureChatRootView(sheetModel: SheetModel.empty, dismissAction: dismissAction)
             case .extractor:
                 ExtractorGenRootView(model: model, dismissAction: dismissAction)
             }
         }
+    }
+    
+    @MainActor @ViewBuilder func inlineChat(root: GeneratorRootModel, sheetModel: SheetModel) -> some View {
+        AdventureChatRootView(sheetModel: sheetModel, dismissAction: nil)
     }
 }

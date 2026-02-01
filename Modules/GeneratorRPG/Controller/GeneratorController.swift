@@ -36,7 +36,7 @@ struct GeneratorController: Sendable {
     let model: GeneratorSessionModel
     let llm = SystemLanguageModel.default
     
-    @MainActor func generate(from model: GeneratorModel) {
+    @MainActor func generate() {
 //        let reference: CharacterGenModel = CharacterGenModel(name: "He-Man", information: "He-Man is a legendary hero from the Marvel Universe.", tags: ["Warrior", "Weapon Master", "Swordsman"], entries: [
 //            CharacterEntryGenModel(name: "Attributes", content: "", valueType: .text, groupedValues: CharacterGenModel(name: "Attributes", information: "The attributes of the character", tags: ["Values"], entries: [
 //                CharacterEntryGenModel(name: "BODY", content: "10", valueType: .number, groupedValues: nil),

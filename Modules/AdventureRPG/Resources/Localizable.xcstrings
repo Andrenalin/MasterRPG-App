@@ -45,6 +45,9 @@
         }
       }
     },
+    "AI Assistant" : {
+
+    },
     "Audio" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -219,6 +222,7 @@
       }
     },
     "Dice" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -301,6 +305,7 @@
 
     },
     "Map" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -429,9 +434,6 @@
     "Sections" : {
 
     },
-    "Selection - should be LinkRootView with ItemSelectionModel" : {
-
-    },
     "Show Adventures" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -466,6 +468,7 @@
       }
     },
     "Table" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -498,6 +501,7 @@
       }
     },
     "Value" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

@@ -120,7 +120,7 @@ private extension ExtractorGenRootView {
         List(root.generatorController.model.session.transcript) { entry in
             switch entry {
                 case .prompt(let prompt):
-                SegmentsView(segments: prompt.segments, isUser: true)
+                GenericSegmentsView(segments: prompt.segments, isUser: true)
                     .listRowSeparator(.hidden)
                 case .response(_):
                 if let campaign = root.generatorController.model.extracted {

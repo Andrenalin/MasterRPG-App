@@ -1,7 +1,9 @@
 // @copyright André Trettin
 
 import CoreRPG
-
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import PdfRPG
 import SwiftUI
 
@@ -10,6 +12,7 @@ enum EditorRoute: Equatable, Hashable, Codable {
     case selectionPdf
     case linkSelection(ItemRowModel)
     case addLink(ItemRowModel)
+    case generator(UUID)
 }
 
 extension EditorRoute: NavigationDestination {
@@ -33,6 +36,17 @@ struct DestinationEditorRoute: View {
             EditorLinkView(root: root.rootController, model: root.itemController.itemOrEmpty(for: itemRowModel.itemId), editorLinkModel: root.editorLinkModel, selectedEntryId: itemRowModel.entryId)
         case .addLink(let itemRowModel):
             EditorLinkView(root: root.rootController, model: root.itemController.itemOrEmpty(for: itemRowModel.itemId), editorLinkModel: root.editorLinkModel, selectedModule: itemRowModel.typeId, selectedEntryId: root.editController.editorModel.currentEntryId)
+        case .generator(let itemId):
+#if os(tvOS)
+            EmptyView()
+                .id(itemId)
+#else
+            if let generatorRoot = root.generatorRoot {
+                let sheetModel = root.linkController.toggleSheet(itemId: itemId, entryId: nil, level: 0, module: root.config.module)
+                generatorRoot.viewController.inlineChat(root: generatorRoot, sheetModel: sheetModel)
+            }
+#endif
+
         }
     }
 }

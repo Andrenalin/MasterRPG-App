@@ -116,6 +116,18 @@ private extension DetailListView {
                             Image(systemName: "note.text.badge.plus")
                         }
                     }
+
+#if !os(tvOS)
+                    Button {
+                        navigator.navigate(to: EditorRoute.generator(model.id), method: .managedSheet)
+                    } label: {
+                        Label {
+                            Text("AI Assistant", bundle: .module)
+                        } icon: {
+                            Image(systemName: NetworkModules.generator.icon)
+                        }
+                    }
+#endif
                 }
             }
         }
