@@ -188,6 +188,7 @@
       }
     },
     "Dice" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

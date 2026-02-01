@@ -114,39 +114,4 @@ extension EditController {
         }
         return itemRowModels
     }
-
-//    @MainActor
-//    func scan(itemId: UUID, with anotherIds: [UUID]?, module: NetworkModules, caseInsensitive: Bool, words: Bool) -> [TableEntryModel] {
-//        guard let anotherIds else {
-//            if module == .dice {
-//                let otherEntries = diceRoot.linkController.link(for: .table)
-//                return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
-//            }
-//            let otherEntries = root.linkController.link(for: .table)
-//            return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
-//        }
-//        let otherEntries: [LinkEntryModel] = anotherIds.flatMap { anotherId in
-//            switch module {
-//            case .dice:
-//                return diceRoot.linkController.linkEntries(for: anotherId)
-//            case .table:
-//                return root.linkController.linkEntries(for: anotherId)
-//            default:
-//                return []
-//            }
-//        }
-//        return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
-//    }
-
-    @MainActor
-    func scan(itemId: UUID, with linkEntries: [LinkEntryModel], caseInsensitive: Bool, words: Bool) -> [TableEntryModel] {
-        guard let entries = itemController.itemSync(for: itemId)?.entries else { return [] }
-        return entries.map { entry in
-            var replacedEntry = entry
-            linkEntries.forEach { linkEntry in
-                replacedEntry = scanReplace(entry: replacedEntry, linkEntry: linkEntry, getLink: { $0.content }, setLink: { var result = $1; result.content = $0; return result }, caseInsensitive: caseInsensitive, words: words)
-            }
-            return replacedEntry
-        }
-    }
 }

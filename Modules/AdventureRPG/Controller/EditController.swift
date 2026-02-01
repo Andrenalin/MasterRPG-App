@@ -140,55 +140,6 @@ extension EditController {
         }
         return itemRowModels
     }
-
-    @MainActor
-    func scan(itemId: UUID, with anotherIds: [UUID]?, module: NetworkModules, caseInsensitive: Bool, words: Bool) -> [AdventureEntryModel] {
-        guard let anotherIds else {
-            let otherEntries: [LinkEntryModel]
-            switch module {
-            case .dice:
-                otherEntries = root.diceRoot.linkController.link(for: .table)
-            case .map:
-                otherEntries = root.mapRoot.linkController.link(for: .adventure)
-            case .table:
-                otherEntries = root.tableRoot.linkController.link(for: .adventure)
-            case .value:
-                otherEntries = root.characterRoot.linkController.link(for: .adventure)
-            default:
-                otherEntries = root.linkController.link(for: .adventure)
-            }
-            return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
-        }
-        let otherEntries: [LinkEntryModel] = anotherIds.flatMap { anotherId in
-            switch module {
-            case .adventure:
-                return root.linkController.linkEntries(for: anotherId)
-            case .dice:
-                return root.diceRoot.linkController.linkEntries(for: anotherId)
-            case .map:
-                return root.mapRoot.linkController.linkEntries(for: anotherId)
-            case .table:
-                return root.tableRoot.linkController.linkEntries(for: anotherId)
-            case .value:
-                return root.characterRoot.linkController.linkEntries(for: anotherId)
-            default:
-                return []
-            }
-        }
-        return scan(itemId: itemId, with: otherEntries, caseInsensitive: caseInsensitive, words: words)
-    }
-
-    @MainActor
-    func scan(itemId: UUID, with linkEntries: [LinkEntryModel], caseInsensitive: Bool, words: Bool) -> [AdventureEntryModel] {
-        guard let entries = root.itemController.itemSync(for: itemId)?.entries else { return [] }
-        return entries.map { entry in
-            var replacedEntry = entry
-            linkEntries.forEach { linkEntry in
-                replacedEntry = scanReplace(entry: replacedEntry, linkEntry: linkEntry, getLink: { $0.content }, setLink: { var result = $1; result.content = $0; return result }, caseInsensitive: caseInsensitive, words: words)
-            }
-            return replacedEntry
-        }
-    }
 }
 
 extension EditController {

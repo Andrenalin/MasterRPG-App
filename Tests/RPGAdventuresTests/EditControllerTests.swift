@@ -16,43 +16,6 @@ import Testing
 @testable import AdventureRPG
 
 struct EditControllerTests {
-    @Test func scanMapEntries() async throws {
-        let root = try await MockRoot.importTestData()
-        let sut = root.editController
-
-        let itemId = await root.itemController.addNew(type: .item)
-        
-        let entryId = UUID()
-        let entry = AdventureEntryModel(id: entryId, name: "Name Eingang und", content: "Bei der Untersuchung des Wurzelnestes findet ihr die Verbotene Türe und die 1. Kinder der Ratten erden in der Einleitung erwähnt")
-        await sut.add(entry: entry, into: itemId)
-        
-        var result = await sut.scan(itemId: itemId, with: nil, module: .adventure, caseInsensitive: true, words: false)
-        #expect(result.count == 1)
-        var updatedEntry = result[0]
-        #expect(updatedEntry.name == "Name Eingang und")
-        #expect(updatedEntry.content == "Bei der [Untersuchung des Wurzelnestes](RPG://ADVENTURES/0/3DCA977D-00C2-4556-97D2-BFF83A05120E) findet ihr die Verbotene Türe und die [1. Kinder der Ratten](RPG://ADVENTURES/0/EC2C95BE-70CD-436F-B8F7-B4F962A70362) erden in der Einleitung erwähnt")
-
-        let item = await root.itemController.itemOrEmpty(for: itemId).copy()
-        item.entries = [updatedEntry]
-        await root.itemController.replace(model: item, isInsert: false)
-        
-        var scanId: UUID? = nil
-        for itemId in await root.itemController.itemDataModel.items {
-            if await root.itemController.itemOrEmpty(for: itemId).name == "Das Geheimnis des Knochenbaus" {
-                scanId = itemId
-                break
-            }
-        }
-        try #require(nil != scanId)
-        
-        result = await sut.scan(itemId: itemId, with: [scanId!], module: .adventure, caseInsensitive: true, words: false)
-        #expect(result.count == 1)
-        updatedEntry = result[0]
-
-        #expect(updatedEntry.name == "Name Eingang und")
-        #expect(updatedEntry.content == "Bei der [Untersuchung des Wurzelnestes](RPG://ADVENTURES/0/3DCA977D-00C2-4556-97D2-BFF83A05120E) findet ihr [Die Verbotene Türe](RPG://ADVENTURES/0/D70F4601-8C80-4BE1-B412-AABA07B2566E/42561C14-8A26-4515-876B-E297262DA9BE) und die [1. Kinder der Ratten](RPG://ADVENTURES/0/EC2C95BE-70CD-436F-B8F7-B4F962A70362) erden in der [Einleitung](RPG://ADVENTURES/0/D70F4601-8C80-4BE1-B412-AABA07B2566E/EAC70DF9-BC6B-4354-905A-6DE9E342C01B) erwähnt")
-    }
-    
     @Test func mergeEntries() async throws {
         let root = try await MockRoot.importTestData()
         let sut = root.editController

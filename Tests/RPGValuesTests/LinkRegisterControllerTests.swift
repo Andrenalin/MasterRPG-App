@@ -16,7 +16,7 @@ struct LinkRegisterControllerTests {
     func setUp() async throws -> CharacterRootModel {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController.linkRegisterController
+        let _ = root.editController.linkRegisterController
         return root
     }
 
