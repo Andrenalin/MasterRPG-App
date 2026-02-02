@@ -154,7 +154,7 @@ extension EditController {
             item.displayConfig.color = coverColor
             save(updated: item, message: String(localized: "Change cover color").localizedString)
         }
-    }
+    }    
 }
 
 extension EditController {
@@ -282,17 +282,14 @@ extension EditController {
     }
 }
 
-// MARK: - Quick & Special Editors
+// MARK: - Monster
 
 extension EditController {
-    // MARK: monster
-    @MainActor
-    func addMonsters(map: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
+    @MainActor func addMonsters(map: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
         addMonsters(to: map, entryId: entryId, location: location, monsters: monsters, number: number)
     }
-
-    @MainActor
-    private func addMonsters(to model: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
+    
+    @MainActor private func addMonsters(to model: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
         let pinNumber = min(max(1, number), 25)
         
         var pins: [MapPinModel] = []
@@ -301,7 +298,7 @@ extension EditController {
                 MapPinModel(id: UUID(), name: root.characterRoot.linkController.name(for: monster.itemId), color: .random, photoId: root.characterRoot.valueGameControllable.imageIds(for: monster.itemId).randomElement(), location: location ?? .zero, size: .normal, isShown: true)
             })
         }
-
+        
         if let entryId {
             //model[entryId].content.append(values)
             if location == nil {
@@ -312,7 +309,7 @@ extension EditController {
             add(pin: pin, to: model)
         }
     }
-
+    
     private func calculateLocations(model: MapModel, for pins: [MapPinModel], entryId: UUID) -> [MapPinModel] {
         let pinScale = model.pinScale
         let entry = model[entryId]
@@ -326,15 +323,16 @@ extension EditController {
             return changedPin
         }
     }
+}
 
-    // MARK: HexGrid
-    @MainActor
-    func isHexMap(for item: MapModel) -> Bool {
+// MARK: - HexGrid
+
+extension EditController {
+    @MainActor func isHexMap(for item: MapModel) -> Bool {
         item.entries.contains(where: { $0.isHexGrid })
     }
 
-    @MainActor
-    func toggleHexMap(for item: MapModel) -> Bool {
+    @MainActor func toggleHexMap(for item: MapModel) -> Bool {
         let isHexGrid = isHexMap(for: item)
         if isHexGrid {
             item.entries.removeAll { $0.isHexGrid }
@@ -345,16 +343,14 @@ extension EditController {
         return !isHexGrid
     }
 
-    @MainActor
-    func createHexMap(model: MapModel, hexMapScale: Double = 0) {
+    @MainActor func createHexMap(model: MapModel, hexMapScale: Double = 0) {
         let size = initHexGridSize(model: model, size: hexMapScale)
         model.hexMapScale = size
         let entries = calculateGrid(for: size, in: CGRect(origin: .zero, size: CGSize(width: model.width, height: model.height)))
         replaceHexGrid(entries: entries, in: model)
     }
 
-    @MainActor
-    private func initHexGridSize(model: MapModel, size: Double) -> Double {
+    @MainActor private func initHexGridSize(model: MapModel, size: Double) -> Double {
         guard size < 10 else { return size }
         let wScale = model.width / (12 * sqrt(3))
         let hScale = model.height / (12 * (3/2))

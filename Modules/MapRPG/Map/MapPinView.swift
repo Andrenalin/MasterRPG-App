@@ -13,6 +13,7 @@ final class MapPinViewModel {
     
     var mapPins: [MapPinModel]
     var pointer: MapPinModel
+    var isExpandedId: UUID?
     
     func pinPointer(for id: UUID) -> MapPinModel? {
         if pointer.id == id {
@@ -30,6 +31,27 @@ final class MapPinViewModel {
         } else if let index = mapPins.firstIndex(where: { $0.id == updatedPin.id }) {
             mapPins[index] = updatedPin
         }
+    }
+    
+    func removePin(id: UUID) {
+        mapPins.removeAll(where: { $0.id == id })
+    }
+    
+    func copyPin(id: UUID) {
+        guard var pin = pinPointer(for: id) else { return }
+        pin.id = UUID()
+        pin.location = pin.location + (pin.size.size.width + 25)
+        if let index = mapPins.firstIndex(where: { $0.id == id }), index != mapPins.endIndex {
+            mapPins.insert(pin, at: index)
+        } else {
+            mapPins.append(pin)
+        }
+    }
+    
+    func resizePin(id: UUID) {
+        guard var updatedPin = pinPointer(for: id) else { return }
+        updatedPin.size = updatedPin.size.nextSize()
+        setPinPointer(updatedPin: updatedPin)
     }
 }
 

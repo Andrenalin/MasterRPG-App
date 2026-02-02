@@ -15,6 +15,8 @@ final class AdventureSessionModel {
     
     var responses: [LanguageModelSession.ResponseStream<CharacterGenModel>.Snapshot] = []
     var adventureChat: String?
+    
+    var responseErrorContent: String = ""
 }
 
 struct AdventureGeneratorController: Sendable {
@@ -50,11 +52,26 @@ struct AdventureGeneratorController: Sendable {
                     self.model.adventureChat = partialResponse.content
                 }
             } catch let error as LanguageModelSession.GenerationError {
-                print(error.localizedDescription)
-            } catch let error as LanguageModelSession.ToolCallError {
-                print(error.tool)
+                switch error {
+                case .guardrailViolation(let context):
+                    model.responseErrorContent = "Guardrail Violation: \(context.debugDescription)"
+                case .decodingFailure(let context):
+                    model.responseErrorContent = "Decoding Failure: \(context.debugDescription)"
+                case .rateLimited(let context):
+                    model.responseErrorContent = "Rate Limit exceeded: \(context.debugDescription)"
+                case .exceededContextWindowSize(let context):
+                    model.responseErrorContent = "Memory exceeded: \(context.debugDescription)"
+                default:
+                    model.responseErrorContent = "Other error: \(error.localizedDescription)"
+                }
+                if let failureReason = error.failureReason {
+                    model.responseErrorContent += "\n\(failureReason)"
+                }
+                if let recoverySuggestion = error.recoverySuggestion {
+                    model.responseErrorContent += "\n\(recoverySuggestion)"
+                }
             } catch {
-                print(error.localizedDescription)
+                model.responseErrorContent = error.localizedDescription
             }
         }
     }

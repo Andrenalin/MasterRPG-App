@@ -9,6 +9,16 @@ struct AdventureChatRootView: View {
     var dismissAction: (() -> Void)? = nil
     
     @Environment(GeneratorRootModel.self) private var root
+    
+    private var model: AdventureSessionModel {
+        root.adventureGeneratorController.model
+    }
+
+    private var generatorController: AdventureGeneratorController {
+        root.adventureGeneratorController
+    }
+
+    
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     
@@ -50,7 +60,7 @@ struct AdventureChatRootView: View {
 
 private extension AdventureChatRootView {
     @ViewBuilder private var contentView: some View {
-        List(root.adventureGeneratorController.model.session.transcript) { entry in
+        List(model.session.transcript) { entry in
             switch entry {
                 case .prompt(let prompt):
                 ChatSegmentsView(segments: prompt.segments, isUser: true)
@@ -64,8 +74,18 @@ private extension AdventureChatRootView {
             }
         }
         .listStyle(.plain)
+        .overlay {
+            if !model.responseErrorContent.isEmpty {
+                Text(model.responseErrorContent)
+                Button {
+                    model.responseErrorContent = ""
+                } label: {
+                    Text("Understand", bundle: .module)
+                }
+            }
+        }
         .onAppear {
-            root.adventureGeneratorController.generate()
+            root.generatorController.generate()
         }
         .safeAreaInset(edge: .bottom) {
             promptFieldView
@@ -77,7 +97,7 @@ private extension AdventureChatRootView {
             TextField(text: $prompt, prompt: textFieldText, axis: .vertical) {
                 textFieldText
             }
-            .disabled(root.adventureGeneratorController.model.session.isResponding)
+            .disabled(model.session.isResponding)
             .labelsHidden()
             .textFieldStyle(.plain)
             .padding(6)
@@ -87,12 +107,12 @@ private extension AdventureChatRootView {
             }
             
             Button {
-                root.adventureGeneratorController.request(message: prompt)
+                generatorController.request(message: prompt)
                 prompt = ""
             } label: {
                 Image(systemName: root.config.module.icon)
             }
-            .disabled(prompt.isEmpty || root.adventureGeneratorController.model.session.isResponding)
+            .disabled(prompt.isEmpty || model.session.isResponding)
         }
         .padding(.horizontal)
     }

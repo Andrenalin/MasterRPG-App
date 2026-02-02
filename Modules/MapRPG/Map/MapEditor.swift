@@ -89,12 +89,12 @@ struct MapEditor: View {
             .onChange(of: map.entries) {
                 resetEntries(newEntries: map.entries)
             }
+            .onChange(of: pins.mapPins) {
+                resetPinsToMap(pins: pins.mapPins)
+            }
             .onChange(of: toolBarModel.hexScale) {
                 guard toolBarModel.hexScale != 0 && toolBarModel.hexScale != map.hexMapScale else { return }
                 editController.createHexMap(model: map, hexMapScale: toolBarModel.hexScale)
-            }
-            .onChange(of: toolBarModel.pinScale) {
-                map.pinScale <=> toolBarModel.pinScale
             }
             .onChange(of: containerSize) {
                 resetZoom()
@@ -105,8 +105,8 @@ struct MapEditor: View {
             .onAppear {
                 firstAppear()
             }
-            .onDisappear {
-                //editController.save(updated: map, message: String(localized: "Change entry coordinates").localizedString)
+            .onDisappear() {
+                saveChanges()
             }
             .modifier(EditToolBarViewModifier(editController: editController, model: toolBarModel))
        }
@@ -114,6 +114,13 @@ struct MapEditor: View {
 }
 
 private extension MapEditor {
+    func saveChanges() {
+        guard let model = editController.editModel(for: map.id) else { return }
+        model.pinScale <=> toolBarModel.pinScale
+        model.mapPins <=> pins.mapPins
+        editController.save(updated: model, message: String(localized: "map updated").localizedString)
+    }
+    
     var overlayMap: some View {
         ZStack(alignment: .topLeading) {
             drawEntryViews(isShowing: true)
@@ -246,6 +253,10 @@ private extension MapEditor {
         }
     }
     
+    func resetPinsToMap(pins: [MapPinModel]) {
+        map.mapPins = pins
+    }
+    
     func dropPin() {
         guard !dropPinModel.items.isEmpty else { return }
         
@@ -318,16 +329,19 @@ extension MapEditor {
         let pinSize = pin.size.size * toolBarModel.pinScale * scaleFact
         let location: CGPoint = (pin.location) - (pinSize / CGFloat(2.0))
         
-        MapPinView(model: pins, pinId: id, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: true) {
-            scalePinId = scalePinId == pin.id ? nil : pin.id
-        } doubleTapAction: {
-            guard var updatedPin = pins.pinPointer(for: pin.id) else { return }
-            updatedPin.isShown.toggle()
-            pins.setPinPointer(updatedPin: updatedPin)
-            map.setPinPointer(updatedPin: updatedPin)
-        } dragEndAction: {
-            guard let updatedPin = pins.pinPointer(for: pin.id) else { return }
-            map.setPinPointer(updatedPin: updatedPin)
+        MapPinActionView(model: pins, pinId: id, layoutDown: true) {
+            MapPinView(model: pins, pinId: id, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: true) {
+                scalePinId = scalePinId == pin.id ? nil : pin.id
+                pins.isExpandedId = pins.isExpandedId == id ? nil : id
+            } doubleTapAction: {
+                guard var updatedPin = pins.pinPointer(for: pin.id) else { return }
+                updatedPin.isShown.toggle()
+                pins.setPinPointer(updatedPin: updatedPin)
+                map.setPinPointer(updatedPin: updatedPin)
+            } dragEndAction: {
+                guard let updatedPin = pins.pinPointer(for: pin.id) else { return }
+                map.setPinPointer(updatedPin: updatedPin)
+            }
         }
         .opacity(toolBarModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
         .offset(x: location.x, y: location.y)

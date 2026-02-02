@@ -1,0 +1,161 @@
+// @copyright André Trettin
+
+import CoreRPG
+import SwiftUI
+
+enum MapPinButtonType: String {
+    case remove, copy, photo, resize
+    
+    var systemImage: String {
+        switch self {
+        case .remove:
+            return "trash"
+        case .copy:
+            return "document.on.document"
+        case .photo:
+            return "photo"
+        case .resize:
+            return "square.resize"
+        }
+    }
+    
+    var label: String {
+        self.rawValue.capitalized
+    }
+    
+    var duration: CGFloat {
+        switch self {
+        case .remove:
+            return 0.3
+        case .copy:
+            return 0.4
+        case .photo:
+            return 0.5
+        case .resize:
+            return 0.6
+        }
+    }
+    
+    func offset(expanded: Bool, layoutDown: Bool) -> CGSize {
+        guard expanded else {
+            return .zero
+        }
+        
+        switch self {
+        case .remove:
+            return offset(atIndex: 0, layoutDown: layoutDown)
+        case .copy:
+            return offset(atIndex: 1, layoutDown: layoutDown)
+        case .photo:
+            return offset(atIndex: 2, layoutDown: layoutDown)
+        case .resize:
+            return offset(atIndex: 3, layoutDown: layoutDown)
+        }
+    }
+    
+    private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
+        let radius: CGFloat = 120
+        let startAngleDeg = -180.0
+        let step = 90.0 / Double(4 - 1)
+        
+        let angleDeg = startAngleDeg + (Double(index) * step)
+        let angleRad = angleDeg * .pi / 180
+        
+        let x = cos(angleRad) * radius
+        let y = sin(angleRad) * radius * (layoutDown ? -1 : 1)
+        
+        return CGSize(width: x, height: y)
+    }
+}
+
+struct MapPinActionView<MapPin: View>: View {
+    let model: MapPinViewModel
+    let pinId: UUID
+    let layoutDown: Bool
+    @ViewBuilder let mapPinContent: MapPin
+    
+    @Namespace var glassNamespace
+    
+    @State private var showImporter = false
+    @State private var showCamera = false
+    @State private var showLibrary = false
+    @State private var showImagePlayground = false
+    
+    var body: some View {
+#if os(visionOS)
+        content
+#else
+        GlassEffectContainer {
+            content
+        }
+#endif
+    }
+    
+    var content: some View {
+        ZStack {
+            button(type: .remove)
+                .zIndex(10)
+            button(type: .copy)
+                .zIndex(10)
+            button(type: .photo)
+                .zIndex(10)
+            button(type: .resize)
+                .zIndex(10)
+            
+            mapPinContent
+#if !os(visionOS)
+                .glassEffectID("menu", in: glassNamespace)
+#endif
+        }
+    }
+    
+    private func button(type: MapPinButtonType) -> some View {
+        return Button {
+            switch type {
+            case .remove:
+                model.removePin(id: pinId)
+            case .copy:
+                model.copyPin(id: pinId)
+            case .photo:
+                showCamera.toggle()
+            case .resize:
+                model.resizePin(id: pinId)
+            }
+        } label: {
+            Label(type.label, systemImage: type.systemImage)
+                .labelStyle(.iconOnly)
+                .frame(width: 50, height: 50)
+                .opacity(model.isExpandedId == pinId ? 1 : 0)
+        }
+        .borderLessTVBottonStyle()
+        .foregroundStyle(.white)
+#if !os(visionOS)
+        .applyIf(model.isExpandedId == pinId) {
+            $0.glassEffect(.regular.tint(NetworkModules.map.tint.opacity(0.75)).interactive())
+        }
+        .glassEffectID(type.label, in: glassNamespace)
+#endif
+        .offset(type.offset(expanded: model.isExpandedId != nil, layoutDown: layoutDown))
+        .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: model.isExpandedId == pinId)
+        .opacity(model.isExpandedId == pinId ? 1 : 0)
+    }
+}
+
+#Preview(traits: .mockData) {
+    @Previewable @State var id = UUID()
+    @Previewable @State var model = MapPinViewModel(mapPins: [], pointer: .empty)
+    ZStack {
+        Color
+            .blue
+        
+        MapPinActionView(model: model, pinId: id, layoutDown: true) {
+            MapPinView(model: model, pinId: id, pinSize: CGSize(width: 80, height: 80), isShown: true, borderColor: .red, canDrag: true) {
+                model.isExpandedId = model.isExpandedId == nil ? id : nil
+            } doubleTapAction: {
+                print("double tap")
+            } dragEndAction: {
+                print("end move")
+            }
+        }
+    }
+}

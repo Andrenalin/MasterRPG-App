@@ -62,6 +62,17 @@ public struct MapPinModel: Identifiable, Equatable, Hashable {
                 return CGSize(width: 128, height: 128)
             }
         }
+        
+        func nextSize() -> MapPinSize {
+            switch self {
+            case .tiny: .small
+            case .small: .normal
+            case .normal: .large
+            case .large: .huge
+            case .huge: .colossal
+            case .colossal: .tiny
+            }
+        }
     }
 
     public var id: UUID

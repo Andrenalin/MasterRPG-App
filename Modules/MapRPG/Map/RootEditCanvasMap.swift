@@ -33,7 +33,9 @@ struct RootEditCanvasMap: View {
         }
         .onChange(of: model.id, initial: true) {
             if model.id != itemId {
-                model = root.itemController.itemOrEmpty(for: itemId)
+                withAnimation {
+                    model = root.itemController.itemOrEmpty(for: itemId)
+                }
             }
         }
         .onChange(of: model.photoId, initial: true) {
