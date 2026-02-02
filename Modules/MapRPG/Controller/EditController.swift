@@ -2,8 +2,6 @@
 
 import CoreRPG
 import Foundation
-import Observation
-import RegexBuilder
 import SwiftUI
 import PhotoRPG
 import AudioRPG
@@ -198,17 +196,6 @@ extension EditController {
 // MARK: - Edit Pins
 
 extension EditController {
-    @MainActor func addNewPin(at index: Int? = nil, itemId: UUID) -> MapEntryModel.ID {
-        let pin = MapPinModel(id: UUID(), name: String(localized: "New Pin").localizedString, color: .random, photoId: nil, location: .zero, size: .normal, isShown: true, players: [], timeInterval: 0)
-        add(pin: pin, at: index, itemId: itemId)
-        return pin.id
-    }
-
-    @MainActor func add(pin: MapPinModel, at index: Int? = nil, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        add(pin: pin, at: index, to: editModel)
-    }
-
     @MainActor func add(pin: MapPinModel, at index: Int? = nil, to model: MapModel) {
         let validatedIndex: Int
         if let index {
@@ -218,55 +205,6 @@ extension EditController {
         }
         model.mapPins.insert(pin, at: validatedIndex)
         save(updated: model, message: String(localized: "Added pin").localizedString)
-    }
-
-    @MainActor
-    func copy(pinIds: [UUID], itemId: UUID) {
-        pinIds.forEach { copy(pinId: $0, itemId: itemId) }
-    }
-
-    @MainActor
-    func copy(pinId: UUID, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        let duplicate = editModel[MapPinId.id, pinId].duplicate()
-        editModel.mapPins.append(duplicate)
-        let name = String(duplicate.name.prefix(16))
-        save(updated: editModel, message: String(localized: "Copy pin \(name)").localizedString)
-    }
-
-    @MainActor
-    func remove(pinIds: [UUID], itemId: UUID) {
-        pinIds.forEach { remove(pinId: $0, itemId: itemId) }
-    }
-
-    @MainActor
-    func remove(pinId: UUID, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        guard let index = editModel.mapPins.firstIndex(where: { $0.id == pinId }) else { return }
-        editModel.mapPins.remove(at: index)
-        save(updated: editModel, message: String(localized: "Remove pin").localizedString)
-    }
-
-    @MainActor
-    func move(pinId: UUID, up: Bool, itemId: UUID) {
-        guard let item = editModel(for: itemId) else { return }
-        guard let index = item.mapPins.firstIndex(where: { $0.id == pinId }) else { return }
-        if up {
-            guard index > 0 else { return }
-            item.mapPins.move(fromOffsets: IndexSet(integer: index), toOffset: index - 1)
-        } else {
-            guard index < item.mapPins.count - 1 else { return }
-            item.mapPins.move(fromOffsets: IndexSet(integer: index + 1), toOffset: index)
-        }
-        let title = up ? String(localized: "Move pin up") : String(localized: "Move pin down")
-        save(updated: item, message: title.localizedString)
-    }
-    
-    @MainActor
-    func move(pinFrom: IndexSet, to: Array<UUID>.Index, itemId: UUID) {
-        guard let item = editModel(for: itemId) else { return }
-        item.mapPins.move(fromOffsets: pinFrom, toOffset: to)
-        save(updated: item, message: String(localized: "Reorder pins").localizedString)
     }
 
     @MainActor

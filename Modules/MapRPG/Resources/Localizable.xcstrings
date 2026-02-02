@@ -333,6 +333,7 @@
       }
     },
     "Copy pin %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -707,6 +708,7 @@
       }
     },
     "Move pin down" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -717,6 +719,7 @@
       }
     },
     "Move pin up" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -749,6 +752,7 @@
       }
     },
     "New Pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -919,6 +923,7 @@
       }
     },
     "Remove pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -940,6 +945,7 @@
       }
     },
     "Reorder pins" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
