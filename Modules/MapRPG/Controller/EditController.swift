@@ -1,14 +1,10 @@
 // @copyright André Trettin
 
+import CharacterRPG
 import CoreRPG
 import Foundation
-import SwiftUI
 import PhotoRPG
-import AudioRPG
-import DiceRPG
-import PdfRPG
-import TableRPG
-import CharacterRPG
+import SwiftUI
 
 @MainActor @Observable
 final class MapEditModel: Sendable {
