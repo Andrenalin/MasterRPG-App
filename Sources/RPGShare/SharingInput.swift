@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-@Observable
+@Observable @MainActor
 final class InputModel {
     var name: String = ""
     var text: String = ""

@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-@Observable
+@Observable @MainActor
 final class ModuleChooserModel {
     var currentModule: NetworkModules = .adventure
     var supportedModules: [NetworkModules] = [.adventure, .value, .map, .photo, .weather]

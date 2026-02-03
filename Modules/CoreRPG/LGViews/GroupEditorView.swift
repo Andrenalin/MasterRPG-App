@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-@Observable
+@Observable @MainActor
 final class GroupEditorModel {
     internal init(namePlaceHolder: String, descriptionPlaceHolder: String, tagsPlaceHolder: String) {
         self.namePlaceHolder = namePlaceHolder
