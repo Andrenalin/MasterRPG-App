@@ -213,8 +213,8 @@ private struct DragRotationModifier: ViewModifier {
     var disableRotation: Bool
     var disableBackPosition: Bool
     
-    @State private var baseYaw: Float
-    @State private var basePitch: Float
+    @State var baseYaw: Float
+    @State var basePitch: Float
     
     func body(content: Content) -> some View {
         content

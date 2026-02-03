@@ -7,35 +7,31 @@ public struct ItemHeaderEditorView: View {
     public init(editControllable: any EditControllable, model: any ItemDataAccessable) {
         self.editControllable = editControllable
         self.model = model
-        _name = State(wrappedValue: model.name)
-        _category = State(wrappedValue: model.category)
-        _tags = State(wrappedValue: model.tags)
-        _information = State(wrappedValue: model.description)
     }
-    
+
     let editControllable: any EditControllable
     let model: any ItemDataAccessable
-    
+
     @Environment(\.dismiss) private var dismiss
-    
+
     enum FocusField {
         case name
         case information
     }
     @FocusState private var currentFocus: FocusField?
-    
-    @State private var name: String
-    @State private var information: String
-    @State private var category: ItemListCategory
-    @State private var tags: [String]
-    
+
+    @State private var name: String = ""
+    @State private var information: String = ""
+    @State private var category: ItemListCategory = .album
+    @State private var tags: [String] = []
+
     public var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 4) {
                 nameSection
                 descriptionSection
                 categoryTagsSection
-                
+
                 AddTagsEditor(tags: $tags)
             }
             .padding()
@@ -56,6 +52,13 @@ public struct ItemHeaderEditorView: View {
                         Image(systemName: "checkmark")
                     }
                 }
+            }
+            .task(id: model.id) {
+                // Initialize local editing state from the model
+                name = model.name
+                information = model.description
+                category = model.category
+                tags = model.tags
             }
         }
     }
