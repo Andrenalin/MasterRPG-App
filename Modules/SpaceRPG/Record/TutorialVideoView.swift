@@ -13,7 +13,7 @@ struct TutorialVideoView: View {
     @EnvironmentObject var appModel: AppDataModel
     let url: URL
     let isInReviewSheet: Bool
-    @State var isShowing = false
+    @State private var isShowing = false
 
     private let textDelay: TimeInterval = 0.3
     private let animationDuration: TimeInterval = 4

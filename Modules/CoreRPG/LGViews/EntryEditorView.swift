@@ -135,7 +135,7 @@ struct EntryNameEditor: View {
                 withAnimation { editModel.name = "" }
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             .opacity(editModel.name.isEmpty ? 0: 1)
             .contentTransition(.symbolEffect(.automatic))

@@ -79,7 +79,7 @@ private extension ItemHeaderEditorView {
                 withAnimation { name = "" }
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             .opacity(name.isEmpty ? 0: 1)
             .contentTransition(.symbolEffect(.automatic))

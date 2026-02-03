@@ -158,7 +158,7 @@ public struct CoreDataPersistenceController {
     private func setupContext() {
         if let container = model.container, model.error == .none {
             let context = container.newBackgroundContext()
-            context.name = "view_background_context"
+            context.name = "background_context"
             context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
             context.transactionAuthor = model.currentActor.rawValue
             context.automaticallyMergesChangesFromParent = true

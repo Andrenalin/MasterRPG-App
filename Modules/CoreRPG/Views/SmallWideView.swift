@@ -151,11 +151,12 @@ struct SmallWideView_Previews: PreviewProvider {
     static var previews: some View {
         SmallWideView {
             TabView {
-                NavigationView {
-                    Text("TabBar")
-                }
-                .foregroundStyle(.blue)
-                .tabItem {
+                Tab {
+                    NavigationView {
+                        Text("TabBar")
+                    }
+                    .foregroundStyle(.blue)
+                } label: {
                     Text("Hello")
                 }
             }

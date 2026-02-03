@@ -24,14 +24,14 @@ public struct ItemDetailOverlayView: View {
                 NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
                     .font(.headline)
                     .fontWeight(.bold)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 HStack(spacing: 4) {
                     TagItemRow(tags: model.tags)
                 }
             }
             if fullHeader || onlyDesctiption {
                 DescriptionItemNewRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .opacity(0.8)
                     .lineLimit(lines)
             }

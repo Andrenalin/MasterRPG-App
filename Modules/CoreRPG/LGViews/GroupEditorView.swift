@@ -151,7 +151,7 @@ private extension GroupEditorView {
                 withAnimation { model.name = "" }
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             .opacity(model.name.isEmpty ? 0: 1)
             .contentTransition(.symbolEffect(.automatic))
