@@ -17,7 +17,7 @@ extension Logger {
 }
 
 struct Scanner3DRootView: View {
-    @StateObject var appModel: AppDataModel = AppDataModel.instance
+    @State private var appModel: AppDataModel = AppDataModel.instance
 
     @State private var showReconstructionView: Bool = false
     @State private var showErrorAlert: Bool = false

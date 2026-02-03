@@ -212,7 +212,7 @@ private struct DragRotationModifier: ViewModifier {
     var axRotateCounterClockwise: Bool
     var disableRotation: Bool
     var disableBackPosition: Bool
-    
+
     @State var baseYaw: Float
     @State var basePitch: Float
     
