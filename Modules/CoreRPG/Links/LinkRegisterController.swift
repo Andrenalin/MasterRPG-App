@@ -187,42 +187,44 @@ private extension LinkRegisterController {
 
 public extension LinkRegisterController {
     @MainActor func linkRegisterModel(linkId: UUID) -> LinkRegisterModel? {
-//        guard let (lookupId, isEntry) = model.links[linkId] else { return nil }
-//        if isEntry {
-//            return model.entries[lookupId, default: []].first(where: { $0.id == linkId} )
-//        } else {
-//            return model.items[lookupId, default: []].first(where: { $0.id == linkId} )
-//        }
+        for (_, links) in model.items {
+            if let found = links.first(where: { $0.id == linkId }) {
+                return found
+            }
+        }
         return nil
     }
 
     @MainActor func linkRegisterModel(in text: String, for source: ItemRowModel) -> [LinkRegisterModel] {
-//        let links = LinkReplaceController.links(for: text)
-//        return links.map { rawLink -> LinkRegisterModel in
-//            if let destinationEntryId = rawLink.entryId {
-//                let entryLinks = model.entries[destinationEntryId, default: []]
-//                if var linkRegisterModel = entryLinks.first(where: { $0.source.itemId == source.itemId && $0.source.entryId == source.entryId  }) {
-//                    linkRegisterModel.markDown = rawLink.markDown
-//                    return linkRegisterModel
-//                }
-//            } else {
-//                let itemLinks = model.items[rawLink.itemId, default: []]
-//                if var linkRegisterModel = itemLinks.first(where: { $0.source.itemId == source.itemId }) {
-//                    linkRegisterModel.markDown = rawLink.markDown
-//                    return linkRegisterModel
-//                }
-//            }
-//            var newModel = LinkRegisterModel(name: rawLink.name, source: source, destination: ItemRowModel(itemId: rawLink.itemId, entryId: rawLink.entryId, typeId: rawLink.module))
-//            register(links: [newModel])
-//            newModel.markDown = rawLink.markDown
-//            return newModel
-//        }
-        return []
+        let links = LinkReplaceController.links(for: text)
+        return links.compactMap { rawLink -> LinkRegisterModel? in
+            // Check if link already exists in the in-memory model
+            let itemLinks = model.items[rawLink.itemId, default: []]
+            if var linkRegisterModel = itemLinks.first(where: { 
+                $0.source.itemId == source.itemId && 
+                $0.source.entryId == source.entryId &&
+                $0.destination.itemId == rawLink.itemId &&
+                $0.destination.entryId == rawLink.entryId
+            }) {
+                linkRegisterModel.markDown = rawLink.markDown
+                return linkRegisterModel
+            }
+            
+            // Create new link and register it
+            var newModel = LinkRegisterModel(
+                name: rawLink.name,
+                source: source,
+                destination: ItemRowModel(itemId: rawLink.itemId, entryId: rawLink.entryId, typeId: rawLink.module)
+            )
+            register(links: [newModel])
+            newModel.markDown = rawLink.markDown
+            return newModel
+        }
     }
     
-    func markDownLinkDataModel(for link: LinkRegisterModel) -> String {
-        "[\(link.name)](\(URL.appScheme)://\(link.id))"
-    }
+//    func markDownLinkDataModel(for link: LinkRegisterModel) -> String {
+//        "[\(link.name)](\(URL.appScheme)://\(link.id))"
+//    }
 }
 
 

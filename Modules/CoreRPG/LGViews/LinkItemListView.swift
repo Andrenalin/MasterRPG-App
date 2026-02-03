@@ -155,7 +155,7 @@ private extension LinkItemListView {
                     }
                     .contentShape(.rect)
 #if !os(tvOS)
-                    .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name)
+                    .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name.withoutLink())
 #endif
                 } else {
                     itemRow(item: item)
@@ -190,7 +190,7 @@ private extension LinkItemListView {
             }
             .contentShape(.rect)
 #if !os(tvOS)
-            .draggable(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)
+            .draggable(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name.withoutLink())
 #endif
             
             specialCategoryFolderIndicator(item: item)
