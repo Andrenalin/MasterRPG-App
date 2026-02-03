@@ -28,13 +28,10 @@ public struct TabbedSplitNavigation: View {
             }
             .environment(appModel.itemRootController(for: selectedModule))
             .navigationSplitViewColumnWidth(min: 250, ideal: contentColumnWidth, max: 600)
-            .background {
-                GeometryReader { reader in
-                    Color.clear
-                        .onChange(of: reader.frame(in: .global).width) {
-                            contentColumnWidth = reader.frame(in: .global).width
-                        }
-                }
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.frame(in: .global).width
+            } action: { newWidth in
+                contentColumnWidth = newWidth
             }
         } detail: {
             SplitDetailView()
