@@ -8,7 +8,6 @@ A data model that maintains the state of the app.
 #if os(iOS) && !targetEnvironment(simulator)
 
 import CoreRPG
-import Combine
 import RealityKit
 import SwiftUI
 import os
@@ -23,14 +22,14 @@ enum ConfigCaptureObject {
 }
 
 
-@MainActor
-class AppDataModel: ObservableObject, Identifiable {
+@Observable @MainActor
+final class AppDataModel: Identifiable {
     static let instance = AppDataModel()
 
     /// The session that manages the object capture phase.
     ///
     /// Set the correct folder locations for the capture session using ``scanFolderManager``.
-    @Published var objectCaptureSession: ObjectCaptureSession? {
+    var objectCaptureSession: ObjectCaptureSession? {
         willSet {
             detachListeners()
         }
@@ -48,9 +47,9 @@ class AppDataModel: ObservableObject, Identifiable {
     /// The folder set when a new capture session starts.
     private(set) var scanFolderManager: CaptureFolderManager!
 
-    @Published var messageList = TimedMessageList()
+    var messageList = TimedMessageList()
 
-    @Published var state: ModelState = .notSet {
+    var state: ModelState = .notSet {
         didSet {
             Logger.scanner3D.debug("didSet AppDataModel.state to \(self.state)")
 
@@ -60,9 +59,9 @@ class AppDataModel: ObservableObject, Identifiable {
         }
     }
 
-    @Published var orbitState: OrbitState = .initial
-    @Published var orbit: Orbit = .orbit1
-    @Published var isObjectFlipped: Bool = false
+    var orbitState: OrbitState = .initial
+    var orbit: Orbit = .orbit1
+    var isObjectFlipped: Bool = false
 
     var hasIndicatedObjectCannotBeFlipped: Bool = false
     var hasIndicatedFlipObjectAnyway: Bool = false
@@ -88,7 +87,7 @@ class AppDataModel: ObservableObject, Identifiable {
     /// the ``objectCaptureSession`` while showing the ``CapturePrimaryView``.
     /// Alternatively, hiding the ``CapturePrimaryView`` pauses the
     /// ``objectCaptureSession``.
-    @Published private(set) var showPreviewModel = false
+    private(set) var showPreviewModel = false
 
     private init(objectCaptureSession: ObjectCaptureSession) {
         self.objectCaptureSession = objectCaptureSession

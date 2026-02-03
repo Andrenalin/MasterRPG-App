@@ -12,7 +12,7 @@ import RealityKit
 import SwiftUI
 
 struct CaptureOverlayView: View {
-    @EnvironmentObject var appModel: AppDataModel
+    @Environment(AppDataModel.self) private var appModel
     var session: ObjectCaptureSession
 
     // This sample passes the binding from parent to allow this view

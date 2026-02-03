@@ -12,7 +12,7 @@ import SwiftUI
 import RealityKit
 
 struct ProgressBarView: View {
-    @EnvironmentObject var appModel: AppDataModel
+    @Environment(AppDataModel.self) private var appModel
     // The progress value from 0 to 1 which describes how much coverage is done.
     var progress: Float
     var estimatedRemainingTime: TimeInterval?

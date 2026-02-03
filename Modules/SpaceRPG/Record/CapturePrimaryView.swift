@@ -12,7 +12,7 @@ import RealityKit
 import SwiftUI
 
 struct CapturePrimaryView: View {
-    @EnvironmentObject var appModel: AppDataModel
+    @Environment(AppDataModel.self) private var appModel
     var session: ObjectCaptureSession
 
     // Pauses the scanning and shows tutorial pages. This sample passes it as

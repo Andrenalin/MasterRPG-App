@@ -14,7 +14,7 @@ import SwiftUI
 import os
 
 struct ReconstructionPrimaryView: View {
-    @EnvironmentObject var appModel: AppDataModel
+    @Environment(AppDataModel.self) private var appModel
     let outputFile: URL
 
     @State private var completed: Bool = false
@@ -41,7 +41,7 @@ struct ReconstructionPrimaryView: View {
 }
 
 struct ReconstructionProgressView: View {
-    @EnvironmentObject var appModel: AppDataModel
+    @Environment(AppDataModel.self) private var appModel
     let outputFile: URL
     @Binding var completed: Bool
     @Binding var cancelled: Bool

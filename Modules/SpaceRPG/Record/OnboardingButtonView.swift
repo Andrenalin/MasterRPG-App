@@ -15,7 +15,7 @@ import os
 /// View that creates the buttons on the review screen depending on
 /// `currentState` in `onboardingStateMachine`.
 struct OnboardingButtonView: View {
-    @EnvironmentObject var appModel: AppDataModel
+    @Environment(AppDataModel.self) private var appModel
     var session: ObjectCaptureSession
     @ObservedObject var onboardingStateMachine: OnboardingStateMachine
     @State private var userHasIndicatedObjectCannotBeFlipped: Bool? = nil
@@ -120,7 +120,7 @@ struct OnboardingButtonView: View {
 }
 
 private struct CreateButton: View {
-    @EnvironmentObject var appModel: AppDataModel
+    @Environment(AppDataModel.self) private var appModel
     let buttonLabel: String
     var buttonLabelColor: Color = Color.white
     var buttonBackgroundColor: Color = Color.blue
@@ -175,7 +175,7 @@ extension View {
 }
 
 private struct CancelButton: View {
-    @EnvironmentObject var appModel: AppDataModel
+    @Environment(AppDataModel.self) private var appModel
     let buttonLabel: String
 
     var body: some View {

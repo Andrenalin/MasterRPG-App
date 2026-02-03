@@ -83,7 +83,7 @@ extension CaptureOverlayView {
     }
 
     struct NextButton: View {
-        @EnvironmentObject var appModel: AppDataModel
+        @Environment(AppDataModel.self) private var appModel
 
         var body: some View {
             Button(action: {
@@ -136,7 +136,7 @@ extension CaptureOverlayView {
     }
 
     struct FilesButton: View {
-        @EnvironmentObject var appModel: AppDataModel
+        @Environment(AppDataModel.self) private var appModel
         @State private var showDocumentBrowser = false
 
         var body: some View {
@@ -188,7 +188,7 @@ extension CaptureOverlayView {
     }
 
     struct CancelButton: View {
-        @EnvironmentObject var appModel: AppDataModel
+        @Environment(AppDataModel.self) private var appModel
         @Environment(\.dismiss) private var dismiss
         
         var body: some View {

@@ -60,7 +60,7 @@ struct Scanner3DRootView: View {
             },
             message: {}
         )
-        .environmentObject(appModel)
+        .environment(appModel)
     }
 }
 
