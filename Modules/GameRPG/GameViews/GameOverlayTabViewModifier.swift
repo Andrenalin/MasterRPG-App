@@ -17,7 +17,6 @@ struct GameOverlayTabViewModifier<Tag: Hashable>: ViewModifier where Tag: Codabl
     func body(content: Content) -> some View {
         content
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .cornerRadius(14)
             .tabItem {
 #if os(visionOS)
                 Label { Text(value.title) } icon: { Image(systemName: value.icon) }

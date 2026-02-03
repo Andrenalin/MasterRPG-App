@@ -41,7 +41,6 @@ struct OverlayMasterTabBar: View {
             .gameOverlayTabBarView(value: NetworkModules.game)
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
-            .cornerRadius(14)
             .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)
             .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
             .shadow(radius: 8)
@@ -60,7 +59,6 @@ struct OverlayMasterTabBar: View {
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
 #if !os(visionOS)
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
-        .cornerRadius(14)
 #endif
         .offset(x: gameScreenModel.showMainTab == .none ? valueFor(iOS: gameScreenModel.sideBarWidth, macOS: gameScreenModel.sideBarWidth, tvOS: gameScreenModel.sideBarWidth, visionOS: -gameScreenModel.sideBarWidth) : 0)
         .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
@@ -77,7 +75,6 @@ struct OverlayMasterTabBar: View {
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
 #if !os(visionOS)
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
-        .cornerRadius(14)
 #endif
         .offset(x: gameScreenModel.showSettingTab == .none ? valueFor(iOS: gameScreenModel.sideBarWidth, macOS: gameScreenModel.sideBarWidth, tvOS: gameScreenModel.sideBarWidth, visionOS: -gameScreenModel.sideBarWidth) : 0)
         .opacity(gameScreenModel.showSettingTab == .none ? 0 : 1)

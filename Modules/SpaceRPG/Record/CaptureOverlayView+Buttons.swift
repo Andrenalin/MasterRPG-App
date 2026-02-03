@@ -229,9 +229,8 @@ extension CaptureOverlayView {
                 .font(.subheadline)
                 .bold()
                 .foregroundStyle(.white)
-                .background(.ultraThinMaterial)
+                .background(.ultraThinMaterial, in: .rect(cornerRadius: 15))
                 .environment(\.colorScheme, .dark)
-                .cornerRadius(15)
                 .multilineTextAlignment(.center)
         }
     }

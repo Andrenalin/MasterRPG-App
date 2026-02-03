@@ -23,7 +23,7 @@ struct PhotoSection: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: size.width - 30)
-                                    .cornerRadius(10)
+                                    .clipShape(.rect(cornerRadius: 10))
                             }
                         }
                     }

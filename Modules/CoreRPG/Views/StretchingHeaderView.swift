@@ -32,7 +32,7 @@ private extension StretchingHeaderView {
 
 struct StretchingHeaderView_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 Section(header:
                     StretchingHeaderView {

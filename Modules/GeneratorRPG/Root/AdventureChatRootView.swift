@@ -147,7 +147,7 @@ struct ChatSegmentsView: View {
                     }
                     .padding(8)
                     .background(isUser ? Color.blue.opacity(0.2) : nil)
-                    .cornerRadius(8)
+                    .clipShape(.rect(cornerRadius: 8))
                     .contentTransition(.interpolate)
                     .animation(.easeInOut(duration: 0.3), value: sturcture.description)
                     .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
@@ -156,7 +156,7 @@ struct ChatSegmentsView: View {
                         Text(LocalizedStringKey(text.content))
                             .padding(8)
                             .background(isUser ? Color.blue.opacity(0.2) : nil)
-                            .cornerRadius(8)
+                            .clipShape(.rect(cornerRadius: 8))
                             .contentTransition(.interpolate)
                             .animation(.easeInOut(duration: 0.3), value: text)
                             .textSelection(.enabled)

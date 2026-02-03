@@ -152,7 +152,7 @@ struct SmallWideView_Previews: PreviewProvider {
         SmallWideView {
             TabView {
                 Tab {
-                    NavigationView {
+                    NavigationStack {
                         Text("TabBar")
                     }
                     .foregroundStyle(.blue)
