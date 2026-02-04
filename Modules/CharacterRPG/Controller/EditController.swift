@@ -212,7 +212,7 @@ extension EditController {
     }
     
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
-        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content)
+        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: true)
         guard let item = editModel(for: itemId), let valueId = item[entryId].valueId else { return }
         let fixedName = name.withoutLink()
         reset(name: fixedName, itemId: valueId)

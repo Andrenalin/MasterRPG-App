@@ -13,6 +13,7 @@ struct ThumbnailDiceRow: View, Equatable {
         let _ = Self._printChanges()
         if let diceId = model.diceId {
             root.diceRoot.viewController.thumbnailRowView(for: diceId)
+                .padding(.trailing, 20)
         }
     }
     

@@ -57,10 +57,7 @@ private extension EntryEditRow {
     }
     
     var linkTextModel: LinkHighlightTextModel {
-        editController.linkTextModel(itemId: itemId, for: entry, linkController: itemRootController.linkControllable, searchModel: searchModel) { itemId, module in
-            guard module == .value else { return }
-            navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
-        }
+        editController.linkTextModel(itemId: itemId, for: entry, linkController: itemRootController.linkControllable, searchModel: searchModel) 
     }
     
     var hasThumbnail: Bool {

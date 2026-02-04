@@ -168,13 +168,14 @@ public extension EntryDataEditable {
     }
     
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
-        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content)
+        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false)
     }
     
-    @MainActor func updateDefault(itemId: UUID, entryId: UUID, name: String, content: String) {
+    @MainActor func updateDefault(itemId: UUID, entryId: UUID, name: String, content: String, nameWithLink: Bool) {
         guard var item = editModel(for: itemId) else { return }
-        var changed = item[entryId].name != name.withoutLink()
-        item[entryId].name <=> name.withoutLink()
+        let validedName = nameWithLink ? name : name.withoutLink()
+        var changed = item[entryId].name != validedName
+        item[entryId].name <=> validedName
         
         let links = linkRegisterController.linkRegisterModel(in: content, for: ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemControllable.config.module))
         var seenIds: Set<UUID> = []

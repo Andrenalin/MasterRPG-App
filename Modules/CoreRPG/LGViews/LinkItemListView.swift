@@ -184,8 +184,16 @@ private extension LinkItemListView {
             ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false) {
                 if root.viewControllable.thumbnailRowViewType == .custom {
                     root.viewControllable.thumbnailRowView(for: item.model.id)
+                        .overlay(alignment: .trailing) {
+                            specialCategoryFolderIndicator(item: item)
+                        }
                 } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
                     ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
+                        .overlay(alignment: .trailing) {
+                            specialCategoryFolderIndicator(item: item)
+                        }
+                } else {
+                    specialCategoryFolderIndicator(item: item)
                 }
             }
             .contentShape(.rect)
@@ -193,7 +201,7 @@ private extension LinkItemListView {
             .draggable(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name.withoutLink())
 #endif
             
-            specialCategoryFolderIndicator(item: item)
+            //specialCategoryFolderIndicator(item: item)
         }
     }
     
@@ -219,14 +227,18 @@ private extension LinkItemListView {
     @ViewBuilder
     func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
         if showFolderIndicator(item: item) {
-            Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
-                .imageScale(.small)
-                .padding(.trailing)
-                .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
-                .contentShape(.rect)
-                .onTapGesture {
-                    withAnimation { root.folderLinkControllable.toggleFolder(item: item) }
-                }
+            Button {
+                withAnimation { root.folderLinkControllable.toggleFolder(item: item) }
+            } label: {
+                Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
+                    .imageScale(.small)
+                    .foregroundStyle(.red)
+                    .contentShape(.circle)
+                    .frame(width: 32, height: 32)
+                    .glassEffect(.clear.interactive())
+            }
+            .borderLessTVBottonStyle()
+            .padding(.trailing, 4)
         }
     }
     
