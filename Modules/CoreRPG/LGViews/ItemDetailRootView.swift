@@ -138,6 +138,8 @@ private extension ItemDetailRootView {
             detailListController.resetParentModel(model: model)
             detailInspectorModel.canShowInspector = canShowInspector(model: model)
             updateInspectorStates(model: model)
+            // Note: Cannot use .equatable() here as inspectorView returns heterogeneous types
+            // The view is already optimized by onChange(of: model.id) triggering only on ID changes
             detailInspectorModel.currentInspectorView = AnyView(inspectorView(model: model))
             withAnimation { selection.selectedItem = nil }
             guard model.url != nil else {
