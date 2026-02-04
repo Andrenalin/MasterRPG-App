@@ -123,8 +123,6 @@ private extension DetailListView {
 #else
                     navigator.navigate(to: EditorRoute.mapEditor(model.id), method: .cover)
 #endif
-                    //RootEditCanvasMap(itemId: model.id, tile: .empty)
-
                 } label: {
                     Label { Text("Edit Tile", bundle: .module) } icon: { Image(systemName: "skew") }
                 }

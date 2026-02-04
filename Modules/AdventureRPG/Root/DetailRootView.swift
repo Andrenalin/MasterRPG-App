@@ -27,7 +27,10 @@ struct DetailListView: View {
     let model: AdventureModel
     
     @Environment(\.navigator) private var navigator
-    
+#if os(visionOS) || os(macOS)
+    @Environment(\.openWindow) private var openWindow
+#endif
+
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
     
@@ -119,7 +122,11 @@ private extension DetailListView {
 
 #if !os(tvOS)
                     Button {
-                        navigator.navigate(to: EditorRoute.generator(model.id), method: .managedSheet)
+#if os(visionOS) || os(macOS)
+                    openWindow(id: WindowIdentifier.generateAdventure.rawValue)
+#else
+                    navigator.navigate(to: EditorRoute.generator(model.id), method: .managedSheet)
+#endif
                     } label: {
                         Label {
                             Text("AI Assistant", bundle: .module)

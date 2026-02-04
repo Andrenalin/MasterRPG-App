@@ -50,7 +50,11 @@ public extension ViewController {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
         return AdventureSheet(model: model, dismissAction: nil)
     }
-    
+
+    @MainActor func generatorView(root: AdventureRootModel, selection: WindowItemSelection) -> some View {
+        EditorRoute.generator(selection.itemId)
+    }
+
     @MainActor func gameView(root: AdventureRootModel, focusedIds: [UUID]) -> some View {
         Group {
             if let select = focusedIds.first {

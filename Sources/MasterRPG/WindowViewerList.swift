@@ -57,7 +57,19 @@ struct WindowViewerList: Scene {
             windowGroup(model: appModel, module: .weather) { selection in
                 appModel.weatherRoot.viewController.windowViewer(root: appModel.weatherRoot, selection: selection)
             }
-            
+
+            WindowGroup("Generator Adventure", id: WindowIdentifier.generateAdventure.rawValue, for: WindowItemSelection.self) { $selection in
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.adventureRoot.viewController.generatorView(root: appModel.adventureRoot, selection: selection ?? WindowItemSelection(itemId: UUID()))
+                        .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .adventure))
+                }
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(.below(WindowIdentifier.game.rawValue))
+    #if !os(iOS)
+            .restorationBehavior(.disabled)
+    #endif
+
             WindowGroup("Map Edit Viewer", id: WindowIdentifier.mapEditor.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.mapRoot.viewController.mapEditWindow(root: appModel.mapRoot)
