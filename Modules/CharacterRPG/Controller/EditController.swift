@@ -178,19 +178,16 @@ extension EditController {
     }
     
     @MainActor func add(selection: [WindowItemSelection], itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        let photos = Set(editModel.photos)
-        var newPhotos = Set(selection.map { $0.itemId })
-        newPhotos.subtract(photos)
-        editModel.photos.append(contentsOf: newPhotos)
-        editModel.photoId = editModel.photos.first
-        save(updated: editModel, message: String(localized: "Change Photo").localizedString)
+        guard let item = editModel(for: itemId) else { return }
+        item.photos <=> selection.map { $0.itemId }
+        item.photoId <=> item.photos.first
+        save(updated: item, message: String(localized: "Change Photo").localizedString)
     }
     
     @MainActor func add(diceId: UUID?, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        editModel.diceId = diceId
-        save(updated: editModel, message: String(localized: "Change Dice").localizedString)
+        guard let item = editModel(for: itemId) else { return }
+        item.diceId = diceId
+        save(updated: item, message: String(localized: "Change Dice").localizedString)
         //root.gameController.resetGameDiceId(itemId: model.id, entryId: entryId)
     }
     
