@@ -21,6 +21,8 @@ public final class FolderListModel {
     // MARK: - Items
     public var parentModel: (any ItemDataAccessable)?
     
+    @ObservationIgnored var isFilterResetting: Bool = false
+    
     @ObservationIgnored var originalItems: [ListItemModel] = []
     public var displayedItems: [ListItemModel] = []
     

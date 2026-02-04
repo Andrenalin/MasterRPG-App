@@ -12,7 +12,7 @@ public protocol FolderListControllable: Sendable {
     var searchModel: SearchModel { get }
     var cacheListItemModel: CacheItemListModel { get }
     var detailInspectorModel: DetailInspectorModel { get }
-    
+        
     func copy(parentModel: (any ItemDataAccessable)?) -> Self
     func detailDestination(for itemId: UUID) -> any NavigationDestination
     func viewerDestination(for itemId: UUID) -> any NavigationDestination
@@ -96,6 +96,11 @@ extension FolderListControllable {
     }
     
     func resetFilter() {
+        guard !listModel.isFilterResetting else { return }  // Prevent recursive calls
+        
+        listModel.isFilterResetting = true
+        defer { listModel.isFilterResetting = false }
+
         let newlyfilteredOnes: [ListItemModel] = originalItems().enumerated().flatMap { (index, item) in
             filterSub(item: item, index: index, level: 0)
         }

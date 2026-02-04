@@ -37,12 +37,12 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             }
 
             HStack {
-                if (isEditor || entry.editType != .none) && entry.sheetType == .item {
+                if (isEditor || entry.editType != .none) && (entry.sheetType == .item || entry.sheetType == .group){
                     editButton(onlyIcon: true)
                 }
                 
                 switch entry.sheetType {
-                case .item:
+                case .item, .group:
                     LinkHighlightTextView(model: model.linkTextModel(for: .entry(entry.id), text: text, shareResults: shareResult))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.body)
@@ -87,7 +87,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         .contentShape(.rect)
 #if !os(tvOS)
         .applyIf(isEditor && entry.sheetType == .item) {
-            $0.dropDestination(for: linkTypes, isEnabled: true) { items, sessions in
+            $0.dropDestination(for: linkTypes, isEnabled: entry.sheetType != .group) { items, sessions in
                 guard let editController = root.editControllable as? (any EntryDataEditable), let entryId = entry.source.entryId else { return }
                 items.forEach {
                     editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: entry.source.itemId, destinationEntryId: entryId)
