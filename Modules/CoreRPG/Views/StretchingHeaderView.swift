@@ -30,27 +30,25 @@ private extension StretchingHeaderView {
     }
 }
 
-struct StretchingHeaderView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationStack {
-            List {
-                Section(header:
-                    StretchingHeaderView {
-                        Image(systemName: "bookmark")
-                            .resizable()
-                            .scaledToFit()
-                    }
-                    .frame(height: 200)
-                ) {
-                    ForEach(0 ..< 20) { i in
-                        Text("Row \(i)")
-                    }
+#Preview {
+    NavigationStack {
+        List {
+            Section(header:
+                StretchingHeaderView {
+                    Image(systemName: "bookmark")
+                        .resizable()
+                        .scaledToFit()
+                }
+                .frame(height: 200)
+            ) {
+                ForEach(0 ..< 20) { i in
+                    Text("Row \(i)")
                 }
             }
-            .listStyle(.automatic)
-            #if os(iOS)
-                .toolbar(.hidden, for: .navigationBar)
-            #endif
         }
+        .listStyle(.automatic)
+        #if os(iOS)
+            .toolbar(.hidden, for: .navigationBar)
+        #endif
     }
 }

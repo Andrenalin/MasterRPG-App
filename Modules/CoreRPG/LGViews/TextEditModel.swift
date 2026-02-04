@@ -4,37 +4,37 @@ import Foundation
 import SwiftData
 import SwiftUI
 
-@Observable public final class TextEditModel {
-    @MainActor public init(linkRegisterController: LinkRegisterController) {
+@MainActor @Observable public final class TextEditModel {
+    public init(linkRegisterController: LinkRegisterController) {
         self.linkRegisterController = linkRegisterController
     }
-    
+
     let linkRegisterController: LinkRegisterController
     var source: ItemRowModel = ItemRowModel(itemId: UUID(), typeId: .none)
-    
+
     public var name: String = ""
     public var text: String = ""
-    
+
     public var attributedText: AttributedString = AttributedString("")
 
     var links: [LinkRegisterModel] = []
 
-    @MainActor public func reset(text: String, source: ItemRowModel) {
+    public func reset(text: String, source: ItemRowModel) {
         self.source = source
         self.text = text
-        
+
         resetAttributedText()
     }
 
-    @MainActor func reset(entry: any EntryDataAccessable, source: ItemRowModel) {
+    func reset(entry: any EntryDataAccessable, source: ItemRowModel) {
         self.source = source
         name = entry.name
         text = entry.content
-        
+
         resetAttributedText()
     }
 
-    @MainActor public func resetAttributedText() {
+    public func resetAttributedText() {
         var att = AttributedString(text)
         links = linkRegisterController.linkRegisterModel(in: text, for: source)
         links.forEach {
@@ -44,11 +44,11 @@ import SwiftUI
                 att.replaceSubrange(range, with: linkAtt)
             }
         }
-        
+
         self.attributedText <=> att
     }
-    
-    @MainActor public func resetText() {
+
+    public func resetText() {
         // Build plain text from attributedText by convertind ng link attributed runs back to Markdown
         // We expect the custom attribute key path `\.linkContent` to contain the UUID of the link (LinkDataModel.id)
         var result = ""
@@ -58,7 +58,7 @@ import SwiftUI
         for run in att.runs {
             let range = run.range
             let substring = String(att[range].characters)
-            
+
             if let linkId = run.linkContent {
                 if let link = linkRegisterController.linkRegisterModel(linkId: linkId) {
                     let markdown = link.markDown ?? link.urlMarkDown
@@ -74,8 +74,8 @@ import SwiftUI
         // Update model state
         text <=> result
     }
-    
-    @MainActor public func updateLinks() {
+
+    public func updateLinks() {
         resetText()
         resetAttributedText()
     }

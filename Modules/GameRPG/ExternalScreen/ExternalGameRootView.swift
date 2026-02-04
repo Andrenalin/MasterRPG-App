@@ -34,8 +34,6 @@ public struct ExternalGameRootView: View {
     }
 }
 
-struct ExternalGameView_Previews: PreviewProvider {
-    static var previews: some View {
-        ExternalGameRootView(root: .preview)
-    }
+#Preview {
+    ExternalGameRootView(root: .preview)
 }

@@ -80,10 +80,8 @@ struct CompactSectionRowViewModifier<Header: View>: ViewModifier {
     }
 }
 
-struct DetailSectionRowViewModifier_Previews: PreviewProvider {
-    static var previews: some View {
-        Text("Row Content").detailSectionRow(color: .yellow) {
-            Text("Title of this section")
-        }
+#Preview {
+    Text("Row Content").detailSectionRow(color: .yellow) {
+        Text("Title of this section")
     }
 }

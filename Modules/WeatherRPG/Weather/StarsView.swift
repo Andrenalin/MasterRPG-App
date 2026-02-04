@@ -61,15 +61,12 @@ struct StarsView: View {
     }
 }
 
-struct StarsView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            StarsView()
-                .frame(width: 300, height: 150)
-            StarsView()
-                .frame(width: 600, height: 150)
-        }
-        .background(.black)
-        .previewLayout(.sizeThatFits)
+#Preview {
+    Group {
+        StarsView()
+            .frame(width: 300, height: 150)
+        StarsView()
+            .frame(width: 600, height: 150)
     }
+    .background(.black)
 }

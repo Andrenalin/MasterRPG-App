@@ -22,9 +22,9 @@ extension FolderListControllable {
     func resetParentModel(model: (any ItemDataAccessable)?) {
         if listModel.parentModel?.id != model?.id {
             listModel.parentModel = model
+            _ = originalItems()
+            resetFilter()
         }
-        _ = originalItems()
-        resetFilter()
     }
     
     var displayItems: [ListItemModel] {

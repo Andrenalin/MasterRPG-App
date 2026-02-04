@@ -28,14 +28,12 @@ public extension ButtonStyle where Self == ImageOverlayButtonStyle {
     }
 }
 
-struct ImageOverlayButtonStyle_Previews: PreviewProvider {
-    static var previews: some View {
-        Button {} label: {
-            Image(systemName: "skew")
-        }
-        .buttonStyle(.imageOverlay)
-        .borderLessTVBottonStyle()
-        .tint(Color.accentColor)
-        .accentColor(Color.teal)
+#Preview {
+    Button {} label: {
+        Image(systemName: "skew")
     }
+    .buttonStyle(.imageOverlay)
+    .borderLessTVBottonStyle()
+    .tint(Color.accentColor)
+    .accentColor(Color.teal)
 }

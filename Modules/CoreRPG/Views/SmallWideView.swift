@@ -147,26 +147,24 @@ private extension UIEdgeInsets {
 }
 #endif
 
-struct SmallWideView_Previews: PreviewProvider {
-    static var previews: some View {
-        SmallWideView {
-            TabView {
-                Tab {
-                    NavigationStack {
-                        Text("TabBar")
-                    }
-                    .foregroundStyle(.blue)
-                } label: {
-                    Text("Hello")
+#Preview {
+    SmallWideView {
+        TabView {
+            Tab {
+                NavigationStack {
+                    Text("TabBar")
                 }
-            }
-        } wide: {
-            Text("SideBar")
-                .font(.largeTitle)
                 .foregroundStyle(.blue)
-        } large: {
-            Text("Large").font(.largeTitle)
+            } label: {
+                Text("Hello")
+            }
         }
-        .previewInterfaceOrientation(.landscapeLeft)
+    } wide: {
+        Text("SideBar")
+            .font(.largeTitle)
+            .foregroundStyle(.blue)
+    } large: {
+        Text("Large").font(.largeTitle)
     }
+    .previewInterfaceOrientation(.landscapeLeft)
 }

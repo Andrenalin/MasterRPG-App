@@ -54,9 +54,7 @@ struct LightningView: View {
     }
 }
 
-struct LightningView_Previews: PreviewProvider {
-    static var previews: some View {
-        LightningView(frequency: 60.0, maximumBolts: 60, forkProbability: 100)
-            .background(.black)
-    }
+#Preview {
+    LightningView(frequency: 60.0, maximumBolts: 60, forkProbability: 100)
+        .background(.black)
 }

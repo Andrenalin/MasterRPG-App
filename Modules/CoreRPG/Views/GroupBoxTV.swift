@@ -62,13 +62,11 @@ public struct GroupBoxTV<Label: View, Content: View>: View {
     }
 }
 
-struct GroupBoxTV_Previews: PreviewProvider {
-    static var previews: some View {
-        GroupBoxTV {
-            Text("Inside")
-        } label: {
-            Text("Header")
-        }
+#Preview {
+    GroupBoxTV {
+        Text("Inside")
+    } label: {
+        Text("Header")
     }
 }
 
