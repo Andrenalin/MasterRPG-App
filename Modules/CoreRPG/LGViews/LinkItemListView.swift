@@ -171,7 +171,7 @@ private extension LinkItemListView {
             }
             .padding(.leading, CGFloat(item.level * 16))
             .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
-            .listRowSeparatorAll(item.isOpen ? .visible : .hidden, edges: .bottom)
+            .listRowSeparatorAll(item.isOpen || item.entryId != nil ? .visible : .hidden, edges: .bottom)
         }
     }
     
@@ -200,8 +200,6 @@ private extension LinkItemListView {
 #if !os(tvOS)
             .draggable(for: selectionModel.onlyEntrySelection ? .none : root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name.withoutLink())
 #endif
-            
-            //specialCategoryFolderIndicator(item: item)
         }
     }
     
