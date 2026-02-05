@@ -65,5 +65,4 @@ private extension BrowserRowView {
 
 #Preview {
     BrowserRowView(root: .preview, playerNetworkControllable: PlayerNetworkController(name: "TestPLayer"), model: BrowserDeviceModel(id: UUID(), deviceName: "iPad 10"))
-        .previewLayout(.sizeThatFits)
 }

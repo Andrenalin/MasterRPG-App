@@ -22,7 +22,7 @@ public struct LinkItemListView: View {
     
     @State private var showDetails: Bool = false
     @State private var showDetailsView: (any NavigationDestination)? = nil
-        
+    
     public var body: some View {
         let _ = Self._printChanges()
         ManagedNavigationStack(name: "LinkInspector") { navigator in
@@ -211,7 +211,7 @@ private extension LinkItemListView {
         if item.model.specialCategory {
             showDetailsView = root.folderLinkControllable.detailDestination(for: item.model.id)
         } else {
-
+            
             showDetailsView = root.folderLinkControllable.viewerDestination(for: item.model.id)
         }
         withAnimation { showDetails.toggle() }
@@ -233,7 +233,9 @@ private extension LinkItemListView {
                     .foregroundStyle(.red)
                     .contentShape(.circle)
                     .frame(width: 32, height: 32)
+#if !os(visionOS)
                     .glassEffect(.clear.interactive())
+#endif
             }
             .borderLessTVBottonStyle()
             .padding(.trailing, 4)

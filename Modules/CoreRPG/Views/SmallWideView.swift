@@ -166,5 +166,4 @@ private extension UIEdgeInsets {
     } large: {
         Text("Large").font(.largeTitle)
     }
-    .previewInterfaceOrientation(.landscapeLeft)
 }
