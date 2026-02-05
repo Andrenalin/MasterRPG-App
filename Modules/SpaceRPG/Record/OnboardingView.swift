@@ -14,11 +14,11 @@ import SwiftUI
 /// View that shows the guidance text and tutorials on the review screen.
 struct OnboardingView: View {
     @Environment(AppDataModel.self) private var appModel
-    @StateObject private var stateMachine: OnboardingStateMachine
+    @State private var stateMachine: OnboardingStateMachine
     @Environment(\.colorScheme) private var colorScheme
 
     init(state: OnboardingState) {
-        _stateMachine = StateObject(wrappedValue: OnboardingStateMachine(state))
+        _stateMachine = State(wrappedValue: OnboardingStateMachine(state))
     }
 
     var body: some View {

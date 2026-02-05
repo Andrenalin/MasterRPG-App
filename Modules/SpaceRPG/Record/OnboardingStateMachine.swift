@@ -15,8 +15,9 @@ import os
 /// The state machine used by `OnboardingView` to show the tutorial and texts
 /// depending on its `currentState`.
 /// The state transitions happen based on the user inputs in `OnboardingButtonView`.
-class OnboardingStateMachine: ObservableObject {
-    @Published var currentState: OnboardingState
+@MainActor @Observable
+final class OnboardingStateMachine {
+    var currentState: OnboardingState
 
     init(_ state: OnboardingState = .firstSegment) {
         guard initialStates.contains(state) else {

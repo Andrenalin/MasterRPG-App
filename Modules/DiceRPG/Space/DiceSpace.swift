@@ -13,15 +13,14 @@ let dice3dAssetsBundle: Bundle? = nil
 public struct DiceSpace: View {
     public init(root: DiceRootModel) {
         self.root = root
-        self._gestureModel =
-         StateObject(wrappedValue: DiceHandTrackingGestureModel(diceRoot: root))
+        self._gestureModel = State(wrappedValue: DiceHandTrackingGestureModel(diceRoot: root))
     }
-    
+
     public static let immersiveSpaceId = "DiceSpace"
 
     let root: DiceRootModel
 
-    @StateObject private var gestureModel: DiceHandTrackingGestureModel
+    @State private var gestureModel: DiceHandTrackingGestureModel
 
     var viewModel: DiceSpaceModel {
         root.diceSpaceModel

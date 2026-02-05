@@ -7,8 +7,8 @@ import Combine
 import SwiftUI
 
 /// A model that contains up-to-date hand coordinate information.
-@MainActor
-public class DiceHandTrackingGestureModel: ObservableObject, @unchecked Sendable {
+@MainActor @Observable
+public final class DiceHandTrackingGestureModel {
     public init(diceRoot: DiceRootModel) {
         self.root = diceRoot
     }
@@ -16,7 +16,7 @@ public class DiceHandTrackingGestureModel: ObservableObject, @unchecked Sendable
     let root: DiceRootModel
     let session = ARKitSession()
     var handTracking = HandTrackingProvider()
-    @Published var latestHandTracking: HandsUpdates = .init(left: nil, right: nil)
+    var latestHandTracking: HandsUpdates = .init(left: nil, right: nil)
 
     struct HandsUpdates {
         var left: HandAnchor?

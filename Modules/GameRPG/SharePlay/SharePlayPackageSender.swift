@@ -3,8 +3,7 @@
 import Combine
 import Foundation
 
-@MainActor
-final class  SharePlaySingleQueuePackageSender: ObservableObject {
+@MainActor final class SharePlaySingleQueuePackageSender {
     init(packageSize: Int = SharePlaySingleQueuePackageSender.packageSize, sendPackage: @escaping (PackageMessage) async -> Void) {
         self.packageSize = packageSize
         self.sendPackage = sendPackage
