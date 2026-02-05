@@ -13,7 +13,8 @@ import Dispatch
 import Foundation
 import os
 
-class CaptureFolderManager: ObservableObject {
+@MainActor @Observable
+final class CaptureFolderManager {
     // The top-level capture directory that contains Images and Snapshots subdirectories.
     // This sample automatically creates this directory at `init()` with timestamp.
     let rootScanFolder: URL
@@ -27,7 +28,7 @@ class CaptureFolderManager: ObservableObject {
     // Subdirectory to output model files.
     let modelsFolder: URL
 
-    @Published var shots: [ShotFileInfo] = []
+    var shots: [ShotFileInfo] = []
 
     init?() {
         guard let newFolder = CaptureFolderManager.createNewScanDirectory() else {

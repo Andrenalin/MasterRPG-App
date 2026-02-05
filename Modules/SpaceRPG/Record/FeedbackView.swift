@@ -12,7 +12,7 @@ import RealityKit
 import SwiftUI
 
 struct FeedbackView: View {
-    @ObservedObject var messageList: TimedMessageList
+    @Bindable var messageList: TimedMessageList
 
     var body: some View {
         VStack {

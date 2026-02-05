@@ -3,9 +3,9 @@
 import Foundation
 import Combine
 
-@MainActor
-final class SharePlayPackageReceiver: ObservableObject {
-    @Published private(set) var receivedPacakges: [UUID: PackageMessageList] = [:]
+@MainActor @Observable
+final class SharePlayPackageReceiver {
+    private(set) var receivedPacakges: [UUID: PackageMessageList] = [:]
 
     func received(package: PackageMessage) -> PackageMessage? {
         let packageList: PackageMessageList
@@ -27,7 +27,8 @@ final class SharePlayPackageReceiver: ObservableObject {
     }
 }
 
-final class PackageMessageList: ObservableObject {
+@MainActor @Observable
+final class PackageMessageList {
     init(initalPackage: PackageMessage) {
         self.id = initalPackage.uuid
         self.total = initalPackage.total
@@ -38,7 +39,7 @@ final class PackageMessageList: ObservableObject {
     let total: Int
     private var messages: [PackageMessage]
 
-    @Published private(set) var packageCounter = 1
+    private(set) var packageCounter = 1
 
     var isComplete: Bool {
         packageCounter == total

@@ -3,7 +3,7 @@
 import Combine
 import SwiftUI
 
-public protocol CompareMergeStore: ObservableObject {
+public protocol CompareMergable {
     func apply(merge: CompareMergeStrategy, to id: UUID)
 }
 
@@ -44,7 +44,7 @@ public struct CompareViewModel<Value: ItemDiffComparable>: Identifiable {
     public var mergeStrategy: CompareMergeStrategy
 }
 
-public struct CompareValueView<Store: CompareMergeStore, Model: ItemDiffComparable, Value: Equatable, Viewer: View, Editor: View>: View {
+public struct CompareValueView<Store: CompareMergable, Model: ItemDiffComparable, Value: Equatable, Viewer: View, Editor: View>: View {
     public init(store: Store, compareViewModel: CompareViewModel<Model>, title: String, keyPath: WritableKeyPath<Model, Value>, viewer: @escaping (Value) -> Viewer, editor: @escaping () -> Editor) {
         self.store = store
         self.compareViewModel = compareViewModel
@@ -54,7 +54,7 @@ public struct CompareValueView<Store: CompareMergeStore, Model: ItemDiffComparab
         self.editor = editor
     }
 
-    @ObservedObject var store: Store
+    let store: Store
     let compareViewModel: CompareViewModel<Model>
     let title: String
     let keyPath: WritableKeyPath<Model, Value>

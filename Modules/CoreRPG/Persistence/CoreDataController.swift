@@ -25,7 +25,7 @@ public struct CoreDataController<Model: ModelType, DataType: NSManagedObject & C
     }
 }
 
-// MARK: - Writer
+// MARK: - Single Operations (Existing)
 
 public extension CoreDataController {
     func delete(data: DataType) async {
@@ -77,7 +77,182 @@ public extension CoreDataController {
     }
 }
 
-// MARK: - Core Data Background Task
+// MARK: - Batch Operations (New)
+
+public extension CoreDataController {
+    
+    /// Batch delete using NSBatchDeleteRequest for better performance
+    func batchDelete(uuids: [UUID]) async throws {
+        guard !uuids.isEmpty else { return }
+        
+        try await context.perform {
+            let request = NSFetchRequest<NSFetchRequestResult>(entityName: String(describing: DataType.self))
+            request.predicate = NSPredicate(format: "uuid IN %@", uuids as [NSUUID])
+            
+            let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: request)
+            batchDeleteRequest.resultType = .resultTypeObjectIDs
+            
+            do {
+                let result = try context.execute(batchDeleteRequest) as? NSBatchDeleteResult
+                let objectIDArray = result?.result as? [NSManagedObjectID]
+                let changes = [NSDeletedObjectsKey: objectIDArray ?? []]
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
+                
+                Logger.coreDataController.info("Batch deleted \(uuids.count) objects")
+            } catch {
+                Logger.coreDataController.error("Batch delete error: \(error.localizedDescription, privacy: .public)")
+                throw error
+            }
+        }
+    }
+    
+    /// Batch replace/insert operations with automatic chunking
+    func batchReplace(
+        models: [Model], 
+        keyPath: KeyPath<Model, UUID>,
+        updater: @escaping @Sendable (Model, DataType) -> Void,
+        chunkSize: Int = 100
+    ) async throws {
+        guard !models.isEmpty else { return }
+        
+        // Process in chunks to avoid memory issues
+        let chunks = models.chunked(into: chunkSize)
+        
+        for chunk in chunks {
+            try await processBatchChunk(chunk: chunk, keyPath: keyPath, updater: updater)
+        }
+        
+        // Save once after all chunks are processed
+        try await save()
+        Logger.coreDataController.info("Batch replaced \(models.count) objects in \(chunks.count) chunks")
+    }
+    
+    /// Batch fetch with predicate for filtered operations
+    func batchFetch(
+        predicate: NSPredicate? = nil,
+        sortDescriptors: [NSSortDescriptor] = [],
+        fetchLimit: Int? = nil,
+        mapper: @escaping @Sendable (DataType) -> Model
+    ) async throws -> [Model] {
+        await context.perform {
+            let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
+            request.predicate = predicate
+            request.sortDescriptors = sortDescriptors
+            
+            if let limit = fetchLimit {
+                request.fetchLimit = limit
+            }
+            
+            // Enable batch faulting for better performance
+            request.returnsObjectsAsFaults = false
+            
+            return fetchAndDelete(request: request, mapper: mapper)
+        }
+    }
+    
+    /// Batch update using NSBatchUpdateRequest for specific attributes
+    func batchUpdate<T>(
+        predicate: NSPredicate,
+        attributeName: String,
+        value: T
+    ) async throws {
+        try await context.perform {
+            let request = NSBatchUpdateRequest(entityName: String(describing: DataType.self))
+            request.predicate = predicate
+            request.propertiesToUpdate = [attributeName: value]
+            request.resultType = .updatedObjectIDsResultType
+            
+            do {
+                let result = try context.execute(request) as? NSBatchUpdateResult
+                let objectIDArray = result?.result as? [NSManagedObjectID]
+                let changes = [NSUpdatedObjectsKey: objectIDArray ?? []]
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
+                
+                Logger.coreDataController.info("Batch updated objects with predicate")
+            } catch {
+                Logger.coreDataController.error("Batch update error: \(error.localizedDescription, privacy: .public)")
+                throw error
+            }
+        }
+    }
+    
+    /// Batch count for efficient counting without loading objects
+    func batchCount(predicate: NSPredicate? = nil) async throws -> Int {
+        await context.perform {
+            let request: NSFetchRequest<DataType> = DataType.fetchRequest() as! NSFetchRequest<DataType>
+            request.predicate = predicate
+            
+            do {
+                return try context.count(for: request)
+            } catch {
+                Logger.coreDataController.error("Batch count error: \(error.localizedDescription, privacy: .public)")
+                return 0
+            }
+        }
+    }
+    
+    /// Batch exists check for multiple UUIDs
+    func batchExists(uuids: [UUID]) async throws -> Set<UUID> {
+        guard !uuids.isEmpty else { return Set() }
+        
+        return await context.perform {
+            let request: NSFetchRequest<DataType> = DataType.fetchRequest() as! NSFetchRequest<DataType>
+            request.predicate = NSPredicate(format: "uuid IN %@", uuids as [NSUUID])
+            request.propertiesToFetch = ["uuid"]
+            request.resultType = .dictionaryResultType
+            
+            do {
+                let results = try context.fetch(request)
+                let existingUUIDs = results.compactMap { result in
+                    if let dict = result as? [String: Any],
+                       let uuid = dict["uuid"] as? UUID {
+                        return uuid
+                    }
+                    return nil
+                }
+                return Set(existingUUIDs)
+            } catch {
+                Logger.coreDataController.error("Batch exists check error: \(error.localizedDescription, privacy: .public)")
+                return Set()
+            }
+        }
+    }
+}
+
+// MARK: - Private Batch Helpers
+
+private extension CoreDataController {
+    func processBatchChunk(
+        chunk: [Model],
+        keyPath: KeyPath<Model, UUID>,
+        updater: @escaping @Sendable (Model, DataType) -> Void
+    ) async throws {
+        let chunkUUIDs = chunk.map { $0[keyPath: keyPath] }
+        let existingUUIDs = try await batchExists(uuids: chunkUUIDs)
+        
+        await context.perform {
+            for model in chunk {
+                let uuid = model[keyPath: keyPath]
+                
+                if existingUUIDs.contains(uuid) {
+                    // Update existing
+                    if let existing = fetchCoreData(uuid: uuid) {
+                        updater(model, existing)
+                    }
+                } else {
+                    // Create new
+                    let new = DataType(context: context)
+                    updater(model, new)
+                }
+            }
+            
+            // Save this chunk
+            saveCoreData()
+        }
+    }
+}
+
+// MARK: - Core Data Background Task (Existing)
 
 private extension CoreDataController {
     func fetchAndDelete(request: NSFetchRequest<NSFetchRequestResult>, mapper: @escaping @Sendable (DataType) -> Model?) -> [Model] {
@@ -172,6 +347,16 @@ private extension CoreDataController {
             }
         } catch {
             Logger.coreDataController.error("save error \(error.localizedDescription, privacy: .public)")
+        }
+    }
+}
+
+// MARK: - Array Extension for Chunking
+
+private extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
         }
     }
 }
