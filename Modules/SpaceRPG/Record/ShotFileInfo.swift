@@ -16,7 +16,7 @@ struct ShotFileInfo {
     let fileURL: URL
     let id: UInt32
 
-    init?(url: URL) {
+    @MainActor init?(url: URL) {
         fileURL = url
         guard let shotID = CaptureFolderManager.parseShotId(url: url) else {
             return nil

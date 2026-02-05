@@ -16,7 +16,7 @@ import SwiftUI
 struct OnboardingTutorialView: View {
     @Environment(AppDataModel.self) private var appModel
     var session: ObjectCaptureSession
-    @ObservedObject var onboardingStateMachine: OnboardingStateMachine
+    let onboardingStateMachine: OnboardingStateMachine
 
     var body: some View {
         VStack {
