@@ -184,17 +184,12 @@ private extension LinkItemListView {
             ItemRowView(root: root, model: item.model, cacheItemListModel: cacheItemListModel, isSelected: false) {
                 if root.viewControllable.thumbnailRowViewType == .custom {
                     root.viewControllable.thumbnailRowView(for: item.model.id)
-                        .overlay(alignment: .trailing) {
-                            specialCategoryFolderIndicator(item: item)
-                        }
                 } else if root.viewControllable.thumbnailRowViewType == .photo, let cacheController = root.cacheControllable {
                     ThumbnailRowPhotoView(cacheController: cacheController, model: item.model)
-                        .overlay(alignment: .trailing) {
-                            specialCategoryFolderIndicator(item: item)
-                        }
-                } else {
-                    specialCategoryFolderIndicator(item: item)
                 }
+            }
+            .overlay(alignment: .trailing) {
+                specialCategoryFolderIndicator(item: item)
             }
             .contentShape(.rect)
 #if !os(tvOS)

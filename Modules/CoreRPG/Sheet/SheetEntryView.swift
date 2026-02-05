@@ -37,7 +37,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             }
 
             HStack {
-                if (isEditor || entry.editType != .none) && (entry.sheetType == .item || entry.sheetType == .group){
+                if (isEditor || entry.editType != .none) && (entry.sheetType == .item || entry.sheetType == .group) {
                     editButton(onlyIcon: true)
                 }
                 
@@ -68,7 +68,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                     EmptyView()
                 }
                                 
-                if isEditor && entry.sheetType == .item {
+                if (isEditor || entry.editType != .none) && (entry.sheetType == .item || entry.sheetType == .group) {
                     deleteButton(onlyIcon: true)
                 }
             }

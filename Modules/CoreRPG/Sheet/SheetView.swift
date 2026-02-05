@@ -139,11 +139,6 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             Image(systemName: "square.and.arrow.down.on.square")
                 .imageScale(.large)
                 .foregroundStyle(.foreground, .tint)
-//                .padding(4)
-//                .contentShape(.circle)
-//#if !os(visionOS)
-//                .glassEffect()
-//#endif
         }
     }
 }
