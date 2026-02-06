@@ -10,6 +10,7 @@ struct DetailRootView: View {
     let model: ValueModel
     
     var body: some View {
+        let _ = Self._printChanges()
         DetailListView(root: root, model: model)
             .detailInspectorModifier(folderListControllable: root.folderListController)
     }
@@ -21,6 +22,7 @@ struct DetailListView: View {
         self.model = model
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
+        print("Set parentId \(model.id)")
     }
     
     let root: CharacterRootModel
@@ -32,6 +34,8 @@ struct DetailListView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
+        let _ = Self._printChanges()
+        
         content(listController: detailFolderListController)
             .onChange(of: detailFolderListController.listModel.subFolderRoute) {
                 guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }

@@ -19,13 +19,15 @@ public final class FolderListModel {
     }
     
     // MARK: - Items
-    public var parentModel: (any ItemDataAccessable)?
+    @ObservationIgnored var parentModel: (any ItemDataAccessable)?
     
-    @ObservationIgnored var isFilterResetting: Bool = false
-    
+    @ObservationIgnored var updatedOnce: Bool = false
     @ObservationIgnored var originalItems: [ListItemModel] = []
-    public var displayedItems: [ListItemModel] = []
+    @ObservationIgnored var parentOriginalItems: [ListItemModel] = []
     
+    public var displayedItems: [ListItemModel] = []
+    public var displayedParentItems: [ListItemModel] = []
+        
     var addedModelId: UUID?
     
     // MARK: - List navigation
@@ -42,7 +44,7 @@ public final class FolderListModel {
     }
     
     func toggleFolder(itemId: UUID, entryId: UUID?) {
-        let model = subItemModel(for: itemId, entryId: entryId, isOpen: true, level: level)
+        let model = subItemModel(for: itemId, entryId: entryId, isOpen: false, level: level)
         model.isOpen.toggle()
     }
     

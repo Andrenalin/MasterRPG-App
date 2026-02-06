@@ -19,10 +19,18 @@ public protocol FolderListControllable: Sendable {
 }
 
 extension FolderListControllable {
-    func resetParentModel(model: (any ItemDataAccessable)?) {
-        if listModel.parentModel?.id != model?.id {
+    public func resetItemOnce() {
+        guard listModel.updatedOnce == false else { return }
+        listModel.updatedOnce = true
+        originalItems()
+        resetFilter()
+    }
+
+    public func resetParentModel(model: (any ItemDataAccessable)) {
+        if listModel.parentModel?.id != model.id {
+            listModel.updatedOnce = true
             listModel.parentModel = model
-            _ = originalItems()
+            originalItems()
             resetFilter()
         }
     }
@@ -40,30 +48,34 @@ extension FolderListControllable {
 }
 
 public extension FolderListControllable {
-    private func originalItems() -> [ListItemModel] {
-        var currentItems: [any ItemDataAccessable] = []
+    private func originalItems() {
+        let currentItems: [any ItemDataAccessable] = itemControllable.itemDataModel.items.compactMap {
+            itemControllable.itemSync(for: $0)
+        }
+        
+        if currentItems.map(\.id) != listModel.originalItems.map(\.model.id) {
+            let updatedItems = currentItems.enumerated().map { (index, model) in
+                map(model: model, entryId: nil, index: index, level: 0)
+            }
+            listModel.originalItems <=> updatedItems
+        }
+
         if let parentModel = listModel.parentModel {
-            currentItems = itemControllable.children(itemId: parentModel.id)
-        } else {
-            currentItems = itemControllable.itemDataModel.items.compactMap {
-                itemControllable.itemSync(for: $0)
+            let parentChildrenItems = itemControllable.children(itemId: parentModel.id)
+
+            if parentChildrenItems.map(\.id) != listModel.parentOriginalItems.map(\.model.id) {
+                let updatedItems = parentChildrenItems.enumerated().map { (index, model) in
+                    map(model: model, entryId: nil, index: index, level: 0)
+                }
+                listModel.parentOriginalItems <=> updatedItems
             }
         }
-        guard currentItems.map(\.id) != listModel.originalItems.map(\.model.id) else {
-            return listModel.originalItems
-        }
-            
-        let updatedItems = currentItems.enumerated().map { (index, model) in
-            map(model: model, entryId: nil, index: index, level: 0)
-        }
-        listModel.originalItems <=> updatedItems
-        return updatedItems
     }
 
     func update() {
         let previousSelectedId = listModel.selectedItemId
         
-        listModel.originalItems = self.originalItems()
+        originalItems()
         resetFilter()
         
         if let addedItem = listModel.item(itemId: listModel.addedModelId) {
@@ -96,25 +108,27 @@ extension FolderListControllable {
     }
     
     func resetFilter() {
-        guard !listModel.isFilterResetting else { return }  // Prevent recursive calls
-        
-        listModel.isFilterResetting = true
-        defer { listModel.isFilterResetting = false }
-
-        let newlyfilteredOnes: [ListItemModel] = originalItems().enumerated().flatMap { (index, item) in
-            filterSub(item: item, index: index, level: 0)
+        let newlyfilteredOnes: [ListItemModel] = listModel.originalItems.enumerated().flatMap { (index, item) in
+            filterSub(item: item, index: index, level: 0, isParent: false)
         }
         if listModel.displayedItems != newlyfilteredOnes {
             listModel.displayedItems <=> newlyfilteredOnes
         }
+
+        let newlyParentFilteredOnes: [ListItemModel] = listModel.parentOriginalItems.enumerated().flatMap { (index, item) in
+            filterSub(item: item, index: index, level: 0, isParent: true)
+        }
+        if listModel.displayedParentItems != newlyParentFilteredOnes {
+            listModel.displayedParentItems <=> newlyParentFilteredOnes
+        }
     }
     
-    func filterSub(item: ListItemModel, index: Int, level: Int) -> [ListItemModel] {
-        guard let itemModel = filter(item: item, level: item.level) else { return [] }
+    func filterSub(item: ListItemModel, index: Int, level: Int, isParent: Bool) -> [ListItemModel] {
+        guard let itemModel = filter(item: item, level: item.level, isParent: isParent) else { return [] }
         if itemModel.isOpen {
             let newItems = mapSub(model: itemModel.model, entryId: item.entryId, index: index, level: itemModel.level)
             return [itemModel] + newItems.enumerated().flatMap { (index, item) in
-                filterSub(item: item, index: index, level: item.level)
+                filterSub(item: item, index: index, level: item.level, isParent: isParent)
             }
         }
         return [itemModel]
@@ -128,9 +142,9 @@ extension FolderListControllable {
 }
 
 private extension FolderListControllable {
-    func filter(item: ListItemModel, level: Int) -> ListItemModel? {
+    func filter(item: ListItemModel, level: Int, isParent: Bool) -> ListItemModel? {
         guard item.model.displayState != 2 else { return nil }
-        if listModel.parentModel == nil {
+        if isParent == false {
             guard item.model.displayState == 0 else { return nil }
             if listDisplayModel.listMode == .list {
                 if item.model.specialCategory {

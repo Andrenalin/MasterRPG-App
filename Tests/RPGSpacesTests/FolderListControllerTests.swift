@@ -25,7 +25,7 @@ struct FolderListControllerTests {
         var items = sut.displayItems
         try #require(items.count == 0)
         
-        sut.resetFilter()
+        sut.resetItemOnce()
         items = sut.displayItems
         try #require(items.count == 1)
         #expect(items[0].model.name == "3D Item")

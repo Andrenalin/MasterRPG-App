@@ -7,12 +7,17 @@ public struct LinkItemListView: View {
     init(root: any ItemRootControllable, type: LinkRootType, parentModel: (any ItemDataAccessable)?) {
         self.root = root
         self.type = type
-        root.folderLinkControllable.listDisplayModel.listMode = parentModel?.category == .folder ? .folder : .list
-        root.folderLinkControllable.resetParentModel(model: parentModel)
+        self.parentModel = parentModel
+        if let parentModel {
+            let mode: ListDisplayModel.ListMode = parentModel.category == .folder ? .folder : .list
+            root.folderLinkControllable.listDisplayModel.listMode <=> mode
+            root.folderLinkControllable.resetParentModel(model: parentModel)
+        }
     }
     
     let root: any ItemRootControllable
     let type: LinkRootType
+    let parentModel: (any ItemDataAccessable)?
     
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ItemSelectionModel.self) private var selectionModel
@@ -34,6 +39,9 @@ public struct LinkItemListView: View {
                 }
                 
                 contentView
+                    .onAppear {
+                        root.folderLinkControllable.resetItemOnce()
+                    }
                     .onChange(of: root.folderLinkControllable.listDisplayModel.displayMode, initial: true) {
                         withAnimation { root.folderLinkControllable.resetFilter() }
                     }
@@ -120,16 +128,16 @@ private extension LinkItemListView {
         listView
             .frame(minWidth: 150, idealWidth: 250)
             .overlay {
-                if listModel.displayedItems.isEmpty && !root.folderLinkControllable.searchModel.searchText.isEmpty {
+                if displayItems.isEmpty && !root.folderLinkControllable.searchModel.searchText.isEmpty {
                     ContentUnavailableView.search
                 }
             }
-            .animation(.smooth, value: listModel.displayedItems.count)
+            .animation(.smooth, value: displayItems.count)
 #if os(macOS)
             .listStyle(.sidebar)
 #endif
             .scrollIndicatorsFlash(onAppear: true)
-            .scrollIndicatorsFlash(trigger: listModel.displayedItems.count)
+            .scrollIndicatorsFlash(trigger: displayItems.count)
 #if !os(visionOS)
             .scrollEdgeEffectStyle(.hard, for: .top)
             .scrollDismissesKeyboard(.immediately)
@@ -144,8 +152,12 @@ private extension LinkItemListView {
         }
     }
     
+    var displayItems: [ListItemModel] {
+        parentModel == nil ? listModel.displayedItems : listModel.displayedParentItems
+    }
+    
     func itemRows() -> some View {
-        ForEach(listModel.displayedItems) { item in
+        ForEach(displayItems) { item in
             Group {
                 if let entryId = item.entryId {
                     HStack {
