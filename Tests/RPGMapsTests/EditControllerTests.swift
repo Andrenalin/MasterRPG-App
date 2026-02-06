@@ -30,13 +30,13 @@ struct EditControllerTests {
         #expect(isHex)
         #expect(sut.editEntries(for: item).count == 13)
         #expect(sut.editEntries(for: item) == entries)
-        #expect(item.entries.count == 130)
+        #expect(item.entries.count == 13)
 
         let entryId = UUID()
         let entry = MapEntryModel(id: entryId, name: "Name Eingang", content: "Was ist in 7a", coordinates: [])
         await sut.add(entry: entry, into: item.id)
 
-        #expect(item.entries.count == 131)
+        #expect(item.entries.count == 14)
         #expect(item.entries[13].id == entryId)
         #expect(item.entries[13].name == "Name Eingang")
         #expect(item.entries[13].content == "Was ist in 7a")

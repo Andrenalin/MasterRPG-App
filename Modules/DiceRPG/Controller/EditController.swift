@@ -38,10 +38,10 @@ extension EditController {
     }
 
     @MainActor func remove(die: DieModel, itemId: UUID) {
-        guard let editModel = editModel(for: itemId) else { return }
-        guard let index = editModel.dice.firstIndex(where: { $0.id == die.id }) else { return }
-        editModel.dice.remove(at: index)
-        save(updated: editModel, message: String(localized: "Remove \(die.name)").localizedString)
+        guard let item = editModel(for: itemId) else { return }
+        guard let index = item.dice.firstIndex(where: { $0.id == die.id }) else { return }
+        item.dice.remove(at: index)
+        save(updated: item, message: String(localized: "Remove \(die.name)").localizedString)
     }
 
     @MainActor func add(coup: Int, isDiceValueCoup: Bool, itemId: UUID) {
