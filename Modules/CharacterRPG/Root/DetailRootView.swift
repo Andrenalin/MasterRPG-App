@@ -22,7 +22,6 @@ struct DetailListView: View {
         self.model = model
         let listController = root.folderListController.copy(parentModel: model) as! FolderListController
         self._detailFolderListController = State(wrappedValue: listController)
-        print("Set parentId \(model.id)")
     }
     
     let root: CharacterRootModel
@@ -34,16 +33,12 @@ struct DetailListView: View {
     @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
-        let _ = Self._printChanges()
-        
+        let _ = Self._printChanges()        
         content(listController: detailFolderListController)
             .onChange(of: detailFolderListController.listModel.subFolderRoute) {
                 guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
                 navigator.navigate(to: CharacterDetailRoute.folder(subItemId), method: .push)
                 detailFolderListController.listModel.subFolderRoute = nil
-            }
-            .onAppear {
-                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
             }
     }
     
@@ -54,7 +49,7 @@ struct DetailListView: View {
         } inspector: {
             EditorLinkView(root: root.rootController, model: model, editorLinkModel: root.editorLinkModel)
         } entryEditor: {
-            EntryEditorView(editController: root.editController, model: model)
+            EntryEditorView(editController: root.editController, model: model, linkTypes: LinkCharacterModuleTransferable.self)
         }
         .overlay {
             if openFileWindowModel.showItem {
@@ -96,7 +91,8 @@ private extension DetailListView {
 
         SheetRootEditorView(root: root.rootController, linkControllable: root.rootControllable.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Values").localizedString, linkTypes: LinkCharacterModuleTransferable.self)
             .onChange(of: model.id, initial: true) {
-                withAnimation { root.editorLinkModel.characterSelectionModel.onlyChildrenFrom = model.id }
+                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+                withAnimation { root.editorLinkModel.characterSelectionModel.onlyChildrenFrom <=> model.id }
             }
     }
     

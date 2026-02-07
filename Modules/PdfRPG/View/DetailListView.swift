@@ -37,7 +37,7 @@ struct DetailListView: View {
         } editor: {
             SheetRootEditorView(root: root.rootController, linkControllable: root.rootControllable.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks").localizedString, linkTypes: LinkPdfModuleTransferable.self)
         } entryEditor: {
-            EntryEditorView(editController: root.editController, model: model)
+            EntryEditorView(editController: root.editController, model: model, linkTypes: LinkPdfModuleTransferable.self)
         }
         .overlay {
             if openFileWindowModel.showItem {

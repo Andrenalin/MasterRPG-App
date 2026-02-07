@@ -3,15 +3,17 @@
 import Foundation
 import SwiftUI
 
-public struct EntryEditorView: View {
-    public init(editController: any EntryDataEditable, model: any ItemDataAccessable) {
+public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
+    public init(editController: any EntryDataEditable, model: any ItemDataAccessable, linkTypes: LinkType.Type) {
         self.editController = editController
         self.model = model
+        self.linkTypes = linkTypes
         self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: editController.linkRegisterController))
     }
     
     let editController: any EntryDataEditable
     let model: any ItemDataAccessable
+    let linkTypes: LinkType.Type
     
     @FocusState private var currentFocus: EntryEditorFocusField?
     @State private var editModel: TextEditModel
@@ -66,6 +68,24 @@ public struct EntryEditorView: View {
                     EntryNameEditor(editModel: editModel, currentFocus: $currentFocus)
                     
                     EntryContentEditor(editModel: editModel, currentFocus: $currentFocus)
+                    
+                    VStack {
+                        Text("Drop Links", bundle: .module)
+                            .background {
+                                RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color.white)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .contentShape(.capsule)
+                                .dropDestination(for: linkTypes) { items, sessions in
+                                        editModel.resetText()
+                                        editController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
+                                        items.forEach {
+                                            editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: model.id, destinationEntryId: entry.id)
+                                        }
+                                    }
+
+                    }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .padding()
                 .background {

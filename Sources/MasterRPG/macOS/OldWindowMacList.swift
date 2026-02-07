@@ -25,11 +25,13 @@ struct OldWindowMacList: Scene {
 
         Settings {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                SettingsView(store: appModel)
-                    .environment(appModel.settingsModel)
-                    .accentColor(.teal)
-                    .tint(.teal)
-                    .frame(minWidth: 600, minHeight: 400)
+                ManagedNavigationStack {
+                    SettingsView(store: appModel)
+                }
+                .environmentSetUp(appModel)
+                .accentColor(.blue)
+                .tint(.teal)
+                .frame(minWidth: 600, minHeight: 400)
             }
         }
         .defaultSize(CGSize(width: 600, height: 800))

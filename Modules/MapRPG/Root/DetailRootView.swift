@@ -53,7 +53,7 @@ struct DetailListView: View {
         } inspector: {
             EditorLinkView(root: root.rootController, model: model, editorLinkModel: root.editorLinkModel)
         } entryEditor: {
-            EntryEditorView(editController: root.editController, model: model)
+            EntryEditorView(editController: root.editController, model: model, linkTypes: LinkMapModuleTransferable.self)
         }
         .overlay {
             if openFileWindowModel.showItem {
