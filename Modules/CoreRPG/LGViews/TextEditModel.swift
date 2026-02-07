@@ -104,7 +104,7 @@ public struct TextEditorLinkView: View {
         @Bindable var model = model
         #if os(tvOS)
         TextField(text: $model.text, prompt: Text("Add content", bundle: .module), label: {
-            Text("Edit content")
+            Text("Edit content", bundle: .module)
         })
         .labelsHidden()
         .frame(minHeight: 120, maxHeight: maxHeight)
@@ -115,6 +115,9 @@ public struct TextEditorLinkView: View {
         #else
         TextEditor(text: $model.attributedText, selection: $selection)
             .attributedTextFormattingDefinition(ContentFormattingDefinition(links: Set(model.links.map(\.id))))
+            .textInputAutocapitalization(.sentences)
+            .autocorrectionDisabled(true)
+            .writingToolsBehavior(.complete)
             .frame(minHeight: 120, maxHeight: maxHeight)
             .background {
                 RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)

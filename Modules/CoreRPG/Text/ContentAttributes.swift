@@ -42,6 +42,7 @@ struct ParagraphFormattingAttribute: CodableAttributedStringKey {
     static let name = "MasterRPG.ParagraphFormattingAttribute"
 
     static let runBoundaries: AttributedString.AttributeRunBoundaries? = .paragraph
+    
     static let inheritedByAddedText: Bool = false
 }
 
@@ -51,6 +52,10 @@ struct LinkContentAttribute: CodableAttributedStringKey, TextAttribute {
 
     static let name = "MasterRPG.LinkContentAttribute"
     static let inheritedByAddedText: Bool = false
+    
+    static let invalidationConditions:
+      Set<AttributedString.AttributeInvalidationCondition>? =
+      [.textChanged]
 }
 
 extension AttributeDynamicLookup {
