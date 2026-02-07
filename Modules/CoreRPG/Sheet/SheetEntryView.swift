@@ -93,6 +93,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                     editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: entry.source.itemId, destinationEntryId: entryId)
                     withAnimation {
                         model.update(entryId: entryId)
+                        model.updateParent()
                     }
                 }
             }
@@ -163,6 +164,7 @@ private extension SheetEntryView {
             withAnimation {
                 model.add(entryId: newId)
                 root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: entry.source.itemId, entryId: newId, typeId: entry.source.typeId))
+                model.updateParent()
             }
         } label: {
             Label {
@@ -194,6 +196,7 @@ private extension SheetEntryView {
             withAnimation {
                 root.editControllable.removeEntry(source: entry.source)
                 model.remove(entry: entry)
+                model.updateParent()
             }
         } label: {
             Label {

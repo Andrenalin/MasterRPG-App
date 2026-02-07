@@ -17,6 +17,7 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
     
     @FocusState private var currentFocus: EntryEditorFocusField?
     @State private var editModel: TextEditModel
+    @State private var isDropTargeted: Bool = false
     
     public var body: some View {
         Group {
@@ -64,26 +65,33 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
 #endif
                     }
                     .buttonStyle(.borderless)
-
+                    
                     EntryNameEditor(editModel: editModel, currentFocus: $currentFocus)
                     
                     EntryContentEditor(editModel: editModel, currentFocus: $currentFocus)
                     
                     VStack {
                         Text("Drop Links", bundle: .module)
+                            .padding()
                             .background {
                                 RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color.white)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .contentShape(.capsule)
+                            .zIndex(1)
+                            .allowsHitTesting(true)
+                            .dropDestination(for: linkTypes) { items, dropSession in
+                                isDropTargeted = dropSession.phase == .entering
+                                editModel.resetText()
+                                editController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
+                                items.forEach {
+                                    editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: model.id, destinationEntryId: entry.id)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .trailing)
-                                .contentShape(.capsule)
-                                .dropDestination(for: linkTypes) { items, sessions in
-                                        editModel.resetText()
-                                        editController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
-                                        items.forEach {
-                                            editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: model.id, destinationEntryId: entry.id)
-                                        }
-                                    }
-
+                            }
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .stroke(isDropTargeted ? Color.accentColor : .clear, lineWidth: 2)
+                            )
                     }
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
@@ -98,6 +106,7 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
             .frame(maxHeight: .infinity, alignment: .center)
             .padding(32)
         }
+        .contentShape(.rect)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
@@ -108,7 +117,7 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
     var isActive: Bool {
         entry.id == editController.editorModel.currentEntryId
     }
-        
+    
     var entry: any EntryDataAccessable {
         guard let currentItemId = editController.editorModel.currentItemId else {
             return model[editController.editorModel.currentEntryId ?? UUID()]
@@ -171,7 +180,7 @@ struct EntryNameEditor: View {
 struct EntryContentEditor: View {
     let editModel: TextEditModel
     @FocusState.Binding var currentFocus: EntryEditorFocusField?
-
+    
     var body: some View {
         Text("Description", bundle: .module)
             .font(.caption)
@@ -196,3 +205,4 @@ struct EntryContentEditor: View {
 #endif
     }
 }
+

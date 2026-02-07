@@ -39,6 +39,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                                         let isMoved = entryDataEditable.move(itemId: itemId, entryId: entryId, into: model.sheetModel.source)
                                         if isMoved {
                                             model.move(itemId: itemId, entryId: entryId, into: model.sheetModel.source)
+                                            model.updateParent()
                                         }
                                     }
                                 }
@@ -76,6 +77,10 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                     guard let entryDataEditable else { return }
                     if entryDataEditable.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index) {
                         model.move(itemId: model.sheetModel.source.itemId, indexSet: indexSet, to: index)
+//                        Task { @MainActor in
+//                            await Task.yield()
+//                            model.updateParent()
+//                        }
                     }
                 }
             }
@@ -115,6 +120,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                     root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: model.sheetModel.source.itemId, entryId: entryId, typeId: root.configurable.module))
                     root.editControllable.editorModel.currentEntryId = entryId
                     model.add(entryId: entryId)
+                    model.updateParent()
                     Task { @MainActor in
                         try? await Task.sleep(for: .seconds(0.25))
                         root.editControllable.editorModel.scrollEntryId = entryId
