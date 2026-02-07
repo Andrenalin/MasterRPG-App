@@ -8,32 +8,32 @@ import SwiftUI
     public init(linkRegisterController: LinkRegisterController) {
         self.linkRegisterController = linkRegisterController
     }
-
+    
     let linkRegisterController: LinkRegisterController
     var source: ItemRowModel = ItemRowModel(itemId: UUID(), typeId: .none)
-
+    
     public var name: String = ""
     public var text: String = ""
-
+    
     public var attributedText: AttributedString = AttributedString("")
-
+    
     var links: [LinkRegisterModel] = []
-
+    
     public func reset(text: String, source: ItemRowModel) {
         self.source = source
         self.text = text
-
+        
         resetAttributedText()
     }
-
+    
     func reset(entry: any EntryDataAccessable, source: ItemRowModel) {
         self.source = source
         name = entry.name
         text = entry.content
-
+        
         resetAttributedText()
     }
-
+    
     public func resetAttributedText() {
         var att = AttributedString(text)
         links = linkRegisterController.linkRegisterModel(in: text, for: source)
@@ -44,21 +44,21 @@ import SwiftUI
                 att.replaceSubrange(range, with: linkAtt)
             }
         }
-
+        
         self.attributedText <=> att
     }
-
+    
     public func resetText() {
         // Build plain text from attributedText by convertind ng link attributed runs back to Markdown
         // We expect the custom attribute key path `\.linkContent` to contain the UUID of the link (LinkDataModel.id)
         var result = ""
         let att = attributedText
-
+        
         // Iterate over runs, preserving non-link text and converting link runs
         for run in att.runs {
             let range = run.range
             let substring = String(att[range].characters)
-
+            
             if let linkId = run.linkContent {
                 if let link = linkRegisterController.linkRegisterModel(linkId: linkId) {
                     let markdown = link.markDown ?? link.urlMarkDown
@@ -70,23 +70,15 @@ import SwiftUI
                 result.append(substring)
             }
         }
-
+        
         // Update model state
         text <=> result
     }
-
+    
     public func updateLinks() {
         resetText()
         resetAttributedText()
     }
-    
-//    @MainActor static var preview: TextEditModel = {
-//        let modelContainer = try! ModelContainer(for: LinkDataModel.self, configurations: .init(isStoredInMemoryOnly: true))
-//        let controller = LinkRegisterController(container: modelContainer, itemControllable: FakeItemController.fake)
-//        let link = controller.register(name: "Name", sourceId: UUID(), sourceModule: .audio, destinationId: UUID(), destinationModule: .table)
-//        let text = "Hello World\n In the [Name](RPG://\(link.id.uuidString)) we will find peace."
-//        return TextEditModel(linkRegisterController: controller, text: text)
-//    }()
 }
 
 public struct TextEditorLinkView: View {
@@ -97,12 +89,12 @@ public struct TextEditorLinkView: View {
     
     public let model: TextEditModel
     let maxHeight: CGFloat
-
+    
     @State private var selection: AttributedTextSelection = .init()
-
+    
     public var body: some View {
         @Bindable var model = model
-        #if os(tvOS)
+#if os(tvOS)
         TextField(text: $model.text, prompt: Text("Add content", bundle: .module), label: {
             Text("Edit content", bundle: .module)
         })
@@ -112,37 +104,19 @@ public struct TextEditorLinkView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
         }
         .padding(.bottom, 6)
-        #else
+#else
         TextEditor(text: $model.attributedText, selection: $selection)
             .attributedTextFormattingDefinition(ContentFormattingDefinition(links: Set(model.links.map(\.id))))
+#if !os(macOS)
             .textInputAutocapitalization(.sentences)
-            .autocorrectionDisabled(true)
             .writingToolsBehavior(.complete)
+#endif
+            .autocorrectionDisabled(true)
             .frame(minHeight: 120, maxHeight: maxHeight)
             .background {
                 RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
             }
             .padding(.bottom, 6)
-        #endif
+#endif
     }
 }
-
-//#Preview {
-//    @Previewable @State var model: TextEditModel = .preview
-//    
-//    NavigationStack {
-//        VStack(alignment: .leading) {
-//            Text("Description")
-//            
-//            TextEditorLinkView(model: model)
-// 
-//            Button("Save") {
-//                model.resetText()
-//            }
-//            
-//            Text(model.text)
-//        }
-//        .padding()
-//    }
-//}
-//

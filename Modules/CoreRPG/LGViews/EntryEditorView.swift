@@ -77,9 +77,7 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                                 RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color.white)
                             }
                             .frame(maxWidth: .infinity, alignment: .trailing)
-                            .contentShape(.capsule)
-                            .zIndex(1)
-                            .allowsHitTesting(true)
+#if !os(tvOS)
                             .dropDestination(for: linkTypes) { items, dropSession in
                                 isDropTargeted = dropSession.phase == .entering
                                 editModel.resetText()
@@ -88,6 +86,10 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                                     editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: model.id, destinationEntryId: entry.id)
                                 }
                             }
+#endif
+                            .contentShape(.capsule)
+                            .zIndex(1)
+                            .allowsHitTesting(true)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                                     .stroke(isDropTargeted ? Color.accentColor : .clear, lineWidth: 2)
