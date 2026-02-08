@@ -85,9 +85,9 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
 #if os(macOS)
         .frame(minWidth: 800, minHeight: 600)
 #endif
-        .inspectorAll(isPresented: $showInspector) {
-            inspector
-        }
+//        .inspectorAll(isPresented: $showInspector) {
+//            inspector
+//        }
     }
 }
 
