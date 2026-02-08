@@ -183,7 +183,7 @@ extension CharacterRootModel {
     public func checkFolders(reportModel: ValidateRepairModel) async {
         await reportModel.update(section: "Validating Character Data")
         for id in await itemController.itemDataModel.items {
-            guard let model = await itemController.item(for: id) else { continue  }
+            guard let model = await itemController.item(for: id), model.specialCategory == false else { continue }
             var entries: [ValueEntryModel] = []
             for entry in model.entries {
                 guard let valueId = entry.valueId, let value = await itemController.item(for: valueId) else {
@@ -204,11 +204,13 @@ extension CharacterRootModel {
                     updatedEntry.name = value.name.withoutLink()
                     updatedEntry.content = value.description
                     entries.append(updatedEntry)
+                } else {
+                    entries.append(entry)
                 }
             }
             if model.entries != entries {
                 guard let item = await editController.editModel(for: id) else { continue }
-                item.entries <=> entries
+                item.entries = entries
                 await editController.save(updated: item, message: String(localized: "update entries").localizedString)
             }
             guard model.diceId == nil else { continue }
