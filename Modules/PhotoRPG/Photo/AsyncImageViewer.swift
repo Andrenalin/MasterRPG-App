@@ -17,6 +17,7 @@ struct AsyncImageViewer: View {
     @State private var isLoading: Bool = false
 
     @State private var imageError: Bool = false
+    @State private var isLoadedId: UUID = UUID()
 
     var body: some View {
         let _ = Self._printChanges()
@@ -35,6 +36,7 @@ struct AsyncImageViewer: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         }
+        .id(isLoadedId)
         .onChange(of: model.fileUrl, initial: true) {
             loadImage()
         }
@@ -65,6 +67,7 @@ struct AsyncImageViewer: View {
                 imageError = false
             }
             isLoading = false
+            isLoadedId = UUID()
         }
     }
 }
