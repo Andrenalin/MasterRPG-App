@@ -4,11 +4,8 @@ import CoreRPG
 import Foundation
 import SwiftUI
 
-public struct LinkController: Sendable {
-    init(itemController: ItemController, gameController: GameController) {
-        self.itemController = itemController
-        self.gameController = gameController
-    }
+struct LinkController: Sendable {
+    let rootManager: RootManager
     let itemController: ItemController
     let gameController: GameController
     
@@ -16,8 +13,7 @@ public struct LinkController: Sendable {
 }
 
 extension LinkController: LinkControllable {
-    @MainActor
-    public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+    @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         if let command {
             if command == LinkType.remove.rawValue {
                 let url = generateLink(linkNumber: linkNumber - LinkType.remove.linkNumberAddition, itemId: itemId, entryId: entryId)

@@ -50,19 +50,17 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
 }
 
 public protocol LinkControllable: Sendable {
-    @MainActor var itemControllable: any ItemControllable { get }
+    var rootManager: RootManager { get }
+    var itemControllable: any ItemControllable { get }
+    
 
     // MARK: - Handle Link
-    @MainActor
-    func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String
+    @MainActor func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String
     
-    @MainActor
-    func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String
+    @MainActor func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String
     
-    @MainActor
-    func toggleLink(module: NetworkModules, linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?) -> String
-    @MainActor
-    func toggleLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?) -> String
+    @MainActor func toggleLink(module: NetworkModules, linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?) -> String
+    @MainActor func toggleLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?) -> String
     
     // MARK: Generate Links
     @MainActor func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String

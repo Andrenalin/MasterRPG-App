@@ -8,9 +8,9 @@ import PhotoRPG
 public protocol WeatherGameStorable {}
 
 struct GameController: Sendable {
-    @MainActor init(config: ModuleConfiguration, photoRoot: PhotoRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+    @MainActor init(rootManager: RootManager, config: ModuleConfiguration, photoRoot: PhotoRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
         self.itemController = itemController
-        self.exportController = ExportController(photoRoot: photoRoot, itemController: itemController, gameExporter: false)
+        self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
         let internItemController = ItemController(config: config, dataController: nil, linkRegisterController: linkRegisterController)
         self.importController = ImportController(itemController: internItemController)
         self.rootExportControllable = rootExportControllable

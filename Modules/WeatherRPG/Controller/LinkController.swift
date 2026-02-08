@@ -6,24 +6,16 @@ import PhotoRPG
 import SwiftUI
 import os.log
 
-public struct LinkController: Sendable {
-    init(photoRoot: PhotoRootModel, itemController: ItemController, gameController: GameController) {
-        self.photoRoot = photoRoot
-        self.itemController = itemController
-        self.gameController = gameController
-    }
-    let photoRoot: PhotoRootModel
+struct LinkController: Sendable {
+    let rootManager: RootManager
     let itemController: ItemController
     let gameController: GameController
     
-    public var itemControllable: any ItemControllable {
-        itemController
-    }
+    public var itemControllable: any ItemControllable { itemController }
 }
 
 extension LinkController: LinkControllable {
-    @MainActor
-    public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+    @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         if let command {
             if command == LinkType.remove.rawValue {
                 let url = generateLink(linkNumber: linkNumber - LinkType.remove.linkNumberAddition, itemId: itemId, entryId: entryId)
@@ -60,7 +52,7 @@ extension LinkController: LinkControllable {
         guard let inspectedItem = itemController.itemSync(for: itemId), let replacedItem = itemController.copy(of: itemId) else { return }
         
         if let photoId = replacedItem.photoId {
-            if !photoRoot.linkController.validateLink(itemId: photoId) {
+            if !rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
                 Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
             }
@@ -72,8 +64,7 @@ extension LinkController: LinkControllable {
         }
     }
 
-    @MainActor
-    public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
+    @MainActor public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
         guard let entryId else { return itemControllable.itemOrEmpty(for: itemId).url(linkNumber: linkNumber) }
         return itemControllable.itemOrEmpty(for: entryId).url(linkNumber: linkNumber)
     }
@@ -85,7 +76,7 @@ extension LinkController: LinkControllable {
     }
 }
 
-public extension LinkController {
+extension LinkController {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
         guard let item = itemController.itemSync(for: itemId) else { return [] }
         if let id = item.photoId {

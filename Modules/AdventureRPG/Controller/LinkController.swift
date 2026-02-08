@@ -14,38 +14,35 @@ import TableRPG
 import CharacterRPG
 import WeatherRPG
 
-public struct LinkController: Sendable {
-    let root: AdventureRootModel
+struct LinkController: Sendable {
+    let rootManager: RootManager
     let itemController: ItemController
-
-    public var itemControllable: any ItemControllable {
-        itemController as ItemController
-    }
+    
+    public var itemControllable: any ItemControllable { itemController }
 }
 
 extension LinkController: LinkControllable {
-    @MainActor
-    public func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+    @MainActor public func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         let module = url.moduleIdentifier
         switch module {
         case .audio:
-            return root.audioRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            return rootManager.audioRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .dice:
-            return root.diceRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            return rootManager.diceRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .map:
-            return root.mapRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            return rootManager.mapRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .pdf:
-            return root.pdfRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            return rootManager.pdfRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .photo:
-            return root.photoRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            return rootManager.photoRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .space:
-            return root.spaceRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            return rootManager.spaceRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .table:
-            return root.tableRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            return rootManager.tableRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .value:
-            return root.characterRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            return rootManager.characterRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .weather:
-            return root.weatherRoot.linkController.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+            return rootManager.weatherRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .adventure:
             guard let itemId = url.itemId else { return text }
             guard let brokenLink = brokenTextLinkToggle(url: url, itemId: itemId, entryId: nil, in: text) else {
@@ -62,23 +59,23 @@ extension LinkController: LinkControllable {
     public func toggleLink(module: NetworkModules, linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?) -> String {
         switch module {
         case .audio:
-            return root.audioRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+            return rootManager.audioRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .dice:
-            return root.diceRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+            return rootManager.diceRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .map:
-            return root.mapRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+            return rootManager.mapRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .pdf:
-            return root.pdfRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+            return rootManager.pdfRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .photo:
-            return root.photoRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+            return rootManager.photoRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .space:
-            return root.spaceRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+            return rootManager.spaceRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .table:
-            return root.tableRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+            return rootManager.tableRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .value:
-            return root.characterRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+            return rootManager.characterRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .weather:
-            return root.weatherRoot.linkController.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+            return rootManager.weatherRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         default:
             return toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         }
@@ -120,15 +117,15 @@ extension LinkController: LinkControllable {
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
         var result = content
         for link in links {
-            result = root.audioRoot.linkController.repairLink(link, for: result, for: [.all])
-            result = root.diceRoot.linkController.repairLink(link, for: result, for: [.rules, .table, .value])
-            result = root.mapRoot.linkController.repairLink(link, for: result, for: [.all])
-            result = root.pdfRoot.linkController.repairLink(link, for: result, for: [.all])
-            result = root.photoRoot.linkController.repairLink(link, for: result, for: [.all])
-            result = root.spaceRoot.linkController.repairLink(link, for: result, for: [.all])
-            result = root.tableRoot.linkController.repairLink(link, for: result, for: [.all])
-            result = root.characterRoot.linkController.repairLink(link, for: result, for: [.all])
-            result = root.weatherRoot.linkController.repairLink(link, for: result, for: [.all])
+            result = rootManager.audioRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = rootManager.diceRoot.linkControllable.repairLink(link, for: result, for: [.rules, .table, .value])
+            result = rootManager.mapRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = rootManager.pdfRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = rootManager.photoRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = rootManager.spaceRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = rootManager.tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = rootManager.characterRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = rootManager.weatherRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = repairLink(link, for: result, for: [.all])
         }
         return result
@@ -138,7 +135,7 @@ extension LinkController: LinkControllable {
         guard let inspectedItem = itemController.itemSync(for: itemId), let replacedItem = itemController.copy(of: itemId) else { return }
     
         if let photoId = replacedItem.photoId {
-            if !root.photoRoot.linkController.validateLink(itemId: photoId) {
+            if !rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
                 Logger.linkController.warning("Adventure: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
             }
@@ -161,7 +158,7 @@ extension LinkController: LinkControllable {
     }    
 }
 
-public extension LinkController {
+extension LinkController {
     @MainActor
     func link(for module: NetworkModules) -> [LinkEntryModel] {
         itemController.itemDataModel.items.map { itemController.itemOrEmpty(for: $0) }.sorted(by: { $0.name.count > $1.name.count })
@@ -177,36 +174,36 @@ public extension LinkController {
     }
 }
 
-public extension LinkController {
+extension LinkController {
     @MainActor func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetModel {
         switch module {
         case .audio:
-            return root.audioRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
+            return rootManager.audioRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .dice:
-            return root.diceRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
+            return rootManager.diceRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .map:
-            return root.mapRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
+            return rootManager.mapRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .pdf:
-            return root.pdfRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
+            return rootManager.pdfRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .photo:
-            return root.photoRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
+            return rootManager.photoRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .space:
-            return root.spaceRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
+            return rootManager.spaceRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .table:
-            return root.tableRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
+            return rootManager.tableRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .value:
-            return root.characterRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
+            return rootManager.characterRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         case .weather:
-            return root.weatherRoot.linkController.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
+            return rootManager.weatherRoot.linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         default:
             return SheetController(itemController: itemController).sheet(for: itemId, level: level)
         }
     }
 }
 
-public extension LinkController {
+extension LinkController {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
-        guard let item = root.itemController.itemSync(for: itemId) else { return [] }
+        guard let item = itemController.itemSync(for: itemId) else { return [] }
         var photoIds: [UUID] = []
         if let id = item.photoId {
             photoIds.append(id)
@@ -218,14 +215,14 @@ public extension LinkController {
                 case .photo:
                     photoIds.append($0.itemId)
                 case .value:
-                    photoIds.append(contentsOf: root.characterRoot.linkController.collectLinks(of: module, from: $0.itemId))
+                    photoIds.append(contentsOf: rootManager.characterRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                 case .map:
-                    photoIds.append(contentsOf: root.mapRoot.linkController.collectLinks(of: module, from: $0.itemId))
+                    photoIds.append(contentsOf: rootManager.mapRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                 case .weather:
-                    photoIds.append(contentsOf: root.weatherRoot.linkController.collectLinks(of: module, from: $0.itemId))
+                    photoIds.append(contentsOf: rootManager.weatherRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                 case .adventure:
                     if $0.entryId == nil {
-                        photoIds.append(contentsOf: root.linkController.collectLinks(of: module, from: $0.itemId))
+                        photoIds.append(contentsOf: rootManager.adventureRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                     }
                 default:
                     break

@@ -143,7 +143,7 @@ public final class GameRoot: @unchecked Sendable {
     @MainActor
     var characterName: String {
         if let selectedCharacter = gameModel.selectedCharacter {
-            return characterRoot.linkController.name(for: selectedCharacter)
+            return characterRoot.linkControllable.name(for: selectedCharacter)
         } else {
             return "Unknown"
         }
@@ -152,7 +152,7 @@ public final class GameRoot: @unchecked Sendable {
     @MainActor
     var gameMasterName: String {
         if let selectedGameMaster = gameModel.selectedGameMaster {
-            return characterRoot.linkController.name(for: selectedGameMaster)
+            return characterRoot.linkControllable.name(for: selectedGameMaster)
         } else {
             return "Unknown"
         }

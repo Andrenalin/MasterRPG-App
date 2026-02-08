@@ -89,7 +89,7 @@ private extension DetailListView {
                 withAnimation { root.editController.valueEditModel.selectionPhoto.resetSelection(selectionIds: model.photos) }
             }
 
-        SheetRootEditorView(root: root.rootController, linkControllable: root.rootControllable.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Values").localizedString, linkTypes: LinkCharacterModuleTransferable.self)
+        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Values").localizedString, linkTypes: LinkCharacterModuleTransferable.self)
             .onChange(of: model.id, initial: true) {
                 root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
                 withAnimation { root.editorLinkModel.characterSelectionModel.onlyChildrenFrom <=> model.id }

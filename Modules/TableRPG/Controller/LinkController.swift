@@ -6,23 +6,15 @@ import Foundation
 import SwiftUI
 import os.log
 
-public struct LinkController: Sendable {
-    init(diceRoot: DiceRootModel, itemController: ItemController, gameController: GameController) {
-        self.diceRoot = diceRoot
-        self.itemController = itemController
-        self.gameController = gameController
-    }
-    let diceRoot: DiceRootModel
+struct LinkController: Sendable {
+    let rootManager: RootManager
     let itemController: ItemController
     let gameController: GameController
     
-    public var itemControllable: any ItemControllable {
-        itemController
-    }
+    public var itemControllable: any ItemControllable { itemController }
 }
 
 extension LinkController: LinkControllable {
-
     @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         if let command {
             if command == LinkType.remove.rawValue {
@@ -64,7 +56,7 @@ extension LinkController: LinkControllable {
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
         var result = content
         for link in links {
-            result = diceRoot.linkController.repairLink(link, for: result, for: [.table])
+            result = rootManager.diceRoot.linkControllable.repairLink(link, for: result, for: [.table])
             result = repairLink(link, for: result, for: [.all])
         }
         return result
@@ -74,7 +66,7 @@ extension LinkController: LinkControllable {
         guard let inspectedItem = itemController.itemSync(for: itemId), let replacedItem = itemController.copy(of: itemId) else { return }
         
         if let diceId = replacedItem.diceId {
-            if !diceRoot.linkController.validateLink(itemId: diceId) {
+            if !rootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {
                 Logger.linkController.warning("Table: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
                 replacedItem.diceId = nil
             }
@@ -101,7 +93,7 @@ extension LinkController: LinkControllable {
     }
 }
 
-public extension LinkController {
+extension LinkController {
     @MainActor
     func link(for name: String, entryName: String?) -> String? {
         guard let itemId = itemController.itemDataModel.items.first(where: { itemController.nameSync(itemId: $0) == name }) else { return nil }
@@ -126,36 +118,5 @@ public extension LinkController {
         return item.entries
             .sorted(by: { $0.name.count > $1.name.count })
             .map { LinkEntryModel(reference: $0.name, markdownUrl: item.url(linkNumber: 0, entryId: $0.id)) }
-    }
-}
-
-// MARK: Other
-
-public extension LinkController {
-    @MainActor
-    func nameWithEntry(for id: UUID, entryId: UUID?) -> (String, String?) {
-        let item = itemController.itemOrEmpty(for: id)
-        guard let entryId else {
-            return (item.name, nil)
-        }
-        return (item.name, item[entryId].name)
-    }
-    
-    @MainActor
-    func templateItems(for rootId: UUID) -> [ItemRowModel] {
-        let item = itemController.itemOrEmpty(for: rootId)
-        return item.entries.map { ItemRowModel(itemId: rootId, entryId: $0.id, typeId: itemController.config.module) }
-    }
-    
-//    @MainActor 
-//    func generateItems(for rootId: UUID) -> ([ItemRowModel], String) {
-//        let generatorStore = root.generatorController(rootItem: ItemRowModel(itemId: rootId, typeId: itemController.config.module))
-//        return (generatorStore.roleResults(), generatorStore.entryValue)
-//    }
-    
-    @MainActor
-    func generateItem(for tableId: UUID, entryId: UUID) -> (String, String) {
-        let item = itemController.itemOrEmpty(for: tableId)
-        return (item[entryId].content, item.url(linkNumber: 0, entryId: entryId))
     }
 }

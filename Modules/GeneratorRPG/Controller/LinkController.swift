@@ -3,17 +3,12 @@
 import CoreRPG
 import Foundation
 
-public struct LinkController: Sendable {
-    init(itemController: ItemController, gameController: GameController) {
-        self.itemController = itemController
-        self.gameController = gameController
-    }
+struct LinkController: Sendable {
+    let rootManager: RootManager
     let itemController: ItemController
     let gameController: GameController
     
-    public var itemControllable: any ItemControllable {
-        itemController
-    }
+    public var itemControllable: any ItemControllable { itemController }
 }
 
 extension LinkController: LinkControllable {

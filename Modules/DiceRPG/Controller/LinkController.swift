@@ -4,22 +4,16 @@ import CoreRPG
 import Foundation
 import SwiftUI
 
-public struct LinkController: Sendable {
-    init(itemController: ItemController, gameController: GameController) {
-        self.itemController = itemController
-        self.gameController = gameController
-    }
+struct LinkController: Sendable {
+    let rootManager: RootManager
     let itemController: ItemController
     let gameController: GameController
     
-    public var itemControllable: any ItemControllable {
-        itemController
-    }
+    public var itemControllable: any ItemControllable { itemController }
 }
 
-extension LinkController: LinkControllable {    
-    @MainActor
-    public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+extension LinkController: LinkControllable {
+    @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         if let command {
             if command == LinkType.remove.rawValue {
                 let url = generateLink(linkNumber: linkNumber - LinkType.remove.linkNumberAddition, itemId: itemId, entryId: entryId)
@@ -54,20 +48,17 @@ extension LinkController: LinkControllable {
         }
     }
 
-    @MainActor
-    public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
+    @MainActor public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
         guard let entryId else { return itemControllable.itemOrEmpty(for: itemId).url(linkNumber: linkNumber) }
         return itemControllable.itemOrEmpty(for: entryId).url(linkNumber: linkNumber)
     }
 
-    @MainActor
-    public func link(for name: String, entryName: String?) -> String? {
+    @MainActor public func link(for name: String, entryName: String?) -> String? {
         guard let itemId = itemController.itemDataModel.items.first(where: { itemController.itemSync(for: $0)?.name == name }) else { return nil }
         return itemController.itemOrEmpty(for: itemId).url(linkNumber: 0)
     }
 
-    @MainActor
-    public func link(for module: NetworkModules) -> [LinkEntryModel] {
+    @MainActor public func link(for module: NetworkModules) -> [LinkEntryModel] {
         let category: ItemListCategory
         switch module {
         case .table: category = .table
@@ -83,8 +74,7 @@ extension LinkController: LinkControllable {
             .map { LinkEntryModel(reference: $0.name, markdownUrl: $0.url(linkNumber: 0)) }
     }
 
-    @MainActor
-    public func linkEntries(for itemId: UUID) -> [LinkEntryModel] {
+    @MainActor public func linkEntries(for itemId: UUID) -> [LinkEntryModel] {
         [LinkEntryModel(reference: itemController.itemOrEmpty(for: itemId).name, markdownUrl: itemController.itemOrEmpty(for: itemId).url(linkNumber: 0))]
     }
 }

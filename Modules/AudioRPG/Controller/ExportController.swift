@@ -5,19 +5,19 @@ import Foundation
 import Observation
 
 struct ExportController: Sendable {
-    @MainActor init(itemController: ItemController, gameExporter: Bool) {
+    @MainActor init(rootManager: RootManager, itemController: ItemController, gameExporter: Bool) {
+        self.rootManager = rootManager
         self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
-    
+
+    let rootManager: RootManager
     let itemController: ItemController
     public let exportModel: ItemDataExportModel
 }
 
 extension ExportController: ExportControllable {
-    var itemControllable: any ItemControllable {
-        itemController
-    }
+    var itemControllable: any ItemControllable { itemController }
 
     @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         var checkIds = itemIds.ids[itemController.config.module, default: []]

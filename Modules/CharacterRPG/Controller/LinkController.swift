@@ -8,51 +8,16 @@ import TableRPG
 import DiceRPG
 import PhotoRPG
 
-public struct LinkController: Sendable {
-    init(root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, gameController: GameController) {
-        self.root = root
-        self.diceRoot = diceRoot
-        self.photoRoot = photoRoot
-        self.tableRoot = tableRoot
-        
-        self.itemController = itemController
-        self.gameController = gameController
-    }
-
-    let root: CharacterRootModel
-    let diceRoot: DiceRootModel
-    let photoRoot: PhotoRootModel
-    let tableRoot: TableRootModel
-    
+struct LinkController: Sendable {
+    let rootManager: RootManager
     let itemController: ItemController
     let gameController: GameController
     
-    public var itemControllable: any ItemControllable {
-        itemController
-    }
-}
-
-extension LinkController {
-    @MainActor
-    func updateValueCalculation(itemId: UUID, entryId: UUID, action: @MainActor @escaping @Sendable () -> Void) {
-        let details: [LinkReplaceModel] = LinkReplaceController.links(for: itemController.itemOrEmpty(for: itemId)[entryId].value).filter {
-            $0.module == itemController.config.module && $0.entryId != nil && $0.entryId != entryId && itemController.itemSync(for: $0.itemId) != nil
-        }
-        for detail in details {
-            _ = withObservationTracking {
-                itemController.itemOrEmpty(for: detail.itemId)[detail.entryId!].value
-            } onChange: {
-                Task { @MainActor in
-                    action()
-                }
-            }
-        }
-    }
+    public var itemControllable: any ItemControllable { itemController }
 }
 
 extension LinkController: LinkControllable {
-    @MainActor
-    public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+    @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         if let command {
             if command == LinkType.remove.rawValue {
                 let url = generateLink(linkNumber: linkNumber - LinkType.remove.linkNumberAddition, itemId: itemId, entryId: entryId)
@@ -65,7 +30,7 @@ extension LinkController: LinkControllable {
                 return text
             }
             Task { @MainActor in
-                await shareResult?.networkActions?.shareId(root.gameController.share(id: itemId))
+                await shareResult?.networkActions?.shareId(rootManager.characterRoot.gameControllable.share(id: itemId))
             }
             return text
         } else {
@@ -95,8 +60,8 @@ extension LinkController: LinkControllable {
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
         var result = content
         for link in links {
-            result = root.diceRoot.linkController.repairLink(link, for: result, for: [.rules, .value])
-            result = root.tableRoot.linkController.repairLink(link, for: result, for: [.all])
+            result = rootManager.diceRoot.linkControllable.repairLink(link, for: result, for: [.rules, .value])
+            result = rootManager.tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = repairLink(link, for: result, for: [.all])
         }
         return result
@@ -113,7 +78,7 @@ extension LinkController: LinkControllable {
         guard let inspectedItem = itemController.itemSync(for: itemId), let replacedItem = itemController.copy(of: itemId) else { return }
         
         replacedItem.photos = replacedItem.photos.compactMap { photoId in
-            if root.photoRoot.linkController.validateLink(itemId: photoId) {
+            if rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
                 return photoId
             } else {
                 Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
@@ -122,7 +87,7 @@ extension LinkController: LinkControllable {
         }
         
         if let photoId = replacedItem.photoId {
-            if !root.photoRoot.linkController.validateLink(itemId: photoId) {
+            if !rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
                 Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
             }
@@ -132,7 +97,7 @@ extension LinkController: LinkControllable {
             var validatedEntry = entry
             
             if let diceId = validatedEntry.diceId {
-                if !root.diceRoot.linkController.validateLink(itemId: diceId) {
+                if !rootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {
                     Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
                     validatedEntry.diceId = nil
                 }
@@ -181,7 +146,7 @@ extension LinkController: LinkControllable {
     }
 }
 
-public extension LinkController {
+extension LinkController {
     @MainActor
     func link(for module: NetworkModules) -> [LinkEntryModel] {
         let category: ItemListCategory
@@ -211,64 +176,6 @@ extension LinkController {
     @MainActor
     public func validate(id: UUID?, isCharacter: Bool = false, isGameMaster: Bool = false) -> UUID? {
         itemController.itemDataModel.items.first(where: { $0 == id })
-    }
-    
-    @MainActor
-    public func generateItem(for name: String, parentId: UUID?, tableId: UUID?, entryId: UUID?) async -> UUID {
-        guard let tableId else {
-            if let itemId = itemController.itemDataModel.items.first(where: { itemController.itemSync(for: $0)?.name == name }) {
-                return itemId
-            }
-            
-            let item = ValueModel(id: UUID(), name: name, entries: [])
-            itemController.replace(model: item, isInsert: false)
-            return item.id
-        }
-        
-        let item: ValueModel
-        if let itemId = itemController.itemDataModel.items.first(where: { itemController.itemSync(for: $0)?.name == name }), let existItem = itemController.itemSync(for: itemId) {
-            item = existItem
-        } else {
-            item = ValueModel(id: UUID(), name: name, entries: [])
-        }
-        if let parentId  {
-            item.category = itemController.itemSync(for: parentId)?.category ?? .item
-            item.isGroupHiddenToggle = true
-        } else {
-            item.category = .item
-        }
-        
-        var url: String
-        if let entryId = entryId {
-            let (_, entryUrl) =  root.tableRoot.linkController.generateItem(for: tableId, entryId: entryId)
-            url = entryUrl
-        } else {
-            url =  root.tableRoot.linkController.generateLinks(itemId: tableId, entryId: entryId, into: "")
-        }
-        url = url.trimmingCharacters(in: .whitespacesAndNewlines)
-        let valueEntry = ValueEntryModel(id: UUID(), name:  root.tableRoot.linkController.name(for: tableId).withoutLink(), type: .text, value: url)
-        item.entries = item.entries + [valueEntry]
-        
-        itemController.replace(model: item, isInsert: false)
-        
-        if let parentId, let parentItem = itemController.itemSync(for: parentId), !parentItem.entries.contains(where: { $0.valueId == item.id }) {
-            let valueEntry = ValueEntryModel(id: UUID(), name: "Group", type: .text, value: "", valueId: item.id)
-            root.editController.add(entry: valueEntry, into: parentId)
-            itemController.replace(model: parentItem, isInsert: false)
-        }
-        
-        return item.id
-    }
-    
-    @MainActor
-    public func generateItem(from itemId: UUID, name: String, value: String, list: [ItemRowModel]) async -> (UUID?, UUID?) {
-        let entries = list.map {
-            let (value, _) =  root.tableRoot.linkController.generateItem(for: $0.itemId, entryId: $0.entryId ?? UUID())
-            return ValueEntryModel(id: UUID(), name:  root.tableRoot.linkController.name(for: $0.itemId), type: .text, value: value)
-        }
-        let newValue = ValueModel(id: UUID(), name: name.withoutLink(), description: value, entries: entries)
-        itemController.replace(model: newValue, isInsert: false)
-        return (nil, newValue.id)
     }
 }
 
@@ -343,7 +250,7 @@ extension LinkController {
         let links = LinkReplaceController.links(for: text).filter { $0.module == .value && mapper[$0.itemId] != nil }
         var result = text
         for link in links {
-            let originalModel = root.itemController.itemOrEmpty(for: link.itemId)
+            let originalModel = itemController.itemOrEmpty(for: link.itemId)
             guard let newId = mapper[link.itemId], let newModel = models.first(where: { $0.id == newId }) else { continue }
             
             let markDown: String
@@ -359,15 +266,33 @@ extension LinkController {
     }
 }
 
-public extension LinkController {
+extension LinkController {
     @MainActor func toggleSheet(itemId: UUID, entryId: UUID?, level: Int, module: NetworkModules) -> SheetModel {
         SheetController(itemController: itemController, linkController: self).sheet(for: itemId, entryId: entryId, level: level)
     }
 }
 
-public extension LinkController {
+extension LinkController {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
-        guard let item = root.itemController.itemSync(for: itemId) else { return [] }
+        guard let item = itemController.itemSync(for: itemId) else { return [] }
         return item.photos
+    }
+}
+
+extension LinkController {
+    @MainActor
+    func updateValueCalculation(itemId: UUID, entryId: UUID, action: @MainActor @escaping @Sendable () -> Void) {
+        let details: [LinkReplaceModel] = LinkReplaceController.links(for: itemController.itemOrEmpty(for: itemId)[entryId].value).filter {
+            $0.module == itemController.config.module && $0.entryId != nil && $0.entryId != entryId && itemController.itemSync(for: $0.itemId) != nil
+        }
+        for detail in details {
+            _ = withObservationTracking {
+                itemController.itemOrEmpty(for: detail.itemId)[detail.entryId!].value
+            } onChange: {
+                Task { @MainActor in
+                    action()
+                }
+            }
+        }
     }
 }

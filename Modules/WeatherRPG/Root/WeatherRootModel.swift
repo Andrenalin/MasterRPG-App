@@ -23,18 +23,16 @@ public final class WeatherRootModel: @unchecked Sendable {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable, linkRegisterController: LinkRegisterController) {
-        self._rootControllable = rootControllable
-
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
         let dataController = context.map { DataController(context: $0, token: config.module.token) }
         _dataController = dataController
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
         _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
-        _exportController = ExportController(photoRoot: photoRoot, itemController: itemController, gameExporter: false)
+        _exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
-        _gameController = GameController(config: config, photoRoot: photoRoot, itemController: itemController, linkRegisterController: linkRegisterController, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
-        _linkController = LinkController(photoRoot: photoRoot, itemController: itemController, gameController: gameController)
+        _gameController = GameController(rootManager: rootManager, config: config, photoRoot: photoRoot, itemController: itemController, linkRegisterController: linkRegisterController, rootExportControllable: rootManager.adventureRoot.exportControllable, rootImportControllable: rootManager.adventureRoot.importControllable)
+        _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
 
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
@@ -72,7 +70,7 @@ public final class WeatherRootModel: @unchecked Sendable {
     @ObservationIgnored private(set) var _gameController: GameController?
     var gameController: GameController { _gameController.unsafelyUnwrapped }
     @ObservationIgnored private(set) var _linkController: LinkController?
-    public var linkController: LinkController { _linkController.unsafelyUnwrapped }
+    var linkController: LinkController { _linkController.unsafelyUnwrapped }
     
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
@@ -85,10 +83,6 @@ public final class WeatherRootModel: @unchecked Sendable {
         ViewController()
     }()
 
-    
-    @ObservationIgnored private(set) var _rootControllable: RootControllable?
-    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
-    
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             config: config,
@@ -100,6 +94,7 @@ public final class WeatherRootModel: @unchecked Sendable {
             editControllable: editController,
             exportControllable: exportControllable,
             gameControllable: gameControllable,
+            importControllable: importControllable,
             itemControllable: itemControllable,
             linkControllable: linkControllable,
             folderListControllable: folderListController,

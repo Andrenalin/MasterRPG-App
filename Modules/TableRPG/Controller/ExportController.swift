@@ -6,26 +6,22 @@ import os.log
 import DiceRPG
 
 struct ExportController: Sendable {
-    @MainActor
-    init(diceRoot: DiceRootModel, itemController: ItemController, gameExporter: Bool) {
-        self.diceRoot = diceRoot
+    @MainActor init(rootManager: RootManager, itemController: ItemController, gameExporter: Bool) {
+        self.rootManager = rootManager
         self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
 
-    let diceRoot: DiceRootModel
+    let rootManager: RootManager
     let itemController: ItemController
-
     public let exportModel: ItemDataExportModel
 }
 
 extension ExportController: ExportControllable {
-    var itemControllable: any ItemControllable {
-        itemController
-    }
+    var itemControllable: any ItemControllable { itemController }
 
     public func exportingAll() -> ItemModuleIds {
-        var allIds = diceRoot.exportControllable.exportingAll()
+        var allIds = rootManager.diceRoot.exportControllable.exportingAll()
         allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.map { $0 }]))
         return allIds
     }
@@ -45,7 +41,7 @@ extension ExportController: ExportControllable {
             }
             results.insert(id)
     
-            if let diceId = item.diceId, diceRoot.linkController.validateLink(itemId: diceId) {
+            if let diceId = item.diceId, rootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {
                 diceIds.insert(diceId)
             }
     
@@ -56,7 +52,7 @@ extension ExportController: ExportControllable {
             links.forEach {
                 switch $0.module {
                 case .dice:
-                    if diceRoot.linkController.validateLink(itemId: $0.itemId) {
+                    if rootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
                         diceIds.insert($0.itemId)
                     }
                 case .table:
@@ -71,7 +67,7 @@ extension ExportController: ExportControllable {
         var allIds = itemIds
         allIds.ids[itemController.config.module] = Array(results)
 
-        let newDiceIds = diceRoot.exportControllable.exporting(ids: diceIds)
+        let newDiceIds = rootManager.diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)
         return allIds
     }

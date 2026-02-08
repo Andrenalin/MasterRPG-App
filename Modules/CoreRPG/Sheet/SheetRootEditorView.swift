@@ -5,12 +5,13 @@ import SwiftUI
 public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
     public init(root: ItemRootController, linkControllable: any LinkControllable, model: any ItemDataAccessable, module: NetworkModules, headerTitle: String, linkTypes: LinkType.Type) {
         self.root = root
-        self.linkControllable = linkControllable
+        let rootLinkControllable = linkControllable.rootManager.adventureRoot.linkControllable
+        self.linkControllable = rootLinkControllable
         self.model = model
         self.module = module
         self.headerTitle = headerTitle
         self.linkTypes = linkTypes
-        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: linkControllable, parent: nil, model: model, level: 0, module: module))
+        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: rootLinkControllable, parent: nil, model: model, level: 0, module: module))
     }
     
     let root: ItemRootController

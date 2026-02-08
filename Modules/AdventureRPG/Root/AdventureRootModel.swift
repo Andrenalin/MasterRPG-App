@@ -31,7 +31,7 @@ public final class AdventureRootModel: @unchecked Sendable {
         self.tableRoot = tableRoot
         self.characterRoot = characterRoot
         self.weatherRoot = weatherRoot
-
+        
         let config = ModuleConfiguration()
         self.config = config
         
@@ -45,6 +45,8 @@ public final class AdventureRootModel: @unchecked Sendable {
     }
     
     @MainActor public func setUp(root: RootManager, context: NSManagedObjectContext?) {
+        self.rootManager = root
+        
         let dataController = context.map { DataController(context: $0, token: config.module.token) }
         _dataController = dataController
         let linkRegisterController = LinkRegisterController(root: root)
@@ -53,23 +55,24 @@ public final class AdventureRootModel: @unchecked Sendable {
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
         _editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
-        _exportController = ExportController(root: self, itemController: itemController, gameExporter: false)
+        _exportController = ExportController(rootManager: root, itemController: itemController, gameExporter: false)
         _importController = ImportController(root: self, itemController: itemController, gameImporter: false)
-        _gameController = GameController(root: self, itemController: itemController, linkRegisterController: linkRegisterController)
-        _linkController = LinkController(root: self, itemController: itemController)
+        _gameController = GameController(rootManager: root, root: self, itemController: itemController, linkRegisterController: linkRegisterController)
+        _linkController = LinkController(rootManager: root, itemController: itemController)
 
         _linkRegisterController = linkRegisterController
         
-        audioRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
-        diceRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
-        pdfRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
-        photoRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
-        spaceRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
-        weatherRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
-        tableRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
-        characterRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
-        mapRoot.setUp(context: context, rootControllable: self, linkRegisterController: linkRegisterController)
-
+        audioRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        diceRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        pdfRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        photoRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        spaceRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        weatherRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        tableRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        characterRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        mapRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        generatorRoot?.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             syncDataController?.start()
@@ -87,6 +90,8 @@ public final class AdventureRootModel: @unchecked Sendable {
     let characterRoot: CharacterRootModel
     let weatherRoot: WeatherRootModel
 
+    var rootManager: RootManager?
+    
     public let config: ModuleConfiguration
     
     public let listDisplayModel: ListDisplayModel
@@ -99,7 +104,7 @@ public final class AdventureRootModel: @unchecked Sendable {
     
     @MainActor @ObservationIgnored lazy var editorLinkModel: EditorLinkModel = {
         EditorLinkModel(
-            rootManager: RootManager(adventureRoot: self, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, generatorRoot: self, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot),
+            rootManager: rootManager!,
             folderListController: folderListController.copy(parentModel: nil),
             adventureSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -119,7 +124,7 @@ public final class AdventureRootModel: @unchecked Sendable {
 
     @MainActor @ObservationIgnored lazy var playerLinkModel: EditorLinkModel = {
         EditorLinkModel(
-            rootManager: RootManager(adventureRoot: self, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, generatorRoot: self, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot),
+            rootManager: rootManager!,
             folderListController: folderListController.copy(parentModel: nil),
             audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -151,7 +156,7 @@ public final class AdventureRootModel: @unchecked Sendable {
     @ObservationIgnored private(set) var _gameController: GameController?
     var gameController: GameController { _gameController.unsafelyUnwrapped }
     @ObservationIgnored private(set) var _linkController: LinkController?
-    public var linkController: LinkController { _linkController.unsafelyUnwrapped }
+    var linkController: LinkController { _linkController.unsafelyUnwrapped }
     
     @ObservationIgnored private(set) var _linkRegisterController: LinkRegisterController?
     var linkRegisterController: LinkRegisterController { _linkRegisterController.unsafelyUnwrapped }
@@ -166,9 +171,6 @@ public final class AdventureRootModel: @unchecked Sendable {
         ViewController()
     }()
 
-    @ObservationIgnored private(set) var _rootControllable: RootControllable?
-    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
-    
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             config: config,
@@ -180,6 +182,7 @@ public final class AdventureRootModel: @unchecked Sendable {
             editControllable: editController,
             exportControllable: exportControllable,
             gameControllable: gameControllable,
+            importControllable: importControllable,
             itemControllable: itemControllable,
             linkControllable: linkControllable,
             folderListControllable: folderListController,
@@ -247,15 +250,15 @@ extension AdventureRootModel: StoreManiplable {
     public func validate() {
         Task { @MainActor in
             linkController.validateLinks()
-            audioRoot.linkController.validateLinks()
-            diceRoot.linkController.validateLinks()
-            mapRoot.linkController.validateLinks()
-            pdfRoot.linkController.validateLinks()
-            photoRoot.linkController.validateLinks()
-            spaceRoot.linkController.validateLinks()
-            tableRoot.linkController.validateLinks()
-            characterRoot.linkController.validateLinks()
-            weatherRoot.linkController.validateLinks()
+            audioRoot.linkControllable.validateLinks()
+            diceRoot.linkControllable.validateLinks()
+            mapRoot.linkControllable.validateLinks()
+            pdfRoot.linkControllable.validateLinks()
+            photoRoot.linkControllable.validateLinks()
+            spaceRoot.linkControllable.validateLinks()
+            tableRoot.linkControllable.validateLinks()
+            characterRoot.linkControllable.validateLinks()
+            weatherRoot.linkControllable.validateLinks()
         }
     }
 }

@@ -87,7 +87,7 @@ private extension DetailListView {
         
         DisplayConfigEditor(model: model)
         
-        SheetRootEditorView(root: root.rootController, linkControllable: root.rootControllable.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Rooms").localizedString, linkTypes: LinkMapModuleTransferable.self)
+        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Rooms").localizedString, linkTypes: LinkMapModuleTransferable.self)
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {

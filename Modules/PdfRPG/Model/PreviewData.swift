@@ -11,7 +11,7 @@ public extension PdfRootModel {
     @MainActor
     static let preview: PdfRootModel = {
         let root = PdfRootModel(tagController: .preview)
-        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -44,7 +44,7 @@ public extension PdfRootModel {
     @MainActor
     static func testRoot() -> PdfRootModel {
         let root = PdfRootModel(tagController: .preview)
-        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif

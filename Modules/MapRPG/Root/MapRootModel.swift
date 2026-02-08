@@ -43,18 +43,18 @@ public final class MapRootModel: @unchecked Sendable {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, rootControllable: RootControllable, linkRegisterController: LinkRegisterController) {
-        self._rootControllable = rootControllable
-        
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
         let dataController = context.map { DataController(context: $0, token: config.module.token) }
         _dataController = dataController
         let itemController = ItemController(config: config, photoRoot: photoRoot, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
-        _editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
-        _exportController = ExportController(root: self, itemController: itemController, gameExporter: false)
+        let editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
+        _editController = editController
+        _exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController, gameImporter: false)
-        _gameController = GameController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, rootExportControllable: rootControllable.gameExportControllable, rootImportControllable: rootControllable.gameImportControllable)
-        _linkController = LinkController(root: self, itemController: itemController)
+        let gameController = GameController(rootManager: rootManager, root: self, itemController: itemController, linkRegisterController: linkRegisterController, rootExportControllable: rootManager.adventureRoot.exportControllable, rootImportControllable: rootManager.adventureRoot.importControllable)
+        _gameController = gameController
+        _linkController = LinkController(rootManager: rootManager, itemController: itemController, editController: editController, gameController: gameController)
 
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
@@ -114,7 +114,7 @@ public final class MapRootModel: @unchecked Sendable {
     @ObservationIgnored private(set) var _gameController: GameController?
     var gameController: GameController { _gameController.unsafelyUnwrapped }
     @ObservationIgnored private(set) var _linkController: LinkController?
-    public var linkController: LinkController { _linkController.unsafelyUnwrapped }
+    var linkController: LinkController { _linkController.unsafelyUnwrapped }
     
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
@@ -127,9 +127,6 @@ public final class MapRootModel: @unchecked Sendable {
         ViewController()
     }()
 
-    @ObservationIgnored private(set) var _rootControllable: RootControllable?
-    var rootControllable: RootControllable { _rootControllable.unsafelyUnwrapped }
-    
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(
             config: config,
@@ -141,8 +138,9 @@ public final class MapRootModel: @unchecked Sendable {
             editControllable: editController,
             exportControllable: exportControllable,
             gameControllable: gameControllable,
+            importControllable: importControllable,
             itemControllable: itemControllable,
-            linkControllable: rootControllable.linkControllable,
+            linkControllable: linkControllable,
             folderListControllable: folderListController,
             viewControllable: viewController
         )

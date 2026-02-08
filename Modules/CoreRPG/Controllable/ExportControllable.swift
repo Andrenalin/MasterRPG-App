@@ -17,6 +17,7 @@ public final class ItemDataExportModel: Sendable {
 }
 
 public protocol ExportControllable: Sendable {
+    var rootManager: RootManager { get }
     var itemControllable: any ItemControllable { get }
 
     var exportModel: ItemDataExportModel { get }
@@ -57,8 +58,10 @@ public extension ExportControllable {
         itemIds
     }
 
-    func createExport(itemIds: ItemModuleIds, into url: URL) -> Task<Void, any Error> {
-        Task.detached(priority: .userInitiated) {
+    @MainActor func createExport(itemIds: ItemModuleIds, into url: URL) -> Task<Void, any Error> {
+        let exportController = self.rootManager.adventureRoot.exportControllable
+
+        return Task.detached(priority: .userInitiated) {
             await self.resetStartState()
             let _ = url.startAccessingSecurityScopedResource()
             defer { url.stopAccessingSecurityScopedResource() }
@@ -71,8 +74,7 @@ public extension ExportControllable {
             await self.updaterExport(itemCount: itemIds.count, increment: false)
             do {
                 try outputStream.append(fileHeader: GmzFileHeader(counter: itemIds.count, token: ExportDataToken.counter.rawValue, version: ExportDataToken.version_2024.rawValue))
-                                        
-                _ = try await self.export(itemIds: itemIds, into: outputStream, counterUpdater: self.updaterExport(itemCount:increment:))
+                _ = try await exportController.export(itemIds: itemIds, into: outputStream, counterUpdater: self.updaterExport(itemCount:increment:))
                 await setExportRunning(false)
             } catch {
                 await setExportRunning(false)
@@ -91,7 +93,7 @@ public extension ExportControllable {
         exporting(itemIds: ItemModuleIds(ids: ids, module: itemControllable.config.module))
     }
 
-    func export(ids: ItemModuleIds) -> (Task<Void, any Error>, URL) {
+    @MainActor func export(ids: ItemModuleIds) -> (Task<Void, any Error>, URL) {
         let url = exportUrl(isSaveGame: false)
         return (createExport(itemIds: ids, into: url), url)
     }

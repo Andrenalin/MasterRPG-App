@@ -22,13 +22,13 @@ public protocol AdventureStoreGameable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: AdventureRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController) {
+    init(rootManager: RootManager, root: AdventureRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController) {
         self.root = root
         self.itemController = itemController
-        self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
+        self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
         let internItemController = ItemController(config: root.config, dataController: nil, linkRegisterController: linkRegisterController)
         self.importController = ImportController(root: root, itemController: internItemController, gameImporter: true)
-        self.gameExportController = ExportController(root: root, itemController: internItemController, gameExporter: true)
+        self.gameExportController = ExportController(rootManager: rootManager, itemController: internItemController, gameExporter: true)
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
     

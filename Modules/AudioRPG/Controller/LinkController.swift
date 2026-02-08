@@ -4,19 +4,13 @@ import CoreRPG
 import Foundation
 import SwiftUI
 
-public struct LinkController: Sendable {
-    init(itemController: ItemController, audioController: AudioController, gameController: GameController) {
-        self.itemController = itemController
-        self.audioController = audioController
-        self.gameController = gameController
-    }
+struct LinkController: Sendable {
+    let rootManager: RootManager
     let itemController: ItemController
     let audioController: AudioController
     let gameController: GameController
     
-    public var itemControllable: any ItemControllable {
-        itemController
-    }
+    public var itemControllable: any ItemControllable { itemController }
 }
 
 extension LinkController: LinkControllable {

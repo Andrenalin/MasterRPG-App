@@ -5,24 +5,22 @@ import Foundation
 import PhotoRPG
 
 struct ExportController: Sendable {
-    @MainActor init(photoRoot: PhotoRootModel, itemController: ItemController, gameExporter: Bool) {
-        self.photoRoot = photoRoot
+    @MainActor init(rootManager: RootManager, itemController: ItemController, gameExporter: Bool) {
+        self.rootManager = rootManager
         self.itemController = itemController
         self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
     }
-    
-    let photoRoot: PhotoRootModel
+
+    let rootManager: RootManager
     let itemController: ItemController
     public let exportModel: ItemDataExportModel
 }
 
 extension ExportController: ExportControllable {
-    var itemControllable: any ItemControllable {
-        itemController
-    }
+    var itemControllable: any ItemControllable { itemController }
 
     @MainActor public func exportingAll() -> ItemModuleIds {
-        var allIds = photoRoot.exportControllable.exportingAll()
+        var allIds = rootManager.photoRoot.exportControllable.exportingAll()
         allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.map { $0 }]))
         return allIds
     }
@@ -34,7 +32,7 @@ extension ExportController: ExportControllable {
         allIds.ids[itemController.config.module] = results
 
         let photoIds = Set(results.compactMap { itemController.itemSync(for: $0)?.photoId })
-        let newPhotoIds = photoRoot.exportControllable.exporting(ids: photoIds)
+        let newPhotoIds = rootManager.photoRoot.exportControllable.exporting(ids: photoIds)
         allIds.merge(other: newPhotoIds)
 
         return allIds

@@ -17,6 +17,7 @@ public protocol ItemRootControllable: Sendable {
     var editControllable: any EditControllable { get }
     var exportControllable: any ExportControllable { get }
     var gameControllable: any GameControllable { get }
+    var importControllable: any ImportControllable { get }
     var itemControllable: any ItemControllable { get }
     var linkControllable: any LinkControllable { get }
     var folderListControllable: any FolderListControllable { get }
@@ -38,6 +39,7 @@ public final class ItemRootController: ItemRootControllable {
         editControllable: any EditControllable,
         exportControllable: any ExportControllable,
         gameControllable: any GameControllable,
+        importControllable: any ImportControllable,
         itemControllable: any ItemControllable,
         linkControllable: any LinkControllable,
         folderListControllable: any FolderListControllable,
@@ -52,6 +54,7 @@ public final class ItemRootController: ItemRootControllable {
         self.editControllable = editControllable
         self.exportControllable = exportControllable
         self.gameControllable = gameControllable
+        self.importControllable = importControllable
         self.itemControllable = itemControllable
         self.linkControllable = linkControllable
         self.folderListControllable = folderListControllable
@@ -72,6 +75,7 @@ public final class ItemRootController: ItemRootControllable {
     public let editControllable: any EditControllable
     public let exportControllable: any ExportControllable
     public let gameControllable: any GameControllable
+    public let importControllable: any ImportControllable
     public let itemControllable: any ItemControllable
     public let linkControllable: any LinkControllable
     public let folderListControllable: any FolderListControllable

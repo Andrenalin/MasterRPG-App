@@ -36,10 +36,11 @@ public protocol MapGameStorable {
 
 struct GameController: Sendable {
     @MainActor
-    init(root: MapRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+    init(rootManager: RootManager, root: MapRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+        self.rootManager = rootManager
         self.root = root
         self.itemController = itemController
-        self.exportController = ExportController(root: root, itemController: itemController, gameExporter: false)
+        self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
         let internItemController = ItemController(config: root.config, photoRoot: root.photoRoot, dataController: nil, linkRegisterController: linkRegisterController)
         self.importController = ImportController(itemController: internItemController, gameImporter: true)
         self.rootExportControllable = rootExportControllable
@@ -48,6 +49,7 @@ struct GameController: Sendable {
         self.mapGameModel = MapGameModel()
     }
 
+    let rootManager: RootManager
     let root: MapRootModel
     let itemController: ItemController
     let exportController: ExportController
@@ -200,7 +202,7 @@ extension GameController: MapGameStorable {
     
     @MainActor
     func saveAll() -> ItemModuleIds {
-        let gameExportController = ExportController(root: root, itemController: importController.itemController, gameExporter: true)
+        let gameExportController = ExportController(rootManager: rootManager, itemController: importController.itemController, gameExporter: true)
         for itemId in gameModel.items {
             gameItem(for: itemId).mapPins = gameItem(for: itemId).mapPins.filter { !$0.isPlayer }
         }

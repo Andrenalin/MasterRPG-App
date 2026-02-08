@@ -206,7 +206,7 @@ extension EditController {
     @MainActor
     func replacePinData(pinId: UUID, with valueId: UUID, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
-        let name = root.characterRoot.linkController.name(for: valueId)
+        let name = root.characterRoot.linkControllable.name(for: valueId)
         let photoId = root.characterRoot.valueGameControllable.imageIds(for: valueId).randomElement()
         var pin = item[MapPinId.id, pinId]
         pin.name = name
@@ -229,7 +229,7 @@ extension EditController {
         var pins: [MapPinModel] = []
         for _ in 0..<pinNumber {
             pins.append(contentsOf: monsters.map { monster in
-                MapPinModel(id: UUID(), name: root.characterRoot.linkController.name(for: monster.itemId), color: .random, photoId: root.characterRoot.valueGameControllable.imageIds(for: monster.itemId).randomElement(), location: location ?? .zero, size: .normal, isShown: true)
+                MapPinModel(id: UUID(), name: root.characterRoot.linkControllable.name(for: monster.itemId), color: .random, photoId: root.characterRoot.valueGameControllable.imageIds(for: monster.itemId).randomElement(), location: location ?? .zero, size: .normal, isShown: true)
             })
         }
         

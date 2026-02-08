@@ -9,8 +9,9 @@ public extension WeatherRootModel {
     @MainActor
     static let preview: WeatherRootModel = {
         let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
-        root.photoRoot.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
-        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
+        let rootManager = RootManager.preview(fake: root.rootController)
+        root.photoRoot.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -42,8 +43,9 @@ public extension WeatherRootModel {
     @MainActor
     static func testRoot(photoRoot: PhotoRootModel) -> WeatherRootModel {
         let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
-        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
-        root.photoRoot.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
+        let rootManager = RootManager.preview(fake: root.rootController)
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
+        root.photoRoot.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif

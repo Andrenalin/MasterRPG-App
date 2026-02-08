@@ -4,8 +4,7 @@ import CoreRPG
 import Foundation
 
 struct ImportController: Sendable {
-    @MainActor
-    init(itemController: ItemController, gameImporter: Bool) {
+    @MainActor init(itemController: ItemController, gameImporter: Bool) {
         self.itemController = itemController
         self.importModel = ItemDataImportModel(gameImporter: gameImporter)
     }

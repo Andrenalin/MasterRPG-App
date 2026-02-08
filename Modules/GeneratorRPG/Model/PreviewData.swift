@@ -9,7 +9,7 @@ public extension GeneratorRootModel {
     @MainActor
     static let preview: GeneratorRootModel = {
         let root = GeneratorRootModel(tagController: .preview)
-        root.setUp(context: nil, rootControllable: root, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: RootManager.preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
