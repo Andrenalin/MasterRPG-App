@@ -71,7 +71,9 @@ public final class AdventureRootModel: @unchecked Sendable {
         tableRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
         characterRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
         mapRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+#if !os(tvOS)
         generatorRoot?.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+#endif
         
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)

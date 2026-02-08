@@ -4,20 +4,29 @@ import Foundation
 import SwiftData
 
 public extension ItemRootController {
-    @MainActor static let fake = ItemRootController(
-        config: FakeModuleConfiguration(),
-        listDisplayModel: ListDisplayModel(),
-        searchModel: SearchModel.preview(),
-        itemSelectionModel: ItemSelectionModel(),
-        removeEntryListModel: RemoveEntryListModel(),
-        cacheControllable: nil,
-        editControllable: FakeEditController.fake,
-        exportControllable: FakeExportController.fake,
-        gameControllable: FakeGameController.fake,
-        importControllable: FakeImportController.fake,
-        itemControllable: FakeItemController.fake,
-        linkControllable: FakeLinkController.fake,
-        folderListControllable: FakeFolderListController.fake,
-        viewControllable: FakeViewController()
-    )
+    @MainActor static let fake: ItemRootController = {
+        var exportFake = FakeExportController.fake
+        var linkFake = FakeLinkController.fake
+        
+        let root = ItemRootController(
+            config: FakeModuleConfiguration(),
+            listDisplayModel: ListDisplayModel(),
+            searchModel: SearchModel.preview(),
+            itemSelectionModel: ItemSelectionModel(),
+            removeEntryListModel: RemoveEntryListModel(),
+            cacheControllable: nil,
+            editControllable: FakeEditController.fake,
+            exportControllable: exportFake,
+            gameControllable: FakeGameController.fake,
+            importControllable: FakeImportController.fake,
+            itemControllable: FakeItemController.fake,
+            linkControllable: linkFake,
+            folderListControllable: FakeFolderListController.fake,
+            viewControllable: FakeViewController()
+        )
+        exportFake._rootManager = RootManager.preview(fake: root)
+        linkFake._rootManager = RootManager.preview(fake: root)
+        
+        return root
+    }()
 }

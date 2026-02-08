@@ -2,7 +2,12 @@
 
 import SwiftUI
 
-struct FakeLinkController: LinkControllable {
+final class FakeLinkController: LinkControllable, @unchecked Sendable {
+    init(itemControllable: any ItemControllable, _rootManager: RootManager? = nil) {
+        self.itemControllable = itemControllable
+        self._rootManager = _rootManager
+    }
+    
     var itemControllable: any ItemControllable
     var _rootManager: RootManager? = nil
     var rootManager: RootManager { _rootManager! }
@@ -23,7 +28,6 @@ struct FakeLinkController: LinkControllable {
     
     @MainActor static let fake: FakeLinkController = {
         var controller = FakeLinkController(itemControllable: FakeItemController.fake)
-        controller._rootManager = RootManager.preview(fake: ItemRootController.fake)
         return controller
     }()
 }

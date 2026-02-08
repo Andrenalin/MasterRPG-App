@@ -9,7 +9,9 @@ public extension GeneratorRootModel {
     @MainActor
     static let preview: GeneratorRootModel = {
         let root = GeneratorRootModel(tagController: .preview)
-        root.setUp(context: nil, rootManager: RootManager.preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
+        let rootManager = RootManager.preview(fake: ItemRootController.fake)
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -41,6 +43,9 @@ public extension GeneratorRootModel {
     @MainActor
     static func testRoot() -> GeneratorRootModel {
         let root = GeneratorRootModel(tagController: .preview)
+        let rootManager = RootManager.preview(fake: ItemRootController.fake)
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
         root.editController.setCurrentItem(to: .preview)
         return root
     }

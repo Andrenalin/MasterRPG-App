@@ -8,7 +8,9 @@ public extension AudioRootModel {
     @MainActor
     static let preview: AudioRootModel = {
         let root = AudioRootModel(tagController: .preview)
-        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
+        let rootManager = RootManager.preview(fake: ItemRootController.fake)
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: .preview(fake: root), linkRegisterController: LinkRegisterController(root: nil))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -39,7 +41,9 @@ public extension AudioRootModel {
     @MainActor
     static func testRoot() -> AudioRootModel {
         let root = AudioRootModel(tagController: .preview)
-        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
+        let rootManager = RootManager.preview(fake: ItemRootController.fake)
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: .preview(fake: root), linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif

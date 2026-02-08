@@ -10,6 +10,8 @@ public extension DiceRootModel {
     @MainActor
     static let preview: DiceRootModel = {
         let root = DiceRootModel(tagController: .preview)
+        let rootManager = RootManager.preview(fake: ItemRootController.fake)
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
         root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
         root.itemController.replace(model: DiceModel.preview, isInsert: true)
         root.editController.setCurrentItem(to: .preview)
@@ -63,6 +65,8 @@ public extension DiceRootModel {
     @MainActor
     static func testRoot() -> DiceRootModel {
         let root = DiceRootModel(tagController: .preview)
+        let rootManager = RootManager.preview(fake: ItemRootController.fake)
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
         root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
         return root
     }

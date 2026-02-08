@@ -17,7 +17,16 @@ public extension MapRootModel {
     @MainActor
     static let preview: MapRootModel = {
         var root = MapRootModel(tagController: .preview, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, characterRoot: .preview)
-        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
+        let rootManager = RootManager.preview(fake: ItemRootController.fake)
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
+        let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root.audioRoot, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root.tableRoot, weatherRoot: root)
+        root.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.audioRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.tableRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.characterRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
         //root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -50,7 +59,16 @@ public extension MapRootModel {
     @MainActor
     static func testRoot(audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel) -> MapRootModel {
         let root = MapRootModel(tagController: .preview, audioRoot: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview, characterRoot: .preview)
-        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
+        let rootManager = RootManager.preview(fake: ItemRootController.fake)
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
+        let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root.audioRoot, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root.tableRoot, weatherRoot: root)
+        root.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.audioRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.tableRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.characterRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
         return root
     }
 #endif
