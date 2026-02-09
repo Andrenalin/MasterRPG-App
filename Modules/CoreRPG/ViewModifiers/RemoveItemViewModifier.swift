@@ -13,20 +13,22 @@ struct RemoveItemViewModifier: ViewModifier {
     let action: () async -> Void
 
     func body(content: Content) -> some View {
-        content
-        .padding(.top, 4)
-        .padding(.leading, isLeading ? 12 : 0)
-        .padding(.trailing, isLeading ? 0 : 12)
-        .overlay(alignment: isLeading ? .topLeading : .topTrailing) {
-            Image(systemName: "minus.circle.fill")
-                .offset(x: isLeading ? -4 : 4, y: -8)
-                .foregroundStyle(.white, .red)
-        }
-        .onTapGesture {
+        Button {
             Task {
                 await action()
             }
+        } label: {
+            content
+                .padding(.top, 4)
+                .padding(.leading, isLeading ? 12 : 0)
+                .padding(.trailing, isLeading ? 0 : 12)
+                .overlay(alignment: isLeading ? .topLeading : .topTrailing) {
+                    Image(systemName: "minus.circle.fill")
+                        .offset(x: isLeading ? -4 : 4, y: -8)
+                        .foregroundStyle(.white, .red)
+                }
         }
+        .buttonStyle(.plain)
     }
 }
 

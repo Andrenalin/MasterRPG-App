@@ -43,7 +43,6 @@ struct HelpPageView: View {
             }.padding()
         }
         .navigationTitle("Scanning Info")
-        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 
