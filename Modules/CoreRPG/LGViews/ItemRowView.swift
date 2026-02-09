@@ -37,13 +37,13 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
             VStack(alignment: .leading, spacing: 4) {
                 NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
                     .font(.headline)
-                
+
                 if listDisplayModel.displayMode == .regular {
-                    if model.tags.count > 4 {
-                        twoLineTagView
-                    } else {
-                        allTagsView
-                    }
+                    TagDisplayView(
+                        tags: model.tags,
+                        category: model.category,
+                        collectionCategory: root.itemControllable.collectionCategory
+                    )
                 }
                 actionBarWithSharing
 
@@ -102,51 +102,8 @@ private extension ItemRowView {
     @ViewBuilder
     var thumbView: some View {
         if !isSpecialCategory {
-            VStack(spacing: 0) {
-                thumbnail
-            }
-            .fixedSize(horizontal: true, vertical: false)
-        }
-    }
-    
-    var tagContent: [String] {
-        model.tags
-    }
-    
-    var allTagsView: some View {
-        HStack(spacing: 4) {
-            TagItemRow(tags: tagContent)
-        }
-    }
-    
-    var tagFirstContent: [String] {
-        let half = tagContent.count / 2
-        guard half > 0 else {
-            return []
-        }
-        return Array(tagContent[0..<half])
-    }
-    
-    var tagSecondContent: [String] {
-        let half = tagContent.count / 2
-        let leftOver = tagContent.count - half
-        guard leftOver > 0 else { return [] }
-        
-        return Array(tagContent[half...])
-    }
-    
-    var twoLineTagView: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 4) {
-                if model.category != .folder && model.category != root.itemControllable.collectionCategory {
-                    CategoryItemRow(category: model.category)
-                }
-                TagItemRow(tags: tagFirstContent)
-            }
-            
-            HStack(spacing: 4) {
-                TagItemRow(tags: tagSecondContent)
-            }
+            thumbnail
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
     
@@ -194,8 +151,53 @@ private extension ItemRowView {
     }
 }
 
+// MARK: - Supporting Views
+
+private struct TagDisplayView: View {
+    let tags: [String]
+    let category: ItemListCategory
+    let collectionCategory: ItemListCategory
+
+    var body: some View {
+        if tags.count > 4 {
+            TwoLineTagView(tags: tags, category: category, collectionCategory: collectionCategory)
+        } else {
+            HStack(spacing: 4) {
+                TagItemRow(tags: tags)
+            }
+        }
+    }
+}
+
+private struct TwoLineTagView: View {
+    let tags: [String]
+    let category: ItemListCategory
+    let collectionCategory: ItemListCategory
+
+    var body: some View {
+        let half = tags.count / 2
+
+        VStack(alignment: .leading, spacing: 4) {
+            if half > 0 {
+                HStack(spacing: 4) {
+                    if category != .folder && category != collectionCategory {
+                        CategoryItemRow(category: category)
+                    }
+                    TagItemRow(tags: Array(tags[0..<half]))
+                }
+            }
+
+            if half < tags.count {
+                HStack(spacing: 4) {
+                    TagItemRow(tags: Array(tags[half...]))
+                }
+            }
+        }
+    }
+}
+
 //#Preview("Split", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root
-//    
+//
 //    ItemRowView(root: root, model: ItemDataModel(), cacheItemListModel: CacheItemListModel())
 //}
