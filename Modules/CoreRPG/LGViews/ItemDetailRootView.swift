@@ -141,7 +141,7 @@ private extension ItemDetailRootView {
             // Note: Cannot use .equatable() here as inspectorView returns heterogeneous types
             // The view is already optimized by onChange(of: model.id) triggering only on ID changes
             detailInspectorModel.currentInspectorView = AnyView(inspectorView(model: model))
-            withAnimation { selection.selectedItem = nil }
+            withAnimation(.easeInOut) { selection.selectedItem = nil }
             guard model.url != nil else {
                 itemIdHasUrl = hasFile(model: model) ? model.id : UUID()
                 return
@@ -153,12 +153,12 @@ private extension ItemDetailRootView {
         }
         .onChange(of: model.name, initial: true) {
             guard model.name.isEmpty && (hasFile(model: model) || model.specialCategory) else { return }
-            withAnimation { isEditing = true }
+            withAnimation(.easeInOut) { isEditing = true }
         }
         .onChange(of: model.url) { oldValue, newValue in
             guard oldValue == nil else { return }
             guard itemIdHasUrl != model.id else { return }
-            withAnimation { isEditing = true }
+            withAnimation(.easeInOut) { isEditing = true }
         }
 #if !os(tvOS)
         .applyIf(model.category != .folder && !fileTypes.isEmpty) {
@@ -181,7 +181,7 @@ private extension ItemDetailRootView {
     }
     
     func updateInspectorStates(model: any ItemDataAccessable) {
-        withAnimation {
+        withAnimation(.easeInOut) {
             if detailInspectorModel.showInspector && openFileWindowModel.showItem {
                 detailInspectorModel.showInspector = false
             }
@@ -407,7 +407,7 @@ private extension ItemDetailRootView {
             ToolbarItem(placement: .primaryAction) {
                 if (hasFile(model: currentModel(model: model)) || currentModel(model: model).specialCategory) {
                     Button {
-                        withAnimation { isEditing = true }
+                        withAnimation(.easeInOut) { isEditing = true }
                     } label: {
                         Image(systemName: "pencil")
                     }

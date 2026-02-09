@@ -21,7 +21,7 @@ struct CarouselPhotoView: View {
                     itemView(itemId: photoId.itemId, selectedItemId: photoId.itemId)
                         .overlay(alignment: .topTrailing) {
                             Button(role: .destructive) {
-                                withAnimation { photoIds.selection.removeAll(where: { $0 == photoId }) }
+                                withAnimation(.easeInOut) { photoIds.selection.removeAll(where: { $0 == photoId }) }
                             } label: {
                                 Image(systemName: "minus.circle.fill")
                                     .imageScale(.large)
@@ -71,7 +71,7 @@ private extension CarouselPhotoView {
                     .imageScale(.large)
             }
             Button {
-                withAnimation { showSelection.toggle() }
+                withAnimation(.easeInOut) { showSelection.toggle() }
                 //navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
             } label: {
                 VStack {
@@ -96,7 +96,7 @@ private extension CarouselPhotoView {
     
     func linkHandler(name: String, itemId: UUID, entryId: UUID?) {
         guard !photoIds.selection.contains(where: { $0.itemId == itemId }) else { return }
-        withAnimation { photoIds.selection.append(WindowItemSelection(itemId: itemId)) }
+        withAnimation(.easeInOut) { photoIds.selection.append(WindowItemSelection(itemId: itemId)) }
     }
     
     func itemView(itemId: UUID, selectedItemId: UUID?) -> some View {
@@ -108,7 +108,7 @@ private extension CarouselPhotoView {
         .environment(GroupItemSelectionModel(selectedItem: itemId))
         .frame(height: 110)
         .onTapGesture {
-            withAnimation { selection.selectedItem = selectedItemId }
+            withAnimation(.easeInOut) { selection.selectedItem = selectedItemId }
         }
         .clipShape(.rect(cornerRadius: 20, style: .continuous))
         .dropDestination(for: root.configurable.module, handler: linkHandler(name:itemId:entryId:))

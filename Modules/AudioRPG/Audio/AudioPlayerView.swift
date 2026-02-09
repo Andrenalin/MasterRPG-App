@@ -28,12 +28,12 @@ struct AudioPlayerView: View {
         }
         .onChange(of: model.currentId, initial: true) {
             guard let id = model.currentId else { return }
-            withAnimation {
+            withAnimation(.easeInOut) {
                 name <=> root.gameController.gameItem(for: id).name
             }
         }
         .onChange(of: model.playerTime) {
-            withAnimation {
+            withAnimation(.easeInOut) {
                 if !isEditingCurrentTime {
                     playerTime <=> model.playerTime
                     currentTime = model.currentTime
@@ -98,7 +98,7 @@ extension AudioPlayerView {
     var playSkipControlView: some View {
         HStack(spacing: 32) {
             Button {
-                withAnimation { root.audioController.skipToCurrentItem(offsetBy: -1) }
+                withAnimation(.easeInOut) { root.audioController.skipToCurrentItem(offsetBy: -1) }
             } label: {
                 Image(systemName: "backward.fill")
                     .font(.headline)
@@ -120,7 +120,7 @@ extension AudioPlayerView {
             .disabled(root.audioController.model.currentId == nil)
             
             Button {
-                withAnimation { root.audioController.skipToCurrentItem(offsetBy: 1) }
+                withAnimation(.easeInOut) { root.audioController.skipToCurrentItem(offsetBy: 1) }
             } label: {
                 Image(systemName: "forward.fill")
                     .font(.headline)

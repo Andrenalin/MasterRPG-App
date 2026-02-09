@@ -16,15 +16,7 @@ struct GameOverlayTabViewModifier<Tag: Hashable>: ViewModifier where Tag: Codabl
 
     func body(content: Content) -> some View {
         content
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .tabItem {
-#if os(visionOS)
-                Label { Text(value.title) } icon: { Image(systemName: value.icon) }
-#else
-                Image(systemName: value.icon)
-#endif
-            }
-            .tag(value)
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -35,7 +27,7 @@ struct GameToolBarButtonView: View {
 
     var body: some View {
         Button {
-            withAnimation {
+            withAnimation(.easeInOut) {
                 showType = if alwaysSet { valueType } else { (showType == valueType ? .none : valueType) }
             }
         } label: {

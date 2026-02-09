@@ -24,12 +24,8 @@ struct CloudsView: View {
                 cloudGroup.update(date: timeline.date, size: size)
                 context.opacity = cloudGroup.opacity
 
-                // very expensive and memleak func
-//                    resolved.shading = .linearGradient(
-//                        Gradient(colors: [topTint, bottomTint]),
-//                        startPoint: .zero,
-//                        endPoint: CGPoint(x: 0, y: resolved.size.height)
-//                    )
+                // Note: linearGradient shading on resolved context causes memory leaks.
+                // Using colorMultiply on symbols instead (see line 45).
 
                 for cloud in cloudGroup.clouds {
                     let cloudImage = context.resolveSymbol(id: "cloud\(cloud.imageNumber)")!
@@ -43,7 +39,6 @@ struct CloudsView: View {
                 ForEach(0..<8, id: \.self) {
                     Image.bundleImage(name: "cloud\($0)")
                         .colorMultiply(topTint.interpolated(to: bottomTint, amount: 0.3))
-//                        .colorEffect(ShaderLibrary.cloudColor(.color(topTint), .color(bottomTint)))
                         .tag("cloud\($0)")
                 }
             }

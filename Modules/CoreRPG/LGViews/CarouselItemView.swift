@@ -30,7 +30,7 @@ public struct CarouselItemView<Content: View>: View {
                         itemView(itemId: item.id, selectedItemId: item.id)
                             .overlay(alignment: .topTrailing) {
                                 Button {
-                                    withAnimation { root.editControllable.removeGroup(itemId: model.id, childId: item.id) }
+                                    withAnimation(.easeInOut) { root.editControllable.removeGroup(itemId: model.id, childId: item.id) }
                                 } label: {
                                     Image(systemName: "minus")
                                         .foregroundStyle(.white)
@@ -77,7 +77,7 @@ private extension CarouselItemView {
                     .imageScale(.large)
             }
             Button {
-                withAnimation { showSelection.toggle() }
+                withAnimation(.easeInOut) { showSelection.toggle() }
                 //navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
             } label: {
                 VStack {
@@ -106,7 +106,7 @@ private extension CarouselItemView {
     }
     
     func linkHandler(name: String, itemId: UUID, entryId: UUID?) {
-        withAnimation { root.editControllable.addGroup(itemId: model.id, childId: itemId) }
+        withAnimation(.easeInOut) { root.editControllable.addGroup(itemId: model.id, childId: itemId) }
     }
     
     func itemView(itemId: UUID, selectedItemId: UUID?) -> some View {
@@ -114,7 +114,7 @@ private extension CarouselItemView {
             .environment(GroupItemSelectionModel(selectedItem: itemId))
             .frame(height: 110)
             .onTapGesture {
-                withAnimation { selection.selectedItem = selectedItemId }
+                withAnimation(.easeInOut) { selection.selectedItem = selectedItemId }
             }
             .clipShape(.rect(cornerRadius: 20, style: .continuous))
             .overlay {
