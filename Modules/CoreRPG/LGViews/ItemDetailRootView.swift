@@ -409,8 +409,15 @@ private extension ItemDetailRootView {
                     Button {
                         withAnimation(.easeInOut) { isEditing = true }
                     } label: {
-                        Image(systemName: "pencil")
+                        Label {
+                            Text("Edit", bundle: .module)
+                        } icon: {
+                            Image(systemName: "pencil")
+                        }
+                        .labelStyle(.iconOnly)
                     }
+                    .accessibilityLabel(Text("Edit Item", bundle: .module))
+                    .accessibilityHint(Text("Edit item details", bundle: .module))
                 }
             }
             ToolbarItemGroup(placement: .secondaryActionAll) {

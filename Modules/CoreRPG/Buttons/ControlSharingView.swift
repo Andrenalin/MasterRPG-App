@@ -51,8 +51,15 @@ public struct ControlSharingView: View {
         Button {
             showSharingFilter.toggle()
         } label: {
-            Image(systemName: "square.and.arrow.up")
+            Label {
+                Text("Share", bundle: .module)
+            } icon: {
+                Image(systemName: "square.and.arrow.up")
+            }
+            .labelStyle(.iconOnly)
         }
+        .accessibilityLabel(Text("Sharing Controls", bundle: .module))
+        .accessibilityHint(Text("Toggle sharing filter options", bundle: .module))
         .selectedBorderedStype(isSelected: sharingFilterActive)
         .overlay(alignment: alignment) {
             SendControlView(controls: controls)
@@ -97,11 +104,18 @@ public struct SendControlView: View {
                         Button {
                             $control.wrappedValue.show.toggle()
                         } label: {
-                            Image(systemName: control.show ? "square.and.arrow.up" : "square.slash")
+                            Label {
+                                Text(control.show ? "Sharing Enabled" : "Sharing Disabled", bundle: .module)
+                            } icon: {
+                                Image(systemName: control.show ? "square.and.arrow.up" : "square.slash")
+                            }
+                            .labelStyle(.iconOnly)
                         }
+                        .accessibilityLabel(Text("\(control.name): \(control.show ? String(localized: "Enabled", bundle: .module) : String(localized: "Disabled", bundle: .module))"))
+                        .accessibilityHint(Text("Toggle sharing for \(control.name)", bundle: .module))
                         .contentTransition(.symbolEffect(.automatic))
                         //.selectedBorderedStype(isSelected: control.show)
-                        
+
                         Text(control.name)
                     }
                     .rowColorBackground(isSelected: false)

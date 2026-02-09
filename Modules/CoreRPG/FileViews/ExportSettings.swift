@@ -55,7 +55,7 @@ public struct ExportDataModels: View {
             }
 
             HStack {
-                Text("Exporting \(exportController.exportModel.exportedItems) of \(exportController.exportModel.totalExportingItems)")
+                Text("Exporting \(exportController.exportModel.exportedItems) of \(exportController.exportModel.totalExportingItems)", bundle: .module)
                 Spacer()
                 Button {
                     exportTask?.cancel()

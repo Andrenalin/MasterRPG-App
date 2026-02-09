@@ -53,35 +53,56 @@ private extension AudioPlayerBarView {
             Button {
                 withAnimation { root.audioController.skipToCurrentItem(offsetBy: -1) }
             } label: {
-                Image(systemName: "backward.fill")
-                    .font(.title3)
-                    .padding(8)
+                Label {
+                    Text("Previous", bundle: .module)
+                } icon: {
+                    Image(systemName: "backward.fill")
+                }
+                .labelStyle(.iconOnly)
+                .font(.title3)
+                .padding(8)
             }
+            .accessibilityLabel(Text("Previous Track", bundle: .module))
+            .accessibilityHint(Text("Play the previous track in the playlist", bundle: .module))
 #if !os(visionOS)
             .glassEffect(.regular.interactive())
 #endif
             .disabled(!root.audioPlayerModel.hasPrev)
-            
+
             Button {
                 withAnimation { root.audioController.togglePlay() }
             } label: {
-                Image(systemName: root.audioPlayerModel.isPlaying ? "pause.fill" : "play.fill")
-                    .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
-                    .font(.title2)
-                    .padding(8)
+                Label {
+                    Text(root.audioPlayerModel.isPlaying ? "Pause" : "Play", bundle: .module)
+                } icon: {
+                    Image(systemName: root.audioPlayerModel.isPlaying ? "pause.fill" : "play.fill")
+                }
+                .labelStyle(.iconOnly)
+                .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                .font(.title2)
+                .padding(8)
             }
+            .accessibilityLabel(root.audioPlayerModel.isPlaying ? Text("Pause", bundle: .module) : Text("Play", bundle: .module))
+            .accessibilityHint(root.audioPlayerModel.isPlaying ? Text("Pause playback", bundle: .module) : Text("Resume playback", bundle: .module))
 #if !os(visionOS)
             .glassEffect(.regular.interactive())
 #endif
             .disabled(root.audioPlayerModel.playList.isEmpty)
-            
+
             Button {
                 withAnimation { root.audioController.skipToCurrentItem(offsetBy: 1) }
             } label: {
-                Image(systemName: "forward.fill")
-                    .font(.title3)
-                    .padding(8)
+                Label {
+                    Text("Next", bundle: .module)
+                } icon: {
+                    Image(systemName: "forward.fill")
+                }
+                .labelStyle(.iconOnly)
+                .font(.title3)
+                .padding(8)
             }
+            .accessibilityLabel(Text("Next Track", bundle: .module))
+            .accessibilityHint(Text("Play the next track in the playlist", bundle: .module))
 #if !os(visionOS)
             .glassEffect(.regular.interactive())
 #endif
@@ -141,9 +162,16 @@ private extension AudioPlayerBarView {
         Button {
             // Next action
         } label: {
-            Image(systemName: "speaker.wave.2.fill")
-                .font(.title3)
+            Label {
+                Text("Volume", bundle: .module)
+            } icon: {
+                Image(systemName: "speaker.wave.2.fill")
+            }
+            .labelStyle(.iconOnly)
+            .font(.title3)
         }
+        .accessibilityLabel(Text("Volume Control", bundle: .module))
+        .accessibilityHint(Text("Adjust playback volume", bundle: .module))
 #if !os(visionOS)
         .glassEffect(.regular.interactive())
 #endif

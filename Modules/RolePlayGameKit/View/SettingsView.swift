@@ -38,7 +38,7 @@ public struct SettingsView: View {
                     Label("Create Folders", systemImage: "folder")
                 }
             } header: {
-                Text("Data Checks")
+                Text("Data Checks", bundle: .module)
             }
 
             SectionGroupEditorView {
@@ -54,23 +54,23 @@ public struct SettingsView: View {
                     Label("Import Explanation German Data", systemImage: "square.and.arrow.down")
                 }
             } header: {
-                Text("Import Prebundled Examples")
+                Text("Import Prebundled Examples", bundle: .module)
             } footer: {
-                Text("Explanation data packages to see how the app works. It explain with real data how to use and add data.")
-            }            
+                Text("Explanation data packages to see how the app works. It explain with real data how to use and add data.", bundle: .module)
+            }
 
             SectionGroupEditorView {
-                Text("Use the Free Support [Page](https://github.com/Andrenalin/MasterRPG)")
+                Text("Use the Free Support [Page](https://github.com/Andrenalin/MasterRPG)", bundle: .module)
             } header: {
-                Text("Download free game bundles")
+                Text("Download free game bundles", bundle: .module)
             } footer: {
-                Text("These are free packages ready to use. They will add tables with rules, photos, characters and adventures for a certain rule system.")
+                Text("These are free packages ready to use. They will add tables with rules, photos, characters and adventures for a certain rule system.", bundle: .module)
             }
-            
+
             SectionGroupEditorView {
                 Text(store.rpgSpotlightIndexer?.model.message ?? "Not yet finished")
             } header: {
-                Text("Spotlight Indexer Message")
+                Text("Spotlight Indexer Message", bundle: .module)
             }
         }
         .environment(store.settingsModel)

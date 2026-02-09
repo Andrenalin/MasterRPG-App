@@ -88,7 +88,7 @@ private extension SearchBar {
                     searchModel.matches = [PDFSelection()]
                     #endif
                 } label: {
-                    Text("Create")
+                    Text("Create", bundle: .module)
                 }
                 Color.clear
             }

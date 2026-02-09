@@ -90,7 +90,7 @@ private extension SelectionBar {
                     let entry = PdfEntryModel(id: UUID(), name: "Hello", content: "This is the selection", pageNumber: "2", bounds: .zero, displayState: 0)
                     searchModel.selectedEntry = entry
                 } label: {
-                    Text("Create")
+                    Text("Create", bundle: .module)
                 }
                 Color.clear
             }

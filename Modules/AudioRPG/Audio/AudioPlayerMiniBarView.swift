@@ -27,21 +27,35 @@ private extension AudioPlayerMiniBarView {
             Button {
                 withAnimation { root.audioController.togglePlay() }
             } label: {
-                Image(systemName: root.audioPlayerModel.isPlaying ? "pause.fill" : "play.fill")
-                    .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
-                    .font(.title2)
-                    .padding(8)
-                    .background(.regularMaterial, in: Circle())
+                Label {
+                    Text(root.audioPlayerModel.isPlaying ? "Pause" : "Play", bundle: .module)
+                } icon: {
+                    Image(systemName: root.audioPlayerModel.isPlaying ? "pause.fill" : "play.fill")
+                }
+                .labelStyle(.iconOnly)
+                .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                .font(.title2)
+                .padding(8)
+                .background(.regularMaterial, in: Circle())
             }
+            .accessibilityLabel(root.audioPlayerModel.isPlaying ? Text("Pause", bundle: .module) : Text("Play", bundle: .module))
+            .accessibilityHint(root.audioPlayerModel.isPlaying ? Text("Pause playback", bundle: .module) : Text("Resume playback", bundle: .module))
             .disabled(!root.audioPlayerModel.playList.isEmpty)
-            
+
             if tabViewBottomAccessoryPlacement != .inline {
                 Button {
                     withAnimation { root.audioController.skipToCurrentItem(offsetBy: 1) }
                 } label: {
-                    Image(systemName: "forward.fill")
-                        .font(.title3)
+                    Label {
+                        Text("Next", bundle: .module)
+                    } icon: {
+                        Image(systemName: "forward.fill")
+                    }
+                    .labelStyle(.iconOnly)
+                    .font(.title3)
                 }
+                .accessibilityLabel(Text("Next Track", bundle: .module))
+                .accessibilityHint(Text("Play the next track in the playlist", bundle: .module))
                 .disabled(!root.audioPlayerModel.hasNext)
             }
         }
@@ -65,6 +79,8 @@ private extension AudioPlayerMiniBarView {
                         )
                         .shadow(radius: 2, y: 1)
                 }
+                .accessibilityLabel(Text("Now Playing", bundle: .module))
+                .accessibilityHint(Text("Hide player toolbar", bundle: .module))
                 .buttonStyle(.plain)
             }
             // Song Info

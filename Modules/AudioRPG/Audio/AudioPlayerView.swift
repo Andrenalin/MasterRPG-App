@@ -156,7 +156,7 @@ extension AudioPlayerView {
             ProgressView(value: currentTime, total: totalTime)
 #else
             Slider(value: $currentTime, in: 0...totalTime) {
-                Text("Time")
+                Text("Time", bundle: .module)
             } onEditingChanged: { edit in
                 isEditingCurrentTime = edit
                 if !isEditingCurrentTime {
