@@ -37,12 +37,11 @@ struct PlayerTime: Equatable, Hashable, Sendable {
             seconds -= mins * TimeConstant.secsPerMin
         }
 
-        var formattedString = ""
         if hours > 0 {
-            formattedString = "\(String(format: "%02d", hours)):"
+            return String(format: "%02d:%02d:%02d", hours, mins, seconds)
+        } else {
+            return String(format: "%02d:%02d", mins, seconds)
         }
-        formattedString += "\(String(format: "%02d", mins)):\(String(format: "%02d", seconds))"
-        return formattedString
     }
 }
 
