@@ -196,14 +196,16 @@ private extension ListRootView {
     @ViewBuilder
     func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
         if item.model.specialCategory {
-            Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
-                .imageScale(.small)
-                .padding(.trailing)
-                .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
-                .contentShape(.rect)
-                .onTapGesture {
-                    withAnimation { listController.toggleFolder(item: item) }
-                }
+            Button {
+                withAnimation { listController.toggleFolder(item: item) }
+            } label: {
+                Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
+                    .imageScale(.small)
+                    .padding(.trailing)
+                    .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
         }
     }
 }

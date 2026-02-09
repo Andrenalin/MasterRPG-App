@@ -110,20 +110,22 @@ private extension CarouselItemView {
     }
     
     func itemView(itemId: UUID, selectedItemId: UUID?) -> some View {
-        content
-            .environment(GroupItemSelectionModel(selectedItem: itemId))
-            .frame(height: 110)
-            .onTapGesture {
-                withAnimation(.easeInOut) { selection.selectedItem = selectedItemId }
-            }
-            .clipShape(.rect(cornerRadius: 20, style: .continuous))
-            .overlay {
-                if model.url != nil {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(selection.selectedItem == selectedItemId ? Color.accentColor : Color.clear, lineWidth: 4)
+        Button {
+            withAnimation(.easeInOut) { selection.selectedItem = selectedItemId }
+        } label: {
+            content
+                .environment(GroupItemSelectionModel(selectedItem: itemId))
+                .frame(height: 110)
+                .clipShape(.rect(cornerRadius: 20, style: .continuous))
+                .overlay {
+                    if model.url != nil {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(selection.selectedItem == selectedItemId ? Color.accentColor : Color.clear, lineWidth: 4)
+                    }
                 }
-            }
-            .dropDestination(for: root.configurable.module, handler: linkHandler(name:itemId:entryId:))
-            .padding(1)
+        }
+        .buttonStyle(.plain)
+        .dropDestination(for: root.configurable.module, handler: linkHandler(name:itemId:entryId:))
+        .padding(1)
     }
 }

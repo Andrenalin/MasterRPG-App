@@ -17,15 +17,17 @@ struct ExpandChildrenViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content.overlay(alignment: .bottomTrailing) {
 #if os(macOS)
-            Image(systemName: "chevron.right.circle")
-                .rotationEffect(isExpanded ? Angle(degrees: 90) : Angle(degrees: 0))
-                .imageScale(.large)
-                .foregroundStyle(Color.teal)
-                .onTapGesture {
-                    withAnimation(.easeInOut) { action() }
-                }
-                .opacity(isActive ? 1 : 0)
-                .offset(x: 7, y: 4)
+            Button {
+                withAnimation(.easeInOut) { action() }
+            } label: {
+                Image(systemName: "chevron.right.circle")
+                    .rotationEffect(isExpanded ? Angle(degrees: 90) : Angle(degrees: 0))
+                    .imageScale(.large)
+                    .foregroundStyle(Color.teal)
+            }
+            .buttonStyle(.plain)
+            .opacity(isActive ? 1 : 0)
+            .offset(x: 7, y: 4)
 #else
             Button {
                 withAnimation(.easeInOut) { action() }

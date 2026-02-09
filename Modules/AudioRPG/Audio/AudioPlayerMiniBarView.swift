@@ -53,17 +53,19 @@ private extension AudioPlayerMiniBarView {
     var musicArtTitleTimeline: some View {
         HStack {
             if tabViewBottomAccessoryPlacement != .inline {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 32, height: 32)
-                    .overlay(
-                        Image(systemName: "music.note")
-                            .foregroundStyle(.secondary)
-                    )
-                    .shadow(radius: 2, y: 1)
-                    .onTapGesture {
-                        withAnimation { root.audioPlayerModel.showPlayerToolBar = false }
-                    }
+                Button {
+                    withAnimation { root.audioPlayerModel.showPlayerToolBar = false }
+                } label: {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 32, height: 32)
+                        .overlay(
+                            Image(systemName: "music.note")
+                                .foregroundStyle(.secondary)
+                        )
+                        .shadow(radius: 2, y: 1)
+                }
+                .buttonStyle(.plain)
             }
             // Song Info
             VStack(alignment: .leading, spacing: 2) {

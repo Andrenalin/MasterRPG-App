@@ -100,17 +100,19 @@ private extension CarouselPhotoView {
     }
     
     func itemView(itemId: UUID, selectedItemId: UUID?) -> some View {
-        Group {
-            if let cacheControllable = root.cacheControllable {
-                GroupedPhotoView(cacheController: cacheControllable, itemControllable: root.itemControllable, model: nil)
-            }
-        }
-        .environment(GroupItemSelectionModel(selectedItem: itemId))
-        .frame(height: 110)
-        .onTapGesture {
+        Button {
             withAnimation(.easeInOut) { selection.selectedItem = selectedItemId }
+        } label: {
+            Group {
+                if let cacheControllable = root.cacheControllable {
+                    GroupedPhotoView(cacheController: cacheControllable, itemControllable: root.itemControllable, model: nil)
+                }
+            }
+            .environment(GroupItemSelectionModel(selectedItem: itemId))
+            .frame(height: 110)
+            .clipShape(.rect(cornerRadius: 20, style: .continuous))
         }
-        .clipShape(.rect(cornerRadius: 20, style: .continuous))
+        .buttonStyle(.plain)
         .dropDestination(for: root.configurable.module, handler: linkHandler(name:itemId:entryId:))
         .padding(1)
     }
