@@ -64,7 +64,7 @@ extension AudioRootModel: RootControllable {
 // MARK: Preview - Test
 extension AudioModel {
     static let previewId = UUID()
-    static let preview = AudioModel.empty(AudioModel.previewId)
+    @MainActor static let preview = AudioModel.empty(AudioModel.previewId)
 }
 
 extension ItemRowTreeModel {

@@ -162,7 +162,7 @@ extension ValueModel: ItemLinkRegistable {
         return (added, removed)
     }
         
-    @MainActor func linkRegisterModels(entry: ValueEntryModel, nameChanged: Bool = false, valueChanged: Bool = false) -> [LinkRegisterModel] {
+    @MainActor func linkRegisterModels(entry: ValueEntryModel, nameChanged: Bool = true, valueChanged: Bool = true) -> [LinkRegisterModel] {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .value)
         var total: [LinkRegisterModel] = []
         if nameChanged {

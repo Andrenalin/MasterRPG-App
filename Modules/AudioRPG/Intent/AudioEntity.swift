@@ -34,7 +34,9 @@ struct AudioEntity: IndexedEntity {
     var description: String { model.description }
 
     var icon: String {
-        model.specialCategory ? model.category.icon : root.config.module.icon
+        MainActor.assumeIsolated {
+            model.specialCategory ? model.category.icon : root.config.module.icon
+        }
     }
 
     var root: AudioRootModel

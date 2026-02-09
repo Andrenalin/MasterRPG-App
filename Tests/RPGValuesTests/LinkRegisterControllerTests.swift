@@ -28,12 +28,15 @@ struct LinkRegisterControllerTests {
         let diceLink = await root.diceRoot.linkControllable.generateLink(itemId: diceId)
         let photoId = UUID()
         let photoLink = await root.photoRoot.linkControllable.generateLink(itemId: photoId)
-        let itemID = UUID()
+        let item = await root.editController.addNew(type: .item)
+        try #require(item != nil)
+        
+        await #expect(sut.model.items.count == 0)
+        let itemID = item!.id
         let entryID = UUID()
         let model = ValueModel(id: itemID, name: "Super", description: "Nix", entries: [ValueEntryModel(id: entryID, name: "Good \(photoLink)", type: .text, value: diceLink)])
-        await root.itemController.replace(model: model, isInsert: true)
-        
-        //await #expect(sut.model.entries.count == 0)
+        await root.editController.save(updated: model, message: "Test")
+
         await #expect(sut.model.items.count == 2)
         var itemLinks = await sut.model.items[diceId]
         try #require(nil != itemLinks)
@@ -75,7 +78,7 @@ struct LinkRegisterControllerTests {
         #expect(await sut.isUsed(link: ItemRowModel(itemId: photoId, typeId: .photo)) == false)
 
         let model = ValueModel(id: itemID, name: "Super", description: "Nix", entries: [ValueEntryModel(id: entryID, name: "Good \(photoLink)", type: .text, value: diceLink)])
-        await root.itemController.replace(model: model, isInsert: true)
+        await root.editController.save(updated: model, message: "Test")
 
         #expect(await sut.isUsed(link: ItemRowModel(itemId: diceId, typeId: .dice)))
         #expect(await sut.isUsed(link: ItemRowModel(itemId: photoId, typeId: .photo)))

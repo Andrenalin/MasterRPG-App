@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 @testable import DiceRPG
 import Foundation
@@ -51,4 +50,3 @@ struct MockRoot {
         await root.tableRoot.itemControllable.resetData()
     }
 }
-#endif

@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-public struct FakeEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
+public struct FakeEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {
     init(id: UUID, childId: UUID = UUID(), name: String, content: String, displayState: Int = 0) {
         self.id = id
         self.childId = childId

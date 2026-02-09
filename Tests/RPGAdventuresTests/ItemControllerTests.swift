@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-#if canImport(Testing)
 import CoreRPG
 import DiceRPG
 import Foundation
@@ -59,4 +58,3 @@ struct ItemControllerTests {
         #expect(effectedLinks.count == 107)
     }
 }
-#endif

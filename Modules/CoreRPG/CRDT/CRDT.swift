@@ -57,3 +57,4 @@ public struct CRDT<T: Codable> {
 extension CRDT: Equatable where T: Equatable {}
 extension CRDT: Hashable where T: Hashable {}
 extension CRDT: Codable where T: Codable {}
+extension CRDT: Sendable where T: Sendable {}

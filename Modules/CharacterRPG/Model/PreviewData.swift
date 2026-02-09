@@ -52,11 +52,11 @@ public extension CharacterRootModel {
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root.tableRoot, weatherRoot: root)
-        root.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
-        root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
-        root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
-        root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
-        root.tableRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.tableRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         return root
     }
 #endif
