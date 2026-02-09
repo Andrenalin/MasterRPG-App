@@ -11,8 +11,12 @@ struct CarouselPhotoView: View {
     
     @Environment(\.appSizeMode) private var appSizeMode
     @Environment(\.navigator) private var navigator
-    
-    @State private var showSelection = false
+
+    enum SheetType: Identifiable {
+        case selection
+        var id: Self { self }
+    }
+    @State private var activeSheet: SheetType?
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -71,7 +75,7 @@ private extension CarouselPhotoView {
                     .imageScale(.large)
             }
             Button {
-                withAnimation(.easeInOut) { showSelection.toggle() }
+                withAnimation(.easeInOut) { activeSheet = .selection }
                 //navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
             } label: {
                 VStack {
@@ -87,10 +91,13 @@ private extension CarouselPhotoView {
         .padding(.horizontal, 12)
         .frame(minWidth: 100)
         .frame(height: 100)
-        .sheet(isPresented: $showSelection) {
-            SelectionModuleRoute.selection
-                .environment(root.rootController)
-                .environment(photoIds)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .selection:
+                SelectionModuleRoute.selection
+                    .environment(root.rootController)
+                    .environment(photoIds)
+            }
         }
     }
     
