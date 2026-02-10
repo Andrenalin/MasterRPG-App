@@ -22,19 +22,19 @@ struct LinkControllerTests {
 
         let photoId = UUID()
         let photo = PhotoModel(id: photoId, name: "Photo", description: "Some Text", tags: ["Some"], category: .adventure)
-        await root.photoRoot.itemController.replace(model: photo, isInsert: true)
+        await root.photoRoot.editController.save(updated: photo, message: "Test")
         
         let tableEntryId = UUID()
         let tableEntry = TableEntryModel(id: tableEntryId, name: "Table", content: "Some Text")
         let tableId = UUID()
         let table = TableModel(id: tableId, name: "Table", description: "Some Text", tags: ["Some"], category: .rules, entries: [tableEntry])
-        await root.tableRoot.itemController.replace(model: table, isInsert: true)
+        await root.tableRoot.editController.save(updated: table, message: "Test")
         
         let valueEntryId = UUID()
         let valueEntry = ValueEntryModel(id: valueEntryId, name: "Value", type: .text, value: "Some Text")
         let valueId = UUID()
         let value = ValueModel(id: valueId, name: "Value", description: "Some Text", tags: ["Some"], category: .rules, entries: [valueEntry])
-        await root.characterRoot.itemController.replace(model: value, isInsert: true)
+        await root.characterRoot.editController.save(updated: value, message: "Test")
         
         var content = "Link to Photo "
         content = await root.photoRoot.linkControllable.generateLinks(itemId: photoId, entryId: nil, into: content)
@@ -48,7 +48,7 @@ struct LinkControllerTests {
         
         let itemId = UUID()
         let item = AdventureModel(id: itemId, name: "Name", description: "Some Text", tags: ["Some"], category: .scenario, photoId: photoId, entries: [entry1, entry2, entry3])
-        await root.itemController.replace(model: item, isInsert: true)
+        await root.editController.save(updated: item, message: "Test")
         await #expect(root.itemController.itemOrEmpty(for: itemId).photoId == photoId)
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry1.id] == entry1)
         await #expect(root.itemController.itemOrEmpty(for: itemId)[entry2.id] == entry2)

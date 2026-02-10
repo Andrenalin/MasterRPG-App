@@ -28,6 +28,9 @@ struct ItemControllerTests {
         let photoId = model.photoId
         #expect(nil != photoId)
         await #expect(root.photoRoot.itemController.itemOrEmpty(for: photoId!).name == "Ratten")
+        let changed = model.copy()
+        changed.name = "Updated"
+        await root.editController.save(updated: changed, message: "")
         let isUsed = await sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: photoId!, typeId: .photo))
         #expect(isUsed)
 
