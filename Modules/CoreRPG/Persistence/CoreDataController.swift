@@ -11,6 +11,23 @@ public protocol CoreDataId {
 
 actor CoreDataModel: Sendable {
     private(set) var updatedIds: Set<UUID> = []
+    private(set) var pendingOperations: [PendingOperation] = []
+
+    func addPendingOperation(_ operation: PendingOperation) {
+        pendingOperations.append(operation)
+    }
+
+    func clearPendingOperations() -> [PendingOperation] {
+        let operations = pendingOperations
+        pendingOperations.removeAll()
+        return operations
+    }
+}
+
+struct PendingOperation: Sendable {
+    let id: UUID
+    let model: any ModelType
+    let updater: @Sendable (any ModelType, NSManagedObject) -> Void
 }
 
 public struct CoreDataController<Model: ModelType, DataType: NSManagedObject & CoreDataId>: Sendable {
@@ -70,7 +87,55 @@ public extension CoreDataController {
         }
     }
 
+    /// Queue a replace operation to be executed later during save
+    func queueReplace(uuid: UUID, with viewModel: Model, updater: @escaping @Sendable (Model, DataType) -> Void) async {
+        let operation = PendingOperation(
+            id: uuid,
+            model: viewModel,
+            updater: { model, nsObject in
+                guard let typedModel = model as? Model,
+                      let typedObject = nsObject as? DataType else { return }
+                updater(typedModel, typedObject)
+            }
+        )
+        await model.addPendingOperation(operation)
+    }
+
     func save() async throws {
+        // First, process any pending operations
+        let pendingOperations = await model.clearPendingOperations()
+
+        if !pendingOperations.isEmpty {
+            // Group operations by ID to handle duplicates (keep last)
+            var operationsByID: [UUID: PendingOperation] = [:]
+            for operation in pendingOperations {
+                operationsByID[operation.id] = operation
+            }
+
+            let uniqueOperations = Array(operationsByID.values)
+            let uuids = uniqueOperations.map { $0.id }
+
+            // Check which objects exist
+            let existingUUIDs = try await batchExists(uuids: uuids)
+
+            // Process all operations in one context.perform block
+            await context.perform {
+                for operation in uniqueOperations {
+                    if existingUUIDs.contains(operation.id) {
+                        // Update existing
+                        if let existing = self.fetchCoreData(uuid: operation.id) {
+                            operation.updater(operation.model, existing)
+                        }
+                    } else {
+                        // Create new
+                        let new = DataType(context: self.context)
+                        operation.updater(operation.model, new)
+                    }
+                }
+            }
+        }
+
+        // Then save
         await context.perform {
             saveCoreData()
         }
@@ -196,19 +261,15 @@ public extension CoreDataController {
         guard !uuids.isEmpty else { return Set() }
         
         return await context.perform {
-            let request: NSFetchRequest<DataType> = DataType.fetchRequest() as! NSFetchRequest<DataType>
+            let request = NSFetchRequest<NSDictionary>(entityName: String(describing: DataType.self))
             request.predicate = NSPredicate(format: "uuid IN %@", uuids as [NSUUID])
             request.propertiesToFetch = ["uuid"]
             request.resultType = .dictionaryResultType
             
             do {
                 let results = try context.fetch(request)
-                let existingUUIDs = results.compactMap { result in
-                    if let dict = result as? [String: Any],
-                       let uuid = dict["uuid"] as? UUID {
-                        return uuid
-                    }
-                    return nil
+                let existingUUIDs = results.compactMap { dict in
+                    dict["uuid"] as? UUID
                 }
                 return Set(existingUUIDs)
             } catch {

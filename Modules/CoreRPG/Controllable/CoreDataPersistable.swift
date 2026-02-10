@@ -24,7 +24,7 @@ public extension CoreDataPersistable {
     func replaceSync(id: UUID, with viewModel: any ModelType) throws {
         guard let viewModel = viewModel as? Model else { return }
         Task {
-            try await replace(id: id, with: viewModel, updater: mapModel(_:into:))
+            await dataController.queueReplace(uuid: id, with: viewModel, updater: mapModel(_:into:))
         }
     }
 

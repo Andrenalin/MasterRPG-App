@@ -246,8 +246,17 @@ extension AdventureRootModel: StoreManiplable {
         await weatherRoot.itemControllable.resetData()
     }
 
-    @Sendable
-    public func save() async {
+    @Sendable public func save() async {
+        await audioRoot.itemControllable.save()
+        await diceRoot.itemControllable.save()
+        await generatorRoot?.itemControllable.save()
+        await mapRoot.itemControllable.save()
+        await pdfRoot.itemControllable.save()
+        await photoRoot.itemControllable.save()
+        await spaceRoot.itemControllable.save()
+        await tableRoot.itemControllable.save()
+        await characterRoot.itemControllable.save()
+        await weatherRoot.itemControllable.save()
         await itemController.save()
     }
 
