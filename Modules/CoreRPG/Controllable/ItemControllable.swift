@@ -124,9 +124,31 @@ public extension ItemControllable {
 
 public extension ItemControllable {
     func resetData() async {
-        for id in await itemDataModel.items {
-            await delete(itemId: id)
+        let allItemIds = await itemDataModel.items
+
+        // Clean up cache and internal state for each item
+        for id in allItemIds {
+            guard let item = await self.item(for: id) else { continue }
+
+            // Remove cache for all entries
+            let entries = item.entries
+            for entry in entries {
+                await cacheControllable?.remove(itemId: entry.id)
+            }
+
+            // Will not remove files on reset Database
+            // Remove file cache if exists
+            if let fileUrl = item.fileUrl {
+                await cacheControllable?.remove(itemId: id)
+                fileUrlDataController?.removeBookmarks(fileId: fileUrl.fileId)
+            }
+
+            // Reset internal state
+            await itemDataModel.resetModel(id: item.id)
         }
+
+        // Batch delete all items from Core Data for better performance
+        try? await dataControllable?.batchDelete(ids: allItemIds)
     }
 
     func save() async {

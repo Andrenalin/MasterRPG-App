@@ -239,6 +239,10 @@ public extension FileUrlDataController {
         }
     }
 
+    func removeBookmarks(fileId: UUID) {
+        fileBookmarkController.removeBookmark(fileId: fileId)
+    }
+
     func download(fileUrl: FileUrl) async throws {
         if fileUrl.location == .newCloud {
             try await cloudDocumentController.download(filePath: fileUrl.rawUrl.absoluteString)

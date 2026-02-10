@@ -64,6 +64,10 @@ public extension CoreDataPersistable {
         try await dataController.delete(uuid: id)
     }
 
+    func batchDelete(ids: [UUID]) async throws {
+        try await dataController.batchDelete(uuids: ids)
+    }
+
     func replace(id: UUID, with viewModel: Model, updater: @escaping @Sendable (Model, DataType) -> Void) async throws {
         try await dataController.replace(uuid: id, with: viewModel, updater: updater)
     }
