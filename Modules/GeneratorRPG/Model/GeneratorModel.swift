@@ -180,7 +180,7 @@ extension GeneratorModel: ItemDataAccessable {
         }
     }
 
-    public func replace(with model: GeneratorModel) -> Bool {
+    @MainActor public func replace(with model: GeneratorModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_

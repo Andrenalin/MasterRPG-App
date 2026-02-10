@@ -35,7 +35,7 @@ public protocol ItemDataAccessable: Sendable, Equatable {
     func duplicate() -> Self
     func filter(_ filter: String) -> Bool
     func isEqual(other: Self) -> Bool
-    func replace(with model: Self) -> Bool
+    @MainActor func replace(with model: Self) -> Bool
 }
 
 public extension ItemDataAccessable {

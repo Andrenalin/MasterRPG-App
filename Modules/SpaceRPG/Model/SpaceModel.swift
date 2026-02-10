@@ -183,7 +183,7 @@ extension SpaceModel: ItemDataAccessable {
         }
     }
 
-    public func replace(with model: SpaceModel) -> Bool {
+    @MainActor public func replace(with model: SpaceModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_

@@ -75,7 +75,6 @@ public extension ItemControllable {
         guard let other = other as? Model, let second = self.itemSync(for: other.id) else { return false }
         return second.isEqual(other: other)
     }
-    
     @MainActor func replace(model: ModelType?, isInsert: Bool) {
         guard let model = model as? Model else { return }
         if let orignal = self.itemSync(for: model.id) {
@@ -103,8 +102,8 @@ public extension ItemControllable {
         // default ignore any version numbers. Later a module can handle older version differently.
         try decoder.decode(Model.self, from: data)
     }
-    
-    func merge(with model: ModelType) async -> ModelType? {
+
+    @MainActor func merge(with model: ModelType) async -> ModelType? {
         guard let model = model as? Model, let current = await self.item(for: model.id) else { return model }
         if model.isSame(current) {
             return nil

@@ -216,7 +216,7 @@ extension AdventureModel: ItemDataAccessable {
         }
     }
 
-    public func replace(with model: AdventureModel) -> Bool {
+    @MainActor public func replace(with model: AdventureModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_

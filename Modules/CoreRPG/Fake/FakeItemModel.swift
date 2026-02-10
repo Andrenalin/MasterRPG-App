@@ -57,7 +57,7 @@ final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplica
     
     func isEqual(other: FakeItemModel) -> Bool { false }
     
-    func replace(with model: FakeItemModel) -> Bool { false }
+    @MainActor func replace(with model: FakeItemModel) -> Bool { false }
     
     func isSame(_ other: FakeItemModel) -> Bool { false }
     

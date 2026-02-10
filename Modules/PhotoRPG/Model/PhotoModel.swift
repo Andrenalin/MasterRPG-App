@@ -187,7 +187,7 @@ extension PhotoModel: ItemDataAccessable {
         }
     }
 
-    public func replace(with model: PhotoModel) -> Bool {
+    @MainActor public func replace(with model: PhotoModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_

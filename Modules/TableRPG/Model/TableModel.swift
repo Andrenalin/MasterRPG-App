@@ -248,7 +248,7 @@ extension TableModel: ItemDataAccessable {
         }
     }
 
-    public func replace(with model: TableModel) -> Bool {
+    @MainActor public func replace(with model: TableModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
         description_ <=> model.description_
