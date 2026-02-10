@@ -11,8 +11,9 @@ public extension DiceRootModel {
     static let preview: DiceRootModel = {
         let root = DiceRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
-        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
+        let realRootManager = RootManager.preview(fake: root.rootController)
+        root.setUp(context: nil, rootManager: realRootManager, linkRegisterController: LinkRegisterController(root: realRootManager))
         root.itemController.replace(model: DiceModel.preview, isInsert: true)
         root.editController.setCurrentItem(to: .preview)
 
@@ -25,7 +26,8 @@ public extension DiceRootModel {
     @MainActor
     static func preview(id: UUID) -> DiceRootModel {
         let root = DiceRootModel(tagController: .preview)
-        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
+        let rootManager = RootManager.preview(fake: ItemRootController.fake)
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
         root.itemController.replace(model: DiceModel.preview, isInsert: true)
         root.editController.setCurrentItem(to: .preview)
         Task {
@@ -66,8 +68,9 @@ public extension DiceRootModel {
     static func testRoot() -> DiceRootModel {
         let root = DiceRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
-        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
+        let realRootManager = RootManager.preview(fake: root.rootController)
+        root.setUp(context: nil, rootManager: realRootManager, linkRegisterController: LinkRegisterController(root: realRootManager))
         return root
     }
 #endif

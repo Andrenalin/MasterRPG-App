@@ -31,10 +31,31 @@ public final class PhotoRootModel: @unchecked Sendable {
         _gameController = GameController(rootManager: rootManager, config: config, itemController: itemController, linkRegisterController: linkRegisterController, rootExportControllable: rootManager.adventureRoot.exportControllable, rootImportControllable: rootManager.adventureRoot.importControllable)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
 
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
+
+        _rootController = ItemRootController(
+            config: config,
+            listDisplayModel: listDisplayModel,
+            searchModel: searchModel,
+            itemSelectionModel: itemSelectionModel,
+            removeEntryListModel: removeEntryListModel,
+            cacheControllable: cacheController,
+            editControllable: editController,
+            exportControllable: exportControllable,
+            gameControllable: gameControllable,
+            importControllable: importControllable,
+            itemControllable: itemControllable,
+            linkControllable: linkControllable,
+            folderListControllable: folderListController,
+            viewControllable: viewController
+        )
+
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
+                Task {
                 syncDataController?.start()
+            }
             }
         }
     }
@@ -57,22 +78,21 @@ public final class PhotoRootModel: @unchecked Sendable {
     var syncDataController: SyncDataController? { _syncDataController }
     
     @ObservationIgnored private(set) var _itemController: ItemController?
-    var itemController: ItemController { _itemController.unsafelyUnwrapped }
+    var itemController: ItemController { _itemController! }
     
     @ObservationIgnored private(set) var _editController: EditController?
-    var editController: EditController { _editController.unsafelyUnwrapped }
+    var editController: EditController { _editController! }
     @ObservationIgnored private(set) var _exportController: ExportController?
-    var exportController: ExportController { _exportController.unsafelyUnwrapped }
+    var exportController: ExportController { _exportController! }
     @ObservationIgnored private(set) var _importController: ImportController?
-    var importController: ImportController { _importController.unsafelyUnwrapped }
+    var importController: ImportController { _importController! }
     @ObservationIgnored private(set) var _gameController: GameController?
-    var gameController: GameController { _gameController.unsafelyUnwrapped }
+    var gameController: GameController { _gameController! }
     @ObservationIgnored private(set) var _linkController: LinkController?
-    var linkController: LinkController { _linkController.unsafelyUnwrapped }
+    var linkController: LinkController { _linkController! }
     
-    @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
-        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
-    }()
+    @ObservationIgnored private(set) var _folderListController: FolderListController?
+    var folderListController: FolderListControllable { _folderListController! }
     @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
         rootController.folderLinkControllable
     }
@@ -81,24 +101,8 @@ public final class PhotoRootModel: @unchecked Sendable {
         ViewController()
     }()
 
-    @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
-        ItemRootController(
-            config: config,
-            listDisplayModel: listDisplayModel,
-            searchModel: searchModel,
-            itemSelectionModel: itemSelectionModel,
-            removeEntryListModel: removeEntryListModel,
-            cacheControllable: cacheController,
-            editControllable: editController,
-            exportControllable: exportControllable,
-            gameControllable: gameControllable,
-            importControllable: importControllable,
-            itemControllable: itemControllable,
-            linkControllable: linkControllable,
-            folderListControllable: folderListController,
-            viewControllable: viewController
-        )
-    }()
+    @MainActor @ObservationIgnored private(set) var _rootController: ItemRootController?
+    @MainActor public var rootController: ItemRootController { _rootController!}
 }
 
 extension PhotoRootModel: ItemRootControllable {

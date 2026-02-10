@@ -77,7 +77,9 @@ public final class AdventureRootModel: @unchecked Sendable {
         
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
-            syncDataController?.start()
+            Task {
+                syncDataController?.start()
+            }
         }
     }
 
@@ -147,21 +149,21 @@ public final class AdventureRootModel: @unchecked Sendable {
     var syncDataController: SyncDataController? { _syncDataController }
     
     @ObservationIgnored private(set) var _itemController: ItemController?
-    var itemController: ItemController { _itemController.unsafelyUnwrapped }
+    var itemController: ItemController { _itemController! }
     
     @ObservationIgnored private(set) var _editController: EditController?
-    var editController: EditController { _editController.unsafelyUnwrapped }
+    var editController: EditController { _editController! }
     @ObservationIgnored private(set) var _exportController: ExportController?
-    var exportController: ExportController { _exportController.unsafelyUnwrapped }
+    var exportController: ExportController { _exportController! }
     @ObservationIgnored private(set) var _importController: ImportController?
-    var importController: ImportController { _importController.unsafelyUnwrapped }
+    var importController: ImportController { _importController! }
     @ObservationIgnored private(set) var _gameController: GameController?
-    var gameController: GameController { _gameController.unsafelyUnwrapped }
+    var gameController: GameController { _gameController! }
     @ObservationIgnored private(set) var _linkController: LinkController?
-    var linkController: LinkController { _linkController.unsafelyUnwrapped }
+    var linkController: LinkController { _linkController! }
     
     @ObservationIgnored private(set) var _linkRegisterController: LinkRegisterController?
-    var linkRegisterController: LinkRegisterController { _linkRegisterController.unsafelyUnwrapped }
+    var linkRegisterController: LinkRegisterController { _linkRegisterController! }
     
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
         FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)

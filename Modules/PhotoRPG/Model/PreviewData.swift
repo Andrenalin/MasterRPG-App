@@ -11,8 +11,9 @@ public extension PhotoRootModel {
     static let preview: PhotoRootModel = {
         let root = PhotoRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
-        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
+        let realRootManager = RootManager.preview(fake: root.rootController)
+        root.setUp(context: nil, rootManager: realRootManager, linkRegisterController: LinkRegisterController(root: realRootManager))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -44,8 +45,9 @@ public extension PhotoRootModel {
     static func testRoot() -> PhotoRootModel {
         let root = PhotoRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: nil))
-        root.setUp(context: nil, rootManager: .preview(fake: root.rootController), linkRegisterController: LinkRegisterController(root: nil))
+        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
+        let realRootManager = RootManager.preview(fake: root.rootController)
+        root.setUp(context: nil, rootManager: realRootManager, linkRegisterController: LinkRegisterController(root: realRootManager))
         return root
     }
 #endif
