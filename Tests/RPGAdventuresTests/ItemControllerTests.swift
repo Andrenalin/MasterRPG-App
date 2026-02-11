@@ -30,11 +30,13 @@ struct ItemControllerTests {
         await #expect(root.photoRoot.itemController.itemOrEmpty(for: photoId!).name == "Ratten")
         let changed = model.copy()
         changed.name = "Updated"
+        let newId = UUID()
+        changed.photoId = newId
         await root.editController.save(updated: changed, message: "")
-        let isUsed = await sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: photoId!, typeId: .photo))
+        let isUsed = await sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: newId, typeId: .photo))
         #expect(isUsed)
 
-        let effectedLinks = await sut.linkRegisterController.used(for: ItemRowModel(itemId: photoId!, typeId: .photo))
+        let effectedLinks = await sut.linkRegisterController.used(for: ItemRowModel(itemId: newId, typeId: .photo))
         try #require(effectedLinks.count == 1)
         #expect(effectedLinks[0].module == .adventure)
         #expect(effectedLinks[0].name == model.name)
@@ -44,20 +46,16 @@ struct ItemControllerTests {
         let root = try await MockRoot.importTestData()
         let sut = root.itemController
 
-        await #expect(sut.itemDataModel.items.count == 3)
-        await #expect(root.tableRoot.itemController.itemDataModel.items.count == 53)
-
-        var tableId: UUID? = nil
-        for itemId in await root.tableRoot.itemController.itemDataModel.items {
-            if await root.tableRoot.itemController.itemOrEmpty(for: itemId).name == "Talente" {
-                tableId = itemId
-                break
-            }
-        }
-        try #require(nil != tableId)
-        let isUsed = await sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: tableId!, typeId: .table))
+        let cc = ConvertController(itemController: sut, editController: root.editController)
+        await cc.createFoldersAndCollections(reportModel: ValidateRepairModel())
+        
+        await #expect(sut.itemDataModel.items.count == 6)
+        let item = await sut.itemOrEmpty(for: sut.itemDataModel.items[0])
+        try #require(item.photoId != nil)
+        
+        let isUsed = await sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: item.photoId!, typeId: .photo))
         #expect(isUsed)
-        let effectedLinks = await sut.linkRegisterController.used(for: ItemRowModel(itemId: tableId!, typeId: .table))
-        #expect(effectedLinks.count == 107)
+        let effectedLinks = await sut.linkRegisterController.used(for: ItemRowModel(itemId: item.photoId!, typeId: .photo))
+        #expect(effectedLinks.count == 1)
     }
 }

@@ -48,6 +48,7 @@ public struct LinkItemListView: View {
                     .onChange(of: root.folderLinkControllable.listDisplayModel.listMode) {
                         withAnimation { root.folderLinkControllable.resetFilter() }
                     }
+                    .listModelUpdatesModifier(listControllable: root.folderLinkControllable, itemControllable: root.itemControllable)
                     .applyIf(type != .inspector && type != .selectionInline) { content in
                         content
                             .toolbarItemListModifier(root: root, listControllable: root.folderLinkControllable, parentModel: nil, modal: true)
