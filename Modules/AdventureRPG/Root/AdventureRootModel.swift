@@ -249,7 +249,9 @@ extension AdventureRootModel: StoreManiplable {
     @Sendable public func save() async {
         await audioRoot.itemControllable.save()
         await diceRoot.itemControllable.save()
+        #if !os(tvOS)
         await generatorRoot?.itemControllable.save()
+        #endif
         await mapRoot.itemControllable.save()
         await pdfRoot.itemControllable.save()
         await photoRoot.itemControllable.save()
