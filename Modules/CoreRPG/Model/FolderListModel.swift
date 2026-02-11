@@ -13,6 +13,7 @@ public final class FolderListModel {
     
     public init(parentModel: (any ItemDataAccessable)?) {
         self.parentModel = parentModel
+        self.selectedParentId = parentModel?.id
         self.isSelectionMode = false
         self.selection = []
         self.listSelection = []
