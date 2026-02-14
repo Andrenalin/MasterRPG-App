@@ -27,15 +27,14 @@ extension ExportController: ExportControllable {
     public func exportingAll() -> ItemModuleIds {
         var itemIds = ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.map { $0 }])
 
-        // TODO:
-        //if !exportModel.gameExporter {
+        if !itemControllable.itemDataModel.isGameMode {
             itemIds.merge(other: rootManager.audioRoot.exportControllable.exportingAll())
             itemIds.merge(other: rootManager.diceRoot.exportControllable.exportingAll())
             itemIds.merge(other: rootManager.pdfRoot.exportControllable.exportingAll())
             itemIds.merge(other: rootManager.photoRoot.exportControllable.exportingAll())
             itemIds.merge(other: rootManager.tableRoot.exportControllable.exportingAll())
             itemIds.merge(other: rootManager.characterRoot.exportControllable.exportingAll())
-        //}
+        }
         return itemIds
     }
     
