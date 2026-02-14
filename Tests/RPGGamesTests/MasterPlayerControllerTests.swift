@@ -118,7 +118,7 @@ final class MasterPlayerControllerTests {
         await #expect(rootPlayer.audioRoot.itemController.itemDataModel.items.count == 1)
     }
 
-    @Test func aandleAudioPLayList() async throws {
+    @Test func handleAudioPLayList() async throws {
         try await setUp()
         try await MockRoot.importTestData(into: rootSut.adventureRoot)
         try await MockRoot.importTestData(into: rootSut.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)

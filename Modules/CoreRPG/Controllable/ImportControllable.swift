@@ -6,11 +6,9 @@ import Observation
 
 @MainActor @Observable
 public final class ItemDataImportModel: Sendable {
-    public init(gameImporter: Bool = false) {
-        self.gameImporter = gameImporter
-    }
+    public init() {}
 
-    public let gameImporter: Bool
+    public var gameImporter: Bool = false
     public var importedItems: Int = 0
     public var totalImportingItems: Int = 0
     public var isImportRunning: Bool = false

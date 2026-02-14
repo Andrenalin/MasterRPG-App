@@ -75,9 +75,13 @@ public extension ItemControllable {
         guard let other = other as? Model, let second = self.itemSync(for: other.id) else { return false }
         return second.isEqual(other: other)
     }
-    @MainActor func replace(model: ModelType?, isInsert: Bool) {
+    @MainActor func replace(model: ModelType?, isInsert: Bool, forceSave: Bool = false) {
         guard let model = model as? Model else { return }
-        if let orignal = self.itemSync(for: model.id) {
+        if itemDataModel.isGameMode == true && forceSave == false {
+            itemDataModel.gameItemData[model.id] = model
+            return
+        }
+        if let orignal = self.itemSync(for: model.id, noGame: true) {
             let resort = orignal.name != model.name
             if orignal.replace(with: model) {
                 try? dataControllable?.replaceSync(id: orignal.id, with: orignal.copy())
@@ -191,10 +195,10 @@ public extension ItemControllable {
         return item.version == version ? item : nil
     }
     
-    @MainActor func itemSync(for itemId: UUID) -> Model? {
-        itemDataModel.item(for: itemId) as? Model
+    @MainActor func itemSync(for itemId: UUID, noGame: Bool = false) -> Model? {
+        itemDataModel.item(for: itemId, noGame: noGame) as? Model
     }
-    
+
     @MainActor func itemOrEmpty(for itemId: UUID) -> Model {
         guard let item = self.itemSync(for: itemId) else { return Model.empty(itemId) }
         return item
@@ -227,7 +231,7 @@ private extension ItemControllable {
     @MainActor func insertIntoItems(model: Model) {
         var foundIndex: Int?
         for (index, itemId) in itemDataModel.items.enumerated() {
-            if itemSync(for: itemId)?.name.localizedCompare(model.name) == .orderedDescending {
+            if itemSync(for: itemId, noGame: true)?.name.localizedCompare(model.name) == .orderedDescending {
                 foundIndex = index
                 break
             }

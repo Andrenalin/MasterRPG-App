@@ -22,29 +22,24 @@ public protocol AdventureStoreGameable {
 
 struct GameController: Sendable {
     @MainActor
-    init(rootManager: RootManager, root: AdventureRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController) {
+    init(rootManager: RootManager, root: AdventureRootModel, itemController: ItemController, exportController: ExportController) {
         self.root = root
         self.itemController = itemController
-        self.exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        let internItemController = ItemController(config: root.config, dataController: nil, linkRegisterController: linkRegisterController)
-        self.importController = ImportController(root: root, itemController: internItemController, gameImporter: true)
-        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
+        self.exportController = exportController
+        self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
     }
     
     let root: AdventureRootModel
     let itemController: ItemController
-    let importController: ImportController
     let exportController: ExportController
     
     let gameModel: ItemGameModel
     
-    @MainActor
-    func gameItem(for itemId: UUID) -> AdventureModel {
+    @MainActor func gameItem(for itemId: UUID) -> AdventureModel {
         (gameModel.itemData[itemId] as? AdventureModel) ?? itemController.itemOrEmpty(for: itemId)
     }
     
-    @MainActor
-    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
         if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
             gameModel.itemData[itemId] = item
         } else {
@@ -65,9 +60,6 @@ extension GameController: GameControllable {
     }
     var exportControllable: any ExportControllable {
         exportController as ExportControllable
-    }
-    var importControllable: any ImportControllable {
-        importController as ImportControllable
     }
 }
 

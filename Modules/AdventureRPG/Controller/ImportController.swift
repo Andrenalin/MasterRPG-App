@@ -14,10 +14,10 @@ import SpaceRPG
 
 struct ImportController: Sendable {
     @MainActor
-    init(root: AdventureRootModel, itemController: ItemController, gameImporter: Bool) {
+    init(root: AdventureRootModel, itemController: ItemController) {
         self.root = root
         self.itemController = itemController
-        self.importModel = ItemDataImportModel(gameImporter: gameImporter)
+        self.importModel = ItemDataImportModel()
     }
     
     let root: AdventureRootModel

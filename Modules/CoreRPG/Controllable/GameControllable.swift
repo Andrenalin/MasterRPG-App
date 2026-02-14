@@ -153,6 +153,7 @@ public extension GameControllable {
     }
 
     func reset() async {
+        await itemControllable.itemDataModel.resetGame()
         await gameModel.reset()
         await resetGameState()
     }
@@ -246,7 +247,7 @@ public extension GameControllable {
         }
         await gameModel.append(itemId: data.id, item: item, onlyItem: true)
         if !hide {
-            await itemControllable.replace(model: item, isInsert: true)
+            await itemControllable.replace(model: item, isInsert: true, forceSave: true)
             var otherIds = await Set(gameModel.items).subtracting(beforeIds)
             otherIds = otherIds.subtracting([data.id])
             for otherId in otherIds {
@@ -272,6 +273,7 @@ public extension GameControllable {
         let stream = InputStream(data: data)
         stream.open()
         defer { stream.close() }
-        try await exportControllable.rootManager.adventureRoot.importControllable.importStream(from: stream, counterUpdater: {})
+        let importController = await exportControllable.rootManager.adventureRoot.importControllable
+        try await importController.importStream(from: stream, counterUpdater: {})
     }
 }

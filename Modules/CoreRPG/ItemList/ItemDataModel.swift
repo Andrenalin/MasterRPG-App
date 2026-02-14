@@ -20,9 +20,15 @@ public final class ItemDataModel: Sendable {
 
     public let categoryTags: [ItemListCategory]
     public let version: Int
-            
-    func item(for itemId: UUID) -> ModelType? {
-        guard let gameItem = gameItemData[itemId] else { return itemData[itemId] }
+           
+    public var isGameMode: Bool = false
+    
+    public func resetGame(start: Bool = false) {
+        isGameMode = start
+    }
+    
+    func item(for itemId: UUID, noGame: Bool = false) -> ModelType? {
+        guard noGame == false, let gameItem = gameItemData[itemId] else { return itemData[itemId] }
         return gameItem
     }
     

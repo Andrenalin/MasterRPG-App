@@ -223,6 +223,7 @@ extension GameRoot {
         gameModel.masterController = MasterController(root: self, asProxy: false)
 
         gameModel.gameConfig.state = .started
+        await adventureRoot.startGame()
 
         await gameModel.masterController?.start()
         characterRoot.valueGameControllable.startGame(for: gameModel.selectedGameMaster!)

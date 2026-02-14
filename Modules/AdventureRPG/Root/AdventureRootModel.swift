@@ -56,8 +56,8 @@ public final class AdventureRootModel: @unchecked Sendable {
         _itemController = itemController
         _editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: root, itemController: itemController)
-        _importController = ImportController(root: self, itemController: itemController, gameImporter: false)
-        _gameController = GameController(rootManager: root, root: self, itemController: itemController, linkRegisterController: linkRegisterController)
+        _importController = ImportController(root: self, itemController: itemController)
+        _gameController = GameController(rootManager: root, root: self, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: root, itemController: itemController)
 
         _linkRegisterController = linkRegisterController
@@ -225,7 +225,7 @@ extension AdventureRootModel: RootControllable {
         linkController as LinkControllable
     }
     public var gameImportControllable: any ImportControllable {
-        gameController.importController as ImportControllable
+        importController as ImportControllable
     }
     public var gameExportControllable: any ExportControllable {
         exportController
@@ -278,14 +278,27 @@ extension AdventureRootModel: StoreManiplable {
     }
 }
 
+// MARK: - Game
+
 public extension AdventureRootModel {
-    @MainActor
-    func networkTitle(for id: UUID) -> String {
+    @MainActor func startGame() {
+        itemController.itemDataModel.isGameMode = true
+        audioRoot.itemControllable.itemDataModel.isGameMode = true
+        diceRoot.itemControllable.itemDataModel.isGameMode = true
+        mapRoot.itemControllable.itemDataModel.isGameMode = true
+        pdfRoot.itemControllable.itemDataModel.isGameMode = true
+        photoRoot.itemControllable.itemDataModel.isGameMode = true
+        spaceRoot.itemControllable.itemDataModel.isGameMode = true
+        tableRoot.itemControllable.itemDataModel.isGameMode = true
+        characterRoot.itemControllable.itemDataModel.isGameMode = true
+        weatherRoot.itemControllable.itemDataModel.isGameMode = true
+    }
+    
+    @MainActor func networkTitle(for id: UUID) -> String {
         itemController.itemOrEmpty(for: id).name
     }
 
-    @MainActor
-    func titleImage(for id: UUID?) async -> AKImage? {
+    @MainActor func titleImage(for id: UUID?) async -> AKImage? {
         guard let id else { return nil }
         let (image, _) = await photoRoot.fetchPhotoImage(for: itemController.itemOrEmpty(for: id).photoId, useGame: false) ?? (nil, 0.0)
         return image

@@ -514,7 +514,7 @@ extension GameController {
     
     @MainActor
     func role(die: DieModel?, for itemId: UUID) {
-        if let dicePath = Resources.bundle.path(forResource: diceName(for: itemId, isOne: die != nil), ofType: "m4a", inDirectory: "Dice") {
+        if let dicePath = Resources.bundle.path(forResource: diceName(for: itemId, isOne: die != nil), ofType: "m4a") {
             let diceUrl = URL(fileURLWithPath: dicePath)
             let item = AVPlayerItem(url: diceUrl)
             diceGameModel.audioPlayer.replaceCurrentItem(with: item)
