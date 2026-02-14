@@ -158,7 +158,7 @@ extension TableModel: ItemLinkRegistable {
         return (added, removed)
     }
     
-    @MainActor func linkRegisterModels(entry: TableEntryModel, valueChanged: Bool = false) -> [LinkRegisterModel] {
+    @MainActor func linkRegisterModels(entry: TableEntryModel, valueChanged: Bool = true) -> [LinkRegisterModel] {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .table)
         var total: [LinkRegisterModel] = []
         if valueChanged {

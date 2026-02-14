@@ -315,7 +315,7 @@ extension MapModel: ItemLinkRegistable {
         return (added, removed)
     }
     
-    @MainActor func linkRegisterModels(entry: MapEntryModel, valueChanged: Bool = false) -> [LinkRegisterModel] {
+    @MainActor func linkRegisterModels(entry: MapEntryModel, valueChanged: Bool = true) -> [LinkRegisterModel] {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .map)
         var total: [LinkRegisterModel] = []
         if valueChanged {

@@ -129,7 +129,7 @@ extension AdventureModel: ItemLinkRegistable {
         return (added, removed)
     }
         
-    @MainActor func linkRegisterModels(entry: AdventureEntryModel, valueChanged: Bool = false) -> [LinkRegisterModel] {
+    @MainActor func linkRegisterModels(entry: AdventureEntryModel, valueChanged: Bool = true) -> [LinkRegisterModel] {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .adventure)
         var total: [LinkRegisterModel] = []
         if valueChanged {

@@ -84,7 +84,9 @@ struct GameControllerTests {
     
     @Test func CreateGameData() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let sut = root.gameController
+        let rootManager = await RootManager.preview(fake: root.rootController)
+        let exportController = await ExportController(rootManager: rootManager, itemController: root.itemController, gameExporter: false)
+        let sut = await GameController(rootManager: rootManager, config: root.config, itemController: root.itemController, linkRegisterController: root.editController.linkRegisterController, rootExportControllable: exportController, rootImportControllable: root.importControllable)
 
         let itemId = await root.itemController.itemDataModel.items[0]
         let version = await root.itemController.itemOrEmpty(for: itemId).version
@@ -98,6 +100,7 @@ struct GameControllerTests {
 
         let success = try await sut.reveal(itemId: itemId, data: netdata, save: false)
         #expect(success)
+        // this will be fixed if we use the new game / no game itemController switch
         await #expect(root.itemController.itemDataModel.itemData[itemId] == nil)
         await #expect(sut.gameModel.itemData[itemId] != nil)
 
@@ -108,7 +111,9 @@ struct GameControllerTests {
     
     @Test func UpdateGame() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let sut = root.gameController
+        let rootManager = await RootManager.preview(fake: root.rootController)
+        let exportController = await ExportController(rootManager: rootManager, itemController: root.itemController, gameExporter: false)
+        let sut = await GameController(rootManager: rootManager, config: root.config, itemController: root.itemController, linkRegisterController: root.editController.linkRegisterController, rootExportControllable: exportController, rootImportControllable: root.importControllable)
 
         let itemId = await root.itemController.itemDataModel.items[0]
         let version = await root.itemController.itemOrEmpty(for: itemId).version
@@ -122,6 +127,7 @@ struct GameControllerTests {
         #expect(updatedVersion != version)
 
         try await sut.updateGame(data: netdata, hide: false, deep: true)
+        // check again if we use the new game / no game itemController switch will fix it
         await #expect(root.itemController.itemOrEmpty(for: itemId).fileUrl == fileUrl)
     }
 }
