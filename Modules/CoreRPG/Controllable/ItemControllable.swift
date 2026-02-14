@@ -216,9 +216,6 @@ public extension ItemControllable {
 private extension ItemControllable {
     @MainActor func setModel(with model: ModelType) {
         guard let model = model as? Model else { return }
-        // this will be removed later and replace with the db
-//        let linkModels = model.linkRegisterModels
-//        linkRegisterController.register(links: linkModels)
         itemDataModel.setItem(id: model.id, item: model)
     }
 

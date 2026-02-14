@@ -17,20 +17,18 @@ public protocol AudioGameStoreable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(rootManager: RootManager, config: ModuleConfiguration, itemController: ItemController, audioController: AudioController, linkRegisterController: LinkRegisterController) {
+    @MainActor init(rootManager: RootManager, itemController: ItemController, audioController: AudioController, exportController: ExportController) {
         self.itemController = itemController
+        self.exportController = exportController
+        
         self.audioController = audioController
-        self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(config: config, dataController: nil, linkRegisterController: linkRegisterController)
-        self.importController = ImportController(itemController: internItemController)
-        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
+        self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
     }
 
     let itemController: ItemController
-    let audioController: AudioController
-    let importController: ImportController
     let exportController: ExportController
 
+    let audioController: AudioController
     let gameModel: ItemGameModel
 
     @MainActor
@@ -55,18 +53,10 @@ struct GameController: Sendable {
 }
 
 extension GameController: GameControllable {
-    var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
-    }
-    var exportControllable: any ExportControllable {
-        exportController as ExportControllable
-    }
-    var importControllable: any ImportControllable {
-        importController as ImportControllable
-    }
-    
-    @MainActor
-    func allPlayersReported(for id: UUID, deep: Int = 0) -> Bool {
+    var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
+    var exportControllable: any ExportControllable { exportController as ExportControllable }
+
+    @MainActor func allPlayersReported(for id: UUID, deep: Int = 0) -> Bool {
         guard deep < 10 else { return false }
         let item = gameItem(for: id)
         guard gameModel.currentPlayers.filter({ !item.players.contains($0) }).isEmpty else { return false }
@@ -78,8 +68,7 @@ extension GameController: GameControllable {
         return true
     }
     
-    @MainActor
-    func report(itemId: UUID, for player: UUID) {
+    @MainActor func report(itemId: UUID, for player: UUID) {
         let item = gameItem(for: itemId)
         if !item.players.contains(player) {
             item.players.append(player)

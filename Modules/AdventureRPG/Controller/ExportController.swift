@@ -13,21 +13,21 @@ import TableRPG
 import CharacterRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController, gameExporter: Bool) {
+    @MainActor init(rootManager: RootManager, itemController: ItemController) {
         self.rootManager = rootManager
         self.itemController = itemController
-        self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
+        self.exportModel = ItemDataExportModel()
     }
-
+    
     let rootManager: RootManager
     let itemController: ItemController
-
+    
     public let exportModel: ItemDataExportModel
 }
 
 extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable { itemController }
-
+    
     public func exportingAll() -> ItemModuleIds {
         var itemIds = rootManager.audioRoot.exportControllable.exportingAll()
         itemIds.merge(other: rootManager.diceRoot.exportControllable.exportingAll())
@@ -54,7 +54,7 @@ extension ExportController: ExportControllable {
         var weatherIds: Set<UUID> = []
         var tableIds: Set<UUID> = []
         var valueIds: Set<UUID> = []
-
+        
         while !checkIds.isEmpty {
             let id = checkIds.removeLast()
             guard let item = itemController.itemSync(for: id) else {
@@ -64,13 +64,13 @@ extension ExportController: ExportControllable {
                 continue
             }
             results.insert(id)
-
+            
             if let photoId = item.photoId, rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
                 photoIds.insert(photoId)
             }
-
+            
             let links = item.entries.flatMap { $0.links(for: $0.content) }
-
+            
             links.forEach {
                 switch $0.module {
                 case .adventure:
@@ -120,51 +120,38 @@ extension ExportController: ExportControllable {
         }        
         var allIds = itemIds
         allIds.ids[itemController.config.module] = Array(results)
-        let newAudioIds = exportModel.gameExporter ? rootManager.audioRoot.gameControllable.exportControllable.exporting(ids: audioIds) : rootManager.audioRoot.exportControllable.exporting(ids: audioIds)
+        let newAudioIds = rootManager.audioRoot.exportControllable.exporting(ids: audioIds)
         allIds.merge(other: newAudioIds)
-        let newDiceIds = exportModel.gameExporter ? rootManager.diceRoot.gameControllable.exportControllable.exporting(ids: diceIds) : rootManager.diceRoot.exportControllable.exporting(ids: diceIds)
+        let newDiceIds = rootManager.diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)
-        let newMapIds = exportModel.gameExporter ? rootManager.mapRoot.gameControllable.exportControllable.exporting(ids: mapIds) : rootManager.mapRoot.exportControllable.exporting(ids: mapIds)
+        let newMapIds = rootManager.mapRoot.exportControllable.exporting(ids: mapIds)
         allIds.merge(other: newMapIds)
-        let newPdfIds = exportModel.gameExporter ? rootManager.pdfRoot.gameControllable.exportControllable.exporting(ids: pdfIds) :  rootManager.pdfRoot.exportControllable.exporting(ids: pdfIds)
+        let newPdfIds = rootManager.pdfRoot.exportControllable.exporting(ids: pdfIds)
         allIds.merge(other: newPdfIds)
-        let newPhotoIds = exportModel.gameExporter ? rootManager.photoRoot.gameControllable.exportControllable.exporting(ids: photoIds) : rootManager.photoRoot.exportControllable.exporting(ids: photoIds)
+        let newPhotoIds = rootManager.photoRoot.exportControllable.exporting(ids: photoIds)
         allIds.merge(other: newPhotoIds)
-        let newSpaceIds = exportModel.gameExporter ? rootManager.spaceRoot.gameControllable.exportControllable.exporting(ids: spaceIds) : rootManager.spaceRoot.exportControllable.exporting(ids: spaceIds)
+        let newSpaceIds = rootManager.spaceRoot.exportControllable.exporting(ids: spaceIds)
         allIds.merge(other: newSpaceIds)
-        let newTableIds = exportModel.gameExporter ? rootManager.tableRoot.gameControllable.exportControllable.exporting(ids: tableIds) : rootManager.tableRoot.exportControllable.exporting(ids: tableIds)
+        let newTableIds = rootManager.tableRoot.exportControllable.exporting(ids: tableIds)
         allIds.merge(other: newTableIds)
-        let newValueIds = exportModel.gameExporter ? rootManager.characterRoot.gameControllable.exportControllable.exporting(ids: valueIds) : rootManager.characterRoot.exportControllable.exporting(ids: valueIds)
+        let newValueIds = rootManager.characterRoot.exportControllable.exporting(ids: valueIds)
         allIds.merge(other: newValueIds)
-        let newWeatherIds = exportModel.gameExporter ? rootManager.weatherRoot.gameControllable.exportControllable.exporting(ids: weatherIds) : rootManager.weatherRoot.exportControllable.exporting(ids: weatherIds)
+        let newWeatherIds = rootManager.weatherRoot.exportControllable.exporting(ids: weatherIds)
         allIds.merge(other: newWeatherIds)
         return allIds
     }
     
     public func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, counterUpdater: @MainActor @Sendable (Int?, Bool) async -> Void) async throws -> ItemModuleIds {
-
-        if await exportModel.gameExporter {
-            let ids1 = try await rootManager.audioRoot.gameControllable.exportControllable.export(itemIds: itemIds, into: outputStream, counterUpdater: counterUpdater)
-            let ids2 = try await rootManager.diceRoot.gameControllable.exportControllable.export(itemIds: ids1, into: outputStream, counterUpdater: counterUpdater)
-            let ids3 = try await rootManager.mapRoot.gameControllable.exportControllable.export(itemIds: ids2, into: outputStream, counterUpdater: counterUpdater)
-            let ids4 = try await rootManager.pdfRoot.gameControllable.exportControllable.export(itemIds: ids3, into: outputStream, counterUpdater: counterUpdater)
-            let ids5 = try await rootManager.photoRoot.gameControllable.exportControllable.export(itemIds: ids4, into: outputStream, counterUpdater: counterUpdater)
-            let ids6 = try await rootManager.spaceRoot.gameControllable.exportControllable.export(itemIds: ids5, into: outputStream, counterUpdater: counterUpdater)
-            let ids7 = try await rootManager.tableRoot.gameControllable.exportControllable.export(itemIds: ids6, into: outputStream, counterUpdater: counterUpdater)
-            let ids8 = try await rootManager.characterRoot.gameControllable.exportControllable.export(itemIds: ids7, into: outputStream, counterUpdater: counterUpdater)
-            let ids9 = try await rootManager.weatherRoot.gameControllable.exportControllable.export(itemIds: ids8, into: outputStream, counterUpdater: counterUpdater)
-            return ids9
-        } else {
-            let ids1 = try await rootManager.audioRoot.exportControllable.export(itemIds: itemIds, into: outputStream, counterUpdater: counterUpdater)
-            let ids2 = try await rootManager.diceRoot.exportControllable.export(itemIds: ids1, into: outputStream, counterUpdater: counterUpdater)
-            let ids3 = try await rootManager.mapRoot.exportControllable.export(itemIds: ids2, into: outputStream, counterUpdater: counterUpdater)
-            let ids4 = try await rootManager.pdfRoot.exportControllable.export(itemIds: ids3, into: outputStream, counterUpdater: counterUpdater)
-            let ids5 = try await rootManager.photoRoot.exportControllable.export(itemIds: ids4, into: outputStream, counterUpdater: counterUpdater)
-            let ids6 = try await rootManager.spaceRoot.exportControllable.export(itemIds: ids5, into: outputStream, counterUpdater: counterUpdater)
-            let ids7 = try await rootManager.tableRoot.exportControllable.export(itemIds: ids6, into: outputStream, counterUpdater: counterUpdater)
-            let ids8 = try await rootManager.characterRoot.exportControllable.export(itemIds: ids7, into: outputStream, counterUpdater: counterUpdater)
-            let ids9 = try await rootManager.weatherRoot.exportControllable.export(itemIds: ids8, into: outputStream, counterUpdater: counterUpdater)
-            return ids9
-        }
+        
+        let ids1 = try await rootManager.audioRoot.exportControllable.export(itemIds: itemIds, into: outputStream, counterUpdater: counterUpdater)
+        let ids2 = try await rootManager.diceRoot.exportControllable.export(itemIds: ids1, into: outputStream, counterUpdater: counterUpdater)
+        let ids3 = try await rootManager.mapRoot.exportControllable.export(itemIds: ids2, into: outputStream, counterUpdater: counterUpdater)
+        let ids4 = try await rootManager.pdfRoot.exportControllable.export(itemIds: ids3, into: outputStream, counterUpdater: counterUpdater)
+        let ids5 = try await rootManager.photoRoot.exportControllable.export(itemIds: ids4, into: outputStream, counterUpdater: counterUpdater)
+        let ids6 = try await rootManager.spaceRoot.exportControllable.export(itemIds: ids5, into: outputStream, counterUpdater: counterUpdater)
+        let ids7 = try await rootManager.tableRoot.exportControllable.export(itemIds: ids6, into: outputStream, counterUpdater: counterUpdater)
+        let ids8 = try await rootManager.characterRoot.exportControllable.export(itemIds: ids7, into: outputStream, counterUpdater: counterUpdater)
+        let ids9 = try await rootManager.weatherRoot.exportControllable.export(itemIds: ids8, into: outputStream, counterUpdater: counterUpdater)
+        return ids9
     }
 }

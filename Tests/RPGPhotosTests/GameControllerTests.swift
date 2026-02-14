@@ -85,7 +85,7 @@ struct GameControllerTests {
     @Test func CreateGameData() async throws {
         let root = try await GameControllerTests.setupPhoto()
         let rootManager = await RootManager.preview(fake: root.rootController)
-        let sut = await GameController(rootManager: rootManager, config: root.config, itemController: root.itemController, linkRegisterController: root.editController.linkRegisterController)
+        let sut = await GameController(rootManager: rootManager, itemController: root.itemController, exportController: root.exportController)
 
         let itemId = await root.itemController.itemDataModel.items[0]
         let version = await root.itemController.itemOrEmpty(for: itemId).version
@@ -111,7 +111,7 @@ struct GameControllerTests {
     @Test func UpdateGame() async throws {
         let root = try await GameControllerTests.setupPhoto()
         let rootManager = await RootManager.preview(fake: root.rootController)
-        let sut = await GameController(rootManager: rootManager, config: root.config, itemController: root.itemController, linkRegisterController: root.editController.linkRegisterController)
+        let sut = await GameController(rootManager: rootManager, itemController: root.itemController, exportController: root.exportController)
 
         let itemId = await root.itemController.itemDataModel.items[0]
         let version = await root.itemController.itemOrEmpty(for: itemId).version

@@ -10,29 +10,25 @@ public protocol TableGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(rootManager: RootManager, config: ModuleConfiguration, diceRoot: DiceRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController) {
+    @MainActor init(rootManager: RootManager, diceRoot: DiceRootModel, itemController: ItemController, exportController: ExportController) {
         self.diceRoot = diceRoot
         self.itemController = itemController
-        self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(config: config, dataController: nil, linkRegisterController: linkRegisterController)
-        self.importController = ImportController(itemController: internItemController)
-        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
+        self.exportController = exportController
+
+        self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
     }
 
     let diceRoot: DiceRootModel
     let itemController: ItemController
     let exportController: ExportController
-    let importController: ImportController
 
     let gameModel: ItemGameModel
 
-    @MainActor
-    func gameItem(for itemId: UUID) -> TableModel {
+    @MainActor func gameItem(for itemId: UUID) -> TableModel {
         (gameModel.itemData[itemId] as? TableModel) ?? itemController.itemOrEmpty(for: itemId)
     }
     
-    @MainActor
-    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
         if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
             gameModel.itemData[itemId] = item
         } else {
@@ -41,27 +37,18 @@ struct GameController: Sendable {
         }
     }
     
-    @MainActor
-    func currentItem() -> TableModel {
+    @MainActor func currentItem() -> TableModel {
         gameItem(for: gameModel.currentItemId ?? UUID())
     }
 }
 
 extension GameController: GameControllable {
-    var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
-    }
-    var exportControllable: any ExportControllable {
-        exportController as ExportControllable
-    }
-    var importControllable: any ImportControllable {
-        importController as ImportControllable
-    }
+    var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
+    var exportControllable: any ExportControllable { exportController as ExportControllable }
 }
 
 extension GameController: TableGameStorable {
-    @MainActor
-    public func addResult(_ result: ResultCategory, value: String) {
+    @MainActor public func addResult(_ result: ResultCategory, value: String) {
         guard result.module == .table else { return }
         let model = gameItem(for: result.id)
         if let childId = result.childId {

@@ -31,9 +31,9 @@ public final class TableRootModel: @unchecked Sendable {
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
         _editController = EditController(diceRoot: diceRoot, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
-        _exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
+        _exportController = ExportController(rootManager: rootManager, itemController: itemController)
         _importController = ImportController(itemController: itemController)
-        _gameController = GameController(rootManager: rootManager, config: config, diceRoot: diceRoot, itemController: itemController, linkRegisterController: linkRegisterController)
+        _gameController = GameController(rootManager: rootManager, diceRoot: diceRoot, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
 
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)

@@ -22,7 +22,8 @@ public final class ItemDataModel: Sendable {
     public let version: Int
             
     func item(for itemId: UUID) -> ModelType? {
-        itemData[itemId]
+        guard let gameItem = gameItemData[itemId] else { return itemData[itemId] }
+        return gameItem
     }
     
     func insert(itemId: UUID, at index: Int?) {

@@ -10,10 +10,10 @@ import TableRPG
 import CharacterRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController, gameExporter: Bool) {
+    @MainActor init(rootManager: RootManager, itemController: ItemController) {
         self.rootManager = rootManager
         self.itemController = itemController
-        self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
+        self.exportModel = ItemDataExportModel()
     }
 
     let rootManager: RootManager
@@ -27,14 +27,15 @@ extension ExportController: ExportControllable {
     public func exportingAll() -> ItemModuleIds {
         var itemIds = ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.map { $0 }])
 
-        if !exportModel.gameExporter {
+        // TODO:
+        //if !exportModel.gameExporter {
             itemIds.merge(other: rootManager.audioRoot.exportControllable.exportingAll())
             itemIds.merge(other: rootManager.diceRoot.exportControllable.exportingAll())
             itemIds.merge(other: rootManager.pdfRoot.exportControllable.exportingAll())
             itemIds.merge(other: rootManager.photoRoot.exportControllable.exportingAll())
             itemIds.merge(other: rootManager.tableRoot.exportControllable.exportingAll())
             itemIds.merge(other: rootManager.characterRoot.exportControllable.exportingAll())
-        }
+        //}
         return itemIds
     }
     

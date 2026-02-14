@@ -50,9 +50,9 @@ public final class MapRootModel: @unchecked Sendable {
         _itemController = itemController
         let editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _editController = editController
-        _exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
+        _exportController = ExportController(rootManager: rootManager, itemController: itemController)
         _importController = ImportController(itemController: itemController, gameImporter: false)
-        let gameController = GameController(rootManager: rootManager, root: self, itemController: itemController, linkRegisterController: linkRegisterController)
+        let gameController = GameController(rootManager: rootManager, root: self, itemController: itemController, exportController: exportController)
         _gameController = gameController
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, editController: editController, gameController: gameController)
 

@@ -29,31 +29,19 @@ extension ImportController: ImportControllable {
     var itemControllable: any ItemControllable {
         itemController as (any ItemControllable)
     }
-
+    
     public func additionalImport(from inputStream: InputStream, counterUpdater: @MainActor @Sendable @escaping () async -> Void) async throws {
         await logImport(title: "additional", count: 0)
-        if await importModel.gameImporter {
-            try await root.audioRoot.gameControllable.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.diceRoot.gameControllable.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.mapRoot.gameControllable.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.pdfRoot.gameControllable.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.photoRoot.gameControllable.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.spaceRoot.gameControllable.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.tableRoot.gameControllable.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.characterRoot.gameControllable.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.weatherRoot.gameControllable.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-        } else {
-            await setOverwite()
-            try await root.audioRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.diceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.mapRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.pdfRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.photoRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.spaceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.tableRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.characterRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-            try await root.weatherRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-        }
+        await setOverwite()
+        try await root.audioRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+        try await root.diceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+        try await root.mapRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+        try await root.pdfRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+        try await root.photoRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+        try await root.spaceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+        try await root.tableRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+        try await root.characterRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+        try await root.weatherRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
     }
     
     @MainActor

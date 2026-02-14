@@ -25,12 +25,9 @@ public protocol PhotoGameControllable {
 }
 
 struct GameController: Sendable {
-    @MainActor
-    init(rootManager: RootManager, config: ModuleConfiguration, itemController: ItemController, linkRegisterController: LinkRegisterController) {
+    @MainActor init(rootManager: RootManager, itemController: ItemController, exportController: ExportController) {
         self.itemController = itemController
-        self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(config: config, dataController: nil, linkRegisterController: linkRegisterController)
-        self.importController = ImportController(itemController: internItemController)
+        self.exportController = exportController
         
         self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
         self.photoGameModel = PhotoGameModel()
@@ -38,18 +35,15 @@ struct GameController: Sendable {
 
     let itemController: ItemController
     let exportController: ExportController
-    let importController: ImportController
 
     let gameModel: ItemGameModel
     let photoGameModel: PhotoGameModel
 
-    @MainActor
-    func gameItem(for itemId: UUID) -> PhotoModel {
+    @MainActor func gameItem(for itemId: UUID) -> PhotoModel {
         (gameModel.itemData[itemId] as? PhotoModel) ?? itemController.itemOrEmpty(for: itemId)
     }
     
-    @MainActor
-    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
         if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
             gameModel.itemData[itemId] = item
         } else {
@@ -58,23 +52,16 @@ struct GameController: Sendable {
         }
     }
     
-    @MainActor
-    func currentItem() -> PhotoModel {
+    @MainActor func currentItem() -> PhotoModel {
         gameItem(for: gameModel.currentItemId ?? UUID())
     }
 }
 
 extension GameController: GameControllable {
-    var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
-    }
-    var exportControllable: any ExportControllable {
-        exportController as ExportControllable
-    }
-    var importControllable: any ImportControllable {
-        importController as ImportControllable
-    }
-    func resetGameState() {
+    var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
+    var exportControllable: any ExportControllable { exportController as ExportControllable }
+    
+    @MainActor func resetGameState() {
         photoGameModel.reset()
     }
 }
@@ -92,8 +79,7 @@ extension GameController {
 }
 
 extension GameController: PhotoGameControllable {
-    @MainActor
-    func resetPhotoSpace() {
+    @MainActor func resetPhotoSpace() {
         photoGameModel.openPhotoSpace <=> false
     }
 }

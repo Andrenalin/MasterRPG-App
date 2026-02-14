@@ -31,13 +31,13 @@ public final class AudioRootModel: @unchecked Sendable {
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController
         _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
-        _exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
+        _exportController = ExportController(rootManager: rootManager, itemController: itemController)
         _importController = ImportController(itemController: itemController)
 
         let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
         _audioController = audioController
 
-        let gameController = GameController(rootManager: rootManager, config: config, itemController: itemController, audioController: audioController, linkRegisterController: linkRegisterController)
+        let gameController = GameController(rootManager: rootManager, itemController: itemController, audioController: audioController, exportController: exportController)
         _gameController = gameController
 
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, audioController: audioController, gameController: gameController)

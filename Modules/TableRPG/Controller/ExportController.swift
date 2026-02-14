@@ -6,10 +6,10 @@ import os.log
 import DiceRPG
 
 struct ExportController: Sendable {
-    @MainActor init(rootManager: RootManager, itemController: ItemController, gameExporter: Bool) {
+    @MainActor init(rootManager: RootManager, itemController: ItemController) {
         self.rootManager = rootManager
         self.itemController = itemController
-        self.exportModel = ItemDataExportModel(gameExporter: gameExporter)
+        self.exportModel = ItemDataExportModel()
     }
 
     let rootManager: RootManager

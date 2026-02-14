@@ -32,18 +32,16 @@ public protocol ValueGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor
-    init(rootManager: RootManager, root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController) {
+    @MainActor init(rootManager: RootManager, root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, exportController: ExportController) {
         self.root = root
         self.diceRoot = diceRoot
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
         
         self.itemController = itemController
-        self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(config: root.config, tableRoot: tableRoot, dataController: nil, linkRegisterController: linkRegisterController)
-        self.importController = ImportController(itemController: internItemController)
-        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
+        self.exportController = exportController
+
+        self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
         self.gameDiceModel = ValueGameModel()
     }
     
@@ -54,18 +52,15 @@ struct GameController: Sendable {
     
     let itemController: ItemController
     let exportController: ExportController
-    let importController: ImportController
 
     let gameModel: ItemGameModel
     let gameDiceModel: ValueGameModel
     
-    @MainActor
-    func gameItem(for itemId: UUID) -> ValueModel {
+    @MainActor func gameItem(for itemId: UUID) -> ValueModel {
         (gameModel.itemData[itemId] as? ValueModel) ?? itemController.itemOrEmpty(for: itemId)
     }
     
-    @MainActor
-    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
         if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
             gameModel.itemData[itemId] = item
         } else {
@@ -74,8 +69,7 @@ struct GameController: Sendable {
         }
     }
     
-    @MainActor
-    func currentItem() -> ValueModel {
+    @MainActor func currentItem() -> ValueModel {
         gameItem(for: gameModel.currentItemId ?? UUID())
     }
 }
@@ -132,15 +126,8 @@ extension GameController {
 }
 
 extension GameController: GameControllable {
-    var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
-    }
-    var exportControllable: any ExportControllable {
-        exportController as ExportControllable
-    }
-    var importControllable: any ImportControllable {
-        importController as ImportControllable
-    }
+    var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
+    var exportControllable: any ExportControllable { exportController as ExportControllable }
 }
 
 extension GameController: ValueGameStorable {

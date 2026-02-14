@@ -81,7 +81,6 @@ public protocol GameControllable: Sendable {
     // other controllers
     var itemControllable: any ItemControllable { get }
     var exportControllable: any ExportControllable { get }
-    var importControllable: any ImportControllable { get }
     
     // model data
     var gameModel: ItemGameModel { get }
@@ -94,8 +93,7 @@ public protocol GameControllable: Sendable {
     // item manipluator
     var currentId: UUID { get async }
 
-    @MainActor
-    func resetGameState()
+    @MainActor func resetGameState()
     
     // focus
     func focus(on id: UUID?) async
@@ -126,18 +124,17 @@ public extension GameControllable {
 
     func hasItem(id: UUID, version: Int) async -> Bool {
         guard await gameModel.itemData[id] == nil else {
-            if version == 0 {
-                return true
-            }
+            return version == 0
             // the item should be imported
-            if await importControllable.itemControllable.itemDataModel.items.contains(id) {
-                return await importControllable.itemControllable.item(for: id, version: version) != nil
-            }
-            return await itemControllable.item(for: id, version: version) != nil
+//            if await importControllable.itemControllable.itemDataModel.items.contains(id) {
+//                return await importControllable.itemControllable.item(for: id, version: version) != nil
+//            }
+//            return await itemControllable.item(for: id, version: version) != nil
         }
         
         guard let item = await itemControllable.item(for: id, version: version) else { return false }
-        await gameModel.insert(itemId: item.id, item: item)
+        let gameItem = item.copy()
+        await gameModel.insert(itemId: item.id, item: gameItem)
         return true
     }
 
@@ -160,7 +157,7 @@ public extension GameControllable {
         await resetGameState()
     }
     
-    func resetGameState() {}
+    @MainActor func resetGameState() {}
 
     @MainActor
     func report(itemId: UUID, for player: UUID) {

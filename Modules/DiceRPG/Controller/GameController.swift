@@ -34,18 +34,16 @@ public protocol DiceGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(rootManager: RootManager, config: ModuleConfiguration, itemController: ItemController, linkRegisterController: LinkRegisterController) {
+    @MainActor init(rootManager: RootManager, itemController: ItemController, exportController: ExportController) {
         self.itemController = itemController
-        self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(config: config, dataController: nil, linkRegisterController: linkRegisterController)
-        self.importController = ImportController(itemController: internItemController)
-        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
+        self.exportController = exportController
+
+        self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
         self.diceGameModel = DiceGameModel()
     }
 
     let itemController: ItemController
     let exportController: ExportController
-    let importController: ImportController
 
     let gameModel: ItemGameModel
     let diceGameModel: DiceGameModel
@@ -67,15 +65,9 @@ struct GameController: Sendable {
 }
 
 extension GameController: GameControllable {    
-    var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
-    }
-    var exportControllable: any ExportControllable {
-        exportController as ExportControllable
-    }
-    var importControllable: any ImportControllable {
-        importController as ImportControllable
-    }
+    var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
+    var exportControllable: any ExportControllable { exportController as ExportControllable }
+
     @MainActor func resetGameState() {
         diceGameModel.reset()
     }

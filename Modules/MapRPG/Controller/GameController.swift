@@ -35,15 +35,13 @@ public protocol MapGameStorable {
 }
 
 struct GameController: Sendable {
-    @MainActor
-    init(rootManager: RootManager, root: MapRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController) {
+    @MainActor init(rootManager: RootManager, root: MapRootModel, itemController: ItemController, exportController: ExportController) {
         self.rootManager = rootManager
         self.root = root
         self.itemController = itemController
-        self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
-        let internItemController = ItemController(config: root.config, photoRoot: root.photoRoot, dataController: nil, linkRegisterController: linkRegisterController)
-        self.importController = ImportController(itemController: internItemController, gameImporter: true)
-        self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
+        self.exportController = exportController
+
+        self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
         self.mapGameModel = MapGameModel()
     }
 
@@ -51,18 +49,15 @@ struct GameController: Sendable {
     let root: MapRootModel
     let itemController: ItemController
     let exportController: ExportController
-    let importController: ImportController
 
     let gameModel: ItemGameModel
     let mapGameModel: MapGameModel
 
-    @MainActor
-    func gameItem(for itemId: UUID) -> MapModel {
+    @MainActor func gameItem(for itemId: UUID) -> MapModel {
         (gameModel.itemData[itemId] as? MapModel) ?? itemController.itemOrEmpty(for: itemId)
     }
     
-    @MainActor
-    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
+    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
         if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
             gameModel.itemData[itemId] = item
         } else {
@@ -71,24 +66,16 @@ struct GameController: Sendable {
         }
     }
     
-    @MainActor
-    func currentItem() -> MapModel {
+    @MainActor func currentItem() -> MapModel {
         gameItem(for: gameModel.currentItemId ?? UUID())
     }
 }
 
 extension GameController: GameControllable {
-    var itemControllable: any ItemControllable {
-        itemController as (any ItemControllable)
-    }
-    var exportControllable: any ExportControllable {
-        exportController as ExportControllable
-    }
-    var importControllable: any ImportControllable {
-        importController as ImportControllable
-    }
-    
-    func resetGameState() {
+    var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
+    var exportControllable: any ExportControllable { exportController as ExportControllable }
+
+    @MainActor func resetGameState() {
         mapGameModel.reset()
     }
 }
@@ -198,7 +185,7 @@ extension GameController: MapGameStorable {
     
     @MainActor
     func saveAll() -> ItemModuleIds {
-        let gameExportController = ExportController(rootManager: rootManager, itemController: importController.itemController, gameExporter: true)
+        let gameExportController = ExportController(rootManager: rootManager, itemController: itemController)
         for itemId in gameModel.items {
             gameItem(for: itemId).mapPins = gameItem(for: itemId).mapPins.filter { !$0.isPlayer }
         }
