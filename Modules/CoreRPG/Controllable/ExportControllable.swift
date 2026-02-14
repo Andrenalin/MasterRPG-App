@@ -34,6 +34,10 @@ public enum ItemDataExportableError: Error {
 }
 
 public extension ExportControllable {
+    @MainActor var rootExportController: ExportControllable {
+        rootManager.adventureRoot.exportControllable
+    }
+    
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
     func exportUrl(isSaveGame: Bool) -> URL {
@@ -44,13 +48,11 @@ public extension ExportControllable {
         return URL.cachesDirectory.appending(path: "\(now)-\(name)")
     }
 
-    @MainActor
-    func exportingAll() -> ItemModuleIds {
+    @MainActor func exportingAll() -> ItemModuleIds {
         ItemModuleIds(dictionary: [itemControllable.config.module: itemControllable.itemDataModel.items.map { $0 }])
     }
 
-    @MainActor
-    func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+    @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         itemIds
     }
     
@@ -59,7 +61,7 @@ public extension ExportControllable {
     }
 
     @MainActor func createExport(itemIds: ItemModuleIds, into url: URL) -> Task<Void, any Error> {
-        let exportController = self.rootManager.adventureRoot.exportControllable
+        let exportController = rootExportController
 
         return Task.detached(priority: .userInitiated) {
             await self.resetStartState()

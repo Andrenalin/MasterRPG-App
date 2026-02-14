@@ -33,7 +33,7 @@ public protocol ValueGameStorable {
 
 struct GameController: Sendable {
     @MainActor
-    init(rootManager: RootManager, root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+    init(rootManager: RootManager, root: CharacterRootModel, diceRoot: DiceRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, itemController: ItemController, linkRegisterController: LinkRegisterController) {
         self.root = root
         self.diceRoot = diceRoot
         self.photoRoot = photoRoot
@@ -43,8 +43,6 @@ struct GameController: Sendable {
         self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
         let internItemController = ItemController(config: root.config, tableRoot: tableRoot, dataController: nil, linkRegisterController: linkRegisterController)
         self.importController = ImportController(itemController: internItemController)
-        self.rootExportControllable = rootExportControllable
-        self.rootImportControllable = rootImportControllable
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
         self.gameDiceModel = ValueGameModel()
     }
@@ -57,8 +55,6 @@ struct GameController: Sendable {
     let itemController: ItemController
     let exportController: ExportController
     let importController: ImportController
-    let rootExportControllable: any ExportControllable
-    let rootImportControllable: any ImportControllable
 
     let gameModel: ItemGameModel
     let gameDiceModel: ValueGameModel
@@ -200,7 +196,7 @@ extension GameController: ValueGameStorable {
     public func updatePlayer(data: NetworkCodableDataType) async throws {
         if let encodedData = data.data {
             do {
-                try await importNetworkIntoStorage(from: encodedData)
+                try await importNetwork(from: encodedData)
             } catch {
                 print("Error \(error.localizedDescription)")
             }
@@ -267,14 +263,5 @@ extension GameController: ValueGameStorable {
         let entry = ValueEntryModel(id: UUID(), name: name, type: .text, isGenerator: false, value: description, diceId: nil, valueId: adventureValue.id)
         await root.editController.add(entry: entry, into: character.id)
         return adventureValue
-    }
-}
-
-private extension GameController {
-    func importNetworkIntoStorage(from data: Data) async throws {
-        let stream = InputStream(data: data)
-        stream.open()
-        defer { stream.close() }
-        try await rootImportControllable.importStream(from: stream, counterUpdater: {})
     }
 }

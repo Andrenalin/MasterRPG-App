@@ -17,17 +17,17 @@ public final class ItemGameModel: Sendable {
 
     public let itemDataModel: ItemDataModel
     public var items: [UUID] {
-        get { itemDataModel.items }
-        set { itemDataModel.items = newValue }
+        get { itemDataModel.gameItems }
+        set { itemDataModel.gameItems = newValue }
     }
     public var itemData: [UUID: ModelType] {
-        get { itemDataModel.itemData }
-        set { itemDataModel.itemData = newValue }
+        get { itemDataModel.gameItemData }
+        set { itemDataModel.gameItemData = newValue }
     }
     public var focusItemIds: [UUID] = []
 
     public var currentItemId: UUID? {
-        itemDataModel.items.first
+        itemDataModel.gameItems.first
     }
     
     public var currentPlayers: [UUID] = []
@@ -82,8 +82,6 @@ public protocol GameControllable: Sendable {
     var itemControllable: any ItemControllable { get }
     var exportControllable: any ExportControllable { get }
     var importControllable: any ImportControllable { get }
-    var rootExportControllable: any ExportControllable { get }
-    var rootImportControllable: any ImportControllable { get }
     
     // model data
     var gameModel: ItemGameModel { get }
@@ -195,7 +193,7 @@ public extension GameControllable {
         stream.open()
 
         do {
-            let _ = try await rootExportControllable.export(itemIds: itemIds, into: stream) { _, _ in }
+            let _ = try await exportControllable.rootExportController.export(itemIds: itemIds, into: stream) { _, _ in }
         } catch {
             print(error.localizedDescription)
         }
@@ -272,11 +270,11 @@ public extension GameControllable {
     }
 }
 
-private extension GameControllable {
+public extension GameControllable {
     func importNetwork(from data: Data) async throws {
         let stream = InputStream(data: data)
         stream.open()
         defer { stream.close() }
-        try await rootImportControllable.importStream(from: stream, counterUpdater: {})
+        try await exportControllable.rootManager.adventureRoot.importControllable.importStream(from: stream, counterUpdater: {})
     }
 }

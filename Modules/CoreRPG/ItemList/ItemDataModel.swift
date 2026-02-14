@@ -14,6 +14,9 @@ public final class ItemDataModel: Sendable {
 
     public var items: [UUID] = []
     public var itemData: [UUID: ModelType] = [:]
+    
+    public var gameItems: [UUID] = []
+    public var gameItemData: [UUID: ModelType] = [:]
 
     public let categoryTags: [ItemListCategory]
     public let version: Int

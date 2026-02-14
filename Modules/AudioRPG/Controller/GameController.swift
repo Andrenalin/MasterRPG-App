@@ -17,14 +17,12 @@ public protocol AudioGameStoreable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(rootManager: RootManager, config: ModuleConfiguration, itemController: ItemController, audioController: AudioController, linkRegisterController: LinkRegisterController, rootExportControllable: any ExportControllable, rootImportControllable: any ImportControllable) {
+    @MainActor init(rootManager: RootManager, config: ModuleConfiguration, itemController: ItemController, audioController: AudioController, linkRegisterController: LinkRegisterController) {
         self.itemController = itemController
         self.audioController = audioController
         self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
         let internItemController = ItemController(config: config, dataController: nil, linkRegisterController: linkRegisterController)
         self.importController = ImportController(itemController: internItemController)
-        self.rootExportControllable = rootExportControllable
-        self.rootImportControllable = rootImportControllable
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
 
@@ -32,8 +30,6 @@ struct GameController: Sendable {
     let audioController: AudioController
     let importController: ImportController
     let exportController: ExportController
-    let rootExportControllable: any ExportControllable
-    let rootImportControllable: any ImportControllable
 
     let gameModel: ItemGameModel
 

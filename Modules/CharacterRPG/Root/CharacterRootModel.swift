@@ -37,7 +37,7 @@ public final class CharacterRootModel: @unchecked Sendable {
         _editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
-        _gameController = GameController(rootManager: rootManager, root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, linkRegisterController: linkRegisterController, rootExportControllable: rootManager.adventureRoot.exportControllable, rootImportControllable: rootManager.adventureRoot.importControllable)
+        _gameController = GameController(rootManager: rootManager, root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, linkRegisterController: linkRegisterController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
 
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)

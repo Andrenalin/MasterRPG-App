@@ -28,7 +28,6 @@ struct GameController: Sendable {
         self.exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
         let internItemController = ItemController(config: root.config, dataController: nil, linkRegisterController: linkRegisterController)
         self.importController = ImportController(root: root, itemController: internItemController, gameImporter: true)
-        self.gameExportController = ExportController(rootManager: rootManager, itemController: internItemController, gameExporter: true)
         self.gameModel = ItemGameModel(itemDataModel: internItemController.itemDataModel)
     }
     
@@ -36,7 +35,6 @@ struct GameController: Sendable {
     let itemController: ItemController
     let importController: ImportController
     let exportController: ExportController
-    let gameExportController: ExportController
     
     let gameModel: ItemGameModel
     
@@ -71,12 +69,6 @@ extension GameController: GameControllable {
     var importControllable: any ImportControllable {
         importController as ImportControllable
     }
-    var rootExportControllable: any ExportControllable {
-        gameExportController as ExportControllable
-    }
-    var rootImportControllable: any ImportControllable {
-        importController as ImportControllable
-    }
 }
 
 extension GameController: AdventureStoreGameable {
@@ -108,7 +100,7 @@ extension GameController: AdventureStoreGameable {
     func saveGame() -> (Task<Void, any Error>, URL) {
         // save only the map state, later we could save more states
         let ids = root.mapRoot.mapGameControllable.saveAll()
-        let url = rootExportControllable.exportUrl(isSaveGame: true)
-        return (rootExportControllable.createExport(itemIds: ids, into: url), url)
+        let url = exportController.rootExportController.exportUrl(isSaveGame: true)
+        return (exportController.rootExportController.createExport(itemIds: ids, into: url), url)
     }
 }

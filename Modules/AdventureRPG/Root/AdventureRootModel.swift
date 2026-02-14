@@ -224,11 +224,11 @@ extension AdventureRootModel: RootControllable {
     public var linkControllable: any LinkControllable {
         linkController as LinkControllable
     }
-    public var gameExportControllable: any ExportControllable {
-        gameController.gameExportController as ExportControllable
-    }
     public var gameImportControllable: any ImportControllable {
         gameController.importController as ImportControllable
+    }
+    public var gameExportControllable: any ExportControllable {
+        exportController
     }
 }
 

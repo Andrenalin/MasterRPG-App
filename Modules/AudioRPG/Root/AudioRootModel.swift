@@ -37,7 +37,7 @@ public final class AudioRootModel: @unchecked Sendable {
         let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
         _audioController = audioController
 
-        let gameController = GameController(rootManager: rootManager, config: config, itemController: itemController, audioController: audioController, linkRegisterController: linkRegisterController, rootExportControllable: rootManager.adventureRoot.exportControllable, rootImportControllable: rootManager.adventureRoot.importControllable)
+        let gameController = GameController(rootManager: rootManager, config: config, itemController: itemController, audioController: audioController, linkRegisterController: linkRegisterController)
         _gameController = gameController
 
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, audioController: audioController, gameController: gameController)

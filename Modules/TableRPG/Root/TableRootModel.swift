@@ -33,7 +33,7 @@ public final class TableRootModel: @unchecked Sendable {
         _editController = EditController(diceRoot: diceRoot, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: rootManager, itemController: itemController, gameExporter: false)
         _importController = ImportController(itemController: itemController)
-        _gameController = GameController(rootManager: rootManager, config: config, diceRoot: diceRoot, itemController: itemController, linkRegisterController: linkRegisterController, rootExportControllable: rootManager.adventureRoot.exportControllable, rootImportControllable: rootManager.adventureRoot.importControllable)
+        _gameController = GameController(rootManager: rootManager, config: config, diceRoot: diceRoot, itemController: itemController, linkRegisterController: linkRegisterController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
 
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
