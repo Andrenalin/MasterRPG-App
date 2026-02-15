@@ -79,8 +79,9 @@ public extension ItemControllable {
         guard let model = model as? Model else { return }
         if itemDataModel.isGameMode == true && forceSave == false {
             itemDataModel.gameItemData[model.id] = model
-            itemDataModel.gameItems.removeAll(where: { $0 == model.id })
-            itemDataModel.gameItems.append(model.id)
+            // TODO: this fix some 2 test but let shown the wrong image / previous ones
+//            itemDataModel.gameItems.removeAll(where: { $0 == model.id })
+//            itemDataModel.gameItems.append(model.id)
             return
         }
         if let orignal = self.itemSync(for: model.id, noGame: true) {
