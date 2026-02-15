@@ -15,6 +15,7 @@ import Testing
 @testable import SpaceRPG
 @testable import TableRPG
 @testable import CharacterRPG
+import AdventureRPG
 
 final class PlayerMasterControllerTests {
     private var sut: MasterController!
@@ -80,6 +81,9 @@ final class PlayerMasterControllerTests {
         try await MockRoot.importTestData(into: rootPlayer.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 0)
         await #expect(rootPlayer.audioRoot.itemController.itemDataModel.items.count == 2)
 
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
+
         // send show audio
         let audioId = await rootPlayer.audioRoot.itemController.itemDataModel.items[1]
         let version = await rootPlayer.audioRoot.itemController.itemOrEmpty(for: audioId).version
@@ -114,6 +118,9 @@ final class PlayerMasterControllerTests {
         try await MockRoot.importTestData(into: rootPlayer.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
         await #expect(rootPlayer.photoRoot.itemController.itemDataModel.items.count == 3)
 
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
+
         // send show photo
         let photoId = await rootPlayer.photoRoot.itemController.itemDataModel.items[0]
         let version = await rootPlayer.photoRoot.itemController.itemOrEmpty(for: photoId).version
@@ -147,6 +154,9 @@ final class PlayerMasterControllerTests {
         try await MockRoot.importTestData(into: rootPlayer.adventureRoot, name: ResourcesDebug.spaceTestData, itemCounter: 0)
         await #expect(rootPlayer.spaceRoot.itemController.itemDataModel.items.count == 1)
 
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
+
         // send show space
         let spaceId = await rootPlayer.spaceRoot.itemController.itemDataModel.items[0]
         let version = await rootPlayer.spaceRoot.itemController.itemOrEmpty(for: spaceId).version
@@ -179,6 +189,9 @@ final class PlayerMasterControllerTests {
         try await setUp()
         try await MockRoot.importTestData(into: rootPlayer.adventureRoot)
         await #expect(rootPlayer.characterRoot.itemController.itemDataModel.items.count == 13)
+
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
 
         // send update Character
         let characterId = await rootPlayer.characterRoot.itemController.itemDataModel.items[1]

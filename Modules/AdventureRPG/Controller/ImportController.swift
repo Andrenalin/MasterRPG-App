@@ -30,18 +30,18 @@ extension ImportController: ImportControllable {
         itemController as (any ItemControllable)
     }
     
-    public func additionalImport(from inputStream: InputStream, counterUpdater: @MainActor @Sendable @escaping () async -> Void) async throws {
+    public func additionalImport(from inputStream: InputStream, forceSave: Bool, counterUpdater: @MainActor @Sendable @escaping () async -> Void) async throws {
         await logImport(title: "additional", count: 0)
         await setOverwite()
-        try await root.audioRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-        try await root.diceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-        try await root.mapRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-        try await root.pdfRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-        try await root.photoRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-        try await root.spaceRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-        try await root.tableRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-        try await root.characterRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
-        try await root.weatherRoot.importControllable.importStream(from: inputStream, counterUpdater: counterUpdater)
+        try await root.audioRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
+        try await root.diceRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
+        try await root.mapRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
+        try await root.pdfRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
+        try await root.photoRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
+        try await root.spaceRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
+        try await root.tableRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
+        try await root.characterRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
+        try await root.weatherRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
     }
     
     @MainActor

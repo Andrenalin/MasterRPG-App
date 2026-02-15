@@ -72,8 +72,7 @@ public extension ExportControllable {
         exportModel.isExportRunning = isRunning
     }
 
-    @MainActor
-    func exporting(ids: Set<UUID>) -> ItemModuleIds {
+    @MainActor func exporting(ids: Set<UUID>) -> ItemModuleIds {
         exporting(itemIds: ItemModuleIds(ids: ids, module: itemControllable.config.module))
     }
 

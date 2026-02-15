@@ -59,6 +59,10 @@ extension GameController: GameControllable {
     @MainActor func allPlayersReported(for id: UUID, deep: Int = 0) -> Bool {
         guard deep < 10 else { return false }
         let item = gameItem(for: id)
+        if let itemDB = itemController.itemSync(for: id, noGame: true), itemDB.players.count > item.players.count {
+            item.players = itemDB.players
+        }
+        
         guard gameModel.currentPlayers.filter({ !item.players.contains($0) }).isEmpty else { return false }
         for entry in item.entries {
             if !allPlayersReported(for: entry.audioId, deep: deep + 1) {

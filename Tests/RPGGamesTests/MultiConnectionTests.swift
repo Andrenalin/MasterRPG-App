@@ -15,6 +15,7 @@ import Testing
 @testable import SpaceRPG
 @testable import TableRPG
 @testable import CharacterRPG
+import AdventureRPG
 
 final class MultiConntectionTests {
     private var sut: MasterController!
@@ -107,6 +108,9 @@ final class MultiConntectionTests {
         try await MockRoot.importTestData(into: rootSut.adventureRoot)
         try await MockRoot.importTestData(into: rootSut.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
         try await #require(rootSut.audioRoot.itemController.itemDataModel.items.count == 2)
+
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
 
         // send show audio
         let audioId = await rootSut.audioRoot.itemController.itemDataModel.items[1]
@@ -308,7 +312,7 @@ final class MultiConntectionTests {
         await #expect(rootPlayer.audioRoot.audioController.model.playList.count == 1)
         await #expect(rootPlayer.audioRoot.audioController.model.playList[0].id == audioId)
         await #expect(rootPlayer.audioRoot.audioController.model.currentId == audioId)
-        await #expect(rootPlayer.audioRoot.itemController.itemOrEmpty(for: audioId).players.sorted() == [gameConfigModelPlayer.id, gameConfigModel2Player.id, gameConfigModel3Player.id, gameConfigModelSut.id].sorted())
+        await #expect(rootPlayer.audioRoot.itemController.itemSync(for: audioId, noGame: true)!.players.sorted() == [gameConfigModelPlayer.id, gameConfigModel2Player.id, gameConfigModel3Player.id, gameConfigModelSut.id].sorted())
         reportResult = await rootPlayer.audioRoot.gameController.allPlayersReported(for: audioId)
         #expect(reportResult)
 

@@ -85,6 +85,9 @@ final class MasterPlayerControllerTests {
         try await MockRoot.importTestData(into: rootSut.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
         try await #require(rootSut.audioRoot.itemController.itemDataModel.items.count == 2)
 
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
+        
         // send show audio
         let audioId = await rootSut.audioRoot.itemController.itemDataModel.items[1]
         let version = await rootSut.audioRoot.itemController.itemOrEmpty(for: audioId).version
@@ -123,6 +126,9 @@ final class MasterPlayerControllerTests {
         try await MockRoot.importTestData(into: rootSut.adventureRoot)
         try await MockRoot.importTestData(into: rootSut.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
         try await #require(rootSut.audioRoot.itemController.itemDataModel.items.count == 2)
+
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
 
         // send show audio
         let audioId = await rootSut.audioRoot.itemController.itemDataModel.items[0]
@@ -186,6 +192,9 @@ final class MasterPlayerControllerTests {
         try await importDiceTestData(into: rootPlayer)
         try await #require(rootPlayer.diceRoot.itemController.itemDataModel.items.count == 15)
     
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
+
         // share Dice
         let diceId = await rootSut.diceRoot.itemController.itemDataModel.items[0]
         let name = await rootSut.diceRoot.itemController.itemOrEmpty(for: diceId).name
@@ -282,6 +291,9 @@ final class MasterPlayerControllerTests {
         try await importTestData(into: rootSut)
         try await #require(rootSut.mapRoot.itemController.itemDataModel.items.count == 3)
         
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
+
         // send show map
         let mapId = await rootSut.mapRoot.itemController.itemDataModel.items[0]
         let version = await rootSut.mapRoot.itemController.itemOrEmpty(for: mapId).version
@@ -340,6 +352,9 @@ final class MasterPlayerControllerTests {
         try await importPhotoTestData(into: rootSut)
         try await #require(rootSut.photoRoot.itemController.itemDataModel.items.count == 30)
 
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
+
         // send show audio
         let photoId = await rootSut.photoRoot.itemController.itemDataModel.items[0]
         let version = await rootSut.photoRoot.itemController.itemOrEmpty(for: photoId).version
@@ -377,6 +392,9 @@ final class MasterPlayerControllerTests {
         try await importSpaceTestData(into: rootSut)
         try await #require(rootSut.spaceRoot.itemController.itemDataModel.items.count == 1)
 
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
+
         // send show space
         let spaceId = await rootSut.spaceRoot.itemController.itemDataModel.items[0]
         let version = await rootSut.spaceRoot.itemController.itemOrEmpty(for: spaceId).version
@@ -413,6 +431,9 @@ final class MasterPlayerControllerTests {
         try await importTestData(into: rootSut)
         try await importTableTestData(into: rootSut)
         try await #require(rootSut.tableRoot.itemController.itemDataModel.items.count == 69)
+
+        await rootSut.adventureRoot.startGame()
+        await rootPlayer.adventureRoot.startGame()
 
         // send show table
         let tableId = await rootSut.tableRoot.itemController.itemDataModel.items[0]

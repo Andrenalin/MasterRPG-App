@@ -3,7 +3,7 @@
 import CoreRPG
 import DiceRPG
 import Foundation
-import Observation
+import os.log
 import PhotoRPG
 import TableRPG
 
@@ -183,9 +183,9 @@ extension GameController: ValueGameStorable {
     public func updatePlayer(data: NetworkCodableDataType) async throws {
         if let encodedData = data.data {
             do {
-                try await importNetwork(from: encodedData)
+                try await importNetwork(from: encodedData, forceSave: true)
             } catch {
-                print("Error \(error.localizedDescription)")
+                Logger.gameController.error("Error in updating the character from player: \(error.localizedDescription, privacy: .public)")
             }
         } else {
             guard data.type == itemControllable.config.module else { throw ItemGameStorableError.wrongData }

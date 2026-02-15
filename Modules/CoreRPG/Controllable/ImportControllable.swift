@@ -21,7 +21,7 @@ public protocol ImportControllable: Sendable {
     var importModel: ItemDataImportModel { get }
 
     // overwrite
-    func additionalImport(from inputStream: InputStream, counterUpdater: @MainActor @Sendable @escaping () async -> Void) async throws
+    func additionalImport(from inputStream: InputStream, forceSave: Bool, counterUpdater: @MainActor @Sendable @escaping () async -> Void) async throws
 }
 
 public enum ItemDataImportableError: Error {
@@ -36,7 +36,7 @@ public extension ImportControllable {
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
     // Overwrite functions
-    func additionalImport(from inputStream: InputStream, counterUpdater: @MainActor @Sendable @escaping () async -> Void) async throws {}
+    func additionalImport(from inputStream: InputStream, forceSave: Bool, counterUpdater: @MainActor @Sendable @escaping () async -> Void) async throws {}
 
     /// import the data from a file url, that is calling the stream version
     func importUrl(from url: URL, withOverwrite: Bool = false) -> Task<Void, any Error> {
@@ -62,7 +62,7 @@ public extension ImportControllable {
             let _ = await counterTask.result
             
             do {
-                try await self.importStream(from: inputStream, counterUpdater: self.updaterImport)
+                try await self.importStream(from: inputStream, forceSave: true,  counterUpdater: self.updaterImport)
                 let runningTask = Task { @MainActor in
                     model.isImportRunning = false
                 }
@@ -77,10 +77,10 @@ public extension ImportControllable {
     }
 
     /// import the data from a stream
-    func importStream(from inputStream: InputStream, counterUpdater: @Sendable @escaping () async -> Void) async throws {
+    func importStream(from inputStream: InputStream, forceSave: Bool, counterUpdater: @Sendable @escaping () async -> Void) async throws {
         guard !Task.isCancelled && inputStream.hasBytesAvailable else { return }
 
-        try await additionalImport(from: inputStream, counterUpdater: counterUpdater)
+        try await additionalImport(from: inputStream, forceSave: forceSave, counterUpdater: counterUpdater)
 
         let token = await self.token()
         var itemCount = 0
@@ -119,7 +119,7 @@ public extension ImportControllable {
                         if let currentFile {
                             try await addFile(data: currentFile, to: newItem)
                         }
-                        try await addItem(importedItem: newItem, counterUpdater: counterUpdater)
+                        try await addItem(importedItem: newItem, forceSave: forceSave, counterUpdater: counterUpdater)
                     } catch {
                         await logImport(title: "Error: \(error.localizedDescription)", count: 0)
                     }
@@ -151,7 +151,7 @@ private extension ImportControllable {
         (importModel.importedItems, importModel.totalImportingItems)
     }
 
-    func addItem(importedItem: ModelType, counterUpdater: @escaping () async -> Void) async throws {
+    func addItem(importedItem: ModelType, forceSave: Bool, counterUpdater: @escaping () async -> Void) async throws {
         let finalItem: ModelType?
         let itemController = itemControllable
         if await importModel.withOverwrite {
@@ -163,7 +163,7 @@ private extension ImportControllable {
             await counterUpdater()
             return
         }
-        await itemController.replace(model: finalItem, isInsert: true)
+        await itemController.replace(model: finalItem, isInsert: true, forceSave: forceSave)
         await counterUpdater()
         try Task.checkCancellation()
     }
@@ -198,7 +198,9 @@ private extension ImportControllable {
         fileUrl.resetData(data)
         do {
             let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
-            await itemControllable.reset(fileUrl: updated, item: &item)
+            if updated != fileUrl {
+                await itemControllable.reset(fileUrl: updated, item: &item)
+            }
         } catch {
             await logImport(title: "Cannot save bookmark the file will be stored as data", count: 0)
             await itemControllable.reset(fileUrl: fileUrl, item: &item)

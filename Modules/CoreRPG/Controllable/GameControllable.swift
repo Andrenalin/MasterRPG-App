@@ -123,14 +123,7 @@ public extension GameControllable {
     }
 
     func hasItem(id: UUID, version: Int) async -> Bool {
-        guard await gameModel.itemData[id] == nil else {
-            return version == 0
-            // the item should be imported
-//            if await importControllable.itemControllable.itemDataModel.items.contains(id) {
-//                return await importControllable.itemControllable.item(for: id, version: version) != nil
-//            }
-//            return await itemControllable.item(for: id, version: version) != nil
-        }
+        guard await gameModel.itemData[id] == nil else { return version == 0 }
         
         guard let item = await itemControllable.item(for: id, version: version) else { return false }
         let gameItem = item.copy()
@@ -252,7 +245,7 @@ public extension GameControllable {
             otherIds = otherIds.subtracting([data.id])
             for otherId in otherIds {
                 let otherItem = await gameModel.itemData[otherId]
-                await itemControllable.replace(model: otherItem, isInsert: true)
+                await itemControllable.replace(model: otherItem, isInsert: true, forceSave: true)
             }
         }
     }
@@ -269,11 +262,11 @@ public extension GameControllable {
 }
 
 public extension GameControllable {
-    func importNetwork(from data: Data) async throws {
+    func importNetwork(from data: Data, forceSave: Bool = false) async throws {
         let stream = InputStream(data: data)
         stream.open()
         defer { stream.close() }
         let importController = await exportControllable.rootManager.adventureRoot.importControllable
-        try await importController.importStream(from: stream, counterUpdater: {})
+        try await importController.importStream(from: stream, forceSave: forceSave, counterUpdater: {})
     }
 }

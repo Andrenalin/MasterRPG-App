@@ -9,6 +9,7 @@ import Testing
 @testable import CoreRPG
 @testable import GameRPG
 import PhotoRPG
+import AdventureRPG
 
 final class PlayerControllerTests {
     private var sut: PlayerController!
@@ -53,6 +54,8 @@ final class PlayerControllerTests {
         try await setUp()
         try await MockRoot.importTestData(into: root.adventureRoot)
         
+        await root.adventureRoot.startGame()
+
         await #expect(root.photoRoot.itemControllable.itemDataModel.items.count == 27)
         let itemId = await root.photoRoot.itemControllable.itemDataModel.items[0]
         let netData = try await root.photoRoot.gameControllable.createGameData(for: itemId)
