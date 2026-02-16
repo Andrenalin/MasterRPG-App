@@ -31,12 +31,11 @@ struct RootEditCanvasMap: View {
                 Color.clear
             }
         }
-        .onChange(of: model.id, initial: true) {
-            if model.id != itemId {
-                withAnimation {
-                    model = root.itemController.itemOrEmpty(for: itemId)
-                }
-            }
+        .onChange(of: itemId, initial: true) {
+            updateModel()
+        }
+        .onChange(of: root.itemController.itemOrEmpty(for: itemId).entries) {
+            updateModel()
         }
         .onChange(of: model.photoId, initial: true) {
             Task {
@@ -56,6 +55,15 @@ struct RootEditCanvasMap: View {
 #endif
     }
     
+    func updateModel() {
+        let updatedModel = root.itemController.itemOrEmpty(for: itemId)
+        if model.id != updatedModel.id || !model.isSame(updatedModel) {
+            withAnimation {
+                model = updatedModel
+            }
+        }
+    }
+
     func reloadImage() async {
         let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(for: model.photoId, useGame: false) ?? (nil, 0)
         Task { @MainActor in

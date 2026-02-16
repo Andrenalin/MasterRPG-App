@@ -12,8 +12,7 @@ public struct TabbedNavigation: View {
 
     @Environment(AppModel.self) private var appModel
     @Environment(\.appSizeMode) private var appSizeMode
-    
-    
+        
     public var body: some View {
         let _ = Self._printChanges()
         let _ = print("Tab: \(selectedModule.title)")
@@ -28,7 +27,7 @@ public struct TabbedNavigation: View {
                             .tint(tab.module.tint)
                             .accentColor(tab.module.tint)
                     }
-                    .environment(appModel.itemRootController(for: tab.module))
+                    .environment(appModel.itemRootController(for: selectedModule))
                     .tint(tab.module.tint)
                     .accentColor(tab.module.tint)
                 }
@@ -75,5 +74,4 @@ public struct TabbedNavigation: View {
     var selectedModule: NetworkModules {
         (appModel.selectedExtendedModule?.module ?? appModel.selectedModule?.module) ?? .game
     }
-
 }
