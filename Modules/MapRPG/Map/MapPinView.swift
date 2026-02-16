@@ -35,6 +35,9 @@ final class MapPinViewModel {
     
     func removePin(id: UUID) {
         mapPins.removeAll(where: { $0.id == id })
+        if isExpandedId == id {
+            isExpandedId = nil
+        }
     }
     
     func copyPin(id: UUID) {
