@@ -13,9 +13,9 @@ final class AdventureSessionModel {
         self.session = session
     }
     
-    var responses: [LanguageModelSession.ResponseStream<CharacterGenModel>.Snapshot] = []
     var adventureChat: String?
     
+    var extracted: [BlockEntryGenModel.PartiallyGenerated] = []
     var responseErrorContent: String = ""
 }
 
@@ -32,22 +32,25 @@ struct AdventureGeneratorController: Sendable {
         """
         You are an assistant to support a game master for creating a fictional game story. 
         The game usually have NPC that are interacting with players characters.
-        Ensure to come up with 3-5 possiblities for a question so a game master can choose.
         Add connections to other possible outcomes or stories. 
         Keep your answer pricse except the game master needed a detailed version.
         """
         }
         self.model.set(session: session)
         session.prewarm()
+        
+        //        Ensure to come up with 3-5 possiblities for a question so a game master can choose.
+
     }
         
     @MainActor func request(message: String) {
         Task {
             do {
-                let stream = model.session.streamResponse(options: GenerationOptions()) {
+                let prompt = Prompt {
                     "\(message)"
                 }
-                
+                let stream = model.session.streamResponse(to: prompt, options: GenerationOptions())
+
                 for try await partialResponse in stream {
                     self.model.adventureChat = partialResponse.content
                 }
