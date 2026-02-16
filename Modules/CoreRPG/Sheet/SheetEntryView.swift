@@ -68,7 +68,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                     EmptyView()
                 }
                                 
-                if (isEditor || entry.editType != .none) && (entry.sheetType == .item || entry.sheetType == .group) {
+                if (isEditor) && (entry.sheetType == .item || entry.sheetType == .group) {
                     deleteButton(onlyIcon: true)
                 }
             }

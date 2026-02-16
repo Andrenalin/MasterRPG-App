@@ -87,10 +87,11 @@ public extension ViewController {
             .environment(root)
     }
 
-    @MainActor func photoDetailView(root: PhotoRootModel, for itemId: UUID?, useGame: Bool, size: CGSize, contentMode: ContentMode = .fit) -> some View {
+    @MainActor func photoDetailView(root: PhotoRootModel, for itemId: UUID?, size: CGSize, contentMode: ContentMode = .fit) -> some View {
         let id = itemId ?? UUID()
-        let model = useGame ? root.gameController.gameItem(for: id) : root.itemController.itemOrEmpty(for: id)
+        let model = root.itemController.itemOrEmpty(for: id)
         return AsyncPhotoViewer(model: model, size: size, contentMode: contentMode)
+            .id(model.id)
             .environment(root)
     }
 }

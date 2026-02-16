@@ -91,7 +91,7 @@ public final class CharacterRootModel: @unchecked Sendable {
             pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
             photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
             tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: false, allowEntrySelection: true, onlyEntrySelection: true),
-            firstRow: [.value, .dice, .pdf, .table],
+            firstRow: [.value, .dice, .pdf, .photo, .table],
             selection: .value
         )
     }()

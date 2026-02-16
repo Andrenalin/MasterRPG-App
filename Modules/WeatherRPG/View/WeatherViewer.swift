@@ -75,7 +75,7 @@ struct WeatherViewer: View {
     var body: some View {
         ZStack {
             if let photoId = model.photoId {
-                root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: photoId, useGame: useGame, size: containerSize, contentMode: .fill)
+                root.photoRoot.viewController.photoDetailView(root: root.photoRoot, for: photoId, size: containerSize, contentMode: .fill)
             }
 
             if isAnimating || useGame {
