@@ -115,363 +115,212 @@
 	</dict>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-    <key>UTExportedTypeDeclarations</key>
-    <array>
-        <dict>
-            <key>UTTypeConformsTo</key>
-            <array>
-                <string>public.data</string>
-            </array>
-            <key>UTTypeDescription</key>
-            <string>MasterRPG Document</string>
-            <key>UTTypeIcons</key>
-            <dict/>
-            <key>UTTypeIdentifier</key>
-            <string>de.AndreTrettin.GameMaster.gmz</string>
-            <key>UTTypeTagSpecification</key>
-            <dict>
-                <key>public.filename-extension</key>
-                <array>
-                    <string>gmz</string>
-                </array>
-            </dict>
-        </dict>
-        <dict>
-            <key>UTTypeConformsTo</key>
-            <array>
-                <string>public.data</string>
-            </array>
-            <key>UTTypeDescription</key>
-            <string>MasterRPG Save Game</string>
-            <key>UTTypeIcons</key>
-            <dict/>
-            <key>UTTypeIdentifier</key>
-            <string>de.AndreTrettin.GameMaster.gms</string>
-            <key>UTTypeTagSpecification</key>
-            <dict>
-                <key>public.filename-extension</key>
-                <array>
-                    <string>gms</string>
-                </array>
-            </dict>
-        </dict>
-    <dict>
-        <key>UTTypeIdentifier</key>
-        <string>de.andretrettin.MasterRPG.Link.Adventure</string>
-        <key>UTTypeDescription</key>
-        <string>MasterRPG Adventure Link</string>
-        <key>UTTypeConformsTo</key>
-        <array>
-            <string>public.text</string>
-        </array>
-        <key>UTTypeTagSpecification</key>
-        <dict>
-            <key>public.mime-type</key>
-            <string>application/vnd.masterrpg.link.adventure</string>
-        </dict>
-    </dict>
-    <dict>
-
-        <key>UTTypeIdentifier</key>
-
-        <string>de.andretrettin.MasterRPG.Link.Audio</string>
-
-        <key>UTTypeDescription</key>
-
-        <string>MasterRPG Audio Link</string>
-
-        <key>UTTypeConformsTo</key>
-
-        <array>
-
-            <string>public.text</string>
-
-        </array>
-
-        <key>UTTypeTagSpecification</key>
-
-        <dict>
-
-            <key>public.mime-type</key>
-
-            <string>application/vnd.masterrpg.link.audio</string>
-
-        </dict>
-
-    </dict>
-
-    <dict>
-
-        <key>UTTypeIdentifier</key>
-
-        <string>de.andretrettin.MasterRPG.Link.Character</string>
-
-        <key>UTTypeDescription</key>
-
-        <string>MasterRPG Character Link</string>
-
-        <key>UTTypeConformsTo</key>
-
-        <array>
-
-            <string>public.text</string>
-
-        </array>
-
-        <key>UTTypeTagSpecification</key>
-
-        <dict>
-
-            <key>public.mime-type</key>
-
-            <string>application/vnd.masterrpg.link.character</string>
-
-        </dict>
-
-    </dict>
-
-    <dict>
-
-        <key>UTTypeIdentifier</key>
-
-        <string>de.andretrettin.MasterRPG.Link.Dice</string>
-
-        <key>UTTypeDescription</key>
-
-        <string>MasterRPG Dice Link</string>
-
-        <key>UTTypeConformsTo</key>
-
-        <array>
-
-            <string>public.text</string>
-
-        </array>
-
-        <key>UTTypeTagSpecification</key>
-
-        <dict>
-
-            <key>public.mime-type</key>
-
-            <string>application/vnd.masterrpg.link.dice</string>
-
-        </dict>
-
-    </dict>
-
-    <dict>
-
-        <key>UTTypeIdentifier</key>
-
-        <string>de.andretrettin.MasterRPG.Link.Map</string>
-
-        <key>UTTypeDescription</key>
-
-        <string>MasterRPG Map Link</string>
-
-        <key>UTTypeConformsTo</key>
-
-        <array>
-
-            <string>public.text</string>
-
-        </array>
-
-        <key>UTTypeTagSpecification</key>
-
-        <dict>
-
-            <key>public.mime-type</key>
-
-            <string>application/vnd.masterrpg.link.map</string>
-
-        </dict>
-
-    </dict>
-
-    <dict>
-
-        <key>UTTypeIdentifier</key>
-
-        <string>de.andretrettin.MasterRPG.Link.Pdf</string>
-
-        <key>UTTypeDescription</key>
-
-        <string>MasterRPG PDF Link</string>
-
-        <key>UTTypeConformsTo</key>
-
-        <array>
-
-            <string>public.text</string>
-
-        </array>
-
-        <key>UTTypeTagSpecification</key>
-
-        <dict>
-
-            <key>public.mime-type</key>
-
-            <string>application/vnd.masterrpg.link.pdf</string>
-
-        </dict>
-
-    </dict>
-
-    <dict>
-
-        <key>UTTypeIdentifier</key>
-
-        <string>de.andretrettin.MasterRPG.Link.Photo</string>
-
-        <key>UTTypeDescription</key>
-
-        <string>MasterRPG Photo Link</string>
-
-        <key>UTTypeConformsTo</key>
-
-        <array>
-
-            <string>public.text</string>
-
-        </array>
-
-        <key>UTTypeTagSpecification</key>
-
-        <dict>
-
-            <key>public.mime-type</key>
-
-            <string>application/vnd.masterrpg.link.photo</string>
-
-        </dict>
-
-    </dict>
-
-    <dict>
-
-        <key>UTTypeIdentifier</key>
-
-        <string>de.andretrettin.MasterRPG.Link.Space</string>
-
-        <key>UTTypeDescription</key>
-
-        <string>MasterRPG Space Link</string>
-
-        <key>UTTypeConformsTo</key>
-
-        <array>
-
-            <string>public.text</string>
-
-        </array>
-
-        <key>UTTypeTagSpecification</key>
-
-        <dict>
-
-            <key>public.mime-type</key>
-
-            <string>application/vnd.masterrpg.link.space</string>
-
-        </dict>
-
-    </dict>
-
-    <dict>
-
-        <key>UTTypeIdentifier</key>
-
-        <string>de.andretrettin.MasterRPG.Link.Table</string>
-
-        <key>UTTypeDescription</key>
-
-        <string>MasterRPG Table Link</string>
-
-        <key>UTTypeConformsTo</key>
-
-        <array>
-
-            <string>public.text</string>
-
-        </array>
-
-        <key>UTTypeTagSpecification</key>
-
-        <dict>
-
-            <key>public.mime-type</key>
-
-            <string>application/vnd.masterrpg.link.table</string>
-
-        </dict>
-
-    </dict>
-
-    <dict>
-
-        <key>UTTypeIdentifier</key>
-
-        <string>de.andretrettin.MasterRPG.Link.Weather</string>
-
-        <key>UTTypeDescription</key>
-
-        <string>MasterRPG Weather Link</string>
-
-        <key>UTTypeConformsTo</key>
-
-        <array>
-
-            <string>public.text</string>
-
-        </array>
-
-        <key>UTTypeTagSpecification</key>
-
-        <dict>
-
-            <key>public.mime-type</key>
-
-            <string>application/vnd.masterrpg.link.weather</string>
-
-        </dict>
-
-    </dict>
-
-    <dict>
-
-        <key>UTTypeIdentifier</key>
-
-        <string>de.andretrettin.MasterRPG.Link.Entry</string>
-
-        <key>UTTypeDescription</key>
-
-        <string>MasterRPG Entry Link</string>
-
-        <key>UTTypeConformsTo</key>
-
-        <array>
-
-            <string>public.text</string>
-
-        </array>
-
-        <key>UTTypeTagSpecification</key>
-
-        <dict>
-
-            <key>public.mime-type</key>
-
-            <string>application/vnd.masterrpg.link.entry</string>
-
-        </dict>
-
-    </dict>
-
-    </array>
-
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Document</string>
+			<key>UTTypeIcons</key>
+			<dict/>
+			<key>UTTypeIdentifier</key>
+			<string>de.AndreTrettin.GameMaster.gmz</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>gmz</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Save Game</string>
+			<key>UTTypeIcons</key>
+			<dict/>
+			<key>UTTypeIdentifier</key>
+			<string>de.AndreTrettin.GameMaster.gms</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>gms</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Adventure</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Adventure Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.adventure</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Audio</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Audio Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.audio</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Character</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Character Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.character</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Dice</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Dice Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.dice</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Map</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Map Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.map</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Pdf</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG PDF Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.pdf</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Photo</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Photo Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.photo</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Space</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Space Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.space</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Table</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Table Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.table</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Weather</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Weather Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.weather</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Entry</string>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Entry Link</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.entry</string>
+			</dict>
+		</dict>
+	</array>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>
@@ -521,7 +370,9 @@
 	<true/>
 	<key>com.apple.security.files.user-selected.read-only</key>
 	<true/>
-    <key>ITSAppUsesNonExemptEncryption</key>
-    <false/> 
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>com.apple.developer.icloud-container-environment</key>
+	<string>Production</string>
 </dict>
 </plist>
