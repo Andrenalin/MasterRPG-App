@@ -8,7 +8,7 @@ public struct TableRootSheet: View {
         self.windowMode = windowMode
         self.dismissAction = dismissAction
         let model = root.itemControllable.itemOrEmpty(for: itemId)
-        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: root.linkControllable, parent: nil, model: model, level: 0, module: module))
+        self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: root.linkControllable.rootLinkControllable, parent: nil, model: model, level: 0, module: module))
     }
         
     let root: ItemRootController

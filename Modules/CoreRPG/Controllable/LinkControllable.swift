@@ -89,6 +89,10 @@ public protocol LinkControllable: Sendable {
 // MARK: - generate Links
 
 public extension LinkControllable {
+    @MainActor var rootLinkControllable: LinkControllable {
+        rootManager.adventureRoot.linkControllable
+    }
+    
     @MainActor
     func generateLink(item: ItemRowTreeModel) -> String {
         generateLink(linkNumber: 0, itemId: item.model.itemId, entryId: item.model.entryId)

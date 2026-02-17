@@ -46,7 +46,7 @@ public final class PdfRootModel: @unchecked Sendable {
             searchModel: searchModel,
             itemSelectionModel: itemSelectionModel,
             removeEntryListModel: removeEntryListModel,
-            cacheControllable: nil,
+            cacheControllable: cacheController,
             editControllable: editController,
             exportControllable: exportControllable,
             gameControllable: gameControllable,

@@ -13,10 +13,10 @@ import AdventureRPG
 
 struct OverlayPlayerTabBar: View {
     let root: GameRoot
-
+    
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.wideMode) private var wideMode
-
+    
     var body: some View {
         ZStack(alignment: .trailing) {
 #if os(macOS)
@@ -32,7 +32,7 @@ struct OverlayPlayerTabBar: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
     }
-
+    
     @ViewBuilder
     var onlyGameView: some View {
         if root.gameModel.gameConfig.type != .observer {
@@ -48,7 +48,7 @@ struct OverlayPlayerTabBar: View {
                 .animation(.bouncy, value: gameScreenModel.showMainTab)
         }
     }
-
+    
     @ViewBuilder
     var tabGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
@@ -68,36 +68,21 @@ struct OverlayPlayerTabBar: View {
         .shadow(radius: 8)
         .animation(.bouncy, value: gameScreenModel.showMainTab)
     }
-
+    
     @ViewBuilder
     var tabSecondGameView: some View {
         @Bindable var gameScreenModel = gameScreenModel
         root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: true)
             .environment(\.gameModus, .player)
             .environment(\.showGame, true)
-        .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
+            .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
 #if !os(visionOS)
-        .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
 #endif
-        .offset(x: gameScreenModel.showSettingTab == .none ? valueFor(iOS: gameScreenModel.sideBarWidth, macOS: gameScreenModel.sideBarWidth, tvOS: gameScreenModel.sideBarWidth, visionOS: -gameScreenModel.sideBarWidth) : 0)
-        .opacity(gameScreenModel.showSettingTab == .none ? 0 : 1)
-        .shadow(radius: 8)
-        .animation(.bouncy, value: gameScreenModel.showSettingTab)
-    }
-
-    var tabSelectedModule: Binding<NetworkModules> {
-        Binding {
-            gameScreenModel.showMainTab != .none ? gameScreenModel.showGameType : gameScreenModel.showSettingsType
-        } set: {
-            switch $0 {
-                case .value, .table, .pdf, .audio, .photo:
-                    gameScreenModel.resetToMainTab(toggle: false)
-                    gameScreenModel.showGameType = $0
-                default:
-                    gameScreenModel.resetToSettingsTab(toggle: false)
-                    gameScreenModel.showSettingsType = $0
-            }
-        }
+            .offset(x: gameScreenModel.showSettingTab == .none ? valueFor(iOS: gameScreenModel.sideBarWidth, macOS: gameScreenModel.sideBarWidth, tvOS: gameScreenModel.sideBarWidth, visionOS: -gameScreenModel.sideBarWidth) : 0)
+            .opacity(gameScreenModel.showSettingTab == .none ? 0 : 1)
+            .shadow(radius: 8)
+            .animation(.bouncy, value: gameScreenModel.showSettingTab)
     }
 }
 
