@@ -78,8 +78,6 @@ struct DetailListView: View {
                 }
             }
             .contentTransition(.symbolEffect(.replace.wholeSymbol))
-            
-            //Divider()
         }
     }
 }

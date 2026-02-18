@@ -4,19 +4,23 @@ import CoreRPG
 import SwiftUI
 
 struct ImageViewer: View {
-    init(image: AKImage, photoDegrees: Double, containerSize: CGSize, toolBarModel: GameToolBarModel) {
+    init(id: UUID, image: AKImage, photoDegrees: Double, containerSize: CGSize, contentMode: ContentMode, toolBarModel: GameToolBarModel?) {
+        self.id = id
         self.image = image
         self.containerSize = containerSize
+        self.contentMode = contentMode
         self.toolBarModel = toolBarModel
-        toolBarModel.degrees = photoDegrees
+        toolBarModel?.degrees = photoDegrees
         
         let (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: photoDegrees)
         self._model = State(wrappedValue: ImageViewerModel(offset: newOffset, scale: newScale))
     }
     
+    let id: UUID
     let image: AKImage
     let containerSize: CGSize
-    let toolBarModel: GameToolBarModel
+    let contentMode: ContentMode
+    let toolBarModel: GameToolBarModel?
     
     @State private var model: ImageViewerModel
         
@@ -26,20 +30,31 @@ struct ImageViewer: View {
             Color.clear.ignoresSafeArea()
 
             Image(akImage: image)
-                .scaleEffect(model.scale)
-                .rotationEffect(Angle(degrees: toolBarModel.degrees))
-                .offset(x: model.offset.x, y: model.offset.y)
-                .contentMargins(.all, 50)
-                .frame(width: currentSize.width, height: currentSize.height)
+                .applyIf(contentMode == .fill) { content in
+                    content
+                        .resizable()
+                        .rotationEffect(Angle(degrees: toolBarModel?.degrees ?? 0))
+                        .aspectRatio(contentMode: contentMode)
+                        //.clipShape(.rect(cornerRadius: 16))
+                        .frame(width: containerSize.width, height: containerSize.height, alignment: .center)
+                }
+                .applyIf(contentMode != .fill) { content in
+                    content
+                        .scaleEffect(model.scale)
+                        .rotationEffect(Angle(degrees: toolBarModel?.degrees ?? 0))
+                        .offset(x: model.offset.x, y: model.offset.y)
+                        .contentMargins(.all, 50)
+                        .frame(width: currentSize.width, height: currentSize.height)
+                }
         }
-        .frame(width: containerSize.width, height: containerSize.height, alignment: .topLeading)
+        .frame(width: containerSize.width, height: containerSize.height, alignment: .leading)
 #if !os(tvOS)
         .dragTapGesture(pressAction: pressAction(_:), doubleTapAction: doubleTapAction(_:), dragStartAction: dragStartAction(_:), dragAction: dragAction(_:), dragEndAction: dragEndAction(_:), endAction: endAction(_:), magnifierAction: magnifierAction(_:isFirst:))
 #endif
-        .onChange(of: toolBarModel.degrees) {
+        .onChange(of: toolBarModel?.degrees) {
             resetZoom()
         }
-        .onAppear {
+        .task(id: id) {
             resetZoom(withoutAnimation: true)
         }
     }
@@ -69,12 +84,12 @@ private extension ImageViewer {
     }
     
     var currentSize: CGSize {
-        ImageViewer.imageSize(image, degrees: toolBarModel.degrees) * model.scale
+        ImageViewer.imageSize(image, degrees: toolBarModel?.degrees ?? 0) * model.scale
     }
 
     func resetZoom(withoutAnimation: Bool = false) {
         let (newScale, newOffset): (CGFloat, CGPoint)
-        (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: toolBarModel.degrees)
+        (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: toolBarModel?.degrees ?? 0)
         model.normScale = newScale
         zoom(scale: newScale, at: newOffset, withoutAnimation: withoutAnimation)
     }
@@ -82,7 +97,7 @@ private extension ImageViewer {
     func zooming(on location: CGPoint) {
         let (newScale, newOffset): (CGFloat, CGPoint)
         if model.scale != model.normScale {
-            (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: toolBarModel.degrees)
+            (newScale, newOffset) = ImageViewer.zoomToFit(with: containerSize, image: image, degrees: toolBarModel?.degrees ?? 0)
         } else {
             (newScale, newOffset) = zoomIn(at: location)
         }
@@ -132,7 +147,7 @@ private extension ImageViewer {
             return
         }
         
-        let imgSize = ImageViewer.imageSize(image, degrees: toolBarModel.degrees)
+        let imgSize = ImageViewer.imageSize(image, degrees: toolBarModel?.degrees ?? 0)
         let scaleDiff = (newScale - model.scale) / 2
         let imgOff = imgSize * scaleDiff
         let newOffsetNew = CGPoint(x: -imgOff.width, y: -imgOff.height)
@@ -147,7 +162,7 @@ private extension ImageViewer {
 
 private extension ImageViewer {
     func updateOffset(with newLocation: CGPoint, firstOffset: CGPoint) {
-        let imgSize = ImageViewer.imageSize(image, degrees: toolBarModel.degrees)
+        let imgSize = ImageViewer.imageSize(image, degrees: toolBarModel?.degrees ?? 0)
         let offX = max(300, (containerSize.width - imgSize.width * model.scale) / 2)
         let offY = max(300, (containerSize.height - imgSize.height * model.scale) / 2)
         let minX = containerSize.width - (imgSize.width * model.scale) - offX
@@ -170,7 +185,7 @@ private extension ImageViewer {
     }
     
     func translate(from location: CGPoint) -> CGPoint {
-        let imgSize = ImageViewer.imageSize(image, degrees: toolBarModel.degrees)
+        let imgSize = ImageViewer.imageSize(image, degrees: toolBarModel?.degrees ?? 0)
         var newOffset = (location - model.offset) / model.scale
         if newOffset.x < 0 {
             newOffset.x = 0

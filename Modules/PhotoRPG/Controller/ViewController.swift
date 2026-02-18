@@ -90,8 +90,6 @@ public extension ViewController {
     @MainActor func photoDetailView(root: PhotoRootModel, for itemId: UUID?, size: CGSize, contentMode: ContentMode = .fit) -> some View {
         let id = itemId ?? UUID()
         let model = root.itemController.itemOrEmpty(for: id)
-        return AsyncPhotoViewer(model: model, size: size, contentMode: contentMode)
-            .id(model.id)
-            .environment(root)
+        return AsyncImageViewer(model: model, size: size, contentMode: contentMode, toolBarModel: nil)
     }
 }

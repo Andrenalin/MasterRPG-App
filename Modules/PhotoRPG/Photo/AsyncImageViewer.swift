@@ -7,7 +7,8 @@ import os.log
 struct AsyncImageViewer: View {
     let model: PhotoModel
     let size: CGSize
-    let toolBarModel: GameToolBarModel
+    var contentMode: ContentMode = .fit
+    let toolBarModel: GameToolBarModel?
 
     @Environment(PhotoRootModel.self) private var root
 
@@ -23,7 +24,7 @@ struct AsyncImageViewer: View {
         let _ = Self._printChanges()
         VStack {
             if let image = cachedImage(for: model.id) {
-                ImageViewer(image: image, photoDegrees: model.degrees, containerSize: size, toolBarModel: toolBarModel)
+                ImageViewer(id: model.id, image: image, photoDegrees: model.degrees, containerSize: size, contentMode: contentMode, toolBarModel: toolBarModel)
             } else if imageError {
                 VStack(alignment: .center, spacing: 20) {
                     Spacer()

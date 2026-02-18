@@ -37,7 +37,7 @@ struct ViewerRootView: View {
 #if !os(visionOS)
         .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
-        .environment(CacheItemListModel())
+        .environment(root.editController.cacheItemListModel)
         .onAppear {
             guard isGame else { return }
             withAnimation { isAnimating = true }
