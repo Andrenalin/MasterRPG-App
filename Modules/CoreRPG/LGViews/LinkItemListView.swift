@@ -180,7 +180,7 @@ private extension LinkItemListView {
             .selectListItem(isActive: isSelectionActive(item: item)) {
                 withAnimation { selectionModel.toggleSelection(itemId: item.model.id, entryId: item.entryId, isCollection: item.model.specialCategory) }
             } isSelected: {
-                selectionModel.itemId == item.model.id && selectionModel.entryId == item.entryId
+                selectionModel.selection.contains(where: { $0.itemId == item.model.id && $0.entryId == item.entryId })
             }
             .padding(.leading, CGFloat(item.level * 16))
             .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 0))
