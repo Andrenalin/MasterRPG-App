@@ -35,6 +35,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                     EmptyView()
                 }
             }
+            .moveDisabled(true)
 
             HStack {
                 if (isEditor || entry.editType != .none) && (entry.sheetType == .item || entry.sheetType == .group) {

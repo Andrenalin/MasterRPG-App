@@ -68,6 +68,11 @@ public final class TableSheetModel: Sendable {
     func entry(entryId: String) -> SheetModel? {
         sheetModel.entries.first { $0.id == entryId }
     }
+
+    func hasEntry(entryId: UUID) -> Bool {
+        sheetModel.entries.first { $0.source.entryId == entryId } != nil 
+    }
+
     
     func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules) {
         withAnimation {

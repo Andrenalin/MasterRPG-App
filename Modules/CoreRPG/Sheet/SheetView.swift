@@ -75,18 +75,23 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             .applyIf(isEditor) {
                 $0.onMove { indexSet, index in
                     guard let entryDataEditable else { return }
-                    if entryDataEditable.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index) {
+                    let (reloc, to) = relocate(indexSet: indexSet, to: index)
+                    if entryDataEditable.move(itemId: model.sheetModel.source.itemId, entryFrom: reloc, to: to) {
                         model.move(itemId: model.sheetModel.source.itemId, indexSet: indexSet, to: index)
-//                        Task { @MainActor in
-//                            await Task.yield()
-//                            model.updateParent()
-//                        }
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(100))
+                            model.updateParent()
+                        }
                     }
                 }
             }
-            .onChange(of: root.editControllable.editorModel.currentEntryId) { previousEntryId, _ in
-                guard let previousEntryId, root.editControllable.editorModel.currentItemId == model.itemId else { return }
-                withAnimation { model.update(entryId: previousEntryId) }
+            .onChange(of: root.editControllable.editorModel.currentEntryId) { previousEntryId, newEntryId in
+                if let previousEntryId, root.editControllable.editorModel.currentItemId == model.itemId {
+                    withAnimation { model.update(entryId: previousEntryId) }
+                }
+                if let newEntryId, !model.hasEntry(entryId: newEntryId) {
+                    model.updateParent()
+                }
             }
         }
         
@@ -98,6 +103,11 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             .onChange(of: model.searchText) {
                 withAnimation { model.updateSearch() }
             }
+    }
+    
+    func relocate(indexSet: IndexSet, to: Int) -> (IndexSet, Int) {
+        let inline = model.sheetModel.filter(searchText: model.searchText).reduce(0) { $0 + $1.inlineEntries.count }
+        return (IndexSet(indexSet.map { $0 - inline }), to - inline)
     }
     
     var entryDataEditable: (any EntryDataEditable)? {
