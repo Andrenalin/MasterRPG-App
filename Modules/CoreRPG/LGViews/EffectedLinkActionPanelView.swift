@@ -92,6 +92,7 @@ private extension EffectedLinkActionPanelView {
                 root.editControllable.restore(itemId: model.itemId)
             }
         }
+        root.folderListControllable.listModel.restoreItems(models: models)
     }
 
     var removeEntryList: RemoveEntryListModel {
@@ -168,6 +169,8 @@ private extension EffectedLinkActionPanelView {
         if name.isEmpty {
             name = nameNotSet
         }
+        let fileWarning: String = model.fileUrl != nil ? " (File) " : ""
+        name += fileWarning
         if let entryId = item.item.entryId, let index = model.entries.firstIndex(where: { $0.id == entryId }) {
             name = "\(name) --- \(model.entries[index].name)"
         }

@@ -99,6 +99,31 @@ extension FolderListModel {
         }
         displayedItems.remove(atOffsets: offsets)
     }
+
+    func restoreItems(models: [ItemRowModel]) {
+        let itemsToRestore = models.compactMap { model in
+            originalItems.first(where: { $0.model.id == model.itemId })
+        }
+
+        for itemToRestore in itemsToRestore {
+            if !displayedItems.contains(where: { $0.model.id == itemToRestore.model.id }) {
+                // Find the correct position based on originalItems order
+                if let originalIndex = originalItems.firstIndex(where: { $0.model.id == itemToRestore.model.id }) {
+                    // Find where to insert in displayedItems to maintain order
+                    var insertIndex = 0
+                    for displayedItem in displayedItems {
+                        if let displayedOriginalIndex = originalItems.firstIndex(where: { $0.model.id == displayedItem.model.id }),
+                           displayedOriginalIndex < originalIndex {
+                            insertIndex += 1
+                        } else {
+                            break
+                        }
+                    }
+                    displayedItems.insert(itemToRestore, at: insertIndex)
+                }
+            }
+        }
+    }
     
     func item(itemId: UUID?) -> ListItemModel? {
         guard let itemId else { return nil }
