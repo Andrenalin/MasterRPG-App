@@ -213,8 +213,8 @@ extension EditController {
     
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
         guard let item = editModel(for: itemId) else { return }
-        if item[entryId].type == .text, Double(content) != nil {
-            item[entryId].type = Int(content) == nil ? .decimal : .number
+        if item[entryId].type == .text, parseDouble(from: content) != nil {
+            item[entryId].type = parseInteger(from: content) == nil ? .decimal : .number
             save(updated: item, message: String(localized: "update value type").localizedString)
         }
         updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: true)
@@ -222,6 +222,23 @@ extension EditController {
         let fixedName = name.withoutLink()
         reset(name: fixedName, itemId: valueId)
         reset(description: content, itemId: valueId)
+    }
+
+    private func parseDouble(from string: String) -> Double? {
+        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        let formatter = NumberFormatter()
+        formatter.locale = Locale.current
+        formatter.numberStyle = .decimal
+        return formatter.number(from: trimmed)?.doubleValue
+    }
+
+    private func parseInteger(from string: String) -> Int? {
+        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        let formatter = NumberFormatter()
+        formatter.locale = Locale.current
+        formatter.numberStyle = .decimal
+        formatter.allowsFloats = false
+        return formatter.number(from: trimmed)?.intValue
     }
 }
 
