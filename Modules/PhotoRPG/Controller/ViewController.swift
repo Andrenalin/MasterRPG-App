@@ -74,14 +74,9 @@ public extension ViewController {
     }
 }
 
-// MARK: - Edit
+// MARK: - Special Viewers
 
-public extension ViewController {
-    @MainActor func onMapView(root: PhotoRootModel, photoId: UUID?, color: Color, size: CGSize, isDragging: Bool, isSelected: Bool) -> some View {
-        OnMapPin(model: root.itemController.itemOrEmpty(for: photoId ?? UUID()), color: color, size: size, isDragging: isDragging, isSelected: isSelected)
-            .environment(root)
-    }
-    
+public extension ViewController {    
     @MainActor func mapImage(root: PhotoRootModel, for itemId: UUID?, size: CGSize, color: Color) -> some View {
         AsyncThumbnail(model: root.gameController.gameItem(for: itemId ?? UUID()), size: size, color: color)
             .environment(root)
