@@ -25,8 +25,8 @@ public final class TableRootModel: @unchecked Sendable {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(context: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
-        let dataController = context.map { DataController(context: $0, token: config.module.token) }
+    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
+        let dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         _dataController = dataController
         let itemController = ItemController(config: config, dataController: dataController, linkRegisterController: linkRegisterController)
         _itemController = itemController

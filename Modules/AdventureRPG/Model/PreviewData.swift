@@ -18,7 +18,7 @@ public extension AdventureRootModel {
     static let preview: AdventureRootModel = {
         let root = AdventureRootModel(tagController: .preview, audioRoot: .preview, diceRoot: .preview, generatorRoot: nil, mapRoot: .preview, pdfRoot: .preview, photoRoot: .preview, spaceRoot: .preview, tableRoot: .preview, characterRoot: .preview, weatherRoot: .preview)
         let rootManager = RootManager(adventureRoot: root, audioRoot: root.audioRoot, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root.mapRoot, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root.spaceRoot, tableRoot: root.tableRoot, weatherRoot: root.tableRoot)
-        root.setUp(root: rootManager, context: nil)
+        root.setUp(root: rootManager, context: nil, batchContext: nil)
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -51,7 +51,7 @@ public extension AdventureRootModel {
     static func testRoot(audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) -> AdventureRootModel {
         let root = AdventureRootModel(tagController: .preview, audioRoot: audioRoot, diceRoot: diceRoot, generatorRoot: nil, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
         let rootManager = RootManager(adventureRoot: root, audioRoot: root.audioRoot, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root.mapRoot, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root.spaceRoot, tableRoot: root.tableRoot, weatherRoot: root.tableRoot)
-        root.setUp(root: rootManager, context: nil)
+        root.setUp(root: rootManager, context: nil, batchContext: nil)
         root.editController.setCurrentItem(to: .preview)
         return root
     }

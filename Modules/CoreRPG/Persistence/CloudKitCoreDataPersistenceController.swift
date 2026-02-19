@@ -26,12 +26,11 @@ public struct CloudKitCoreDataPersistenceController {
         let groupURL = FileManager.groupURL
         let storeFolderURL = groupURL.appendingPathComponent("Stores")
         let privateStoreFolderURL = storeFolderURL.appendingPathComponent("Private")
-        let sharedStoreFolderURL = storeFolderURL.appendingPathComponent("Shared")
-        
+
         let fileManager = FileManager.default
-        for folderURL in [privateStoreFolderURL, sharedStoreFolderURL] where !fileManager.fileExists(atPath: folderURL.path) {
+        if !fileManager.fileExists(atPath: privateStoreFolderURL.path) {
             do {
-                try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true, attributes: nil)
+                try fileManager.createDirectory(at: privateStoreFolderURL, withIntermediateDirectories: true, attributes: nil)
             } catch {
                 Logger.persistenceController.error("PersistenceController #\(#function) Failed to create the store folder: \(error.localizedDescription)")
                 model.error = .loadModel
@@ -72,36 +71,15 @@ public struct CloudKitCoreDataPersistenceController {
             return
         }
         privateDescription.url = privateStoreFolderURL.appendingPathComponent("private.sqlite")
-        
-        // don't set the configuration name - it will cause an error that the configuration cannot be found by core data. Before it was working for the cloud container. Might be that AppGroup changed this.
-        //privateDescription.configuration = "Private"
+
         if allowCloudKitSync {
             privateDescription.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
             privateDescription.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         }
 
         let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitCoreDataPersistenceController.cloudKitContainerIdentifier)
-
         cloudKitContainerOptions.databaseScope = .private
         privateDescription.cloudKitContainerOptions = cloudKitContainerOptions
-
-        if !model.inMemory {
-            // shared store setup
-            guard let sharedDescription = privateDescription.copy() as? NSPersistentStoreDescription else {
-                Logger.persistenceController.error("PersistenceController #\(#function) Copying the private store description returned an unexpected value.")
-                model.error = .loadModel
-                return
-            }
-            sharedDescription.url = sharedStoreFolderURL.appendingPathComponent("shared.sqlite")
-            sharedDescription.configuration = "Shared"
-            
-            let sharedStoreOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitCoreDataPersistenceController.cloudKitContainerIdentifier)
-            sharedStoreOptions.databaseScope = .shared
-            sharedDescription.cloudKitContainerOptions = sharedStoreOptions
-            
-            // Shared DB is not used at the moment
-            //container.persistentStoreDescriptions.append(sharedDescription)
-        }
         
         model.container = container
         if model.inMemory {
@@ -113,7 +91,6 @@ public struct CloudKitCoreDataPersistenceController {
 #endif
         
         var privateStore: NSPersistentStore?
-        var sharedStore: NSPersistentStore?
         var storeUrl: URL? = nil
         var initError: CoreDataInitError = .none
         container.loadPersistentStores { storeDescription, error in
@@ -122,18 +99,13 @@ public struct CloudKitCoreDataPersistenceController {
                 storeUrl = url
                 return
             }
-            guard let cloudKitContainerOptions = storeDescription.cloudKitContainerOptions else {
-                return
-            }
-            if cloudKitContainerOptions.databaseScope == .private {
+            if let cloudKitContainerOptions = storeDescription.cloudKitContainerOptions,
+               cloudKitContainerOptions.databaseScope == .private {
                 privateStore = container.persistentStoreCoordinator.persistentStore(for: storeDescription.url!)
-            } else if cloudKitContainerOptions.databaseScope == .shared {
-                sharedStore = container.persistentStoreCoordinator.persistentStore(for: storeDescription.url!)
             }
         }
         model.containerStoreUrl = storeUrl
         model.privatePersistentStore = privateStore
-        model.sharedPersistentStore = sharedStore
         model.error = initError
 
 #if InitializeCloudKitSchema

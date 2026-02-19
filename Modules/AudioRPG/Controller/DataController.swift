@@ -5,11 +5,11 @@ import CoreData
 import Foundation
 
 struct DataController: DataPersistenceControllable {
-    @MainActor init(context: NSManagedObjectContext, token: String) {
-        self.dataController = CoreDataController<AudioModel, RPGAudio>(context: context)
+    @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
+        self.dataController = CoreDataController<AudioModel, RPGAudio>(context: context, batchContext: batchContext)
         self.token = token
     }
-    
+
     let dataController: CoreDataController<AudioModel, RPGAudio>
     let token: String
 }

@@ -5,8 +5,8 @@ import Foundation
 import CoreData
 
 struct DataController: DataPersistenceControllable {
-    @MainActor init(context: NSManagedObjectContext, token: String) {
-            self.dataController = CoreDataController<WeatherModel, RPGWeather>(context: context)
+    @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
+            self.dataController = CoreDataController<WeatherModel, RPGWeather>(context: context, batchContext: batchContext)
             self.token = token
         }
         

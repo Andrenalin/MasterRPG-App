@@ -44,7 +44,7 @@ public final class AdventureRootModel: @unchecked Sendable {
         self.linkSelectionModel = config.linkSelectionModel
     }
     
-    @MainActor public func setUp(root: RootManager, context: NSManagedObjectContext?) {
+    @MainActor public func setUp(root: RootManager, context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?) {
         self.rootManager = root
         
         let dataController = context.map { DataController(context: $0, token: config.module.token) }
@@ -62,17 +62,17 @@ public final class AdventureRootModel: @unchecked Sendable {
 
         _linkRegisterController = linkRegisterController
         
-        audioRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
-        diceRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
-        pdfRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
-        photoRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
-        spaceRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
-        weatherRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
-        tableRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
-        characterRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
-        mapRoot.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        audioRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
+        diceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
+        pdfRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
+        photoRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
+        spaceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
+        weatherRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
+        tableRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
+        characterRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
+        mapRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
 #if !os(tvOS)
-        generatorRoot?.setUp(context: context, rootManager: root, linkRegisterController: linkRegisterController)
+        generatorRoot?.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
 #endif
         
         if let dataController, let context {

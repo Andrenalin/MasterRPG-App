@@ -6,8 +6,8 @@ import CoreData
 import CoreGraphics
 
 struct DataController: DataPersistenceControllable {
-    @MainActor init(context: NSManagedObjectContext, token: String) {
-            self.dataController = CoreDataController<PdfModel, RPGPdf>(context: context)
+    @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
+            self.dataController = CoreDataController<PdfModel, RPGPdf>(context: context, batchContext: batchContext)
             self.token = token
         }
         

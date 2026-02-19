@@ -245,13 +245,13 @@ extension AppModel {
 // MARK: - DB and Root Models setup
 
 extension AppModel {
-    @MainActor public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
+    @MainActor public func setupRootModels(context: NSManagedObjectContext, batchContext: NSManagedObjectContext?, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
         tagController.setup(context: context)
-        adventureRoot.setUp(root: root, context: context)
-        
+        adventureRoot.setUp(root: root, context: context, batchContext: batchContext)
+
         self.rpgSpotlightIndexer = spotlightIndexer
         spotlightIndexer?.observeIndexing()
-        
+
         hasDatabase = true
     }
 }
@@ -298,7 +298,7 @@ extension AppModel {
     @MainActor public static var preview: AppModel {
         let dbModel = DataBaseModel.preview
         let model = AppModel()
-        model.setupRootModels(context: dbModel.context.unsafelyUnwrapped, spotlightIndexer: nil)
+        model.setupRootModels(context: dbModel.context.unsafelyUnwrapped, batchContext: dbModel.batchContext, spotlightIndexer: nil)
         return model
     }
     @MainActor public static let previewWithoutDatabase: AppModel = AppModel()

@@ -29,7 +29,6 @@ public final class CoreDataInitModel: @unchecked Sendable {
     public internal(set) var error: CoreDataInitError = .none
 
     public internal(set) var privatePersistentStore: NSPersistentStore?
-    public internal(set) var sharedPersistentStore: NSPersistentStore?
 
     public internal(set) var spotlightIndexer: RpgSpotlightIndexerDelegate?
     var persistentHistoryTracker: PersistentHistoryTrackerManager?

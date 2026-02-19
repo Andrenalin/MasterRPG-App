@@ -74,7 +74,7 @@ struct InitialRootView: View {
                     guard let context = databaseModel.context else { return }
                     Task { @MainActor in
                         try? await Task.sleep(for: .seconds(0.25))
-                        appModel.setupRootModels(context: context, spotlightIndexer: databaseModel.spotlightIndexer)
+                        appModel.setupRootModels(context: context, batchContext: databaseModel.batchContext, spotlightIndexer: databaseModel.spotlightIndexer)
                     }
                 }
                 .alert("iCloud Account issues", isPresented: $showAccountAlert) {

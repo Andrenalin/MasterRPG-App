@@ -10,10 +10,10 @@ public extension WeatherRootModel {
     static let preview: WeatherRootModel = {
         let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
+        root.setUp(context: nil, batchContext: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root, generatorRoot: root, mapRoot: root, pdfRoot: root, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root, weatherRoot: root)
-        root.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.photoRoot.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.photoRoot.setUp(context: nil, batchContext: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         root.editController.setCurrentItem(to: .preview)
         return root
     }()
@@ -46,10 +46,10 @@ public extension WeatherRootModel {
     static func testRoot(photoRoot: PhotoRootModel) -> WeatherRootModel {
         let root = WeatherRootModel(tagController: .preview, photoRoot: PhotoFactory.root(tagController: .preview))
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
+        root.setUp(context: nil, batchContext: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root, generatorRoot: root, mapRoot: root, pdfRoot: root, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root, weatherRoot: root)
-        root.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.photoRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         return root
     }
 #endif

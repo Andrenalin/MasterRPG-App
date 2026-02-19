@@ -15,13 +15,13 @@ public extension CharacterRootModel {
     static let preview: CharacterRootModel = {
         let root = CharacterRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
+        root.setUp(context: nil, batchContext: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root.tableRoot, weatherRoot: root)
-        root.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.tableRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.diceRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.photoRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.pdfRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.tableRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         root.itemController.replace(model: ValueModel.preview, isInsert: true)
         root.editController.setCurrentItem(to: .preview)
         return root
@@ -50,13 +50,13 @@ public extension CharacterRootModel {
     static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) -> CharacterRootModel {
         let root = CharacterRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
+        root.setUp(context: nil, batchContext: nil, rootManager: rootManager, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root.tableRoot, weatherRoot: root)
-        root.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.tableRoot.setUp(context: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.diceRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.photoRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.pdfRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.tableRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         return root
     }
 #endif
