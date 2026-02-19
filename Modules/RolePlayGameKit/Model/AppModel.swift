@@ -43,6 +43,7 @@ public final class AppModel: Sendable {
     
     // Options
     public var hasDatabase: Bool = false
+    public var coreDataInitModel: CoreDataInitModel?
     
     @ObservationIgnored let inAppModel = InAppModel()
     public let inAppController: InAppController
@@ -245,12 +246,14 @@ extension AppModel {
 // MARK: - DB and Root Models setup
 
 extension AppModel {
-    @MainActor public func setupRootModels(context: NSManagedObjectContext, batchContext: NSManagedObjectContext?, spotlightIndexer: RpgSpotlightIndexerDelegate?) {
+    @MainActor public func setupRootModels(context: NSManagedObjectContext, batchContext: NSManagedObjectContext?, spotlightIndexer: RpgSpotlightIndexerDelegate?, coreDataInitModel: CoreDataInitModel?) {
         tagController.setup(context: context)
         adventureRoot.setUp(root: root, context: context, batchContext: batchContext)
 
         self.rpgSpotlightIndexer = spotlightIndexer
         spotlightIndexer?.observeIndexing()
+        
+        self.coreDataInitModel = coreDataInitModel
 
         hasDatabase = true
     }
@@ -298,7 +301,7 @@ extension AppModel {
     @MainActor public static var preview: AppModel {
         let dbModel = DataBaseModel.preview
         let model = AppModel()
-        model.setupRootModels(context: dbModel.context.unsafelyUnwrapped, batchContext: dbModel.batchContext, spotlightIndexer: nil)
+        model.setupRootModels(context: dbModel.context.unsafelyUnwrapped, batchContext: dbModel.batchContext, spotlightIndexer: nil, coreDataInitModel: nil)
         return model
     }
     @MainActor public static let previewWithoutDatabase: AppModel = AppModel()

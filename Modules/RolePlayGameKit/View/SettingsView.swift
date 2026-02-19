@@ -69,8 +69,12 @@ public struct SettingsView: View {
 
             SectionGroupEditorView {
                 Text(store.rpgSpotlightIndexer?.model.message ?? "Not yet finished")
+                
+                if let model = store.coreDataInitModel {
+                    CloudKitSyncStatusView(syncState: model.cloudKitSyncState, lastSync: model.lastSuccessfulSync)
+                }
             } header: {
-                Text("Spotlight Indexer Message", bundle: .module)
+                Text("iCloud Sync Status", bundle: .module)
             }
         }
         .environment(store.settingsModel)

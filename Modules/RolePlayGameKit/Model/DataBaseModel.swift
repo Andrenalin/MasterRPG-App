@@ -22,6 +22,7 @@ public final class DataBaseModel {
     
     public var hasCloudKit = false
     public var hasContextSet = false
+    public var coreDataInitModel: CoreDataInitModel?
     
     @MainActor
     public init(inMemory: Bool = false, useCloudKit: Bool, currentActor: AppPersistentActor) {
@@ -69,6 +70,7 @@ public final class DataBaseModel {
     
     private func finishSetup() {
         let error = (hasCloudKit ? cloudPersistence?.model.error : localPersistence?.model.error) ?? .none
+        coreDataInitModel = hasCloudKit ? cloudPersistence?.model : localPersistence?.model
         switch error {
         case .none:
             guard !hasContextSet else { return }

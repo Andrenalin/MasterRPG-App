@@ -172,6 +172,29 @@ public struct CloudKitCoreDataPersistenceController {
             let localModel = model
             let persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: currentActor, viewBackupContext: localContext)
             localModel.persistentHistoryTracker = persistentHistoryTracker
+
+            // Setup persistent history cleaner and run initial cleanup
+            localModel.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
+
+            // Run cleanup on launch (after a delay to not block startup)
+            Task {
+                try? await Task.sleep(for: .seconds(5))
+                localModel.persistentHistoryCleaner?.clean()
+
+                // Schedule daily cleanup
+                await schedulePeriodicCleanup()
+            }
+        }
+    }
+
+    @MainActor
+    private func schedulePeriodicCleanup() async {
+        while !Task.isCancelled {
+            // Wait 24 hours
+            try? await Task.sleep(for: .seconds(24 * 60 * 60))
+
+            // Run cleanup
+            model.persistentHistoryCleaner?.clean()
         }
     }
 
@@ -181,23 +204,39 @@ public struct CloudKitCoreDataPersistenceController {
             forName: NSPersistentCloudKitContainer.eventChangedNotification,
             object: container,
             queue: nil
-        ) { notification in
+        ) { [weak model] notification in
+            guard let model = model else { return }
+
             if let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event {
                 switch event.type {
                 case .setup:
-                    Logger.persistenceController.info("CloudKit setup event: \(event.succeeded ? "succeeded" : "in progress")")
+                    if event.succeeded {
+                        Logger.persistenceController.info("CloudKit setup succeeded")
+                    } else {
+                        Logger.persistenceController.info("CloudKit setup in progress")
+                        model.cloudKitSyncState = .inProgress
+                    }
+
                 case .import:
                     if event.succeeded {
                         Logger.persistenceController.info("CloudKit import succeeded")
+                        model.cloudKitSyncState = .succeeded
+                        model.lastSuccessfulSync = Date()
                     } else if let error = event.error {
                         Logger.persistenceController.error("CloudKit import error: \(error.localizedDescription, privacy: .public)")
+                        model.cloudKitSyncState = .failed(error.localizedDescription)
+                    } else {
+                        model.cloudKitSyncState = .inProgress
                     }
+
                 case .export:
                     if event.succeeded {
                         Logger.persistenceController.info("CloudKit export succeeded")
+                        model.lastSuccessfulSync = Date()
                     } else if let error = event.error {
                         Logger.persistenceController.error("CloudKit export error: \(error.localizedDescription, privacy: .public)")
                     }
+
                 @unknown default:
                     Logger.persistenceController.debug("CloudKit unknown event type")
                 }

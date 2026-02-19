@@ -11,6 +11,14 @@ public enum CoreDataInitError: Equatable {
     case creation(message: String)
 }
 
+public enum CloudKitSyncState: Sendable, Equatable {
+    case notStarted
+    case inProgress
+    case succeeded
+    case failed(String)
+}
+
+@Observable
 public final class CoreDataInitModel: @unchecked Sendable {
     init(inMemory: Bool, currentActor: AppPersistentActor) {
         self.inMemory = inMemory
@@ -32,6 +40,11 @@ public final class CoreDataInitModel: @unchecked Sendable {
 
     public internal(set) var spotlightIndexer: RpgSpotlightIndexerDelegate?
     var persistentHistoryTracker: PersistentHistoryTrackerManager?
+    var persistentHistoryCleaner: PersistentHistoryCleaner?
+
+    // CloudKit sync state for UI
+    public var cloudKitSyncState: CloudKitSyncState = .notStarted
+    public var lastSuccessfulSync: Date?
 
     public var hasError: Bool {
         error != .none
@@ -43,6 +56,13 @@ public final class CoreDataInitModel: @unchecked Sendable {
         default:
             return false
         }
+    }
+
+    public var isSyncing: Bool {
+        if case .inProgress = cloudKitSyncState {
+            return true
+        }
+        return false
     }
 }
 
@@ -177,6 +197,29 @@ public struct CoreDataPersistenceController {
             model.spotlightIndexer?.startSpotlightIndexing()
 #endif
             model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: model.currentActor, viewBackupContext: model.context)
+
+            // Setup persistent history cleaner and run initial cleanup
+            model.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
+
+            // Run cleanup on launch (after a delay to not block startup)
+            Task {
+                try? await Task.sleep(for: .seconds(5))
+                model.persistentHistoryCleaner?.clean()
+
+                // Schedule daily cleanup
+                await schedulePeriodicCleanup()
+            }
+        }
+    }
+
+    @MainActor
+    private func schedulePeriodicCleanup() async {
+        while !Task.isCancelled {
+            // Wait 24 hours
+            try? await Task.sleep(for: .seconds(24 * 60 * 60))
+
+            // Run cleanup
+            model.persistentHistoryCleaner?.clean()
         }
     }
 }
