@@ -232,11 +232,11 @@ private extension CoreDataController {
     ) async throws {
         let chunkUUIDs = chunk.map { $0[keyPath: keyPath] }
         let existingUUIDs = try await batchExists(uuids: chunkUUIDs)
-        
+
         await context.perform {
             for model in chunk {
                 let uuid = model[keyPath: keyPath]
-                
+
                 if existingUUIDs.contains(uuid) {
                     // Update existing
                     if let existing = fetchCoreData(uuid: uuid) {
@@ -248,9 +248,8 @@ private extension CoreDataController {
                     updater(model, new)
                 }
             }
-            
-            // Save this chunk
-            saveCoreData()
+
+            // Don't save per chunk - let batchReplace save once at the end for better performance
         }
     }
 }

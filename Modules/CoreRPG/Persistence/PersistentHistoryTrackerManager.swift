@@ -89,9 +89,6 @@ final class PersistentHistoryTrackerManager: @unchecked Sendable {
     lazy var backgroundContext = { container.newBackgroundContext() }()
 
     private var cancellables: Set<AnyCancellable> = []
-    private lazy var queue = {
-        DispatchQueue(label: "de.andretrettin.\(currentActor.rawValue).processPersistentHistory")
-    }()
 
     private func processor() {
         let fromDate = loadDate()
