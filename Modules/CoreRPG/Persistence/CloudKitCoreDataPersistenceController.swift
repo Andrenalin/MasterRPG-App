@@ -189,8 +189,13 @@ public struct CloudKitCoreDataPersistenceController {
             model.spotlightIndexer?.startSpotlightIndexing()
 #endif
 
+            let currentActor = model.currentActor
+            let localContext = model.context
+            
+            let localModel = model
             context.performAndWait {
-                model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, model: model)
+                let persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: currentActor, viewBackupContext: localContext)
+                localModel.persistentHistoryTracker = persistentHistoryTracker
             }
         }
     }

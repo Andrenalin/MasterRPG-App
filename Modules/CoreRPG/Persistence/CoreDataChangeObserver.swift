@@ -18,9 +18,12 @@ public final class CoreDataChangeObserver: @unchecked Sendable {
             observer = NotificationCenter.default
                 .publisher(for: NSManagedObjectContext.didMergeChangesObjectIDsNotification, object: localCtx)
                 .compactMap { notification in
+                    let changes = ChangeType.allCases.compactMap { type -> (ChangeType, Set<NSManagedObjectID>)? in
+                        guard let changes = notification.userInfo?[type.userInfoKey] as? Set<NSManagedObjectID> else { return nil }
+                        return (type, changes)
+                    }
                     return localCtx.performAndWait {
-                        ChangeType.allCases.compactMap { type -> ([DataType], ChangeType)? in
-                            guard let changes = notification.userInfo?[type.userInfoKey] as? Set<NSManagedObjectID> else { return nil }
+                        changes.map { (type, changes) in
                             let objects = changes.filter { objectID in
                                 objectID.entity == entity
                             }.compactMap { objectID in

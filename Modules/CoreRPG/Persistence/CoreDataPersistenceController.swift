@@ -11,7 +11,7 @@ public enum CoreDataInitError: Equatable {
     case creation(message: String)
 }
 
-public final class CoreDataInitModel {
+public final class CoreDataInitModel: @unchecked Sendable {
     init(inMemory: Bool, currentActor: AppPersistentActor) {
         self.inMemory = inMemory
         self.currentActor = currentActor
@@ -177,7 +177,7 @@ public struct CoreDataPersistenceController {
 #if !os(tvOS)
             model.spotlightIndexer?.startSpotlightIndexing()
 #endif
-            model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, model: model)
+            model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: model.currentActor, viewBackupContext: model.context)
         }
     }
 }

@@ -80,12 +80,14 @@ public extension CoreDataController {
     }
 
     func replace(uuid: UUID, with viewModel: Model, updater: @escaping @Sendable (Model, DataType) -> Void) async throws {
-        if let current = try await fetch(uuid: uuid) {
-            await context.perform {
+        await context.perform {
+            if let current = fetchCoreData(uuid: uuid) {
                 updater(viewModel, current)
+            } else {
+                Logger.coreDataController.debug("add new \(uuid, privacy: .public)")
+                let new = DataType(context: context)
+                updater(viewModel, new)
             }
-        } else {
-            addNewCoreData(id: uuid, model: viewModel, updater: updater)
         }
     }
 
@@ -192,70 +194,6 @@ public extension CoreDataController {
         // Save once after all chunks are processed
         try await save()
         Logger.coreDataController.info("Batch replaced \(models.count) objects in \(chunks.count) chunks")
-    }
-    
-    /// Batch fetch with predicate for filtered operations
-    func batchFetch(
-        predicate: NSPredicate? = nil,
-        sortDescriptors: [NSSortDescriptor] = [],
-        fetchLimit: Int? = nil,
-        mapper: @escaping @Sendable (DataType) -> Model
-    ) async throws -> [Model] {
-        await context.perform {
-            let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
-            request.predicate = predicate
-            request.sortDescriptors = sortDescriptors
-            
-            if let limit = fetchLimit {
-                request.fetchLimit = limit
-            }
-            
-            // Enable batch faulting for better performance
-            request.returnsObjectsAsFaults = false
-            
-            return fetchAndDelete(request: request, mapper: mapper)
-        }
-    }
-    
-    /// Batch update using NSBatchUpdateRequest for specific attributes
-    func batchUpdate<T>(
-        predicate: NSPredicate,
-        attributeName: String,
-        value: T
-    ) async throws {
-        try await batchContext.perform {
-            let request = NSBatchUpdateRequest(entityName: String(describing: DataType.self))
-            request.predicate = predicate
-            request.propertiesToUpdate = [attributeName: value]
-            request.resultType = .updatedObjectIDsResultType
-
-            do {
-                let result = try self.batchContext.execute(request) as? NSBatchUpdateResult
-                let objectIDArray = result?.result as? [NSManagedObjectID]
-                let changes = [NSUpdatedObjectsKey: objectIDArray ?? []]
-                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [self.batchContext])
-
-                Logger.coreDataController.info("Batch updated objects with predicate")
-            } catch {
-                Logger.coreDataController.error("Batch update error: \(error.localizedDescription, privacy: .public)")
-                throw error
-            }
-        }
-    }
-    
-    /// Batch count for efficient counting without loading objects
-    func batchCount(predicate: NSPredicate? = nil) async throws -> Int {
-        await context.perform {
-            let request: NSFetchRequest<DataType> = DataType.fetchRequest() as! NSFetchRequest<DataType>
-            request.predicate = predicate
-            
-            do {
-                return try context.count(for: request)
-            } catch {
-                Logger.coreDataController.error("Batch count error: \(error.localizedDescription, privacy: .public)")
-                return 0
-            }
-        }
     }
     
     /// Batch exists check for multiple UUIDs

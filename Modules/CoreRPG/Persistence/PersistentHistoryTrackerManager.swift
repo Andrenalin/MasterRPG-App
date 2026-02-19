@@ -12,13 +12,12 @@ public enum AppPersistentActor: String, CaseIterable, Sendable {
     case rpgWidget
 }
 
-public struct PersistentHistoryCleaner {
-    @MainActor
-    public init(container: NSPersistentContainer) {
+public struct PersistentHistoryCleaner: @unchecked Sendable {
+    @MainActor public init(container: NSPersistentContainer) {
         self.container = container
         userDefault = UserDefaults.appGroup
     }
-    
+
     let container: NSPersistentContainer
     let userDefault: UserDefaults
     let appActors = AppPersistentActor.allCases
@@ -44,25 +43,32 @@ public struct PersistentHistoryCleaner {
         }
 
         let allActors = appActors
-        let userDefaultsLocal = self.userDefault
+        //let userDefaultsLocal = self.userDefault
         container.performBackgroundTask { context in
             do {
                 try context.execute(deleteHistoryRequest)
                 Logger.persistentHistory.info("Update Transaction Dates")
                 allActors.forEach { actor in
-                    userDefaultsLocal.updateLastHistoryTransactionTimestamp(for: actor, to: nil)
+                    Task { @MainActor in
+                        updateTimeStamp(actor: actor)
+                    }
                 }
             } catch {
                 Logger.persistentHistory.error("Clean History error \(error.localizedDescription, privacy: .public)")
             }
         }
     }
+    
+    @MainActor func updateTimeStamp(actor: AppPersistentActor) {
+        userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: nil)
+    }
 }
 
-final class PersistentHistoryTrackerManager {
-    init(container: NSPersistentContainer, model: CoreDataInitModel) {
+final class PersistentHistoryTrackerManager: @unchecked Sendable {
+    init(container: NSPersistentContainer, currentActor: AppPersistentActor, viewBackupContext: NSManagedObjectContext?) {
         self.container = container
-        self.model = model
+        self.currentActor = currentActor
+        self.viewBackupContext = viewBackupContext
         self.userDefaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")!
 
         NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange, object: container.persistentStoreCoordinator)
@@ -74,19 +80,22 @@ final class PersistentHistoryTrackerManager {
     }
 
     let container: NSPersistentContainer
-    let model: CoreDataInitModel
+    let currentActor: AppPersistentActor
+    let viewBackupContext: NSManagedObjectContext?
     let userDefaults: UserDefaults
 
     lazy var backgroundContext = { container.newBackgroundContext() }()
 
     private var cancellables: Set<AnyCancellable> = []
     private lazy var queue = {
-        DispatchQueue(label: "de.andretrettin.\(self.model.currentActor.rawValue).processPersistentHistory")
+        DispatchQueue(label: "de.andretrettin.\(currentActor.rawValue).processPersistentHistory")
     }()
 
     private func processor() {
+        let fromDate = loadDate()
+        
         backgroundContext.performAndWait {
-            guard let transactions = try? fetcher() else {
+            guard let transactions = try? fetcher(date: fromDate) else {
                 Logger.persistentHistory.info("No Transactions")
                 return
             }
@@ -103,15 +112,13 @@ extension PersistentHistoryTrackerManager {
         case historyTransactionConvertionFailed
     }
 
-    func fetcher() throws -> [NSPersistentHistoryTransaction] {
-        let fromDate = userDefaults.lastHistoryTransactionTimestamp(for: model.currentActor) ?? Date.distantPast
-
+    func fetcher(date fromDate: Date) throws -> [NSPersistentHistoryTransaction] {
         let historyFetchRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: fromDate)
         if let fetchRequest = NSPersistentHistoryTransaction.fetchRequest {
             var predicates: [NSPredicate] = []
 
             AppPersistentActor.allCases.forEach { appActor in
-                if appActor == model.currentActor {
+                if appActor == currentActor {
                     // For own transactions, only process batchContext (which generates history)
                     // Regular background_context changes don't need to be merged back to itself
                     let predicate = NSPredicate(format: "%K = %@ AND %K = %@", #keyPath(NSPersistentHistoryTransaction.author), appActor.rawValue, #keyPath(NSPersistentHistoryTransaction.contextName), "batchContext")
@@ -131,11 +138,15 @@ extension PersistentHistoryTrackerManager {
         guard let historyResult = try backgroundContext.execute(historyFetchRequest) as? NSPersistentHistoryResult, let history = historyResult.result as? [NSPersistentHistoryTransaction] else { throw Error.historyTransactionConvertionFailed }
         return history
     }
+    
+    func loadDate() -> Date {
+        userDefaults.lastHistoryTransactionTimestamp(for: currentActor) ?? Date.distantPast
+    }
 }
 
 extension PersistentHistoryTrackerManager {
     func merger(transaction: [NSPersistentHistoryTransaction]) {
-        guard let viewContext = model.context else { return }
+        guard let viewContext = viewBackupContext else { return }
         viewContext.perform {
             transaction.forEach { transaction in
                 let userInfo = transaction.objectIDNotification().userInfo ?? [:]
@@ -144,7 +155,7 @@ extension PersistentHistoryTrackerManager {
         }
 
         guard let lastTimestamp = transaction.last?.timestamp else { return }
-        userDefaults.updateLastHistoryTransactionTimestamp(for: model.currentActor, to: lastTimestamp)
+        userDefaults.updateLastHistoryTransactionTimestamp(for: currentActor, to: lastTimestamp)
     }
 }
 
