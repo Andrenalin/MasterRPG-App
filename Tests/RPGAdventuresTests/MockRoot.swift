@@ -33,7 +33,7 @@ struct MockRoot {
         
         await root.itemController.resetData()
         
-        await root.setUp(root: RootManager(adventureRoot: root, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, generatorRoot: root, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot), context: nil)
+        await root.setUp(root: RootManager(adventureRoot: root, audioRoot: audioRoot, characterRoot: characterRoot, diceRoot: diceRoot, generatorRoot: root, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, weatherRoot: weatherRoot), context: nil, batchContext: nil)
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: name, withExtension: "gmz").unsafelyUnwrapped
