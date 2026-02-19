@@ -43,22 +43,24 @@ public struct PersistentHistoryCleaner: @unchecked Sendable {
         }
 
         let allActors = appActors
-        //let userDefaultsLocal = self.userDefault
         container.performBackgroundTask { context in
             do {
                 try context.execute(deleteHistoryRequest)
-                Logger.persistentHistory.info("Update Transaction Dates")
-                allActors.forEach { actor in
-                    Task { @MainActor in
-                        updateTimeStamp(actor: actor)
+                Logger.persistentHistory.info("Cleaned history before \(timestamp, privacy: .public)")
+
+                // Coordinate timestamp updates on MainActor
+                Task { @MainActor in
+                    allActors.forEach { actor in
+                        self.updateTimeStamp(actor: actor)
                     }
+                    Logger.persistentHistory.info("Updated timestamps for \(allActors.count) actors")
                 }
             } catch {
-                Logger.persistentHistory.error("Clean History error \(error.localizedDescription, privacy: .public)")
+                Logger.persistentHistory.error("Clean History error: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
-    
+
     @MainActor func updateTimeStamp(actor: AppPersistentActor) {
         userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: nil)
     }
@@ -93,15 +95,18 @@ final class PersistentHistoryTrackerManager: @unchecked Sendable {
 
     private func processor() {
         let fromDate = loadDate()
-        
+
         backgroundContext.performAndWait {
-            guard let transactions = try? fetcher(date: fromDate) else {
-                Logger.persistentHistory.info("No Transactions")
-                return
-            }
-            merger(transaction: transactions)
-            if !transactions.isEmpty {
-                Logger.persistentHistory.info("\(transactions.count, privacy: .public) Transactions")
+            do {
+                let transactions = try fetcher(date: fromDate)
+                if transactions.isEmpty {
+                    Logger.persistentHistory.debug("No new transactions since \(fromDate, privacy: .public)")
+                } else {
+                    merger(transaction: transactions)
+                    Logger.persistentHistory.info("Processed \(transactions.count, privacy: .public) transactions from \(fromDate, privacy: .public)")
+                }
+            } catch {
+                Logger.persistentHistory.error("Failed to fetch history: \(error.localizedDescription, privacy: .public)")
             }
         }
     }

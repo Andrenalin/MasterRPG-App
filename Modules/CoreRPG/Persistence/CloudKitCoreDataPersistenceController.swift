@@ -72,14 +72,14 @@ public struct CloudKitCoreDataPersistenceController {
         }
         privateDescription.url = privateStoreFolderURL.appendingPathComponent("private.sqlite")
 
-        if allowCloudKitSync {
+        if allowCloudKitSync && !model.inMemory {
             privateDescription.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
             privateDescription.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-        }
 
-        let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitCoreDataPersistenceController.cloudKitContainerIdentifier)
-        cloudKitContainerOptions.databaseScope = .private
-        privateDescription.cloudKitContainerOptions = cloudKitContainerOptions
+            let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitCoreDataPersistenceController.cloudKitContainerIdentifier)
+            cloudKitContainerOptions.databaseScope = .private
+            privateDescription.cloudKitContainerOptions = cloudKitContainerOptions
+        }
         
         model.container = container
         if model.inMemory {
@@ -99,9 +99,9 @@ public struct CloudKitCoreDataPersistenceController {
                 storeUrl = url
                 return
             }
-            if let cloudKitContainerOptions = storeDescription.cloudKitContainerOptions,
-               cloudKitContainerOptions.databaseScope == .private {
-                privateStore = container.persistentStoreCoordinator.persistentStore(for: storeDescription.url!)
+            // Always capture the private store reference
+            if let url = storeDescription.url {
+                privateStore = container.persistentStoreCoordinator.persistentStore(for: url)
             }
         }
         model.containerStoreUrl = storeUrl
@@ -161,20 +161,53 @@ public struct CloudKitCoreDataPersistenceController {
             model.spotlightIndexer?.startSpotlightIndexing()
 #endif
 
+            // Setup CloudKit event monitoring if sync is enabled
+            if allowCloudKitSync && !model.inMemory {
+                setupCloudKitEventMonitoring(container: container)
+            }
+
             let currentActor = model.currentActor
             let localContext = model.context
-            
+
             let localModel = model
-            context.performAndWait {
-                let persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: currentActor, viewBackupContext: localContext)
-                localModel.persistentHistoryTracker = persistentHistoryTracker
+            let persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: currentActor, viewBackupContext: localContext)
+            localModel.persistentHistoryTracker = persistentHistoryTracker
+        }
+    }
+
+    @MainActor
+    private func setupCloudKitEventMonitoring(container: NSPersistentContainer) {
+        NotificationCenter.default.addObserver(
+            forName: NSPersistentCloudKitContainer.eventChangedNotification,
+            object: container,
+            queue: nil
+        ) { notification in
+            if let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event {
+                switch event.type {
+                case .setup:
+                    Logger.persistenceController.info("CloudKit setup event: \(event.succeeded ? "succeeded" : "in progress")")
+                case .import:
+                    if event.succeeded {
+                        Logger.persistenceController.info("CloudKit import succeeded")
+                    } else if let error = event.error {
+                        Logger.persistenceController.error("CloudKit import error: \(error.localizedDescription, privacy: .public)")
+                    }
+                case .export:
+                    if event.succeeded {
+                        Logger.persistenceController.info("CloudKit export succeeded")
+                    } else if let error = event.error {
+                        Logger.persistenceController.error("CloudKit export error: \(error.localizedDescription, privacy: .public)")
+                    }
+                @unknown default:
+                    Logger.persistenceController.debug("CloudKit unknown event type")
+                }
             }
         }
     }
     
     private var allowCloudKitSync: Bool = {
         let arguments = ProcessInfo.processInfo.arguments
-        guard let index = arguments.firstIndex(where: { $0 == "-allowCloudKitSync" }), index + 1 < arguments.count - 1 else { return true }
+        guard let index = arguments.firstIndex(where: { $0 == "-allowCloudKitSync" }), index + 1 < arguments.count else { return true }
         return arguments[index + 1] == "1"
     }()
 }

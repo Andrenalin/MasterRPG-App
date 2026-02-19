@@ -165,7 +165,9 @@ public extension CoreDataController {
                 let result = try self.batchContext.execute(batchDeleteRequest) as? NSBatchDeleteResult
                 let objectIDArray = result?.result as? [NSManagedObjectID]
                 let changes = [NSDeletedObjectsKey: objectIDArray ?? []]
-                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [self.batchContext])
+
+                // Merge changes to both batchContext and main context to ensure immediate consistency
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [self.batchContext, self.context])
 
                 Logger.coreDataController.info("Batch deleted \(uuids.count) objects")
             } catch {
