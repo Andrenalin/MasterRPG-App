@@ -43,17 +43,18 @@ public struct PersistentHistoryCleaner: @unchecked Sendable {
         }
 
         let allActors = appActors
+        let cleanupTimestamp = timestamp
         container.performBackgroundTask { context in
             do {
                 try context.execute(deleteHistoryRequest)
-                Logger.persistentHistory.info("Cleaned history before \(timestamp, privacy: .public)")
+                Logger.persistentHistory.info("Cleaned history before \(cleanupTimestamp, privacy: .public)")
 
                 // Coordinate timestamp updates on MainActor
                 Task { @MainActor in
                     allActors.forEach { actor in
-                        self.updateTimeStamp(actor: actor)
+                        self.updateTimeStamp(actor: actor, to: cleanupTimestamp)
                     }
-                    Logger.persistentHistory.info("Updated timestamps for \(allActors.count) actors")
+                    Logger.persistentHistory.info("Updated timestamps for \(allActors.count) actors to \(cleanupTimestamp, privacy: .public)")
                 }
             } catch {
                 Logger.persistentHistory.error("Clean History error: \(error.localizedDescription, privacy: .public)")
@@ -61,8 +62,8 @@ public struct PersistentHistoryCleaner: @unchecked Sendable {
         }
     }
 
-    @MainActor func updateTimeStamp(actor: AppPersistentActor) {
-        userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: nil)
+    @MainActor func updateTimeStamp(actor: AppPersistentActor, to timestamp: Date) {
+        userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: timestamp)
     }
 }
 
@@ -74,7 +75,7 @@ final class PersistentHistoryTrackerManager: @unchecked Sendable {
         self.userDefaults = UserDefaults(suiteName: "group.de.andretrettin.MasterRPG")!
 
         NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange, object: container.persistentStoreCoordinator)
-            //.subscribe(on: queue, options: nil)
+            .debounce(for: .seconds(1), scheduler: DispatchQueue.global(qos: .utility))
             .sink { [weak self] _ in
                 self?.processor()
             }
@@ -97,10 +98,15 @@ final class PersistentHistoryTrackerManager: @unchecked Sendable {
             do {
                 let transactions = try fetcher(date: fromDate)
                 if transactions.isEmpty {
-                    Logger.persistentHistory.debug("No new transactions since \(fromDate, privacy: .public)")
+                    // Update timestamp to now even when empty, so we don't keep checking from distantPast
+                    if fromDate == Date.distantPast {
+                        self.userDefaults.updateLastHistoryTransactionTimestamp(for: self.currentActor, to: Date())
+                        Logger.persistentHistory.info("Initialized history timestamp for \(self.currentActor.rawValue)")
+                    }
+                    // Don't log when empty - reduces noise
                 } else {
                     merger(transaction: transactions)
-                    Logger.persistentHistory.info("Processed \(transactions.count, privacy: .public) transactions from \(fromDate, privacy: .public)")
+                    Logger.persistentHistory.info("Processed \(transactions.count, privacy: .public) transactions")
                 }
             } catch {
                 Logger.persistentHistory.error("Failed to fetch history: \(error.localizedDescription, privacy: .public)")
