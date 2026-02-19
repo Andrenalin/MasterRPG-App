@@ -34,10 +34,12 @@ public struct CoreDataController<Model: ModelType, DataType: NSManagedObject & C
     let model: CoreDataModel
 
     private let context: NSManagedObjectContext
+    private let batchContext: NSManagedObjectContext
 
     @MainActor
-    public init(context: NSManagedObjectContext) {
+    public init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil) {
         self.context = context
+        self.batchContext = batchContext ?? context
         model = CoreDataModel()
     }
 }
@@ -149,20 +151,20 @@ public extension CoreDataController {
     /// Batch delete using NSBatchDeleteRequest for better performance
     func batchDelete(uuids: [UUID]) async throws {
         guard !uuids.isEmpty else { return }
-        
-        try await context.perform {
+
+        try await batchContext.perform {
             let request = NSFetchRequest<NSFetchRequestResult>(entityName: String(describing: DataType.self))
             request.predicate = NSPredicate(format: "uuid IN %@", uuids as [NSUUID])
-            
+
             let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: request)
             batchDeleteRequest.resultType = .resultTypeObjectIDs
-            
+
             do {
-                let result = try context.execute(batchDeleteRequest) as? NSBatchDeleteResult
+                let result = try self.batchContext.execute(batchDeleteRequest) as? NSBatchDeleteResult
                 let objectIDArray = result?.result as? [NSManagedObjectID]
                 let changes = [NSDeletedObjectsKey: objectIDArray ?? []]
-                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
-                
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [self.batchContext])
+
                 Logger.coreDataController.info("Batch deleted \(uuids.count) objects")
             } catch {
                 Logger.coreDataController.error("Batch delete error: \(error.localizedDescription, privacy: .public)")
@@ -221,18 +223,18 @@ public extension CoreDataController {
         attributeName: String,
         value: T
     ) async throws {
-        try await context.perform {
+        try await batchContext.perform {
             let request = NSBatchUpdateRequest(entityName: String(describing: DataType.self))
             request.predicate = predicate
             request.propertiesToUpdate = [attributeName: value]
             request.resultType = .updatedObjectIDsResultType
-            
+
             do {
-                let result = try context.execute(request) as? NSBatchUpdateResult
+                let result = try self.batchContext.execute(request) as? NSBatchUpdateResult
                 let objectIDArray = result?.result as? [NSManagedObjectID]
                 let changes = [NSUpdatedObjectsKey: objectIDArray ?? []]
-                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
-                
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [self.batchContext])
+
                 Logger.coreDataController.info("Batch updated objects with predicate")
             } catch {
                 Logger.coreDataController.error("Batch update error: \(error.localizedDescription, privacy: .public)")

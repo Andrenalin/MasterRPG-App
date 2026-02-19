@@ -43,12 +43,14 @@ public struct PersistentHistoryCleaner {
             deleteHistoryRequest.fetchRequest = fetchRequest
         }
 
+        let allActors = appActors
+        let userDefaultsLocal = self.userDefault
         container.performBackgroundTask { context in
             do {
                 try context.execute(deleteHistoryRequest)
                 Logger.persistentHistory.info("Update Transaction Dates")
-                appActors.forEach { actor in
-                    userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: nil)
+                allActors.forEach { actor in
+                    userDefaultsLocal.updateLastHistoryTransactionTimestamp(for: actor, to: nil)
                 }
             } catch {
                 Logger.persistentHistory.error("Clean History error \(error.localizedDescription, privacy: .public)")
@@ -110,13 +112,14 @@ extension PersistentHistoryTrackerManager {
 
             AppPersistentActor.allCases.forEach { appActor in
                 if appActor == model.currentActor {
-                    // own transactions from batchContext others can be ignored
-                    let perdicate = NSPredicate(format: "%K = %@ AND %K = %@", #keyPath(NSPersistentHistoryTransaction.author), appActor.rawValue, #keyPath(NSPersistentHistoryTransaction.contextName), "batchContext")
-                    predicates.append(perdicate)
+                    // For own transactions, only process batchContext (which generates history)
+                    // Regular background_context changes don't need to be merged back to itself
+                    let predicate = NSPredicate(format: "%K = %@ AND %K = %@", #keyPath(NSPersistentHistoryTransaction.author), appActor.rawValue, #keyPath(NSPersistentHistoryTransaction.contextName), "batchContext")
+                    predicates.append(predicate)
                 } else {
-                    // other actors we need to process
-                    let perdicate = NSPredicate(format: "%K = %@", #keyPath(NSPersistentHistoryTransaction.author), appActor.rawValue)
-                    predicates.append(perdicate)
+                    // For other actors, process all their transactions (they need to be merged into this actor's contexts)
+                    let predicate = NSPredicate(format: "%K = %@", #keyPath(NSPersistentHistoryTransaction.author), appActor.rawValue)
+                    predicates.append(predicate)
                 }
             }
 

@@ -169,24 +169,26 @@ public struct CloudKitCoreDataPersistenceController {
     @MainActor
     private func setupContext() {
         if let container = model.container, model.error == .none {
+            // Setup main background context for regular operations
             let context = container.newBackgroundContext()
             context.name = "background_context"
             context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
             context.transactionAuthor = model.currentActor.rawValue
             context.automaticallyMergesChangesFromParent = true
-
-            do {
-                try context.performAndWait {
-                    try context.setQueryGenerationFrom(.current)
-                }
-            } catch {
-                Logger.persistenceController.error("Failed to pin viewContext to the current generation: \(error.localizedDescription, privacy: .public)")
-            }
             model.context = context
+
+            // Setup dedicated batch context for batch operations
+            let batchContext = container.newBackgroundContext()
+            batchContext.name = "batchContext"
+            batchContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+            batchContext.transactionAuthor = model.currentActor.rawValue
+            batchContext.automaticallyMergesChangesFromParent = true
+            model.batchContext = batchContext
+
 #if !os(tvOS)
             model.spotlightIndexer?.startSpotlightIndexing()
 #endif
-            
+
             context.performAndWait {
                 model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, model: model)
             }

@@ -16,23 +16,24 @@ public final class CoreDataInitModel {
         self.inMemory = inMemory
         self.currentActor = currentActor
     }
-    
+
     let inMemory: Bool
     let currentActor: AppPersistentActor
     var isInitialized = false
-    
+
     var containerStoreUrl: URL?
-    
+
     public internal(set) var context: NSManagedObjectContext?
+    public internal(set) var batchContext: NSManagedObjectContext?
     public internal(set) var container: NSPersistentContainer?
     public internal(set) var error: CoreDataInitError = .none
-    
+
     public internal(set) var privatePersistentStore: NSPersistentStore?
     public internal(set) var sharedPersistentStore: NSPersistentStore?
-    
-    public internal(set) var spotlightIndexer: RpgSpotlightIndexerDelegate?    
+
+    public internal(set) var spotlightIndexer: RpgSpotlightIndexerDelegate?
     var persistentHistoryTracker: PersistentHistoryTrackerManager?
-    
+
     public var hasError: Bool {
         error != .none
     }
@@ -157,19 +158,21 @@ public struct CoreDataPersistenceController {
     @MainActor
     private func setupContext() {
         if let container = model.container, model.error == .none {
+            // Setup main background context for regular operations
             let context = container.newBackgroundContext()
             context.name = "background_context"
             context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
             context.transactionAuthor = model.currentActor.rawValue
             context.automaticallyMergesChangesFromParent = true
-            do {
-                try context.performAndWait {
-                    try context.setQueryGenerationFrom(.current)
-                }
-            } catch {
-                Logger.persistenceController.error("Failed to pin viewContext to the current generation: \(error.localizedDescription, privacy: .public)")
-            }
             model.context = context
+
+            // Setup dedicated batch context for batch operations
+            let batchContext = container.newBackgroundContext()
+            batchContext.name = "batchContext"
+            batchContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+            batchContext.transactionAuthor = model.currentActor.rawValue
+            batchContext.automaticallyMergesChangesFromParent = true
+            model.batchContext = batchContext
 
 #if !os(tvOS)
             model.spotlightIndexer?.startSpotlightIndexing()
