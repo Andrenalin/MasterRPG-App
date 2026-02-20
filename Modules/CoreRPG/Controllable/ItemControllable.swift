@@ -55,7 +55,7 @@ public extension ItemControllable {
         self.itemOrEmpty(for: itemId).copy()
     }
     
-    func delete(itemId: UUID) async {
+    func delete(itemId: UUID, withFileData: Bool = true) async {
         guard let item = await self.item(for: itemId) else { return }
         let entries = item.entries
         for entry in entries {
@@ -65,7 +65,9 @@ public extension ItemControllable {
         try? await dataControllable?.delete(id: item.id)
         if let fileUrlDataController, let fileUrl = item.fileUrl {
             await cacheControllable?.remove(itemId: itemId)
-            fileUrlDataController.delete(fileUrl)
+            if withFileData {
+                fileUrlDataController.delete(fileUrl)
+            }
         }
         
         await itemDataModel.resetModel(id: item.id)

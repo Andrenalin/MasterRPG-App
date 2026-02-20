@@ -35,7 +35,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                     EmptyView()
                 }
             }
-            .moveDisabled(true)
 
             HStack {
                 if (isEditor || entry.editType != .none) && (entry.sheetType == .item || entry.sheetType == .group) {
@@ -86,6 +85,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             }
         }
         .contentShape(.rect)
+        .moveDisabled(entry.sheetType != .item && entry.sheetType != .group)
 #if !os(tvOS)
         .applyIf(isEditor && entry.sheetType == .item) {
             $0.dropDestination(for: linkTypes, isEnabled: entry.sheetType != .group) { items, sessions in
