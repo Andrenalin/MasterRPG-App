@@ -26,7 +26,7 @@ public extension SyncDataControllable {
                 let ids = try await dataControllable.fetchIds()
                 let removedIds = await Set(itemControllable.itemDataModel.items).subtracting(ids)
                 for removedId in removedIds {
-                    await itemControllable.delete(itemId: removedId)
+                    await itemControllable.delete(itemId: removedId, withFileData: false)
                 }
             }
             for insertedId in insertedIds {

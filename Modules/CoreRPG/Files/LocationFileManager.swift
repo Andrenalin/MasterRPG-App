@@ -61,7 +61,7 @@ public extension LocationFileManager {
             guard let cloudPath = rootICloud else { return nil }
             return add(relative: url, to: cloudPath, module: nil)
         case .newCloud:
-            return add(relative: url, to: rootNewCloud, module: module)
+            return add(relative: url, to: rootNewCloud, module: mapModule(name: module))
         case .local:
             guard let rootLocal else { return nil }
             let filePath = Array(url.pathComponents.drop(while: { $0 != "Documents" }).dropFirst()).joined(separator: "/")
@@ -69,6 +69,17 @@ public extension LocationFileManager {
             return newUrl
         default:
             return url
+        }
+    }
+    
+    private func mapModule(name: String?) -> String? {
+        guard let name else { return nil }
+        return switch name {
+        case NetworkModules.audio.token: "audio"
+        case NetworkModules.pdf.token: "pdf"
+        case NetworkModules.photo.token: "photo"
+        case NetworkModules.space.token: "space"
+        default: name
         }
     }
 

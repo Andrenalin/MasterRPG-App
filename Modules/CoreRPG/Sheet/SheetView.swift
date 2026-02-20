@@ -52,9 +52,9 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                 .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
                 .moveDisabled(true)
                 
-                if !model.sheetModel.inlineEntries.isEmpty || model.description(for: model.sheetModel)?.isEmpty ?? false {
+                if !model.sheetModel.inlineEntries.isEmpty || !(model.description(for: model.sheetModel)?.isEmpty ?? true) {
                     VStack(alignment: .leading) {
-                        if let description = model.description(for: model.sheetModel) {
+                        if let description = model.description(for: model.sheetModel), !description.isEmpty {
                             LinkHighlightTextView(model: model.linkTextModel(for: .description, text: description))
                         }
                         ForEach(model.sheetModel.inlineEntries) { inlineEntry in
@@ -75,8 +75,8 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             .applyIf(isEditor) {
                 $0.onMove { indexSet, index in
                     guard let entryDataEditable else { return }
-                    let (reloc, to) = relocate(indexSet: indexSet, to: index)
-                    if entryDataEditable.move(itemId: model.sheetModel.source.itemId, entryFrom: reloc, to: to) {
+                    //let (reloc, to) = relocate(indexSet: indexSet, to: index)
+                    if entryDataEditable.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index) {
                         model.move(itemId: model.sheetModel.source.itemId, indexSet: indexSet, to: index)
                         Task { @MainActor in
                             try? await Task.sleep(for: .milliseconds(100))
