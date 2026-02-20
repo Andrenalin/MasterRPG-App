@@ -87,7 +87,9 @@ public struct CloudKitCoreDataPersistenceController {
         }
         
 #if !os(tvOS)
-        model.spotlightIndexer = RpgSpotlightIndexerDelegate(forStoreWith: privateDescription, coordinator: container.persistentStoreCoordinator)
+        if allowCloudKitSync {
+            model.spotlightIndexer = RpgSpotlightIndexerDelegate(forStoreWith: privateDescription, coordinator: container.persistentStoreCoordinator)
+        }
 #endif
         
         var privateStore: NSPersistentStore?
@@ -170,19 +172,22 @@ public struct CloudKitCoreDataPersistenceController {
             let localContext = model.context
 
             let localModel = model
-            let persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: currentActor, viewBackupContext: localContext)
-            localModel.persistentHistoryTracker = persistentHistoryTracker
-
-            // Setup persistent history cleaner and run initial cleanup
-            localModel.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
-
-            // Run cleanup on launch (after a delay to not block startup)
-            Task {
-                try? await Task.sleep(for: .seconds(5))
-                localModel.persistentHistoryCleaner?.clean()
-
-                // Schedule daily cleanup
-                await schedulePeriodicCleanup()
+            
+            if allowCloudKitSync {
+                let persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: currentActor, viewBackupContext: localContext)
+                localModel.persistentHistoryTracker = persistentHistoryTracker
+                
+                // Setup persistent history cleaner and run initial cleanup
+                localModel.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
+                
+                // Run cleanup on launch (after a delay to not block startup)
+                Task {
+                    try? await Task.sleep(for: .seconds(5))
+                    localModel.persistentHistoryCleaner?.clean()
+                    
+                    // Schedule daily cleanup
+                    await schedulePeriodicCleanup()
+                }
             }
         }
     }
