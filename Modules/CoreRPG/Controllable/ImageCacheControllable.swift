@@ -45,7 +45,7 @@ extension ImageCacheControllable {
     public func photoId(for itemId: UUID, item: any ItemDataAccessable, shouldDownload: Bool = false) async -> UUID? {
         guard let fileUrlDataController, let fileUrl = item.fileUrl else { return nil }
         guard await !imageCacheController.hasObject(for: itemId) else { return itemId }
-        let imageTask = Task.detached(priority: .userInitiated) {
+        let imageTask = Task(priority: .userInitiated) {
             if shouldDownload {
                 if await fileUrlDataController.hasAccess(for: fileUrl) == false {
                     try? await fileUrlDataController.download(fileUrl: fileUrl)
@@ -63,7 +63,7 @@ extension ImageCacheControllable {
         guard await !thumbnailCacheController.hasObject(for: itemId) else { return itemId }
         let _ = await thumbnail(for: itemId) // load from disk
         guard await !thumbnailCacheController.hasObject(for: itemId) else { return itemId }
-        let imageTask = Task.detached(priority: .userInitiated) {
+        let imageTask = Task(priority: .userInitiated) {
             await self.createThumbnail(for: itemId, item: item)
         }
         _ = await imageTask.value
