@@ -195,7 +195,19 @@ public extension EditControllable {
         }
         save(updated: parentItem, message: String(localized: "Added item").localizedString)
     }
-    
+
+    @MainActor func remove(itemId: UUID, parentId: UUID) {
+        guard let parentItem = editModel(for: parentId) else { return }
+        if parentItem.isFolder {
+            removeItemFromParent(itemId: itemId)
+        } else {
+            var entries = parentItem.entries
+            entries.removeAll(where: { $0.childId == itemId })
+            parentItem.entries = entries
+            save(updated: parentItem, message: String(localized: "Removed item").localizedLowercase.localizedString)
+        }
+    }
+
     @MainActor func removeItemFromParent(itemId: UUID) {
         guard var item = editModel(for: itemId), let parentId = item.parentId, let parentItem = editModel(for: parentId) else { return }
         item.parentId = nil

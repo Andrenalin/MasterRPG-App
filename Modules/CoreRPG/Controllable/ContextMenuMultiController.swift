@@ -29,6 +29,16 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
         return listModel.ids(selectedItemIds: [currentSelected])
     }
 
+    func itemCategory(currentSelected: UUID?) -> ItemListCategory {
+        let selection = selection(currentSelected: currentSelected)
+        guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return .entry }
+        if selection.count > 1 {
+            return .entry
+        } else {
+            return model.category
+        }
+    }
+    
     func itemName(currentSelected: UUID?) -> String {
         let selection = selection(currentSelected: currentSelected)
         guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return "" }

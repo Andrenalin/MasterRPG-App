@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 public protocol ItemListContextMenuControllable {
     func itemName(currentSelected: UUID?) -> String
+    func itemCategory(currentSelected: UUID?) -> ItemListCategory
     var collectionIcon: String { get }
     
     func duplicateItem(currentSelected: UUID?) async

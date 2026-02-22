@@ -3,12 +3,14 @@
 import SwiftUI
 
 public struct ListRootContextMenu: View {
-    public init(controller: any ItemListContextMenuControllable, currentSelected: UUID? = nil) {
+    public init(controller: any ItemListContextMenuControllable, parentItem: (any ItemDataAccessable)?, currentSelected: UUID? = nil) {
         self.controller = controller
+        self.parentItem = parentItem
         self.currentSelected = currentSelected
     }
     
     let controller: ItemListContextMenuControllable
+    let parentItem: (any ItemDataAccessable)?
     let currentSelected: UUID?
 
     @Environment(ItemRootController.self) private var root
@@ -17,10 +19,14 @@ public struct ListRootContextMenu: View {
     
     public var body: some View {
         duplicateItemView
-        moveItemView
-            .disabled(listDisplayModel.isListMode)
-        addItemView
-            .disabled(listDisplayModel.isListMode)
+        if !listDisplayModel.isListMode {
+            Divider()
+            addItemView
+            moveItemView
+        }
+        if parentItem?.specialCategory ?? false {
+            removeItemView
+        }
         Divider()
         exportItemView
         groupEditView
@@ -66,6 +72,7 @@ private extension ListRootContextMenu {
                 Image(systemName: "trash")
             }
         }
+        .disabled((parentItem?.category ?? .entry) == .collection)
     }
 
     var exportItemView: some View {
@@ -149,4 +156,24 @@ private extension ListRootContextMenu {
             }
         }
     }
+    
+    var removeEntryTitle: String {
+        (parentItem?.category ?? .entry).title
+    }
+    
+    var removeItemView: some View {
+        Button {
+            guard let itemId = currentSelected, let parentId = parentItem?.id else { return }
+            withAnimation {
+                root.editControllable.remove(itemId: itemId, parentId: parentId)
+            }
+        } label: {
+            Label {
+                Text("Remove \(title) from \(removeEntryTitle)", bundle: .module)
+            } icon: {
+                Image(systemName: "rectangle.stack.badge.minus")
+            }
+        }
+    }
+
 }
