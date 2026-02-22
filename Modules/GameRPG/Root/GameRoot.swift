@@ -293,6 +293,7 @@ extension GameRoot {
         gameModel.gameConfig.players[0].type = type
         gameModel.gameConfig.players[0].name = name(for: type)
         gameModel.gameConfig.state = .started
+        adventureRoot.startGame()
         if type != .observer {
             characterRoot.valueGameControllable.startGame(for: gameModel.selectedCharacter)
             diceRoot.diceGameControllable.setFocusDice(on: characterRoot.valueGameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))

@@ -108,50 +108,6 @@ extension AudioController {
         }
     }
     
-//    func addAudio(models: [AudioModel], replace: Bool = false, playId: UUID? = nil, shouldPlay: Bool) async {
-//        let playNextId: UUID?
-//        if let playId, !models.contains(where: { $0.id == playId }), let firstId = models.first?.id {
-//            playNextId = firstId
-//        } else {
-//            playNextId = playId
-//        }
-//        if let playNextId, await model.currentId == playNextId {
-//            if await model.isPlaying && shouldPlay {
-//                return
-//            }
-//            if await model.isPlaying && !shouldPlay {
-//                await togglePlay()
-//                return
-//            }
-//        }
-//
-//        if replace {
-//            let resetTask = Task { @MainActor in
-//                model.playList = []
-//                model.currentIndex = 0
-//                model.isPlaybackComplete = false
-//            }
-//            _ = await resetTask.result
-//        }
-//        for item in models {
-//            let loader = Task.detached { [weak self] in
-//                return await self?.root?.gameController.audioAsset(for: item.id)
-//            }
-//            let loaderTask = Task { @MainActor in
-//                guard let playItem = await loader.value else { return }
-//                if playItem.id == playNextId {
-//                    model.currentIndex = model.playList.count
-//                }
-//                model.playList.append(playItem)
-//            }
-//            _ = await loaderTask.result
-//        }
-//
-//        await model.resetPlayMode(playMode)
-//        guard let playNextId else { return }
-//        await preparePlay(id: playNextId)
-//    }
-    
     private func audioAsset(for item: AudioModel) async -> PlaylistItem? {
         guard let fileUrl = item.fileUrl, let fileUrlDataController = itemController.fileUrlDataController else { return nil }
 

@@ -40,12 +40,6 @@ final class AudioPlayerSession: Sendable {
         self.model = AudioPlayerSessionModel(delegate: delegate)
     }
 
-    deinit {
-        //Task {
-        //await removeAllSessionObservers()
-        //}
-    }
-
     @MainActor
     func initSession() {
 #if !os(macOS)
