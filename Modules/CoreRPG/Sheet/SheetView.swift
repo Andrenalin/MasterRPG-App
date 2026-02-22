@@ -93,6 +93,12 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                     model.updateParent()
                 }
             }
+            .onChange(of: root.itemControllable.itemOrEmpty(for: model.id).name) {
+                model.reset()
+            }
+            .onChange(of: root.itemControllable.itemOrEmpty(for: model.id).description) {
+                model.reset()
+            }
         }
         
         Color.accentColor.opacity(0.3)

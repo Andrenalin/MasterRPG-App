@@ -11,7 +11,7 @@ struct AdventureChatRootView: View {
     @Environment(GeneratorRootModel.self) private var root
     
     private var model: AdventureSessionModel {
-        root.adventureGeneratorController.model
+        generatorController.model
     }
 
     private var generatorController: AdventureGeneratorController {

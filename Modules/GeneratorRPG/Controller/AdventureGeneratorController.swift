@@ -12,11 +12,14 @@ final class AdventureSessionModel {
     func set(session: LanguageModelSession) {
         self.session = session
     }
-    
+
+    var responseErrorContent: String = ""
+
+    // chat
     var adventureChat: String?
     
+    // extracting chat
     var extracted: [BlockEntryGenModel.PartiallyGenerated] = []
-    var responseErrorContent: String = ""
 }
 
 struct AdventureGeneratorController: Sendable {
@@ -31,7 +34,7 @@ struct AdventureGeneratorController: Sendable {
         let session = LanguageModelSession {
         """
         You are an assistant to support a game master for creating a fictional game story. 
-        The game usually have NPC that are interacting with players characters.
+        In the game you have NPC and players characters they have to talk to each other.
         Add connections to other possible outcomes or stories. 
         Keep your answer pricse except the game master needed a detailed version.
         """
