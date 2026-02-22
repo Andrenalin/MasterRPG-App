@@ -75,13 +75,11 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             .applyIf(isEditor) {
                 $0.onMove { indexSet, index in
                     guard let entryDataEditable else { return }
-                    //let (reloc, to) = relocate(indexSet: indexSet, to: index)
-                    if entryDataEditable.move(itemId: model.sheetModel.source.itemId, entryFrom: indexSet, to: index) {
-                        model.move(itemId: model.sheetModel.source.itemId, indexSet: indexSet, to: index)
-                        Task { @MainActor in
-                            try? await Task.sleep(for: .milliseconds(100))
-                            model.updateParent()
-                        }
+                    model.move(itemId: model.sheetModel.source.itemId, indexSet: indexSet, to: index)
+                    entryDataEditable.move(itemId: model.sheetModel.source.itemId, entryIds: model.sheetModel.entries.compactMap { $0.source.entryId })
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(100))
+                        model.updateParent()
                     }
                 }
             }

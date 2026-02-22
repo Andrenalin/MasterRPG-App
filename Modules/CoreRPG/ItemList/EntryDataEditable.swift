@@ -198,18 +198,25 @@ public extension EntryDataEditable {
         }
         save(updated: item, message: String(localized: "Edit entry").localizedString)
     }
-    
-    @MainActor func move(itemId: UUID, entryFrom: IndexSet, to: Array<UUID>.Index) -> Bool {
-        guard let item = editModel(for: itemId) else { return false }
-        var destination = to
-        if destination >= item.entries.count {
-            destination = item.entries.count - 1
-        }
-        item.entries.move(fromOffsets: entryFrom, toOffset: destination)
+
+    @MainActor func move(itemId: UUID, entryIds: [UUID]) {
+        guard let item = editModel(for: itemId) else { return }
+        let entries = entryIds.compactMap { id in item.entries.first { $0.id == id }}
+        item.entries = entries
         save(updated: item, message: String(localized: "Reorder entries").localizedString)
-        return true
     }
-    
+
+//    @MainActor func move(itemId: UUID, entryFrom: IndexSet, to: Array<UUID>.Index) -> Bool {
+//        guard let item = editModel(for: itemId) else { return false }
+//        var destination = to
+//        if destination >= item.entries.count {
+//            destination = item.entries.count - 1
+//        }
+//        item.entries.move(fromOffsets: entryFrom, toOffset: destination)
+//        save(updated: item, message: String(localized: "Reorder entries").localizedString)
+//        return true
+//    }
+//    
     @MainActor func move(itemId: UUID, entryId: UUID, up: Bool) {
         guard let item = editModel(for: itemId) else { return }
         guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }
