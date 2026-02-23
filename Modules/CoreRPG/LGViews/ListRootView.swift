@@ -175,10 +175,9 @@ private extension ListRootView {
         } else {
             let removingItems = listController.delete(offsets: offsets)
             guard !removingItems.isEmpty else { return }
-            root.removeEntryListModel.removeItems = removingItems
-            removingItems.forEach {
-                root.editControllable.markForDeletion(itemId: $0.itemId)
-            }
+            
+            root.removeEntryListModel.removeItems = root.editControllable.markCollectionItemsForRemoval(for: removingItems)
+            
             navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
         }
     }

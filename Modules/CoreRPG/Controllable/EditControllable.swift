@@ -220,6 +220,39 @@ public extension EditControllable {
     }
 }
 
+// MARK: - Collect Items for Removal
+
+public extension EditControllable {
+    @MainActor func markCollectionItemsForRemoval(for items: [ItemRowModel]) -> [ItemRowModel] {
+        var allRemovingItems = items
+        var processedIds = Set<UUID>()
+
+        func collectChildren(from itemModels: [ItemRowModel]) {
+            for itemModel in itemModels {
+                guard !processedIds.contains(itemModel.itemId) else { continue }
+                processedIds.insert(itemModel.itemId)
+
+                if let model = itemControllable.itemSync(for: itemModel.itemId), model.isFolder {
+                    // Only folders delete their children, so only add folder children to the removing list
+                    let children = model.entries.map {
+                        ItemRowModel(itemId: $0.childId, typeId: itemModel.typeId)
+                    }
+                    allRemovingItems.append(contentsOf: children)
+                    // Recursively collect children from nested folders
+                    collectChildren(from: children)
+                }
+            }
+        }
+
+        collectChildren(from: items)
+        
+        allRemovingItems.forEach {
+            markForDeletion(itemId: $0.itemId)
+        }
+        return allRemovingItems
+    }
+}
+
 // MARK: - Menu
 
 public extension EditControllable {
@@ -248,9 +281,11 @@ public extension EditControllable {
         for entry in item.entries {
             if var entryItem = editModel(for: entry.childId) {
                 if item.category == .folder {
-                    entryItem.parentId = item.parentId // upper folder
+                    entryItem.parentId = item.parentId // move to upper folder (or root if nil)
+                    entryItem.displayState = 2 // mark children as deleted when folder is deleted
+                } else {
+                    entryItem.displayState = 0 // for non-folder containers, reset to visible
                 }
-                entryItem.displayState = 0
                 save(updated: entryItem, message: String(localized: "Remove parent").localizedString)
             }
         }
@@ -289,15 +324,24 @@ public extension EditControllable {
     
     @MainActor func restore(itemId: UUID) {
         guard var item = editModel(for: itemId) else { return }
-        for entry in item.entries {
-            if var entryItem = editModel(for: entry.childId) {
-                if item.category == .folder {
+
+        // If this is a folder being restored, restore its children
+        if item.category == .folder {
+            for entry in item.entries {
+                if var entryItem = editModel(for: entry.childId) {
                     entryItem.parentId = item.id // to this folder
+                    entryItem.displayState = 1 // hidden
+                    save(updated: entryItem, message: String(localized: "Restore parent").localizedString)
                 }
-                entryItem.displayState = 1 // hidden
-                save(updated: entryItem, message: String(localized: "Restore parent").localizedString)
+            }
+        } else {
+            // If this is a child being restored, check if its parent folder still exists and is not deleted
+            if let parentId = item.parentId, let parentItem = editModel(for: parentId), parentItem.displayState == 2 {
+                // Parent folder is deleted, move child to root level
+                item.parentId = nil
             }
         }
+
         tagController.add(tags: item.tags, module: itemControllable.config.module)
         item.displayState = 0
         save(updated: item, message: String(localized: "Restore item").localizedString)

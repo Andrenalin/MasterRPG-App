@@ -687,9 +687,130 @@ struct EditControllerTests {
         let deletedFolder = await root.itemController.itemOrEmpty(for: folderModel.id)
         #expect(deletedFolder.displayState == 2)
 
+        // Verify children are also marked for deletion (displayState = 2)
+        #expect(await root.itemController.itemOrEmpty(for: child1).displayState == 2)
+        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 2)
+
         // Verify children's parentId is reset to nil (moved to parent's parent, which is nil)
         #expect(await root.itemController.itemOrEmpty(for: child1).parentId == nil)
         #expect(await root.itemController.itemOrEmpty(for: child2).parentId == nil)
+    }
+
+    @Test func collectItemsForRemovalWithFolder() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+
+        // Create a folder with children
+        let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
+        await root.itemController.replace(model: folderModel, isInsert: true)
+
+        let child1 = await root.itemController.addNew(type: .item)
+        let child2 = await root.itemController.addNew(type: .item)
+
+        await sut.addItem(itemId: child1, parentId: folderModel.id)
+        await sut.addItem(itemId: child2, parentId: folderModel.id)
+
+        // Test collectItemsForRemoval
+        let removingItems = [ItemRowModel(itemId: folderModel.id, typeId: .space)]
+        let allItems = await sut.markCollectionItemsForRemoval(for: removingItems)
+
+        // Should include folder + 2 children = 3 items
+        #expect(allItems.count == 3)
+        #expect(allItems.contains(where: { $0.itemId == folderModel.id }))
+        #expect(allItems.contains(where: { $0.itemId == child1 }))
+        #expect(allItems.contains(where: { $0.itemId == child2 }))
+    }
+
+    @Test func collectItemsForRemovalWithNestedFolders() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+
+        // Create nested folder structure: parent > child folder > grandchild item
+        let parentFolder = SpaceModel(id: UUID(), name: "Parent Folder", category: .folder, displayState: 0)
+        await root.itemController.replace(model: parentFolder, isInsert: true)
+
+        let childFolder = SpaceModel(id: UUID(), name: "Child Folder", category: .folder, displayState: 0)
+        await root.itemController.replace(model: childFolder, isInsert: true)
+
+        let grandchildItem = await root.itemController.addNew(type: .item)
+
+        // Build hierarchy
+        await sut.addItem(itemId: grandchildItem, parentId: childFolder.id)
+        await sut.addItem(itemId: childFolder.id, parentId: parentFolder.id)
+
+        // Test collectItemsForRemoval on parent folder
+        let removingItems = [ItemRowModel(itemId: parentFolder.id, typeId: .space)]
+        let allItems = await sut.markCollectionItemsForRemoval(for: removingItems)
+
+        // Should include parent folder + child folder + grandchild item = 3 items
+        #expect(allItems.count == 3)
+        #expect(allItems.contains(where: { $0.itemId == parentFolder.id }))
+        #expect(allItems.contains(where: { $0.itemId == childFolder.id }))
+        #expect(allItems.contains(where: { $0.itemId == grandchildItem }))
+    }
+
+    @Test func collectItemsForRemovalWithCollection() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+
+        // Create a collection with items
+        let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
+        await root.itemController.replace(model: collectionModel, isInsert: true)
+
+        let item1 = await root.itemController.addNew(type: .item)
+        let item2 = await root.itemController.addNew(type: .item)
+
+        await sut.addItem(itemId: item1, parentId: collectionModel.id)
+        await sut.addItem(itemId: item2, parentId: collectionModel.id)
+
+        // Test collectItemsForRemoval
+        let removingItems = [ItemRowModel(itemId: collectionModel.id, typeId: .space)]
+        let allItems = await sut.markCollectionItemsForRemoval(for: removingItems)
+
+        // Should only include collection, NOT items (collections don't delete children)
+        #expect(allItems.count == 1)
+        #expect(allItems[0].itemId == collectionModel.id)
+    }
+
+    @Test func deleteCollectionWithItems() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+
+        // Create a collection (album)
+        let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
+        await root.itemController.replace(model: collectionModel, isInsert: true)
+
+        // Create items
+        let item1 = await root.itemController.addNew(type: .item)
+        let item2 = await root.itemController.addNew(type: .item)
+
+        // Add items to collection
+        await sut.addItem(itemId: item1, parentId: collectionModel.id)
+        await sut.addItem(itemId: item2, parentId: collectionModel.id)
+
+        let collection = await root.itemController.itemOrEmpty(for: collectionModel.id)
+        #expect(collection.entries.count == 2)
+        #expect(await root.itemController.itemOrEmpty(for: item1).parentId == nil) // collections don't set parentId
+        #expect(await root.itemController.itemOrEmpty(for: item2).parentId == nil)
+
+        // Delete the collection
+        await sut.delete(itemId: collectionModel.id)
+
+        // Verify collection is marked for deletion
+        let deletedCollection = await root.itemController.itemOrEmpty(for: collectionModel.id)
+        #expect(deletedCollection.displayState == 2)
+
+        // Verify items remain visible (displayState = 0), not deleted
+        #expect(await root.itemController.itemOrEmpty(for: item1).displayState == 0)
+        #expect(await root.itemController.itemOrEmpty(for: item2).displayState == 0)
+
+        // Verify items' parentId remains nil (collections don't set parentId)
+        #expect(await root.itemController.itemOrEmpty(for: item1).parentId == nil)
+        #expect(await root.itemController.itemOrEmpty(for: item2).parentId == nil)
     }
 
     @Test func duplicate() async throws {
@@ -938,6 +1059,68 @@ struct EditControllerTests {
         #expect(collection.entries[0].spaceId == child2)
         #expect(collection.entries[1].spaceId == child1)
         #expect(collection.entries[2].spaceId == child3)
+    }
+
+    @Test func deleteFolderWithSelectiveChildRemoval() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+
+        // Create a folder with multiple children
+        let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
+        await root.itemController.replace(model: folderModel, isInsert: true)
+
+        let child1 = await root.itemController.addNew(type: .item)
+        let child2 = await root.itemController.addNew(type: .item)
+        let child3 = await root.itemController.addNew(type: .item)
+
+        await sut.addItem(itemId: child1, parentId: folderModel.id)
+        await sut.addItem(itemId: child2, parentId: folderModel.id)
+        await sut.addItem(itemId: child3, parentId: folderModel.id)
+
+        #expect(await root.itemController.itemOrEmpty(for: child1).parentId == folderModel.id)
+        #expect(await root.itemController.itemOrEmpty(for: child2).parentId == folderModel.id)
+        #expect(await root.itemController.itemOrEmpty(for: child3).parentId == folderModel.id)
+
+        // Simulate the actual UI workflow:
+        // 1. Mark all for deletion (what markCollectionItemsForRemoval does)
+        await sut.markForDeletion(itemId: folderModel.id)
+        await sut.markForDeletion(itemId: child1)
+        await sut.markForDeletion(itemId: child2)
+        await sut.markForDeletion(itemId: child3)
+
+        #expect(await root.itemController.itemOrEmpty(for: folderModel.id).displayState == 2)
+        #expect(await root.itemController.itemOrEmpty(for: child1).displayState == 2)
+        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 2)
+        #expect(await root.itemController.itemOrEmpty(for: child3).displayState == 2)
+
+        // 2. User clicks Remove with only folder and child1 selected (child2 and child3 unchecked)
+        //    This simulates EffectedLinkActionPanelView behavior (lines 40-46):
+        //    First: removeItems(models: removedItems) → delete folder and child1
+        //    Then: restoreItems(models: restoredItems) → restore child2 and child3
+
+        // Delete folder (this will also mark ALL children including child2 and child3 as deleted)
+        await sut.delete(itemId: folderModel.id)
+
+        // Restore child2 and child3 AFTER folder is deleted
+        // The restore() function will now check if parent is deleted and move them to root
+        await sut.restore(itemId: child2)
+        await sut.restore(itemId: child3)
+
+        // child1 remains marked for deletion (displayState == 2)
+
+        // Verify folder is deleted
+        let deletedFolder = await root.itemController.itemOrEmpty(for: folderModel.id)
+        #expect(deletedFolder.displayState == 2)
+
+        // Child1 should remain deleted
+        #expect(await root.itemController.itemOrEmpty(for: child1).displayState == 2)
+
+        // Child2 and child3 should be moved to root level (parentId = nil) and visible (displayState = 0)
+        #expect(await root.itemController.itemOrEmpty(for: child2).parentId == nil)
+        #expect(await root.itemController.itemOrEmpty(for: child3).parentId == nil)
+        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 0)
+        #expect(await root.itemController.itemOrEmpty(for: child3).displayState == 0)
     }
 
     @Test func moveMultipleItems() async throws {

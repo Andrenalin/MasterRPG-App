@@ -59,10 +59,7 @@ private extension ListRootContextMenu {
             withAnimation {
                 let removingItems = controller.deleteItem(currentSelected: currentSelected)
                 guard !removingItems.isEmpty else { return }
-                root.removeEntryListModel.removeItems = removingItems
-                removingItems.forEach {
-                    root.editControllable.markForDeletion(itemId: $0.itemId)
-                }
+                root.removeEntryListModel.removeItems = root.editControllable.markCollectionItemsForRemoval(for: removingItems)
             }
             navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
         } label: {
