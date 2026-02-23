@@ -202,7 +202,8 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             }
             
             let configName = await root.gameModel.gameConfig.name
-            guard await root.gameModel.gameConfig.type == .proxy || controls.isEmpty || controls.contains(where: { $0.name == configName && $0.show == true }) else {
+            let type = await root.gameModel.gameConfig.type
+            guard type == .proxy || type == .observer || controls.isEmpty || controls.contains(where: { $0.name == configName && $0.show == true }) else {
                 Logger.networking.debug("PlayerController: Message will be ignored because of controls \(controls, privacy: .public)")
                 return
             }
