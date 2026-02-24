@@ -35,7 +35,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
                     }
                 } else {
                     ToolbarItem(placement: .primaryAction) {
-                        if modal == false {
+                        if modal == false || (parentModel != nil && parentModel!.specialCategory) {
                             addItemButton(for: .item)
                         }
                     }
@@ -71,10 +71,20 @@ private extension ToolbarItemListViewModifier {
                     addItemButton(for: .collection)
                         .disabled(listDisplayModel.isListMode)
                     Divider()
-                    
+
                     toggleFolder()
                         .disabled(listModel.selected == nil)
 
+                    Divider()
+                } else if let parentModel, parentModel.specialCategory && modal == false {
+                    // For special categories (folder/collection), show appropriate add buttons
+                    if parentModel.category == .folder {
+                        addItemButton(for: .folder)
+                        addItemButton(for: .collection)
+                    } else if parentModel.category == root.itemControllable.collectionCategory {
+                        // Collections cannot contain folders
+                        addItemButton(for: .collection)
+                    }
                     Divider()
                 }
             }
@@ -90,10 +100,11 @@ private extension ToolbarItemListViewModifier {
         }
         if modal == false {
             ControlGroup {
+                addItemButton(for: .item)
                 addItemButton(for: .folder)
+                    .disabled(parentModel?.category == root.itemControllable.collectionCategory)
                 addItemButton(for: .collection)
             }
-            .disabled(listDisplayModel.isListMode)
         }
         ControlGroup {
             CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
@@ -105,7 +116,7 @@ private extension ToolbarItemListViewModifier {
                 ListModeToggle(listDisplayModel: listDisplayModel)
                 FolderModeToggle(listDisplayModel: listDisplayModel)
             }
-            
+
             ControlGroup {
                 toggleFolder()
             }
@@ -148,8 +159,9 @@ private extension ToolbarItemListViewModifier {
         withAnimation {
             if parentModel != nil {
                 root.editControllable.addItem(itemId: newModel.id, parentId: listModel.selectedParentId)
+            } else {
+                listController.add(model: newModel)
             }
-            listController.add(model: newModel)
         }
     }
     
