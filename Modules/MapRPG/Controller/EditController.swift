@@ -332,7 +332,7 @@ extension EditController {
 }
 
 extension EditController {
-    @MainActor func merge(itemId: UUID, entries: [MapEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+    @MainActor func merge(itemId: UUID, entries: [MapEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
         var newEntries = entries.map { entry in
             var foundEntry = item.entries.first(where: { $0.name == entry.name })

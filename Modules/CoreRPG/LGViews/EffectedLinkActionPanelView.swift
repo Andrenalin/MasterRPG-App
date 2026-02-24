@@ -182,7 +182,6 @@ private extension EffectedLinkActionPanelView {
     static func effectedItems(itemControllable: any ItemControllable, for item: ItemRowModel) async -> [EffectedItemModel] {
         let linkRegisterController = itemControllable.linkRegisterController
         return linkRegisterController.used(for: item)
-        //return controller.effectedItems(targetId: item.itemId, targetEntryId: item.entryId, targetModule: item.typeId)        
     }
     
     static func linkTree(itemControllable: any ItemControllable, removeItems: [ItemRowModel]) async -> [RemoveLinkTreeModel] {

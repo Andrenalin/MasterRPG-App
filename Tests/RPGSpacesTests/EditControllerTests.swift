@@ -975,12 +975,14 @@ struct EditControllerTests {
         // Remove the middle entry (index 1) from folder
         await sut.removeItem(offsets: IndexSet(integer: 1), itemId: folder.id)
 
-        // Verify entry was removed
+        // Verify entry was removed from folder
         folder = await root.itemController.itemOrEmpty(for: folderModel.id)
         #expect(folder.entries.count == 2)
 
-        // For folder, removed child should be deleted (displayState = 2)
-        #expect(await root.itemController.itemOrEmpty(for: child2).displayState == 2)
+        // For folder, removed child should be moved to root level (parentId = nil) and remain visible (displayState = 0)
+        let removedChild = await root.itemController.itemOrEmpty(for: child2)
+        #expect(removedChild.parentId == nil)
+        #expect(removedChild.displayState == 0)
     }
 
     @Test func removeMultipleItems() async throws {

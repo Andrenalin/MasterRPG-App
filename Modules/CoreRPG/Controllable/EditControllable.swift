@@ -353,12 +353,17 @@ public extension EditControllable {
         var entries = item.entries
         entries.remove(atOffsets: offsets)
         item.entries = entries
-        
+
         if item.category == .folder {
+            // For folders, move children to root level (set parentId = nil) instead of deleting them
             for (_, entry) in removedEntries {
-                delete(itemId: entry.childId)
+                if var childItem = editModel(for: entry.childId) {
+                    childItem.parentId = nil
+                    save(updated: childItem, message: String(localized: "Removed parent").localizedLowercase.localizedString)
+                }
             }
         }
+        // For non-folder containers (collections), just remove from entries (no need to modify children)
         save(updated: item, message: String(localized: "Delete item").localizedString)
     }
     

@@ -35,7 +35,7 @@ public protocol EntryDataEditable: EditControllable {
     // MARK: - QuickEntryEditor
     
     @MainActor func create(name: String, content: String) -> Model.Entry
-    @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel]
+    @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) -> [ItemRowModel]
     @MainActor func remove(itemId: UUID, entryId: UUID)
     
     // MARK: - Entry Editor
@@ -186,7 +186,6 @@ public extension EntryDataEditable {
                 continue
             }
             let newLink = link.duplicate()
-            // linkRegisterController.markDown(for: link)
             guard let oldLinkText = link.markDown, let range = content.firstRange(of: oldLinkText) else { continue }
             newContent = newContent.replacingOccurrences(of: oldLinkText, with: newLink.markDown ?? oldLinkText, range: range)
             linkRegisterController.register(links: [newLink])
@@ -206,17 +205,6 @@ public extension EntryDataEditable {
         save(updated: item, message: String(localized: "Reorder entries").localizedString)
     }
 
-//    @MainActor func move(itemId: UUID, entryFrom: IndexSet, to: Array<UUID>.Index) -> Bool {
-//        guard let item = editModel(for: itemId) else { return false }
-//        var destination = to
-//        if destination >= item.entries.count {
-//            destination = item.entries.count - 1
-//        }
-//        item.entries.move(fromOffsets: entryFrom, toOffset: destination)
-//        save(updated: item, message: String(localized: "Reorder entries").localizedString)
-//        return true
-//    }
-//    
     @MainActor func move(itemId: UUID, entryId: UUID, up: Bool) {
         guard let item = editModel(for: itemId) else { return }
         guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }

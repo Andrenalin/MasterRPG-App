@@ -87,7 +87,7 @@ extension EditController {
         TableEntryModel(id: UUID(), name: name, content: content)
     }
 
-    @MainActor func merge(itemId: UUID, entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) async -> [ItemRowModel] {
+    @MainActor func merge(itemId: UUID, entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
         guard let editModel = editModel(for: itemId) else { return [] }
         var newEntries = entries.map { entry in
             let foundEntry = editModel.entries.first(where: { $0.name == entry.name })

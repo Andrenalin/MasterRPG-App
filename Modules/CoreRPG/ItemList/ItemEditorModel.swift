@@ -17,6 +17,8 @@ public final class ItemEditorModel: Sendable {
     public var currentEntryId: UUID?
     public var scrollEntryId: UUID?
     
+    public var hasChangedEntries: Int = 0
+    
     public var cacheItemListModel: CacheItemListModel = CacheItemListModel()
 
     @ObservationIgnored var undoManaged: UndoManaged<ModelType?>

@@ -63,9 +63,10 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                     .animation(.default, value: showHelp)
                 }
                 .sizedSheet(isPresented: $showEffectedLinksAlert, idealSize: CGSize(width: 400, height: 600)) {
-                    EffectedLinkAction(itemControllable: root.itemControllable, removeEntryList: editorModel, overwrite: true) { rowModels in
+                    EffectedLinkActionPanelView(root: root, overwrite: true) { rowModels in
                         editorModel.removeItems.removeAll(where: { rowModels.contains($0) })
-                        _ = await editController.merge(itemId: model.id, entries: entries, recoverEntries: editorModel.removeItems)
+                        _ = editController.merge(itemId: model.id, entries: entries, recoverEntries: editorModel.removeItems)
+                        root.editControllable.editorModel.hasChangedEntries += 1
                         dismiss()
                     }
                 }
@@ -253,13 +254,13 @@ private extension QuickEntryEditorView {
         ToolbarItem(placement: .confirmationAction) {
             ControlGroup {
                 Button {
-                    Task {
-                        editorModel.removeItems = await editController.merge(itemId: model.id, entries: entries, recoverEntries: nil)
-                        if editorModel.removeItems.isEmpty {
-                            dismiss()
-                        } else {
-                            showEffectedLinksAlert.toggle()
-                        }
+                    editorModel.removeItems = editController.merge(itemId: model.id, entries: entries, recoverEntries: nil)
+                    if editorModel.removeItems.isEmpty {
+                        root.editControllable.editorModel.hasChangedEntries += 1
+                        dismiss()
+                    } else {
+                        root.removeEntryListModel.removeItems = editorModel.removeItems
+                        showEffectedLinksAlert.toggle()
                     }
                 } label: {
                     Image(systemName: "square.and.arrow.down")
