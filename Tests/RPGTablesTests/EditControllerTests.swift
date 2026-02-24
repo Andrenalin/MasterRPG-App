@@ -20,7 +20,7 @@ struct EditControllerTests {
         let originalEntries = item.entries
 
         item.entries[0].content = "New Content"
-        var result = await sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
+        var result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
         #expect(result.isEmpty)
 
         let savedItem = root.itemController.itemOrEmpty(for: itemId)
@@ -29,7 +29,7 @@ struct EditControllerTests {
 
         let newEntry = TableEntryModel(id: UUID(), name: "Newbee", content: "Super", displayState: 1, diceResult: "Perfect")
         item.entries.append(newEntry)
-        result = await sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
+        result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
         #expect(result.isEmpty)
 
         originalEntries.enumerated().forEach { index, entry in
@@ -39,7 +39,7 @@ struct EditControllerTests {
 
         let middleEntry = TableEntryModel(id: UUID(), name: "Middle", content: "Super", displayState: 1, diceResult: "Perfect")
         item.entries.insert(middleEntry, at: 4)
-        result = await sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
+        result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
         #expect(result.isEmpty)
 
         originalEntries.enumerated().forEach { index, entry in

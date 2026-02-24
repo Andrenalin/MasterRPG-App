@@ -92,55 +92,57 @@ private extension DetailListView {
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
-            ControlGroup {
-                Button {
-                    navigator.navigate(to: EditorRoute.quickEditor(model.id), method: .cover)
-                } label: {
-                    Label {
-                        Text("Quick Editor", bundle: .module)
-                    } icon: {
-                        Image(systemName: "table.badge.more")
-                    }
-                }
-                
-                Button {
-#if os(visionOS) || os(macOS)
-                    openWindow(id: WindowIdentifier.mapEditor.rawValue)
-#else
-                    navigator.navigate(to: EditorRoute.mapEditor(model.id), method: .cover)
-#endif
-                } label: {
-                    Label {
-                        Text("Map Editor", bundle: .module)
-                    } icon: {
-                        Image(systemName: "mappin.and.ellipse")
-                    }
-                }
-                
-                Button {
-#if os(visionOS) || os(macOS)
-                    openWindow(id: WindowIdentifier.mapEditor.rawValue)
-#else
-                    navigator.navigate(to: EditorRoute.mapEditor(model.id), method: .cover)
-#endif
-                } label: {
-                    Label { Text("Edit Tile", bundle: .module) } icon: { Image(systemName: "skew") }
-                }
-
-                Button {
-                    withAnimation {
-                        let entryId = root.editController.addNewEntry(itemId: model.id)
-                        root.editController.editorModel.currentEntryId = entryId
-                        Task { @MainActor in
-                            try? await Task.sleep(for: .seconds(0.25))
-                            root.editController.editorModel.scrollEntryId = entryId
+            if !model.specialCategory {
+                ControlGroup {
+                    Button {
+                        navigator.navigate(to: EditorRoute.quickEditor(model.id), method: .cover)
+                    } label: {
+                        Label {
+                            Text("Quick Editor", bundle: .module)
+                        } icon: {
+                            Image(systemName: "table.badge.more")
                         }
                     }
-                } label: {
-                    Label {
-                        Text("Add new Entry", bundle: .module)
-                    } icon: {
-                        Image(systemName: "note.text.badge.plus")
+                    
+                    Button {
+#if os(visionOS) || os(macOS)
+                        openWindow(id: WindowIdentifier.mapEditor.rawValue)
+#else
+                        navigator.navigate(to: EditorRoute.mapEditor(model.id), method: .cover)
+#endif
+                    } label: {
+                        Label {
+                            Text("Map Editor", bundle: .module)
+                        } icon: {
+                            Image(systemName: "mappin.and.ellipse")
+                        }
+                    }
+                    
+                    Button {
+#if os(visionOS) || os(macOS)
+                        openWindow(id: WindowIdentifier.mapEditor.rawValue)
+#else
+                        navigator.navigate(to: EditorRoute.mapEditor(model.id), method: .cover)
+#endif
+                    } label: {
+                        Label { Text("Edit Tile", bundle: .module) } icon: { Image(systemName: "skew") }
+                    }
+                    
+                    Button {
+                        withAnimation {
+                            let entryId = root.editController.addNewEntry(itemId: model.id)
+                            root.editController.editorModel.currentEntryId = entryId
+                            Task { @MainActor in
+                                try? await Task.sleep(for: .seconds(0.25))
+                                root.editController.editorModel.scrollEntryId = entryId
+                            }
+                        }
+                    } label: {
+                        Label {
+                            Text("Add new Entry", bundle: .module)
+                        } icon: {
+                            Image(systemName: "note.text.badge.plus")
+                        }
                     }
                 }
             }

@@ -98,48 +98,50 @@ private extension DetailListView {
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
-            ControlGroup {
-                Button {
-                    navigator.navigate(to: EditorRoute.quickEditor(model.id), method: .cover)
-                } label: {
-                    Label {
-                        Text("Quick Editor", bundle: .module)
-                    } icon: {
-                        Image(systemName: "table.badge.more")
-                    }
-                }
-                Button {
-                    withAnimation {
-                        root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
-                        let entryId = root.editController.addNewEntry(itemId: model.id)
-                        root.editController.editorModel.currentEntryId = entryId
-                        Task { @MainActor in
-                            try? await Task.sleep(for: .seconds(0.25))
-                            root.editController.editorModel.scrollEntryId = entryId
+            if !model.specialCategory {
+                ControlGroup {
+                    Button {
+                        navigator.navigate(to: EditorRoute.quickEditor(model.id), method: .cover)
+                    } label: {
+                        Label {
+                            Text("Quick Editor", bundle: .module)
+                        } icon: {
+                            Image(systemName: "table.badge.more")
                         }
                     }
-                } label: {
-                    Label {
-                        Text("Add new Entry", bundle: .module)
-                    } icon: {
-                        Image(systemName: "note.text.badge.plus")
-                    }
-                }
-
-                Button {
-                    root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
-                    let itemId = model.id
-                    Task {
-                        let entryId = await root.editController.addNewGroup(itemId: itemId)
+                    Button {
                         withAnimation {
+                            root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+                            let entryId = root.editController.addNewEntry(itemId: model.id)
                             root.editController.editorModel.currentEntryId = entryId
+                            Task { @MainActor in
+                                try? await Task.sleep(for: .seconds(0.25))
+                                root.editController.editorModel.scrollEntryId = entryId
+                            }
+                        }
+                    } label: {
+                        Label {
+                            Text("Add new Entry", bundle: .module)
+                        } icon: {
+                            Image(systemName: "note.text.badge.plus")
                         }
                     }
-                } label: {
-                    Label {
-                        Text("Add new Group", bundle: .module)
-                    } icon: {
-                        Image(systemName: "plus.square.fill.on.square.fill")
+                    
+                    Button {
+                        root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
+                        let itemId = model.id
+                        Task {
+                            let entryId = await root.editController.addNewGroup(itemId: itemId)
+                            withAnimation {
+                                root.editController.editorModel.currentEntryId = entryId
+                            }
+                        }
+                    } label: {
+                        Label {
+                            Text("Add new Group", bundle: .module)
+                        } icon: {
+                            Image(systemName: "plus.square.fill.on.square.fill")
+                        }
                     }
                 }
             }

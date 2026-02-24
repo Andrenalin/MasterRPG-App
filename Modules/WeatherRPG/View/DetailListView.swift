@@ -62,7 +62,9 @@ struct DetailListView: View {
     @ToolbarContentBuilder
     var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .secondaryActionAll) {
-            animateButton
+            if !model.specialCategory {
+                animateButton
+            }
         }
     }
     

@@ -1168,5 +1168,59 @@ struct EditControllerTests {
         #expect(collection.entries[2].spaceId == child2)
         #expect(collection.entries[3].spaceId == child4)
     }
+
+    @Test func addGroupIgnoresFolderAsChild() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+
+        // Create a parent item (group container)
+        let parentItemId = await root.itemController.addNew(type: .item)
+        let parent = await root.itemController.itemOrEmpty(for: parentItemId)
+        #expect(parent.entries.count == 0)
+
+        // Create a folder
+        let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
+        await root.itemController.replace(model: folderModel, isInsert: true)
+
+        await sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
+
+        // Try to add folder to group - should be ignored
+        await sut.addGroup(itemId: parent.id, childId: folderModel.id)
+
+        // Verify folder was NOT added to parent's entries
+        #expect(parent.entries.count == 0)
+
+        // Verify folder's display state was NOT updated
+        let folder = await root.itemController.itemOrEmpty(for: folderModel.id)
+        #expect(folder.displayState == 0)
+    }
+
+    @Test func addGroupIgnoresCollectionAsChild() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+
+        // Create a parent item (group container)
+        let parentItemId = await root.itemController.addNew(type: .item)
+        let parent = await root.itemController.itemOrEmpty(for: parentItemId)
+        #expect(parent.entries.count == 0)
+
+        // Create a collection (album for spaces)
+        let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
+        await root.itemController.replace(model: collectionModel, isInsert: true)
+
+        await sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
+
+        // Try to add collection to group - should be ignored
+        await sut.addGroup(itemId: parent.id, childId: collectionModel.id)
+
+        // Verify collection was NOT added to parent's entries
+        #expect(parent.entries.count == 0)
+
+        // Verify collection's display state was NOT updated
+        let collection = await root.itemController.itemOrEmpty(for: collectionModel.id)
+        #expect(collection.displayState == 0)
+    }
 }
 

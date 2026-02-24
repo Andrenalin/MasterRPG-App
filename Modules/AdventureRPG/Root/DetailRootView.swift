@@ -90,7 +90,7 @@ private extension DetailListView {
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
-            if !openFileWindowModel.showItem {
+            if !model.specialCategory && !openFileWindowModel.showItem {
                 ControlGroup {
                     Button {
                         navigator.navigate(to: EditorRoute.quickEditor(model.id), method: .cover)
