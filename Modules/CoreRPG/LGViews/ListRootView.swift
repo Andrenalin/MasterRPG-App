@@ -20,7 +20,7 @@ struct ListRootView: View {
 #if !os(tvOS)
             .applyIf(listController.listDisplayModel.isSelectionMode) { content in
                 content.contextMenu(forSelectionType: ListItemModel.ID.self) { selectedItemIDs in
-                    ListRootContextMenu(controller: menuController, parentItem: parentModel)
+                    ListRootContextMenu(controller: menuController, parentItem: parentModel, listController: listController)
                 }
             }
 #endif
@@ -84,6 +84,8 @@ private extension ListRootView {
                 }
                 if parentModel != nil {
                     root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
+                    // Reset parent list filter when adding to folder/collection
+                    root.folderListControllable.resetFilter()
                 }
                 listController.add(model: model)
             }
@@ -146,7 +148,7 @@ private extension ListRootView {
                 .draggable(for: root.configurable.module, itemId: item.model.id, entryId: nil, name: item.model.name)
                 .applyIf(!listController.listDisplayModel.isSelectionMode) { content in
                     content.contextMenu {
-                        ListRootContextMenu(controller: menuController, parentItem: parentModel, currentSelected: item.model.id)
+                        ListRootContextMenu(controller: menuController, parentItem: parentModel, currentSelected: item.model.id, listController: listController)
                     }
                 }
 
@@ -165,7 +167,13 @@ private extension ListRootView {
 
     func addLink(name: String, itemId: UUID, entryId: UUID?) {
         guard let parentModel else { return }
-        withAnimation { root.editControllable.addItem(itemId: itemId, parentId: parentModel.id) }
+        withAnimation {
+            root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
+            // Refresh the detail list from the updated parent model entries
+            listController.update()
+            // Also refresh the parent folder list
+            root.folderListControllable.resetFilter()
+        }
     }
     
     func deleteItems(offsets: IndexSet) {

@@ -3,15 +3,17 @@
 import SwiftUI
 
 public struct ListRootContextMenu: View {
-    public init(controller: any ItemListContextMenuControllable, parentItem: (any ItemDataAccessable)?, currentSelected: UUID? = nil) {
+    public init(controller: any ItemListContextMenuControllable, parentItem: (any ItemDataAccessable)?, currentSelected: UUID? = nil, listController: (any FolderListControllable)? = nil) {
         self.controller = controller
         self.parentItem = parentItem
         self.currentSelected = currentSelected
+        self.listController = listController
     }
-    
+
     let controller: ItemListContextMenuControllable
     let parentItem: (any ItemDataAccessable)?
     let currentSelected: UUID?
+    let listController: (any FolderListControllable)?
 
     @Environment(ItemRootController.self) private var root
     @Environment(\.navigator) private var navigator
@@ -163,6 +165,10 @@ private extension ListRootContextMenu {
             guard let itemId = currentSelected, let parentId = parentItem?.id else { return }
             withAnimation {
                 root.editControllable.remove(itemId: itemId, parentId: parentId)
+                // Refresh the detail list from the updated parent model entries
+                listController?.update()
+                // Also refresh the parent folder list
+                root.folderListControllable.resetFilter()
             }
         } label: {
             Label {
