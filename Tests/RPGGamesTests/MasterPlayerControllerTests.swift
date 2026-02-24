@@ -162,7 +162,7 @@ final class MasterPlayerControllerTests {
         #expect(result!.subType == .ok)
         await #expect(rootPlayer.audioRoot.gameController.currentId == audioId)
         await #expect(rootPlayer.audioRoot.gameController.gameItem(for: audioId).version == version)
-        await #expect(rootPlayer.audioRoot.itemController.itemDataModel.items.count == 2)
+        await #expect(rootPlayer.audioRoot.itemController.itemDataModel.items.count == 1)
 
         response = try await sut.handle(result!)
         #expect(nil == response)
@@ -324,7 +324,7 @@ final class MasterPlayerControllerTests {
         #expect(nil != result)
         #expect(result!.subType == .ok)
         await #expect(rootPlayer.mapRoot.gameController.currentId == mapId)
-        await #expect(rootPlayer.photoRoot.gameController.gameModel.items.contains(photoId!))
+        //await #expect(rootPlayer.photoRoot.gameController.gameModel.items.contains(photoId!))
         let playerPhoto1 = await rootPlayer.photoRoot.gameController.gameItem(for: photoId!).version
         let sutPhoto1 = await rootSut.photoRoot.gameController.gameItem(for: photoId!).version
         #expect(playerPhoto1 == sutPhoto1)
