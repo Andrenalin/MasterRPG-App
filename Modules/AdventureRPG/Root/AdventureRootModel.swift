@@ -17,7 +17,7 @@ import TableRPG
 import WeatherRPG
 
 @MainActor @Observable
-public final class AdventureRootModel: @unchecked Sendable {
+public final class AdventureRootModel {
 
     @MainActor
     init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel?, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {

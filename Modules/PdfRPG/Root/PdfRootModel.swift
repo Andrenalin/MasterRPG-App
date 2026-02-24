@@ -12,7 +12,7 @@ import UIKit
 #endif
 
 @MainActor @Observable
-public final class PdfRootModel: @unchecked Sendable {
+public final class PdfRootModel {
     @MainActor
     init(tagController: TagController) {
         let config = ModuleConfiguration()

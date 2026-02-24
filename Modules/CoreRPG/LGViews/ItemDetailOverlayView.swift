@@ -7,20 +7,20 @@ public struct ItemDetailOverlayView: View {
     public init(model: any ItemDataAccessable, fullHeader: Bool = false, onlyDescription: Bool = false, lines: Int = 20) {
         self.model = model
         self.fullHeader = fullHeader
-        self.onlyDesctiption = onlyDescription
+        self.onlyDescription = onlyDescription
         self.lines = lines
         self.cacheItemListModel = CacheItemListModel()
     }
     
     let model: any ItemDataAccessable
     let fullHeader: Bool
-    let onlyDesctiption: Bool
+    let onlyDescription: Bool
     let lines: Int
     let cacheItemListModel: CacheItemListModel
 
     public var body: some View {
         VStack(alignment: .leading) {
-            if fullHeader || onlyDesctiption == false {
+            if fullHeader || onlyDescription == false {
                 NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel)
                     .font(.headline)
                     .fontWeight(.bold)
@@ -29,10 +29,11 @@ public struct ItemDetailOverlayView: View {
                     TagItemRow(tags: model.tags)
                 }
             }
-            if fullHeader || onlyDesctiption {
+            if fullHeader || onlyDescription {
                 DescriptionItemNewRow(itemId: model.id, description: model.description, cacheItemListModel: cacheItemListModel)
                     .foregroundStyle(.primary)
-                    .opacity(0.8)
+                    .font(.footnote)
+                    .opacity(onlyDescription ? 1 : 0.8)
                     .lineLimit(lines)
             }
         }

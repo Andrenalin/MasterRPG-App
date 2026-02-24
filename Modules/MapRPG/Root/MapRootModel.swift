@@ -18,7 +18,7 @@ public final class RootModel: Sendable {
 }
 
 @MainActor @Observable
-public final class MapRootModel: @unchecked Sendable {
+public final class MapRootModel {
     
     @MainActor
     init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel) {

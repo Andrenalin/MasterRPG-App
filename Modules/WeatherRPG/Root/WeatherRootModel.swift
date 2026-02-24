@@ -7,7 +7,7 @@ import PhotoRPG
 import SwiftUI
 
 @MainActor @Observable
-public final class WeatherRootModel: @unchecked Sendable {
+public final class WeatherRootModel {
     @MainActor init(tagController: TagController, photoRoot: PhotoRootModel) {
         self.photoRoot = photoRoot
         

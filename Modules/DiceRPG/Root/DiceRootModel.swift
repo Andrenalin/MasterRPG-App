@@ -6,7 +6,7 @@ import SwiftData
 import SwiftUI
 
 @MainActor @Observable
-public final class DiceRootModel: @unchecked Sendable {
+public final class DiceRootModel {
     @MainActor init(tagController: TagController) {
         let config = ModuleConfiguration()
         self.config = config

@@ -10,7 +10,7 @@ import SwiftData
 import SwiftUI
 
 @MainActor @Observable
-public final class CharacterRootModel: @unchecked Sendable {
+public final class CharacterRootModel {
     @MainActor init(tagController: TagController, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot

@@ -7,7 +7,7 @@ import SwiftData
 import SwiftUI
 
 @MainActor @Observable
-public final class AudioRootModel: @unchecked Sendable {
+public final class AudioRootModel {
     @MainActor init(tagController: TagController) {
         let config = ModuleConfiguration()
         self.config = config

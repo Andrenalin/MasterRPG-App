@@ -338,27 +338,35 @@ private extension ItemDetailRootView {
     
     func overlayDescription(model: any ItemDataAccessable) -> some View {
         ItemDetailOverlayView(model: model, fullHeader: false, onlyDescription: true, lines: 3)
-            .padding()
+            .padding(.horizontal, 8)
+            .padding(6)
 #if !os(visionOS)
             .glassEffect(.regular)
 #endif
     }
     
     func overlayFileImporter(model: any ItemDataAccessable) -> some View {
-        HStack {
-            Text(model.url?.path(percentEncoded: false) ?? String(localized: "No file is set").localizedString)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            if root.viewControllable.fileImporterViewType == .file {
-                FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, itemId: model.id)
-            } else {
-                root.viewControllable.fileImporterView(for: model.id, preopen: false, layoutDown: true)
+        HStack(alignment: .bottom, spacing: 0) {
+            HStack {
+                Text(model.url?.path(percentEncoded: false) ?? String(localized: "No file is set").localizedString)
+                    .font(.callout)
             }
-        }
-        .padding()
+            .padding(6)
 #if !os(visionOS)
-        .glassEffect(.regular.interactive())
+            .glassEffect(.regular.interactive())
 #endif
+            
+            Spacer(minLength: 20)
+            
+            HStack {
+                if root.viewControllable.fileImporterViewType == .file {
+                    FileImporterView(editControllable: root.editControllable, fileTypes: fileTypes, itemId: model.id)
+                } else {
+                    root.viewControllable.fileImporterView(for: model.id, preopen: false, layoutDown: true)
+                }
+            }
+            .zIndex(5)
+        }
     }
     
     func updateFile(url: URL, model: any ItemDataAccessable) {

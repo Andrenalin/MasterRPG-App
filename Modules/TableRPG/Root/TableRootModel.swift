@@ -8,7 +8,7 @@ import SwiftData
 import SwiftUI
 
 @MainActor @Observable
-public final class TableRootModel: @unchecked Sendable {
+public final class TableRootModel {
     @MainActor init(tagController: TagController, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) {
         self.diceRoot = diceRoot
         self.pdfRoot = pdfRoot

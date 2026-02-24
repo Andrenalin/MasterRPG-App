@@ -6,7 +6,7 @@ import CoreData
 import SwiftData
 
 @MainActor @Observable
-public final class GeneratorRootModel: @unchecked Sendable {
+public final class GeneratorRootModel {
     @MainActor init(tagController: TagController) {
         let config = ModuleConfiguration()
         self.config = config

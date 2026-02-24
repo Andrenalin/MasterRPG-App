@@ -6,7 +6,7 @@ import SwiftData
 import SwiftUI
 
 @MainActor @Observable
-public final class PhotoRootModel: @unchecked Sendable {    
+public final class PhotoRootModel {    
     @MainActor init(tagController: TagController) {
         let config = ModuleConfiguration()
         self.config = config
