@@ -471,35 +471,35 @@ private extension MasterPlayerControllerTests {
     func importTestData(into root: GameRoot) async throws {
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.adventureTestData, withExtension: "gmz").unsafelyUnwrapped
-        let task = root.adventureRoot.importControllable.importUrl(from: url)
+        let task = await root.adventureRoot.importControllable.importUrl(from: url)
         let _ = try await task.value
     }
     
     func importDiceTestData(into root: GameRoot) async throws {
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.diceTestData, withExtension: "gmz").unsafelyUnwrapped
-        let task = root.adventureRoot.importControllable.importUrl(from: url)
+        let task = await root.adventureRoot.importControllable.importUrl(from: url)
         let _ = try await task.value
     }
     
     func importPhotoTestData(into root: GameRoot) async throws {
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.photoTestData, withExtension: "gmz").unsafelyUnwrapped
-        let task = root.adventureRoot.importControllable.importUrl(from: url)
+        let task = await root.adventureRoot.importControllable.importUrl(from: url)
         let _ = try await task.value
     }
 
     func importSpaceTestData(into root: GameRoot) async throws {
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.spaceTestData, withExtension: "gmz").unsafelyUnwrapped
-        let task = root.adventureRoot.importControllable.importUrl(from: url)
+        let task = await root.adventureRoot.importControllable.importUrl(from: url)
         let _ = try await task.value
     }
 
     func importTableTestData(into root: GameRoot) async throws {
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.tableTestData, withExtension: "gmz").unsafelyUnwrapped
-        let task = root.adventureRoot.importControllable.importUrl(from: url)
+        let task = await root.adventureRoot.importControllable.importUrl(from: url)
         let _ = try await task.value
     }
 }

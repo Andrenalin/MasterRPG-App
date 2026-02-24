@@ -10,7 +10,7 @@ import Testing
 struct LinkControllerTests {
     @Test func generateLinks() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.linkController
+        let sut = await root.linkController
 
         let itemId = await root.itemControllable.itemDataModel.items[0]
 
@@ -25,7 +25,7 @@ struct LinkControllerTests {
     @Test func toggleWithShareTogglerAndEditAction() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         let shareResult: ShareValueResult = await ShareValueResult.preview()
                 
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])

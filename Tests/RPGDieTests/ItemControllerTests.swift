@@ -11,7 +11,7 @@ struct ItemControllerTests {
     @Test func addNewItem() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = root.itemController
+        let sut = await root.itemController
         
         // Act
         let itemId = await sut.addNew(type: .item)
@@ -34,7 +34,7 @@ struct ItemControllerTests {
     @Test func addNewFolder() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = root.itemController
+        let sut = await root.itemController
         
         // Act
         let itemId = await sut.addNew(type: .folder)
@@ -53,7 +53,7 @@ struct ItemControllerTests {
     @Test func copyOfItem() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = root.itemController
+        let sut = await root.itemController
         
         // Create a test item
         let itemId = await sut.addNew(type: .item)
@@ -79,7 +79,7 @@ struct ItemControllerTests {
     @Test func deleteItem() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = root.itemController
+        let sut = await root.itemController
         
         // Create a test item
         let itemId = await sut.addNew(type: .item)
@@ -105,7 +105,7 @@ struct ItemControllerTests {
     @Test func isEqualWithSameItem() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = root.itemController
+        let sut = await root.itemController
         
         // Create a test item
         let itemId = await sut.addNew(type: .item)
@@ -128,7 +128,7 @@ struct ItemControllerTests {
     @Test func isEqualWithDifferentItems() async throws {
         // Arrange
         let root = try await MockRoot.importTestData()
-        let sut = root.itemController
+        let sut = await root.itemController
         
         // Create two different items
         let itemId1 = await sut.addNew(type: .item)

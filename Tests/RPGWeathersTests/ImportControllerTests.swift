@@ -13,7 +13,7 @@ struct ImportControllerTests{
         let root = await WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
         await root.itemController.resetData()
 
-        let sut = root.importController
+        let sut = await root.importController
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.weatherTestData, withExtension: "gmz").unsafelyUnwrapped

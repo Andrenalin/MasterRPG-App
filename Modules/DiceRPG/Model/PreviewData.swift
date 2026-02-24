@@ -76,11 +76,12 @@ public extension DiceRootModel {
 #endif
 }
 
+@MainActor
 extension DiceRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
     }
-    
+
     public var gameExportControllable: any ExportControllable {
         exportController
     }

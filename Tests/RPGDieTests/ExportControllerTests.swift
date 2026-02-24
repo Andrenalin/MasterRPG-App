@@ -11,7 +11,7 @@ struct ExportControllerTests {
         let root = await DiceRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         var ids = await sut.exportingAll()
         try #require(ids.ids[.dice] != nil)
@@ -32,7 +32,7 @@ struct ExportControllerTests {
         let root = await DiceRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         let itemId = await root.itemController.addNew(type: .item)
 

@@ -19,7 +19,7 @@ struct EditControllerTests {
         let itemId = await root.itemController.itemDataModel.items[0]
         let item = await root.itemController.itemOrEmpty(for: itemId)
         
-        let sut = root.editController
+        let sut = await root.editController
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: .map))
         
         let entries = item.entries

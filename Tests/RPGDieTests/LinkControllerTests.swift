@@ -11,7 +11,7 @@ struct LinkControllerTests {
     @Test func toggleTextLink() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         var result = await sut.toggleTextLink(linkNumber: 0, itemId: UUID(), entryId: nil, command: nil, in: "", shareResult: nil, toggler: nil, editAction: nil)
         #expect(result.isEmpty)
         
@@ -33,7 +33,7 @@ struct LinkControllerTests {
     @Test func toggleWithShare() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         let shareResult: ShareValueResult = await ShareValueResult.preview()
         
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
@@ -54,7 +54,7 @@ struct LinkControllerTests {
     @Test func toggleWithShareAndToggler() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         let shareResult: ShareValueResult = await ShareValueResult.preview()
                 
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
@@ -75,7 +75,7 @@ struct LinkControllerTests {
     @Test func toggleWithShareTogglerAndEditAction() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         let shareResult: ShareValueResult = await ShareValueResult.preview()
                 
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
@@ -98,7 +98,7 @@ struct LinkControllerTests {
 
     @Test func handleDoubleLink() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.linkController
+        let sut = await root.linkController
 
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let diceLink = await sut.generateLink(itemId: firstItem.id)

@@ -38,26 +38,26 @@ struct MockRoot {
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: name, withExtension: "gmz").unsafelyUnwrapped
 
-        let task7 = root.audioRoot.importControllable.importUrl(from: url)
+        let task7 = await root.audioRoot.importControllable.importUrl(from: url)
         let _ = try await task7.value
-        let task3 = root.diceRoot.importControllable.importUrl(from: url)
+        let task3 = await root.diceRoot.importControllable.importUrl(from: url)
         let _ = try await task3.value
-        let task2 = root.pdfRoot.importControllable.importUrl(from: url)
+        let task2 = await root.pdfRoot.importControllable.importUrl(from: url)
         let _ = try await task2.value
-        let task4 = root.photoRoot.importControllable.importUrl(from: url)
+        let task4 = await root.photoRoot.importControllable.importUrl(from: url)
         let _ = try await task4.value
-        let task9 = root.spaceRoot.importControllable.importUrl(from: url)
+        let task9 = await root.spaceRoot.importControllable.importUrl(from: url)
         let _ = try await task9.value
-        let task8 = root.weatherRoot.importControllable.importUrl(from: url)
+        let task8 = await root.weatherRoot.importControllable.importUrl(from: url)
         let _ = try await task8.value
-        let task5 = root.tableRoot.importControllable.importUrl(from: url)
+        let task5 = await root.tableRoot.importControllable.importUrl(from: url)
         let _ = try await task5.value
-        let task6 = root.characterRoot.importControllable.importUrl(from: url)
+        let task6 = await root.characterRoot.importControllable.importUrl(from: url)
         let _ = try await task6.value
-        let task10 = root.mapRoot.importControllable.importUrl(from: url)
+        let task10 = await root.mapRoot.importControllable.importUrl(from: url)
         let _ = try await task10.value
 
-        let task = root.importController.importUrl(from: url)
+        let task = await root.importController.importUrl(from: url)
         let _ = try await task.value
         await #expect(root.itemController.itemDataModel.items.count == itemCounter)
         

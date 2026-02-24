@@ -65,6 +65,7 @@ public extension TableRootModel {
 #endif
 }
 
+@MainActor
 extension TableRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController

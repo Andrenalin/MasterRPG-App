@@ -10,7 +10,7 @@ import Testing
 struct GameControllerTests {
     @Test func setGameDice() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
-        let sut = root.gameController
+        let sut = await root.gameController
         
         #expect(await sut.gameModel.items.count == 1)
         #expect(await sut.gameModel.items.first == dice.id)
@@ -18,7 +18,7 @@ struct GameControllerTests {
     
     @Test func fumble() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
-        let sut = root.gameController
+        let sut = await root.gameController
         
         var fumble = await sut.fumble(for: dice.id)
         #expect(!fumble)
@@ -63,7 +63,7 @@ struct GameControllerTests {
     
     @Test func coup() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
-        let sut = root.gameController
+        let sut = await root.gameController
         
         var coup = await sut.coup(for: dice.id)
         #expect(!coup)
@@ -95,7 +95,7 @@ struct GameControllerTests {
     
     @Test func maxValuePerDice() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
-        let sut = root.gameController
+        let sut = await root.gameController
         dice.dice = GameControllerTests.diceResult(values: [[1, 20], [1, 12], [1, 1, 3]])
         
         var max = await sut.maxValuePerDice(for: 1, itemId: dice.id)
@@ -113,7 +113,7 @@ struct GameControllerTests {
     
     @Test func reorder() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
-        let sut = root.gameController
+        let sut = await root.gameController
 
         var reorder = await sut.reorder(for: dice.id)
         #expect(reorder.map { $0.id } == [GameControllerTests.dieUUID1, GameControllerTests.dieUUID2, GameControllerTests.dieUUID3])
@@ -147,7 +147,7 @@ struct GameControllerTests {
     
     @Test func calculate() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
-        let sut = root.gameController
+        let sut = await root.gameController
 
         var result = await sut.calculate(itemId: dice.id)
         #expect(!result.checked)
@@ -203,7 +203,7 @@ struct GameControllerTests {
     
     @Test func result() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
-        let sut = root.gameController
+        let sut = await root.gameController
 
         dice.dice = GameControllerTests.diceResult(values: [[1, 20], [1, 12], [1, 1, 4]])
         var result = await sut.resultText(itemId: dice.id)
@@ -223,7 +223,7 @@ struct GameControllerTests {
     
     @Test func reset() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
-        let sut = root.gameController
+        let sut = await root.gameController
 
         dice.dice = GameControllerTests.diceResult(values: [[1, 20], [1, 12], [1, 1, 4]])
         await sut.reset(for: dice.id)
@@ -232,7 +232,7 @@ struct GameControllerTests {
     
     @Test func role() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
-        let sut = root.gameController
+        let sut = await root.gameController
 
         dice.dice = GameControllerTests.diceResult(values: [[], [], []])
         await sut.role(die: dice.dice[0], for: dice.id)
@@ -248,7 +248,7 @@ struct GameControllerTests {
     
     @Test func diceSuccess() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
-        let sut = root.gameController
+        let sut = await root.gameController
 
         dice.dice = GameControllerTests.diceResult(values: [[1, 20], [1, 12], [1, 1, 4]])
         var result = await sut.diceSuccess(for: dice.id)

@@ -54,7 +54,7 @@ public extension GeneratorRootModel {
 #endif
 }
 
-extension GeneratorRootModel: @preconcurrency RootControllable {
+extension GeneratorRootModel: RootControllable {
     public var gameExportControllable: any ExportControllable {
         exportController
     }

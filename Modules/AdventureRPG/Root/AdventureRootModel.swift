@@ -16,7 +16,7 @@ import SwiftUI
 import TableRPG
 import WeatherRPG
 
-@Observable
+@MainActor @Observable
 public final class AdventureRootModel: @unchecked Sendable {
 
     @MainActor
@@ -195,6 +195,7 @@ public final class AdventureRootModel: @unchecked Sendable {
     }()
 }
 
+@MainActor
 extension AdventureRootModel: ItemRootControllable {
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
@@ -204,6 +205,7 @@ extension AdventureRootModel: ItemRootControllable {
     public var viewControllable: any ViewControllable { viewController }
 }
 
+@MainActor
 extension AdventureRootModel: RootControllable {
     public var exportControllable: any ExportControllable {
         exportController as ExportControllable
@@ -232,6 +234,7 @@ extension AdventureRootModel: RootControllable {
     }
 }
 
+@MainActor
 extension AdventureRootModel: StoreManiplable {
     public func resetData() async {
         await itemController.resetData()
@@ -325,10 +328,10 @@ public extension AdventureRootModel {
     }
     
     func itemDataCleanup() async throws {
-        for itemId in await itemController.itemDataModel.items {
+        for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {
-                await editController.delete(itemId: model.id)
+                editController.delete(itemId: model.id)
             }
         }
     }

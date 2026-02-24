@@ -14,7 +14,7 @@ struct ImportControllerTests {
         try await MockRoot.resetTestData(for: root)
 
 
-        let sut = root.importController
+        let sut = await root.importController
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.tableTestData, withExtension: "gmz").unsafelyUnwrapped

@@ -56,11 +56,12 @@ public extension PdfRootModel {
 #endif
 }
 
+@MainActor
 extension PdfRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
     }
-    
+
     public var gameExportControllable: any ExportControllable {
         exportController
     }

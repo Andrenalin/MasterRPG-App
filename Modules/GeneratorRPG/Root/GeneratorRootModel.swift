@@ -5,7 +5,7 @@ import Foundation
 import CoreData
 import SwiftData
 
-@Observable
+@MainActor @Observable
 public final class GeneratorRootModel: @unchecked Sendable {
     @MainActor init(tagController: TagController) {
         let config = ModuleConfiguration()
@@ -115,6 +115,7 @@ public final class GeneratorRootModel: @unchecked Sendable {
     }()
 }
 
+@MainActor
 extension GeneratorRootModel: ItemRootControllable {
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }

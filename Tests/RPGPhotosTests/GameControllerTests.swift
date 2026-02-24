@@ -11,7 +11,7 @@ import Testing
 struct GameControllerTests {
     @Test func HasItem() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let sut = root.gameController
+        let sut = await root.gameController
 
         // random id must be false
         let randomId = UUID()
@@ -37,7 +37,7 @@ struct GameControllerTests {
     
     @Test func SetCurrent() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let sut = root.gameController
+        let sut = await root.gameController
 
         // random id must be false
         let randomId = UUID()
@@ -68,7 +68,7 @@ struct GameControllerTests {
     
     @Test func Report() async throws {
         let root = try await GameControllerTests.setupPhoto()
-        let sut = root.gameController
+        let sut = await root.gameController
 
         let itemId = await root.itemController.itemDataModel.items[0]
         let playerId = UUID()
@@ -85,7 +85,7 @@ struct GameControllerTests {
     @Test func CreateGameData() async throws {
         let root = try await GameControllerTests.setupPhoto()
         let rootManager = await RootManager.preview(fake: root.rootController)
-        let itemController = root.itemController
+        let itemController = await root.itemController
         let exportController = await ExportController(rootManager: rootManager, itemController: itemController)
         let sut = await GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
 
@@ -114,7 +114,7 @@ struct GameControllerTests {
     @Test func UpdateGame() async throws {
         let root = try await GameControllerTests.setupPhoto()
         let rootManager = await RootManager.preview(fake: root.rootController)
-        let itemController = root.itemController
+        let itemController = await root.itemController
         let exportController = await ExportController(rootManager: rootManager, itemController: itemController)
         let sut = await GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
 
@@ -145,7 +145,7 @@ private extension GameControllerTests {
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.photoTestData, withExtension: "gmz").unsafelyUnwrapped
-        let task = root.importController.importUrl(from: url)
+        let task = await root.importController.importUrl(from: url)
         let _ = try await task.value
 
         #expect(await root.itemController.itemDataModel.items.count == 3)

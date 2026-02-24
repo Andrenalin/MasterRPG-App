@@ -16,7 +16,7 @@ struct MockRoot {
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: name, withExtension: "gmz").unsafelyUnwrapped
-        let task = root.importController.importUrl(from: url)
+        let task = await root.importController.importUrl(from: url)
         let _ = try await task.value
         await #expect(root.itemController.itemDataModel.items.count == itemCounter)
         

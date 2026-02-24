@@ -53,11 +53,12 @@ public extension PhotoRootModel {
 #endif
 }
 
+@MainActor
 extension PhotoRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
     }
-    
+
     public var gameExportControllable: any ExportControllable {
         exportController
     }

@@ -10,7 +10,7 @@ import Testing
 struct EditControllerTests {
     @Test func resetName() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.editController
+        let sut = await root.editController
 
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let originalName = item.name
@@ -27,7 +27,7 @@ struct EditControllerTests {
 
     @Test func resetNameWithWhitespace() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.editController
+        let sut = await root.editController
 
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
 
@@ -42,7 +42,7 @@ struct EditControllerTests {
 
     @Test func resetCategory() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.editController
+        let sut = await root.editController
 
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let originalCategory = item.category
@@ -59,7 +59,7 @@ struct EditControllerTests {
 
     @Test func resetCategoryNoChangeWhenSame() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.editController
+        let sut = await root.editController
 
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let originalCategory = item.category
@@ -75,7 +75,7 @@ struct EditControllerTests {
 
     @Test func resetFileUrl() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.editController
+        let sut = await root.editController
 
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
 
@@ -90,7 +90,7 @@ struct EditControllerTests {
 
     @Test func resetFileUrlForDifferentItem() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.editController
+        let sut = await root.editController
 
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
@@ -112,7 +112,7 @@ struct EditControllerTests {
 
     @Test func resetSpaceWithNilUrl() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.editController
+        let sut = await root.editController
 
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
 
@@ -127,7 +127,7 @@ struct EditControllerTests {
 
     @Test func resetNameNoChangeWhenSame() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.editController
+        let sut = await root.editController
 
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let originalName = item.name
@@ -144,7 +144,7 @@ struct EditControllerTests {
     @Test func addGroup() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create parent item
         let parentItemId = await root.itemController.addNew(type: .item)
@@ -173,7 +173,7 @@ struct EditControllerTests {
     @Test func addGroupMultipleChildren() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create parent item
         let parentItemId = await root.itemController.addNew(type: .item)
@@ -207,7 +207,7 @@ struct EditControllerTests {
     @Test func addGroupIgnoresSameId() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create parent item
         let parentItem = await root.itemController.addNew(type: .item)
@@ -225,7 +225,7 @@ struct EditControllerTests {
     @Test func addGroupIgnoresDuplicateEntry() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create parent and child items
         let parentItem = await root.itemController.addNew(type: .item)
@@ -249,7 +249,7 @@ struct EditControllerTests {
     @Test func removeGroup() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create parent and child items
         let parentItem = await root.itemController.addNew(type: .item)
@@ -280,7 +280,7 @@ struct EditControllerTests {
     @Test func removeGroupFromMultiple() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create parent and multiple child items
         let parentItem = await root.itemController.addNew(type: .item)
@@ -323,7 +323,7 @@ struct EditControllerTests {
     @Test func removeGroupIgnoresSameId() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create parent item
         let parentItem = await root.itemController.addNew(type: .item)
@@ -340,7 +340,7 @@ struct EditControllerTests {
     @Test func removeGroupNonExistentChild() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create parent and children
         let parentItem = await root.itemController.addNew(type: .item)
@@ -369,7 +369,7 @@ struct EditControllerTests {
     @Test func addItemToFolder() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
@@ -396,7 +396,7 @@ struct EditControllerTests {
     @Test func addItemToCollection() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a collection (album for spaces)
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
@@ -422,7 +422,7 @@ struct EditControllerTests {
     @Test func addItemToFolderMultipleItems() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
@@ -456,7 +456,7 @@ struct EditControllerTests {
     @Test func addItemToFolderIgnoresSameId() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
@@ -473,7 +473,7 @@ struct EditControllerTests {
     @Test func addItemToFolderIgnoresDuplicateParent() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
@@ -497,7 +497,7 @@ struct EditControllerTests {
     @Test func addItemToCollectionIgnoresSpecialCategory() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a collection
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
@@ -517,7 +517,7 @@ struct EditControllerTests {
     @Test func addItemToFolderAllowsSpecialCategory() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create parent folder
         let parentFolderModel = SpaceModel(id: UUID(), name: "Parent Folder", category: .folder, displayState: 0)
@@ -542,7 +542,7 @@ struct EditControllerTests {
     @Test func addItemWithNilParentId() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create an item
         let itemId = await root.itemController.addNew(type: .item)
@@ -559,7 +559,7 @@ struct EditControllerTests {
     @Test func addNewItem() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         let initialCount = await root.itemController.itemDataModel.items.count
 
@@ -576,7 +576,7 @@ struct EditControllerTests {
     @Test func addNewFolder() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         let initialCount = await root.itemController.itemDataModel.items.count
 
@@ -593,7 +593,7 @@ struct EditControllerTests {
     @Test func addNewCollection() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         let initialCount = await root.itemController.itemDataModel.items.count
 
@@ -610,7 +610,7 @@ struct EditControllerTests {
     @Test func deleteItem() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create an item
         let itemId = await root.itemController.addNew(type: .item)
@@ -628,7 +628,7 @@ struct EditControllerTests {
     @Test func deleteItemWithChildren() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a parent item
         let parentItem = await root.itemController.addNew(type: .item)
@@ -663,7 +663,7 @@ struct EditControllerTests {
     @Test func deleteFolderWithChildren() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
@@ -699,7 +699,7 @@ struct EditControllerTests {
     @Test func collectItemsForRemovalWithFolder() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a folder with children
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
@@ -725,7 +725,7 @@ struct EditControllerTests {
     @Test func collectItemsForRemovalWithNestedFolders() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create nested folder structure: parent > child folder > grandchild item
         let parentFolder = SpaceModel(id: UUID(), name: "Parent Folder", category: .folder, displayState: 0)
@@ -754,7 +754,7 @@ struct EditControllerTests {
     @Test func collectItemsForRemovalWithCollection() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a collection with items
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
@@ -778,7 +778,7 @@ struct EditControllerTests {
     @Test func deleteCollectionWithItems() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a collection (album)
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
@@ -816,7 +816,7 @@ struct EditControllerTests {
     @Test func duplicate() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create an item
         let itemId = await root.itemController.addNew(type: .item)
@@ -841,7 +841,7 @@ struct EditControllerTests {
     @Test func markForDeletion() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create an item
         let itemId = await root.itemController.addNew(type: .item)
@@ -859,7 +859,7 @@ struct EditControllerTests {
     @Test func restore() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create an item
         let itemId = await root.itemController.addNew(type: .item)
@@ -880,7 +880,7 @@ struct EditControllerTests {
     @Test func restoreFolderWithChildren() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
@@ -915,7 +915,7 @@ struct EditControllerTests {
     @Test func removeItem() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a collection
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
@@ -953,7 +953,7 @@ struct EditControllerTests {
     @Test func removeItemFromFolder() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a folder
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
@@ -988,7 +988,7 @@ struct EditControllerTests {
     @Test func removeMultipleItems() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a collection
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
@@ -1026,7 +1026,7 @@ struct EditControllerTests {
     @Test func moveItems() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a collection
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
@@ -1066,7 +1066,7 @@ struct EditControllerTests {
     @Test func deleteFolderWithSelectiveChildRemoval() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a folder with multiple children
         let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
@@ -1128,7 +1128,7 @@ struct EditControllerTests {
     @Test func moveMultipleItems() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a collection
         let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
@@ -1172,7 +1172,7 @@ struct EditControllerTests {
     @Test func addGroupIgnoresFolderAsChild() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a parent item (group container)
         let parentItemId = await root.itemController.addNew(type: .item)
@@ -1199,7 +1199,7 @@ struct EditControllerTests {
     @Test func addGroupIgnoresCollectionAsChild() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
+        let sut = await root.editController
 
         // Create a parent item (group container)
         let parentItemId = await root.itemController.addNew(type: .item)

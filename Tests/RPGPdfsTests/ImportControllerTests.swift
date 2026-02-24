@@ -12,7 +12,7 @@ struct ImportControllerTests {
         let root = await PdfRootModel.testRoot()
         await root.itemController.resetData()
 
-        let sut = root.importController
+        let sut = await root.importController
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: ResourcesDebug.pdfTestData, withExtension: "gmz").unsafelyUnwrapped

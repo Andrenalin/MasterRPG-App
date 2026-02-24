@@ -19,7 +19,7 @@ import WeatherRPG
 struct ItemControllerTests {
     @Test func itemRegisterLinks() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.itemController
+        let sut = await root.itemController
 
         await #expect(sut.itemDataModel.items.count == 3)
         await #expect(root.photoRoot.itemController.itemDataModel.items.count == 27)
@@ -44,9 +44,9 @@ struct ItemControllerTests {
 
     @Test func itemRegisterLinksIsUsedReturnsAlsoEntries() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.itemController
+        let sut = await root.itemController
 
-        let cc = ConvertController(itemController: sut, editController: root.editController)
+        let cc = await ConvertController(itemController: sut, editController: root.editController)
         await cc.createFoldersAndCollections(reportModel: ValidateRepairModel())
         
         await #expect(sut.itemDataModel.items.count == 6)

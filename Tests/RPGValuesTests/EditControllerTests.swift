@@ -15,7 +15,7 @@ import Testing
 //struct EditControllerTests {
 //    @Test func createGroup() async throws {
 //        let root = try await MockRoot.importTestData()
-//        let sut = root.editController
+//        let sut = await root.editController
 //        
 //        let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
 //        #expect(item.entries.count == 11)
@@ -83,7 +83,7 @@ import Testing
 //    
 //    @Test func ungroup() async throws {
 //        let root = try await MockRoot.importTestData()
-//        let sut = root.editController
+//        let sut = await root.editController
 //
 //        let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
 //        #expect(item.entries.count == 11)

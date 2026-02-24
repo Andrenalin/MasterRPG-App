@@ -18,7 +18,7 @@ import Testing
 struct EditControllerTests {
     @Test func mergeEntries() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.editController
+        let sut = await root.editController
         let itemId = await root.itemController.itemDataModel.items[0]
 
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: .adventure))

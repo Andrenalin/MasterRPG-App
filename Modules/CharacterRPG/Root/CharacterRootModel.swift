@@ -9,7 +9,7 @@ import CoreData
 import SwiftData
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 public final class CharacterRootModel: @unchecked Sendable {
     @MainActor init(tagController: TagController, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
         self.diceRoot = diceRoot
@@ -130,6 +130,7 @@ public final class CharacterRootModel: @unchecked Sendable {
     @MainActor public var rootController: ItemRootController { _rootController!}
 }
 
+@MainActor
 extension CharacterRootModel: ItemRootControllable {
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
@@ -173,17 +174,17 @@ extension CharacterRootModel {
     }
     
     public func itemDataCleanup() async throws {
-        for itemId in await itemController.itemDataModel.items {
+        for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {
-                await editController.delete(itemId: model.id)
+                editController.delete(itemId: model.id)
             }
         }
     }
     
     public func checkFolders(reportModel: ValidateRepairModel) async {
-        await reportModel.update(section: "Validating Character Data")
-        for id in await itemController.itemDataModel.items {
+        reportModel.update(section: "Validating Character Data")
+        for id in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: id), model.specialCategory == false else { continue }
             var entries: [ValueEntryModel] = []
             for entry in model.entries {
@@ -191,13 +192,13 @@ extension CharacterRootModel {
                     entries.append(entry)
                     continue
                 }
-                if let valueItem = await editController.editModel(for: valueId) {
+                if let valueItem = editController.editModel(for: valueId) {
                     valueItem.parentId <=> model.id
                     valueItem.displayState <=> 1
-                    await editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues").localizedString)
+                    editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues").localizedString)
                 }
                 
-                await editController.reset(tags: [], itemId: valueId)
+                editController.reset(tags: [], itemId: valueId)
                 await editController.removePhotos(itemId: valueId)
                 
                 if entry.name != value.name {
@@ -210,15 +211,15 @@ extension CharacterRootModel {
                 }
             }
             if model.entries != entries {
-                guard let item = await editController.editModel(for: id) else { continue }
+                guard let item = editController.editModel(for: id) else { continue }
                 item.entries = entries
-                await editController.save(updated: item, message: String(localized: "update entries").localizedString)
+                editController.save(updated: item, message: String(localized: "update entries").localizedString)
             }
             guard model.diceId == nil else { continue }
             let entry = model.entries.first {
                 $0.diceId != nil
             }
-            await editController.add(diceId: entry?.diceId, itemId: model.id)
+            editController.add(diceId: entry?.diceId, itemId: model.id)
         }
 
         let cc = ConvertController(itemController: itemController, editController: editController)

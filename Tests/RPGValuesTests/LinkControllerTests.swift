@@ -15,7 +15,7 @@ import Testing
 struct LinkControllerTests {
     @Test func createGroup() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.linkController
+        let sut = await root.linkController
 
         let itemId = await root.itemController.addNew(type: .item)
         let item = await root.itemController.item(for: itemId)?.copy()
@@ -43,7 +43,7 @@ struct LinkControllerTests {
     @Test func toggleWithShareTogglerAndEditAction() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let text = await sut.generateLink(itemId: firstItem.id)
         var result = await sut.toggleTextLink(linkNumber: 0, itemId: firstItem.id, entryId: nil, command: nil, in: text, shareResult: shareResult(), toggler: toggler(), editAction: editAction())

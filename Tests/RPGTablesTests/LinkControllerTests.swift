@@ -11,7 +11,7 @@ struct LinkControllerTests {
     @Test func toggleTextLink() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         var result = await sut.toggleTextLink(linkNumber: 0, itemId: UUID(), entryId: nil, command: nil, in: "", shareResult: nil, toggler: nil, editAction: nil)
         #expect(result.isEmpty)
         
@@ -29,7 +29,7 @@ struct LinkControllerTests {
     @Test func toggleWithShare() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         let shareResult: ShareValueResult = await ShareValueResult.preview()
         
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
@@ -46,7 +46,7 @@ struct LinkControllerTests {
     @Test func toggleWithShareAndToggler() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         let shareResult: ShareValueResult = await ShareValueResult.preview()
                 
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
@@ -63,7 +63,7 @@ struct LinkControllerTests {
     @Test func toggleWithShareTogglerAndEditAction() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         let shareResult: ShareValueResult = await ShareValueResult.preview()
                 
         let firstItem = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
@@ -82,7 +82,7 @@ struct LinkControllerTests {
     
     @Test func toogleBrokenLink() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.linkController
+        let sut = await root.linkController
         let text = "**1-3**: [Axt](RPG://TABLES/0/307BF818-787A-41E2-91A7-7397AE9BB36F/E940E958-3152-41A3-9EF5-A456A5EE17C8)"
         let result = await sut.handleTextLink(url: URL(string: "RPG://TABLES/0/307BF818-787A-41E2-91A7-7397AE9BB36F/E940E958-3152-41A3-9EF5-A456A5EE17C8")!, in: text, shareResult: nil, toggler: nil, editAction: nil)
         #expect(result == "**1-3**: [Axt](RPG://TABLES/0/307BF818-787A-41E2-91A7-7397AE9BB36F/E940E958-3152-41A3-9EF5-A456A5EE17C8➡️🚨 Table Link is broken⬅️)")
@@ -90,7 +90,7 @@ struct LinkControllerTests {
 
     @Test func handleLink() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.linkController
+        let sut = await root.linkController
         let text = "**4**: [Dolch](RPG://TABLES/0/84087225-BF5D-4398-B5F3-FDE0A0B79250/EDB0E646-8F15-4D2B-A63C-B31C11E0F1E1)"
         let result = await sut.handleTextLink(url: URL(string: "RPG://TABLES/0/84087225-BF5D-4398-B5F3-FDE0A0B79250/EDB0E646-8F15-4D2B-A63C-B31C11E0F1E1")!, in: text, shareResult: nil, toggler: nil, editAction: nil)
         #expect(result == "**4**: [Dolch](RPG://TABLES/0/84087225-BF5D-4398-B5F3-FDE0A0B79250/EDB0E646-8F15-4D2B-A63C-B31C11E0F1E1➡️🚨 Table Link is broken⬅️)")

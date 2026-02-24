@@ -11,7 +11,7 @@ struct LinkControllerTests {
     @Test func toggleTextLink() async throws {
         let root = try await MockRoot.importTestData()
         
-        let sut = root.linkController
+        let sut = await root.linkController
         var result = await sut.toggleTextLink(linkNumber: 0, itemId: UUID(), entryId: nil, command: nil, in: "", shareResult: nil, toggler: nil, editAction: nil)
         #expect(result.isEmpty)
                 

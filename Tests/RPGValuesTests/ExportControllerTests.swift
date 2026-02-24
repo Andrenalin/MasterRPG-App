@@ -15,7 +15,7 @@ import Testing
 struct ExportControllerTests {
     @Test func exportingAll() async throws {
         let root = try await MockRoot.importTestData()
-        let sut = root.exportController
+        let sut = await root.exportController
 
         var ids = await sut.exportingAll()
         try #require(ids.ids[.value] != nil)
@@ -39,7 +39,7 @@ struct ExportControllerTests {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)
 
-        let sut = root.exportController
+        let sut = await root.exportController
 
         let itemId = await root.itemController.addNew(type: .item)
 

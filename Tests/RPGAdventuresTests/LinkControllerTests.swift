@@ -18,7 +18,7 @@ struct LinkControllerTests {
     @Test func validateLinksWithLinkReplace() async throws {
         let root = try await MockRoot.importTestData()
 
-        let sut = root.linkController
+        let sut = await root.linkController
 
         let photoId = UUID()
         let photo = PhotoModel(id: photoId, name: "Photo", description: "Some Text", tags: ["Some"], category: .adventure)

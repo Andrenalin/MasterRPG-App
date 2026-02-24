@@ -5,7 +5,7 @@ import CoreData
 import SwiftData
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 public final class SpaceRootModel: @unchecked Sendable {
     @MainActor init(tagController: TagController) {
         let config = ModuleConfiguration()
@@ -104,6 +104,7 @@ public final class SpaceRootModel: @unchecked Sendable {
     @MainActor public var rootController: ItemRootController { _rootController!}
 }
 
+@MainActor
 extension SpaceRootModel: ItemRootControllable {
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { cacheController }
@@ -130,12 +131,12 @@ extension SpaceRootModel {
     public static let thumbnailSize: CGSize = .init(width: 64.0, height: 64.0)
     
     public func moveFiles() async throws {
-        let itemIds = await itemController.itemDataModel.items
+        let itemIds = itemController.itemDataModel.items
         for itemId in itemIds {
-            let item = await itemController.itemOrEmpty(for: itemId)
+            let item = itemController.itemOrEmpty(for: itemId)
             guard let fileUrl = item.fileUrl, fileUrl.location != .newCloud else { continue }
             if let newFileUrl = try? await fileUrlDataController?.move(fileUrl: fileUrl, name: item.name, category: item.category.title) {
-                await editController.reset(fileUrl: newFileUrl, itemId: itemId)
+                editController.reset(fileUrl: newFileUrl, itemId: itemId)
             }
         }
     }
@@ -148,10 +149,10 @@ extension SpaceRootModel {
     }
     
     public func itemDataCleanup() async throws {
-        for itemId in await itemController.itemDataModel.items {
+        for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {
-                await editController.delete(itemId: model.id)
+                editController.delete(itemId: model.id)
             }
         }
     }

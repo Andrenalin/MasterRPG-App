@@ -49,6 +49,7 @@ public extension SpaceRootModel {
 #endif
 }
 
+@MainActor
 extension SpaceRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController

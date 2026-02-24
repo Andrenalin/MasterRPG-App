@@ -55,6 +55,7 @@ public extension WeatherRootModel {
 #endif
 }
 
+@MainActor
 extension WeatherRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController

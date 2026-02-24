@@ -20,13 +20,13 @@ struct MockRoot {
 
         let bundle = ResourcesDebug.bundle
         let url = bundle.url(forResource: name, withExtension: "gmz").unsafelyUnwrapped
-        let task = root.importController.importUrl(from: url)
+        let task = await root.importController.importUrl(from: url)
         let _ = try await task.value
         await #expect(root.itemController.itemDataModel.items.count == itemCounter)
         
-        let task2 = root.pdfRoot.importControllable.importUrl(from: url)
+        let task2 = await root.pdfRoot.importControllable.importUrl(from: url)
         let _ = try await task2.value
-        let task3 = root.diceRoot.importControllable.importUrl(from: url)
+        let task3 = await root.diceRoot.importControllable.importUrl(from: url)
         let _ = try await task3.value
 
         return root

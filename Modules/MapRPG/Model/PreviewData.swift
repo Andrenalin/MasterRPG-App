@@ -74,11 +74,12 @@ public extension MapRootModel {
 #endif
 }
 
+@MainActor
 extension MapRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController
     }
-    
+
     public var gameExportControllable: any ExportControllable {
         exportController
     }

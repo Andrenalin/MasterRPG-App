@@ -51,6 +51,7 @@ public extension AudioRootModel {
 #endif
 }
 
+@MainActor
 extension AudioRootModel: RootControllable {
     public var linkControllable: LinkControllable {
         linkController

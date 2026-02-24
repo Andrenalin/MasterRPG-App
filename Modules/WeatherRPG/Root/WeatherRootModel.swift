@@ -6,7 +6,7 @@ import Foundation
 import PhotoRPG
 import SwiftUI
 
-@Observable
+@MainActor @Observable
 public final class WeatherRootModel: @unchecked Sendable {
     @MainActor init(tagController: TagController, photoRoot: PhotoRootModel) {
         self.photoRoot = photoRoot
@@ -105,6 +105,7 @@ public final class WeatherRootModel: @unchecked Sendable {
     @MainActor public var rootController: ItemRootController { _rootController!}
 }
 
+@MainActor
 extension WeatherRootModel: ItemRootControllable {
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
@@ -145,10 +146,10 @@ public extension WeatherRootModel {
     }
     
     func itemDataCleanup() async throws {
-        for itemId in await itemController.itemDataModel.items {
+        for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {
-                await editController.delete(itemId: model.id)
+                editController.delete(itemId: model.id)
             }
         }
     }

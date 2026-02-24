@@ -2,6 +2,7 @@
 
 import Foundation
 
+@MainActor
 public protocol RootControllable: Sendable {
     var exportControllable: any ExportControllable { get }
     var importControllable: any ImportControllable { get }

@@ -15,7 +15,7 @@ import Testing
 struct ItemControllerTests {
     @Test func duplicate() async throws {
         let root = try await MockRoot.importTestData()
-        let _ = root.itemController
+        let _ = await root.itemController
         
         await root.linkController.validateParentId()
         let originalId = await root.itemController.itemDataModel.items[0]

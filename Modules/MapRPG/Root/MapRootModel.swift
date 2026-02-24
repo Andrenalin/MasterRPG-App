@@ -17,7 +17,7 @@ public final class RootModel: Sendable {
     var toolBarModel = GameToolBarModel()
 }
 
-@Observable
+@MainActor @Observable
 public final class MapRootModel: @unchecked Sendable {
     
     @MainActor
@@ -151,6 +151,7 @@ public final class MapRootModel: @unchecked Sendable {
     @MainActor public var rootController: ItemRootController { _rootController!}
 }
 
+@MainActor
 extension MapRootModel: ItemRootControllable {
     public var configurable: any ModuleConfigurable { config }
     public var cacheControllable: (any ImageCacheControllable)? { nil }
@@ -209,10 +210,10 @@ public extension MapRootModel {
     }
     
     func itemDataCleanup() async throws {
-        for itemId in await itemController.itemDataModel.items {
+        for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
             if model.displayState == 2 {
-                await editController.delete(itemId: model.id)
+                editController.delete(itemId: model.id)
             }
         }
     }

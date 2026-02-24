@@ -12,7 +12,7 @@ struct ExportControllerTests {
         let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         var ids = await sut.exportingAll()
         try #require(ids.ids[.photo] != nil)
@@ -36,7 +36,7 @@ struct ExportControllerTests {
         let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         let itemId = await root.itemController.addNew(type: .item)
         
@@ -68,7 +68,7 @@ struct ExportControllerTests {
         let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         let emptyIds = ItemModuleIds()
         let result = await sut.exporting(itemIds: emptyIds)
@@ -81,7 +81,7 @@ struct ExportControllerTests {
         let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         // Create a photo item without entries
         let photoId = await root.itemController.addNew(type: .item)
@@ -102,7 +102,7 @@ struct ExportControllerTests {
         let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         // Create referenced photo items
         let referencedPhotoId1 = await root.itemController.addNew(type: .item)
@@ -140,7 +140,7 @@ struct ExportControllerTests {
         let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         // Create two photos that reference each other
         let photoId1 = await root.itemController.addNew(type: .item)
@@ -170,7 +170,7 @@ struct ExportControllerTests {
         let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         // Create a photo that references itself
         let photoId = await root.itemController.addNew(type: .item)
@@ -192,7 +192,7 @@ struct ExportControllerTests {
         let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         // Create shared referenced photo
         let sharedPhotoId = await root.itemController.addNew(type: .item)
@@ -249,7 +249,7 @@ struct ExportControllerTests {
         let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         let nonExistentId = UUID()
         
@@ -276,7 +276,7 @@ struct ExportControllerTests {
         let root = await PhotoRootModel.testRoot()
         await root.itemController.resetData()
         
-        let sut = root.exportController
+        let sut = await root.exportController
         
         // Create a chain of photos: photo1 -> photo2 -> photo3 -> photo4
         let photoId4 = await root.itemController.addNew(type: .item)
