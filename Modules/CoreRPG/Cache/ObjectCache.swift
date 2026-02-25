@@ -60,6 +60,16 @@ public actor ObjectCache<Object: AnyObject> {
         guard let data = try? Data(contentsOf: url) else { return nil }
         return AKImage(data: data)
     }
+
+    /// Async version using ResourceCache for better performance
+    public func loadImageFromDiskAsync(for itemId: UUID) async -> AKImage? {
+        let url = fileURL(for: itemId)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+
+        let key = "image.cache.\(itemId.uuidString)"
+        guard let data = try? await ResourceCache.shared.load(key: key, from: url) else { return nil }
+        return AKImage(data: data)
+    }
     
     public func saveImageToDisk(_ image: AKImage, for itemId: UUID) {
         ensureCacheDirectoryExists(for: itemId)

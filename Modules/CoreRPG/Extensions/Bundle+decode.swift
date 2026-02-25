@@ -30,4 +30,30 @@ public extension Bundle {
             fatalError("Failed to decode \(file) from bundle: \(error.localizedDescription)")
         }
     }
+
+    /// Async version using ResourceCache for better performance
+    @MainActor
+    func decodeAsync<T: Decodable>(_ type: T.Type, from file: String, dateDecodingStrategy: JSONDecoder.DateDecodingStrategy = .deferredToDate, keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy = .useDefaultKeys) async throws -> T {
+        guard let url = url(forResource: file, withExtension: nil) else {
+            throw BundleDecodeError.fileNotFound(file)
+        }
+
+        // Use ResourceCache for async loading
+        let data = try await asyncLoadResource(url: url)
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = dateDecodingStrategy
+        decoder.keyDecodingStrategy = keyDecodingStrategy
+
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw BundleDecodeError.decodingFailed(file, error)
+        }
+    }
+}
+
+public enum BundleDecodeError: Error {
+    case fileNotFound(String)
+    case decodingFailed(String, Error)
 }

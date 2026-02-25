@@ -93,7 +93,9 @@ extension GameController {
             _ = await fileUrlDataController.fileDownloaded(for: fileUrl)
             audioAsset = try await fileUrlDataController.url(for: fileUrl) { url -> PlaylistItem? in
                 guard let url else { return nil }
-                let data = try Data(contentsOf: url)
+                // Use ResourceCache for better performance
+                let key = "audio.game.\(itemId.uuidString)"
+                let data = try await ResourceCache.shared.load(key: key, from: url)
                 let fileExtension = url.pathExtension
                 let tempUrl = URL.temporaryDirectory.appending(path: itemId.uuidString).appendingPathExtension(fileExtension)
                 try data.write(to: tempUrl)

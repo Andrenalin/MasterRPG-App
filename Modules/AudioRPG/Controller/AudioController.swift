@@ -111,7 +111,9 @@ extension AudioController {
             _ = await fileUrlDataController.fileDownloaded(for: fileUrl)
             audioAsset = try await fileUrlDataController.url(for: fileUrl) { url -> PlaylistItem? in
                 guard let url else { return nil }
-                let data = try Data(contentsOf: url)
+                // Use ResourceCache for better performance
+                let key = "audio.\(item.id.uuidString)"
+                let data = try await ResourceCache.shared.load(key: key, from: url)
                 let fileExtension = url.pathExtension
                 let tempUrl = URL.temporaryDirectory.appending(path: item.id.uuidString).appendingPathExtension(fileExtension)
                 try data.write(to: tempUrl)
