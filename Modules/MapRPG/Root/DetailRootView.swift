@@ -132,7 +132,7 @@ private extension DetailListView {
                         withAnimation {
                             let entryId = root.editController.addNewEntry(itemId: model.id)
                             root.editController.editorModel.currentEntryId = entryId
-                            Task { @MainActor in
+                            Task {
                                 try? await Task.sleep(for: .seconds(0.25))
                                 root.editController.editorModel.scrollEntryId = entryId
                             }

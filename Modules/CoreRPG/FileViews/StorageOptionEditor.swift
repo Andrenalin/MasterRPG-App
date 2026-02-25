@@ -34,7 +34,7 @@ struct StorageOptionEditor: View {
             .alert(Text("Change Database?", bundle: .module), isPresented: $showExitAlert) {
                 Button {
                     appSettings.resetCloudKit(to: useCloudKit)
-                    Task { @MainActor in
+                    Task {
                         try await Task.sleep(for: .seconds(0.1))
                         Darwin.exit(0)
                     }

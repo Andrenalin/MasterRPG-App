@@ -119,7 +119,7 @@ struct MapPinView: View {
         .highPriorityGesture(combinedGesture)
         .onChange(of: isDragging) {
             guard !isDragging else { return }
-            Task { @MainActor in
+            Task {
                 isDraggingStarts = false
                 dragEndAction?()
             }
@@ -155,7 +155,7 @@ struct MapPinView: View {
                 state = false
                 return
             }
-            Task { @MainActor in
+            Task {
                 isDraggingStarts = true
                 guard var position = position else { return }
                 let x = position.location.x + (value.location.x - value.startLocation.x)

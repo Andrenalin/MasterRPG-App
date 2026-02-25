@@ -27,7 +27,7 @@ public struct ImmersivePhotoView: View {
             guard destinationChanged else { return }
             guard let entity = content.entities.first else { fatalError() }
             entity.updateTexture(root: root, for: photoSelection)
-            Task { @MainActor in
+            Task {
                 destinationChanged = false
             }
         }

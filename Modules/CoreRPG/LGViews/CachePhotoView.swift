@@ -71,7 +71,7 @@ private extension CachePhotoView {
     }
 
     func loadImage() {
-        Task { @MainActor in
+        Task {
             let fileId = model.id
             let loaderTask = Task.detached(priority: .userInitiated) {
                 if highResolution {

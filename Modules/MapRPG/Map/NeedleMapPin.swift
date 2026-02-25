@@ -122,7 +122,7 @@ struct NeedleMapPin: View {
 #endif
             .onChange(of: isDragging) {
                 guard !isDragging else { return }
-                Task { @MainActor in
+                Task {
                     isDraggingStarts = false
                     entries.selectedNeedleCoordinate = nil
                     dragEndAction()
@@ -148,7 +148,7 @@ struct NeedleMapPin: View {
 #if !os(tvOS)
     var dragGesture: some Gesture {
         DragGesture(minimumDistance: 3).updating($isDragging) { value, state, _ in
-            Task { @MainActor in
+            Task {
                 isDraggingStarts = true
                 var position = coordinate
                 let x = position.x + (value.location.x - value.startLocation.x)

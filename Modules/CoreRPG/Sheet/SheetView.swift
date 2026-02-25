@@ -77,7 +77,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                     guard let entryDataEditable else { return }
                     model.move(itemId: model.sheetModel.source.itemId, indexSet: indexSet, to: index)
                     entryDataEditable.move(itemId: model.sheetModel.source.itemId, entryIds: model.sheetModel.entries.compactMap { $0.source.entryId })
-                    Task { @MainActor in
+                    Task {
                         try? await Task.sleep(for: .milliseconds(100))
                         model.updateParent()
                     }
@@ -135,7 +135,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
                     root.editControllable.editorModel.currentEntryId = entryId
                     model.add(entryId: entryId)
                     model.updateParent()
-                    Task { @MainActor in
+                    Task {
                         try? await Task.sleep(for: .seconds(0.25))
                         root.editControllable.editorModel.scrollEntryId = entryId
                     }

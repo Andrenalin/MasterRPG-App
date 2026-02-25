@@ -93,7 +93,7 @@ private extension DetailListView {
                             root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
                             let entryId = root.editController.addNewEntry(itemId: model.id)
                             root.editController.editorModel.currentEntryId = entryId
-                            Task { @MainActor in
+                            Task {
                                 try? await Task.sleep(for: .seconds(0.25))
                                 root.editController.editorModel.scrollEntryId = entryId
                             }

@@ -66,7 +66,7 @@ struct RootEditCanvasMap: View {
 
     func reloadImage() async {
         let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(for: model.photoId, useGame: false) ?? (nil, 0)
-        Task { @MainActor in
+        Task {
             self.image = updateImage
             self.degrees <=> updateDegrees
         }

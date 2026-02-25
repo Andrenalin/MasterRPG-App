@@ -58,7 +58,7 @@ private struct ARQuickLookController: UIViewControllerRepresentable {
 
         nonisolated func previewControllerWillDismiss(_ controller: QLPreviewController) {
             Logger.scanner3D.log("Exiting ARQL ...")
-            Task { @MainActor in
+            Task {
                 parent.endCaptureCallback()
             }
         }

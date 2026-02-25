@@ -78,7 +78,7 @@ struct ViewerRootView: View {
                 return
             }
 #if !os(tvOS)
-            Task { @MainActor in
+            Task {
                 let pdfTask = Task.detached {
                     await root.itemController.pdfDocument(for: id)
                 }

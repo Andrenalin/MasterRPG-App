@@ -99,7 +99,7 @@ struct PlayerGameScreen: View {
 private extension PlayerGameScreen {
     func prepareWindows() {
 #if os(iOS) || os(visionOS)
-        Task { @MainActor in
+        Task {
             try? await Task.sleep(for: .seconds(0.1))
             gameScreenModel.showGameType <=> .table
             withAnimation { gameScreenModel.showMainTab <=> .game }
@@ -107,13 +107,13 @@ private extension PlayerGameScreen {
             withAnimation { gameScreenModel.showGameType <=> .value }
         }
 #elseif os(macOS)
-        Task { @MainActor in
+        Task {
             try? await Task.sleep(for: .seconds(0.1))
             withAnimation { gameScreenModel.showMainTab <=> .game }
         }
 #endif
 #if os(visionOS)
-        Task { @MainActor in
+        Task {
             try? await Task.sleep(for: .seconds(0.15))
             showWindow(for: .table)
             try? await Task.sleep(for: .seconds(0.15))
@@ -143,7 +143,7 @@ private extension PlayerGameScreen {
 
     func endGame() {
         showGameActions.show(false)
-        Task { @MainActor in
+        Task {
             await root.stopGame()
         }
     }

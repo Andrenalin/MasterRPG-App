@@ -105,7 +105,7 @@
         var gesture: some Gesture {
             let magni = MagnificationGesture().updating($isMagnifying) { value, state, _ in
                 let firstValue = !state
-                Task { @MainActor in
+                Task {
                     magnifierAction?(value, firstValue)
                 }
                 state = true
@@ -113,12 +113,12 @@
 
             let drag = DragGesture(minimumDistance: 0).updating($isDragging) { value, state, _ in
                 guard !isMagnifying else {
-                    Task { @MainActor in
+                    Task {
                         lastValue = value
                     }
                     return
                 }
-                Task { @MainActor in
+                Task {
                     tryHandlePress(value)
                     tryHandleDragging(value)
                     lastValue = value

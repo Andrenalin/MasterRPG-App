@@ -20,7 +20,7 @@ struct AnimatedMap: View {
                 .environment(dropPinModel)
         }
         .onChange(of: date, initial: false) {
-            Task { @MainActor in
+            Task {
                 withAnimation { entryId = randomEntries() }
             }
         }

@@ -76,7 +76,7 @@ private extension RootCanvasMap {
 
     func reloadImage() async {
         let (updateImage, updateDegrees) = await root.photoRoot.fetchPhotoImage(for: mapModel.photoId, useGame: true) ?? (nil, 0)
-        Task { @MainActor in
+        Task {
             self.image = updateImage
             self.degrees <=> updateDegrees
         }

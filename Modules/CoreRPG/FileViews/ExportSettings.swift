@@ -40,7 +40,7 @@ public struct ExportDataModels: View {
                     return
                 }
                 guard let exportTask else { return }
-                Task { @MainActor in
+                Task {
                     let result = await exportTask.result
                     do {
                         exportError = ""

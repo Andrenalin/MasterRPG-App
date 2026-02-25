@@ -75,7 +75,7 @@ private extension ListRootView {
     }
 
     func updateFile(url: URL) {
-        Task { @MainActor in
+        Task {
             guard let model = await root.editControllable.addNew(type: .item) else { return }
             try? await Task.sleep(for: .seconds(0.5))
             withAnimation {

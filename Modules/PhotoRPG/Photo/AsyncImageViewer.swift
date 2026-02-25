@@ -56,7 +56,7 @@ struct AsyncImageViewer: View {
         let cacheItemListModel = editController.cacheItemListModel
         let itemId = model.id
         let fileUrl = model.fileUrl
-        Task { @MainActor in
+        Task {
             let loaderTask = Task.detached(priority: .userInitiated) {
                 await editController.loadImage(cacheType: .image, item: model, itemId: itemId, fileUrl: fileUrl)
             }

@@ -56,7 +56,7 @@ public struct HeaderPhoto: View {
         .onChange(of: itemId.wrappedValue, initial: true) {
             if fadeIn == true {
                 fadeIn = false
-                Task { @MainActor in
+                Task {
                     try await Task.sleep(for: .seconds(0.5))
                     withAnimation(.snappy(duration: 0.5)) { fadeIn = true }
                 }

@@ -139,7 +139,7 @@ struct QuickLinkTextRow<EntryViewModel: ItemLinkEditable>: View {
             return linkModel
         } else {
             let linkModel = LinkHighlightTextModel(linkControllable: linkControllable, text: entryText, highlightedText: nil, toggler: nil, shareResult: nil, editAction: { _ in !original })
-            Task { @MainActor in
+            Task {
                 _linkTextModel = linkModel
             }
             return linkModel

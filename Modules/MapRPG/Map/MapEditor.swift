@@ -613,7 +613,7 @@ private extension MapEditor {
         guard editEntries.eaten == false && editEntries.addedNewNeedlePoint == nil else { return }
 
         editEntries.addedNewNeedlePoint = roomPin
-        Task { @MainActor in
+        Task {
             try? await Task.sleep(for: .milliseconds(250))
             guard let point = editEntries.addedNewNeedlePoint, var updatedEntry = editEntries.entries.first else { return }
             editEntries.addedNewNeedlePoint = nil

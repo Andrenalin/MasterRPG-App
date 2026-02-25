@@ -19,7 +19,7 @@ struct DisplayMapViewer: View {
         }
         .frame(width: size.width, height: size.height)
         .onChange(of: root.itemController.itemOrEmpty(for: itemId).entries, initial: false) {
-            Task { @MainActor in
+            Task {
                 withAnimation { mapUpdated = map }
             }
         }

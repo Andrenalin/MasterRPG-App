@@ -35,7 +35,7 @@ struct AsyncThumbnail: View {
             await cacheController?.thumbnailId(for: id, item: model)
         }
 
-        Task { @MainActor in
+        Task {
             let _ = await loaderTask.result
             let newImage = await cacheController?.thumbnail(for: id)
             withAnimation { self.image = newImage }
