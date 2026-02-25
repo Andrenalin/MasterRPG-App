@@ -12,7 +12,6 @@ struct InlineRowViewer: View, Equatable {
     @Environment(TableRootModel.self) private var root
     
     var body: some View {
-        let _ = Self._printChanges()
         switch source.typeId {
         case .dice:
             root.diceRoot.viewController.rowViewer(source: source, destination: destination)

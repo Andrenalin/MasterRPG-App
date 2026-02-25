@@ -22,7 +22,6 @@ struct TabRootView: View {
     @Environment(\.appSizeMode) private var appSizeMode
 
     var body: some View {
-        let _ = Self._printChanges()
 
         layout
             .onChange(of: appSizeMode) { oldValue, newValue in

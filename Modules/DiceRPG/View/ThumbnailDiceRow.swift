@@ -10,7 +10,6 @@ struct ThumbnailDiceRow: View, Equatable {
     @Environment(DiceRootModel.self) private var root
     
     var body: some View {
-        let _ = Self._printChanges()
         if let die = model?.dice.first {
             ThumbnailDice(die: die)
         }

@@ -24,7 +24,6 @@ struct ViewerRootView: View {
     @State private var searchModel = PdfSearchModel()
     
     var body: some View {
-        let _ = Self._printChanges()
             VStack {
 #if !os(tvOS)
                 PdfContentView(searchModel: searchModel, horizontal: false, entry: entry)

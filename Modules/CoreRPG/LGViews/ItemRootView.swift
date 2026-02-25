@@ -12,7 +12,6 @@ public struct ItemRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     public var body: some View {
-        let _ = Self._printChanges()
         
         ItemRootSingleListView(root: root)
             .environment(root.folderListControllable.cacheListItemModel)
@@ -31,7 +30,6 @@ struct ItemRootSingleListView: View {
     @Environment(\.appSizeMode) private var appSizeMode
     
     var body: some View {
-        let _ = Self._printChanges()
         
         ItemRootListView(root: root)
             .onChange(of: listModel.itemRoute) {
@@ -51,7 +49,6 @@ struct ItemRootListView: View {
     let root: ItemRootController
     
     var body: some View {
-        let _ = Self._printChanges()
         
         ListRootView(root: root, listController: root.folderListControllable, parentModel: nil)
             .searchItemList(listControllable: root.folderListControllable)
@@ -67,7 +64,6 @@ public struct ItemSplitDetailRootView: View {
     let root: ItemRootController
     
     public var body: some View {
-        let _ = Self._printChanges()
         let _ = print("*** ->", root.configurable.module)
         
         ManagedNavigationStack(name: "Split-\(root.configurable.module.token)") {
@@ -88,7 +84,6 @@ struct SplitContentDetailRootView: View {
     let itemId: UUID?
     
     var body: some View {
-        let _ = Self._printChanges()
         
         if let itemId {
             root.folderListControllable.detailDestination(for: itemId).asAnyView()

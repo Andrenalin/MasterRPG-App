@@ -10,7 +10,6 @@ public struct SplitContentUnavailable: View {
     let module: NetworkModules
     
     public var body: some View {
-        let _ = Self._printChanges()
 
         ContentUnavailableView {
             Label {

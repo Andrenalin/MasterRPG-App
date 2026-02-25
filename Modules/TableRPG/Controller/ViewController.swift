@@ -12,11 +12,11 @@ public struct ViewController: Sendable {
 
 extension ViewController: ViewControllable {
     @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView {
-        AnyView(InlineRowViewer(source: source, destination: destination))
+        AnyView(InlineRowViewer(source: source, destination: destination).equatable())
     }
 
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
-        AnyView(ThumbnailDiceRow(itemId: itemId))
+        AnyView(ThumbnailDiceRow(itemId: itemId).equatable())
     }
 }
 

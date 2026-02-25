@@ -18,7 +18,6 @@ struct ToggleDiceValue: View {
     @State private var toggleEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
     
     var body: some View {
-        let _ = Self._printChanges()
         ToggleEditor(model: toggleEditModel, canToggle: canToggle, title: title, bundle: bundle, icon: icon)
             .onChange(of: model, initial: true) {
                 updateToggleValue()

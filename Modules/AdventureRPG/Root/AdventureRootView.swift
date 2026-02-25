@@ -8,7 +8,6 @@ struct AdventureRootView: View {
     @Environment(AdventureRootModel.self) private var root
 
     var body: some View {
-        let _ = Self._printChanges()
         
         ItemRootView(root: root.rootController)
             .overlay {
@@ -27,7 +26,6 @@ struct SaveView: View {
     @Environment(\.navigator) private var navigator
     
     var body: some View {
-        let _ = Self._printChanges()
 
         Color.clear
             .applyItemRootRoute(listControllable: root.folderListController, route: $route)

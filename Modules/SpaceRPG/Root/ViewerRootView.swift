@@ -16,7 +16,6 @@ struct ViewerRootView: View {
     @Environment(\.appSizeMode) private var appSizeMode
 
     var body: some View {
-        let _ = Self._printChanges()
         VStack {
 #if !os(tvOS)
             SpaceViewer(root: root, id: model.id, isModal: externalViewer)

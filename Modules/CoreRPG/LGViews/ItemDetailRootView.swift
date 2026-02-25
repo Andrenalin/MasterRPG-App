@@ -85,7 +85,6 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @State private var headerFooterModel = HeaderFooterScrollModel()
     
     public var body: some View {
-        let _ = Self._printChanges()
         contentScrollView(model: selectedModel)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)

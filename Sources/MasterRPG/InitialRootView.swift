@@ -21,7 +21,6 @@ struct InitialRootView: View {
     @State private var iCloudAccount: CloudKitAccountStatus = .notChecked
 
     var body: some View {
-        let _ = Self._printChanges()
         Group {
             if appModel.hasDatabase {
                 RootView(appModel: appModel, editorOnly: editorOnly)

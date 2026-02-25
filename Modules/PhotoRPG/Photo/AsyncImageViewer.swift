@@ -21,7 +21,6 @@ struct AsyncImageViewer: View {
     @State private var isLoadedId: UUID = UUID()
 
     var body: some View {
-        let _ = Self._printChanges()
         VStack {
             if let image = cachedImage(for: model.id) {
                 ImageViewer(id: model.id, image: image, photoDegrees: model.degrees, containerSize: size, contentMode: contentMode, toolBarModel: toolBarModel)

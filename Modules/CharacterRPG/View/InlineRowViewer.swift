@@ -14,7 +14,6 @@ struct InlineRowViewer: View, Equatable {
     @Environment(CharacterRootModel.self) private var root
     
     var body: some View {
-        let _ = Self._printChanges()
         switch module {
         case .dice:
             if let entryId = destination.entryId {

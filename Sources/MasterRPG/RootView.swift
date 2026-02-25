@@ -27,7 +27,6 @@ struct RootView: View {
     @State private var showFirstDataAlert = false
 
     var body: some View {
-        let _ = Self._printChanges()
 
         Group {
 #if os(macOS)

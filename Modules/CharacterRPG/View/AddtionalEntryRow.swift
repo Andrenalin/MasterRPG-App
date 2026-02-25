@@ -10,7 +10,6 @@ struct AddtionalEntryRow: View, Equatable {
     @Environment(CharacterRootModel.self) private var root
     
     var body: some View {
-        let _ = Self._printChanges()
         VStack(alignment: .leading) {
             HStack(spacing: 4) {
                 

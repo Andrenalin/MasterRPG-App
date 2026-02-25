@@ -15,7 +15,6 @@ public struct TabbedSplitNavigation: View {
     @AppStorage("contentColumnWidth") private var contentColumnWidth: Double = 350
     
     public var body: some View {
-        let _ = Self._printChanges()
         let _ = print("Tab: \(selectedModule.title)")
         @Bindable var appModel = appModel
 

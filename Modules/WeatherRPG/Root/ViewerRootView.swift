@@ -17,7 +17,6 @@ struct ViewerRootView: View {
     @State private var isAnimating: Bool = false
     
     var body: some View {
-        let _ = Self._printChanges()
         VStack {
             GeometryReader { proxy in
                 WeatherViewer(model: model, size: proxy.size, useGame: isGame, isAnimating: $isAnimating)

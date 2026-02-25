@@ -10,7 +10,6 @@ struct AddtionalEntryRow: View, Equatable {
     @Environment(MapRootModel.self) private var root
     
     var body: some View {
-        let _ = Self._printChanges()
         @Bindable var model = model
         VStack(alignment: .trailing) {
             HStack {
