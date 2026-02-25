@@ -3,7 +3,7 @@
 import CoreRPG
 import Foundation
 
-public struct TableEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
+public struct TableEntryModel: Identifiable, Equatable, Hashable, Codable {
     init(id: UUID, name: String, content: String, displayState: Int = 0, diceResult: String? = nil) {
         self.id = id
         self.name = name
@@ -81,6 +81,32 @@ extension TableEntryModel: ItemLinkEditable {
 }
 
 extension TableEntryModel: ItemReferencable {}
+
+#if DEBUG
+extension TableEntryModel {
+    /// Creates a test fixture with sensible defaults for testing.
+    ///
+    /// All parameters have default values, allowing you to specify only what matters for your test:
+    /// ```swift
+    /// let entry = TableEntryModel.fixture(name: "Test Table", content: "Roll 1d20")
+    /// ```
+    public static func fixture(
+        id: UUID = UUID(),
+        name: String = "Test Table Entry",
+        content: String = "Test table content",
+        displayState: Int = 0,
+        diceResult: String? = nil
+    ) -> TableEntryModel {
+        TableEntryModel(
+            id: id,
+            name: name,
+            content: content,
+            displayState: displayState,
+            diceResult: diceResult
+        )
+    }
+}
+#endif
 
 // MARK: - Attributed Text with links
 

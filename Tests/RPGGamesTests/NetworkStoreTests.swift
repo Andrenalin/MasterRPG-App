@@ -8,84 +8,137 @@ import Testing
 
 @testable import GameRPG
 
-final class NetworkStoreTests {
-    private var masterDeleagteMock: MasterNetworkStoreDelegateMock!
-    private var playerDelegateMock: PlayerNetworkStoreDelegateMock!
-    private var masterStoreAbstractionMock: MasterNetworkControllableMock!
-    private var playerStoreAbstractionMock: PlayerStoreAbstractionMock!
+/// Test environment for NetworkController tests.
+struct NetworkStoreTestEnvironment {
+    let masterDelegateSpy: MasterNetworkStoreDelegateMock
+    let playerDelegateSpy: PlayerNetworkStoreDelegateMock
+    let masterNetworkSpy: MasterNetworkControllableMock
+    let playerNetworkSpy: PlayerStoreAbstractionMock
+    let networkController: NetworkController
 
-    private var sut: NetworkController!
+    /// Creates a NetworkController with spy dependencies
+    static func create() async throws -> NetworkStoreTestEnvironment {
+        let masterDelegateSpy = MasterNetworkStoreDelegateMock()
+        let playerDelegateSpy = PlayerNetworkStoreDelegateMock()
+        let masterNetworkSpy = await MasterNetworkControllableMock()
+        let playerNetworkSpy = await PlayerStoreAbstractionMock()
 
-    func setUp() async throws {
-        masterDeleagteMock = MasterNetworkStoreDelegateMock()
-        playerDelegateMock = PlayerNetworkStoreDelegateMock()
-        let masterMock = await MasterNetworkControllableMock()
-        let playerMock = await PlayerStoreAbstractionMock()
+        let networkController = await NetworkController(
+            name: "Hello Test",
+            masterBuilder: { _, _ in masterNetworkSpy },
+            playerBuilder: { _, _ in playerNetworkSpy }
+        )
+        await networkController.model.setMaster(delegate: masterDelegateSpy)
+        await networkController.model.setPlayer(delegate: playerDelegateSpy)
 
-        sut = await NetworkController(name: "Hello Test", masterBuilder: { _, _ in
-            masterMock
-        }, playerBuilder: { _, _ in
-            playerMock
-        })
-        await sut.model.setMaster(delegate: masterDeleagteMock)
-        await sut.model.setPlayer(delegate: playerDelegateMock)
-        masterStoreAbstractionMock = masterMock
-        playerStoreAbstractionMock = playerMock
+        return NetworkStoreTestEnvironment(
+            masterDelegateSpy: masterDelegateSpy,
+            playerDelegateSpy: playerDelegateSpy,
+            masterNetworkSpy: masterNetworkSpy,
+            playerNetworkSpy: playerNetworkSpy,
+            networkController: networkController
+        )
+    }
+}
+
+@Suite("Network controller tests")
+struct NetworkStoreTests {
+
+    // Test data
+    let masterGameNetworkModel = GameNetworkModel(
+        counter: 1,
+        proxyCounter: 0,
+        type: .reveal,
+        subType: .show,
+        gameConfig: .master,
+        data: NetworkCodableDataType(id: UUID(), type: .none, version: 0, data: nil)
+    )
+
+    let playerGameNetworkModel = GameNetworkModel(
+        counter: 2,
+        proxyCounter: 0,
+        type: .reveal,
+        subType: .show,
+        gameConfig: .player,
+        data: NetworkCodableDataType(id: UUID(), type: .none, version: 0, data: nil)
+    )
+
+    @Test("Master game network flow")
+    func masterGame() async throws {
+        // Arrange
+        let env = try await NetworkStoreTestEnvironment.create()
+
+        // Act & Assert - Start master game
+        await env.networkController.startMasterGame(game: .master, titleImage: nil)
+        #expect(env.masterNetworkSpy.calledStartStreaming == 1)
+
+        // Act & Assert - Master ready
+        await env.networkController.masterReady(for: ConnectionController.ID())
+        #expect(env.masterDelegateSpy.calledReady == 1)
+
+        // Act & Assert - Send to specific player
+        await env.networkController.sendPlayer(masterGameNetworkModel, to: ConnectionController.ID())
+        #expect(env.masterNetworkSpy.calledSendResponseId == 1)
+
+        // Act & Assert - Send to all players
+        await env.networkController.sendPlayer(data: masterGameNetworkModel, fileJournal: false)
+        #expect(env.masterNetworkSpy.calledSendResponseAll == 1)
+
+        // Act & Assert - Master received data
+        await env.networkController.masterReceived(
+            data: masterGameNetworkModel.encodeData(),
+            for: ConnectionController.ID(),
+            fileJournal: false
+        )
+        #expect(env.masterNetworkSpy.calledSendResponseExcept == 1)
+        #expect(env.masterDelegateSpy.calledReceived == 1)
+
+        // Act & Assert - Stop game when not streaming
+        await env.networkController.stopGame()
+        #expect(env.masterNetworkSpy.calledStopStreaming == 0)
+
+        // Act & Assert - Stop game when streaming
+        await env.masterNetworkSpy.networkModel.reset(isStreaming: true)
+        await env.networkController.stopGame()
+        #expect(env.masterNetworkSpy.calledStopStreaming == 1)
     }
 
-    @Test func MasterGame() async throws {
-        try await setUp()
-        await sut.startMasterGame(game: .master, titleImage: nil)
-        #expect(masterStoreAbstractionMock.calledStartStreaming == 1)
+    @Test("Player game network flow")
+    func playerGame() async throws {
+        // Arrange
+        let env = try await NetworkStoreTestEnvironment.create()
 
-        await sut.masterReady(for: ConnectionController.ID())
-        #expect(masterDeleagteMock.calledReady == 1)
-
-        await sut.sendPlayer(masterGameNetworkModel, to: ConnectionController.ID())
-        #expect(masterStoreAbstractionMock.calledSendResponseId == 1)
-
-        await sut.sendPlayer(data: masterGameNetworkModel, fileJournal: false)
-        #expect(masterStoreAbstractionMock.calledSendResponseAll == 1)
-
-        await sut.masterReceived(data: masterGameNetworkModel.encodeData(), for: ConnectionController.ID(), fileJournal: false)
-        #expect(masterStoreAbstractionMock.calledSendResponseExcept == 1)
-        #expect(masterDeleagteMock.calledReceived == 1)
-
-        await sut.stopGame()
-        #expect(masterStoreAbstractionMock.calledStopStreaming == 0)
-        await masterStoreAbstractionMock.networkModel.reset(isStreaming: true)
-        await sut.stopGame()
-        #expect(masterStoreAbstractionMock.calledStopStreaming == 1)
-    }
-
-    @Test func PlayerGame() async throws {
-        try await setUp()
-        let result = await sut.startPlayerGame(to: nil)
+        // Act & Assert - Start player game with no device (should fail)
+        let result = await env.networkController.startPlayerGame(to: nil)
         #expect(result == false)
-        #expect(playerStoreAbstractionMock.calledToggleConnection == 0)
+        #expect(env.playerNetworkSpy.calledToggleConnection == 0)
 
-        let connectResult = await sut.startPlayerGame(to: BrowserDeviceModel(id: UUID(), deviceName: "MasterTestDevice"))
+        // Act & Assert - Start player game with device (should succeed)
+        let connectResult = await env.networkController.startPlayerGame(
+            to: BrowserDeviceModel(id: UUID(), deviceName: "MasterTestDevice")
+        )
         #expect(connectResult)
-        #expect(playerStoreAbstractionMock.calledToggleConnection == 1)
+        #expect(env.playerNetworkSpy.calledToggleConnection == 1)
 
-        await sut.playerReady()
-        #expect(playerDelegateMock.calledReady == 1)
+        // Act & Assert - Player ready
+        await env.networkController.playerReady()
+        #expect(env.playerDelegateSpy.calledReady == 1)
 
-        await sut.sendMaster(data: playerGameNetworkModel, fileJournal: false)
-        #expect(playerStoreAbstractionMock.calledRequest == 1)
+        // Act & Assert - Send to master
+        await env.networkController.sendMaster(data: playerGameNetworkModel, fileJournal: false)
+        #expect(env.playerNetworkSpy.calledRequest == 1)
 
-        await sut.playerReceived(data: playerGameNetworkModel.encodeData())
-        #expect(playerDelegateMock.calledReceived == 1)
+        // Act & Assert - Player received data
+        await env.networkController.playerReceived(data: playerGameNetworkModel.encodeData())
+        #expect(env.playerDelegateSpy.calledReceived == 1)
 
-        await sut.playerLostMaster()
-        #expect(playerDelegateMock.calledLostConnection == 1)
+        // Act & Assert - Player lost master
+        await env.networkController.playerLostMaster()
+        #expect(env.playerDelegateSpy.calledLostConnection == 1)
 
-        await sut.stopGame()
-        #expect(playerStoreAbstractionMock.calledStop == 1)
+        // Act & Assert - Stop game
+        await env.networkController.stopGame()
+        #expect(env.playerNetworkSpy.calledStop == 1)
     }
-
-    private var masterGameNetworkModel = GameNetworkModel(counter: 1, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: .master, data: NetworkCodableDataType(id: UUID(), type: .none, version: 0, data: nil))
-
-    private var playerGameNetworkModel = GameNetworkModel(counter: 2, proxyCounter: 0, type: .reveal, subType: .show, gameConfig: .player, data: NetworkCodableDataType(id: UUID(), type: .none, version: 0, data: nil))
 }
 #endif

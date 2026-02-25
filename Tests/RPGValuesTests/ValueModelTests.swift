@@ -8,24 +8,31 @@ import Testing
 @testable import CharacterRPG
 
 struct ValueModelTests {
-    func setUp() -> ValueModel {
+    /// Creates a test ValueModel with one entry for testing.
+    ///
+    /// Uses the fixture pattern to provide sensible defaults while allowing customization.
+    static func makeValueModel(
+        name: String = "Some Name",
+        description: String = "Some Desc"
+    ) -> ValueModel {
         ValueModel(
             id: UUID(),
-            name: "Some Name",
-            description: "Some Desc",
+            name: name,
+            description: description,
             tags: ["Hi", "Good"],
             category: .gameMaster,
             displayState: 2,
             photoId: UUID(),
             photos: [UUID(), UUID()],
             entries: [
-                ValueEntryModel(id: UUID(), name: "Nice", type: .decimal, value: "0"),
+                ValueEntryModel.fixture(name: "Nice", type: .decimal, value: "0"),
             ]
         )
     }
 
     @Test func assignAndDuplicate() async throws {
-        let sut = setUp()
+        // Arrange
+        let sut = Self.makeValueModel()
         let a = sut
         #expect(a == sut)
 
@@ -48,7 +55,8 @@ struct ValueModelTests {
     }
 
     @Test func changeValues() async throws {
-        let sut = setUp()
+        // Arrange
+        let sut = Self.makeValueModel()
         let a = sut.copy()
         let b = sut.copy()
         let c = sut.copy()

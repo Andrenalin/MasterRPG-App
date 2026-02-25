@@ -25,7 +25,7 @@ enum MapDisplayMode: Int, Identifiable, Equatable, Hashable, CaseIterable {
     }
 }
 
-public struct MapEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
+public struct MapEntryModel: Identifiable, Equatable, Hashable, Codable {
     public init(id: UUID, name: String, content: String, coordinates: [CGPoint], isHexGrid: Bool = false, isShown: Bool = false, focused: Bool = false, displayState: Int = 0) {
         self.id = id
         self.name = name
@@ -165,6 +165,38 @@ extension MapEntryModel: ItemDiffComparable {
 }
 
 extension MapEntryModel: ItemReferencable {}
+
+#if DEBUG
+extension MapEntryModel {
+    /// Creates a test fixture with sensible defaults for testing.
+    ///
+    /// All parameters have default values, allowing you to specify only what matters for your test:
+    /// ```swift
+    /// let entry = MapEntryModel.fixture(name: "Test Map", coordinates: [CGPoint(x: 0, y: 0)])
+    /// ```
+    public static func fixture(
+        id: UUID = UUID(),
+        name: String = "Test Map Entry",
+        content: String = "Test map content",
+        coordinates: [CGPoint] = [CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 100)],
+        isHexGrid: Bool = false,
+        isShown: Bool = false,
+        focused: Bool = false,
+        displayState: Int = 0
+    ) -> MapEntryModel {
+        MapEntryModel(
+            id: id,
+            name: name,
+            content: content,
+            coordinates: coordinates,
+            isHexGrid: isHexGrid,
+            isShown: isShown,
+            focused: focused,
+            displayState: displayState
+        )
+    }
+}
+#endif
 
 extension MapEntryModel {
     enum CodingKeys: CodingKey {

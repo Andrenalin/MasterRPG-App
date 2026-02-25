@@ -3,7 +3,7 @@
 import CoreRPG
 import Foundation
 
-public struct AdventureEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
+public struct AdventureEntryModel: Identifiable, Equatable, Hashable, Codable {
     public init(id: UUID, name: String, content: String, displayState: Int = 0) {
         self.id = id
         self.name = name
@@ -74,3 +74,27 @@ extension AdventureEntryModel: ItemLinkEditable {
 }
 
 extension AdventureEntryModel: ItemReferencable {}
+
+#if DEBUG
+extension AdventureEntryModel {
+    /// Creates a test fixture with sensible defaults for testing.
+    ///
+    /// All parameters have default values, allowing you to specify only what matters for your test:
+    /// ```swift
+    /// let entry = AdventureEntryModel.fixture(name: "Test Adventure", content: "Test content")
+    /// ```
+    public static func fixture(
+        id: UUID = UUID(),
+        name: String = "Test Adventure Entry",
+        content: String = "Test adventure content",
+        displayState: Int = 0
+    ) -> AdventureEntryModel {
+        AdventureEntryModel(
+            id: id,
+            name: name,
+            content: content,
+            displayState: displayState
+        )
+    }
+}
+#endif

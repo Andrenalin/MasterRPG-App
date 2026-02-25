@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, @unchecked Sendable {
+public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable {
     public init(id: UUID, name: String, type: ValueEntryModel.ValueType, isGenerator: Bool = false, value: String, diceId: UUID? = nil, valueId: UUID? = nil, displayState: Int = 0) {
         self.id = id
         self.name = name
@@ -26,7 +26,7 @@ public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, @unch
         self.displayState = displayState
     }
 
-    public enum ValueType: Int, Equatable, Hashable, Codable, CaseIterable, Identifiable {
+    public enum ValueType: Int, Equatable, Hashable, Codable, CaseIterable, Identifiable, Sendable {
         case text = 0
         case number = 1
         case decimal = 2
@@ -283,3 +283,35 @@ extension ValueEntryModel: ItemDiffComparable {
 }
 
 extension ValueEntryModel: ItemReferencable {}
+
+#if DEBUG
+extension ValueEntryModel {
+    /// Creates a test fixture with sensible defaults for testing.
+    ///
+    /// All parameters have default values, allowing you to specify only what matters for your test:
+    /// ```swift
+    /// let entry = ValueEntryModel.fixture(name: "Test Entry", type: .number)
+    /// ```
+    public static func fixture(
+        id: UUID = UUID(),
+        name: String = "Test Entry",
+        type: ValueType = .decimal,
+        isGenerator: Bool = false,
+        value: String = "0",
+        diceId: UUID? = nil,
+        valueId: UUID? = nil,
+        displayState: Int = 0
+    ) -> ValueEntryModel {
+        ValueEntryModel(
+            id: id,
+            name: name,
+            type: type,
+            isGenerator: isGenerator,
+            value: value,
+            diceId: diceId,
+            valueId: valueId,
+            displayState: displayState
+        )
+    }
+}
+#endif
