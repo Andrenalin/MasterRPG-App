@@ -7,6 +7,7 @@ import Testing
 
 @testable import CharacterRPG
 
+@Suite("Value model tests")
 struct ValueModelTests {
     /// Creates a test ValueModel with one entry for testing.
     ///

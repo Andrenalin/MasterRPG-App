@@ -17,205 +17,258 @@ import Testing
 @testable import CharacterRPG
 import AdventureRPG
 
-final class PlayerMasterControllerTests {
-    private var sut: MasterController!
-    private var rootSut: GameRoot!
-    private var gameConfigModelSut: GameConfigModel!
+/// Test environment for PlayerMasterController integration tests.
+struct PlayerMasterControllerTestEnvironment {
+    let master: MasterController
+    let masterRoot: GameRoot
+    let masterGameConfig: GameConfigModel
+    let player: PlayerController
+    let playerRoot: GameRoot
+    let playerGameConfig: GameConfigModel
+    let masterDelegateSpy: MasterNetworkStoreDelegateMock
+    let playerDelegateSpy: PlayerNetworkStoreDelegateMock
+    let masterNetworkSpy: MasterNetworkControllableMock
+    let playerNetworkSpy: PlayerStoreAbstractionMock
+    let network: NetworkController
 
-    private var sutPlayer: PlayerController!
-    private var rootPlayer: GameRoot!
-    private var gameConfigModelPlayer: GameConfigModel!
+    /// Creates a player-to-master test environment with full network setup
+    static func create() async throws -> PlayerMasterControllerTestEnvironment {
+        let masterDelegateSpy = MasterNetworkStoreDelegateMock()
+        let playerDelegateSpy = PlayerNetworkStoreDelegateMock()
+        let masterNetworkSpy = await MasterNetworkControllableMock()
+        let playerNetworkSpy = await PlayerStoreAbstractionMock()
 
-    private var masterDeleagteMock: MasterNetworkStoreDelegateMock!
-    private var playerDelegateMock: PlayerNetworkStoreDelegateMock!
-    private var masterStoreAbstractionMock: MasterNetworkControllableMock!
-    private var playerStoreAbstractionMock: PlayerStoreAbstractionMock!
-    private var networkMock: NetworkController!
-    private var networkProxyMock: NetworkProxyController!
+        let network = await NetworkController(
+            name: "Hello Test",
+            masterBuilder: { _, _ in masterNetworkSpy },
+            playerBuilder: { _, _ in playerNetworkSpy }
+        )
+        await network.model.setMaster(delegate: masterDelegateSpy)
+        await network.model.setPlayer(delegate: playerDelegateSpy)
 
-    func setUp() async throws {
-        masterDeleagteMock = MasterNetworkStoreDelegateMock()
-        playerDelegateMock = PlayerNetworkStoreDelegateMock()
-        let masterMock = await MasterNetworkControllableMock()
-        let playerMock = await PlayerStoreAbstractionMock()
+        let networkProxy = await NetworkProxyController(
+            name: "Hello Test",
+            masterBuilder: { _, _ in masterNetworkSpy },
+            playerBuilder: { _, _ in playerNetworkSpy }
+        )
 
-        networkMock = await NetworkController(name: "Hello Test", masterBuilder: { _, _ in
-            masterMock
-        }, playerBuilder: { _, _ in
-            playerMock
-        })
-        await networkMock.model.setMaster(delegate: masterDeleagteMock)
-        await networkMock.model.setPlayer(delegate: playerDelegateMock)
-        masterStoreAbstractionMock = masterMock
-        playerStoreAbstractionMock = playerMock
+        // Setup master
+        let masterRoot = try await MockRoot.createGameRoot()
+        try await MockRoot.resetTestData(for: masterRoot.adventureRoot)
+        try await MockRoot.resetGameController(for: masterRoot)
+        masterRoot.networkStore = network
+        masterRoot.networkProxyStore = networkProxy
 
-        networkProxyMock = await NetworkProxyController(name: "Hello Test", masterBuilder: { _, _ in
-            masterMock
-        }, playerBuilder: { _, _ in
-            playerMock
-        })
-
-        rootSut = try await MockRoot.createGameRoot()
-        try await MockRoot.resetTestData(for: rootSut.adventureRoot)
-        try await MockRoot.resetGameController(for: rootSut)
-        rootSut.networkStore = networkMock
-        rootSut.networkProxyStore = networkProxyMock
         let masterId = UUID()
-        gameConfigModelSut = GameConfigModel(id: masterId, state: .started, master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin"), players: [], controls: [])
-        await rootSut.gameModel.reset(gameConfig: gameConfigModelSut)
-        sut = await MasterController(root: rootSut, asProxy: false)
+        let masterGameConfig = GameConfigModel(
+            id: masterId,
+            state: .started,
+            master: MasterGameModel(id: masterId, type: .master, name: "Andrenalin"),
+            players: [],
+            controls: []
+        )
+        await masterRoot.gameModel.reset(gameConfig: masterGameConfig)
+        let master = await MasterController(root: masterRoot, asProxy: false)
 
-        rootPlayer = try await MockRoot.createGameRoot()
-        try await MockRoot.resetTestData(for: rootPlayer.adventureRoot)
-        try await MockRoot.resetGameController(for: rootPlayer)
-        rootPlayer.networkStore = networkMock
+        // Setup player
+        let playerRoot = try await MockRoot.createGameRoot()
+        try await MockRoot.resetTestData(for: playerRoot.adventureRoot)
+        try await MockRoot.resetGameController(for: playerRoot)
+        playerRoot.networkStore = network
 
         let playerId = UUID()
-        gameConfigModelPlayer = GameConfigModel(id: playerId, state: .started, master: .empty, players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")], controls: [])
-        await rootPlayer.gameModel.reset(gameConfig: gameConfigModelPlayer)
-        sutPlayer = await PlayerController(root: rootPlayer, asGameMaster: false)
+        let playerGameConfig = GameConfigModel(
+            id: playerId,
+            state: .started,
+            master: .empty,
+            players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")],
+            controls: []
+        )
+        await playerRoot.gameModel.reset(gameConfig: playerGameConfig)
+        let player = await PlayerController(root: playerRoot, asGameMaster: false)
+
+        return PlayerMasterControllerTestEnvironment(
+            master: master,
+            masterRoot: masterRoot,
+            masterGameConfig: masterGameConfig,
+            player: player,
+            playerRoot: playerRoot,
+            playerGameConfig: playerGameConfig,
+            masterDelegateSpy: masterDelegateSpy,
+            playerDelegateSpy: playerDelegateSpy,
+            masterNetworkSpy: masterNetworkSpy,
+            playerNetworkSpy: playerNetworkSpy,
+            network: network
+        )
     }
-    
-    @Test func handleAudio() async throws {
-        try await setUp()
-        try await MockRoot.importTestData(into: rootPlayer.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 0)
-        await #expect(rootPlayer.audioRoot.itemController.itemDataModel.items.count == 2)
+}
 
-        await rootSut.adventureRoot.startGame()
-        await rootPlayer.adventureRoot.startGame()
+@Suite("Player to master controller integration tests")
+struct PlayerMasterControllerTests {
 
-        // send show audio
-        let audioId = await rootPlayer.audioRoot.itemController.itemDataModel.items[1]
-        let version = await rootPlayer.audioRoot.itemController.itemOrEmpty(for: audioId).version
-        await #expect(rootPlayer.audioRoot.itemController.itemOrEmpty(for: audioId).entries.isEmpty)
-        await #expect(rootPlayer.audioRoot.gameController.currentId != audioId)
-        let audioShareData = try await rootPlayer.audioRoot.gameController.createGameData(for: audioId)
-        await sutPlayer.game(message: audioShareData, actionType: .generic)
-        let sendedAudioData = playerStoreAbstractionMock.requestData as? GameNetworkModel
+    @Test("Player sends audio to master and receives it back")
+    func handleAudio() async throws {
+        // Arrange
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 0)
+        await #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 2)
+        await env.masterRoot.adventureRoot.startGame()
+        await env.playerRoot.adventureRoot.startGame()
+
+        let audioId = await env.playerRoot.audioRoot.itemController.itemDataModel.items[1]
+        let version = await env.playerRoot.audioRoot.itemController.itemOrEmpty(for: audioId).version
+        await #expect(env.playerRoot.audioRoot.itemController.itemOrEmpty(for: audioId).entries.isEmpty)
+        await #expect(env.playerRoot.audioRoot.gameController.currentId != audioId)
+
+        // Act - Player sends audio to master
+        let audioShareData = try await env.playerRoot.audioRoot.gameController.createGameData(for: audioId)
+        await env.player.game(message: audioShareData, actionType: .generic)
+        let sendedAudioData = env.playerNetworkSpy.requestData as? GameNetworkModel
         #expect(nil != sendedAudioData)
 
-        let result = try await sut.handle(sendedAudioData!)
+        // Assert - Master receives and processes audio
+        let result = try await env.master.handle(sendedAudioData!)
         #expect(nil == result)
-        let resendAudioData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
+        let resendAudioData = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         #expect(resendAudioData!.type == .reveal)
         #expect(resendAudioData!.subType == .show)
         #expect(resendAudioData!.data.type == .audio)
-        await #expect(rootSut.audioRoot.gameController.currentId == audioId)
-        await #expect(rootSut.audioRoot.gameController.gameItem(for: audioId).version == version)
-        await #expect(rootSut.audioRoot.itemController.itemDataModel.items.count == 1)
-        await #expect(rootPlayer.audioRoot.gameController.currentId != audioId)
-        
-        let playerResult = try await sutPlayer.handle(resendAudioData!)
+        await #expect(env.masterRoot.audioRoot.gameController.currentId == audioId)
+        await #expect(env.masterRoot.audioRoot.gameController.gameItem(for: audioId).version == version)
+        await #expect(env.masterRoot.audioRoot.itemController.itemDataModel.items.count == 1)
+        await #expect(env.playerRoot.audioRoot.gameController.currentId != audioId)
+
+        // Act - Player receives audio back from master
+        let playerResult = try await env.player.handle(resendAudioData!)
+
+        // Assert - Player now has audio displayed
         #expect(nil != playerResult)
         #expect(playerResult!.subType == .ok)
-        await #expect(rootPlayer.audioRoot.gameController.currentId == audioId)
-        await #expect(rootPlayer.audioRoot.gameController.gameItem(for: audioId).version == version)
-        await #expect(rootPlayer.audioRoot.itemController.itemDataModel.items.count == 2)
+        await #expect(env.playerRoot.audioRoot.gameController.currentId == audioId)
+        await #expect(env.playerRoot.audioRoot.gameController.gameItem(for: audioId).version == version)
+        await #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 2)
     }
 
-    @Test func handlePhoto() async throws {
-        try await setUp()
-        try await MockRoot.importTestData(into: rootPlayer.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
-        await #expect(rootPlayer.photoRoot.itemController.itemDataModel.items.count == 3)
+    @Test("Player sends photo to master and receives it back")
+    func handlePhoto() async throws {
+        // Arrange
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
+        await #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 3)
+        await env.masterRoot.adventureRoot.startGame()
+        await env.playerRoot.adventureRoot.startGame()
 
-        await rootSut.adventureRoot.startGame()
-        await rootPlayer.adventureRoot.startGame()
+        let photoId = await env.playerRoot.photoRoot.itemController.itemDataModel.items[0]
+        let version = await env.playerRoot.photoRoot.itemController.itemOrEmpty(for: photoId).version
+        await #expect(env.playerRoot.photoRoot.gameController.currentId != photoId)
 
-        // send show photo
-        let photoId = await rootPlayer.photoRoot.itemController.itemDataModel.items[0]
-        let version = await rootPlayer.photoRoot.itemController.itemOrEmpty(for: photoId).version
-        await #expect(rootPlayer.photoRoot.gameController.currentId != photoId)
-        let photoShareData = try await rootPlayer.photoRoot.gameController.createGameData(for: photoId)
-        await sutPlayer.game(message: photoShareData, actionType: .generic)
-        let sendedPhotoData = playerStoreAbstractionMock.requestData as? GameNetworkModel
+        // Act - Player sends photo to master
+        let photoShareData = try await env.playerRoot.photoRoot.gameController.createGameData(for: photoId)
+        await env.player.game(message: photoShareData, actionType: .generic)
+        let sendedPhotoData = env.playerNetworkSpy.requestData as? GameNetworkModel
         #expect(nil != sendedPhotoData)
 
-        let result = try await sut.handle(sendedPhotoData!)
+        // Assert - Master receives and processes photo
+        let result = try await env.master.handle(sendedPhotoData!)
         #expect(nil == result)
-        let resendPhotoData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
+        let resendPhotoData = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         #expect(resendPhotoData!.type == .reveal)
         #expect(resendPhotoData!.subType == .show)
         #expect(resendPhotoData!.data.type == .photo)
-        await #expect(rootSut.photoRoot.gameController.currentId == photoId)
-        await #expect(rootSut.photoRoot.gameController.gameItem(for: photoId).version == version)
-        await #expect(rootSut.photoRoot.itemController.itemDataModel.items.count == 1)
-        await #expect(rootPlayer.photoRoot.gameController.currentId != photoId)
+        await #expect(env.masterRoot.photoRoot.gameController.currentId == photoId)
+        await #expect(env.masterRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
+        await #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.count == 1)
+        await #expect(env.playerRoot.photoRoot.gameController.currentId != photoId)
 
-        let playerResult = try await sutPlayer.handle(resendPhotoData!)
+        // Act - Player receives photo back from master
+        let playerResult = try await env.player.handle(resendPhotoData!)
+
+        // Assert - Player now has photo displayed
         #expect(nil != playerResult)
         #expect(playerResult!.subType == .ok)
-        await #expect(rootPlayer.photoRoot.gameController.currentId == photoId)
-        await #expect(rootPlayer.photoRoot.gameController.gameItem(for: photoId).version == version)
-        await #expect(rootPlayer.photoRoot.itemController.itemDataModel.items.count == 3)
+        await #expect(env.playerRoot.photoRoot.gameController.currentId == photoId)
+        await #expect(env.playerRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
+        await #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 3)
     }
 
-    @Test func handleSapce() async throws {
-        try await setUp()
-        try await MockRoot.importTestData(into: rootPlayer.adventureRoot, name: ResourcesDebug.spaceTestData, itemCounter: 0)
-        await #expect(rootPlayer.spaceRoot.itemController.itemDataModel.items.count == 1)
+    @Test("Player sends space to master and receives it back")
+    func handleSpace() async throws {
+        // Arrange
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.spaceTestData, itemCounter: 0)
+        await #expect(env.playerRoot.spaceRoot.itemController.itemDataModel.items.count == 1)
+        await env.masterRoot.adventureRoot.startGame()
+        await env.playerRoot.adventureRoot.startGame()
 
-        await rootSut.adventureRoot.startGame()
-        await rootPlayer.adventureRoot.startGame()
+        let spaceId = await env.playerRoot.spaceRoot.itemController.itemDataModel.items[0]
+        let version = await env.playerRoot.spaceRoot.itemController.itemOrEmpty(for: spaceId).version
+        await #expect(env.playerRoot.spaceRoot.gameController.currentId != spaceId)
 
-        // send show space
-        let spaceId = await rootPlayer.spaceRoot.itemController.itemDataModel.items[0]
-        let version = await rootPlayer.spaceRoot.itemController.itemOrEmpty(for: spaceId).version
-        await #expect(rootPlayer.spaceRoot.gameController.currentId != spaceId)
-        let spaceShareData = try await rootPlayer.spaceRoot.gameController.createGameData(for: spaceId)
-        await sutPlayer.game(message: spaceShareData, actionType: .generic)
-        let sendedSpaceData = playerStoreAbstractionMock.requestData as? GameNetworkModel
+        // Act - Player sends space to master
+        let spaceShareData = try await env.playerRoot.spaceRoot.gameController.createGameData(for: spaceId)
+        await env.player.game(message: spaceShareData, actionType: .generic)
+        let sendedSpaceData = env.playerNetworkSpy.requestData as? GameNetworkModel
         #expect(nil != sendedSpaceData)
 
-        let result = try await sut.handle(sendedSpaceData!)
+        // Assert - Master receives and processes space
+        let result = try await env.master.handle(sendedSpaceData!)
         #expect(nil == result)
-        let resendSpaceData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
+        let resendSpaceData = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         #expect(resendSpaceData!.type == .reveal)
         #expect(resendSpaceData!.subType == .show)
         #expect(resendSpaceData!.data.type == .space)
-        await #expect(rootSut.spaceRoot.gameController.currentId == spaceId)
-        await #expect(rootSut.spaceRoot.gameController.gameItem(for: spaceId).version == version)
-        await #expect(rootSut.spaceRoot.itemController.itemDataModel.items.count == 1)
-        await #expect(rootPlayer.spaceRoot.gameController.currentId != spaceId)
+        await #expect(env.masterRoot.spaceRoot.gameController.currentId == spaceId)
+        await #expect(env.masterRoot.spaceRoot.gameController.gameItem(for: spaceId).version == version)
+        await #expect(env.masterRoot.spaceRoot.itemController.itemDataModel.items.count == 1)
+        await #expect(env.playerRoot.spaceRoot.gameController.currentId != spaceId)
 
-        let playerResult = try await sutPlayer.handle(resendSpaceData!)
+        // Act - Player receives space back from master
+        let playerResult = try await env.player.handle(resendSpaceData!)
+
+        // Assert - Player now has space displayed
         #expect(nil != playerResult)
         #expect(playerResult!.subType == .ok)
-        await #expect(rootPlayer.spaceRoot.gameController.currentId == spaceId)
-        await #expect(rootPlayer.spaceRoot.gameController.gameItem(for: spaceId).version == version)
-        await #expect(rootPlayer.spaceRoot.itemController.itemDataModel.items.count == 1)
+        await #expect(env.playerRoot.spaceRoot.gameController.currentId == spaceId)
+        await #expect(env.playerRoot.spaceRoot.gameController.gameItem(for: spaceId).version == version)
+        await #expect(env.playerRoot.spaceRoot.itemController.itemDataModel.items.count == 1)
     }
 
-    @Test func handleCharacterUpdate() async throws {
-        try await setUp()
-        try await MockRoot.importTestData(into: rootPlayer.adventureRoot)
-        await #expect(rootPlayer.characterRoot.itemController.itemDataModel.items.count == 13)
+    @Test("Player sends character update to master")
+    func handleCharacterUpdate() async throws {
+        // Arrange
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.playerRoot.adventureRoot)
+        await #expect(env.playerRoot.characterRoot.itemController.itemDataModel.items.count == 13)
+        await env.masterRoot.adventureRoot.startGame()
+        await env.playerRoot.adventureRoot.startGame()
 
-        await rootSut.adventureRoot.startGame()
-        await rootPlayer.adventureRoot.startGame()
-
-        // send update Character
-        let characterId = await rootPlayer.characterRoot.itemController.itemDataModel.items[1]
-        var master = await rootSut.gameModel.gameConfig.master
+        let characterId = await env.playerRoot.characterRoot.itemController.itemDataModel.items[1]
+        var master = await env.masterRoot.gameModel.gameConfig.master
         master.characterId = characterId
-        await rootSut.gameModel.reset(master: master)
-        let photoId = await rootPlayer.characterRoot.itemController.itemOrEmpty(for: characterId).photoId
+        await env.masterRoot.gameModel.reset(master: master)
+        let photoId = await env.playerRoot.characterRoot.itemController.itemOrEmpty(for: characterId).photoId
         #expect(nil != photoId)
-        
-        let characterData = try? await rootPlayer.characterRoot.gameControllable.createGameData(for: characterId)
+
+        // Act - Player sends character update to master
+        let characterData = try? await env.playerRoot.characterRoot.gameControllable.createGameData(for: characterId)
         #expect(nil != characterData)
-        await sutPlayer.send(counter: 0, type: .update, subType: .store, updated: characterData!, useJournal: true)
-        let sendedCharacterData = playerStoreAbstractionMock.requestData as? GameNetworkModel
+        await env.player.send(counter: 0, type: .update, subType: .store, updated: characterData!, useJournal: true)
+        let sendedCharacterData = env.playerNetworkSpy.requestData as? GameNetworkModel
         #expect(nil != sendedCharacterData)
 
-        var result = try await sut.handle(sendedCharacterData!)
+        // Assert - Master receives and stores character
+        var result = try await env.master.handle(sendedCharacterData!)
         #expect(nil == result)
-        await #expect(rootSut.characterRoot.itemController.itemDataModel.items.count == 6)
-        await #expect(rootSut.photoRoot.itemController.itemDataModel.items.contains(photoId!))
-        
-        result = try await sut.handle(sendedCharacterData!)
+        await #expect(env.masterRoot.characterRoot.itemController.itemDataModel.items.count == 6)
+        await #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.contains(photoId!))
+
+        // Act - Send same character update again
+        result = try await env.master.handle(sendedCharacterData!)
+
+        // Assert - Master handles duplicate update gracefully
         #expect(nil == result)
-        await #expect(rootSut.characterRoot.itemController.itemDataModel.items.count == 6)
-        await #expect(rootSut.photoRoot.itemController.itemDataModel.items.contains(photoId!))
+        await #expect(env.masterRoot.characterRoot.itemController.itemDataModel.items.count == 6)
+        await #expect(env.masterRoot.photoRoot.itemController.itemDataModel.items.contains(photoId!))
     }
 }
 #endif
