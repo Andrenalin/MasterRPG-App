@@ -35,7 +35,7 @@ public final class SearchModel: Sendable {
             searchTags = []
             return
         }
-        Task.detached {
+        Task {
             await self.updateTagSuggestions(tagSearch: tagSearch)
         }
     }

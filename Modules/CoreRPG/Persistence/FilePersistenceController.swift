@@ -36,25 +36,22 @@ extension FilePersistenceController {
         guard type != .memory else { return await model.cache }
         let oldUrl = oldFileURL
         let loadUrl = fileURL
-        let backgroundTask = Task.detached(priority: priority) {
-            do {
-                try await migrateOldFile(oldUrl: oldUrl, newUrl: loadUrl)
-                let exists = FileManager.default.fileExists(atPath: loadUrl.relativePath)
-                if !exists {
-                    try FileManager.default.createDirectory(at: loadUrl.deletingLastPathComponent(), withIntermediateDirectories: true)
-                    try FilePersistenceController.saveModel(data: [], into: loadUrl)
-                }
-                let data = try Data(contentsOf: loadUrl)
-
-                let decoder = JSONDecoder()
-                let loadedData = try decoder.decode([DataModel].self, from: data)
-                return loadedData
-            } catch {
-                Logger.filePersistenceController.error("Error loading data \(error.localizedDescription, privacy: .public)")
+        do {
+            try await migrateOldFile(oldUrl: oldUrl, newUrl: loadUrl)
+            let exists = FileManager.default.fileExists(atPath: loadUrl.relativePath)
+            if !exists {
+                try FileManager.default.createDirectory(at: loadUrl.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try FilePersistenceController.saveModel(data: [], into: loadUrl)
             }
-            return []
+            let data = try Data(contentsOf: loadUrl)
+
+            let decoder = JSONDecoder()
+            let loadedData = try decoder.decode([DataModel].self, from: data)
+            return loadedData
+        } catch {
+            Logger.filePersistenceController.error("Error loading data \(error.localizedDescription, privacy: .public)")
         }
-        return await backgroundTask.value
+        return []
     }
 
     func save(data: [DataModel]) async {
@@ -63,14 +60,11 @@ extension FilePersistenceController {
             return
         }
         let saveURL = fileURL
-        let backgroundTask = Task.detached(priority: priority) {
-            do {
-                try FilePersistenceController.saveModel(data: data, into: saveURL)
-            } catch {
-                Logger.filePersistenceController.error("Error saving data \(error.localizedDescription, privacy: .public)")
-            }
+        do {
+            try FilePersistenceController.saveModel(data: data, into: saveURL)
+        } catch {
+            Logger.filePersistenceController.error("Error saving data \(error.localizedDescription, privacy: .public)")
         }
-        let _ = await backgroundTask.result
     }
 
     func remove() async {
@@ -79,10 +73,7 @@ extension FilePersistenceController {
             return
         }
         let removeURL = fileURL
-        let backgroundTask = Task.detached(priority: .userInitiated) {
-            try? FileManager.default.removeItem(at: removeURL)
-        }
-        let _ = await backgroundTask.value
+        try? FileManager.default.removeItem(at: removeURL)
     }
 }
 
@@ -91,26 +82,17 @@ extension FilePersistenceController {
 extension FilePersistenceController {
     func loadData(for uuid: String) async throws -> Data? {
         guard let url = try dataURL(for: uuid) else { return nil }
-        let loadTask = Task.detached(priority: priority) {
-            try Data(contentsOf: url)
-        }
-        return try await loadTask.value
+        return try Data(contentsOf: url)
     }
 
     func saveData(_ data: Data, for uuid: String) async throws {
         guard let url = try dataURL(for: uuid) else { return }
-        let loadTask = Task.detached(priority: priority) {
-            try data.write(to: url)
-        }
-        let _ = await loadTask.result
+        try data.write(to: url)
     }
 
     func removeData(for uuid: String) async throws {
         guard let url = try dataURL(for: uuid) else { return }
-        let loadTask = Task.detached(priority: priority) {
-            try FileManager.default.removeItem(at: url)
-        }
-        let _ = await loadTask.result
+        try FileManager.default.removeItem(at: url)
     }
 }
 

@@ -23,10 +23,7 @@ import Foundation
             counter += 1
             if counter % Self.lowPackageCount == 0 {
                 do {
-                    let waiter = Task.detached(priority: .background) {
-                        try await Task.sleep(for: .milliseconds(Self.throttleInMilliSeconds))
-                    }
-                    try await waiter.value
+                    try await Task.sleep(for: .milliseconds(Self.throttleInMilliSeconds))
                 } catch {
                     // do nothing on cancel
                 }

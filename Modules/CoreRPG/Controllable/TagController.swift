@@ -28,7 +28,7 @@ public struct TagController: Sendable {
         guard let context else { return }
         model.context = context
         
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
@@ -90,7 +90,7 @@ public struct TagController: Sendable {
     
     @MainActor private func updateDatabase(tag: String, count: Int, module: NetworkModules) {
         guard let context = model.context else { return }
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()

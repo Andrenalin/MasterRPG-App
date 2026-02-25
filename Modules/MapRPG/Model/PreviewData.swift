@@ -39,7 +39,7 @@ public extension MapRootModel {
         let editController = root.editController
         let photoCon = root.photoRoot.itemControllable
 #if DEBUG
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             let bundle = Resources.bundle
             guard let url = bundle.url(forResource: Resources.exampleFirstData, withExtension: "gmz") else {
                 print("url nil ")

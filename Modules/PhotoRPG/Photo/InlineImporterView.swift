@@ -153,7 +153,7 @@ struct InlineImporterView: View, Equatable {
         .onChange(of: selectedItem) {
             guard let localItem = selectedItem else { return }
             let id = itemId
-            Task.detached {
+            Task {
                 if let data = try? await localItem.loadTransferable(type: Data.self) {
                     await update(id: id, image: AKImage(data: data))
                 }

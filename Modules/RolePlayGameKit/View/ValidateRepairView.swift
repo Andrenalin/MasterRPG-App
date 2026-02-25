@@ -111,7 +111,7 @@ struct ValidateRepairView: View {
                 .foregroundStyle(.secondary)
         }
         .onAppear {
-            converterTask = Task.detached(priority: .userInitiated) {
+            converterTask = Task(priority: .userInitiated) {
                 await controller.start()
             }
             Task {

@@ -48,18 +48,15 @@ public struct FileDataController<Datatype: Codable & Storeable & Sendable>: Send
 public extension FileDataController {
     func fetch() async {
         let persistenceLoader = persistence
-        let backgroundTask = Task.detached(priority: priority) {
-            let decoder = JSONDecoder()
-            let jsonData = await persistenceLoader.load()
-            let data = jsonData.compactMap { entry in
-                if let restoreData = try? decoder.decode(Datatype.self, from: entry.data) {
-                    return restoreData
-                }
-                return nil
+        let decoder = JSONDecoder()
+        let jsonData = await persistenceLoader.load()
+        let data = jsonData.compactMap { entry in
+            if let restoreData = try? decoder.decode(Datatype.self, from: entry.data) {
+                return restoreData
             }
-            return data
+            return nil
         }
-        await model.setData(update: await backgroundTask.value)
+        await model.setData(update: data)
     }
 
     func save() async {

@@ -79,7 +79,7 @@ struct ViewerRootView: View {
             }
 #if !os(tvOS)
             Task {
-                let pdfTask = Task.detached {
+                let pdfTask = Task {
                     await root.itemController.pdfDocument(for: id)
                 }
                 let doc = await pdfTask.value

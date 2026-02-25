@@ -42,7 +42,7 @@ public extension TableRootModel {
                 editController.setCurrentItem(to: .previewWithData(from: itemController))
             }
             _ = await saveTask.result
-            Task.detached {
+            Task {
                 _ = await gameController.setCurrent(itemId: itemController.itemDataModel.items.first!)
             }
         }

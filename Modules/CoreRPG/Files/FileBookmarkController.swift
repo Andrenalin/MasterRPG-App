@@ -147,7 +147,7 @@ extension FileBookmarkController {
 
     func removeBookmark(fileId: UUID) {
         let model = fileBookmarkModel
-        Task.detached(priority: priority) {
+        Task(priority: priority) {
             await model.removeBookmark(fileId: fileId)
         }
     }

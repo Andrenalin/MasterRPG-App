@@ -101,11 +101,8 @@ struct PdfWrapperView: CustomViewRepresentable {
             Task { @MainActor in
                 searchModel.pdfSearching = true
                 searchModel.isSearching = true
-                let searchTask = Task.detached {
-                    await pdfView.document?.findString(searchText, withOptions: .caseInsensitive)
-                }
-                
-                let matches = await searchTask.value
+
+                let matches = await pdfView.document?.findString(searchText, withOptions: .caseInsensitive)
                 matches?.forEach { match in
                     match.color = AKColor.yellow
                 }

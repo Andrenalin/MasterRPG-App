@@ -23,7 +23,7 @@ public extension GeneratorRootModel {
         let importController = root.importController
         let editController = root.editController
 #if DEBUG
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             let bundle = Resources.bundle
             guard let url = bundle.url(forResource: Resources.exampleFirstData, withExtension: "gmz") else {
                 print("url nil ")

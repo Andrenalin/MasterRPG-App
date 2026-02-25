@@ -71,16 +71,13 @@ private extension CachePhotoView {
     }
 
     func loadImage() {
-        Task {
+        Task(priority: .userInitiated) {
             let fileId = model.id
-            let loaderTask = Task.detached(priority: .userInitiated) {
-                if highResolution {
-                    await cacheController.photoId(for: fileId, item: model, shouldDownload: false)
-                } else {
-                    await cacheController.thumbnailId(for: fileId, item: model)
-                }
+            if highResolution {
+                await cacheController.photoId(for: fileId, item: model, shouldDownload: false)
+            } else {
+                await cacheController.thumbnailId(for: fileId, item: model)
             }
-            _ = await loaderTask.result
             let newImage = highResolution ? await cacheController.photo(for: fileId) : await cacheController.thumbnail(for: fileId)
             withAnimation { cacheItemListModel.setImageCache(cacheType: highResolution ? .image : .thumbnail, itemId: fileId, image: newImage) }
             isLoading = false

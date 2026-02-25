@@ -17,7 +17,7 @@ import os.log
         guard let context else { return }
         model.context = context
         
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
@@ -122,7 +122,7 @@ private extension LinkRegisterController {
     
     @MainActor func updateDatabase(keyId: UUID, removedModel: LinkRegisterModel) {
         guard let context = model.context else { return }
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
@@ -149,7 +149,7 @@ private extension LinkRegisterController {
     
     @MainActor func updateDatabase(keyId: UUID, addedModel: LinkRegisterModel) {
         guard let context = model.context else { return }
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()

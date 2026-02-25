@@ -23,7 +23,7 @@ public extension SpaceRootModel {
         let root = SpaceRootModel.preview
         let importController = root.importController
 #if DEBUG
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             let bundle = Resources.bundle
             guard let url = bundle.url(forResource: Resources.exampleFirstData, withExtension: "gmz") else {
                 print("url nil ")

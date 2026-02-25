@@ -31,7 +31,7 @@ struct AsyncThumbnail: View {
     private func loadImage() {
         let cacheController = root.itemController.cacheController
         let id = model.id
-        let loaderTask = Task.detached(priority: .userInitiated) {
+        let loaderTask = Task(priority: .userInitiated) {
             await cacheController?.thumbnailId(for: id, item: model)
         }
 

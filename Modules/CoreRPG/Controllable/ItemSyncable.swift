@@ -14,14 +14,14 @@ public protocol SyncDataControllable: Sendable {
 
 public extension SyncDataControllable {
     func start() {
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             await fetchUpdates()
         }
     }
-    
+
     @Sendable
     func updateFromSync(deletedIds: [UUID], insertedIds: [UUID], updatedIds: [UUID]) {
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             if !deletedIds.isEmpty {
                 let ids = try await dataControllable.fetchIds()
                 let removedIds = await Set(itemControllable.itemDataModel.items).subtracting(ids)

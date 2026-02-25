@@ -89,22 +89,17 @@ extension AudioController {
 extension AudioController {
     func add(audio models: [AudioModel], replace: Bool = false) async {
         if replace {
-            let resetTask = Task { @MainActor in
+            await MainActor.run {
                 model.playList = []
                 model.isPlaybackComplete = false
             }
-            _ = await resetTask.result
         }
-        
+
         for item in models {
-            let loader = Task.detached { [weak self] in
-                return await self?.audioAsset(for: item)
-            }
-            let loaderTask = Task { @MainActor in
-                guard let playItem = await loader.value else { return }
+            guard let playItem = await audioAsset(for: item) else { continue }
+            await MainActor.run {
                 model.playList.append(playItem)
             }
-            _ = await loaderTask.result
         }
     }
     
