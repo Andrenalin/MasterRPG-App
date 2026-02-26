@@ -97,6 +97,7 @@ struct GameToolBar: View {
                     Image(systemName: showToolBar ? "arrow.left.square.fill" : "arrow.right.square")
                         .contentTransition(.symbolEffect(.replace.downUp))
                         .frame(height: 24)
+                        .accessibilityLabel(AccessibilityLabelCache.shared.label(for: showToolBar ? "arrow.left.square.fill" : "arrow.right.square") ?? "Toggle toolbar")
                 }
             }
             HStack {
@@ -109,6 +110,7 @@ struct GameToolBar: View {
                                 Image(systemName: model.iconDisplaMode)
                                     .contentTransition(.symbolEffect(.replace.byLayer))
                                     .frame(width: 28, height: 24)
+                                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: model.iconDisplaMode) ?? "Display mode")
                             }
                             
                             barButtonViews
@@ -146,11 +148,13 @@ struct GameToolBar: View {
         Button {
             withAnimation { model.isStreaming.toggle() }
         } label: {
-            Image(systemName: "person.2\(model.isStreaming ? ".fill" : ".slash")")
+            let symbolName = "person.2\(model.isStreaming ? ".fill" : ".slash")"
+            Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .frame(height: 24)
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Streaming")
         }
-        
+
         Button {
 #if os(macOS)
             openWindow(id: NetworkModules.value.linkWindowId)
@@ -158,16 +162,20 @@ struct GameToolBar: View {
             showPinSelection.toggle()
 #endif
         } label: {
-            Image(systemName: "mappin\(showPinSelection ? ".and.ellipse" : "")")
+            let symbolName = "mappin\(showPinSelection ? ".and.ellipse" : "")"
+            Image(systemName: symbolName)
                 .frame(width: 24, height: 24)
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Pin selection")
         }
-        
+
         Button {
             withAnimation { model.isPointing.toggle() }
         } label: {
-            Image(systemName: "hand.point.up.left\(model.isPointing ? ".fill" : "")")
+            let symbolName = "hand.point.up.left\(model.isPointing ? ".fill" : "")"
+            Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.offUp))
                 .frame(height: 24)
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Pointing")
         }
     }
 
@@ -199,9 +207,11 @@ struct GameToolBar: View {
                     model.hexScale = map.hexMapScale
                 }
             } label: {
-                Image(systemName: editController.isHexMap(for: root.gameController.currentItem()) ? "hexagon.fill" : "hexagon")
+                let symbolName = editController.isHexMap(for: root.gameController.currentItem()) ? "hexagon.fill" : "hexagon"
+                Image(systemName: symbolName)
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
                     .frame(width: 24, height: 24)
+                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Hex map")
             }
             Text("Hex Map Scale", bundle: .module)
 
@@ -219,8 +229,10 @@ struct GameToolBar: View {
         Button {
             hideScales.toggle()
         } label: {
-            Image(systemName: "square.arrowtriangle.4.outward")
+            let symbolName = "square.arrowtriangle.4.outward"
+            Image(systemName: symbolName)
                 .frame(width: 24, height: 24)
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Toggle scales")
         }
     }
 
@@ -235,8 +247,10 @@ struct GameToolBar: View {
                 model.resetReshare()
             }
         } label: {
-            Image(systemName: "square.and.arrow.up")
+            let symbolName = "square.and.arrow.up"
+            Image(systemName: symbolName)
                 .frame(width: 24, height: 24)
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Share")
         }
         .disabled(!model.canReshare)
         .opacity(hideScales ? 0 : 1)

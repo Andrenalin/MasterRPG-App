@@ -185,29 +185,35 @@ private extension EditToolBarViewModifier {
         Button {
             resetSelectedIndex(shouldIncrease: true)
         } label: {
-            Image(systemName: canIncrease ? "forward" : "plus")
+            let symbolName = canIncrease ? "forward" : "plus"
+            Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Next")
         }
     }
-    
+
     @ViewBuilder var previousEntryButton: some View {
         Button {
             resetSelectedIndex(shouldIncrease: false)
         } label: {
-            Image(systemName: "backward")
+            let symbolName = "backward"
+            Image(systemName: symbolName)
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Previous")
         }
     }
-    
+
     @ViewBuilder var closeButtonView: some View {
         if !model.hideCloseButton {
             Button {
                 dismiss()
             } label: {
-                Image(systemName: "checkmark")
+                let symbolName = "checkmark"
+                Image(systemName: symbolName)
+                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Close")
             }
         }
     }
-    
+
     @ViewBuilder var showPinSelectionButton: some View {
         Button {
 #if os(macOS)
@@ -216,30 +222,35 @@ private extension EditToolBarViewModifier {
             showPinSelection.toggle()
 #endif
         } label: {
-            Image(systemName: "mappin\(showPinSelection ? ".and.ellipse" : "")")
+            let symbolName = "mappin\(showPinSelection ? ".and.ellipse" : "")"
+            Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Pin selection")
         }
     }
-    
+
     @ViewBuilder var toggleDisplayModeButton: some View {
         Button {
             withAnimation { model.toggleDisplayMode() }
         } label: {
             Image(systemName: model.iconDisplaMode)
                 .contentTransition(.symbolEffect(.replace.byLayer))
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: model.iconDisplaMode) ?? "Display mode")
         }
     }
-    
+
     @ViewBuilder var hideScaleButton: some View {
         if !model.hideCloseButton {
             Button {
                 hideScales.toggle()
             } label: {
-                Image(systemName: "square.arrowtriangle.4.outward")
+                let symbolName = "square.arrowtriangle.4.outward"
+                Image(systemName: symbolName)
+                    .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Toggle scales")
             }
         }
     }
-    
+
     @ViewBuilder var hexCreationButton: some View {
         Button {
             guard let mapModel = model.mapModel else { return }
@@ -248,8 +259,10 @@ private extension EditToolBarViewModifier {
                 withAnimation { hideScales <=> false }
             }
         } label: {
-            Image(systemName: editController.isHexMap(for: model.mapModel ?? MapModel.empty) ? "hexagon.fill" : "hexagon")
+            let symbolName = editController.isHexMap(for: model.mapModel ?? MapModel.empty) ? "hexagon.fill" : "hexagon"
+            Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Hex map")
         }
     }
     
