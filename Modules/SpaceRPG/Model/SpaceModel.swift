@@ -35,16 +35,16 @@ public final class SpaceModel: Identifiable, @unchecked Sendable {
     public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<SpaceModel.CodingKeys> = try decoder.container(keyedBy: SpaceModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: SpaceModel.CodingKeys._id)
-        self._name_ = try container.decode(CRDT<String>.self, forKey: SpaceModel.CodingKeys._name_)
-        self._description_ = try container.decode(CRDT<String>.self, forKey: SpaceModel.CodingKeys._description_)
-        self._tags_ = try container.decode(CRDT<[String]>.self, forKey: SpaceModel.CodingKeys._tags_)
-        self._category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: SpaceModel.CodingKeys._category_)
-        self._displayState = try container.decode(Int.self, forKey: SpaceModel.CodingKeys._displayState)
-        self._degrees_ = try container.decode(CRDT<Double>.self, forKey: SpaceModel.CodingKeys._degrees_)
-        self._fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: SpaceModel.CodingKeys._fileUrl_)
-        self._entries_ = try container.decode(CRDTDataUpdate<[SpaceEntryModel]>.self, forKey: SpaceModel.CodingKeys._entries_)
-        self._parentId = try container.decodeIfPresent(UUID.self, forKey: SpaceModel.CodingKeys._parentId)
+        self.id = try container.decode(UUID.self, forKey: SpaceModel.CodingKeys._id)
+        self.name_ = try container.decode(CRDT<String>.self, forKey: SpaceModel.CodingKeys._name_)
+        self.description_ = try container.decode(CRDT<String>.self, forKey: SpaceModel.CodingKeys._description_)
+        self.tags_ = try container.decode(CRDT<[String]>.self, forKey: SpaceModel.CodingKeys._tags_)
+        self.category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: SpaceModel.CodingKeys._category_)
+        self.displayState = try container.decode(Int.self, forKey: SpaceModel.CodingKeys._displayState)
+        self.degrees_ = try container.decode(CRDT<Double>.self, forKey: SpaceModel.CodingKeys._degrees_)
+        self.fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: SpaceModel.CodingKeys._fileUrl_)
+        self.entries_ = try container.decode(CRDTDataUpdate<[SpaceEntryModel]>.self, forKey: SpaceModel.CodingKeys._entries_)
+        self.parentId = try container.decodeIfPresent(UUID.self, forKey: SpaceModel.CodingKeys._parentId)
     }
 
     public var id: UUID
@@ -53,25 +53,25 @@ public final class SpaceModel: Identifiable, @unchecked Sendable {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
-    var name_: CRDT<String>
+    @ObservationIgnored var name_: CRDT<String>
 
     public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
-    var description_: CRDT<String>
+    @ObservationIgnored var description_: CRDT<String>
 
     public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
-    var tags_: CRDT<[String]>
+    @ObservationIgnored var tags_: CRDT<[String]>
 
     public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
-    var category_: CRDT<ItemListCategory>
+    @ObservationIgnored var category_: CRDT<ItemListCategory>
 
     public var displayState: Int
 
@@ -79,19 +79,19 @@ public final class SpaceModel: Identifiable, @unchecked Sendable {
         get { degrees_.wrappedValue }
         set { degrees_.wrappedValue = newValue }
     }
-    var degrees_: CRDT<Double>
+    @ObservationIgnored var degrees_: CRDT<Double>
 
     public var fileUrl: FileUrl? {
         get { fileUrl_.wrappedValue }
         set { fileUrl_.wrappedValue = newValue }
     }
-    var fileUrl_: CRDTDataUpdate<FileUrl?>
+    @ObservationIgnored var fileUrl_: CRDTDataUpdate<FileUrl?>
     
     public var entries: [SpaceEntryModel] {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
-    var entries_: CRDTDataUpdate<[SpaceEntryModel]>
+    @ObservationIgnored var entries_: CRDTDataUpdate<[SpaceEntryModel]>
 
     public var parentId: UUID? = nil
     
@@ -131,14 +131,16 @@ extension SpaceModel: ItemDiffComparable {
     }
 
     public func isSame(_ other: SpaceModel) -> Bool {
-        name == other.name &&
-        description == other.description &&
-        tags == other.tags &&
-        category == other.category &&
-        degrees == other.degrees &&
-        fileUrl_.update == other.fileUrl_.update &&
-        entries_.update == other.entries_.update &&
-        parentId == other.parentId
+        // Fast checks first: cheapest comparisons and most likely to differ
+        guard parentId == other.parentId else { return false }
+        guard fileUrl_.update == other.fileUrl_.update,
+              entries_.update == other.entries_.update else { return false }
+        guard degrees == other.degrees,
+              category == other.category else { return false }
+        guard name == other.name else { return false }
+        guard tags == other.tags else { return false }
+        guard description == other.description else { return false }
+        return true
     }
     
     public var version: Int {
@@ -230,16 +232,16 @@ extension SpaceModel: Codable {
     public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<SpaceModel.CodingKeys> = encoder.container(keyedBy: SpaceModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: SpaceModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: SpaceModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: SpaceModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: SpaceModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: SpaceModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: SpaceModel.CodingKeys._displayState)
-        try container.encode(self._degrees_, forKey: SpaceModel.CodingKeys._degrees_)
-        try container.encode(self._fileUrl_, forKey: SpaceModel.CodingKeys._fileUrl_)
-        try container.encode(self._entries_, forKey: SpaceModel.CodingKeys._entries_)
-        try container.encodeIfPresent(self._parentId, forKey: SpaceModel.CodingKeys._parentId)
+        try container.encode(self.id, forKey: SpaceModel.CodingKeys._id)
+        try container.encode(self.name_, forKey: SpaceModel.CodingKeys._name_)
+        try container.encode(self.description_, forKey: SpaceModel.CodingKeys._description_)
+        try container.encode(self.tags_, forKey: SpaceModel.CodingKeys._tags_)
+        try container.encode(self.category_, forKey: SpaceModel.CodingKeys._category_)
+        try container.encode(self.displayState, forKey: SpaceModel.CodingKeys._displayState)
+        try container.encode(self.degrees_, forKey: SpaceModel.CodingKeys._degrees_)
+        try container.encode(self.fileUrl_, forKey: SpaceModel.CodingKeys._fileUrl_)
+        try container.encode(self.entries_, forKey: SpaceModel.CodingKeys._entries_)
+        try container.encodeIfPresent(self.parentId, forKey: SpaceModel.CodingKeys._parentId)
     }
 }
 

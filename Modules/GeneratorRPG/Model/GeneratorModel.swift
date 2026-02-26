@@ -35,16 +35,16 @@ final class GeneratorModel: Identifiable, @unchecked Sendable {
     init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<GeneratorModel.CodingKeys> = try decoder.container(keyedBy: GeneratorModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: GeneratorModel.CodingKeys._id)
-        self._name_ = try container.decode(CRDT<String>.self, forKey: GeneratorModel.CodingKeys._name_)
-        self._description_ = try container.decode(CRDT<String>.self, forKey: GeneratorModel.CodingKeys._description_)
-        self._tags_ = try container.decode(CRDT<[String]>.self, forKey: GeneratorModel.CodingKeys._tags_)
-        self._category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: GeneratorModel.CodingKeys._category_)
-        self._displayState = try container.decode(Int.self, forKey: GeneratorModel.CodingKeys._displayState)
-        self._entries_ = try container.decode(CRDTDataUpdate<[ChildEntryModel]>.self, forKey: GeneratorModel.CodingKeys._entries_)
-        self._parentId = try container.decodeIfPresent(UUID.self, forKey: GeneratorModel.CodingKeys._parentId)
-        self._genType = try container.decode(GenType.self, forKey: GeneratorModel.CodingKeys._genType)
-        self._referenceId = try container.decodeIfPresent(UUID.self, forKey: GeneratorModel.CodingKeys._referenceId)
+        self.id = try container.decode(UUID.self, forKey: GeneratorModel.CodingKeys._id)
+        self.name_ = try container.decode(CRDT<String>.self, forKey: GeneratorModel.CodingKeys._name_)
+        self.description_ = try container.decode(CRDT<String>.self, forKey: GeneratorModel.CodingKeys._description_)
+        self.tags_ = try container.decode(CRDT<[String]>.self, forKey: GeneratorModel.CodingKeys._tags_)
+        self.category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: GeneratorModel.CodingKeys._category_)
+        self.displayState = try container.decode(Int.self, forKey: GeneratorModel.CodingKeys._displayState)
+        self.entries_ = try container.decode(CRDTDataUpdate<[ChildEntryModel]>.self, forKey: GeneratorModel.CodingKeys._entries_)
+        self.parentId = try container.decodeIfPresent(UUID.self, forKey: GeneratorModel.CodingKeys._parentId)
+        self.genType = try container.decode(GenType.self, forKey: GeneratorModel.CodingKeys._genType)
+        self.referenceId = try container.decodeIfPresent(UUID.self, forKey: GeneratorModel.CodingKeys._referenceId)
     }
 
     var id: UUID
@@ -53,25 +53,25 @@ final class GeneratorModel: Identifiable, @unchecked Sendable {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
-    var name_: CRDT<String>
+    @ObservationIgnored var name_: CRDT<String>
 
     var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
-    var description_: CRDT<String>
+    @ObservationIgnored var description_: CRDT<String>
 
     var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
-    var tags_: CRDT<[String]>
+    @ObservationIgnored var tags_: CRDT<[String]>
 
     var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
-    var category_: CRDT<ItemListCategory>
+    @ObservationIgnored var category_: CRDT<ItemListCategory>
 
     var displayState: Int
 
@@ -79,7 +79,7 @@ final class GeneratorModel: Identifiable, @unchecked Sendable {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
-    var entries_: CRDTDataUpdate<[ChildEntryModel]>
+    @ObservationIgnored var entries_: CRDTDataUpdate<[ChildEntryModel]>
 
     var parentId: UUID? = nil
     
@@ -239,15 +239,15 @@ extension GeneratorModel: Equatable, Hashable, Comparable, Codable {
     final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<GeneratorModel.CodingKeys> = encoder.container(keyedBy: GeneratorModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: GeneratorModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: GeneratorModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: GeneratorModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: GeneratorModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: GeneratorModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: GeneratorModel.CodingKeys._displayState)
-        try container.encode(self._entries_, forKey: GeneratorModel.CodingKeys._entries_)
-        try container.encodeIfPresent(self._parentId, forKey: GeneratorModel.CodingKeys._parentId)
-        try container.encode(self._genType, forKey: GeneratorModel.CodingKeys._genType)
-        try container.encodeIfPresent(self._referenceId, forKey: GeneratorModel.CodingKeys._referenceId)
+        try container.encode(self.id, forKey: GeneratorModel.CodingKeys._id)
+        try container.encode(self.name_, forKey: GeneratorModel.CodingKeys._name_)
+        try container.encode(self.description_, forKey: GeneratorModel.CodingKeys._description_)
+        try container.encode(self.tags_, forKey: GeneratorModel.CodingKeys._tags_)
+        try container.encode(self.category_, forKey: GeneratorModel.CodingKeys._category_)
+        try container.encode(self.displayState, forKey: GeneratorModel.CodingKeys._displayState)
+        try container.encode(self.entries_, forKey: GeneratorModel.CodingKeys._entries_)
+        try container.encodeIfPresent(self.parentId, forKey: GeneratorModel.CodingKeys._parentId)
+        try container.encode(self.genType, forKey: GeneratorModel.CodingKeys._genType)
+        try container.encodeIfPresent(self.referenceId, forKey: GeneratorModel.CodingKeys._referenceId)
     }
 }

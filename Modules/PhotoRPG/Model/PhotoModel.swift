@@ -4,8 +4,48 @@ import CoreRPG
 import Foundation
 import Observation
 
+// Equality cache for PhotoModel version-based comparisons
+private final class PhotoModelEqualityCache: @unchecked Sendable {
+    private struct CacheKey: Hashable {
+        let lhsId: UUID
+        let rhsId: UUID
+        let lhsVersion: Int
+        let rhsVersion: Int
+    }
+
+    private var cache: [CacheKey: Bool] = [:]
+    private let lock = NSLock()
+    private let maxCacheSize = 1000
+
+    func get(lhsId: UUID, rhsId: UUID, lhsVersion: Int, rhsVersion: Int) -> Bool? {
+        let key = CacheKey(lhsId: lhsId, rhsId: rhsId, lhsVersion: lhsVersion, rhsVersion: rhsVersion)
+        lock.lock()
+        defer { lock.unlock() }
+        return cache[key]
+    }
+
+    func set(lhsId: UUID, rhsId: UUID, lhsVersion: Int, rhsVersion: Int, result: Bool) {
+        let key = CacheKey(lhsId: lhsId, rhsId: rhsId, lhsVersion: lhsVersion, rhsVersion: rhsVersion)
+
+        lock.lock()
+        defer { lock.unlock() }
+
+        // Simple cache eviction: clear half the cache when full
+        if cache.count >= maxCacheSize {
+            let keysToRemove = cache.keys.prefix(maxCacheSize / 2)
+            for keyToRemove in keysToRemove {
+                cache.removeValue(forKey: keyToRemove)
+            }
+        }
+
+        cache[key] = result
+    }
+}
+
 @Observable
 public final class PhotoModel: Identifiable, @unchecked Sendable {
+    private static let equalityCache = PhotoModelEqualityCache()
+
     init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, degrees: Double = 0, fileUrl: FileUrl? = nil, entries: [PhotoEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
@@ -35,16 +75,16 @@ public final class PhotoModel: Identifiable, @unchecked Sendable {
     public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<PhotoModel.CodingKeys> = try decoder.container(keyedBy: PhotoModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: PhotoModel.CodingKeys._id)
-        self._name_ = try container.decode(CRDT<String>.self, forKey: PhotoModel.CodingKeys._name_)
-        self._description_ = try container.decode(CRDT<String>.self, forKey: PhotoModel.CodingKeys._description_)
-        self._tags_ = try container.decode(CRDT<[String]>.self, forKey: PhotoModel.CodingKeys._tags_)
-        self._category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: PhotoModel.CodingKeys._category_)
-        self._displayState = try container.decode(Int.self, forKey: PhotoModel.CodingKeys._displayState)
-        self._degrees_ = try container.decode(CRDT<Double>.self, forKey: PhotoModel.CodingKeys._degrees_)
-        self._fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: PhotoModel.CodingKeys._fileUrl_)
-        self._entries_ = try container.decode(CRDTDataUpdate<[PhotoEntryModel]>.self, forKey: PhotoModel.CodingKeys._entries_)
-        self._parentId = try container.decodeIfPresent(UUID.self, forKey: PhotoModel.CodingKeys._parentId)
+        self.id = try container.decode(UUID.self, forKey: PhotoModel.CodingKeys._id)
+        self.name_ = try container.decode(CRDT<String>.self, forKey: PhotoModel.CodingKeys._name_)
+        self.description_ = try container.decode(CRDT<String>.self, forKey: PhotoModel.CodingKeys._description_)
+        self.tags_ = try container.decode(CRDT<[String]>.self, forKey: PhotoModel.CodingKeys._tags_)
+        self.category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: PhotoModel.CodingKeys._category_)
+        self.displayState = try container.decode(Int.self, forKey: PhotoModel.CodingKeys._displayState)
+        self.degrees_ = try container.decode(CRDT<Double>.self, forKey: PhotoModel.CodingKeys._degrees_)
+        self.fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: PhotoModel.CodingKeys._fileUrl_)
+        self.entries_ = try container.decode(CRDTDataUpdate<[PhotoEntryModel]>.self, forKey: PhotoModel.CodingKeys._entries_)
+        self.parentId = try container.decodeIfPresent(UUID.self, forKey: PhotoModel.CodingKeys._parentId)
     }
 
     public var id: UUID
@@ -53,25 +93,25 @@ public final class PhotoModel: Identifiable, @unchecked Sendable {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
-    var name_: CRDT<String>
+    @ObservationIgnored var name_: CRDT<String>
 
     public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
-    var description_: CRDT<String>
+    @ObservationIgnored var description_: CRDT<String>
 
     public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
-    var tags_: CRDT<[String]>
+    @ObservationIgnored var tags_: CRDT<[String]>
 
     public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
-    var category_: CRDT<ItemListCategory>
+    @ObservationIgnored var category_: CRDT<ItemListCategory>
 
     public var displayState: Int
 
@@ -79,19 +119,19 @@ public final class PhotoModel: Identifiable, @unchecked Sendable {
         get { degrees_.wrappedValue }
         set { degrees_.wrappedValue = newValue }
     }
-    var degrees_: CRDT<Double>
+    @ObservationIgnored var degrees_: CRDT<Double>
 
     public var fileUrl: FileUrl? {
         get { fileUrl_.wrappedValue }
         set { fileUrl_.wrappedValue = newValue }
     }
-    var fileUrl_: CRDTDataUpdate<FileUrl?>
-    
+    @ObservationIgnored var fileUrl_: CRDTDataUpdate<FileUrl?>
+
     public var entries: [PhotoEntryModel] {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
-    var entries_: CRDTDataUpdate<[PhotoEntryModel]>
+    @ObservationIgnored var entries_: CRDTDataUpdate<[PhotoEntryModel]>
 
     public var parentId: UUID? = nil
     
@@ -130,19 +170,76 @@ extension PhotoModel: ItemDiffComparable {
     }
 
     public func isSame(_ other: PhotoModel) -> Bool {
-        name == other.name &&
-        description == other.description &&
-        tags == other.tags &&
-        category == other.category &&
-        degrees == other.degrees &&
-        fileUrl_.update == other.fileUrl_.update &&
-        entries_.update == other.entries_.update &&
-        parentId == other.parentId &&
-        // santity checks
-        entries.count == other.entries.count &&
-        entries.enumerated().allSatisfy { index, entry in
-            entry == other.entries[index]
+        // Version-based caching: check if we've already compared these versions
+        let lhsVersion = self.version
+        let rhsVersion = other.version
+
+        if let cachedResult = Self.equalityCache.get(
+            lhsId: self.id,
+            rhsId: other.id,
+            lhsVersion: lhsVersion,
+            rhsVersion: rhsVersion
+        ) {
+            return cachedResult
         }
+
+        // Fast checks first: cheapest comparisons and most likely to differ
+        // Check counts first (O(1) integer comparison)
+        guard entries.count == other.entries.count else {
+            Self.equalityCache.set(lhsId: self.id, rhsId: other.id, lhsVersion: lhsVersion, rhsVersion: rhsVersion, result: false)
+            return false
+        }
+
+        // Check parentId (O(1) UUID comparison, optional so likely different)
+        guard parentId == other.parentId else {
+            Self.equalityCache.set(lhsId: self.id, rhsId: other.id, lhsVersion: lhsVersion, rhsVersion: rhsVersion, result: false)
+            return false
+        }
+
+        // Check update hashes (O(1) integer comparisons, changes frequently)
+        guard fileUrl_.update == other.fileUrl_.update,
+              entries_.update == other.entries_.update else {
+            Self.equalityCache.set(lhsId: self.id, rhsId: other.id, lhsVersion: lhsVersion, rhsVersion: rhsVersion, result: false)
+            return false
+        }
+
+        // Check scalar values (O(1) but less likely to differ than above)
+        guard degrees == other.degrees,
+              category == other.category else {
+            Self.equalityCache.set(lhsId: self.id, rhsId: other.id, lhsVersion: lhsVersion, rhsVersion: rhsVersion, result: false)
+            return false
+        }
+
+        // Check strings (O(n) but short strings, likely to differ)
+        guard name == other.name else {
+            Self.equalityCache.set(lhsId: self.id, rhsId: other.id, lhsVersion: lhsVersion, rhsVersion: rhsVersion, result: false)
+            return false
+        }
+
+        // Check arrays (O(n) comparisons)
+        guard tags == other.tags else {
+            Self.equalityCache.set(lhsId: self.id, rhsId: other.id, lhsVersion: lhsVersion, rhsVersion: rhsVersion, result: false)
+            return false
+        }
+
+        // Most expensive checks last
+        // Check description (potentially long string)
+        guard description == other.description else {
+            Self.equalityCache.set(lhsId: self.id, rhsId: other.id, lhsVersion: lhsVersion, rhsVersion: rhsVersion, result: false)
+            return false
+        }
+
+        // Most expensive: deep equality check on entries array
+        for (index, entry) in entries.enumerated() {
+            if entry != other.entries[index] {
+                Self.equalityCache.set(lhsId: self.id, rhsId: other.id, lhsVersion: lhsVersion, rhsVersion: rhsVersion, result: false)
+                return false
+            }
+        }
+
+        // Cache and return true
+        Self.equalityCache.set(lhsId: self.id, rhsId: other.id, lhsVersion: lhsVersion, rhsVersion: rhsVersion, result: true)
+        return true
     }
     
     public var version: Int {
@@ -239,16 +336,16 @@ extension PhotoModel: Codable {
     final public func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<PhotoModel.CodingKeys> = encoder.container(keyedBy: PhotoModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: PhotoModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: PhotoModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: PhotoModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: PhotoModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: PhotoModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: PhotoModel.CodingKeys._displayState)
-        try container.encode(self._degrees_, forKey: PhotoModel.CodingKeys._degrees_)
-        try container.encode(self._fileUrl_, forKey: PhotoModel.CodingKeys._fileUrl_)
-        try container.encode(self._entries_, forKey: PhotoModel.CodingKeys._entries_)
-        try container.encodeIfPresent(self._parentId, forKey: PhotoModel.CodingKeys._parentId)
+        try container.encode(self.id, forKey: PhotoModel.CodingKeys._id)
+        try container.encode(self.name_, forKey: PhotoModel.CodingKeys._name_)
+        try container.encode(self.description_, forKey: PhotoModel.CodingKeys._description_)
+        try container.encode(self.tags_, forKey: PhotoModel.CodingKeys._tags_)
+        try container.encode(self.category_, forKey: PhotoModel.CodingKeys._category_)
+        try container.encode(self.displayState, forKey: PhotoModel.CodingKeys._displayState)
+        try container.encode(self.degrees_, forKey: PhotoModel.CodingKeys._degrees_)
+        try container.encode(self.fileUrl_, forKey: PhotoModel.CodingKeys._fileUrl_)
+        try container.encode(self.entries_, forKey: PhotoModel.CodingKeys._entries_)
+        try container.encodeIfPresent(self.parentId, forKey: PhotoModel.CodingKeys._parentId)
     }
 }
 

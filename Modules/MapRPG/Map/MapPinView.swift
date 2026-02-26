@@ -58,7 +58,7 @@ final class MapPinViewModel {
     }
 }
 
-struct MapPinView: View {
+struct MapPinView: View, Equatable {
     let model: MapPinViewModel
     let pinId: UUID
     let pinSize: CGSize
@@ -68,12 +68,24 @@ struct MapPinView: View {
     let tapAction: (() -> Void)?
     let doubleTapAction: (() -> Void)?
     let dragEndAction: (() -> Void)?
-    
+
     @Environment(MapRootModel.self) private var root
-    
+
     @GestureState private var isDragging = false
     @State private var isDraggingStarts = false
-    
+
+    // Equatable implementation: compare stable properties that affect rendering
+    static func == (lhs: MapPinView, rhs: MapPinView) -> Bool {
+        lhs.pinId == rhs.pinId &&
+        lhs.pinSize == rhs.pinSize &&
+        lhs.isShown == rhs.isShown &&
+        lhs.borderColor == rhs.borderColor &&
+        lhs.canDrag == rhs.canDrag &&
+        lhs.model.pinPointer(for: lhs.pinId)?.location == rhs.model.pinPointer(for: rhs.pinId)?.location &&
+        lhs.model.pinPointer(for: lhs.pinId)?.size == rhs.model.pinPointer(for: rhs.pinId)?.size &&
+        lhs.model.pinPointer(for: lhs.pinId)?.photoId == rhs.model.pinPointer(for: rhs.pinId)?.photoId
+    }
+
     var body: some View {
 #if os(macOS)
         pinView

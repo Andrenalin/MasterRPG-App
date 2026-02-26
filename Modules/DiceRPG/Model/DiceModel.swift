@@ -60,28 +60,28 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
     public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<DiceModel.CodingKeys> = try decoder.container(keyedBy: DiceModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: DiceModel.CodingKeys._id)
-        self._name_ = try container.decode(CRDT<String>.self, forKey: DiceModel.CodingKeys._name_)
-        self._description_ = try container.decode(CRDT<String>.self, forKey: DiceModel.CodingKeys._description_)
-        self._tags_ = try container.decode(CRDT<[String]>.self, forKey: DiceModel.CodingKeys._tags_)
-        self._category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: DiceModel.CodingKeys._category_)
-        self._displayState = try container.decode(Int.self, forKey: DiceModel.CodingKeys._displayState)
-        self._dice_ = try container.decode(CRDTDataUpdate<[DieModel]>.self, forKey: DiceModel.CodingKeys._dice_)
-        self._sumUp = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._sumUp)
-        self._modifier = try container.decode(Double.self, forKey: DiceModel.CodingKeys._modifier)
-        self._percentDice = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._percentDice)
-        self._compareOption = try container.decode(DiceModel.CompareValue.self, forKey: DiceModel.CodingKeys._compareOption)
-        self._compareValue = try container.decode(Double.self, forKey: DiceModel.CodingKeys._compareValue)
-        self._coupValues = try container.decode([DiceModel.CoupFumbleOption].self, forKey: DiceModel.CodingKeys._coupValues)
-        self._coupOnlyOnFirstDie = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._coupOnlyOnFirstDie)
-        self._fumbleValues = try container.decode([DiceModel.CoupFumbleOption].self, forKey: DiceModel.CodingKeys._fumbleValues)
-        self._fumbleOnlyOnFirstDie = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._fumbleOnlyOnFirstDie)
-        self._rerollOptions = try container.decode([DiceModel.RerollOption].self, forKey: DiceModel.CodingKeys._rerollOptions)
-        self._reorderDice = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._reorderDice)
-        self._addDiceEvery = try container.decode(Int.self, forKey: DiceModel.CodingKeys._addDiceEvery)
-        self._resultCategory = try container.decodeIfPresent(ResultCategory.self, forKey: DiceModel.CodingKeys._resultCategory)
-        self._entries_ = try container.decodeIfPresent(CRDTDataUpdate<[ChildEntryModel]>.self, forKey: DiceModel.CodingKeys._entries_) ?? CRDTDataUpdate<[ChildEntryModel]>(wrappedValue: [])
-        self._parentId = try container.decodeIfPresent(UUID.self, forKey: DiceModel.CodingKeys._parentId)
+        self.id = try container.decode(UUID.self, forKey: DiceModel.CodingKeys._id)
+        self.name_ = try container.decode(CRDT<String>.self, forKey: DiceModel.CodingKeys._name_)
+        self.description_ = try container.decode(CRDT<String>.self, forKey: DiceModel.CodingKeys._description_)
+        self.tags_ = try container.decode(CRDT<[String]>.self, forKey: DiceModel.CodingKeys._tags_)
+        self.category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: DiceModel.CodingKeys._category_)
+        self.displayState = try container.decode(Int.self, forKey: DiceModel.CodingKeys._displayState)
+        self.dice_ = try container.decode(CRDTDataUpdate<[DieModel]>.self, forKey: DiceModel.CodingKeys._dice_)
+        self.sumUp = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._sumUp)
+        self.modifier = try container.decode(Double.self, forKey: DiceModel.CodingKeys._modifier)
+        self.percentDice = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._percentDice)
+        self.compareOption = try container.decode(DiceModel.CompareValue.self, forKey: DiceModel.CodingKeys._compareOption)
+        self.compareValue = try container.decode(Double.self, forKey: DiceModel.CodingKeys._compareValue)
+        self.coupValues = try container.decode([DiceModel.CoupFumbleOption].self, forKey: DiceModel.CodingKeys._coupValues)
+        self.coupOnlyOnFirstDie = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._coupOnlyOnFirstDie)
+        self.fumbleValues = try container.decode([DiceModel.CoupFumbleOption].self, forKey: DiceModel.CodingKeys._fumbleValues)
+        self.fumbleOnlyOnFirstDie = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._fumbleOnlyOnFirstDie)
+        self.rerollOptions = try container.decode([DiceModel.RerollOption].self, forKey: DiceModel.CodingKeys._rerollOptions)
+        self.reorderDice = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._reorderDice)
+        self.addDiceEvery = try container.decode(Int.self, forKey: DiceModel.CodingKeys._addDiceEvery)
+        self.resultCategory = try container.decodeIfPresent(ResultCategory.self, forKey: DiceModel.CodingKeys._resultCategory)
+        self.entries_ = try container.decodeIfPresent(CRDTDataUpdate<[ChildEntryModel]>.self, forKey: DiceModel.CodingKeys._entries_) ?? CRDTDataUpdate<[ChildEntryModel]>(wrappedValue: [])
+        self.parentId = try container.decodeIfPresent(UUID.self, forKey: DiceModel.CodingKeys._parentId)
     }
     
     public var id: UUID
@@ -89,25 +89,25 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
-    var name_: CRDT<String>
+    @ObservationIgnored var name_: CRDT<String>
 
     public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
-    var description_: CRDT<String>
+    @ObservationIgnored var description_: CRDT<String>
 
     public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
-    var tags_: CRDT<[String]>
+    @ObservationIgnored var tags_: CRDT<[String]>
 
     public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
-    var category_: CRDT<ItemListCategory>
+    @ObservationIgnored var category_: CRDT<ItemListCategory>
 
     public var displayState: Int
 
@@ -115,7 +115,7 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         get { dice_.wrappedValue }
         set { dice_.wrappedValue = newValue }
     }
-    var dice_: CRDTDataUpdate<[DieModel]>
+    @ObservationIgnored var dice_: CRDTDataUpdate<[DieModel]>
 
     public var sumUp: Bool = true
     public var modifier: Double = 0.0
@@ -307,7 +307,7 @@ public final class DiceModel: Identifiable, @unchecked Sendable {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
-    var entries_: CRDTDataUpdate<[ChildEntryModel]>
+    @ObservationIgnored var entries_: CRDTDataUpdate<[ChildEntryModel]>
 
     public var parentId: UUID? = nil
 }
@@ -584,28 +584,28 @@ extension DiceModel: Codable {
     public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<DiceModel.CodingKeys> = encoder.container(keyedBy: DiceModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: DiceModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: DiceModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: DiceModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: DiceModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: DiceModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: DiceModel.CodingKeys._displayState)
-        try container.encode(self._dice_, forKey: DiceModel.CodingKeys._dice_)
-        try container.encode(self._sumUp, forKey: DiceModel.CodingKeys._sumUp)
-        try container.encode(self._modifier, forKey: DiceModel.CodingKeys._modifier)
-        try container.encode(self._percentDice, forKey: DiceModel.CodingKeys._percentDice)
-        try container.encode(self._compareOption, forKey: DiceModel.CodingKeys._compareOption)
-        try container.encode(self._compareValue, forKey: DiceModel.CodingKeys._compareValue)
-        try container.encode(self._coupValues, forKey: DiceModel.CodingKeys._coupValues)
-        try container.encode(self._coupOnlyOnFirstDie, forKey: DiceModel.CodingKeys._coupOnlyOnFirstDie)
-        try container.encode(self._fumbleValues, forKey: DiceModel.CodingKeys._fumbleValues)
-        try container.encode(self._fumbleOnlyOnFirstDie, forKey: DiceModel.CodingKeys._fumbleOnlyOnFirstDie)
-        try container.encode(self._rerollOptions, forKey: DiceModel.CodingKeys._rerollOptions)
-        try container.encode(self._reorderDice, forKey: DiceModel.CodingKeys._reorderDice)
-        try container.encode(self._addDiceEvery, forKey: DiceModel.CodingKeys._addDiceEvery)
-        try container.encodeIfPresent(self._resultCategory, forKey: DiceModel.CodingKeys._resultCategory)
-        try container.encode(self._entries_, forKey: DiceModel.CodingKeys._entries_)
-        try container.encodeIfPresent(self._parentId, forKey: DiceModel.CodingKeys._parentId)
+        try container.encode(self.id, forKey: DiceModel.CodingKeys._id)
+        try container.encode(self.name_, forKey: DiceModel.CodingKeys._name_)
+        try container.encode(self.description_, forKey: DiceModel.CodingKeys._description_)
+        try container.encode(self.tags_, forKey: DiceModel.CodingKeys._tags_)
+        try container.encode(self.category_, forKey: DiceModel.CodingKeys._category_)
+        try container.encode(self.displayState, forKey: DiceModel.CodingKeys._displayState)
+        try container.encode(self.dice_, forKey: DiceModel.CodingKeys._dice_)
+        try container.encode(self.sumUp, forKey: DiceModel.CodingKeys._sumUp)
+        try container.encode(self.modifier, forKey: DiceModel.CodingKeys._modifier)
+        try container.encode(self.percentDice, forKey: DiceModel.CodingKeys._percentDice)
+        try container.encode(self.compareOption, forKey: DiceModel.CodingKeys._compareOption)
+        try container.encode(self.compareValue, forKey: DiceModel.CodingKeys._compareValue)
+        try container.encode(self.coupValues, forKey: DiceModel.CodingKeys._coupValues)
+        try container.encode(self.coupOnlyOnFirstDie, forKey: DiceModel.CodingKeys._coupOnlyOnFirstDie)
+        try container.encode(self.fumbleValues, forKey: DiceModel.CodingKeys._fumbleValues)
+        try container.encode(self.fumbleOnlyOnFirstDie, forKey: DiceModel.CodingKeys._fumbleOnlyOnFirstDie)
+        try container.encode(self.rerollOptions, forKey: DiceModel.CodingKeys._rerollOptions)
+        try container.encode(self.reorderDice, forKey: DiceModel.CodingKeys._reorderDice)
+        try container.encode(self.addDiceEvery, forKey: DiceModel.CodingKeys._addDiceEvery)
+        try container.encodeIfPresent(self.resultCategory, forKey: DiceModel.CodingKeys._resultCategory)
+        try container.encode(self.entries_, forKey: DiceModel.CodingKeys._entries_)
+        try container.encodeIfPresent(self.parentId, forKey: DiceModel.CodingKeys._parentId)
     }
 }
 

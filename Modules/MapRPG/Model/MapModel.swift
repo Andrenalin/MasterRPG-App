@@ -54,23 +54,23 @@ public final class MapModel: Identifiable, @unchecked Sendable {
     public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<MapModel.CodingKeys> = try decoder.container(keyedBy: MapModel.CodingKeys.self)
 
-        self._id = try container.decode(UUID.self, forKey: MapModel.CodingKeys._id)
-        self._name_ = try container.decode(CRDT<String>.self, forKey: MapModel.CodingKeys._name_)
-        self._description_ = try container.decode(CRDT<String>.self, forKey: MapModel.CodingKeys._description_)
-        self._tags_ = try container.decode(CRDT<[String]>.self, forKey: MapModel.CodingKeys._tags_)
-        self._category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: MapModel.CodingKeys._category_)
-        self._displayState = try container.decode(Int.self, forKey: MapModel.CodingKeys._displayState)
-        self._entries_ = try container.decode(CRDTDataUpdate<[MapEntryModel]>.self, forKey: MapModel.CodingKeys._entries_)
-        self._displayConfig_ = try container.decode(CRDTDataUpdate<DisplayConfigModel>.self, forKey: MapModel.CodingKeys._displayConfig_)
-        self._photoId_ = try container.decode(CRDTDataUpdate<UUID?>.self, forKey: MapModel.CodingKeys._photoId_)
-        self._width = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._width)
-        self._height = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._height)
-        self._mapPins_ = try container.decode(CRDTDataUpdate<[MapPinModel]>.self, forKey: MapModel.CodingKeys._mapPins_)
-        self._pinScale = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._pinScale)
-        self._hexMapScale_ = try container.decode(CRDT<Double>.self, forKey: MapModel.CodingKeys._hexMapScale_)
-        self._scale = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._scale)
-        self._degrees = try container.decode(Double.self, forKey: MapModel.CodingKeys._degrees)
-        self._parentId = try container.decodeIfPresent(UUID.self, forKey: MapModel.CodingKeys._parentId)
+        self.id = try container.decode(UUID.self, forKey: MapModel.CodingKeys._id)
+        self.name_ = try container.decode(CRDT<String>.self, forKey: MapModel.CodingKeys._name_)
+        self.description_ = try container.decode(CRDT<String>.self, forKey: MapModel.CodingKeys._description_)
+        self.tags_ = try container.decode(CRDT<[String]>.self, forKey: MapModel.CodingKeys._tags_)
+        self.category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: MapModel.CodingKeys._category_)
+        self.displayState = try container.decode(Int.self, forKey: MapModel.CodingKeys._displayState)
+        self.entries_ = try container.decode(CRDTDataUpdate<[MapEntryModel]>.self, forKey: MapModel.CodingKeys._entries_)
+        self.displayConfig_ = try container.decode(CRDTDataUpdate<DisplayConfigModel>.self, forKey: MapModel.CodingKeys._displayConfig_)
+        self.photoId_ = try container.decode(CRDTDataUpdate<UUID?>.self, forKey: MapModel.CodingKeys._photoId_)
+        self.width = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._width)
+        self.height = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._height)
+        self.mapPins_ = try container.decode(CRDTDataUpdate<[MapPinModel]>.self, forKey: MapModel.CodingKeys._mapPins_)
+        self.pinScale = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._pinScale)
+        self.hexMapScale_ = try container.decode(CRDT<Double>.self, forKey: MapModel.CodingKeys._hexMapScale_)
+        self.scale = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._scale)
+        self.degrees = try container.decode(Double.self, forKey: MapModel.CodingKeys._degrees)
+        self.parentId = try container.decodeIfPresent(UUID.self, forKey: MapModel.CodingKeys._parentId)
     }
 
     public var id: UUID
@@ -79,25 +79,25 @@ public final class MapModel: Identifiable, @unchecked Sendable {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
-    var name_: CRDT<String>
+    @ObservationIgnored var name_: CRDT<String>
 
     public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
-    var description_: CRDT<String>
+    @ObservationIgnored var description_: CRDT<String>
 
     public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
-    var tags_: CRDT<[String]>
+    @ObservationIgnored var tags_: CRDT<[String]>
 
     public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
-    var category_: CRDT<ItemListCategory>
+    @ObservationIgnored var category_: CRDT<ItemListCategory>
 
     public var displayState: Int = 0 {
         didSet { resetEntries() }
@@ -107,19 +107,19 @@ public final class MapModel: Identifiable, @unchecked Sendable {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }
     }
-    var entries_: CRDTDataUpdate<[MapEntryModel]>
+    @ObservationIgnored var entries_: CRDTDataUpdate<[MapEntryModel]>
 
     public var displayConfig: DisplayConfigModel {
         get { displayConfig_.wrappedValue }
         set { displayConfig_.wrappedValue = newValue }
     }
-    var displayConfig_: CRDTDataUpdate<DisplayConfigModel>
+    @ObservationIgnored var displayConfig_: CRDTDataUpdate<DisplayConfigModel>
 
     public var photoId: UUID? {
         get { photoId_.wrappedValue }
         set { photoId_.wrappedValue = newValue }
     }
-    var photoId_: CRDTDataUpdate<UUID?>
+    @ObservationIgnored var photoId_: CRDTDataUpdate<UUID?>
 
     private(set) public var width: CGFloat = 1200
     private(set) public var height: CGFloat = 800
@@ -128,14 +128,14 @@ public final class MapModel: Identifiable, @unchecked Sendable {
         get { mapPins_.wrappedValue }
         set { mapPins_.wrappedValue = newValue }
     }
-    var mapPins_: CRDTDataUpdate<[MapPinModel]>
+    @ObservationIgnored var mapPins_: CRDTDataUpdate<[MapPinModel]>
 
     public var pinScale: CGFloat = 1.0
     public var hexMapScale: Double {
         get { hexMapScale_.wrappedValue }
         set { hexMapScale_.wrappedValue = newValue }
     }
-    var hexMapScale_: CRDT<Double>
+    @ObservationIgnored var hexMapScale_: CRDT<Double>
 
     // play infos
     public var scale: CGFloat = 1.0
@@ -353,26 +353,50 @@ extension MapModel: ItemDiffComparable {
     }
 
     public func isSame(_ other: MapModel) -> Bool {
-        name == other.name &&
-        description == other.description &&
-        tags == other.tags &&
-        category == other.category &&
-        entries_.update == other.entries_.update &&
-        displayConfig == other.displayConfig &&
-        photoId_.update == other.photoId_.update &&
-        mapPins_.update == other.mapPins_.update &&
-        hexMapScale == other.hexMapScale &&
-        pinScale == other.pinScale &&
-        parentId == other.parentId &&
-        // santity checks
-        entries.count == other.entries.count &&
-        entries.enumerated().allSatisfy { index, entry in
-            entry == other.entries[index]
-        } &&
-        mapPins.count == other.mapPins.count &&
-        mapPins.enumerated().allSatisfy { index, pin in
-            pin == other.mapPins[index]
+        // Fast checks first: cheapest comparisons and most likely to differ
+        // Check counts first (O(1) integer comparisons)
+        guard entries.count == other.entries.count,
+              mapPins.count == other.mapPins.count else { return false }
+
+        // Check parentId (O(1) UUID comparison, optional so likely different)
+        guard parentId == other.parentId else { return false }
+
+        // Check update hashes (O(1) integer comparisons, changes frequently)
+        guard entries_.update == other.entries_.update,
+              photoId_.update == other.photoId_.update,
+              mapPins_.update == other.mapPins_.update else { return false }
+
+        // Check scalar values (O(1) comparisons)
+        guard hexMapScale == other.hexMapScale,
+              pinScale == other.pinScale,
+              category == other.category else { return false }
+
+        // Check strings (O(n) but short strings)
+        guard name == other.name else { return false }
+
+        // Check arrays (O(n) comparisons)
+        guard tags == other.tags else { return false }
+
+        // Check description (potentially long string)
+        guard description == other.description else { return false }
+
+        // Check displayConfig (complex struct comparison)
+        guard displayConfig == other.displayConfig else { return false }
+
+        // Most expensive checks last: deep equality on arrays
+        for (index, entry) in entries.enumerated() {
+            if entry != other.entries[index] {
+                return false
+            }
         }
+
+        for (index, pin) in mapPins.enumerated() {
+            if pin != other.mapPins[index] {
+                return false
+            }
+        }
+
+        return true
     }
     
     public var version: Int {
@@ -494,23 +518,23 @@ extension MapModel: Codable {
     public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<MapModel.CodingKeys> = encoder.container(keyedBy: MapModel.CodingKeys.self)
 
-        try container.encode(self._id, forKey: MapModel.CodingKeys._id)
-        try container.encode(self._name_, forKey: MapModel.CodingKeys._name_)
-        try container.encode(self._description_, forKey: MapModel.CodingKeys._description_)
-        try container.encode(self._tags_, forKey: MapModel.CodingKeys._tags_)
-        try container.encode(self._category_, forKey: MapModel.CodingKeys._category_)
-        try container.encode(self._displayState, forKey: MapModel.CodingKeys._displayState)
-        try container.encode(self._entries_, forKey: MapModel.CodingKeys._entries_)
-        try container.encode(self._displayConfig_, forKey: MapModel.CodingKeys._displayConfig_)
-        try container.encode(self._photoId_, forKey: MapModel.CodingKeys._photoId_)
-        try container.encode(self._width, forKey: MapModel.CodingKeys._width)
-        try container.encode(self._height, forKey: MapModel.CodingKeys._height)
-        try container.encode(self._mapPins_, forKey: MapModel.CodingKeys._mapPins_)
-        try container.encode(self._pinScale, forKey: MapModel.CodingKeys._pinScale)
-        try container.encode(self._hexMapScale_, forKey: MapModel.CodingKeys._hexMapScale_)
-        try container.encode(self._scale, forKey: MapModel.CodingKeys._scale)
-        try container.encode(self._degrees, forKey: MapModel.CodingKeys._degrees)
-        try container.encodeIfPresent(self._parentId, forKey: MapModel.CodingKeys._parentId)
+        try container.encode(self.id, forKey: MapModel.CodingKeys._id)
+        try container.encode(self.name_, forKey: MapModel.CodingKeys._name_)
+        try container.encode(self.description_, forKey: MapModel.CodingKeys._description_)
+        try container.encode(self.tags_, forKey: MapModel.CodingKeys._tags_)
+        try container.encode(self.category_, forKey: MapModel.CodingKeys._category_)
+        try container.encode(self.displayState, forKey: MapModel.CodingKeys._displayState)
+        try container.encode(self.entries_, forKey: MapModel.CodingKeys._entries_)
+        try container.encode(self.displayConfig_, forKey: MapModel.CodingKeys._displayConfig_)
+        try container.encode(self.photoId_, forKey: MapModel.CodingKeys._photoId_)
+        try container.encode(self.width, forKey: MapModel.CodingKeys._width)
+        try container.encode(self.height, forKey: MapModel.CodingKeys._height)
+        try container.encode(self.mapPins_, forKey: MapModel.CodingKeys._mapPins_)
+        try container.encode(self.pinScale, forKey: MapModel.CodingKeys._pinScale)
+        try container.encode(self.hexMapScale_, forKey: MapModel.CodingKeys._hexMapScale_)
+        try container.encode(self.scale, forKey: MapModel.CodingKeys._scale)
+        try container.encode(self.degrees, forKey: MapModel.CodingKeys._degrees)
+        try container.encodeIfPresent(self.parentId, forKey: MapModel.CodingKeys._parentId)
     }
 }
 
