@@ -7,9 +7,7 @@ struct NeedleMapPin: View {
     let entries: MapEntryViewerModel
     let entryId: UUID
     let index: Int
-    let addAction: () -> Void
-    let removeAction: () -> Void
-    let dragEndAction: () -> Void
+    let map: MapModel
     
     @GestureState private var isDragging = false
     @State private var isDraggingStarts = false
@@ -21,6 +19,10 @@ struct NeedleMapPin: View {
     }
     
     var body: some View {
+        needleView
+    }
+    
+    var needleView: some View {
         VStack(alignment: .center, spacing: 0) {
             needleHeader
                 .frame(width: 44, height: 44)
@@ -79,7 +81,7 @@ struct NeedleMapPin: View {
     
     var addButton: some View {
         Button {
-            addAction()
+            withAnimation { addPin() }
         } label: {
             Image(systemName: "plus")
                 .padding()
@@ -92,12 +94,25 @@ struct NeedleMapPin: View {
         .clipShape(.circle)
     }
     
+    func addPin() {
+        var updatedEntry = entries.entry(entryId)
+        let next = index + 1 < updatedEntry.coordinates.count ? index + 1 : 0
+        var nextPoint = updatedEntry.coordinates[next]
+        if next == 0 {
+            nextPoint = nextPoint + CGPoint(x: 50, y: 50)
+        } else {
+            nextPoint = nextPoint - (nextPoint - updatedEntry.coordinates[index]) / 2
+        }
+        updatedEntry.coordinates.insert(nextPoint, at: next)
+        map[updatedEntry.id] = updatedEntry
+    }
+    
     var removeButton: some View {
         Button {
             withAnimation(.bouncy) {
                 entries.selectedNeedleIndex = nil
+                removePin()
             }
-            removeAction()
         } label: {
             Image(systemName: "trash")
                 .padding()
@@ -108,6 +123,14 @@ struct NeedleMapPin: View {
             Color.red
         }
         .clipShape(.circle)
+    }
+    
+    func removePin() {
+        var updatedEntry = entries.entry(entryId)
+        if index >= 0 && index < updatedEntry.coordinates.count {
+            updatedEntry.coordinates.remove(at: index)
+            map[updatedEntry.id] = updatedEntry
+        }
     }
     
     var needHead: some View {
@@ -125,9 +148,13 @@ struct NeedleMapPin: View {
                 Task {
                     isDraggingStarts = false
                     entries.selectedNeedleCoordinate = nil
-                    dragEndAction()
+                    updateCoordinate()
                 }
             }
+    }
+    
+    func updateCoordinate() {
+        map[entryId] = entries.entry(entryId)
     }
     
     var combinedGesture: some Gesture {
@@ -182,19 +209,69 @@ struct NeedleMapPin: View {
     }
 }
 
+
+enum NeedleMapPinButtonType: String {
+    case remove, add
+    
+    var systemImage: String {
+        switch self {
+        case .remove:
+            return "trash"
+        case .add:
+            return "plus"
+        }
+    }
+    
+    var label: String {
+        self.rawValue.capitalized
+    }
+    
+    var duration: CGFloat {
+        switch self {
+        case .remove:
+            return 0.3
+        case .add:
+            return 0.4
+        }
+    }
+    
+    func offset(expanded: Bool, layoutDown: Bool) -> CGSize {
+        guard expanded else {
+            return .zero
+        }
+        
+        switch self {
+        case .remove:
+            return offset(atIndex: 0, layoutDown: layoutDown)
+        case .add:
+            return offset(atIndex: 1, layoutDown: layoutDown)
+        }
+    }
+    
+    private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
+        let radius: CGFloat = 120
+        let startAngleDeg = -180.0
+        let step = 90.0 / Double(4 - 1)
+        
+        let angleDeg = startAngleDeg + (Double(index) * step)
+        let angleRad = angleDeg * .pi / 180
+        
+        let x = cos(angleRad) * radius
+        let y = sin(angleRad) * radius * (layoutDown ? -1 : 1)
+        
+        return CGSize(width: x, height: y)
+    }
+}
+
+
+
 #Preview {
     @Previewable var entries = MapEntryViewerModel(mapId: MapModel.previewId, entries: [.empty(MapModel.previewId)])
     
     VStack {
         ForEach(entries.entries[0].coordinates.indexed(), id: \.index) { (index, point) in
-            NeedleMapPin(entries: entries, entryId: MapModel.previewId, index: index) {
-                
-            } removeAction: {
-                
-            } dragEndAction: {
-                
-            }
-            .offset(x: entries.entries[0].coordinates[index].x, y: entries.entries[0].coordinates[index].y)
+            NeedleMapPin(entries: entries, entryId: MapModel.previewId, index: index, map: MapModel.preview)
+                .offset(x: entries.entries[0].coordinates[index].x, y: entries.entries[0].coordinates[index].y)
         }
         Spacer()
     }

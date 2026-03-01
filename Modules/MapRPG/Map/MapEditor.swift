@@ -358,27 +358,8 @@ private extension MapEditor {
     func drawEntryPins() -> some View {
         if let entry = editEntries.entries.first {
             ForEach(entry.coordinates.indexed(), id: \.index) { (index, point) in
-                NeedleMapPin(entries: editEntries, entryId: entry.id, index: index) {
-                    var updatedEntry = editEntries.entry(entry.id)
-                    let next = index + 1 < updatedEntry.coordinates.count ? index + 1 : 0
-                    var nextPoint = updatedEntry.coordinates[next]
-                    if next == 0 {
-                        nextPoint = nextPoint + CGPoint(x: 50, y: 50)
-                    } else {
-                        nextPoint = nextPoint - (nextPoint - updatedEntry.coordinates[index]) / 2
-                    }
-                    updatedEntry.coordinates.insert(nextPoint, at: next)
-                    map[updatedEntry.id] = updatedEntry
-                } removeAction: {
-                    var updatedEntry = editEntries.entry(entry.id)
-                    if index >= 0 && index < updatedEntry.coordinates.count {
-                        updatedEntry.coordinates.remove(at: index)
-                        map[updatedEntry.id] = updatedEntry
-                    }
-                } dragEndAction: {
-                    map[entry.id] = editEntries.entry(entry.id)
-                }
-                .offset(x: point.x - 22, y: point.y - 110)
+                NeedleMapPin(entries: editEntries, entryId: entry.id, index: index, map: map)
+                    .offset(x: point.x - 22, y: point.y - 110)
             }
         }
     }
