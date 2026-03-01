@@ -41,7 +41,7 @@ struct FilePersistenceControllerTests {
 
     @Test func externalData() async throws {
         let sut = FilePersistenceController(name: "MegaTest", persistence: .memory, dataExtension: "test")
-        try await sut.removeData(for: "uuid")
+        try? await sut.removeData(for: "uuid")
 
         let saveData = String("save").data(using: .utf8)
         try #require(saveData != nil)

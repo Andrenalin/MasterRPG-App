@@ -80,6 +80,8 @@ struct MapPinActionView: View, Equatable {
     let dragEndAction: (() -> Void)?
     
     @Environment(MapRootModel.self) private var root
+    @Environment(\.openWindow) private var openWindow
+    
     @Namespace private var glassNamespace
     @Namespace private var photoSpace
     

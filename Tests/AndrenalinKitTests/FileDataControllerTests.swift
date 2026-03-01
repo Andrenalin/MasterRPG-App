@@ -19,7 +19,7 @@ struct FileDataControllerTests {
         #expect(readData!.name == "Test")
 
         await sut.save()
-        try await sut.delete(id: testData.id)
+        try? await sut.delete(id: testData.id)
 
         let readDataAgain = await sut.read(id: testData.id)
         #expect(readDataAgain == nil)

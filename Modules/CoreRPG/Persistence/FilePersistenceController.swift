@@ -43,9 +43,7 @@ extension FilePersistenceController {
                 try FileManager.default.createDirectory(at: loadUrl.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try FilePersistenceController.saveModel(data: [], into: loadUrl)
             }
-            // Use ResourceCache for better performance
-            let key = "persistence.\(name)"
-            let data = try await ResourceCache.shared.load(key: key, from: loadUrl)
+            let data = try Data(contentsOf: loadUrl)
 
             let decoder = JSONDecoder()
             let loadedData = try decoder.decode([DataModel].self, from: data)
@@ -84,9 +82,7 @@ extension FilePersistenceController {
 extension FilePersistenceController {
     func loadData(for uuid: String) async throws -> Data? {
         guard let url = try dataURL(for: uuid) else { return nil }
-        // Use ResourceCache for better performance
-        let key = "data.\(name).\(uuid)"
-        return try await ResourceCache.shared.load(key: key, from: url)
+        return try Data(contentsOf: url)
     }
 
     func saveData(_ data: Data, for uuid: String) async throws {

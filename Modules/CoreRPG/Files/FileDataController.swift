@@ -105,8 +105,8 @@ public extension FileDataController {
 
     func delete(id: UUID) async throws {
         guard let index = await model.data.firstIndex(where: { $0.id == id }) else { return }
-        try await persistence.removeData(for: id.uuidString)
         await model.remove(at: index)
+        try await persistence.removeData(for: id.uuidString)
     }
 
     func moveData(from: IndexSet, to: Int) async  {
