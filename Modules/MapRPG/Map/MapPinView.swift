@@ -40,6 +40,12 @@ final class MapPinViewModel {
         }
     }
     
+    func replacePhoto(pinId: UUID, itemId: UUID?) {
+        guard var updatedPin = pinPointer(for: pinId) else { return }
+        updatedPin.photoId = itemId
+        setPinPointer(updatedPin: updatedPin)
+    }
+    
     func copyPin(id: UUID) {
         guard var pin = pinPointer(for: id) else { return }
         pin.id = UUID()

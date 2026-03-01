@@ -59,8 +59,10 @@ public struct ItemHeaderEditorView: View {
                 information = model.description
                 category = model.category
                 tags = model.tags
+                currentFocus = .name
             }
         }
+        .resetAppColorScheme()
     }
 }
 

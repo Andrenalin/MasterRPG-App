@@ -79,8 +79,13 @@ struct MapPinActionView: View, Equatable {
     let doubleTapAction: (() -> Void)?
     let dragEndAction: (() -> Void)?
     
-    @Namespace var glassNamespace
-        
+    @Environment(MapRootModel.self) private var root
+    @Namespace private var glassNamespace
+    @Namespace private var photoSpace
+    
+    @State private var showPhotoSelection: Bool = false
+    @State private var selectedPhoto: ItemSelectionModel = ItemSelectionModel(isSingleSelection: true, allowCollections: false)
+    
     // Equatable implementation: compare stable properties
     static func == (lhs: MapPinActionView, rhs: MapPinActionView) -> Bool {
         lhs.pinId == rhs.pinId &&
@@ -105,6 +110,17 @@ struct MapPinActionView: View, Equatable {
                     actionButtons
                 }
 #endif
+            }
+            .sheet(isPresented: $showPhotoSelection) {
+                root.viewController.photoSelection(root: root, selectionModel: selectedPhoto)
+#if !os(macOS)
+                    .navigationTransition(.zoom(sourceID: MapPinButtonType.photo.label, in: photoSpace))
+#endif
+            }
+            .onChange(of: showPhotoSelection, initial: false) {
+                guard !showPhotoSelection, !selectedPhoto.selection.isEmpty else { return }
+                withAnimation { model.replacePhoto(pinId: pinId, itemId: selectedPhoto.itemId) }
+                selectedPhoto.resetSelection(itemId: nil, entryId: nil)
             }
     }
     
@@ -135,8 +151,11 @@ struct MapPinActionView: View, Equatable {
             case .copy:
                 model.copyPin(id: pinId)
             case .photo:
-                //showCamera.toggle()
-                print("photo")
+#if os(macOS)
+            openWindow(id: NetworkModules.photo.linkWindowId)
+#else
+            showPhotoSelection.toggle()
+#endif
             case .resize:
                 model.resizePin(id: pinId)
             }
@@ -157,6 +176,7 @@ struct MapPinActionView: View, Equatable {
         .offset(type.offset(expanded: model.isExpandedId != nil, layoutDown: layoutDown))
         .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: model.isExpandedId == pinId)
         .opacity(model.isExpandedId == pinId ? 1 : 0)
+        .matchedTransitionSource(id: type.label, in: photoSpace)
     }
 }
 

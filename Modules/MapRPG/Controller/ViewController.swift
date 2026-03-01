@@ -4,6 +4,7 @@ import CharacterRPG
 import CoreRPG
 import DiceRPG
 import SwiftUI
+import PhotoRPG
 
 public struct ViewController {
     public let goupViewType: GroupViewType = .none
@@ -24,12 +25,16 @@ extension ViewController: ViewControllable {
 // MARK: External Views
 
 extension ViewController {
+    @MainActor func characterSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
+        root.characterRoot.viewController.linkListView(type: .selection, itemSelectionModel: selectionModel)
+    }
+    
     @MainActor func diceSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.diceRoot.viewController.dropChooseView(model: selectionModel)
     }
     
-    @MainActor func characterSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
-        root.characterRoot.viewController.linkListView(type: .selection, itemSelectionModel: selectionModel)
+    @MainActor func photoSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
+        root.photoRoot.viewController.linkListView(type: .selection, itemSelectionModel: selectionModel)
     }
 }
 
