@@ -68,7 +68,7 @@ enum MapPinButtonType: String {
     }
 }
 
-struct MapPinActionView<MapPin: View>: View {
+struct MapPinActionView<MapPin: View & Equatable>: View, Equatable {
     let model: MapPinViewModel
     let pinId: UUID
     let layoutDown: Bool
@@ -80,6 +80,14 @@ struct MapPinActionView<MapPin: View>: View {
     @State private var showCamera = false
     @State private var showLibrary = false
     @State private var showImagePlayground = false
+    
+    // Equatable implementation: compare stable properties
+    static func == (lhs: MapPinActionView, rhs: MapPinActionView) -> Bool {
+        lhs.pinId == rhs.pinId &&
+        lhs.layoutDown == rhs.layoutDown &&
+        lhs.model.isExpandedId == rhs.model.isExpandedId &&
+        lhs.mapPinContent == rhs.mapPinContent
+    }
     
     var body: some View {
 #if os(visionOS)
