@@ -65,7 +65,6 @@ struct MapPinView: View, Equatable {
     let isShown: Bool
     let borderColor: Color
     let canDrag: Bool
-    let tapAction: (() -> Void)?
     let doubleTapAction: (() -> Void)?
     let dragEndAction: (() -> Void)?
     
@@ -93,7 +92,7 @@ struct MapPinView: View, Equatable {
         Button {
             guard !isDraggingStarts else { return }
             withAnimation {
-                tapAction?()
+                model.isExpandedId = model.isExpandedId == pinId ? nil : pinId
             }
         } label: {
             pinView
@@ -119,9 +118,9 @@ struct MapPinView: View, Equatable {
             }
         }
         .clipShape(.circle)
-        .padding(3)
+        .padding(2)
         .frame(width: pinSize.width , height: pinSize.height)
-        .padding(3)
+        .padding(2)
         .background(borderColor)
         .overlay {
             isShown ? Color.clear : .green.opacity(0.5)
@@ -141,7 +140,7 @@ struct MapPinView: View, Equatable {
     private var combinedGesture: some Gesture {
         let tapGesture = TapGesture().onEnded {
             withAnimation {
-                tapAction?()
+                model.isExpandedId = model.isExpandedId == pinId ? nil : pinId
             }
         }
         return doubeDragGesture.exclusively(before: tapGesture)
@@ -187,14 +186,17 @@ struct MapPinView: View, Equatable {
     
     MapPinView(model: model, pinId: MapModel.previewId, pinSize: model.mapPins[0].size == .normal ? CGSize(width: 64, height: 64) : CGSize(width: 128, height: 128), isShown: false, borderColor: .yellow, canDrag: true) {
         var pin = model.mapPins[0]
-        pin.size = pin.size == .normal ? .large : .normal
-        model.setPinPointer(updatedPin: pin)
-    } doubleTapAction: {
-        var pin = model.mapPins[0]
         pin.isShown.toggle()
         model.setPinPointer(updatedPin: pin)
     } dragEndAction: {
         print("end")
+    }
+    .onChange(of: model.isExpandedId) {
+        withAnimation {
+            var pin = model.mapPins[0]
+            pin.size = pin.size == .normal ? .large : .normal
+            model.setPinPointer(updatedPin: pin)
+        }
     }
     .offset(x: model.mapPins[0].location.x, y: model.mapPins[0].location.y)
     .environment(MapRootModel.preview)

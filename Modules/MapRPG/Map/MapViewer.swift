@@ -50,13 +50,10 @@ struct MapViewer: View {
     
     @State private var pins: MapPinViewModel = MapPinViewModel(mapPins: [], pointer: .empty)
     @State private var entries: MapEntryViewerModel
-    @State private var scalePinId: UUID?
     @State private var focusId: MapEntryModel.ID?
     @State private var appeared: Bool
 
     var body: some View {
-        //let _ = Self._printChanges()
-
         ZStack(alignment: .topLeading) {
             backColor
             
@@ -76,7 +73,7 @@ struct MapViewer: View {
                             drawPins
                         }
                         
-                        if let scalePinId {
+                        if let scalePinId = pins.isExpandedId {
                             drawPin(id: scalePinId)
                         }
                         if map.pointer.isShown {
@@ -238,7 +235,7 @@ extension MapViewer {
 
 extension MapViewer {
     var drawPins: some View {
-        ForEach(pins.mapPins.filter({ $0.id != scalePinId && (toolBarModel.displayMode != .player || $0.isShown) })) { pin in
+        ForEach(pins.mapPins.filter({ $0.id != pins.isExpandedId && (toolBarModel.displayMode != .player || $0.isShown) })) { pin in
             drawPin(id: pin.id)
         }
     }
@@ -246,13 +243,11 @@ extension MapViewer {
     @ViewBuilder
     func drawPin(id: UUID) -> some View {
         let pin = pins.pinPointer(for: id) ?? .empty(id)
-        let scaleFact: CGFloat = scalePinId == id ? 4.0 : 1.0
+        let scaleFact: CGFloat = pins.isExpandedId == id ? 4.0 : 1.0
         let pinSize = pin.size.size * map.pinScale * scaleFact
         let location: CGPoint = (pin.location) - (pinSize / CGFloat(2.0))
         
         MapPinView(model: pins, pinId: id, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: mapMode == .gameMaster || pin.id == playerPinId || pin.id == map.pointer.id) {
-            scalePinId = scalePinId == pin.id ? nil : pin.id
-        } doubleTapAction: {
             if mapMode == .gameMaster {
                 guard var updatedPin = pins.pinPointer(for: pin.id) else { return }
                 updatedPin.isShown.toggle()

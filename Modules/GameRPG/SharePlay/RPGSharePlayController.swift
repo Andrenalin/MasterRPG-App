@@ -46,15 +46,15 @@ final class RPGSharePlayController {
     weak var audioCoordinator: AudioListenerCoordinator?
     
     init() {
-        Logger.sharePlay.debug("init")
+        Logger.sharePlay.debug("SharePlay: init")
     }
 
     deinit {
-        Logger.sharePlay.debug("deinit")
+        Logger.sharePlay.debug("SharePlay: deinit")
     }
 
     func setup(gameModel: GameModel) {
-        Logger.sharePlay.debug("setup")
+        Logger.sharePlay.debug("SharePlay: setup")
         self.gameModel = gameModel
         packageSender = SharePlaySingleQueuePackageSender { [weak self] package in
             await self?.sendPackage(package)
@@ -114,7 +114,7 @@ extension RPGSharePlayController {
     }
 
     func reset() {
-        Logger.sharePlay.debug("reset state: \(self.printState(), privacy: .public)")
+        Logger.sharePlay.debug("SharePlay: reset state: \(self.printState(), privacy: .public)")
         isActive = false
         messenger = nil
         tasks.forEach { $0.cancel() }

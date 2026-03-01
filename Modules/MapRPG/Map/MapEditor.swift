@@ -41,7 +41,6 @@ struct MapEditor: View {
     @State private var pins: MapPinViewModel = MapPinViewModel(mapPins: [], pointer: .empty)
     @State private var entries: MapEntryViewerModel = MapEntryViewerModel(mapId: UUID(), entries: [])
     @State private var editEntries: MapEntryViewerModel = MapEntryViewerModel(mapId: UUID(), entries: [])
-    @State private var scalePinId: UUID?
     @State private var focusId: MapEntryModel.ID? = nil
     @State private var appeared = false
     
@@ -132,7 +131,7 @@ private extension MapEditor {
             
             drawPins
             
-            if let scalePinId {
+            if let scalePinId = pins.isExpandedId {
                 drawPin(id: scalePinId)
             }
             
@@ -317,7 +316,7 @@ extension MapEditor {
 
 extension MapEditor {
     var drawPins: some View {
-        ForEach(pins.mapPins.filter({ $0.id != scalePinId && (toolBarModel.displayMode != .player || $0.isShown) })) { pin in
+        ForEach(pins.mapPins.filter({ $0.id != pins.isExpandedId && (toolBarModel.displayMode != .player || $0.isShown) })) { pin in
             drawPin(id: pin.id)
         }
     }
@@ -325,23 +324,18 @@ extension MapEditor {
     @ViewBuilder
     func drawPin(id: UUID) -> some View {
         if let pin = pins.pinPointer(for: id) {
-            let scaleFact: CGFloat = scalePinId == id ? 4.0 : 1.0
+            let scaleFact: CGFloat = pins.isExpandedId == id ? 4.0 : 1.0
             let pinSize = pin.size.size * toolBarModel.pinScale * scaleFact
             let location: CGPoint = (pin.location) - (pinSize / CGFloat(2.0))
             
-            MapPinActionView(model: pins, pinId: id, layoutDown: true) {
-                MapPinView(model: pins, pinId: id, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: true) {
-                    scalePinId = scalePinId == pin.id ? nil : pin.id
-                    pins.isExpandedId = pins.isExpandedId == id ? nil : id
-                } doubleTapAction: {
+            MapPinActionView(model: pins, pinId: id, layoutDown: true, pinSize: pinSize, isShown: pin.isShown, borderColor: borderColorForPin(position: pin), canDrag: true) {
                     guard var updatedPin = pins.pinPointer(for: pin.id) else { return }
                     updatedPin.isShown.toggle()
                     pins.setPinPointer(updatedPin: updatedPin)
                     map.setPinPointer(updatedPin: updatedPin)
-                } dragEndAction: {
+            } dragEndAction: {
                     guard let updatedPin = pins.pinPointer(for: pin.id) else { return }
                     map.setPinPointer(updatedPin: updatedPin)
-                }
             }
             .equatable()
             .opacity(toolBarModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)

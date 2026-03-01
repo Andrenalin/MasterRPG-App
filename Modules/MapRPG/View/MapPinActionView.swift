@@ -68,11 +68,16 @@ enum MapPinButtonType: String {
     }
 }
 
-struct MapPinActionView<MapPin: View & Equatable>: View, Equatable {
+struct MapPinActionView: View, Equatable {
     let model: MapPinViewModel
     let pinId: UUID
     let layoutDown: Bool
-    @ViewBuilder let mapPinContent: MapPin
+    let pinSize: CGSize
+    let isShown: Bool
+    let borderColor: Color
+    let canDrag: Bool
+    let doubleTapAction: (() -> Void)?
+    let dragEndAction: (() -> Void)?
     
     @Namespace var glassNamespace
     
@@ -86,17 +91,26 @@ struct MapPinActionView<MapPin: View & Equatable>: View, Equatable {
         lhs.pinId == rhs.pinId &&
         lhs.layoutDown == rhs.layoutDown &&
         lhs.model.isExpandedId == rhs.model.isExpandedId &&
-        lhs.mapPinContent == rhs.mapPinContent
+        lhs.pinSize == rhs.pinSize &&
+        lhs.isShown == rhs.isShown &&
+        lhs.borderColor == rhs.borderColor &&
+        lhs.canDrag == rhs.canDrag &&
+        lhs.model.pinPointer(for: lhs.pinId)?.location == rhs.model.pinPointer(for: rhs.pinId)?.location &&
+        lhs.model.pinPointer(for: lhs.pinId)?.size == rhs.model.pinPointer(for: rhs.pinId)?.size &&
+        lhs.model.pinPointer(for: lhs.pinId)?.photoId == rhs.model.pinPointer(for: rhs.pinId)?.photoId
     }
     
     var body: some View {
+        MapPinView(model: model, pinId: pinId, pinSize: pinSize, isShown: isShown, borderColor: borderColor, canDrag: canDrag, doubleTapAction: doubleTapAction, dragEndAction: dragEndAction)
+            .overlay {
 #if os(visionOS)
-        content
+                content
 #else
-        GlassEffectContainer {
-            content
-        }
+                GlassEffectContainer {
+                    content
+                }
 #endif
+            }
     }
     
     var content: some View {
@@ -109,8 +123,9 @@ struct MapPinActionView<MapPin: View & Equatable>: View, Equatable {
                 .zIndex(10)
             button(type: .resize)
                 .zIndex(10)
+
             
-            mapPinContent
+            Color.clear
 #if !os(visionOS)
                 .glassEffectID("menu", in: glassNamespace)
 #endif
@@ -156,14 +171,11 @@ struct MapPinActionView<MapPin: View & Equatable>: View, Equatable {
         Color
             .blue
         
-        MapPinActionView(model: model, pinId: id, layoutDown: true) {
-            MapPinView(model: model, pinId: id, pinSize: CGSize(width: 80, height: 80), isShown: true, borderColor: .red, canDrag: true) {
-                model.isExpandedId = model.isExpandedId == nil ? id : nil
-            } doubleTapAction: {
+        MapPinActionView(model: model, pinId: id, layoutDown: true, pinSize: CGSize(width: 80, height: 80), isShown: true, borderColor: .red, canDrag: true) {
                 print("double tap")
             } dragEndAction: {
                 print("end move")
-            }
         }
+        
     }
 }

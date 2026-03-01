@@ -17,7 +17,6 @@ public struct SplitNavigation: View {
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
     public var body: some View {
-        let _ = print("Tab: \(selectedModule.title)")
         @Bindable var appModel = appModel
 
         Group {

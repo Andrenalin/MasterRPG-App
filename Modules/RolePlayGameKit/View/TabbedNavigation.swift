@@ -14,7 +14,6 @@ public struct TabbedNavigation: View {
     @Environment(\.appSizeMode) private var appSizeMode
         
     public var body: some View {
-        let _ = print("Tab: \(selectedModule.title)")
         @Bindable var appModel = appModel
         
         TabView(selection: $appModel.selectedModule) {
