@@ -343,7 +343,6 @@ extension MapEditor {
                     map.setPinPointer(updatedPin: updatedPin)
                 }
             }
-            .equatable()
             .opacity(toolBarModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
             .offset(x: location.x, y: location.y)
         }

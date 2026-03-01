@@ -41,15 +41,15 @@ public final class PdfModel: Identifiable, @unchecked Sendable {
     public init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<PdfModel.CodingKeys> = try decoder.container(keyedBy: PdfModel.CodingKeys.self)
 
-        self.id = try container.decode(UUID.self, forKey: PdfModel.CodingKeys._id)
-        self.name_ = try container.decode(CRDT<String>.self, forKey: PdfModel.CodingKeys._name_)
-        self.description_ = try container.decode(CRDT<String>.self, forKey: PdfModel.CodingKeys._description_)
-        self.tags_ = try container.decode(CRDT<[String]>.self, forKey: PdfModel.CodingKeys._tags_)
-        self.category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: PdfModel.CodingKeys._category_)
-        self.displayState = try container.decode(Int.self, forKey: PdfModel.CodingKeys._displayState)
-        self.fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: PdfModel.CodingKeys._fileUrl_)
-        self.entries_ = try container.decode(CRDTDataUpdate<[PdfEntryModel]>.self, forKey: PdfModel.CodingKeys._entries_)
-        self.parentId = try container.decodeIfPresent(UUID.self, forKey: PdfModel.CodingKeys._parentId)
+        self._id = try container.decode(UUID.self, forKey: PdfModel.CodingKeys._id)
+        self._name_ = try container.decode(CRDT<String>.self, forKey: PdfModel.CodingKeys._name_)
+        self._description_ = try container.decode(CRDT<String>.self, forKey: PdfModel.CodingKeys._description_)
+        self._tags_ = try container.decode(CRDT<[String]>.self, forKey: PdfModel.CodingKeys._tags_)
+        self._category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: PdfModel.CodingKeys._category_)
+        self._displayState = try container.decode(Int.self, forKey: PdfModel.CodingKeys._displayState)
+        self._fileUrl_ = try container.decode(CRDTDataUpdate<FileUrl?>.self, forKey: PdfModel.CodingKeys._fileUrl_)
+        self._entries_ = try container.decode(CRDTDataUpdate<[PdfEntryModel]>.self, forKey: PdfModel.CodingKeys._entries_)
+        self._parentId = try container.decodeIfPresent(UUID.self, forKey: PdfModel.CodingKeys._parentId)
     }
 
     public var id: UUID
@@ -58,25 +58,25 @@ public final class PdfModel: Identifiable, @unchecked Sendable {
         get { name_.wrappedValue }
         set { name_.wrappedValue = newValue }
     }
-    @ObservationIgnored var name_: CRDT<String>
+    var name_: CRDT<String>
 
     public var description: String {
         get { description_.wrappedValue }
         set { description_.wrappedValue = newValue }
     }
-    @ObservationIgnored var description_: CRDT<String>
+    var description_: CRDT<String>
 
     public var tags: [String] {
         get { tags_.wrappedValue }
         set { tags_.wrappedValue = newValue }
     }
-    @ObservationIgnored var tags_: CRDT<[String]>
+    var tags_: CRDT<[String]>
 
     public var category: ItemListCategory {
         get { category_.wrappedValue }
         set { category_.wrappedValue = newValue }
     }
-    @ObservationIgnored var category_: CRDT<ItemListCategory>
+    var category_: CRDT<ItemListCategory>
 
     public var displayState: Int
 
@@ -220,15 +220,15 @@ extension PdfModel: Codable {
     public final func encode(to encoder: Encoder) throws {
         var container: KeyedEncodingContainer<PdfModel.CodingKeys> = encoder.container(keyedBy: PdfModel.CodingKeys.self)
 
-        try container.encode(self.id, forKey: PdfModel.CodingKeys._id)
-        try container.encode(self.name_, forKey: PdfModel.CodingKeys._name_)
-        try container.encode(self.description_, forKey: PdfModel.CodingKeys._description_)
-        try container.encode(self.tags_, forKey: PdfModel.CodingKeys._tags_)
-        try container.encode(self.category_, forKey: PdfModel.CodingKeys._category_)
-        try container.encode(self.displayState, forKey: PdfModel.CodingKeys._displayState)
-        try container.encode(self.fileUrl_, forKey: PdfModel.CodingKeys._fileUrl_)
-        try container.encode(self.entries_, forKey: PdfModel.CodingKeys._entries_)
-        try container.encodeIfPresent(self.parentId, forKey: PdfModel.CodingKeys._parentId)
+        try container.encode(self._id, forKey: PdfModel.CodingKeys._id)
+        try container.encode(self._name_, forKey: PdfModel.CodingKeys._name_)
+        try container.encode(self._description_, forKey: PdfModel.CodingKeys._description_)
+        try container.encode(self._tags_, forKey: PdfModel.CodingKeys._tags_)
+        try container.encode(self._category_, forKey: PdfModel.CodingKeys._category_)
+        try container.encode(self._displayState, forKey: PdfModel.CodingKeys._displayState)
+        try container.encode(self._fileUrl_, forKey: PdfModel.CodingKeys._fileUrl_)
+        try container.encode(self._entries_, forKey: PdfModel.CodingKeys._entries_)
+        try container.encodeIfPresent(self._parentId, forKey: PdfModel.CodingKeys._parentId)
     }
 }
 
