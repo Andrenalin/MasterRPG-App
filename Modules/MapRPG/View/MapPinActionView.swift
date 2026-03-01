@@ -80,12 +80,7 @@ struct MapPinActionView: View, Equatable {
     let dragEndAction: (() -> Void)?
     
     @Namespace var glassNamespace
-    
-    @State private var showImporter = false
-    @State private var showCamera = false
-    @State private var showLibrary = false
-    @State private var showImagePlayground = false
-    
+        
     // Equatable implementation: compare stable properties
     static func == (lhs: MapPinActionView, rhs: MapPinActionView) -> Bool {
         lhs.pinId == rhs.pinId &&
@@ -104,16 +99,16 @@ struct MapPinActionView: View, Equatable {
         MapPinView(model: model, pinId: pinId, pinSize: pinSize, isShown: isShown, borderColor: borderColor, canDrag: canDrag, doubleTapAction: doubleTapAction, dragEndAction: dragEndAction)
             .overlay {
 #if os(visionOS)
-                content
+                actionButtons
 #else
                 GlassEffectContainer {
-                    content
+                    actionButtons
                 }
 #endif
             }
     }
     
-    var content: some View {
+    var actionButtons: some View {
         ZStack {
             button(type: .remove)
                 .zIndex(10)
@@ -140,7 +135,8 @@ struct MapPinActionView: View, Equatable {
             case .copy:
                 model.copyPin(id: pinId)
             case .photo:
-                showCamera.toggle()
+                //showCamera.toggle()
+                print("photo")
             case .resize:
                 model.resizePin(id: pinId)
             }

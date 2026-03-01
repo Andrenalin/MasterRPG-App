@@ -9,6 +9,8 @@ struct NeedleMapPin: View {
     let index: Int
     let map: MapModel
     
+    @Namespace var glassNamespace
+    
     @GestureState private var isDragging = false
     @State private var isDraggingStarts = false
     
@@ -22,21 +24,53 @@ struct NeedleMapPin: View {
         needleView
     }
     
+    var actionButtons: some View {
+        ZStack {
+            button(type: .remove)
+                .zIndex(110)
+            button(type: .add)
+                .zIndex(110)
+            
+            Color.clear
+                .frame(width: 22, height: 22)
+#if !os(visionOS)
+                .glassEffectID("menu", in: glassNamespace)
+#endif
+        }
+    }
+    
+    private func button(type: NeedleMapPinButtonType) -> some View {
+        return Button {
+            switch type {
+            case .remove:
+                removePin()
+            case .add:
+                addPin()
+            }
+        } label: {
+            Label(type.label, systemImage: type.systemImage)
+                .labelStyle(.iconOnly)
+                .frame(width: 50, height: 50)
+                .opacity(entries.isSelected(index: index) ? 1 : 0)
+        }
+        .borderLessTVBottonStyle()
+        .foregroundStyle(.white)
+#if !os(visionOS)
+        .applyIf(entries.isSelected(index: index)) {
+            $0.glassEffect(.regular.tint(NetworkModules.map.tint.opacity(0.75)).interactive())
+        }
+        .glassEffectID(type.label, in: glassNamespace)
+#endif
+        .offset(type.offset(expanded: entries.isSelected(index: index), layoutDown: true))
+        .animation(.spring(duration: type.duration * 3, bounce: 0.2), value: entries.isSelected(index: index))
+        .opacity(entries.isSelected(index: index) ? 1 : 0)
+    }
+
     var needleView: some View {
         VStack(alignment: .center, spacing: 0) {
             needleHeader
                 .frame(width: 44, height: 44)
-                .animation(.linear, value: entries.isSelected(index: index))
-                .overlay(alignment: .center) {
-                    Group {
-                        addButton
-                            .offset(x: entries.isSelected(index: index) ? 36 : 0, y: entries.isSelected(index: index) ? -36 : 0)
-                        removeButton
-                            .offset(x: entries.isSelected(index: index) ? -36 : 0, y: entries.isSelected(index: index) ? -36 : 0)
-                    }
-                    .opacity(entries.isSelected(index: index) ? 1 : 0)
-                }
-            
+
             needlePath
                 .stroke(Color.black, lineWidth: 1, antialiased: true)
                 .fill(Color.gray)
@@ -75,61 +109,42 @@ struct NeedleMapPin: View {
             .opacity(entries.isSelected(index: index) ? 1 : 0)
             .overlay(alignment: .center) {
                 needHead
+                    .overlay {
+        #if os(visionOS)
+                        actionButtons
+        #else
+                        GlassEffectContainer {
+                            actionButtons
+                        }
+        #endif
+                    }
             }
             .zIndex(2)
     }
-    
-    var addButton: some View {
-        Button {
-            withAnimation { addPin() }
-        } label: {
-            Image(systemName: "plus")
-                .padding()
-                .foregroundStyle(.black)
-        }
-        .frame(width: 44, height: 44)
-        .background {
-            Color.green
-        }
-        .clipShape(.circle)
-    }
-    
+        
     func addPin() {
-        var updatedEntry = entries.entry(entryId)
-        let next = index + 1 < updatedEntry.coordinates.count ? index + 1 : 0
-        var nextPoint = updatedEntry.coordinates[next]
-        if next == 0 {
-            nextPoint = nextPoint + CGPoint(x: 50, y: 50)
-        } else {
-            nextPoint = nextPoint - (nextPoint - updatedEntry.coordinates[index]) / 2
-        }
-        updatedEntry.coordinates.insert(nextPoint, at: next)
-        map[updatedEntry.id] = updatedEntry
-    }
-    
-    var removeButton: some View {
-        Button {
-            withAnimation(.bouncy) {
-                entries.selectedNeedleIndex = nil
-                removePin()
+        withAnimation(.bouncy) {
+            var updatedEntry = entries.entry(entryId)
+            let next = index + 1 < updatedEntry.coordinates.count ? index + 1 : 0
+            var nextPoint = updatedEntry.coordinates[next]
+            if next == 0 {
+                nextPoint = nextPoint + CGPoint(x: 50, y: 50)
+            } else {
+                nextPoint = nextPoint - (nextPoint - updatedEntry.coordinates[index]) / 2
             }
-        } label: {
-            Image(systemName: "trash")
-                .padding()
-                .foregroundStyle(.black)
+            updatedEntry.coordinates.insert(nextPoint, at: next)
+            map[updatedEntry.id] = updatedEntry
         }
-        .frame(width: 44, height: 44)
-        .background {
-            Color.red
-        }
-        .clipShape(.circle)
     }
     
     func removePin() {
-        var updatedEntry = entries.entry(entryId)
-        if index >= 0 && index < updatedEntry.coordinates.count {
-            updatedEntry.coordinates.remove(at: index)
-            map[updatedEntry.id] = updatedEntry
+        withAnimation(.bouncy) {
+            entries.selectedNeedleIndex = nil
+            var updatedEntry = entries.entry(entryId)
+            if index >= 0 && index < updatedEntry.coordinates.count {
+                updatedEntry.coordinates.remove(at: index)
+                map[updatedEntry.id] = updatedEntry
+            }
         }
     }
     
@@ -231,7 +246,7 @@ enum NeedleMapPinButtonType: String {
         case .remove:
             return 0.3
         case .add:
-            return 0.4
+            return 0.5
         }
     }
     
@@ -244,13 +259,13 @@ enum NeedleMapPinButtonType: String {
         case .remove:
             return offset(atIndex: 0, layoutDown: layoutDown)
         case .add:
-            return offset(atIndex: 1, layoutDown: layoutDown)
+            return offset(atIndex: 3, layoutDown: layoutDown)
         }
     }
     
     private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
-        let radius: CGFloat = 120
-        let startAngleDeg = -180.0
+        let radius: CGFloat = 80
+        let startAngleDeg = 45.0
         let step = 90.0 / Double(4 - 1)
         
         let angleDeg = startAngleDeg + (Double(index) * step)
