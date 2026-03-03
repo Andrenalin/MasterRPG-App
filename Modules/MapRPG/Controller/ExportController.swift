@@ -38,7 +38,7 @@ extension ExportController: ExportControllable {
         return itemIds
     }
     
-    public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+    @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         var checkIds = itemIds.ids[itemController.config.module, default: []]
         var results: Set<UUID> = []
         var audioIds: Set<UUID> = []
@@ -62,42 +62,54 @@ extension ExportController: ExportControllable {
                 photoIds.insert(photoId)
             }
 
-            let links = item.entries.flatMap {
-                let text = $0.content
-                return LinkReplaceController.links(for: text)
-            }
-
-            links.forEach {
-                switch $0.module {
-                case .audio:
-                    if rootManager.audioRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                        audioIds.insert($0.itemId)
+            if item.specialCategory {
+                let ids = item.entries.compactMap { entryId -> UUID? in
+                    let subId = entryId.childId
+                    if !(results.contains(subId) || checkIds.contains(subId)) && itemController.itemSync(for: subId) != nil {
+                        return subId
                     }
-                case .dice:
-                    if rootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                        diceIds.insert($0.itemId)
+                    return nil
+                }
+                checkIds.append(contentsOf: ids)
+            } else {
+                
+                let links = item.entries.flatMap {
+                    let text = $0.content
+                    return LinkReplaceController.links(for: text)
+                }
+                
+                links.forEach {
+                    switch $0.module {
+                    case .audio:
+                        if rootManager.audioRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            audioIds.insert($0.itemId)
+                        }
+                    case .dice:
+                        if rootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            diceIds.insert($0.itemId)
+                        }
+                    case .map:
+                        if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && rootManager.mapRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            checkIds.append($0.itemId)
+                        }
+                    case .photo:
+                        if rootManager.photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            photoIds.insert($0.itemId)
+                        }
+                    case .table:
+                        if rootManager.tableRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            tableIds.insert($0.itemId)
+                        }
+                    case .value:
+                        if rootManager.characterRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            valueIds.insert($0.itemId)
+                        }
+                    default:
+                        print("*** ERROR table \(item.name) export is not handling link \($0)")
                     }
-                case .map:
-                    if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && rootManager.mapRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                        checkIds.append($0.itemId)
-                    }
-                case .photo:
-                    if rootManager.photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                        photoIds.insert($0.itemId)
-                    }
-                case .table:
-                    if rootManager.tableRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                        tableIds.insert($0.itemId)
-                    }
-                case .value:
-                    if rootManager.characterRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                        valueIds.insert($0.itemId)
-                    }
-                default:
-                    print("*** ERROR table \(item.name) export is not handling link \($0)")
                 }
             }
-        }        
+        }
         var allIds = itemIds
         allIds.ids[itemController.config.module] = Array(results)
         let newAudioIds = rootManager.audioRoot.exportControllable.exporting(ids: audioIds)

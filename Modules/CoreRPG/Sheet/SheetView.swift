@@ -70,7 +70,11 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
             
             ForEach(model.sheetModel.filter(searchText: model.searchText)) { entry in
                 SheetEntryView(root: root, model: model, entry: entry, isEditor: isEditor, linkTypes: linkTypes)
-                //                .draggable(LinkEntryData(itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name, module: entry.source.typeId))
+                    .applyIf(!isEditor) {
+#if !os(tvOS)
+                        $0.draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink())
+#endif
+                    }
             }
             .applyIf(isEditor) {
                 $0.onMove { indexSet, index in

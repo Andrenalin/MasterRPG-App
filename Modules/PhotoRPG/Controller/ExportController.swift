@@ -31,7 +31,7 @@ extension ExportController: ExportControllable {
                 continue
             }
             results.insert(id)
-            
+                        
             let ids = item.entries.compactMap { entryId -> UUID? in
                 let subId = entryId.photoId
                 if !(results.contains(subId) || checkIds.contains(subId)) && itemController.itemSync(for: subId) != nil {

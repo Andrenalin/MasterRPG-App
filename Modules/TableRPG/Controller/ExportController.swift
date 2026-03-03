@@ -26,7 +26,7 @@ extension ExportController: ExportControllable {
         return allIds
     }
     
-    public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+    @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         var checkIds = itemIds.ids[itemController.config.module, default: []]
         var results: Set<UUID> = []
         var diceIds: Set<UUID> = []
@@ -45,22 +45,33 @@ extension ExportController: ExportControllable {
                 diceIds.insert(diceId)
             }
     
-            let links = item.entries.flatMap { entry in
-                entry.links(for: entry.content)
-            }
-    
-            links.forEach {
-                switch $0.module {
-                case .dice:
-                    if rootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                        diceIds.insert($0.itemId)
+            if item.specialCategory {
+                let ids = item.entries.compactMap { entryId -> UUID? in
+                    let subId = entryId.childId
+                    if !(results.contains(subId) || checkIds.contains(subId)) && itemController.itemSync(for: subId) != nil {
+                        return subId
                     }
-                case .table:
-                    if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && itemController.itemSync(for: $0.itemId) != nil {
-                        checkIds.append($0.itemId)
+                    return nil
+                }
+                checkIds.append(contentsOf: ids)
+            } else {
+                let links = item.entries.flatMap { entry in
+                    entry.links(for: entry.content)
+                }
+                
+                links.forEach {
+                    switch $0.module {
+                    case .dice:
+                        if rootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            diceIds.insert($0.itemId)
+                        }
+                    case .table:
+                        if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && itemController.itemSync(for: $0.itemId) != nil {
+                            checkIds.append($0.itemId)
+                        }
+                    default:
+                        Logger.exportController.error("Table \(item.name, privacy: .public) export is not handling link \($0.markDown, privacy: .public)")
                     }
-                default:
-                    Logger.exportController.error("Table \(item.name, privacy: .public) export is not handling link \($0.markDown, privacy: .public)")
                 }
             }
         }

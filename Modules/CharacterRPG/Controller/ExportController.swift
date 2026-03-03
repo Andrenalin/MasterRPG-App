@@ -28,7 +28,7 @@ extension ExportController: ExportControllable {
         return allIds
     }
     
-    public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+    @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         var checkIds = itemIds.ids[itemController.config.module, default: []]
         var results: Set<UUID> = []
         var diceIds: Set<UUID> = []
@@ -45,52 +45,64 @@ extension ExportController: ExportControllable {
                 continue
             }
             results.insert(id)
-
+            
             if let diceId = item.diceId, rootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {
                 diceIds.insert(diceId)
             }
-
+            
             if let photoId = item.photoId, rootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
                 photoIds.insert(photoId)
             }
             photoIds.formUnion(item.photos.filter { rootManager.photoRoot.linkControllable.validateLink(itemId: $0) })
-
-            var links: [LinkReplaceModel] = []
-            item.entries.forEach { entry in
-                links.append(contentsOf: entry.links(for: entry.name))
-                links.append(contentsOf: entry.links(for: entry.value))
-                if let valueId = entry.valueId, !(results.contains(valueId) || checkIds.contains(valueId)) {
-                    checkIds.append(valueId)
+            
+            if item.specialCategory {
+                let ids = item.entries.compactMap { entryId -> UUID? in
+                    let subId = entryId.childId
+                    if !(results.contains(subId) || checkIds.contains(subId)) && itemController.itemSync(for: subId) != nil {
+                        return subId
+                    }
+                    return nil
                 }
-                if let diceId = entry.diceId {
-                    diceIds.insert(diceId)
+                checkIds.append(contentsOf: ids)
+            } else {
+                
+                var links: [LinkReplaceModel] = []
+                item.entries.forEach { entry in
+                    links.append(contentsOf: entry.links(for: entry.name))
+                    links.append(contentsOf: entry.links(for: entry.value))
+                    if let valueId = entry.valueId, !(results.contains(valueId) || checkIds.contains(valueId)) {
+                        checkIds.append(valueId)
+                    }
+                    if let diceId = entry.diceId {
+                        diceIds.insert(diceId)
+                    }
                 }
-            }
-
-            links.forEach {
-                switch $0.module {
-                case .dice:
-                    if rootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                        diceIds.insert($0.itemId)
+                
+                links.forEach {
+                    switch $0.module {
+                    case .dice:
+                        if rootManager.diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            diceIds.insert($0.itemId)
+                        }
+                    case .pdf:
+                        if rootManager.pdfRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            pdfIds.insert($0.itemId)
+                        }
+                    case .photo:
+                        if rootManager.photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            photoIds.insert($0.itemId)
+                        }
+                    case .table:
+                        if rootManager.tableRoot.linkControllable.validateLink(itemId: $0.itemId, entryId: nil) {
+                            tableIds.insert($0.itemId)
+                        }
+                    case .value:
+                        if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && itemController.itemSync(for: $0.itemId) != nil {
+                            checkIds.append($0.itemId)
+                        }
+                    default:
+                        print("*** ERROR table \(item.name) export is not handling link \($0)")
                     }
-                case .pdf:
-                    if rootManager.pdfRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                        pdfIds.insert($0.itemId)
-                    }
-                case .photo:
-                    if rootManager.photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                        photoIds.insert($0.itemId)
-                    }
-                case .table:
-                    if rootManager.tableRoot.linkControllable.validateLink(itemId: $0.itemId, entryId: nil) {
-                        tableIds.insert($0.itemId)
-                    }
-                case .value:
-                    if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && itemController.itemSync(for: $0.itemId) != nil {
-                        checkIds.append($0.itemId)
-                    }
-                default:
-                    print("*** ERROR table \(item.name) export is not handling link \($0)")
                 }
             }
         }
