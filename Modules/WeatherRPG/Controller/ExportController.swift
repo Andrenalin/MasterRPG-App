@@ -58,8 +58,8 @@ extension ExportController: ExportControllable {
         var allIds = itemIds
         allIds.ids[itemController.config.module] = Array(results)
 
-        let newDiceIds = rootManager.diceRoot.exportControllable.exporting(ids: photoIds)
-        allIds.merge(other: newDiceIds)
+        let newPhotoIds = rootManager.photoRoot.exportControllable.exporting(ids: photoIds)
+        allIds.merge(other: newPhotoIds)
         return allIds
     }
 }
