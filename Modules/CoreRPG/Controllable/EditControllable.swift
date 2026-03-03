@@ -120,6 +120,22 @@ public extension EditControllable {
     }
 }
 
+// MARK: - Other
+
+public extension EditControllable {
+    @MainActor func repairFolder(itemId: UUID) {
+        guard let item = editModel(for: itemId), item.parentId != nil else { return }
+        for id in itemControllable.itemDataModel.items {
+            guard id != item.parentId, let checkItem = itemControllable.itemSync(for: id), checkItem.isFolder else { continue }
+            guard let index = checkItem.entries.firstIndex(where: { $0.childId == itemId }) else { return }
+            guard let folderItem = editModel(for: id) else { return }
+            folderItem.entries.remove(at: index)
+            save(updated: folderItem, message: String(localized: "removed item from folder").localizedString)
+        }
+        guard item.entries.isEmpty else { return }
+    }
+}
+
 // MARK: - Group Items / Carousell Items
 
 public extension EditControllable {

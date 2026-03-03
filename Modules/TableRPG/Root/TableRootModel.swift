@@ -32,7 +32,7 @@ public final class TableRootModel {
         _itemController = itemController
         _editController = EditController(diceRoot: diceRoot, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        _importController = ImportController(itemController: itemController)
+        _importController = ImportController(itemController: itemController, editController: editController)
         _gameController = GameController(rootManager: rootManager, diceRoot: diceRoot, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
 

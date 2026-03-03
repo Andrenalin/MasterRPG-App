@@ -36,7 +36,7 @@ public final class CharacterRootModel {
         _itemController = itemController
         _editController = EditController(root: self, itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        _importController = ImportController(itemController: itemController)
+        _importController = ImportController(itemController: itemController, editController: editController)
         _gameController = GameController(rootManager: rootManager, root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
 

@@ -17,6 +17,7 @@ public final class ItemDataImportModel: Sendable {
 
 public protocol ImportControllable: Sendable {
     var itemControllable: any ItemControllable { get }
+    var editControllable: any EditControllable { get }
     // overwrite
     var importModel: ItemDataImportModel { get }
 
@@ -119,7 +120,7 @@ public extension ImportControllable {
                         if let currentFile {
                             try await addFile(data: currentFile, to: newItem)
                         }
-                        try await addItem(importedItem: newItem, forceSave: forceSave, counterUpdater: counterUpdater)
+                        try await addItem(importedItem: newItem, id: newItem.id, forceSave: forceSave, counterUpdater: counterUpdater)
                     } catch {
                         await logImport(title: "Error: \(error.localizedDescription)", count: 0)
                     }
@@ -151,7 +152,7 @@ private extension ImportControllable {
         (importModel.importedItems, importModel.totalImportingItems)
     }
 
-    func addItem(importedItem: ModelType, forceSave: Bool, counterUpdater: @escaping () async -> Void) async throws {
+    func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, counterUpdater: @escaping () async -> Void) async throws {
         let finalItem: ModelType?
         let itemController = itemControllable
         if await importModel.withOverwrite {
@@ -164,6 +165,7 @@ private extension ImportControllable {
             return
         }
         await itemController.replace(model: finalItem, isInsert: true, forceSave: forceSave)
+        await editControllable.repairFolder(itemId: id)
         await counterUpdater()
         try Task.checkCancellation()
     }

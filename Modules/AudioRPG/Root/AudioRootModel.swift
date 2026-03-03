@@ -32,7 +32,7 @@ public final class AudioRootModel {
         _itemController = itemController
         _editController = EditController(itemController: itemController, linkRegisterController: linkRegisterController, tagController: searchModel.tagController)
         _exportController = ExportController(rootManager: rootManager, itemController: itemController)
-        _importController = ImportController(itemController: itemController)
+        _importController = ImportController(itemController: itemController, editController: editController)
 
         let audioController = AudioController(itemController: itemController, model: audioPlayerModel)
         _audioController = audioController
