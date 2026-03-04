@@ -33,6 +33,11 @@ struct ContextMenuMultiController {
         guard let parentId = selection(currentSelected: currentSelected).first else { return nil }
         return itemController.itemSync(for: parentId)
     }
+    
+    func hasDifferentFolders(for parent: (any ItemDataAccessable)?) -> Bool {
+        guard let parent, parent.isFolder else { return false }
+        return parent.parentId != nil
+    }
 
     func itemCategory(currentSelected: UUID?) -> ItemListCategory {
         let selection = selection(currentSelected: currentSelected)

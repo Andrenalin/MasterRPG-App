@@ -26,7 +26,7 @@ struct ListRootContextMenu: View {
             addItemView
             moveItemView
         }
-        if parent?.isFolder ?? false {
+        if controller.hasDifferentFolders(for: parent) {
             removeItemView(oneUp: true)
         }
         if parent?.specialCategory ?? false {
