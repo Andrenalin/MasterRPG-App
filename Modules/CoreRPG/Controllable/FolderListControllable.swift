@@ -114,7 +114,7 @@ extension FolderListControllable {
         if listModel.displayedItems != newlyfilteredOnes {
             listModel.displayedItems <=> newlyfilteredOnes
         }
-
+        
         let newlyParentFilteredOnes: [ListItemModel] = listModel.parentOriginalItems.enumerated().flatMap { (index, item) in
             filterSub(item: item, index: index, level: 0, isParent: true)
         }
@@ -137,6 +137,13 @@ extension FolderListControllable {
     func toggleFolder(item: ListItemModel) {
         listModel.toggleFolder(itemId: item.model.id, entryId: item.entryId)
         item.isOpen.toggle()
+        resetFilter()
+    }
+    
+    func toggleParentFolder(item: ListItemModel) {
+        listModel.toggleFolder(itemId: item.model.id, entryId: nil)
+        guard let parentItem = listModel.displayedItems.first(where: { $0.model.id == item.model.id && $0.entryId == nil && $0.level == item.level - 1 }) else { return }
+        parentItem.isOpen.toggle()
         resetFilter()
     }
 }

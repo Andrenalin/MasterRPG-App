@@ -166,6 +166,9 @@ private extension LinkItemListView {
                         specialCategoryFolderIndicator(item: item)
                     }
                     .contentShape(.rect)
+                    .contextMenu {
+                        closeEntrySection(for: item)
+                    }
 #if !os(tvOS)
                     .draggable(for: root.configurable.module, itemId: item.model.id, entryId: entryId, name: item.model[entryId].name.withoutLink())
 #endif
@@ -251,5 +254,19 @@ private extension LinkItemListView {
     
     func showFolderIndicator(item: ListItemModel) -> Bool {
         item.model.specialCategory || (selectionModel.allowEntrySelection && !item.model.entries.isEmpty && item.entryId == nil) || !root.itemControllable.subChildren(itemId: item.model.id, entryId: item.entryId).isEmpty
+    }
+    
+    func closeEntrySection(for item: ListItemModel) -> some View {
+        Button {
+            withAnimation { root.folderLinkControllable.toggleParentFolder(item: item) }
+        } label: {
+            Label {
+                Text("Close parent folder", bundle: .module)
+            } icon: {
+                Image(systemName: "folder.circle")
+            }
+
+        }
+
     }
 }
