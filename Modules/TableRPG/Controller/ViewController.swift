@@ -61,12 +61,3 @@ public extension ViewController {
         ViewerRootView(model: root.gameController.currentItem(), windowMode: false)
     }
 }
-
-// MARK: Links
-
-public extension ViewController {
-    @MainActor
-    func selectForScan(root: TableRootModel, ids: Binding<[UUID]?>, entryId: Binding<UUID?>? = nil, entryOnly: Bool = false, dismissAction: @escaping () -> Void) -> some View {
-        Text("Todo")
-    }
-}

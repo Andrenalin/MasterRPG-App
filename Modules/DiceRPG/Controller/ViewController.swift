@@ -66,16 +66,6 @@ public extension ViewController {
     }
 }
 
-// MARK: - Links
-
-public extension ViewController {
-    @MainActor
-    func selectForScan(root: DiceRootModel, ids: Binding<[UUID]?>, dismissAction: @escaping () -> Void) -> some View {
-        Text("Todo")
-    }
-}
-
-
 // MARK: - Dice
 
 public extension ViewController {

@@ -64,12 +64,3 @@ public extension ViewController {
         }
     }
 }
-
-// MARK: - OLd Views
-
-public extension ViewController {
-    @MainActor 
-    func selectForScan(root: CharacterRootModel, ids: Binding<[UUID]?>, dismissAction: @escaping () -> Void) -> some View {
-        Text("TodO")
-    }
-}
