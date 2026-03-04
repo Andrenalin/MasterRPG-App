@@ -32,6 +32,8 @@ public protocol EntryDataEditable: EditControllable {
     
     @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String
     
+    @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable]
+    
     // MARK: - QuickEntryEditor
     
     @MainActor func create(name: String, content: String) -> Model.Entry
@@ -226,6 +228,17 @@ public extension EntryDataEditable {
         save(updated: otherItem, message: String(localized: "remove entry", bundle: .module).localizedString)
         save(updated: item, message: String(localized: "add entry", bundle: .module).localizedString)
         return true
+    }
+    
+    @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] { [] }
+    
+    @MainActor func move(itemId: UUID, sourceEntryId: UUID, into folder: FolderRepresentable) {
+        guard let item = editModel(for: itemId), let group = editModel(for: folder.id) else { return }
+        let entry = item[sourceEntryId]
+        item.entries.removeAll(where: { $0.id == sourceEntryId })
+        group.entries.append(entry)
+        save(updated: item, message: String(localized: "remove entry", bundle: .module).localizedString)
+        save(updated: group, message: String(localized: "move entry", bundle: .module).localizedString)
     }
 }
 

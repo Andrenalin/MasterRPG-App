@@ -149,6 +149,22 @@ public final class TableSheetModel: Sendable {
         }
     }
     
+    func groupFolders(entryDataEditable: (any EntryDataEditable), entry: SheetModel) -> [FolderRepresentable] {
+        guard let entryId = entry.source.entryId else { return [] }
+        return entryDataEditable.groupFolders(itemId: entry.source.itemId, sourceEntryId: entryId)
+    }
+
+    func move(entryDataEditable: (any EntryDataEditable), entry: SheetModel, into folder: FolderRepresentable) {
+        guard let entryId = entry.source.entryId else { return }
+        entryDataEditable.move(itemId: entry.source.itemId, sourceEntryId: entryId, into: folder)
+        
+        Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            updateParent()
+        }
+
+    }
+
     func update(entryId: UUID) {
         let updatedModel = linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         if let entryIndex = updatedModel.entries.firstIndex(where: { $0.source.entryId == entryId }) {

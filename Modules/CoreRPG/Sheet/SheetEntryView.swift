@@ -101,6 +101,9 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             .contextMenu {
                 editButton(onlyIcon: false)
                 Divider()
+                if let entryEditable {
+                    moveIntoButton(entryEditable: entryEditable, groups: model.groupFolders(entryDataEditable: entryEditable, entry: entry))
+                }
                 moveUpButton
                 moveDownButton
                 Divider()
@@ -191,6 +194,31 @@ private extension SheetEntryView {
                 Text("Add Links", bundle: .module)
             } icon: {
                 Image(systemName: "link.badge.plus")
+            }
+        }
+    }
+
+    @ViewBuilder
+    func moveIntoButton(entryEditable: any EntryDataEditable, groups: [FolderRepresentable]) -> some View {
+        if !groups.isEmpty {
+            Menu {
+                ForEach(groups) { folder in
+                    Button {
+                        model.move(entryDataEditable: entryEditable, entry: entry, into: folder)
+                    } label: {
+                        Label {
+                            Text(folder.name)
+                        } icon: {
+                            Image(systemName: "folder")
+                        }
+                    }
+                }
+            } label: {
+                Label {
+                    Text("Move \(entry.name.withoutLink()) into", bundle: .module)
+                } icon: {
+                    Image(systemName: "list.bullet.indent")
+                }
             }
         }
     }

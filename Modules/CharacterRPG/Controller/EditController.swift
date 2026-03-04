@@ -132,6 +132,14 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return "" }
         return root.linkController.linkText(model: item, entryId: entry.id)
     }
+    
+    @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] {
+        guard let item = itemControllable.itemSync(for: itemId) as? Model else { return [] }
+        return item.entries.compactMap {
+            guard $0.id != sourceEntryId, let valueId = $0.valueId else { return nil }
+            return FolderRepresentable(id: valueId, name: $0.name)
+        }
+    }
 }
 
 // MARK: - New Editor Functions
