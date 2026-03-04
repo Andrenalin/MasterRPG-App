@@ -61,6 +61,9 @@ private extension ListRootContextMenu {
                 Image(systemName: "doc.on.doc")
             }
         }
+        #if !os(tvOS)
+        .keyboardShortcut("d", modifiers: .command)
+        #endif
     }
 
     var deleteItemView: some View {
@@ -78,6 +81,9 @@ private extension ListRootContextMenu {
                 Image(systemName: "trash")
             }
         }
+        #if !os(tvOS)
+        .keyboardShortcut(.delete, modifiers: .command)
+        #endif
         .disabled((parentItem?.category ?? .entry) == .collection)
     }
 
@@ -92,6 +98,9 @@ private extension ListRootContextMenu {
                 Image(systemName: "square.and.arrow.up")
             }
         }
+        #if !os(tvOS)
+        .keyboardShortcut("e", modifiers: [.command, .shift])
+        #endif
     }
 
     var generateLinkView: some View {
@@ -104,6 +113,9 @@ private extension ListRootContextMenu {
                 Image(systemName: "link")
             }
         }
+        #if !os(tvOS)
+        .keyboardShortcut("l", modifiers: [.command, .shift])
+        #endif
     }
 
     var groupEditView: some View {
@@ -117,6 +129,9 @@ private extension ListRootContextMenu {
                 Image(systemName: "long.text.page.and.pencil")
             }
         }
+        #if !os(tvOS)
+        .keyboardShortcut("g", modifiers: [.command, .option])
+        #endif
     }
     
     var moveItemView: some View {
@@ -139,6 +154,9 @@ private extension ListRootContextMenu {
                 Image(systemName: "folder")
             }
         }
+        #if !os(tvOS)
+        .keyboardShortcut("m", modifiers: [.command, .shift])
+        #endif
     }
 
     var addItemView: some View {
@@ -161,6 +179,9 @@ private extension ListRootContextMenu {
                 Image(systemName: controller.collectionIcon)
             }
         }
+        #if !os(tvOS)
+        .keyboardShortcut("a", modifiers: [.command, .shift])
+        #endif
     }
     
     func removeEntryTitle(oneUp: Bool) -> String {
@@ -193,6 +214,9 @@ private extension ListRootContextMenu {
                 Image(systemName: "rectangle.stack.badge.minus")
             }
         }
+        #if !os(tvOS)
+        .keyboardShortcut("r", modifiers: [.command, .shift])
+        #endif
     }
 
 }

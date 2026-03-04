@@ -80,7 +80,7 @@ private extension LinkItemListView {
         
         Picker(selection: $inspectorDisplayModel.listMode) {
             ForEach(ListDisplayModel.ListMode.allCases) { mode in
-                Text(mode.title)
+                Text(mode.title, bundle: .module)
                     .tag(mode)
             }
         } label: {

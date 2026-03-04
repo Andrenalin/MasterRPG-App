@@ -46,7 +46,7 @@ public final class ListDisplayModel {
         case list
         case folder
         
-        public var title: String {
+        public var title: LocalizedStringKey {
             switch self {
             case .list: return "List"
             case .folder: return "Folder"
