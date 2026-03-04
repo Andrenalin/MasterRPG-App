@@ -347,7 +347,7 @@ private extension ItemDetailRootView {
     func overlayFileImporter(model: any ItemDataAccessable) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
             HStack {
-                Text(model.url?.path(percentEncoded: false) ?? String(localized: "No file is set").localizedString)
+                Text(model.url?.path(percentEncoded: false) ?? String(localized: "No file is set", bundle: .module).localizedString)
                     .font(.callout)
             }
             .padding(6)

@@ -343,7 +343,7 @@ final class AppDataModel: Identifiable {
 
     enum LocString {
         static let minNumImages = 10
-        static let bundleForLocalizedStrings = { return Bundle.main }()
+        static let bundleForLocalizedStrings = { return Bundle.module }()
 
         static let segment1FeedbackString = NSLocalizedString(
             "Move slowly around your object. (Object Capture, Segment, Feedback)",

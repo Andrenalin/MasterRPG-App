@@ -36,7 +36,7 @@ public struct LinkWindowCommandView: View {
     
     var titleWindow: String {
         guard isAlt else { return title }
-        let newTitle = String(localized: "New").localizedString
+        let newTitle = String(localized: "New", bundle: .module).localizedString
         return newTitle + " " + title
     }
 }

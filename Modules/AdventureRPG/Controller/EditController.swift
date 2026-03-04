@@ -100,7 +100,7 @@ extension EditController {
     @MainActor func add(photoId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = photoId
-        save(updated: item, message: String(localized: "Changed Photo").localizedString)
+        save(updated: item, message: String(localized: "Changed Photo", bundle: .module).localizedString)
     }
 }
 
@@ -135,7 +135,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced").localizedString)
+            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString)
             return []
         }
         return itemRowModels

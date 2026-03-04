@@ -64,7 +64,7 @@ struct GroupEditorController {
             }
         }
         
-        return GroupEditorModel(namePlaceHolder: name ?? String(localized: "Different Names").localizedString, descriptionPlaceHolder: description ?? String(localized: "Different Descriptions").localizedString, tagsPlaceHolder: tags?.joined(separator: " ") ?? String(localized: "Different Tags").localizedString)
+        return GroupEditorModel(namePlaceHolder: name ?? String(localized: "Different Names", bundle: .module).localizedString, descriptionPlaceHolder: description ?? String(localized: "Different Descriptions", bundle: .module).localizedString, tagsPlaceHolder: tags?.joined(separator: " ") ?? String(localized: "Different Tags", bundle: .module).localizedString)
     }
     
     @MainActor func save() {

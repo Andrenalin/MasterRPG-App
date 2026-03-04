@@ -76,7 +76,7 @@ extension EditController {
     @MainActor func add(diceId: UUID?, itemId: UUID) {
         guard let editModel = editModel(for: itemId) else { return }
         editModel.diceId = diceId
-        save(updated: editModel, message: String(localized: "Added Dice").localizedString)
+        save(updated: editModel, message: String(localized: "Added Dice", bundle: .module).localizedString)
     }
 }
 
@@ -109,7 +109,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { editModel[$0] })
             }
             editModel.entries = newEntries
-            save(updated: editModel, message: String(localized: "Entries replaced").localizedString)
+            save(updated: editModel, message: String(localized: "Entries replaced", bundle: .module).localizedString)
             return []
         }
         return itemRowModels

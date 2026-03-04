@@ -80,7 +80,7 @@ extension EditController {
         let linkText = " [\(link)](\(URL.appScheme)://\(module.token)/0/\(itemId.uuidString)\(entryLink))"
         entry.name = linkText
         editModel[destinationEntryId] = entry
-        save(updated: editModel, message: String(localized: "Add Link").localizedString)
+        save(updated: editModel, message: String(localized: "Add Link", bundle: .module).localizedString)
     }
     
     @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
@@ -98,13 +98,13 @@ extension EditController {
                 entry.type = .number
             }
             item[destinationEntryId] = entry
-            save(updated: item, message: String(localized: "Add Dice").localizedString)
+            save(updated: item, message: String(localized: "Add Dice", bundle: .module).localizedString)
         case .pdf:
             var entry = item[destinationEntryId]
             if entry.type != .text {
                 entry.type = .text
                 item[destinationEntryId] = entry
-                save(updated: item, message: String(localized: "Change Value Type").localizedString)
+                save(updated: item, message: String(localized: "Change Value Type", bundle: .module).localizedString)
             }
             addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
         case .value:
@@ -112,7 +112,7 @@ extension EditController {
             if entry.type != .number || entry.type != .decimal {
                 entry.type = .number
                 item[destinationEntryId] = entry
-                save(updated: item, message: String(localized: "Change Value Type").localizedString)
+                save(updated: item, message: String(localized: "Change Value Type", bundle: .module).localizedString)
             }
             addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, separator: "+")
         default:
@@ -181,13 +181,13 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         item.photos <=> selection.map { $0.itemId }
         item.photoId <=> item.photos.first
-        save(updated: item, message: String(localized: "Change Photo").localizedString)
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
     }
     
     @MainActor func add(diceId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.diceId = diceId
-        save(updated: item, message: String(localized: "Change Dice").localizedString)
+        save(updated: item, message: String(localized: "Change Dice", bundle: .module).localizedString)
         //root.gameController.resetGameDiceId(itemId: model.id, entryId: entryId)
     }
     
@@ -195,7 +195,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = nil
         item.photos.removeAll()
-        save(updated: item, message: String(localized: "remove photos").localizedString)
+        save(updated: item, message: String(localized: "remove photos", bundle: .module).localizedString)
     }
 
     @MainActor func addNewGroup(itemId: UUID) async -> UUID {
@@ -203,7 +203,7 @@ extension EditController {
         reset(hidden: true, itemId: groupId)
         guard let group = editModel(for: groupId) else { return groupId }
         group.parentId = itemId
-        save(updated: group, message: String(localized: "prepare group").localizedString)
+        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
         var entry = Model.Entry.empty
         entry.name = group.name
         entry.valueId = groupId
@@ -215,7 +215,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item[entryId].type == .text, parseDouble(from: content) != nil {
             item[entryId].type = parseInteger(from: content) == nil ? .decimal : .number
-            save(updated: item, message: String(localized: "update value type").localizedString)
+            save(updated: item, message: String(localized: "update value type", bundle: .module).localizedString)
         }
         updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: true)
         guard let valueId = item[entryId].valueId else { return }
@@ -269,7 +269,7 @@ extension EditController {
         guard let entryId, let item = editModel(for: itemId) else { return }
         if item[entryId].valueDecimal != decimal {
             item[entryId].valueDecimal = decimal
-            save(updated: item, message: String(localized: "Update decimal").localizedString)
+            save(updated: item, message: String(localized: "Update decimal", bundle: .module).localizedString)
         }
     }
     
@@ -277,7 +277,7 @@ extension EditController {
         guard let entryId, let item = editModel(for: itemId) else { return }
         if item[entryId].valueNumber != number {
             item[entryId].valueNumber = number
-            save(updated: item, message: String(localized: "Update number").localizedString)
+            save(updated: item, message: String(localized: "Update number", bundle: .module).localizedString)
         }
     }
     
@@ -285,7 +285,7 @@ extension EditController {
         guard let entryId, let item = editModel(for: itemId) else { return }
         if item[entryId].valueSelected != selected {
             item[entryId].toggleSelection()
-            save(updated: item, message: String(localized: "Update Selection").localizedString)
+            save(updated: item, message: String(localized: "Update Selection", bundle: .module).localizedString)
         }
     }
     
@@ -293,7 +293,7 @@ extension EditController {
         guard let entryId, let item = editModel(for: itemId) else { return }
         if item[entryId].value != value {
             item[entryId].value = value
-            save(updated: item, message: String(localized: "Update value").localizedString)
+            save(updated: item, message: String(localized: "Update value", bundle: .module).localizedString)
         }
     }
 }
@@ -328,7 +328,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced").localizedString)
+            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString)
             return []
         }
         return itemRowModels

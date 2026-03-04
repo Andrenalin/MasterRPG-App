@@ -117,7 +117,7 @@ private extension MapEditor {
         guard let model = editController.editModel(for: map.id) else { return }
         model.pinScale <=> toolBarModel.pinScale
         model.mapPins <=> pins.mapPins
-        editController.save(updated: model, message: String(localized: "map updated").localizedString)
+        editController.save(updated: model, message: String(localized: "map updated", bundle: .module).localizedString)
     }
     
     var overlayMap: some View {
@@ -181,7 +181,7 @@ private extension MapEditor {
                     entries.setEntry(entry: entry)
                 }
                 mapEdit.entries = entries.entries
-                editController.save(updated: mapEdit, message: String(localized: "Change entry coordinates").localizedString)
+                editController.save(updated: mapEdit, message: String(localized: "Change entry coordinates", bundle: .module).localizedString)
             }
             if let currentEntryId {
                 let entry = map[currentEntryId]

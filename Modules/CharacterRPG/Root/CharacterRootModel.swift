@@ -195,7 +195,7 @@ extension CharacterRootModel {
                 if let valueItem = editController.editModel(for: valueId) {
                     valueItem.parentId <=> model.id
                     valueItem.displayState <=> 1
-                    editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues").localizedString)
+                    editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues", bundle: .module).localizedString)
                 }
                 
                 editController.reset(tags: [], itemId: valueId)
@@ -213,7 +213,7 @@ extension CharacterRootModel {
             if model.entries != entries {
                 guard let item = editController.editModel(for: id) else { continue }
                 item.entries = entries
-                editController.save(updated: item, message: String(localized: "update entries").localizedString)
+                editController.save(updated: item, message: String(localized: "update entries", bundle: .module).localizedString)
             }
             guard model.diceId == nil else { continue }
             let entry = model.entries.first {

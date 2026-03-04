@@ -154,13 +154,9 @@ private extension EffectedLinkActionPanelView {
 #endif
         }
     }
-    
-    private var nameNotSetResource: LocalizedStringResource {
-        "Untitled"
-    }
-    
+        
     private var nameNotSet: String {
-        String(localized: nameNotSetResource).localizedString
+        String(localized: "Untitled", bundle: .module).localizedString
     }
     
     func itemName(item: RemoveLinkTreeModel) -> String {
@@ -169,7 +165,7 @@ private extension EffectedLinkActionPanelView {
         if name.isEmpty {
             name = nameNotSet
         }
-        let fileWarning: String = model.fileUrl != nil ? String(localized: "Path: \(model.url?.path(percentEncoded: false) ?? "Unknown")").localizedString : ""
+        let fileWarning: String = model.fileUrl != nil ? String(localized: "Path: \(model.url?.path(percentEncoded: false) ?? "Unknown")", bundle: .module).localizedString : ""
         if let entryId = item.item.entryId, let index = model.entries.firstIndex(where: { $0.id == entryId }) {
             name = "\(name) --- \(model.entries[index].name)"
         }

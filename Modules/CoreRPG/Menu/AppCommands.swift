@@ -36,7 +36,7 @@ public struct AltLinkWindowCommandView: View {
     }
     
     func titleWindow() -> String {
-        let newTitle = String(localized: "New").localizedString
+        let newTitle = String(localized: "New", bundle: .module).localizedString
         return newTitle + " " + title
     }
 }

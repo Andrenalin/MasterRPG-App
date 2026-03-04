@@ -85,7 +85,7 @@ private extension DetailListView {
                 withAnimation { root.editController.adventureEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil) }
             }
         
-        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Sections").localizedString, linkTypes: LinkAdventureModuleTransferable.self)
+        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Sections", bundle: .module).localizedString, linkTypes: LinkAdventureModuleTransferable.self)
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {

@@ -22,7 +22,7 @@ extension EditController {
     @MainActor func remove(itemId: UUID, entryId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         remove(entryId: entryId, from: item)
-        save(updated: item, message: String(localized: "Remove entry").localizedString)
+        save(updated: item, message: String(localized: "Remove entry", bundle: .module).localizedString)
     }
 
     // deep delete after didDelete
@@ -51,14 +51,14 @@ extension EditController {
                 editModel[entry.id].toggleSelection()
             }
         }
-        save(updated: editModel, message: String(localized: "Changed selection").localizedString)
+        save(updated: editModel, message: String(localized: "Changed selection", bundle: .module).localizedString)
     }
 
     @MainActor
     func toggleType(itemId: UUID, entryId: UUID, updatedValue: ValueEntryModel.ValueType) {
         guard let editModel = editModel(for: itemId) else { return }
         editModel[entryId].type = updatedValue
-        save(updated: editModel, message: String(localized: "Change type").localizedString)
+        save(updated: editModel, message: String(localized: "Change type", bundle: .module).localizedString)
     }
 
 }
@@ -79,13 +79,13 @@ extension EditController {
 //
 //        groupIndex = min(max(groupIndex, 0), item.entries.count)
 //
-//        let newValue = ValueModel(id: UUID(), name: "\(item.name) \(String(localized: "Group").localizedString)", description: item.description, tags: item.tags, category: item.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: item.photoId, photos: item.photos, entries: valueEntries)
-//        let newEntry = ValueEntryModel(id: UUID(), name: String(localized: "Group").localizedString, type: .text, value: "", diceId: nil, valueId: newValue.id)
+//        let newValue = ValueModel(id: UUID(), name: "\(item.name) \(String(localized: "Group", bundle: .module).localizedString)", description: item.description, tags: item.tags, category: item.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: item.photoId, photos: item.photos, entries: valueEntries)
+//        let newEntry = ValueEntryModel(id: UUID(), name: String(localized: "Group", bundle: .module).localizedString, type: .text, value: "", diceId: nil, valueId: newValue.id)
 //        newValue.parentId = item.id
 //
 //        item.entries.insert(newEntry, at: groupIndex)
 //        itemController.replace(model: newValue, isInsert: true)
-//        save(updated: item, message: String(localized: "Created group").localizedString)
+//        save(updated: item, message: String(localized: "Created group", bundle: .module).localizedString)
 //    }
 //
 //    @MainActor
@@ -140,7 +140,7 @@ extension EditController {
 //        groupEntries.reversed().forEach {
 //            editModel.entries.insert($0, at: groupIndex)
 //        }
-//        save(updated: editModel, message: String(localized: "Insert group").localizedString)
+//        save(updated: editModel, message: String(localized: "Insert group", bundle: .module).localizedString)
 //    }
 //
 //    @MainActor
@@ -158,10 +158,10 @@ extension EditController {
 //            entries.insert(editModel[entryId], at: 0)
 //        }
 //
-//        let value = ValueModel(id: UUID(), name: entries.first?.name ?? String(localized: "Unnamed").localizedString, description: "", tags: editModel.tags, category: editModel.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: editModel.photoId, photos: editModel.photoId != nil ? [editModel.photoId!] : [], entries: entries)
+//        let value = ValueModel(id: UUID(), name: entries.first?.name ?? String(localized: "Unnamed", bundle: .module).localizedString, description: "", tags: editModel.tags, category: editModel.category, displayState: DisplayStateMask.groupHidden.rawValue, photoId: editModel.photoId, photos: editModel.photoId != nil ? [editModel.photoId!] : [], entries: entries)
 //        itemControllable.replace(model: value, isInsert: true)
 //
-//        let valueEntry = ValueEntryModel(id: UUID(), name: String(localized: "Group").localizedString, type: .text, value: "", valueId: value.id)
+//        let valueEntry = ValueEntryModel(id: UUID(), name: String(localized: "Group", bundle: .module).localizedString, type: .text, value: "", valueId: value.id)
 //
 //        if let entryId {
 //            if let index = editModel.entries.firstIndex(where: { $0.id == entryId }) {
@@ -175,7 +175,7 @@ extension EditController {
 //        } else {
 //            editModel.entries.append(valueEntry)
 //        }
-//        save(updated: editModel, message: String(localized: "Grouped").localizedString)
+//        save(updated: editModel, message: String(localized: "Grouped", bundle: .module).localizedString)
 //    }
 //
 //    @MainActor
@@ -194,7 +194,7 @@ extension EditController {
 //        for entry in editModel.entries {
 //            remove(entryId: entry.id, from: editModel, isDeepRemove: true)
 //        }
-//        save(updated: item, message: String(localized: "Ungrouped").localizedString)
+//        save(updated: item, message: String(localized: "Ungrouped", bundle: .module).localizedString)
 //    }
 //}
 
@@ -221,7 +221,7 @@ extension EditController {
 //            // save is missing
 //            itemController.itemOrEmpty(for: childId).parentId = itemId
 //        }
-//        save(updated: parent, message: String(localized: "Add child item").localizedString)
+//        save(updated: parent, message: String(localized: "Add child item", bundle: .module).localizedString)
 //    }
 
     @MainActor
@@ -239,7 +239,7 @@ extension EditController {
             return entry
         }
         parent.entries = entries
-        save(updated: parent, message: String(localized: "Remove child item").localizedString)
+        save(updated: parent, message: String(localized: "Remove child item", bundle: .module).localizedString)
     }
 
 //    func copyAddChild(childId: UUID, into itemId: UUID, entryId: UUID) async {

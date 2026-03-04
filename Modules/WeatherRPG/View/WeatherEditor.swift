@@ -171,7 +171,7 @@ private extension WeatherEditor {
             guard let item = editController.editModel(for: itemId) else { return }
             if value != item.rainDirection {
                 item.rainDirection = value
-                editController.save(updated: item, message: String(localized: "toggle rain direction").localizedString)
+                editController.save(updated: item, message: String(localized: "toggle rain direction", bundle: .module).localizedString)
             }
         }
     }

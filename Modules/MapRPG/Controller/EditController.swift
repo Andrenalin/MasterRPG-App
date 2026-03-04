@@ -114,7 +114,7 @@ extension EditController {
     @MainActor func add(photoId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = photoId
-        save(updated: item, message: String(localized: "Change Photo").localizedString)
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
     }
     
     @MainActor func reset(borderThickness: Double, itemId: UUID) {
@@ -122,7 +122,7 @@ extension EditController {
         let updatedBorderThickness: CGFloat = CGFloat(borderThickness)
         if item.displayConfig.borderThickness != updatedBorderThickness {
             item.displayConfig.borderThickness = updatedBorderThickness
-            save(updated: item, message: String(localized: "Change border thickness").localizedString)
+            save(updated: item, message: String(localized: "Change border thickness", bundle: .module).localizedString)
         }
     }
 
@@ -130,7 +130,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.hasBorder != hasBorder {
             item.displayConfig.hasBorder = hasBorder
-            save(updated: item, message: String(localized: "toggle border").localizedString)
+            save(updated: item, message: String(localized: "toggle border", bundle: .module).localizedString)
         }
     }
 
@@ -138,7 +138,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.borderColor != borderColor {
             item.displayConfig.borderColor = borderColor
-            save(updated: item, message: String(localized: "Change border color").localizedString)
+            save(updated: item, message: String(localized: "Change border color", bundle: .module).localizedString)
         }
     }
     
@@ -146,7 +146,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.color != coverColor {
             item.displayConfig.color = coverColor
-            save(updated: item, message: String(localized: "Change cover color").localizedString)
+            save(updated: item, message: String(localized: "Change cover color", bundle: .module).localizedString)
         }
     }    
 }
@@ -200,7 +200,7 @@ extension EditController {
             validatedIndex = model.mapPins.count
         }
         model.mapPins.insert(pin, at: validatedIndex)
-        save(updated: model, message: String(localized: "Added pin").localizedString)
+        save(updated: model, message: String(localized: "Added pin", bundle: .module).localizedString)
     }
 
     @MainActor
@@ -212,7 +212,7 @@ extension EditController {
         pin.name = name
         pin.photoId = photoId
         item[MapPinId.id, pinId] = pin
-        save(updated: item, message: String(localized: "Updated pin from charakter").localizedString)
+        save(updated: item, message: String(localized: "Updated pin from charakter", bundle: .module).localizedString)
     }
 }
 
@@ -355,7 +355,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced").localizedString)
+            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString)
             return []
         }
         return itemRowModels

@@ -15,13 +15,13 @@ struct DiceOptionEditor: View {
     var body: some View {
         @Bindable var model = model
         Section {
-            ToggleDiceValue(model: model, toggleKetpath: \.sumUp, title: "Sum up dice", bundle: .module, icon: "sum", saveMessage: String(localized: "change sum up dice").localizedString)
+            ToggleDiceValue(model: model, toggleKetpath: \.sumUp, title: "Sum up dice", bundle: .module, icon: "sum", saveMessage: String(localized: "change sum up dice", bundle: .module).localizedString)
 
             TextDoubleEditor(model: modifierEditModel, title: "Modifier", icon: "plus.forwardslash.minus", prompt: "+/- 5", bundle: .module, range: -10...10)
                 .padding(.bottom, 8)
             
             if model.canPercentDice {
-                ToggleDiceValue(model: model, toggleKetpath: \.percentDice, title: "Percent dice", bundle: .module, icon: "percent", saveMessage: String(localized: "change percent").localizedString)
+                ToggleDiceValue(model: model, toggleKetpath: \.percentDice, title: "Percent dice", bundle: .module, icon: "percent", saveMessage: String(localized: "change percent", bundle: .module).localizedString)
             }
 
             ValuePickerEditor(model: optionValueEditModel, allCategories: DiceModel.CompareValue.allCases, title: "Check for", bundle: .module) { option in

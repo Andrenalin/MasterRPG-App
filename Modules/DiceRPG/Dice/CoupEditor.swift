@@ -16,7 +16,7 @@ struct CoupEditor: View {
         Section {
             coupValueView
 
-            ToggleDiceValue(model: model, toggleKetpath: \.coupOnlyOnFirstDie, title: "Only first die can coup", bundle: .module, icon: "dice", saveMessage: String(localized: "change coup option").localizedString)
+            ToggleDiceValue(model: model, toggleKetpath: \.coupOnlyOnFirstDie, title: "Only first die can coup", bundle: .module, icon: "dice", saveMessage: String(localized: "change coup option", bundle: .module).localizedString)
                 .disabled(model.coupValues.contains(where: { $0.isResult }))
 
             coupEditorView

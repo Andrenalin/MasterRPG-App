@@ -12,7 +12,7 @@ struct MapEditWindow: View {
                 RootEditCanvasMap(itemId: itemId)
                     .id(itemId)
             } else {
-                ContentUnavailableView(String(localized: "No map item is selected").localizedString, image: root.configurable.module.icon)
+                ContentUnavailableView(String(localized: "No map item is selected", bundle: .module).localizedString, image: root.configurable.module.icon)
             }
         }
     }

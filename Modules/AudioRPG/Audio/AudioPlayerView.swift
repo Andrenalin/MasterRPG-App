@@ -10,8 +10,7 @@ struct AudioPlayerView: View {
     @Environment(\.networkActions) private var networkActions
     @Environment(\.showGame) private var showGame
     
-    static let noSong: LocalizedStringResource = "No song currently loaded"
-    @State private var name: String = String(localized: noSong)
+    @State private var name: String = String(localized: "No song currently loaded", bundle: .module)
     @State private var playerTime = PlayerTime.zero
     
     @State private var currentTime = 0.0

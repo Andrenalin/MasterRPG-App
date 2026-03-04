@@ -71,7 +71,7 @@ private extension DetailListView {
                 withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil) }
             }
         
-        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Entries").localizedString, linkTypes: LinkTableModuleTransferable.self)
+        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Entries", bundle: .module).localizedString, linkTypes: LinkTableModuleTransferable.self)
     }
     
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {

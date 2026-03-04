@@ -35,7 +35,7 @@ struct DetailListView: View {
     func content(listController: any FolderListControllable) -> some View {
         ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: false) {
         } editor: {
-            SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks").localizedString, linkTypes: LinkPdfModuleTransferable.self)
+            SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString, linkTypes: LinkPdfModuleTransferable.self)
         } entryEditor: {
             EntryEditorView(editController: root.editController, model: model, linkTypes: LinkPdfModuleTransferable.self)
         }

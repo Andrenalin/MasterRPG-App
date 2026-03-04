@@ -29,12 +29,8 @@ struct NameItemNewRow: View {
         return linkModel
     }
     
-    private var nameNotSetResource: LocalizedStringResource {
-        "Untitled"
-    }
-    
     public var nameNotSet: String {
-        String(localized: nameNotSetResource).localizedString
+        String(localized: "Untitled", bundle: .module).localizedString
     }
 }
 

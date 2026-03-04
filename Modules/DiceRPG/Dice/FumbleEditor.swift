@@ -16,7 +16,7 @@ struct FumbleEditor: View {
         Section {
             fumbleValueView
             
-            ToggleDiceValue(model: model, toggleKetpath: \.fumbleOnlyOnFirstDie, title: "Only first die can fumble", bundle: .module, icon: "dice", saveMessage: String(localized: "change fumble option").localizedString)
+            ToggleDiceValue(model: model, toggleKetpath: \.fumbleOnlyOnFirstDie, title: "Only first die can fumble", bundle: .module, icon: "dice", saveMessage: String(localized: "change fumble option", bundle: .module).localizedString)
                 .disabled(model.fumbleValues.contains(where: { $0.isResult }))
             
             fumbleEditorView

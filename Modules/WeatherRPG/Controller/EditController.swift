@@ -38,18 +38,18 @@ extension EditController {
     @MainActor func add(photoId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = photoId
-        save(updated: item, message: String(localized: "Change Photo").localizedString)
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
     }
     
     @MainActor func reset(cloudThickness: Cloud.Thickness, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.cloudThickness <=> cloudThickness
-        save(updated: item, message: String(localized: "change cloud thickness").localizedString)
+        save(updated: item, message: String(localized: "change cloud thickness", bundle: .module).localizedString)
     }
     
     @MainActor func reset(stormType: Storm.Contents, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.stormType <=> stormType
-        save(updated: item, message: String(localized: "change storm type").localizedString)
+        save(updated: item, message: String(localized: "change storm type", bundle: .module).localizedString)
     }
 }

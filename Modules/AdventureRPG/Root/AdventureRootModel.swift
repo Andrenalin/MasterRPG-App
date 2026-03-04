@@ -316,7 +316,7 @@ public extension AdventureRootModel {
         editController.reset(name: name, itemId: itemId)
         editController.reset(description: text, itemId: itemId)
         editController.add(photoId: photoIds.first, itemId: itemId)
-        let entry = AdventureEntryModel(id: UUID(), name: String(localized: "Photos").localizedString, content: photoLinks.joined(separator: ", "))
+        let entry = AdventureEntryModel(id: UUID(), name: String(localized: "Photos", bundle: .module).localizedString, content: photoLinks.joined(separator: ", "))
         editController.add(entry: entry, itemId: itemId)
     }
     

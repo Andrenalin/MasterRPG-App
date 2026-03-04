@@ -236,13 +236,11 @@ extension GameController: ValueGameStorable {
     }
 
     private func adventureModel(for character: ValueModel) async -> ValueModel {
-        let adventureTitle: LocalizedStringResource = "Adventure"
-        let name = String(localized: adventureTitle).localizedString
+        let name = String(localized: "Adventure", bundle: .module).localizedString
         if let adventureEntry = character.entries.first(where: { $0.name == name }), let adventureValueId = adventureEntry.valueId {
             return await itemController.itemOrEmpty(for: adventureValueId)
         }
-        let adventureDescription: LocalizedStringResource = "Items sent from the gamemaster"
-        let description = String(localized: adventureDescription).localizedString
+        let description = String(localized: "Items sent from the gamemaster", bundle: .module).localizedString
         let adventureValue = ValueModel(id: UUID(), name: name, description: description, tags: [name], category: .item, photoId: character.photoId, photos: character.photos)
         adventureValue.isGroupHiddenToggle.toggle()
         

@@ -43,7 +43,7 @@ struct LogMessageList: View {
     private func playerNames(message: LogGameModel) -> String {
         let players = message.players
         if players.isEmpty {
-            return String(localized: "No Players").localizedString
+            return String(localized: "No Players", bundle: .module).localizedString
         } else {
             return logController.playerNames(for: message.players)
         }
