@@ -132,6 +132,10 @@ private extension ListRootView {
     @ViewBuilder func itemRows() -> some View {
         if displayItems.isEmpty && parentModel != nil {
             Text("Drop here", bundle: .module)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding()
+                .background(root.configurable.module.color.gradient, in: .capsule)
+                .padding()
                 .dropDestination(for: root.configurable.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
         }
         

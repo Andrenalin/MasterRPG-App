@@ -158,25 +158,29 @@ public extension FolderListModel {
     }
 
     func set(selectedItemId: UUID) {
-        selected = displayedItems.first(where: { $0.model.id == selectedItemId })?.id
+        selected = displayedParentItems.first(where: { $0.model.id == selectedItemId })?.id ?? displayedItems.first(where: { $0.model.id == selectedItemId })?.id
     }
 
     var selectedItemId: UUID? {
+        displayedParentItems.first(where: { $0.id == selected })?.model.id ??
         displayedItems.first(where: { $0.id == selected })?.model.id
     }
 
     var selectedModel: (any ItemDataAccessable)? {
+        displayedParentItems.first(where: { $0.id == selected })?.model ??
         displayedItems.first(where: { $0.id == selected })?.model
     }
 
     var selectionItemIds: [UUID] {
         selection.compactMap { selected in
+            displayedParentItems.first(where: { $0.id == selected })?.model.id ??
             displayedItems.first(where: { $0.id == selected })?.model.id
         }
     }
         
     func ids(selectedItemIds: [UUID]) -> [String] {
         selectedItemIds.compactMap { itemId -> String? in
+            displayedParentItems.first(where: { $0.model.id == itemId })?.id ??
             displayedItems.first(where: { $0.model.id == itemId })?.id
         }
     }

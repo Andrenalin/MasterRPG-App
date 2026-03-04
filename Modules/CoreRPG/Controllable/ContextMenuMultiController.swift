@@ -30,7 +30,7 @@ struct ContextMenuMultiController {
     }
     
     func parentItem(currentSelected: UUID?) -> (any ItemDataAccessable)? {
-        guard let parentId = selection(currentSelected: currentSelected).first else { return nil }
+        guard let selectedId = selection(currentSelected: currentSelected).first, let parentId = itemController.itemSync(for: selectedId)?.parentId else { return nil }
         return itemController.itemSync(for: parentId)
     }
     
