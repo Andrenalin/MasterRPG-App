@@ -101,6 +101,9 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             .contextMenu {
                 editButton(onlyIcon: false)
                 Divider()
+                moveUpButton
+                moveDownButton
+                Divider()
                 duplicateButton
 #if os(iOS)
                 linkButton
@@ -190,6 +193,44 @@ private extension SheetEntryView {
                 Image(systemName: "link.badge.plus")
             }
         }
+    }
+
+    var moveUpButton: some View {
+        Button {
+            guard let currentIndex = model.sheetModel.entries.firstIndex(where: { $0.id == entry.id }), currentIndex > 0 else { return }
+            withAnimation {
+                model.move(entryDataEditable: entryEditable, indexSet: IndexSet(integer: currentIndex), to: currentIndex - 1)
+            }
+        } label: {
+            Label {
+                Text("Move Up", bundle: .module)
+            } icon: {
+                Image(systemName: "arrow.up")
+            }
+        }
+        .disabled(model.sheetModel.entries.first?.id == entry.id)
+#if !os(tvOS)
+        .keyboardShortcut(.upArrow, modifiers: [.command, .option])
+#endif
+    }
+
+    var moveDownButton: some View {
+        Button {
+            guard let currentIndex = model.sheetModel.entries.firstIndex(where: { $0.id == entry.id }), currentIndex < model.sheetModel.entries.count - 1 else { return }
+            withAnimation {
+                model.move(entryDataEditable: entryEditable, indexSet: IndexSet(integer: currentIndex), to: currentIndex + 2)
+            }
+        } label: {
+            Label {
+                Text("Move Down", bundle: .module)
+            } icon: {
+                Image(systemName: "arrow.down")
+            }
+        }
+        .disabled(model.sheetModel.entries.last?.id == entry.id)
+#if !os(tvOS)
+        .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+#endif
     }
     
     func deleteButton(onlyIcon: Bool) -> some View {

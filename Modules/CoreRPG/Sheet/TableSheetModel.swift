@@ -139,6 +139,16 @@ public final class TableSheetModel: Sendable {
         sheetModel.entries.move(fromOffsets: indexSet, toOffset: to)
     }
 
+    func move(entryDataEditable: (any EntryDataEditable)?, indexSet: IndexSet, to index: Int) {
+        guard let entryDataEditable else { return }
+        move(itemId: sheetModel.source.itemId, indexSet: indexSet, to: index)
+        entryDataEditable.move(itemId: sheetModel.source.itemId, entryIds: sheetModel.entries.compactMap { $0.source.entryId })
+        Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            updateParent()
+        }
+    }
+    
     func update(entryId: UUID) {
         let updatedModel = linkControllable.toggleSheet(itemId: itemId, entryId: entryId, level: level, module: module)
         if let entryIndex = updatedModel.entries.firstIndex(where: { $0.source.entryId == entryId }) {
