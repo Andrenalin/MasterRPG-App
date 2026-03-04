@@ -10,7 +10,7 @@ import UIKit
 #endif
 
 @MainActor
-struct ContextMenuMultiController: ItemListContextMenuControllable {
+struct ContextMenuMultiController {
     let editController: any EditControllable
     let itemController: any ItemControllable
     let listModel: FolderListModel
@@ -27,6 +27,11 @@ struct ContextMenuMultiController: ItemListContextMenuControllable {
     func selectionId(currentSelected: UUID?) -> [String] {
         guard let currentSelected else { return listModel.selection }
         return listModel.ids(selectedItemIds: [currentSelected])
+    }
+    
+    func parentItem(currentSelected: UUID?) -> (any ItemDataAccessable)? {
+        guard let parentId = selection(currentSelected: currentSelected).first else { return nil }
+        return itemController.itemSync(for: parentId)
     }
 
     func itemCategory(currentSelected: UUID?) -> ItemListCategory {

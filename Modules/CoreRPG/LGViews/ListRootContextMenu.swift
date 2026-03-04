@@ -2,15 +2,15 @@
 
 import SwiftUI
 
-public struct ListRootContextMenu: View {
-    public init(controller: any ItemListContextMenuControllable, parentItem: (any ItemDataAccessable)?, currentSelected: UUID? = nil, listController: (any FolderListControllable)? = nil) {
+struct ListRootContextMenu: View {
+    init(controller: ContextMenuMultiController, parentItem: (any ItemDataAccessable)?, currentSelected: UUID? = nil, listController: (any FolderListControllable)? = nil) {
         self.controller = controller
         self.parentItem = parentItem
         self.currentSelected = currentSelected
         self.listController = listController
     }
 
-    let controller: ItemListContextMenuControllable
+    let controller: ContextMenuMultiController
     let parentItem: (any ItemDataAccessable)?
     let currentSelected: UUID?
     let listController: (any FolderListControllable)?
@@ -19,15 +19,18 @@ public struct ListRootContextMenu: View {
     @Environment(\.navigator) private var navigator
     @Environment(ListDisplayModel.self) private var listDisplayModel
     
-    public var body: some View {
+    var body: some View {
         duplicateItemView
         if !listDisplayModel.isListMode {
             Divider()
             addItemView
             moveItemView
         }
-        if parentItem?.specialCategory ?? false {
-            removeItemView
+        if parent?.isFolder ?? false {
+            removeItemView(oneUp: true)
+        }
+        if parent?.specialCategory ?? false {
+            removeItemView(oneUp: false)
         }
         Divider()
         exportItemView
@@ -40,6 +43,10 @@ public struct ListRootContextMenu: View {
 private extension ListRootContextMenu {
     var title: String {
         controller.itemName(currentSelected: currentSelected)
+    }
+    
+    var parent: (any ItemDataAccessable)? {
+        parentItem ?? controller.parentItem(currentSelected: currentSelected)
     }
 
     var duplicateItemView: some View {
@@ -156,15 +163,24 @@ private extension ListRootContextMenu {
         }
     }
     
-    var removeEntryTitle: String {
-        (parentItem?.category ?? .entry).title
+    func removeEntryTitle(oneUp: Bool) -> String {
+        guard let parent else { return String(localized: "Unknown").localizedString }
+        if parent.isFolder {
+            var toName = "Root"
+            if oneUp, let parentId = parent.parentId, let parentParent = root.itemControllable.itemSync(for: parentId) {
+                toName = parentParent.name
+            }
+            return "\(parent.name) to \(toName)"
+        } else {
+            return parent.category.title
+        }
     }
     
-    var removeItemView: some View {
+    func removeItemView(oneUp: Bool) -> some View {
         Button {
-            guard let itemId = currentSelected, let parentId = parentItem?.id else { return }
+            guard let itemId = currentSelected, let parentId = parent?.id else { return }
             withAnimation {
-                root.editControllable.remove(itemId: itemId, parentId: parentId)
+                root.editControllable.remove(itemId: itemId, parentId: parentId, oneUp: oneUp)
                 // Refresh the detail list from the updated parent model entries
                 listController?.update()
                 // Also refresh the parent folder list
@@ -172,7 +188,7 @@ private extension ListRootContextMenu {
             }
         } label: {
             Label {
-                Text("Remove \(title) from \(removeEntryTitle)", bundle: .module)
+                Text("Remove \(title) from \(removeEntryTitle(oneUp: oneUp))", bundle: .module)
             } icon: {
                 Image(systemName: "rectangle.stack.badge.minus")
             }

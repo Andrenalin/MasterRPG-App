@@ -175,7 +175,7 @@ public extension EditControllable {
             return
         }
         if parentItem.isFolder && item.parentId != nil {
-            removeItemFromParent(itemId: itemId)
+            removeItemFromParent(itemId: itemId, oneUp: false)
         }
 
         if item.isFolder && (parentItem.specialCategory && !parentItem.isFolder) {
@@ -212,10 +212,10 @@ public extension EditControllable {
         save(updated: parentItem, message: String(localized: "Added item").localizedString)
     }
 
-    @MainActor func remove(itemId: UUID, parentId: UUID) {
+    @MainActor func remove(itemId: UUID, parentId: UUID, oneUp: Bool) {
         guard let parentItem = editModel(for: parentId) else { return }
         if parentItem.isFolder {
-            removeItemFromParent(itemId: itemId)
+            removeItemFromParent(itemId: itemId, oneUp: oneUp)
         } else {
             var entries = parentItem.entries
             entries.removeAll(where: { $0.childId == itemId })
@@ -224,7 +224,7 @@ public extension EditControllable {
         }
     }
 
-    @MainActor func removeItemFromParent(itemId: UUID) {
+    @MainActor func removeItemFromParent(itemId: UUID, oneUp: Bool) {
         guard var item = editModel(for: itemId), let parentId = item.parentId, let parentItem = editModel(for: parentId) else { return }
         item.parentId = nil
         save(updated: item, message: String(localized: "Removed parent").localizedLowercase.localizedString)
@@ -233,6 +233,9 @@ public extension EditControllable {
         entries.removeAll(where: { $0.childId == itemId })
         parentItem.entries = entries
         save(updated: parentItem, message: String(localized: "Removed item").localizedLowercase.localizedString)
+        
+        guard oneUp && parentItem.parentId != nil else { return }
+        addItem(itemId: itemId, parentId: parentItem.parentId)
     }
 }
 

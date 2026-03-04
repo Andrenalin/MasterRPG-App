@@ -69,7 +69,7 @@ private extension ListRootView {
         root.editControllable.fileUrlDataController?.fileTypes ?? []
     }
     
-    var menuController: any ItemListContextMenuControllable {
+    var menuController: ContextMenuMultiController {
         ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: listModel)
     }
 
