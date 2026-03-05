@@ -105,18 +105,39 @@ public struct TextEditorLinkView: View {
         }
         .padding(.bottom, 6)
 #else
-        TextEditor(text: $model.attributedText, selection: $selection)
-            .attributedTextFormattingDefinition(ContentFormattingDefinition(links: Set(model.links.map(\.id))))
-#if !os(macOS)
-            .textInputAutocapitalization(.sentences)
-            .writingToolsBehavior(.complete)
+        ZStack {
+#if os(macOS)
+            Color(nsColor: .controlBackgroundColor)
 #endif
-            .autocorrectionDisabled(true)
-            .frame(minHeight: 120, maxHeight: maxHeight)
-            .background {
-                RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
-            }
-            .padding(.bottom, 6)
+            TextEditor(text: $model.attributedText, selection: $selection)
+                .attributedTextFormattingDefinition(ContentFormattingDefinition(links: Set(model.links.map(\.id))))
+#if !os(macOS)
+                .textInputAutocapitalization(.sentences)
+                .writingToolsBehavior(.complete)
+#endif
+                .autocorrectionDisabled(true)
+                //.frame(minHeight: 120, maxHeight: maxHeight)
+                .padding(valueFor(iOS: 0, macOS: 4, tvOS: 0, visionOS: 0))
+        }
+        .background {
+            Color.clear
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
+        }
+        .frame(minHeight: 120, maxHeight: maxHeight)
 #endif
     }
+}
+
+#Preview {
+    Color.clear
+        .background {
+            Rectangle().fill(Color.blue.gradient)
+        }
+        .overlay {
+            TextEditorLinkView(model: TextEditModel(linkRegisterController: .fake), maxHeight: 200)
+                .padding()
+        }
 }

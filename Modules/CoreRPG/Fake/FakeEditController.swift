@@ -17,3 +17,21 @@ struct FakeEditController: EditControllable {
     @MainActor
     static let fake = FakeEditController(itemControllable: FakeItemController.fake, tagController: TagController(), linkRegisterController: LinkRegisterController(root: nil), editorModel: ItemEditorModel(), cacheItemListModel: CacheItemListModel())
 }
+
+extension FakeEditController: EntryDataEditable {
+    var linkModules: [NetworkModules] {
+        []
+    }
+    
+    func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
+        InternalRoute.removeAlert
+    }
+    
+    func create(name: String, content: String) -> FakeEntryModel {
+        FakeEntryModel.empty
+    }
+    
+    func merge(itemId: UUID, entries: [FakeEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
+        []
+    }
+}

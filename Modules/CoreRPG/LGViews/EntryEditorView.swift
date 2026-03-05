@@ -34,6 +34,10 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
         }
         .transition(.scale)
         .animation(.bouncy, value: isActive)
+        .onChange(of: isActive) {
+            guard isActive else { return }
+            currentFocus = .name
+        }
     }
     
     func content(entry: any EntryDataAccessable) -> some View {
@@ -70,32 +74,7 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                     
                     EntryContentEditor(editModel: editModel, currentFocus: $currentFocus)
                     
-                    VStack {
-                        Text("Drop Links", bundle: .module)
-                            .padding()
-                            .background {
-                                RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color.white)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-#if !os(tvOS)
-                            .dropDestination(for: linkTypes) { items, dropSession in
-                                isDropTargeted = dropSession.phase == .entering
-                                editModel.resetText()
-                                editController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
-                                items.forEach {
-                                    editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: model.id, destinationEntryId: entry.id)
-                                }
-                            }
-#endif
-                            .contentShape(.capsule)
-                            .zIndex(1)
-                            .allowsHitTesting(true)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                    .stroke(isDropTargeted ? Color.accentColor : .clear, lineWidth: 2)
-                            )
-                    }
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    // Drop Links Button Disable
                 }
                 .padding()
                 .background {
@@ -134,13 +113,43 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
             editController.editorModel.currentEntryId = nil
         }
     }
+    
+    var dropBackgroundColor: Color {
+#if os(iOS)
+        isDropTargeted ? Color.accentColor : Color(.systemGray6)
+#else
+        isDropTargeted ? Color.accentColor : Color(.controlBackgroundColor)
+#endif
+    }
+    
+    var dropLinkButton: some View {
+#if !os(tvOS)
+        Text("Drop Links", bundle: .module)
+            .padding()
+            .background {
+                RoundedRectangle(cornerRadius: 24, style: .continuous).fill(dropBackgroundColor)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(isDropTargeted ? Color.accentColor : .clear, lineWidth: 2)
+            )
+            .dropDestination(for: linkTypes) { items, dropSession in
+                isDropTargeted = dropSession.phase == .entering
+                editModel.resetText()
+                editController.update(itemId: editController.editorModel.currentItemId ?? model.id, entryId: entry.id, name: editModel.name, content: editModel.text)
+                items.forEach {
+                    editController.add(link: $0.name, module: $0.module, itemId: $0.itemId, entryId: $0.entryId, destinationItemId: model.id, destinationEntryId: entry.id)
+                }
+            }
+#endif
+    }
 }
 
 enum EntryEditorFocusField {
     case name
     case information
 }
-
 
 struct EntryNameEditor: View {
     let editModel: TextEditModel
@@ -151,7 +160,6 @@ struct EntryNameEditor: View {
         
         Text("Name", bundle: .module)
             .font(.caption)
-            .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
         
         HStack {
@@ -172,6 +180,11 @@ struct EntryNameEditor: View {
             .contentTransition(.symbolEffect(.automatic))
         }
         .padding(6)
+#if os(iOS)
+        .background(Color(.systemGray6))
+#else
+        .background(Color(.controlBackgroundColor))
+#endif
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(.secondary, lineWidth: 1)
@@ -186,7 +199,6 @@ struct EntryContentEditor: View {
     var body: some View {
         Text("Description", bundle: .module)
             .font(.caption)
-            .foregroundStyle(.secondary)
         
 #if os(tvOS)
         @Bindable var editModel = editModel
@@ -208,3 +220,6 @@ struct EntryContentEditor: View {
     }
 }
 
+//#Preview {
+//    EntryEditRow(editController: FakeEditController.fake, itemId: UUID(), entry: FakeEntryModel.empty, cacheItemListModel: CacheItemListModel())
+//}
