@@ -115,13 +115,16 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
     }
     
     var dropBackgroundColor: Color {
-#if os(iOS)
+#if os(iOS) || os(visionOS)
         isDropTargeted ? Color.accentColor : Color(.systemGray6)
+#elseif os(tvOS)
+        isDropTargeted ? Color.accentColor : .clear
 #else
         isDropTargeted ? Color.accentColor : Color(.controlBackgroundColor)
 #endif
     }
-    
+
+    @ViewBuilder
     var dropLinkButton: some View {
 #if !os(tvOS)
         Text("Drop Links", bundle: .module)
@@ -180,8 +183,10 @@ struct EntryNameEditor: View {
             .contentTransition(.symbolEffect(.automatic))
         }
         .padding(6)
-#if os(iOS)
+#if os(iOS) || os(visionOS)
         .background(Color(.systemGray6))
+#elseif os(tvOS)
+        .background(Color(.black))
 #else
         .background(Color(.controlBackgroundColor))
 #endif

@@ -34,7 +34,6 @@ struct ImageViewer: View {
                         .resizable()
                         .rotationEffect(Angle(degrees: toolBarModel?.degrees ?? 0))
                         .aspectRatio(contentMode: contentMode)
-                        //.clipShape(.rect(cornerRadius: 16))
                         .frame(width: containerSize.width, height: containerSize.height, alignment: .center)
                 }
                 .applyIf(contentMode != .fill) { content in
