@@ -100,18 +100,9 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             }
             .contextMenu {
                 editButton(onlyIcon: false)
-                Divider()
                 if let entryEditable {
-                    moveIntoButton(entryEditable: entryEditable, groups: model.groupFolders(entryDataEditable: entryEditable, entry: entry))
+                    SheetContextMenuView(root: root, entryEditable: entryEditable, model: model, entry: entry)
                 }
-                moveUpButton
-                moveDownButton
-                Divider()
-                duplicateButton
-#if os(iOS)
-                linkButton
-#endif
-                Divider()
                 deleteButton(onlyIcon: false)
             }
         }
@@ -161,103 +152,6 @@ private extension SheetEntryView {
         .borderLessTVBottonStyle()
 #if !os(tvOS)
         .keyboardShortcut("e", modifiers: .shift)
-#endif
-    }
-    
-    var duplicateButton: some View {
-        Button {
-            guard let entryId = entry.source.entryId, let newId = entryEditable?.copy(itemId: entry.source.itemId, entryId: entryId) else { return }
-            
-            withAnimation {
-                model.add(entryId: newId)
-                root.editControllable.setCurrentItem(to: ItemRowTreeModel(itemId: entry.source.itemId, entryId: newId, typeId: entry.source.typeId))
-                model.updateParent()
-            }
-        } label: {
-            Label {
-                Text("Duplicate \(entry.name.withoutLink())", bundle: .module)
-            } icon: {
-                Image(systemName: "doc.on.doc")
-            }
-        }
-#if !os(tvOS)
-        .keyboardShortcut("d", modifiers: .shift)
-#endif
-    }
-    
-    var linkButton: some View {
-        Button {
-            guard let entryEditable, let entryId = entry.source.entryId else { return }
-            navigator.navigate(to: entryEditable.linkSelectionDestination(itemRowModel: ItemRowModel(itemId: entry.source.itemId, entryId: entryId, typeId: entry.source.typeId)), method: .managedSheet)
-        } label: {
-            Label {
-                Text("Add Links", bundle: .module)
-            } icon: {
-                Image(systemName: "link.badge.plus")
-            }
-        }
-    }
-
-    @ViewBuilder
-    func moveIntoButton(entryEditable: any EntryDataEditable, groups: [FolderRepresentable]) -> some View {
-        if !groups.isEmpty {
-            Menu {
-                ForEach(groups) { folder in
-                    Button {
-                        model.move(entryDataEditable: entryEditable, entry: entry, into: folder)
-                    } label: {
-                        Label {
-                            Text(folder.name)
-                        } icon: {
-                            Image(systemName: "folder")
-                        }
-                    }
-                }
-            } label: {
-                Label {
-                    Text("Move \(entry.name.withoutLink()) into", bundle: .module)
-                } icon: {
-                    Image(systemName: "list.bullet.indent")
-                }
-            }
-        }
-    }
-
-    var moveUpButton: some View {
-        Button {
-            guard let currentIndex = model.sheetModel.entries.firstIndex(where: { $0.id == entry.id }), currentIndex > 0 else { return }
-            withAnimation {
-                model.move(entryDataEditable: entryEditable, indexSet: IndexSet(integer: currentIndex), to: currentIndex - 1)
-            }
-        } label: {
-            Label {
-                Text("Move Up", bundle: .module)
-            } icon: {
-                Image(systemName: "arrow.up")
-            }
-        }
-        .disabled(model.sheetModel.entries.first?.id == entry.id)
-#if !os(tvOS)
-        .keyboardShortcut(.upArrow, modifiers: [.command, .option])
-#endif
-    }
-
-    var moveDownButton: some View {
-        Button {
-            guard let currentIndex = model.sheetModel.entries.firstIndex(where: { $0.id == entry.id }), currentIndex < model.sheetModel.entries.count - 1 else { return }
-            withAnimation {
-                model.move(entryDataEditable: entryEditable, indexSet: IndexSet(integer: currentIndex), to: currentIndex + 2)
-            }
-        } label: {
-            Label {
-                Text("Move Down", bundle: .module)
-            } icon: {
-                Image(systemName: "arrow.down")
-            }
-        }
-        .disabled(model.sheetModel.entries.last?.id == entry.id)
-#if !os(tvOS)
-        .keyboardShortcut(.downArrow, modifiers: [.command, .option])
 #endif
     }
     

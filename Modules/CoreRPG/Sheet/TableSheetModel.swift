@@ -157,12 +157,26 @@ public final class TableSheetModel: Sendable {
     func move(entryDataEditable: (any EntryDataEditable), entry: SheetModel, into folder: FolderRepresentable) {
         guard let entryId = entry.source.entryId else { return }
         entryDataEditable.move(itemId: entry.source.itemId, sourceEntryId: entryId, into: folder)
-        
+
         Task {
             try? await Task.sleep(for: .milliseconds(100))
             updateParent()
         }
 
+    }
+
+    func parentGroup(entryDataEditable: (any EntryDataEditable)) -> FolderRepresentable? {
+        return entryDataEditable.parentFolder(itemId: sheetModel.source.itemId)
+    }
+
+    func moveOutOfGroup(entryDataEditable: (any EntryDataEditable), entry: SheetModel, parent: FolderRepresentable) {
+        guard let entryId = entry.source.entryId else { return }
+        entryDataEditable.moveOutOfGroup(itemId: entry.source.itemId, sourceEntryId: entryId, parent: parent)
+
+        Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            updateParent()
+        }
     }
 
     func update(entryId: UUID) {

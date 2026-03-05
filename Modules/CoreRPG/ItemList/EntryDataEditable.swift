@@ -33,6 +33,7 @@ public protocol EntryDataEditable: EditControllable {
     @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String
     
     @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable]
+    @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable?
     
     // MARK: - QuickEntryEditor
     
@@ -231,7 +232,7 @@ public extension EntryDataEditable {
     }
     
     @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] { [] }
-    
+
     @MainActor func move(itemId: UUID, sourceEntryId: UUID, into folder: FolderRepresentable) {
         guard let item = editModel(for: itemId), let group = editModel(for: folder.id) else { return }
         let entry = item[sourceEntryId]
@@ -239,6 +240,17 @@ public extension EntryDataEditable {
         group.entries.append(entry)
         save(updated: item, message: String(localized: "remove entry", bundle: .module).localizedString)
         save(updated: group, message: String(localized: "move entry", bundle: .module).localizedString)
+    }
+
+    @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? { nil }
+
+    @MainActor func moveOutOfGroup(itemId: UUID, sourceEntryId: UUID, parent: FolderRepresentable) {
+        guard let group = editModel(for: itemId), let parentItem = editModel(for: parent.id) else { return }
+        let entry = group[sourceEntryId]
+        group.entries.removeAll(where: { $0.id == sourceEntryId })
+        parentItem.entries.append(entry)
+        save(updated: group, message: String(localized: "remove entry", bundle: .module).localizedString)
+        save(updated: parentItem, message: String(localized: "move entry out", bundle: .module).localizedString)
     }
 }
 

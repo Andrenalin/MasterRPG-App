@@ -140,6 +140,12 @@ extension EditController {
             return FolderRepresentable(id: valueId, name: $0.name)
         }
     }
+
+    @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? {
+        guard let item = itemControllable.itemSync(for: itemId) as? Model, let parentId = item.parentId else { return nil }
+        guard let parent = itemControllable.itemSync(for: parentId) as? Model else { return nil }
+        return FolderRepresentable(id: parent.id, name: parent.name)
+    }
 }
 
 // MARK: - New Editor Functions
