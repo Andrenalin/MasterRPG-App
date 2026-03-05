@@ -187,11 +187,11 @@ private extension ListRootContextMenu {
     func removeEntryTitle(oneUp: Bool) -> String {
         guard let parent else { return String(localized: "Unknown", bundle: .module).localizedString }
         if parent.isFolder {
-            var toName = "Root"
+            var toName = String(localized: "Root", bundle: .module).localizedString
             if oneUp, let parentId = parent.parentId, let parentParent = root.itemControllable.itemSync(for: parentId) {
                 toName = parentParent.name
             }
-            return "\(parent.name) to \(toName)"
+            return String(localized: "\(parent.name) to \(toName)", bundle: .module).localizedString
         } else {
             return parent.category.title
         }
