@@ -32,7 +32,7 @@ private extension RemoveTagsEditor {
     }
 
     func remove(tag: String) {
-        withAnimation(.bouncy(duration: 0.5, extraBounce: 0.4)) { tags.removeAll(where: { $0 == tag }) }
+        withAnimation(.bouncy) { tags.removeAll(where: { $0 == tag }) }
     }
 }
 

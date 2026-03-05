@@ -30,9 +30,10 @@ struct NeedleMapPin: View {
                 .zIndex(110)
             button(type: .add)
                 .zIndex(110)
-            
+
             Color.clear
                 .frame(width: 22, height: 22)
+                .allowsHitTesting(false)
 #if !os(visionOS)
                 .glassEffectID("menu", in: glassNamespace)
 #endif
@@ -88,19 +89,7 @@ struct NeedleMapPin: View {
     }
     
     var needleHeader: some View {
-#if os(macOS)
         headerBar
-#else
-        Button {
-            guard !isDraggingStarts else { return }
-            withAnimation(.bouncy) {
-                entries.selectedNeedleIndex = entries.selectedNeedleIndex == index ? nil : index
-            }
-        } label: {
-            headerBar
-        }
-        .buttonStyle(.borderless)
-#endif
     }
     
     var headerBar: some View {
@@ -153,11 +142,7 @@ struct NeedleMapPin: View {
             .stroke(Color.blue, lineWidth: 2, antialiased: true)
             .frame(width: 44, height: 44)
             .zIndex(2)
-#if os(tvOS) || os(macOS)
             .gesture(combinedGesture)
-#else
-            .simultaneousGesture(dragGesture)
-#endif
             .onChange(of: isDragging) {
                 guard !isDragging else { return }
                 Task {
