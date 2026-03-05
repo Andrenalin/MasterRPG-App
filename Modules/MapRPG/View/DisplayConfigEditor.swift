@@ -5,12 +5,8 @@ import SwiftUI
 
 struct DisplayConfigEditor: View {
     let model: MapModel
-    let constTime = Date.now
     
     @Environment(MapRootModel.self) private var root
-    
-    @State private var isAnimating = false
-    @State private var showTileEditor = false
     
     @State private var color = Color.black
     @State private var borderToggleEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
@@ -22,12 +18,14 @@ struct DisplayConfigEditor: View {
             
             activateBorderView
             
-            DisplayConfigBorderEditor(model: model)
-                .disabled(!model.displayConfig.hasBorder)
+            if model.displayConfig.hasBorder {
+                DisplayConfigBorderEditor(model: model)
+            }
 #endif
         } header: {
             Text("Config", bundle: .module)
         }
+        .animation(.default, value: model.displayConfig.hasBorder)
         .onChange(of: model.id, initial: true) {
             resetColor()
             updateToggleValue()

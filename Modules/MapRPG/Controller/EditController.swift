@@ -136,8 +136,8 @@ extension EditController {
 
     @MainActor func reset(borderColor: Color, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
-        if item.displayConfig.borderColor != borderColor {
-            item.displayConfig.borderColor = borderColor
+        if item.displayConfig.border.color != borderColor {
+            item.displayConfig.border.color = borderColor
             save(updated: item, message: String(localized: "Change border color", bundle: .module).localizedString)
         }
     }

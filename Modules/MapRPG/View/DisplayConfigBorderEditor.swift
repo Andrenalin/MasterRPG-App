@@ -15,7 +15,7 @@ struct DisplayConfigBorderEditor: View {
         Group {
             LabeledContent {
 #if !os(tvOS)
-                ColorPicker(selection: $model.displayConfig.borderColor) {
+                ColorPicker(selection: $color) {
                     Text("Border color", bundle: .module)
                 }
                 .labelsHidden()
@@ -36,7 +36,7 @@ struct DisplayConfigBorderEditor: View {
         .onChange(of: model.displayConfig.borderThicknessDouble) {
             resetBorderValue()
         }
-        .onChange(of: model.displayConfig.borderColor) {
+        .onChange(of: model.displayConfig.border.color) {
             resetColor()
         }
         .onChange(of: color) {
@@ -49,7 +49,7 @@ struct DisplayConfigBorderEditor: View {
     }
 
     private func resetColor() {
-        color <=> model.displayConfig.borderColor
+        color <=> model.displayConfig.border.color
     }
     
     private func resetBorderValue() {
