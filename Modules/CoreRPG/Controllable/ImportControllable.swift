@@ -132,6 +132,10 @@ public extension ImportControllable {
                 await logImport(title: "Error: \(error.localizedDescription)", count: 0)
             }
         }
+        
+        guard !Task.isCancelled else { return }
+        let cc = ConvertController(itemController: itemControllable, editController: editControllable)
+        await cc.repairHiddenAndFolders(reportModel: ValidateRepairModel())
     }
 
     func logImport(title: String, count: Int) async {

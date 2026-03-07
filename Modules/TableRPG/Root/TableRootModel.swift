@@ -176,7 +176,7 @@ public extension TableRootModel {
     
     func checkFolders(reportModel: ValidateRepairModel) async {
         let cc = ConvertController(itemController: itemController, editController: editController)
-        await cc.repairHidden(reportModel: reportModel)
+        await cc.repairHiddenAndFolders(reportModel: reportModel)
         await cc.createFoldersAndCollections(reportModel: reportModel)
     }
 }

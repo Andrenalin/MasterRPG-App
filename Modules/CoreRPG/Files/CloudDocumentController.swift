@@ -78,14 +78,19 @@ struct CloudDocumentController: Sendable {
     }
 
     func move(url: URL, newName destination: String) async throws -> (URL, URL)? {
-        let pathComponents = url.pathComponents
+        guard let newUrl = URL(string: destination) else { return nil }
+        let pathComponents = newUrl.pathComponents
         guard pathComponents.last != nil else { return nil }
+        
         let fileExt = url.pathExtension
         let path = pathComponents.dropLast().joined(separator: "/")
-        let filename = destination + ".\(fileExt)"
+        let filename = newUrl.lastPathComponent + ".\(fileExt)"
+        
         let newFilename = try await suggestedFileName(for: path, filename: filename)
-        let newPath = path.appending("/\(newFilename)")
+        let newPath = path.appending("\(path.isEmpty ? "" : "/")" + newFilename)
         let destinationDirUrl = fullUrl(filePath: path)
+        _ = destinationDirUrl.startAccessingSecurityScopedResource()
+        defer { destinationDirUrl.stopAccessingSecurityScopedResource() }
         try await FileManager.default.createDirectory(coordinatingAccessAt: destinationDirUrl, withIntermediateDirectories: true)
         try await FileManager.default.moveItem(coordinatingAccessFrom: fullUrl(fileUrl: url), to: fullUrl(filePath: newPath))
         guard let relativeUrl = URL(string: newPath) else { return nil }

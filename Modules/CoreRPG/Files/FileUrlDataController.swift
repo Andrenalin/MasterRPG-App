@@ -306,7 +306,7 @@ extension FileUrlDataController {
         return nil
     }
 
-    public func move(fileUrl: FileUrl?, from source: String, to destination: String) async -> FileUrl? {
+    public func move(fileUrl: FileUrl?, to destination: String) async -> FileUrl? {
         do {
             guard let fileUrl, fileUrl.location == .newCloud, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newName: destination) else { return nil }
             await bookmark(url: fullUrl, fileId: fileUrl.fileId)

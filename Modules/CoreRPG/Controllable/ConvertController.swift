@@ -11,13 +11,20 @@ public struct ConvertController: Sendable {
     let itemController: any ItemControllable
     let editController: any EditControllable
     
-    @MainActor public func repairHidden(reportModel: ValidateRepairModel) async {
+    @MainActor public func repairHiddenAndFolders(reportModel: ValidateRepairModel) async {
         for itemId in itemController.itemDataModel.items {
-            guard let model = itemController.itemSync(for: itemId), model.parentId == nil && model.displayState == 1 else { continue }
-            editController.reset(hidden: false, itemId: model.id)
+            guard let item = itemController.itemSync(for: itemId) else { continue }
+
+            if item.isFolder {
+                editController.cleanFolder(itemId: itemId)
+            }
+            
+            if item.parentId == nil && item.displayState == 1 {
+                editController.reset(hidden: false, itemId: item.id)
+            }
         }
     }
-        
+    
     @MainActor public func createFilepathFoldersAndCollections(reportModel: ValidateRepairModel) async {
         var tagCounter: [String: [UUID]] = [:]
         

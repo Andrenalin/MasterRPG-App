@@ -2471,6 +2471,16 @@
         }
       }
     },
+    "update folder" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order aktuallisert"
+          }
+        }
+      }
+    },
     "update from sync" : {
       "localizations" : {
         "de" : {

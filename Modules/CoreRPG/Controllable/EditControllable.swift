@@ -175,7 +175,7 @@ public extension EditControllable {
             return
         }
         if parentItem.isFolder && item.parentId != nil {
-            removeItemFromParent(itemId: itemId, oneUp: false)
+            removeItemFromParent(itemId: itemId, oneUp: false, moveFiles: false)
         }
 
         if item.isFolder && (parentItem.specialCategory && !parentItem.isFolder) {
@@ -204,6 +204,7 @@ public extension EditControllable {
                 item.displayState <=> 1
             }
             save(updated: item, message: String(localized: "Added parent", bundle: .module).localizedString)
+            movedFile(itemId: itemId)
         }
 
         if parentItem.category != .item {
@@ -224,18 +225,35 @@ public extension EditControllable {
         }
     }
 
-    @MainActor func removeItemFromParent(itemId: UUID, oneUp: Bool) {
+    @MainActor func removeItemFromParent(itemId: UUID, oneUp: Bool, moveFiles: Bool = true) {
         guard var item = editModel(for: itemId), let parentId = item.parentId, let parentItem = editModel(for: parentId) else { return }
         item.parentId = nil
         save(updated: item, message: String(localized: "Removed parent", bundle: .module).localizedLowercase.localizedString)
-
+            
         var entries = parentItem.entries
         entries.removeAll(where: { $0.childId == itemId })
         parentItem.entries = entries
         save(updated: parentItem, message: String(localized: "Removed item", bundle: .module).localizedLowercase.localizedString)
         
-        guard oneUp && parentItem.parentId != nil else { return }
+        guard oneUp && parentItem.parentId != nil else {
+            if moveFiles {
+                movedFile(itemId: itemId)
+            }
+            return
+        }
         addItem(itemId: itemId, parentId: parentItem.parentId)
+    }
+    
+    @MainActor func cleanFolder(itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        item.entries.removeAll {
+            let child = itemControllable.itemOrEmpty(for: $0.childId)
+            if child.parentId != itemId {
+                return true
+            }
+            return false
+        }
+        save(updated: item, message: String(localized: "update folder", bundle: .module).localizedString)
     }
 }
 
@@ -413,19 +431,23 @@ public extension EditControllable {
 public extension EditControllable {
     func folderPath(itemId: UUID?) async -> String {
         guard let itemId, let item = await editModel(for: itemId) else { return "" }
+        var name = ""
         if let parentId = item.parentId {
-            return await folderPath(itemId: parentId) + "/"
+            name = await folderPath(itemId: parentId) + "/"
         }
-        return item.name
+        name.append(item.name)
+        return name
     }
     
-    func moved(oldName: String, itemId: UUID) async {
-        guard let fileUrlDataController, let item = await editModel(for: itemId) else { return }
-        let oldFileUrl = item.fileUrl
-        let newName = item.name
-        let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, from: oldName, to: newName)
-        if let newFileUrl {
-            await reset(fileUrl: newFileUrl, itemId: item.id)
+    func movedFile(itemId: UUID) {
+        Task {
+            guard let fileUrlDataController, let item = await editModel(for: itemId) else { return }
+            let oldFileUrl = item.fileUrl
+            let path = await folderPath(itemId: itemId)
+            let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, to: path)
+            if let newFileUrl {
+                await reset(fileUrl: newFileUrl, itemId: item.id)
+            }
         }
     }
     
