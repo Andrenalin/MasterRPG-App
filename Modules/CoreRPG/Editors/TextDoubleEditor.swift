@@ -21,7 +21,7 @@ public final class EditIdentifierModel<Value: Equatable> {
     private var _save: ((UUID, Value) -> Void)?
     
     public private(set) var valueId: UUID
-    public internal(set) var value: Value {
+    public var value: Value {
         get {
             if let bindingValue {
                 return bindingValue.wrappedValue
@@ -45,7 +45,7 @@ public final class EditIdentifierModel<Value: Equatable> {
         self._save = saveHandler
     }
     
-    func save() {
+    public func save() {
         _save?(valueId, value)
     }
 }

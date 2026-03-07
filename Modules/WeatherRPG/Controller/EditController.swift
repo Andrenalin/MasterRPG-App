@@ -52,4 +52,22 @@ extension EditController {
         item.stormType <=> stormType
         save(updated: item, message: String(localized: "change storm type", bundle: .module).localizedString)
     }
+    
+    @MainActor func reset(lightningFrequency: Double, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        item.lightningFrequency <=> lightningFrequency
+        save(updated: item, message: String(localized: "change lightning frequency", bundle: .module).localizedString)
+    }
+
+    @MainActor func reset(lightningMaxBolts: Double, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        item.lightningMaxBolts <=> lightningMaxBolts
+        save(updated: item, message: String(localized: "change lightning max bolts", bundle: .module).localizedString)
+    }
+    
+    @MainActor func reset(lightningForkProbability: Double, itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        item.lightningForkProbability <=> lightningForkProbability
+        save(updated: item, message: String(localized: "change lightning fork probability", bundle: .module).localizedString)
+    }
 }

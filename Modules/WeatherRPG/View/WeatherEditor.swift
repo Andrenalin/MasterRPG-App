@@ -11,6 +11,11 @@ struct WeatherEditor: View {
     @State private var cloudEditModel: EditIdentifierModel<Cloud.Thickness> = EditIdentifierModel(value: .none)
     @State private var stormEditModel: EditIdentifierModel<Storm.Contents> = EditIdentifierModel(value: .none)
     @State private var directionEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
+
+    @State private var lightningFrequency: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
+    @State private var lightningMaxBolts: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
+    @State private var lightningForkProbability: EditIdentifierModel<Double> = EditIdentifierModel(value: 0.0)
+
     
     var body: some View {
         Section {
@@ -37,6 +42,15 @@ struct WeatherEditor: View {
             }
             stormEditModel.reset(valueId: model.id, value: model.stormType) { itemId, value in
                 editController.reset(stormType: value, itemId: itemId)
+            }
+            lightningFrequency.reset(valueId: model.id, value: model.lightningFrequency) { itemId, value in
+                editController.reset(lightningFrequency: value, itemId: itemId)
+            }
+            lightningMaxBolts.reset(valueId: model.id, value: model.lightningMaxBolts) { itemId, value in
+                editController.reset(lightningMaxBolts: value, itemId: itemId)
+            }
+            lightningForkProbability.reset(valueId: model.id, value: model.lightningForkProbability) { itemId, value in
+                editController.reset(lightningForkProbability: value, itemId: itemId)
             }
         }
         Section {
@@ -184,10 +198,15 @@ private extension WeatherEditor {
 #if os(tvOS)
             Text("\(model.lightningFrequency)")
 #else
-            Slider(value: $model.lightningFrequency, in: 0 ... 100)
+            Slider(value: $lightningFrequency.value, in: 0 ... 100)
 #endif
         } label: {
             Text("Frequency", bundle: .module)
+        }
+        .onChange(of: lightningFrequency.value) { oldValue, newValue in
+            if abs(oldValue - newValue) >= 1 {
+                lightningFrequency.save()
+            }
         }
     }
 
@@ -199,10 +218,15 @@ private extension WeatherEditor {
 #if os(tvOS)
             Text("\(model.lightningMaxBolts)")
 #else
-            Slider(value: $model.lightningMaxBolts, in: 0 ... 10)
+            Slider(value: $lightningMaxBolts.value, in: 0 ... 10)
 #endif
         } label: {
             Text("Max Bolts", bundle: .module)
+        }
+        .onChange(of: lightningMaxBolts.value) { oldValue, newValue in
+            if abs(oldValue - newValue) >= 1 {
+                lightningMaxBolts.save()
+            }
         }
     }
 
@@ -214,10 +238,15 @@ private extension WeatherEditor {
 #if os(tvOS)
             Text("\(model.lightningForkProbability)")
 #else
-            Slider(value: $model.lightningForkProbability, in: 0 ... 100)
+            Slider(value: $lightningForkProbability.value, in: 0 ... 100)
 #endif
         } label: {
             Text("Fork %", bundle: .module)
+        }
+        .onChange(of: lightningForkProbability.value) { oldValue, newValue in
+            if abs(oldValue - newValue) >= 1 {
+                lightningForkProbability.save()
+            }
         }
     }
 

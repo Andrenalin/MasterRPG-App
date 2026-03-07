@@ -73,6 +73,36 @@
         }
       }
     },
+    "change lightning fork probability" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blitz Teilungswahrscheinlichkeit ändern"
+          }
+        }
+      }
+    },
+    "change lightning frequency" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blitz Frequenz ändern"
+          }
+        }
+      }
+    },
+    "change lightning max bolts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blitz max Spaltung ändern"
+          }
+        }
+      }
+    },
     "Change Photo" : {
       "localizations" : {
         "de" : {

@@ -39,6 +39,7 @@ struct DetailListView: View {
             root.photoRoot.viewController.linkListView(type: .inspector, itemSelectionModel: photoSelectionModel)
         } overlay: {
             OverlayViewer(model: model, animate: $animate)
+                .allowsHitTesting(false)
         }
         .overlay {
             if openFileWindowModel.showItem {
