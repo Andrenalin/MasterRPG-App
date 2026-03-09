@@ -7,9 +7,9 @@ struct ListRootView: View {
     let root: ItemRootControllable
     let listController: any FolderListControllable
     let parentModel: (any ItemDataAccessable)?
-
+    
     @Environment(\.navigator) private var navigator
-
+    
     var body: some View {
         listView
             .animation(.smooth, value: displayItems.count)
@@ -38,7 +38,7 @@ struct ListRootView: View {
                 //selectItem(direction)
             }
 #endif
-
+        
             .overlay {
                 if displayItems.isEmpty && !listController.searchModel.searchText.isEmpty && !listController.searchModel.searchText.starts(with: "@") {
                     ContentUnavailableView.search
@@ -58,7 +58,7 @@ private extension ListRootView {
     var displayItems: [ListItemModel] {
         parentModel == nil ? listController.listModel.displayedItems : listController.listModel.displayedParentItems
     }
-
+    
     var listModel: FolderListModel {
         listController.listModel
     }
@@ -70,15 +70,15 @@ private extension ListRootView {
     var menuController: ContextMenuMultiController {
         ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: listModel)
     }
-
+    
     func updateFile(url: URL) {
         Task {
             guard let model = await root.editControllable.addNew(type: .item) else { return }
-            try? await Task.sleep(for: .seconds(0.5))
+            await root.editControllable.resetFile(url: url, itemId: model.id)
+            let cc = ConvertController(itemController: root.itemControllable, editController: root.editControllable)
+            await cc.moveAndCreateFolders(itemId: model.id)
+            try? await Task.sleep(for: .seconds(0.2))
             withAnimation {
-                Task {
-                    await root.editControllable.resetFile(url: url, itemId: model.id)
-                }
                 if parentModel != nil {
                     root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
                     // Reset parent list filter when adding to folder/collection
@@ -88,7 +88,7 @@ private extension ListRootView {
             }
         }
     }
-
+    
     @ViewBuilder
     var listView: some View {
         ScrollViewReader { proxy in
@@ -126,7 +126,7 @@ private extension ListRootView {
             }
         }
     }
-
+    
     @ViewBuilder func itemRows() -> some View {
         if displayItems.isEmpty && parentModel != nil {
             Text("Drop here", bundle: .module)
@@ -152,7 +152,7 @@ private extension ListRootView {
                         ListRootContextMenu(controller: menuController, parentItem: parentModel, currentSelected: item.model.id, listController: listController)
                     }
                 }
-
+                
                 specialCategoryFolderIndicator(item: item)
             }
             .padding(.leading, CGFloat(item.level * 16))
@@ -165,7 +165,7 @@ private extension ListRootView {
         .moveDisabled(parentModel == nil || parentModel?.category == .folder)
         .deleteDisabled(listController.listDisplayModel.isSelectionMode)
     }
-
+    
     func addLink(name: String, itemId: UUID, entryId: UUID?) {
         guard let parentModel else { return }
         withAnimation {
@@ -195,12 +195,12 @@ private extension ListRootView {
         guard let parentModel else { return }
         root.editControllable.moveItems(source: source, destination: destination, itemId: parentModel.id)
     }
-
+    
     var leadingPadding: CGFloat {
         let value = listController.listDisplayModel.isSelectionMode ? 12 : 8
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
     }
-
+    
     @ViewBuilder
     func specialCategoryFolderIndicator(item: ListItemModel) -> some View {
         if item.model.specialCategory {
@@ -220,6 +220,6 @@ private extension ListRootView {
 
 //#Preview("Split", traits: .mockData) {
 //    @Previewable @Environment(FakeItemRootController.self) var root
-//    
+//
 //    ListRootView(root: root, parentModel: nil)
 //}

@@ -205,9 +205,8 @@ private extension ListRootContextMenu {
     
     func removeItemView(oneUp: Bool) -> some View {
         Button {
-            guard let itemId = currentSelected, let parentId = parent?.id else { return }
+            controller.removeItemsFromFolder(currentSelected: currentSelected, parentId: parent?.id, oneUp: oneUp)
             withAnimation {
-                root.editControllable.remove(itemId: itemId, parentId: parentId, oneUp: oneUp)
                 // Refresh the detail list from the updated parent model entries
                 listController?.update()
                 // Also refresh the parent folder list

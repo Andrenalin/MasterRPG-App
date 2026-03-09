@@ -86,6 +86,7 @@ struct CloudDocumentController: Sendable {
         let path = pathComponents.dropLast().joined(separator: "/")
         let filename = newUrl.lastPathComponent + ".\(fileExt)"
         
+        guard destination + ".\(fileExt)" != url.path(percentEncoded: false) else { return nil }
         let newFilename = try await suggestedFileName(for: path, filename: filename)
         let newPath = path.appending("\(path.isEmpty ? "" : "/")" + newFilename)
         let destinationDirUrl = fullUrl(filePath: path)

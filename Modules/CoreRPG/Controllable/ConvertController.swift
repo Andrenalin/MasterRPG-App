@@ -22,9 +22,54 @@ public struct ConvertController: Sendable {
             if item.parentId == nil && item.displayState == 1 {
                 editController.reset(hidden: false, itemId: item.id)
             }
+            
+            if !item.specialCategory && item.category != .entry {
+                let category = item.category
+                editController.reset(category: .entry, itemId: itemId)
+                editController.reset(tags: [category.title] + item.tags, itemId: itemId)
+            }
+            if let url = item.url {
+                await extractFolderAndCreate(url: url, item: item)
+            }
         }
     }
+
+    @MainActor public func moveAndCreateFolders(itemId: UUID) async {
+        guard let item = itemController.itemSync(for: itemId), let url = item.url else { return }
+        await extractFolderAndCreate(url: url, item: item)
+    }
     
+    @MainActor public func extractFolderAndCreate(url: URL, item: any ItemDataAccessable) async {
+        var currentParentId: UUID? = nil
+        var currentFolderModel: (any ItemDataAccessable)? = nil
+        let folderComponents = url.pathComponents.dropLast() // drop root '/' and the file name
+        for folderName in folderComponents {
+            guard folderName != "/" else { continue }
+            // Find folder at this level with the same name and parent
+            var folderId = itemController.itemDataModel.items.first {
+                let item = itemController.itemOrEmpty(for: $0)
+                return item.category == .folder && item.name == folderName && item.parentId == currentParentId
+            }
+            
+            if folderId == nil, let newModel = await editController.addNew(type: .folder) {
+                // If not found, create
+                editController.reset(name: folderName, itemId: newModel.id)
+                editController.addItem(itemId: newModel.id, parentId: currentParentId)
+                folderId = newModel.id
+            }
+            
+            if let folderId {
+                currentParentId = folderId
+                currentFolderModel = itemController.itemOrEmpty(for: folderId)
+            }
+        }
+        
+        // If we found/created folders, add the photo to the deepest one
+        if let folderModel = currentFolderModel {
+            editController.addItem(itemId: item.id, parentId: folderModel.id)
+        }
+    }
+
     @MainActor public func createFilepathFoldersAndCollections(reportModel: ValidateRepairModel) async {
         var tagCounter: [String: [UUID]] = [:]
         

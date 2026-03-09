@@ -14,16 +14,16 @@ struct ContextMenuMultiController {
     let editController: any EditControllable
     let itemController: any ItemControllable
     let listModel: FolderListModel
-
+    
     var collectionIcon: String {
         itemController.collectionCategory.icon
     }
-
+    
     func selection(currentSelected: UUID?) -> [UUID] {
         guard let currentSelected else { return listModel.selectionItemIds }
         return [currentSelected]
     }
-
+    
     func selectionId(currentSelected: UUID?) -> [String] {
         guard let currentSelected else { return listModel.selection }
         return listModel.ids(selectedItemIds: [currentSelected])
@@ -38,7 +38,7 @@ struct ContextMenuMultiController {
         guard let parent, parent.isFolder else { return false }
         return parent.parentId != nil
     }
-
+    
     func itemCategory(currentSelected: UUID?) -> ItemListCategory {
         let selection = selection(currentSelected: currentSelected)
         guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return .entry }
@@ -78,7 +78,7 @@ struct ContextMenuMultiController {
     
     func generateLink(currentSelected: UUID?) {
         let selection = self.selection(currentSelected: currentSelected)
-
+        
         let linkText = selection.compactMap { id -> String? in
             guard let model = itemController.itemSync(for: id) else { return nil }
             return model.url(linkNumber: 0)
@@ -126,6 +126,14 @@ struct ContextMenuMultiController {
         for itemId in selection {
             guard let model = itemController.itemSync(for: itemId) else { continue }
             editController.addItem(itemId: model.id, parentId: folder.id)
+        }
+    }
+    
+    func removeItemsFromFolder(currentSelected: UUID?, parentId: UUID?, oneUp: Bool) {
+        guard let parentId else { return }
+        let selection = selection(currentSelected: currentSelected)
+        for itemId in selection {
+            editController.remove(itemId: itemId, parentId: parentId, oneUp: oneUp)
         }
     }
 }

@@ -441,8 +441,7 @@ public extension EditControllable {
     
     func movedFile(itemId: UUID) {
         Task {
-            guard let fileUrlDataController, let item = await editModel(for: itemId) else { return }
-            let oldFileUrl = item.fileUrl
+            guard let fileUrlDataController, let item = await editModel(for: itemId), let oldFileUrl = item.fileUrl else { return }
             let path = await folderPath(itemId: itemId)
             let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, to: path)
             if let newFileUrl {
