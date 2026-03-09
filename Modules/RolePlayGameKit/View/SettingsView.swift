@@ -35,7 +35,7 @@ public struct SettingsView: View {
                 Button {
                     navigator.navigate(to: ValidateRoute.validate, method: .managedSheet)
                 } label: {
-                    Label("Create Folders", systemImage: "folder")
+                    Label("Validate Folders", systemImage: "folder")
                 }
             } header: {
                 Text("Data Checks", bundle: .module)

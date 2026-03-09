@@ -209,6 +209,5 @@ public extension PhotoRootModel {
     func checkFolders(reportModel: ValidateRepairModel) async {
         let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.repairHiddenAndFolders(reportModel: reportModel)
-        await cc.createFilepathFoldersAndCollections(reportModel: reportModel)
     }
 }

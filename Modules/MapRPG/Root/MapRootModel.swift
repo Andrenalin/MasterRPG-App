@@ -221,6 +221,5 @@ public extension MapRootModel {
     func checkFolders(reportModel: ValidateRepairModel) async {
         let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.repairHiddenAndFolders(reportModel: reportModel)
-        await cc.createFoldersAndCollections(reportModel: reportModel)
     }
 }

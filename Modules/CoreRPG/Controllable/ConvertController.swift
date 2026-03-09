@@ -22,18 +22,25 @@ public struct ConvertController: Sendable {
             if item.parentId == nil && item.displayState == 1 {
                 editController.reset(hidden: false, itemId: item.id)
             }
-            
+                        
             if !item.specialCategory && item.category != .entry {
                 let category = item.category
                 editController.reset(category: .entry, itemId: itemId)
                 editController.reset(tags: [category.title] + item.tags, itemId: itemId)
             }
+            
+            if itemController.config.module == .photo && item.category == .entry {
+                for entry in item.entries {
+                    editController.removeGroup(itemId: itemId, childId: entry.childId)
+                }
+            }
+
             if let url = item.url {
                 await extractFolderAndCreate(url: url, item: item)
             }
         }
     }
-
+    
     @MainActor public func moveAndCreateFolders(itemId: UUID) async {
         guard let item = itemController.itemSync(for: itemId), let url = item.url else { return }
         await extractFolderAndCreate(url: url, item: item)

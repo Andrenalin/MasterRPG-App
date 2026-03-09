@@ -224,7 +224,6 @@ extension CharacterRootModel {
 
         let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.repairHiddenAndFolders(reportModel: reportModel)
-        await cc.createFoldersAndCollections(reportModel: reportModel, excludeHidden: true)
     }
 }
 

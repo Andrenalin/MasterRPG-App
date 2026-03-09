@@ -122,6 +122,7 @@
       }
     },
     "Create Folders" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -514,6 +515,9 @@
           }
         }
       }
+    },
+    "Validate Folders" : {
+
     },
     "Weather" : {
       "comment" : "Text displayed in a navigation option when the option is \"Weather\".",

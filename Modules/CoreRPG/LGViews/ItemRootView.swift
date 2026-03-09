@@ -64,8 +64,6 @@ public struct ItemSplitDetailRootView: View {
     let root: ItemRootController
     
     public var body: some View {
-        let _ = print("*** ->", root.configurable.module)
-        
         ManagedNavigationStack(name: "Split-\(root.configurable.module.token)") {
             SplitContentDetailRootView(root: root, itemId: listModel.selectedItemId)
         }
