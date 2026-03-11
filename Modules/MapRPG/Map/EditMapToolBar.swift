@@ -131,9 +131,12 @@ struct EditToolBarViewModifier: ViewModifier {
 #endif
                 
                 ToolbarItemGroup(placement: bottomBarPlacement) {
+                    undoButton
+                    redoButton
+
                     toggleDisplayModeButton
                     hexCreationButton
-                    
+
                     showPinSelectionButton
                         .matchedTransitionSource(id: "pin", in: pinSpace)
                 }
@@ -264,6 +267,28 @@ private extension EditToolBarViewModifier {
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Hex map")
         }
+    }
+
+    @ViewBuilder var undoButton: some View {
+        Button {
+            withAnimation { editController.undo() }
+        } label: {
+            let symbolName = "arrow.uturn.backward"
+            Image(systemName: symbolName)
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Undo")
+        }
+        .disabled(!editController.canUndo)
+    }
+
+    @ViewBuilder var redoButton: some View {
+        Button {
+            withAnimation { editController.redo() }
+        } label: {
+            let symbolName = "arrow.uturn.forward"
+            Image(systemName: symbolName)
+                .accessibilityLabel(AccessibilityLabelCache.shared.label(for: symbolName) ?? "Redo")
+        }
+        .disabled(!editController.canRedo)
     }
     
     @ViewBuilder var pinScaleView: some View {

@@ -31,6 +31,16 @@ struct RootEditCanvasMap: View {
                 Color.clear
             }
         }
+        .onAppear {
+#if os(iOS)
+            root.editController.editorModel.deactivateEntryEditor = true
+#endif
+        }
+        .onDisappear {
+#if os(iOS)
+            root.editController.editorModel.deactivateEntryEditor = false
+#endif
+        }
         .onChange(of: itemId, initial: true) {
             updateModel()
         }

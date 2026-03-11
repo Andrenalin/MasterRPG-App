@@ -16,8 +16,10 @@ public final class ItemEditorModel: Sendable {
     public internal(set) var currentItemId: UUID?
     public var currentEntryId: UUID?
     public var scrollEntryId: UUID?
-    
+
     public var hasChangedEntries: Int = 0
+
+    public var deactivateEntryEditor: Bool = false
     
     public var cacheItemListModel: CacheItemListModel = CacheItemListModel()
 

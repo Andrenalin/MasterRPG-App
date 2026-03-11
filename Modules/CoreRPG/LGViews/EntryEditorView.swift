@@ -96,7 +96,10 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
     }
     
     var isActive: Bool {
-        entry.id == editController.editorModel.currentEntryId
+#if os(iOS)
+        guard !editController.editorModel.deactivateEntryEditor else { return false }
+#endif
+        return entry.id == editController.editorModel.currentEntryId
     }
     
     var entry: any EntryDataAccessable {
