@@ -35,6 +35,8 @@ struct DetailListView: View {
     func content(listController: any FolderListControllable) -> some View {
         ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: false) {
         } editor: {
+            fileAndPlayerView(model: model)
+            
             SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString, linkTypes: LinkPdfModuleTransferable.self)
         } entryEditor: {
             EntryEditorView(editController: root.editController, model: model, linkTypes: LinkPdfModuleTransferable.self)
@@ -54,6 +56,21 @@ struct DetailListView: View {
         .tint(root.configurable.module.tint)
         .accentColor(root.configurable.module.tint)
     }
+    
+    func fileAndPlayerView(model: PdfModel) -> some View {
+        HStack {
+            HStack {
+                FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], itemId: model.id)
+                
+                Text(model.url?.path(percentEncoded: false) ?? "No file is set")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+            }
+            .opacity(model.specialCategory ? 0 : 1)
+        }
+        .padding()
+    }
+
 }
 
 #Preview(traits: .mockData) {
