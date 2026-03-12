@@ -112,6 +112,7 @@
       }
     },
     "Coming Soon" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
