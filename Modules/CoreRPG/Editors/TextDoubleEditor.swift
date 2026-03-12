@@ -85,6 +85,7 @@ public struct TextDoubleEditor: View {
         }
         .onChange(of: model.value) {
             text = format(number: model.value)
+            model.save()
         }
         
         LabeledContent {

@@ -129,12 +129,21 @@ private extension ListRootView {
     
     @ViewBuilder func itemRows() -> some View {
         if displayItems.isEmpty && parentModel != nil {
-            Text("Drop here", bundle: .module)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding()
-                .background(root.configurable.module.color.gradient, in: .capsule)
-                .padding()
-                .dropDestination(for: root.configurable.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
+
+            VStack(spacing: 0) {
+                Text("Drop here", bundle: .module)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding()
+                    .background(root.configurable.module.color.gradient, in: .capsule)
+                    .padding()
+                    .dropDestination(for: root.configurable.module, isEnabled: parentModel != nil, handler: addLink(name:itemId:entryId:))
+            
+                Text("Drag items from the list or the inspector on this drop field to add the item to the folder or collection. After the first item is added you can add more items by dropping it on the exisiting items in this detail list.")
+                    .padding()
+                    .lineLimit(5)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         
         ForEach(displayItems) { item in

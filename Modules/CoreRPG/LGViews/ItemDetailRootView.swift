@@ -84,6 +84,8 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     @State private var detailListController: FolderListControllable
     @State private var headerFooterModel = HeaderFooterScrollModel()
     
+    @Namespace private var editSheetNamespace
+    
     public var body: some View {
         contentScrollView(model: selectedModel)
             .tint(root.configurable.module.tint)
@@ -170,7 +172,10 @@ private extension ItemDetailRootView {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .tint(root.configurable.module.tint)
-                .accentColor(root.configurable.module.tint)
+                .accentColor(root.configurable.module.tint)                
+#if os(iOS)
+                .navigationTransition(.zoom(sourceID: "edit", in: editSheetNamespace))
+#endif
         }
         .modifier(OpenFileViewerViewModifier(model: currentModel(model: model), module: root.configurable.module))
         .toolbar {
@@ -427,6 +432,10 @@ private extension ItemDetailRootView {
                     .accessibilityHint(Text("Edit item details", bundle: .module))
                 }
             }
+#if os(iOS)
+            .matchedTransitionSource(id: "edit", in: editSheetNamespace)
+#endif
+            
             ToolbarItemGroup(placement: .secondaryActionAll) {
                 MenuUndoRedoButton(root: root)
             }

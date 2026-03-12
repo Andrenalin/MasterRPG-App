@@ -33,10 +33,8 @@ struct DisplayConfigBorderEditor: View {
             resetBorderValue()
             resetColor()
         }
-        .onChange(of: model.displayConfig.borderThicknessDouble) {
+        .onChange(of: model.displayConfig) {
             resetBorderValue()
-        }
-        .onChange(of: model.displayConfig.border.color) {
             resetColor()
         }
         .onChange(of: color) {
