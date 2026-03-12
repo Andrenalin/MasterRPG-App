@@ -216,10 +216,22 @@ public extension FileUrlDataController {
         } catch {
             Logger.fileStore.error("Cannot get the download status of url \(url.absoluteString, privacy: .public)")
         }
-        let fullUrl = try await cloudDocumentController.createNameUrl(for: url, category: category ?? "New".localizedString)
+        let fullUrl = try await cloudDocumentController.createNameUrl(for: url)
         try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullUrl)
         let nameUrl = cloudDocumentController.nameUrl(fullUrl: fullUrl)
         return FileUrl(fileId: fileId, url: nameUrl, location: .newCloud, module: module, relativeUrl: nil)
+    }
+
+    /// Check if the new URL points to the same file as the existing FileUrl
+    func isSameFile(existingFileUrl: FileUrl, newUrl: URL?) async -> Bool {
+        guard let newUrl else { return false }
+
+        let nameUrl = cloudDocumentController.nameUrl(fullUrl: newUrl)
+        if existingFileUrl.rawUrl.path() == nameUrl.path() {
+            return true
+        }
+
+        return false
     }
 
     /// called from ItemStore on delete of the item

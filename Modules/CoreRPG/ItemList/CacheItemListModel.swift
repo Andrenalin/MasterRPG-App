@@ -27,8 +27,10 @@ public final class CacheItemListModel: Sendable {
         CacheItemListModel.imageCache[cacheId(for: cacheType, itemId: itemId)] = image
     }
     
-    public func resetImageCache(itemId: UUID) {
-        setImageCache(cacheType: .image, itemId: itemId, image: nil)
+    public func resetImageCache(itemId: UUID, includeImage: Bool = true) {
+        if includeImage {
+            setImageCache(cacheType: .image, itemId: itemId, image: nil)
+        }
         setImageCache(cacheType: .thumbnail, itemId: itemId, image: nil)
     }
 

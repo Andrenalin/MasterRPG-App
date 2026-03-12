@@ -452,23 +452,34 @@ public extension EditControllable {
     
     func resetFile(url: URL?, itemId: UUID) async {
         guard let fileUrlDataController, let item = await editModel(for: itemId) else { return }
-        if item.fileUrl != nil {
-            await cacheItemListModel.resetImageCache(itemId: itemId)
-            await itemControllable.cacheControllable?.remove(itemId: itemId)
-            fileUrlDataController.delete(item.fileUrl)
-            await reset(fileUrl: nil, itemId: itemId)
+
+        // Check if we have an existing file
+        var isSameFilePath: Bool = false
+        if let existingFileUrl = item.fileUrl {
+            // If selecting same file, just reset cache without deleting
+            isSameFilePath = await fileUrlDataController.isSameFile(existingFileUrl: existingFileUrl, newUrl: url)
+            // reset cach only for the thumbnail, it might be old thumbnail file exists.
+            await cacheItemListModel.resetImageCache(itemId: itemId, includeImage: !isSameFilePath)
+            await itemControllable.cacheControllable?.remove(itemId: itemId, includeImage: !isSameFilePath)
+
+            if !isSameFilePath {
+                // Different file - delete old file and clear reference
+                fileUrlDataController.delete(existingFileUrl)
+                await reset(fileUrl: nil, itemId: itemId)
+            }
         }
-        guard let url else { return }
-        
+
+        guard let url, !isSameFilePath else { return }
+
         _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
-        
+
         if item.name.isEmpty {
             let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"
             let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
             await reset(name: name, itemId: itemId)
         }
-            
+
         let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: itemId, url: url, module: itemControllable.config.module.token, category: folderPath(itemId: item.parentId))
         await reset(fileUrl: updatedFileUrl, itemId: itemId)
     }

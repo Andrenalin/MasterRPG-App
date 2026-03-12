@@ -36,8 +36,10 @@ extension ImageCacheControllable {
         return image
     }
     
-    public func remove(itemId: UUID) async {
-        await imageCacheController.removeObject(for: itemId)
+    public func remove(itemId: UUID, includeImage: Bool = true) async {
+        if includeImage {
+            await imageCacheController.removeObject(for: itemId)
+        }
         await thumbnailCacheController.removeObject(for: itemId)
     }
     

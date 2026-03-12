@@ -46,12 +46,12 @@ struct CloudDocumentController: Sendable {
         try await FileManager.default.download(coordinatingAccessAt: fullUrl(filePath: filePath))
     }
 
-    func createNameUrl(for selectedUrl: URL, category: String) async throws -> URL {
+    func createNameUrl(for selectedUrl: URL) async throws -> URL {
         if isCloud(url: selectedUrl) {
             return selectedUrl
         } else {
             let filename = selectedUrl.lastPathComponent
-            let name = CloudDocumentController.suggestedFileName(for: modulePath, filename: filename, category: category)
+            let name = filename
             let newFilename = try await move(sourceUrl: selectedUrl, destinationFilename: name)
             return fullUrl(filePath: newFilename)
         }
