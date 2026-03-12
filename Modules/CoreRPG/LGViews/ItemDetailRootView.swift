@@ -68,6 +68,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     let entryEditor: EntryEditor
     
     @Environment(\.appSizeMode) private var appSizeMode
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
     
     @Environment(ListDisplayModel.self) private var listDisplayModel
@@ -76,7 +77,7 @@ public struct ItemDetailRootView<Header: View, Editor: View, Inspector: View, Ov
     
     @Environment(ItemRootController.self) private var root
     @Environment(DetailInspectorModel.self) private var detailInspectorModel
-    
+        
     @State private var isEditing = false
     @State private var itemIdHasUrl = UUID()
     @State private var selection = GroupItemSelectionModel()
@@ -168,11 +169,14 @@ private extension ItemDetailRootView {
 #endif
         .sheet(isPresented: $isEditing) {
             ItemHeaderEditorView(editControllable: root.editControllable, model: currentModel(model: model))
+                .colorScheme(colorScheme)
+                .preferredColorScheme(colorScheme)
                 .presentationContentInteraction(.resizes)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+                .presentationBackgroundInteraction(.enabled)
                 .tint(root.configurable.module.tint)
-                .accentColor(root.configurable.module.tint)                
+                .accentColor(root.configurable.module.tint)
 #if os(iOS)
                 .navigationTransition(.zoom(sourceID: "edit", in: editSheetNamespace))
 #endif
