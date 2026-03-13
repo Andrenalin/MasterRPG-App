@@ -18,17 +18,31 @@ public struct ConvertController: Sendable {
             if item.isFolder {
                 editController.cleanFolder(itemId: itemId)
             }
-            
+
+            // Repair orphaned items: if item has parentId but parent doesn't contain it in entries
+            if let parentId = item.parentId {
+                if let parent = itemController.itemSync(for: parentId) {
+                    let isOrphaned = !parent.entries.contains(where: { $0.childId == item.id })
+                    if isOrphaned {
+                        // Reset orphaned item to root level
+                        editController.removeItemFromParent(itemId: item.id, oneUp: false, moveFiles: false)
+                    }
+                } else {
+                    // Parent doesn't exist - reset to root level
+                    editController.removeItemFromParent(itemId: item.id, oneUp: false, moveFiles: false)
+                }
+            }
+
             if item.parentId == nil && item.displayState == 1 {
                 editController.reset(hidden: false, itemId: item.id)
             }
-                        
+
             if !item.specialCategory && item.category != .entry {
                 let category = item.category
                 editController.reset(category: .entry, itemId: itemId)
                 editController.reset(tags: [category.title] + item.tags, itemId: itemId)
             }
-            
+
             if itemController.config.module == .photo && item.category == .entry {
                 for entry in item.entries {
                     editController.removeGroup(itemId: itemId, childId: entry.childId)
