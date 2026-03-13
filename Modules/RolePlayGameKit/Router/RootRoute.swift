@@ -185,7 +185,7 @@ struct RouteRouteDestionationView: View {
             case .weathers:
                 WeatherRootFactory.rootView()
             case .search:
-                SearchRootView(root: appModel.adventureRoot.rootController, searchText: "Barcammer")
+                SearchAllView(root: appModel.gameRoot, searchText: "Barcama")
             }
         }
         .tint(route.module.tint)

@@ -86,22 +86,32 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
 #if os(macOS)
         .frame(minWidth: 800, minHeight: 600)
 #endif
-//        .inspectorAll(isPresented: $showInspector) {
-//            inspector
-//        }
     }
 }
 
 private extension QuickEntryEditorView {
     private var contentView: some View {
-        HStack(spacing: 8) {
-            if showResult {
-                entryListView
-            }
+        HStack(spacing: 0) {
+            HStack(spacing: 8) {
+                if showResult {
+                    entryListView
+                }
 
-            editorView
+                editorView
+            }
+            .animation(.bouncy, value: showResult)
+            
+            if showInspector {
+                inspector
+                    .frame(width: 300)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+#if !os(macOS)
+                    .toolbarVisibility(.visible, for: .navigationBar)
+#endif
+
+            }
         }
-        .animation(.bouncy, value: showResult)
+        .animation(.bouncy, value: showInspector)
         .onAppear {
             referenceText.input = initialText
             focusedField = .editor
@@ -112,7 +122,7 @@ private extension QuickEntryEditorView {
             model.entries = entries
         }
     }
-    
+
     private var entryListView: some View {
         List {
             ForEach(model.entries, id: \.id) { entry in
@@ -140,6 +150,7 @@ private extension QuickEntryEditorView {
                 .onChange(of: textEditModel.text) {
                     referenceText.input = textEditModel.text
                 }
+                .padding(.horizontal, 4)
 #endif
         }
     }
