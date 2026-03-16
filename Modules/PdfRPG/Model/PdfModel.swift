@@ -160,8 +160,13 @@ extension PdfModel: ItemDataAccessable {
         PdfModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, fileUrl: fileUrl_, entries: entries_, parentId: parentId)
     }
 
-    public func filter(_ filter: String) -> Bool {
-        (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
+    public func filter(filter: String, includeEntries: Bool) -> Bool {
+        guard !filter.isEmpty else { return true }
+        guard !(name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter)) else { return true }
+        guard specialCategory == false else { return false }
+        return entries.contains {
+            $0.filter(with: filter)
+        }
     }
 
     public func isEqual(other: PdfModel) -> Bool {

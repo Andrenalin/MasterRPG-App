@@ -33,7 +33,7 @@ public protocol ItemDataAccessable: Sendable, Equatable {
 
     func copy() -> Self
     func duplicate() -> Self
-    func filter(_ filter: String) -> Bool
+    func filter(filter: String, includeEntries: Bool) -> Bool
     func isEqual(other: Self) -> Bool
     @MainActor func replace(with model: Self) -> Bool
 }

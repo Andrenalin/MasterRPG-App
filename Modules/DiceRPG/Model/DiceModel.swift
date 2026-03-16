@@ -476,8 +476,10 @@ extension DiceModel: ItemDataAccessable {
         DiceModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, dice: dice_, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, rerollOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, resultCategory: resultCategory, entries: entries_, parentId: parentId)
     }
 
-    public func filter(_ filter: String) -> Bool {
-        (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
+    public func filter(filter: String, includeEntries: Bool) -> Bool {
+        guard !filter.isEmpty else { return true }
+        guard !(name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter)) else { return true }
+        return false
     }
 
     public func isEqual(other: DiceModel) -> Bool {

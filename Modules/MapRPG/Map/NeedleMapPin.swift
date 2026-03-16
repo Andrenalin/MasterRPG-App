@@ -13,6 +13,7 @@ struct NeedleMapPin: View {
     
     @GestureState private var isDragging = false
     @State private var isDraggingStarts = false
+    @Environment(MapRootModel.self) private var root
     
     var coordinate: CGPoint {
         let entry = entries.entry(entryId)
@@ -122,7 +123,10 @@ struct NeedleMapPin: View {
                 nextPoint = nextPoint - (nextPoint - updatedEntry.coordinates[index]) / 2
             }
             updatedEntry.coordinates.insert(nextPoint, at: next)
-            map[updatedEntry.id] = updatedEntry
+
+            guard let mapModel = root.editController.editModel(for: map.id) else { return }
+            mapModel[updatedEntry.id] = updatedEntry
+            root.editController.save(updated: mapModel, message: String(localized: "add needle point", bundle: .module).localizedString)
         }
     }
     
@@ -132,7 +136,10 @@ struct NeedleMapPin: View {
             var updatedEntry = entries.entry(entryId)
             if index >= 0 && index < updatedEntry.coordinates.count {
                 updatedEntry.coordinates.remove(at: index)
-                map[updatedEntry.id] = updatedEntry
+
+                guard let mapModel = root.editController.editModel(for: map.id) else { return }
+                mapModel[updatedEntry.id] = updatedEntry
+                root.editController.save(updated: mapModel, message: String(localized: "remove needle point", bundle: .module).localizedString)
             }
         }
     }
@@ -154,7 +161,9 @@ struct NeedleMapPin: View {
     }
     
     func updateCoordinate() {
-        map[entryId] = entries.entry(entryId)
+        guard let mapModel = root.editController.editModel(for: map.id) else { return }
+        mapModel[entryId] = entries.entry(entryId)
+        root.editController.save(updated: mapModel, message: String(localized: "move needle point", bundle: .module).localizedString)
     }
     
     var combinedGesture: some Gesture {
@@ -265,9 +274,10 @@ enum NeedleMapPinButtonType: String {
 
 
 
-#Preview {
+#Preview(traits: .mockData) {
+    @Previewable @Environment(MapRootModel.self) var root
     @Previewable var entries = MapEntryViewerModel(mapId: MapModel.previewId, entries: [.empty(MapModel.previewId)])
-    
+
     VStack {
         ForEach(entries.entries[0].coordinates.indexed(), id: \.index) { (index, point) in
             NeedleMapPin(entries: entries, entryId: MapModel.previewId, index: index, map: MapModel.preview)

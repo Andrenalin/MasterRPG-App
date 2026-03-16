@@ -164,10 +164,12 @@ extension SpaceModel: ItemDataAccessable {
         SpaceModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, degrees: degrees_, fileUrl: fileUrl_, entries: entries_, parentId: parentId)
     }
     
-    public func filter(_ filter: String) -> Bool {
-        (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
+    public func filter(filter: String, includeEntries: Bool) -> Bool {
+        guard !filter.isEmpty else { return true }
+        guard !(name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter)) else { return true }
+        return false
     }
-    
+
     public func isEqual(other: SpaceModel) -> Bool {
         self == other
     }

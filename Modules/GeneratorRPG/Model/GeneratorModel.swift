@@ -161,7 +161,7 @@ extension GeneratorModel: ItemDataAccessable {
         GeneratorModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, parentId: parentId, genType: genType, referenceId: referenceId)
     }
     
-    public func filter(_ filter: String) -> Bool {
+    public func filter(filter: String, includeEntries: Bool) -> Bool {
         (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
     }
     

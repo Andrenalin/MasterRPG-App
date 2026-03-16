@@ -227,8 +227,10 @@ extension WeatherModel: ItemDataAccessable {
         WeatherModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, weatherUpdate: weatherUpdate_, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries_, parentId: parentId)
     }
 
-    public func filter(_ filter: String) -> Bool {
-        (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
+    public func filter(filter: String, includeEntries: Bool) -> Bool {
+        guard !filter.isEmpty else { return true }
+        guard !(name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter)) else { return true }
+        return false
     }
 
     public func isEqual(other: WeatherModel) -> Bool {

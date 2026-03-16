@@ -5,9 +5,16 @@ import SwiftUI
 import AdventureRPG
 import MapRPG
 import TableRPG
+import AudioRPG
+import CharacterRPG
+import PdfRPG
+import DiceRPG
+import PhotoRPG
+import WeatherRPG
+import SpaceRPG
 
 @MainActor
-public struct SearchAllView: View {
+public struct SearchRootView: View {
     public init(root: GameRoot, searchText: String = "") {
         self.root = root
         self._searchController = State(initialValue: SearchController(root: root, searchText: searchText))
@@ -18,6 +25,8 @@ public struct SearchAllView: View {
     @State private var searchController: SearchController
     @State private var selection: UUID?
 
+    let modules: [NetworkModules] = [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather]
+    
     public var body: some View {
         NavigationSplitView {
             searchResultsList
@@ -52,7 +61,7 @@ public struct SearchAllView: View {
     }
 }
 
-private extension SearchAllView {
+private extension SearchRootView {
     @ViewBuilder var searchResultsList: some View {
         if searchController.isSearching {
             ProgressView("Searching...")
@@ -66,11 +75,14 @@ private extension SearchAllView {
         } else if searchController.results.isEmpty {
             ContentUnavailableView.search(text: searchController.searchText)
         } else {
-            List(selection: $selection) {
-                ForEach(searchController.results) { result in
-                    SearchResultRow(result: result, root: root)
-                        .tag(result.itemId)
+            List(modules, id: \.self) { module in
+                Section(module.title) {
+                    ForEach(searchController.results[module, default: []]) { result in
+                        SearchResultRow(result: result, root: root)
+                            .tag(result.itemId)
+                    }
                 }
+                .sectionIndexLabel(module.title.prefix(1))
             }
         }
     }
@@ -125,10 +137,26 @@ private struct SearchResultRow: View {
         switch result.module {
         case .adventure:
             root.adventureRoot.rootController
+        case .audio:
+            root.audioRoot.rootController
+        case .value:
+            root.characterRoot.rootController
+        case .dice:
+            root.diceRoot.rootController
         case .map:
             root.mapRoot.rootController
-        default:
+        case .pdf:
+            root.pdfRoot.rootController
+        case .photo:
+            root.photoRoot.rootController
+        case .space:
+            root.spaceRoot.rootController
+        case .table:
             root.tableRoot.rootController
+        case .weather:
+            root.weatherRoot.rootController
+        default:
+            root.adventureRoot.rootController
         }
     }
 }
@@ -141,51 +169,61 @@ private final class SearchController {
     init(root: GameRoot, searchText: String = "") {
         self.root = root
         self.searchText = searchText
-        self.results = []
+        self.results = [:]
         self.isSearching = false
     }
-
+    
     let root: GameRoot
-
+    
     var searchText: String
-    var results: [SearchResult] = []
+    var results: [NetworkModules: [SearchResult]] = [:]
     var isSearching = false
-
+    
     private var searchTask: Task<Void, Never>?
-
+    
     func performSearch() async {
         // Cancel any ongoing search
         searchTask?.cancel()
-
+        
         guard !searchText.isEmpty else {
-            results = []
+            results = [:]
             return
         }
-
+        
         let searchTask = Task {
             isSearching = true
             defer { isSearching = false }
-
+            
             // Small delay to debounce rapid typing
             try? await Task.sleep(for: .milliseconds(300))
-
+            
             guard !Task.isCancelled else { return }
-
+            
             let foundResults = await searchAllItems()
-
+            
             guard !Task.isCancelled else { return }
-
+            
             results = foundResults
         }
-
+        
         self.searchTask = searchTask
         await searchTask.value
     }
-
-    private func searchAllItems() async -> [SearchResult] {
-        await searchItems(in: root.adventureRoot.rootController) +
-        searchItems(in: root.mapRoot.rootController) +
-        searchItems(in: root.tableRoot.rootController)
+    
+    private func searchAllItems() async -> [NetworkModules: [SearchResult]] {
+        var result: [NetworkModules: [SearchResult]] = [:]
+        result[.adventure] = await searchItems(in: root.adventureRoot.rootController)
+        result[.audio] = await searchItems(in: root.audioRoot.rootController)
+        result[.value] = await searchItems(in: root.characterRoot.rootController)
+        result[.dice] = await searchItems(in: root.diceRoot.rootController)
+        result[.map] = await searchItems(in: root.mapRoot.rootController)
+        result[.pdf] = await searchItems(in: root.pdfRoot.rootController)
+        result[.photo] = await searchItems(in: root.photoRoot.rootController)
+        result[.space] = await searchItems(in: root.spaceRoot.rootController)
+        result[.table] = await searchItems(in: root.tableRoot.rootController)
+        result[.weather] = await searchItems(in: root.weatherRoot.rootController)
+        
+        return result
     }
 
     private func searchItems(in moduleRoot: ItemRootController) async -> [SearchResult] {
@@ -194,12 +232,12 @@ private final class SearchController {
         var foundResults: [SearchResult] = []
 
         for itemId in itemIds {
-            guard !Task.isCancelled else { break }
+            guard !Task.isCancelled, foundResults.count < 5 else { break }
 
             guard let item = await moduleRoot.itemControllable.item(for: itemId) else { continue }
 
             // Check if item matches search
-            let itemMatches = item.filter(searchText)
+            let itemMatches = item.filter(filter: searchText, includeEntries: false)
 
             if itemMatches {
                 foundResults.append(SearchResult(
@@ -213,20 +251,22 @@ private final class SearchController {
                 ))
             }
 
-            // Search through entries
-            for entry in item.entries {
-                guard !Task.isCancelled else { break }
-
-                if entry.filter(with: searchText) {
-                    foundResults.append(SearchResult(
-                        itemId: item.id,
-                        itemName: item.name,
-                        module: moduleRoot.configurable.module,
-                        categoryName: item.category.title,
-                        entryId: entry.id,
-                        entryName: entry.name,
-                        matchedContent: entry.content.isEmpty ? nil : entry.content
-                    ))
+            if !item.specialCategory {
+                // Search through entries
+                for entry in item.entries {
+                    guard !Task.isCancelled else { break }
+                    
+                    if entry.filter(with: searchText) {
+                        foundResults.append(SearchResult(
+                            itemId: item.id,
+                            itemName: item.name,
+                            module: moduleRoot.configurable.module,
+                            categoryName: item.category.title,
+                            entryId: entry.id,
+                            entryName: entry.name,
+                            matchedContent: entry.content.isEmpty ? nil : entry.content
+                        ))
+                    }
                 }
             }
         }

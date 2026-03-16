@@ -418,8 +418,13 @@ extension MapModel: ItemDataAccessable {
         MapModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, displayConfig: displayConfig_, photoId: photoId_, width: width, height: height, mapPins: mapPins_, pinScale: pinScale, hexMapScale: hexMapScale_, scale: scale, degrees: degrees, parentId: parentId)
     }
 
-    public func filter(_ filter: String) -> Bool {
-        (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
+    public func filter(filter: String, includeEntries: Bool) -> Bool {
+        guard !filter.isEmpty else { return true }
+        guard !(name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter)) else { return true }
+        guard specialCategory == false else { return false }
+        return entries.contains {
+            $0.filter(with: filter)
+        }
     }
 
     public func isEqual(other: MapModel) -> Bool {

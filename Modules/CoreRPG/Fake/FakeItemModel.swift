@@ -53,7 +53,7 @@ final class FakeItemModel: ItemDataAccessable & ItemDiffComparable & ItemDuplica
         .init(id: id, name: name, category: category, description: description, tags: tags, displayState: displayState, isGroupHiddenToggle: isGroupHiddenToggle)
     }
     
-    func filter(_ filter: String) -> Bool { true }
+    func filter(filter: String, includeEntries: Bool) -> Bool { true }
     
     func isEqual(other: FakeItemModel) -> Bool { false }
     
