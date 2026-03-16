@@ -253,7 +253,9 @@ private extension MapEditor {
     }
     
     func resetPinsToMap(pins: [MapPinModel]) {
-        map.mapPins = pins
+        guard let model = editController.editModel(for: map.id) else { return }
+        model.mapPins <=> pins
+        editController.save(updated: model, message: String(localized: "map pins updated", bundle: .module).localizedString)
     }
     
     func dropPin() {
@@ -284,11 +286,17 @@ extension MapEditor {
         MapEntryViewer(model: entries, entryId: entry.id, displayMode: toolBarModel.displayMode, displayConfig: map.displayConfig, activateGestures: toolBarModel.displayMode == .master && editEntries.entries.isEmpty) {
             editEntries.addedNewNeedlePoint = nil
             editEntries.eaten = true
-            map[entry.id] = entries.entry(entry.id)
+
+            guard let mapModel = editController.editModel(for: map.id) else { return }
+            mapModel[entry.id] = entries.entry(entry.id)
+            editController.save(updated: mapModel, message: String(localized: "update entry", bundle: .module).localizedString)
         } longPressAction: {
             editEntries.addedNewNeedlePoint = nil
             editEntries.eaten = true
-            map.focused(entries.entry(entry.id))
+
+            guard let mapModel = editController.editModel(for: map.id) else { return }
+            mapModel.focused(entries.entry(entry.id))
+            editController.save(updated: mapModel, message: String(localized: "focus entry", bundle: .module).localizedString)
         }
         .frame(width: entry.width, height: entry.height)
         .offset(x: entry.xOffset, y: entry.yOffset)
@@ -332,10 +340,16 @@ extension MapEditor {
                     guard var updatedPin = pins.pinPointer(for: pin.id) else { return }
                     updatedPin.isShown.toggle()
                     pins.setPinPointer(updatedPin: updatedPin)
-                    map.setPinPointer(updatedPin: updatedPin)
+
+                    guard let model = editController.editModel(for: map.id) else { return }
+                    model.setPinPointer(updatedPin: updatedPin)
+                    editController.save(updated: model, message: String(localized: "toggle pin visibility", bundle: .module).localizedString)
             } dragEndAction: {
                     guard let updatedPin = pins.pinPointer(for: pin.id) else { return }
-                    map.setPinPointer(updatedPin: updatedPin)
+
+                    guard let model = editController.editModel(for: map.id) else { return }
+                    model.setPinPointer(updatedPin: updatedPin)
+                    editController.save(updated: model, message: String(localized: "move pin", bundle: .module).localizedString)
             }
             .equatable()
             .opacity(toolBarModel.displayMode == .player ? (pin.isShown ? 1 : 0) : 1)
@@ -594,7 +608,10 @@ private extension MapEditor {
             guard let point = editEntries.addedNewNeedlePoint, var updatedEntry = editEntries.entries.first else { return }
             editEntries.addedNewNeedlePoint = nil
             updatedEntry.coordinates.append(point)
-            map[updatedEntry.id] = updatedEntry // editController.model <- is this working?
+
+            guard let mapModel = editController.editModel(for: map.id) else { return }
+            mapModel[updatedEntry.id] = updatedEntry
+            editController.save(updated: mapModel, message: String(localized: "add coordinate", bundle: .module).localizedString)
         }
     }
 }
