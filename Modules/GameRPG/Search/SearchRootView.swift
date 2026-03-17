@@ -13,7 +13,6 @@ import PhotoRPG
 import WeatherRPG
 import SpaceRPG
 
-@MainActor
 public struct SearchRootView: View {
     public init(root: GameRoot, searchText: String = "") {
         self.root = root
@@ -22,10 +21,18 @@ public struct SearchRootView: View {
 
     let root: GameRoot
 
+    @Environment(\.locale) private var locale: Locale
+    
     @State private var searchController: SearchController
-    @State private var selection: UUID?
+    @State private var selection: SearchResult?
 
-    let modules: [NetworkModules] = [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather]
+    var modules: [NetworkModules] {
+        if locale.identifier.hasPrefix("de") {
+            [.space, .adventure, .value, .photo, .map, .audio, .pdf, .table, .weather, .dice]
+        } else {
+            [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather]
+        }
+    }
     
     public var body: some View {
         NavigationSplitView {
@@ -37,19 +44,22 @@ public struct SearchRootView: View {
                 }
         } detail: {
             if let selection {
-            
-//                ItemDetailRootView(
-//                    detailListController: root.folderListControllable,
-//                    selectedModel: root.itemControllable.itemOrEmpty(for: selection)
-//                ) {
-//                    root.viewControllable.header(for: selection)
-//                } editor: {
-//                    root.viewControllable.editor(for: selection)
-//                } inspector: {
-//                    root.viewControllable.inspector(for: selection)
-//                }
-//                .id(selection)
-                Text("Found something")
+                Group {
+                    switch selection.module {
+                    case .adventure: root.adventureRoot.viewController.inlineViewer(root: root.adventureRoot, with: selection.itemId)
+                    case .audio: AudioFactory.detailView(root: root.audioRoot)
+                    case .dice: DiceFactory.detailView(root: root.diceRoot)
+                    case .map: root.mapRoot.viewController.inlineViewer(root: root.mapRoot, with: selection.itemId)
+                    case .pdf: root.pdfRoot.viewController.inlineViewer(root: root.pdfRoot, with: selection.itemId, entryId: selection.entryId, withoutBookmark: true)
+                    case .photo: root.photoRoot.viewController.inlineViewer(root: root.photoRoot, with: selection.itemId)
+                    case .space: root.spaceRoot.viewController.inlineViewer(root: root.spaceRoot, with: selection.itemId)
+                    case .table: root.tableRoot.viewController.inlineViewer(root: root.tableRoot, with: selection.itemId)
+                    case .value: root.characterRoot.viewController.inlineViewer(root: root.characterRoot, with: selection.itemId)
+                    case .weather: root.weatherRoot.viewController.inlineViewer(root: root.weatherRoot, with: selection.itemId)
+                    default: EmptyView()
+                    }
+                }
+                .id(selection.id)
             } else {
                 ContentUnavailableView {
                     Label("No Selection", systemImage: "magnifyingglass")
@@ -75,14 +85,19 @@ private extension SearchRootView {
         } else if searchController.results.isEmpty {
             ContentUnavailableView.search(text: searchController.searchText)
         } else {
-            List(modules, id: \.self) { module in
-                Section(module.title) {
-                    ForEach(searchController.results[module, default: []]) { result in
-                        SearchResultRow(result: result, root: root)
-                            .tag(result.itemId)
+            List(selection: $selection) {
+                ForEach(modules, id: \.self) { module in
+                    Section {
+                        ForEach(searchController.results[module, default: []]) { result in
+                            SearchResultRow(result: result, root: root)
+                                .tag(result)
+                        }
+                    } header: {
+                        Text("\(Image(systemName: module.icon)) \(module.title)")
+                            .foregroundStyle(module.tint)
                     }
+                    .sectionIndexLabel(module.title.prefix(2))
                 }
-                .sectionIndexLabel(module.title.prefix(1))
             }
         }
     }
@@ -277,7 +292,7 @@ private final class SearchController {
 
 // MARK: - Search Result Model
 
-private struct SearchResult: Identifiable {
+private struct SearchResult: Identifiable, Equatable, Hashable {
     let itemId: UUID
     let itemName: String
     let module: NetworkModules
@@ -296,6 +311,6 @@ private struct SearchResult: Identifiable {
 
 // MARK: - Preview
 
-//#Preview {
-//    SearchRootView(root: .preview)
-//}
+#Preview {
+    SearchRootView(root: GameRoot.preview, searchText: "T")
+}
