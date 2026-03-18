@@ -125,6 +125,7 @@ public enum ItemListCategory: Int, Equatable, Codable, CaseIterable, CategoryTex
 
             case .drop: "square.and.arrow.down.on.square"
             case .folder: "folder"
+            case .entry: "text.document"
 
             case .album: "rectangle.stack"
             case .bookshelf: "books.vertical"

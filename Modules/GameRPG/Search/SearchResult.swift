@@ -7,7 +7,7 @@ struct SearchResult: Identifiable, Equatable, Hashable {
     let itemId: UUID
     let itemName: String
     let module: NetworkModules
-    let categoryName: String
+    let category: ItemListCategory
     let entryId: UUID?
     let entryName: String?
     let matchedContent: String?

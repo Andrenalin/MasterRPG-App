@@ -26,27 +26,20 @@ struct SearchResultRow: View {
                 Text(result.itemName)
                     .font(.headline)
 
-                if !result.categoryName.isEmpty {
-                    Text("·")
-                        .foregroundStyle(.secondary)
-                    Text(result.categoryName)
+                Text("·")
+                    .foregroundStyle(.secondary)
+                Image(systemName: result.category.icon)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                }
             }
 
-            if let entryName = result.entryName {
-                HStack(spacing: 4) {
-                    Image(systemName: "doc.text")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(entryName)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            if let matchedContent = result.matchedContent {
+            if let entryName = result.entryName,
+               let matchedContent = result.matchedContent {
+                Text("\(entryName): \(matchedContent)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            } else if let matchedContent = result.matchedContent {
                 Text(matchedContent)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
@@ -93,7 +86,7 @@ struct SearchResultRow: View {
                 itemId: UUID(),
                 itemName: "Dragon's Lair",
                 module: .adventure,
-                categoryName: "Dungeons",
+                category: .entry,
                 entryId: nil,
                 entryName: nil,
                 matchedContent: "A dangerous cave filled with treasure and a fearsome dragon guarding its hoard.",
@@ -111,7 +104,7 @@ struct SearchResultRow: View {
                 itemId: UUID(),
                 itemName: "Spellbook of Mysteries",
                 module: .pdf,
-                categoryName: "Magic Items",
+                category: .collection,
                 entryId: UUID(),
                 entryName: "Fireball Spell",
                 matchedContent: "A devastating fire spell that creates an explosion dealing massive damage to all creatures in the area.",
@@ -129,7 +122,7 @@ struct SearchResultRow: View {
                 itemId: UUID(),
                 itemName: "Ancient Map",
                 module: .map,
-                categoryName: "World Maps",
+                category: .entry,
                 entryId: nil,
                 entryName: nil,
                 matchedContent: nil,
@@ -143,7 +136,7 @@ struct SearchResultRow: View {
                 itemId: UUID(),
                 itemName: "Character Sheet",
                 module: .value,
-                categoryName: "Players",
+                category: .folder,
                 entryId: UUID(),
                 entryName: "Strength Score",
                 matchedContent: "Base strength value: 16",
@@ -157,7 +150,7 @@ struct SearchResultRow: View {
                 itemId: UUID(),
                 itemName: "Battle Music",
                 module: .audio,
-                categoryName: "Soundtracks",
+                category: .collection,
                 entryId: nil,
                 entryName: nil,
                 matchedContent: "Epic orchestral music for combat encounters",

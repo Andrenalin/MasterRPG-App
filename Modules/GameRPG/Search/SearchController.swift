@@ -14,45 +14,37 @@ import WeatherRPG
 import SpaceRPG
 
 @MainActor
-@Observable
-final class SearchController {
+struct SearchController {
     init(root: GameRoot, searchText: String = "") {
         self.root = root
-        self.searchText = searchText
-        self.results = [:]
-        self.isSearching = false
+        self.model = SearchModel(searchText: searchText)
     }
-
+    
     let root: GameRoot
-
-    var searchText: String
-    var results: [NetworkModules: [SearchResult]] = [:]
-    var isSearching = false
-
-    private var searchTask: Task<Void, Never>?
+    let model: SearchModel
 
     func performSearch() async {
         // Cancel any ongoing search
-        searchTask?.cancel()
+        model.searchTask?.cancel()
 
-        guard !searchText.isEmpty else {
-            results = [:]
+        guard !model.searchText.isEmpty else {
+            model.results = [:]
             return
         }
 
         let searchTask = Task {
-            isSearching = true
-            defer { isSearching = false }
+            model.isSearching = true
+            defer { model.isSearching = false }
 
             // Small delay to debounce rapid typing
             try? await Task.sleep(for: .milliseconds(300))
 
             guard !Task.isCancelled else { return }
 
-            results = await searchAllItems()
+            model.results = await searchAllItems()
         }
 
-        self.searchTask = searchTask
+        self.model.searchTask = searchTask
         await searchTask.value
     }
 
@@ -83,11 +75,11 @@ final class SearchController {
             guard let item = await moduleRoot.itemControllable.item(for: itemId) else { continue }
 
             // Check if item matches search
-            let itemMatches = item.filter(filter: searchText, includeEntries: false)
+            let itemMatches = item.filter(filter: model.searchText, includeEntries: false)
 
             if itemMatches {
                 let relevance = SearchResult.calculateRelevance(
-                    searchText: searchText,
+                    searchText: model.searchText,
                     itemName: item.name,
                     entryName: nil,
                     content: item.description,
@@ -97,7 +89,7 @@ final class SearchController {
                     itemId: item.id,
                     itemName: item.name,
                     module: moduleRoot.configurable.module,
-                    categoryName: item.category.title,
+                    category: item.category,
                     entryId: nil,
                     entryName: nil,
                     matchedContent: item.description.isEmpty ? nil : item.description,
@@ -110,9 +102,9 @@ final class SearchController {
                 for entry in item.entries {
                     guard !Task.isCancelled else { break }
 
-                    if entry.filter(with: searchText) {
+                    if entry.filter(with: model.searchText) {
                         let relevance = SearchResult.calculateRelevance(
-                            searchText: searchText,
+                            searchText: model.searchText,
                             itemName: item.name,
                             entryName: entry.name,
                             content: entry.content,
@@ -122,7 +114,7 @@ final class SearchController {
                             itemId: item.id,
                             itemName: item.name,
                             module: moduleRoot.configurable.module,
-                            categoryName: item.category.title,
+                            category: item.category,
                             entryId: entry.id,
                             entryName: entry.name,
                             matchedContent: entry.content.isEmpty ? nil : entry.content,
