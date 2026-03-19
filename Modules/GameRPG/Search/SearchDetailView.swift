@@ -23,8 +23,8 @@ struct SearchDetailView: View {
             Group {
                 switch selection.module {
                 case .adventure: root.adventureRoot.viewController.inlineViewer(root: root.adventureRoot, with: selection.itemId)
-                case .audio: AudioFactory.detailView(root: root.audioRoot)
-                case .dice: DiceFactory.detailView(root: root.diceRoot)
+                case .audio: root.audioRoot.viewController.inlineViewer(root: root.audioRoot, with: selection.itemId)
+                case .dice: root.diceRoot.viewController.inlineViewer(root: root.diceRoot, with: selection.itemId)
                 case .map: root.mapRoot.viewController.inlineViewer(root: root.mapRoot, with: selection.itemId)
                 case .pdf: root.pdfRoot.viewController.inlineViewer(root: root.pdfRoot, with: selection.itemId, entryId: selection.entryId, withoutBookmark: true)
                 case .photo: root.photoRoot.viewController.inlineViewer(root: root.photoRoot, with: selection.itemId)

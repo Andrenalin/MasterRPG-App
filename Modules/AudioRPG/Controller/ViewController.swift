@@ -27,7 +27,19 @@ public extension ViewController {
         LinkRootView(type: type)
             .environment(itemSelectionModel)
     }
-    
+
+    @MainActor func inlineViewer(root: AudioRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+//        Task {
+//            let list = root.itemController.audioList(itemId: id)
+//            await root.audioController.add(audio: list, replace: true)
+//            root.audioController.togglePlay(id: list.first?.id)
+//        }
+//        return AudioPlayerBarView()
+        let model = root.itemController.itemOrEmpty(for: id)
+        return DetailRootView(root: root, model: model)
+            .environment(root)
+    }
+
     @MainActor func gameView(root: AudioRootModel) -> some View {
         LinkRootView(type: .inspector)
             .environment(ItemSelectionModel())

@@ -32,7 +32,14 @@ public extension ViewController {
         LinkRootView(type: type)
             .environment(itemSelectionModel)
     }
-    
+
+    @MainActor func inlineViewer(root: DiceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: id)
+        return DiceViewer(model: model, isEditor: false)
+            .environment(root.listDisplayModel)
+            .environment(root)
+    }
+
     @MainActor func gameView(root: DiceRootModel) -> some View {
         LinkRootView(type: .inspector)
             .environment(ItemSelectionModel())
