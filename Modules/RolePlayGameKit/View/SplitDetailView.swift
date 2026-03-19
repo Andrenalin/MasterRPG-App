@@ -4,6 +4,7 @@ import CoreRPG
 import AdventureRPG
 import AudioRPG
 import DiceRPG
+import GameRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -35,6 +36,7 @@ struct SplitDetailView: View {
         case .map: MapRootFactory.detailView(root: appModel.mapRoot)
         case .pdf: PdfFactory.detailView(root: appModel.pdfRoot)
         case .photo: PhotoFactory.detailView(root: appModel.photoRoot)
+        case .search: GameFactory.detailSearchView(root: appModel.gameRoot)
         case .space: SpaceFactory.detailView(root: appModel.spaceRoot)
         case .table: TableFactory.detailView(root: appModel.tableRoot)
         case .value: CharacterRootFactory.detailView(root: appModel.characterRoot)

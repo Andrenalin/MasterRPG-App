@@ -139,7 +139,11 @@ public final class GameRoot: @unchecked Sendable {
     var logGameController: LogGameController {
         _logGameController.unsafelyUnwrapped
     }
-
+    
+    @MainActor lazy var searchController: SearchController = {
+        SearchController(root: self)
+    }()
+    
     @MainActor
     var characterName: String {
         if let selectedCharacter = gameModel.selectedCharacter {

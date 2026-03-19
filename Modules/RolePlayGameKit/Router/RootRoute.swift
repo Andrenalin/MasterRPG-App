@@ -78,7 +78,7 @@ public enum RootRoute: Hashable, Codable {
     
     public var hasDetailView: Bool {
         switch self {
-        case .game, .settings, .search: false
+        case .game, .settings: false
         default: true
         }
     }
@@ -185,7 +185,8 @@ struct RouteRouteDestionationView: View {
             case .weathers:
                 WeatherRootFactory.rootView()
             case .search:
-                SearchRootView(root: appModel.gameRoot, searchText: "Barcama")
+                GameFactory.rootSearchView(root: appModel.gameRoot)
+                //SearchRootView(root: appModel.gameRoot, searchText: "Barcama")
             }
         }
         .tint(route.module.tint)
