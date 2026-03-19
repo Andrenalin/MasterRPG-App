@@ -78,8 +78,10 @@ private extension SearchListView {
                         let displayedResults = isExpanded ? results : Array(results.prefix(5))
                         
                         ForEach(displayedResults) { result in
-                            SearchResultRow(result: result, root: root)
-                                .tag(result)
+                            NavigationLink(value: result) {
+                                SearchResultRow(result: result, root: root)
+                            }
+                            .tag(result)
                         }
                         
                         expandView(module: module, results: results)
@@ -90,6 +92,9 @@ private extension SearchListView {
                 }
             }
         }
+#if !os(visionOS)
+        .scrollDismissesKeyboard(.immediately)
+#endif
     }
     
     func sectionHeader(module: NetworkModules, results: [SearchResult]) -> some View {

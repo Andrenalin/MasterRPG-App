@@ -17,6 +17,8 @@ struct SearchDetailView: View {
     let root: GameRoot
     let searchController: SearchController
     
+    @Environment(\.navigator) private var navigator
+    
     public var body: some View {
         @Bindable var model = searchController.model
         if let selection = model.selection {
@@ -33,6 +35,15 @@ struct SearchDetailView: View {
                 case .value: root.characterRoot.viewController.inlineViewer(root: root.characterRoot, with: selection.itemId)
                 case .weather: root.weatherRoot.viewController.inlineViewer(root: root.weatherRoot, with: selection.itemId)
                 default: EmptyView()
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigation) {
+                    Button {
+                        navigator.perform(route: KnownRoutes.route(module: selection.module, itemId: selection.itemId, entryId: selection.entryId))
+                    } label: {
+                        Image(systemName: selection.module.icon)
+                    }
                 }
             }
             .id(selection.id)

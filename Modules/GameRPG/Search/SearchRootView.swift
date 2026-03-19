@@ -2,16 +2,6 @@
 
 import CoreRPG
 import SwiftUI
-import AdventureRPG
-import MapRPG
-import TableRPG
-import AudioRPG
-import CharacterRPG
-import PdfRPG
-import DiceRPG
-import PhotoRPG
-import WeatherRPG
-import SpaceRPG
 
 public struct SearchRootView: View {
     public init(root: GameRoot, searchText: String = "") {
@@ -20,15 +10,26 @@ public struct SearchRootView: View {
     }
 
     let root: GameRoot
-
+    
+    @Environment(\.appSizeMode) private var appSizeMode
     @State private var searchController: SearchController
 
     public var body: some View {
-        @Bindable var model = searchController.model
-        NavigationSplitView {
-            SearchListView(root: root, searchController: searchController)
-        } detail: {
-            SearchDetailView(root: root, searchController: searchController)
+        if appSizeMode == .compact {
+            @Bindable var model = searchController.model
+            NavigationStack {
+                SearchListView(root: root, searchController: searchController)
+                    .navigationDestination(item: $model.selection) { _ in
+                        SearchDetailView(root: root, searchController: searchController)
+                    }
+            }
+        } else {
+            NavigationSplitView {
+                SearchListView(root: root, searchController: searchController)
+                    .listStyle(.sidebar)
+            } detail: {
+                SearchDetailView(root: root, searchController: searchController)
+            }
         }
     }
 }
