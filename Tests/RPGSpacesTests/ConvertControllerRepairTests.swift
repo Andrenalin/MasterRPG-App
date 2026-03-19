@@ -556,7 +556,7 @@ struct ConvertControllerRepairTests {
         guard let orphanedChild = orphanedChildId else { return }
         await root.editController.reset(name: "OrphanedChild", itemId: orphanedChild.id)
 
-        var orphanedModel = await root.itemController.itemOrEmpty(for: orphanedChild.id)
+        let orphanedModel = await root.itemController.itemOrEmpty(for: orphanedChild.id)
         orphanedModel.parentId = parent.id
         await root.itemController.replace(model: orphanedModel, isInsert: false)
 
