@@ -19,8 +19,9 @@ public struct ConvertController: Sendable {
                 editController.cleanFolder(itemId: itemId)
             }
 
+            let repairFolder = itemController.config.module != .value
             // Repair orphaned items: if item has parentId but parent doesn't contain it in entries
-            if let parentId = item.parentId {
+            if repairFolder, let parentId = item.parentId {
                 if let parent = itemController.itemSync(for: parentId) {
                     let isOrphaned = !parent.entries.contains(where: { $0.childId == item.id })
                     if isOrphaned {
