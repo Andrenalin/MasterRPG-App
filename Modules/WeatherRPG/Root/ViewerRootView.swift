@@ -69,6 +69,7 @@ private extension ViewerRootView {
             Image(systemName: "film\(isAnimating ? ".fill" : "")")
         }
         .contentTransition(.symbolEffect(.replace.wholeSymbol))
+        .foregroundStyle(root.config.module.tint)
     }
     
     var closeButton: some View {
@@ -81,6 +82,7 @@ private extension ViewerRootView {
         } label: {
             Image(systemName: "xmark.circle")
         }
+        .foregroundStyle(root.config.module.tint)
     }
 }
 

@@ -18,10 +18,13 @@ struct SearchResultRow: View {
     let root: GameRoot
 
     var body: some View {
+        let controller = root.rootController(for: result.module)
+        let module = controller.configurable.module
+
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Image(systemName: itemRootController.configurable.module.icon)
-                    .foregroundStyle(itemRootController.configurable.module.tint)
+                Image(systemName: module.icon)
+                    .foregroundStyle(module.tint)
 
                 Text(result.itemName)
                     .font(.headline)
@@ -47,33 +50,6 @@ struct SearchResultRow: View {
             }
         }
         .padding(.vertical, 4)
-    }
-
-    var itemRootController: ItemRootController {
-        switch result.module {
-        case .adventure:
-            root.adventureRoot.rootController
-        case .audio:
-            root.audioRoot.rootController
-        case .value:
-            root.characterRoot.rootController
-        case .dice:
-            root.diceRoot.rootController
-        case .map:
-            root.mapRoot.rootController
-        case .pdf:
-            root.pdfRoot.rootController
-        case .photo:
-            root.photoRoot.rootController
-        case .space:
-            root.spaceRoot.rootController
-        case .table:
-            root.tableRoot.rootController
-        case .weather:
-            root.weatherRoot.rootController
-        default:
-            root.adventureRoot.rootController
-        }
     }
 }
 

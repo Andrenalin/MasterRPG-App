@@ -20,40 +20,42 @@ struct SearchListView: View {
     @Environment(\.locale) private var locale: Locale
 
     @State private var expandedModules: Set<NetworkModules> = []
-
-    var modules: [NetworkModules] {
-        if locale.identifier.hasPrefix("de") {
-            [.space, .adventure, .value, .photo, .map, .audio, .pdf, .table, .weather, .dice]
-        } else {
-            [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather]
-        }
-    }
+    @State private var modules: [NetworkModules] = []
 
     public var body: some View {
         @Bindable var model = searchController.model
-        
+
         Group {
-            if searchController.model.isSearching {
+            if model.isSearching {
                 ProgressView("Searching...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if searchController.model.searchText.isEmpty {
-                unavailbleSearch
-            } else if searchController.model.results.isEmpty {
-                ContentUnavailableView.search(text: searchController.model.searchText)
+            } else if model.searchText.isEmpty {
+                unavailableSearch
+            } else if model.results.isEmpty {
+                ContentUnavailableView.search(text: model.searchText)
             } else {
-                listView
+                listView(model: $model)
             }
         }
         .navigationTitle("Search Results")
         .searchable(text: $model.searchText, prompt: "Search items and entries")
-        .task(id: searchController.model.searchText) {
+        .task(id: model.searchText) {
             await searchController.performSearch()
         }
+        .task(id: locale.identifier) {
+            updateModulesOrder()
+        }
+    }
+
+    private func updateModulesOrder() {
+        modules = locale.identifier.hasPrefix("de")
+            ? [.space, .adventure, .value, .photo, .map, .audio, .pdf, .table, .weather, .dice]
+            : [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather]
     }
 }
 
 private extension SearchListView {
-    var unavailbleSearch: some View {
+    var unavailableSearch: some View {
         ContentUnavailableView {
             Label {
                 Text("Search", bundle: .module)
@@ -66,12 +68,10 @@ private extension SearchListView {
     }
 
     @ViewBuilder
-    var listView: some View {
-        @Bindable var model = searchController.model
-        
-        List(selection: $model.selection) {
+    func listView(model: Bindable<SearchModel>) -> some View {
+        List(selection: model.selection) {
             ForEach(modules, id: \.self) { module in
-                let results = searchController.model.results[module, default: []]
+                let results = model.wrappedValue.results[module, default: []]
                 if !results.isEmpty {
                     Section {
                         let isExpanded = expandedModules.contains(module)

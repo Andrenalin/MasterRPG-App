@@ -63,6 +63,7 @@ private extension ViewerRootView {
         } label: {
             Image(systemName: "xmark.circle")
         }
+        .foregroundStyle(root.config.module.tint)
     }
 }
 

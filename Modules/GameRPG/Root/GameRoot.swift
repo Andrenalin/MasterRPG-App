@@ -434,3 +434,35 @@ public extension GameRoot {
         }
     }
 }
+
+// MARK: - Search Helpers
+
+extension GameRoot {
+    @MainActor
+    func rootController(for module: NetworkModules) -> ItemRootController {
+        switch module {
+        case .adventure:
+            adventureRoot.rootController
+        case .audio:
+            audioRoot.rootController
+        case .value:
+            characterRoot.rootController
+        case .dice:
+            diceRoot.rootController
+        case .map:
+            mapRoot.rootController
+        case .pdf:
+            pdfRoot.rootController
+        case .photo:
+            photoRoot.rootController
+        case .space:
+            spaceRoot.rootController
+        case .table:
+            tableRoot.rootController
+        case .weather:
+            weatherRoot.rootController
+        default:
+            adventureRoot.rootController
+        }
+    }
+}

@@ -44,6 +44,7 @@ struct SearchDetailView: View {
                     } label: {
                         Image(systemName: selection.module.icon)
                     }
+                    .foregroundStyle(selection.module.tint)
                 }
             }
             .id(selection.id)

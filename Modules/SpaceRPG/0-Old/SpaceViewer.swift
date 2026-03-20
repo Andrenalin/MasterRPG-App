@@ -58,6 +58,7 @@ struct SpaceViewer: View {
                             Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
                         }
                     }
+                    .foregroundStyle(root.config.module.tint)
                 }
 
                 ToolbarSpacer()                

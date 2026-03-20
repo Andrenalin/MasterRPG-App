@@ -55,6 +55,7 @@ struct PdfContentView: View {
                     Image(systemName: showThumbnail ? "rectangle.stack" : "rectangle.stack.fill")
                         .contentTransition(.symbolEffect(.automatic))
                 }
+                .foregroundStyle(root.config.module.tint)
             }
         }
     }
