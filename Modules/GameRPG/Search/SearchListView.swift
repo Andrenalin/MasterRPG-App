@@ -16,15 +16,15 @@ import SpaceRPG
 struct SearchListView: View {
     let root: GameRoot
     let searchController: SearchController
-
+    
     @Environment(\.locale) private var locale: Locale
-
+    
     @State private var expandedModules: Set<NetworkModules> = []
     @State private var modules: [NetworkModules] = []
-
+    
     public var body: some View {
         @Bindable var model = searchController.model
-
+        
         Group {
             if model.isSearching {
                 ProgressView("Searching...")
@@ -38,8 +38,10 @@ struct SearchListView: View {
             }
         }
         .navigationTitle("Search Results")
+#if !os(tvOS)
         .searchable(text: $model.searchText, placement: .sidebar,
                     prompt: "Search items and entries")
+#endif
         .task(id: model.searchText) {
             await searchController.performSearch()
         }
@@ -47,11 +49,11 @@ struct SearchListView: View {
             updateModulesOrder()
         }
     }
-
+    
     private func updateModulesOrder() {
         modules = locale.identifier.hasPrefix("de")
-            ? [.space, .adventure, .value, .photo, .map, .audio, .pdf, .table, .weather, .dice]
-            : [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather]
+        ? [.space, .adventure, .value, .photo, .map, .audio, .pdf, .table, .weather, .dice]
+        : [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather]
     }
 }
 
@@ -67,7 +69,7 @@ private extension SearchListView {
             Text("Enter text to search across all items and entries", bundle: .module)
         }
     }
-
+    
     @ViewBuilder
     func listView(model: Bindable<SearchModel>) -> some View {
         List(selection: model.selection) {
@@ -134,7 +136,7 @@ private extension SearchListView {
             }
             .buttonStyle(.plain)
         }
-
+        
     }
 }
 
