@@ -6,6 +6,12 @@ import RolePlayGameKit
 import SwiftUI
 import os.log
 
+#if os(macOS)
+typealias BaseWindow = Window
+#else
+typealias BaseWindow = WindowGroup
+#endif
+
 @main
 struct MasterRPGApp: App {
 #if os(iOS) || os(visionOS)
@@ -67,40 +73,18 @@ struct MasterRPGApp: App {
 #if os(macOS)
         .keyboardShortcut("G", modifiers: [.command, .shift, .option])
 #endif
-        
-#if os(macOS)
-        Window("Editor", id: WindowIdentifier.editor.rawValue) {
-            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                RootView(appModel: appModel, editorOnly: true)
-                    .setAppSizeMode()
-                    .environmentSetUp(appModel)
-                    .frame(minWidth: 600, minHeight: 400)
-            }
-        }
-        .keyboardShortcut("E", modifiers: [.command, .shift, .option])
-        
-//        MenuBarExtra() {
-//            MenuBarView(audioRoot: appModel.audioRoot)
-//        } label: {
-//            Label("MasterRPG", systemImage: "music.note.list")
-//        }
-//        .menuBarExtraStyle(.window)
-#endif
-        
+                
 #if !os(tvOS)
-        OldWindowLinkList(appModel: appModel)
-        
-        
         WindowViewerList(appModel: appModel)
         WindowLinkList(appModel: appModel)
 #endif
         
 #if os(macOS)
-        OldWindowMacList(appModel: appModel)
+        WindowMacList(appModel: appModel)
 #endif
         
 #if os(visionOS)
-        OldWindowVisionList(appModel: appModel)
+        WindowVisionList(appModel: appModel)
 #endif
     }
 }

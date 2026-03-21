@@ -142,7 +142,7 @@ extension RPGSharePlayController {
             Logger.sharePlay.debug("GroupSession active state: \(self.printState(), privacy: .public)")
             groupSession.activity = activity
         } else {
-            Task {
+            Task { @MainActor in
                 do {
                     _ = try await activity.activate()
                     Logger.sharePlay.debug("Activate state: \(self.printState(), privacy: .public)")

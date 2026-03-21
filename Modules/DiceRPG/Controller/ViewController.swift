@@ -35,9 +35,11 @@ public extension ViewController {
 
     @MainActor func inlineViewer(root: DiceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: id)
-        return DiceViewer(model: model, isEditor: false)
-            .environment(root.listDisplayModel)
-            .environment(root)
+        return ViewerRootView(model: model, dismissAction: dismissAction)
+//        let model = root.itemController.itemOrEmpty(for: id)
+//        return DiceViewer(model: model, isEditor: false)
+//            .environment(root.listDisplayModel)
+//            .environment(root)
     }
 
     @MainActor func gameView(root: DiceRootModel) -> some View {

@@ -82,6 +82,17 @@ struct WindowViewerList: Scene {
             .restorationBehavior(.disabled)
     #endif
 
+            WindowGroup("Logs", id: WindowIdentifier.logs.rawValue) {
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    appModel.gameRoot.viewController.logWindow()
+                }
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(.above(WindowIdentifier.game.rawValue))
+    #if !os(iOS)
+            .restorationBehavior(.disabled)
+    #endif
+
         }
         .defaultSize(CGSize(width: 600, height: 800))
     }

@@ -29,15 +29,8 @@ public extension ViewController {
     }
 
     @MainActor func inlineViewer(root: AudioRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-//        Task {
-//            let list = root.itemController.audioList(itemId: id)
-//            await root.audioController.add(audio: list, replace: true)
-//            root.audioController.togglePlay(id: list.first?.id)
-//        }
-//        return AudioPlayerBarView()
         let model = root.itemController.itemOrEmpty(for: id)
-        return DetailRootView(root: root, model: model)
-            .environment(root)
+        return ViewerRootView(model: model, dismissAction: dismissAction)
     }
 
     @MainActor func gameView(root: AudioRootModel) -> some View {
@@ -53,6 +46,13 @@ public extension ViewController {
     func viewAudioPlayer(root: AudioRootModel, with id: UUID?) -> some View {
         root.gameController.play(id: id, shouldPlay: true)
         return AudioPlayerView()
+            .environment(root)
+    }
+
+    @MainActor
+    func menuAudioPlayer(root: AudioRootModel, with id: UUID?) -> some View {
+        root.gameController.play(id: id, shouldPlay: true)
+        return AudioPlayerBarView()
             .environment(root)
     }
 

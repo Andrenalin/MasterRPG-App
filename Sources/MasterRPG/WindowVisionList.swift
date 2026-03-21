@@ -9,7 +9,7 @@ import SpaceRPG
 import SwiftUI
 
 
-struct OldWindowVisionList: Scene {
+struct WindowVisionList: Scene {
     let appModel: AppModel
     
     @State private var immersionState: any ImmersionStyle = .mixed

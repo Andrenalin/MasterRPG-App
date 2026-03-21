@@ -5,7 +5,7 @@ import CoreGraphics
 import Foundation
 import GroupActivities
 
-public struct RPGActivity: GroupActivity {
+public struct RPGActivity: GroupActivity, Sendable {
     public static let activityIdentifier = "de.andretrettin.MasterRPG.play-rpg-together"
     @MainActor static var titleImage: CGImage?
 
