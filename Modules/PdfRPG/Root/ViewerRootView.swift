@@ -18,8 +18,6 @@ struct ViewerRootView: View {
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.showGame) private var showGame
-    @Environment(\.appSizeMode) private var appSizeMode
     
     @State private var searchModel = PdfSearchModel()
     
@@ -51,7 +49,7 @@ struct ViewerRootView: View {
             }
         }
         .toolbar {
-            if shouldShowCloseButton {
+            if configuration.closeButton {
                 ToolbarItem(placement: .cancellationAction) {
                     closeButton
                 }
@@ -93,10 +91,6 @@ struct ViewerRootView: View {
 }
 
 private extension ViewerRootView {
-    var shouldShowCloseButton: Bool {
-        valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
-    }
-    
     var searchBar: Bool {
         valueFor(iOS: !configuration.isGame, macOS: configuration.addToolbar, tvOS: !configuration.isGame, visionOS: !configuration.isGame)
     }
@@ -117,7 +111,6 @@ private extension ViewerRootView {
             Image(systemName: "xmark.circle")
         }
         .foregroundStyle(root.config.module.tint)
-        .opacity(showGame ? 0 : 1)
     }
     
 }
