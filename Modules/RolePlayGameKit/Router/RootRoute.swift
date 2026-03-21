@@ -131,7 +131,7 @@ extension RootRoute: NavigationDestination {
     }
 
     public static var macTabs: [RootRoute] {
-        [.adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .search]
+        [.adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
     }
 
     static var fiveTabs: [RootRoute] {

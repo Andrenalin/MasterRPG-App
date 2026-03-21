@@ -24,45 +24,45 @@ struct ViewerRootView: View {
     @State private var searchModel = PdfSearchModel()
     
     var body: some View {
-            VStack {
+        VStack {
 #if !os(tvOS)
-                PdfContentView(searchModel: searchModel, horizontal: false, entry: entry)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .id(searchModel.pdfId)
-                    .overlay {
-                        if searchModel.isSearching {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                                .controlSize(.large)
-                                .foregroundStyle(Color.accentColor)
-                        }
+            PdfContentView(searchModel: searchModel, horizontal: false, entry: entry)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .id(searchModel.pdfId)
+                .overlay {
+                    if searchModel.isSearching {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .controlSize(.large)
+                            .foregroundStyle(Color.accentColor)
                     }
+                }
 #endif
+        }
+        .ignoresSafeArea(.container, edges: [.top, .bottom])
+        .overlay(alignment: .topTrailing) {
+            GlassEffectContainerView {
+                SelectionBar(editController: root.editController, model: model, searchModel: searchModel, withoutBookmark: withoutBookmark)
             }
-            .ignoresSafeArea(.container, edges: [.top, .bottom])
-            .overlay(alignment: .topTrailing) {
-                GlassEffectContainerView {
-                    SelectionBar(editController: root.editController, model: model, searchModel: searchModel, withoutBookmark: withoutBookmark)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            GlassEffectContainerView {
+                SearchBar(searchModel: searchModel)
+            }
+        }
+        .toolbar {
+            if shouldShowCloseButton {
+                ToolbarItem(placement: .cancellationAction) {
+                    closeButton
                 }
             }
-            .overlay(alignment: .bottomTrailing) {
-                GlassEffectContainerView {
-                    SearchBar(searchModel: searchModel)
-                }
-            }
-            .toolbar {
-                if shouldShowCloseButton {
-                    ToolbarItem(placement: .cancellationAction) {
-                        closeButton
-                    }
-                }
-            }
-            .applyIf(searchBar) {
-                $0.searchable(text: $searchModel.displaySearchText, placement: .automatic, prompt: Text("Find in pdf", bundle: .module))
-            }
-            .onSubmit(of: .search) {
-                searchModel.resetSearch()
-            }
+        }
+        .applyIf(searchBar) {
+            $0.searchable(text: $searchModel.displaySearchText, placement: .automatic, prompt: Text("Find in pdf", bundle: .module))
+        }
+        .onSubmit(of: .search) {
+            searchModel.resetSearch()
+        }
 #if !os(visionOS)
         .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
@@ -96,7 +96,7 @@ private extension ViewerRootView {
     var shouldShowCloseButton: Bool {
         valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
     }
-
+    
     var searchBar: Bool {
         valueFor(iOS: !showGame, macOS: windowMode, tvOS: !showGame, visionOS: !showGame)
     }
@@ -119,7 +119,7 @@ private extension ViewerRootView {
         .foregroundStyle(root.config.module.tint)
         .opacity(showGame ? 0 : 1)
     }
-
+    
 }
 
 #Preview(traits: .mockData) {
@@ -128,7 +128,7 @@ private extension ViewerRootView {
         ViewerRootView(model: PdfModel.preview)
     }
 #if os(macOS)
-        .frame(width: 800, height: 600)
+    .frame(width: 800, height: 600)
 #endif
 }
 

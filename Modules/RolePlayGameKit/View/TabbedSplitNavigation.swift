@@ -99,7 +99,7 @@ struct TabSidebar: View {
         }
         
         Section {
-            tabView(tab: .search)
+            //tabView(tab: .search)
             
             tabView(tab: .generator)
         } header: {

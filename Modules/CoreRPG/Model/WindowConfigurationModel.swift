@@ -12,6 +12,7 @@ public enum WindowIdentifier: String {
     case mapEditor
     case pdfViewer
     case photoViewer
+    case search
     case spaceViewer
     case tableViewer
     case valueViewer

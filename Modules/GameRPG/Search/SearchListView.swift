@@ -38,7 +38,8 @@ struct SearchListView: View {
             }
         }
         .navigationTitle("Search Results")
-        .searchable(text: $model.searchText, prompt: "Search items and entries")
+        .searchable(text: $model.searchText, placement: .sidebar,
+                    prompt: "Search items and entries")
         .task(id: model.searchText) {
             await searchController.performSearch()
         }

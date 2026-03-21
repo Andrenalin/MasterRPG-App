@@ -21,7 +21,21 @@ struct WindowMacList: Scene {
             }
         }
         .keyboardShortcut("E", modifiers: [.command, .shift, .option])
-        
+
+        Window("Search", id: WindowIdentifier.search.rawValue) {
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                NavigationSplitView {
+                    GameFactory.rootSearchView(root: appModel.gameRoot)
+                } detail: {
+                    GameFactory.detailSearchView(root: appModel.gameRoot)
+                }
+                .setAppSizeMode()
+                .environmentSetUp(appModel)
+                .frame(minWidth: 600, minHeight: 400)
+            }
+        }
+        .keyboardShortcut("S", modifiers: [.command, .shift, .option])
+
         MenuBarExtra() {
             MenuBarView(audioRoot: appModel.audioRoot)
         } label: {
