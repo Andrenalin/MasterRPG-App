@@ -75,7 +75,7 @@ struct RootFiveRouteRouter: NavigationRouteHandling {
             }
             return routes
         case .spaces(let itemId, _):
-            var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.photos)]
+            var routes: [NavigationAction] = [.send(RootRoute.editors), .reset, .send(ExtendedTabRoute.space)]
             if let itemId {
                 routes.append(.send(SpaceRoute.detail(itemId)))
             }
