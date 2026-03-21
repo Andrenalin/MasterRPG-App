@@ -38,14 +38,9 @@ public extension ViewController {
             .environment(itemSelectionModel)
     }
 
-    @MainActor func windowViewer(root: CharacterRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return ViewerRootView(model: model, dismissAction: nil)
-    }
-
-    @MainActor func inlineViewer(root: CharacterRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return ViewerRootView(model: model, dismissAction: dismissAction)
+    @MainActor func viewer(root: CharacterRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: itemId)
+        return ViewerRootView(model: model, configuration: configuration, dismissAction: dismissAction)
     }
     
     @MainActor func dropChooseView(model: ItemSelectionModel) -> some View {
@@ -56,7 +51,7 @@ public extension ViewController {
     @MainActor func gameView(root: CharacterRootModel, select: UUID? = nil) -> some View {
         Group {
             if let select {
-                inlineViewer(root: root, with: select)
+                viewer(root: root, itemId: select, configuration: ViewerConfiguration(closeButton: false))
             } else {
                 LinkRootView(type: .inspector)
                     .environment(ItemSelectionModel())

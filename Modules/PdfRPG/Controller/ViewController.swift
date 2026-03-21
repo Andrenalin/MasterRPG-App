@@ -23,14 +23,9 @@ public extension ViewController {
             .environment(itemSelectionModel)
     }
 
-    @MainActor func inlineViewer(root: PdfRootModel, with id: UUID, entryId: UUID?, windowMode: Bool = false, withoutBookmark: Bool, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return ViewerRootView(model: model, entryId: entryId, windowMode: windowMode, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
-    }
-    
-    @MainActor func windowViewer(root: PdfRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return ViewerRootView(model: model, entryId: selection.entryId, windowMode: true, withoutBookmark: false)
+    @MainActor func viewer(root: PdfRootModel, itemId: UUID, entryId: UUID?, configuration: ViewerConfiguration, withoutBookmark: Bool = false, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: itemId)
+        return ViewerRootView(model: model, entryId: entryId, configuration: configuration, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
     }
     
     @MainActor func gameView(root: PdfRootModel) -> some View {
@@ -41,7 +36,7 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor func gamePdfView(root: PdfRootModel) -> some View {
-        ViewerRootView(model: root.gameController.currentItem(), entryId: nil, withoutBookmark: true, dismissAction: nil)
+        ViewerRootView(model: root.gameController.currentItem(), entryId: nil, configuration: ViewerConfiguration(isGame: true), withoutBookmark: true, dismissAction: nil)
             .padding(32)
             .padding(.top, 64)
             .environment(root)

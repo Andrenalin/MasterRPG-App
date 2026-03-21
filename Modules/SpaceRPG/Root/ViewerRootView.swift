@@ -5,25 +5,23 @@ import SwiftUI
 
 struct ViewerRootView: View {
     let model: SpaceModel
-    var windowMode: Bool = false
-    var externalViewer: Bool = true
+    let configuration: ViewerConfiguration
     var dismissAction: (() -> Void)? = nil
 
     @Environment(SpaceRootModel.self) private var root
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.appSizeMode) private var appSizeMode
 
     var body: some View {
         VStack {
 #if !os(tvOS)
-            SpaceViewer(root: root, id: model.id, isModal: externalViewer)
+            SpaceViewer(root: root, id: model.id, isModal: configuration.addToolbar)
                 .id(model.id)
 #endif
         }
         .ignoresSafeArea(.container, edges: [.top, .bottom])
-        .applyIf(externalViewer) {
+        .applyIf(configuration.addToolbar) {
             $0.toolbar {
                 toolbarContent
             }
@@ -42,15 +40,11 @@ struct ViewerRootView: View {
 private extension ViewerRootView {
     @ToolbarContentBuilder
     var toolbarContent: some ToolbarContent {
-        if shouldShowCloseButton {
+        if configuration.closeButton {
             ToolbarItem(placement: .cancellationAction) {
                 closeButton
             }
         }
-    }
-    
-    var shouldShowCloseButton: Bool {
-        valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
     }
 
     var closeButton: some View {
@@ -70,7 +64,7 @@ private extension ViewerRootView {
 #Preview(traits: .mockData) {
     @Previewable @Environment(SpaceRootModel.self) var root
 
-    ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
+    ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), configuration: ViewerConfiguration())
 #if os(macOS)
         .frame(width: 800, height: 600)
 #endif

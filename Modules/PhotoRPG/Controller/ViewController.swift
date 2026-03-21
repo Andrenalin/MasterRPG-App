@@ -62,15 +62,15 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor func gameViewer(root: PhotoRootModel) -> some View {
-        ViewerRootView(model: root.gameController.currentItem(), isGame: true)
+        ViewerRootView(model: root.gameController.currentItem(), configuration: ViewerConfiguration(isGame: true))
     }
 
-    @MainActor func inlineViewer(root: PhotoRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: id), dismissAction: dismissAction)
+    @MainActor func viewer(root: PhotoRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: itemId), configuration: configuration, dismissAction: dismissAction)
     }
     
     @MainActor func windowViewer(root: PhotoRootModel, selection: WindowItemSelection) -> some View {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: selection.itemId))
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: selection.itemId), configuration: ViewerConfiguration(closeButton: false))
     }
 }
 

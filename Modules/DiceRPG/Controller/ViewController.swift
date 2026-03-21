@@ -33,9 +33,9 @@ public extension ViewController {
             .environment(itemSelectionModel)
     }
 
-    @MainActor func inlineViewer(root: DiceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return ViewerRootView(model: model, dismissAction: dismissAction)
+    @MainActor func viewer(root: DiceRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: itemId)
+        return ViewerRootView(model: model, configuration: configuration, dismissAction: dismissAction)
                     .environment(root.listDisplayModel)
     }
 

@@ -47,17 +47,17 @@ public extension ViewController {
 
 public extension ViewController {
 
-    @MainActor func inlineViewer(root: TableRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return ViewerRootView(model: model, dismissAction: dismissAction)
+    @MainActor func viewer(root: TableRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: itemId)
+        return ViewerRootView(model: model, configuration: configuration, dismissAction: dismissAction)
     }
     
     @MainActor func windowViewer(root: TableRootModel, selection: WindowItemSelection) -> some View {
         let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return ViewerRootView(model: model, windowMode: true)
+        return ViewerRootView(model: model, configuration: ViewerConfiguration(closeButton: false))
     }
 
     @MainActor func gameViewer(root: TableRootModel) -> some View {
-        ViewerRootView(model: root.gameController.currentItem(), windowMode: false)
+        ViewerRootView(model: root.gameController.currentItem(), configuration: ViewerConfiguration(closeButton: false))
     }
 }

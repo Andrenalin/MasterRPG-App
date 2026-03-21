@@ -26,6 +26,18 @@ public enum ThumbnailRowViewType: Hashable, Sendable {
     case custom
 }
 
+public struct ViewerConfiguration: Hashable, Sendable {
+    public init(closeButton: Bool = false, addToolbar: Bool = true, isGame: Bool = false) {
+        self.closeButton = closeButton
+        self.addToolbar = addToolbar
+        self.isGame = isGame
+    }
+    
+    public let closeButton: Bool
+    public let addToolbar: Bool
+    public let isGame: Bool
+}
+
 public protocol ViewControllable: Sendable {
     var fileImporterViewType: FileImporterViewType { get }
     var goupViewType: GroupViewType { get }

@@ -23,39 +23,39 @@ struct WindowViewerList: Scene {
     var body: some Scene {
         Group {
             windowGroup(model: appModel, module: .adventure) { selection in
-                appModel.adventureRoot.viewController.windowViewer(root: appModel.adventureRoot, selection: selection)
+                appModel.adventureRoot.viewController.viewer(root: appModel.adventureRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
 
             windowGroup(model: appModel, module: .value) { selection in
-                appModel.characterRoot.viewController.windowViewer(root: appModel.characterRoot, selection: selection)
+                appModel.characterRoot.viewController.viewer(root: appModel.characterRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
             
             windowGroup(model: appModel, module: .generator) { selection in
-                appModel.generatorRoot.viewController.windowViewer(root: appModel.generatorRoot, selection: selection)
+                appModel.generatorRoot.viewController.viewer(root: appModel.generatorRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
 
             windowGroup(model: appModel, module: .map) { selection in
-                appModel.mapRoot.viewController.windowViewer(root: appModel.mapRoot, selection: selection)
+                appModel.mapRoot.viewController.viewer(root: appModel.mapRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
 
             windowGroup(model: appModel, module: .pdf) { selection in
-                appModel.pdfRoot.viewController.windowViewer(root: appModel.pdfRoot, selection: selection)
+                appModel.pdfRoot.viewController.viewer(root: appModel.pdfRoot, itemId: selection.itemId, entryId: selection.entryId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
 
             windowGroup(model: appModel, module: .photo) { selection in
-                appModel.photoRoot.viewController.windowViewer(root: appModel.photoRoot, selection: selection)
+                appModel.photoRoot.viewController.viewer(root: appModel.photoRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
 
             windowGroup(model: appModel, module: .space) { selection in
-                appModel.spaceRoot.viewController.windowViewer(root: appModel.spaceRoot, selection: selection)
+                appModel.spaceRoot.viewController.viewer(root: appModel.spaceRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
             
             windowGroup(model: appModel, module: .table) { selection in
-                appModel.tableRoot.viewController.windowViewer(root: appModel.tableRoot, selection: selection)
+                appModel.tableRoot.viewController.viewer(root: appModel.tableRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
 
             windowGroup(model: appModel, module: .weather) { selection in
-                appModel.weatherRoot.viewController.windowViewer(root: appModel.weatherRoot, selection: selection)
+                appModel.weatherRoot.viewController.viewer(root: appModel.weatherRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
 
             WindowGroup("Generator Adventure", id: WindowIdentifier.generateAdventure.rawValue, for: WindowItemSelection.self) { $selection in
@@ -111,6 +111,14 @@ struct WindowViewerList: Scene {
 #if !os(iOS)
         .restorationBehavior(.disabled)
 #endif
+    }
+    
+    private var closeButton: Bool {
+        #if os(macOS)
+        return false
+        #else
+        return true
+        #endif
     }
 }
 

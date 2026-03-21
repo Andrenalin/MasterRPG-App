@@ -10,7 +10,7 @@ struct SelectedPhotoViewerView: View {
     @Environment(GroupItemSelectionModel.self) var selection
     
     var body: some View {
-        ViewerRootView(model: selectedModel, externalViewer: false)
+        ViewerRootView(model: selectedModel, configuration: ViewerConfiguration(addToolbar: false))
             .id(selection.selectedItem ?? model.id)
     }
     

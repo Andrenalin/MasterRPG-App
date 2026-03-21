@@ -11,7 +11,7 @@ struct InlineRowViewer: View, Equatable {
     
     var body: some View {
         if source.typeId == root.config.module {
-            ViewerRootView(model: root.itemController.itemOrEmpty(for: source.itemId), externalViewer: false)
+            ViewerRootView(model: root.itemController.itemOrEmpty(for: source.itemId), configuration: ViewerConfiguration(isGame: false))
                 .frame(height: 256)
         }
     }

@@ -50,12 +50,12 @@ public extension ViewController {
 #endif
     }
 
-    @MainActor func inlineViewer(root: SpaceRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: id), dismissAction: dismissAction)
+    @MainActor func viewer(root: SpaceRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: itemId), configuration: configuration, dismissAction: dismissAction)
     }
     
     @MainActor func windowViewer(root: SpaceRootModel, selection: WindowItemSelection) -> some View {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: selection.itemId))
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: selection.itemId), configuration: ViewerConfiguration(closeButton: false, isGame: true))
     }
 }
 

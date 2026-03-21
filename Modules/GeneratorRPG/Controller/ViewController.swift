@@ -14,22 +14,8 @@ extension ViewController: ViewControllable {}
 
 public extension ViewController {
     @MainActor @ViewBuilder
-    func windowViewer(root: GeneratorRootModel, selection: WindowItemSelection) -> some View {
-        if let model = root.itemController.itemSync(for: selection.itemId) {
-            switch model.genType {
-            case .adventure:
-                AdventureGenRootView(model: model)
-            case .character:
-                AdventureChatRootView(sheetModel: SheetModel.empty)
-            case .extractor:
-                ExtractorGenRootView(model: model)
-            }
-        }
-    }
-
-    @MainActor @ViewBuilder
-    func inlineViewer(root: GeneratorRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        if let model = root.itemController.itemSync(for: id) {
+    func viewer(root: GeneratorRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
+        if let model = root.itemController.itemSync(for: itemId) {
             switch model.genType {
             case .adventure:
                 AdventureGenRootView(model: model, dismissAction: dismissAction)

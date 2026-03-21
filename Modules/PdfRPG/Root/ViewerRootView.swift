@@ -10,7 +10,7 @@ import SwiftUI
 struct ViewerRootView: View {
     let model: PdfModel
     var entryId: UUID? = nil
-    var windowMode: Bool = false
+    let configuration: ViewerConfiguration
     var withoutBookmark: Bool = false
     var dismissAction: (() -> Void)? = nil
     
@@ -98,7 +98,7 @@ private extension ViewerRootView {
     }
     
     var searchBar: Bool {
-        valueFor(iOS: !showGame, macOS: windowMode, tvOS: !showGame, visionOS: !showGame)
+        valueFor(iOS: !configuration.isGame, macOS: configuration.addToolbar, tvOS: !configuration.isGame, visionOS: !configuration.isGame)
     }
     
     var entry: PdfEntryModel? {
@@ -125,7 +125,7 @@ private extension ViewerRootView {
 #Preview(traits: .mockData) {
     
     ManagedNavigationStack {
-        ViewerRootView(model: PdfModel.preview)
+        ViewerRootView(model: PdfModel.preview, configuration: ViewerConfiguration())
     }
 #if os(macOS)
     .frame(width: 800, height: 600)

@@ -5,7 +5,7 @@ import SwiftUI
 
 struct ViewerRootView: View {
     let model: WeatherModel
-    var isGame: Bool = false
+    let configuration: ViewerConfiguration
     var dismissAction: (() -> Void)? = nil
     
     @Environment(WeatherRootModel.self) private var root
@@ -19,12 +19,12 @@ struct ViewerRootView: View {
     var body: some View {
         VStack {
             GeometryReader { proxy in
-                WeatherViewer(model: model, size: proxy.size, useGame: isGame, isAnimating: $isAnimating)
+                WeatherViewer(model: model, size: proxy.size, useGame: configuration.isGame, isAnimating: $isAnimating)
                     .id(model.id)
             }
         }
         .ignoresSafeArea(.container, edges: [.top, .bottom])
-        .applyIf(!isGame) {
+        .applyIf(!configuration.isGame) {
             $0.toolbar {
                 toolbarContent
             }
@@ -38,7 +38,7 @@ struct ViewerRootView: View {
 #endif
         .environment(root.editController.cacheItemListModel)
         .onAppear {
-            guard isGame else { return }
+            guard configuration.isGame else { return }
             withAnimation { isAnimating = true }
         }
     }
@@ -89,7 +89,7 @@ private extension ViewerRootView {
 #Preview(traits: .mockData) {
     @Previewable @Environment(WeatherRootModel.self) var root
     
-    ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
+    ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), configuration: ViewerConfiguration())
 #if os(macOS)
         .frame(width: 800, height: 600)
 #endif

@@ -42,9 +42,10 @@ struct ViewerRouteDestinationView: View {
     let itemId: UUID
 
     @Environment(CharacterRootModel.self) private var root
+    @Environment(\.appSizeMode) private var appSizeMode
     
     var body: some View {
-        root.viewController.inlineViewer(root: root, with: itemId)
+        root.viewController.viewer(root: root, itemId: itemId, configuration: ViewerConfiguration(closeButton: appSizeMode == .compact))
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
     }

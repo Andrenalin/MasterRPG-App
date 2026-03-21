@@ -5,12 +5,6 @@ import SwiftUI
 struct TableSheetView: View {
     let root: ItemRootController
     let model: TableSheetModel
-    let windowMode: Bool
-    let dismissAction: (() -> Void)?
-
-    @Environment(\.appSizeMode) private var appSizeMode
-    @Environment(\.dismiss) var dismiss
-    @Environment(\.showGame) private var showGame
 
     var body: some View {
         @Bindable var model = model

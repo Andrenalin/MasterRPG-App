@@ -43,9 +43,10 @@ struct ViewerRouteDestinationView: View {
     let entryId: UUID?
 
     @Environment(PdfRootModel.self) private var root
+    @Environment(\.appSizeMode) private var appSizeMode
     
     var body: some View {
-        root.viewController.inlineViewer(root: root, with: itemId, entryId: entryId, withoutBookmark: true)
+        root.viewController.viewer(root: root, itemId: itemId, entryId: entryId, configuration: ViewerConfiguration(closeButton: appSizeMode == .compact), withoutBookmark: true)
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
     }

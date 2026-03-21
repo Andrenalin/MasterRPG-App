@@ -5,13 +5,11 @@ import SwiftUI
 
 struct ViewerRootView: View {
     let model: PhotoModel
-    var externalViewer: Bool = true
-    var isGame: Bool = false
+    let configuration: ViewerConfiguration
     var dismissAction: (() -> Void)? = nil
 
     @Environment(PhotoRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.appSizeMode) private var appSizeMode
     
 #if os(visionOS)
     @Environment(\.openImmersiveSpace) private var openSpace
@@ -40,7 +38,7 @@ struct ViewerRootView: View {
 #endif
         }
         .ignoresSafeArea(.container, edges: [.top, .bottom])
-        .applyIf(externalViewer && !isGame) {
+        .applyIf(configuration.addToolbar && !configuration.isGame) {
             $0.toolbar {
                 toolbarContent
             }
@@ -49,7 +47,7 @@ struct ViewerRootView: View {
             .navigationBarTitleDisplayMode(.inline)
 #endif
         }
-        .applyIf(isGame) {
+        .applyIf(configuration.isGame) {
             $0.overlay(alignment: .bottomLeading)  {
                 rotateButton
 #if !os(visionOS)
@@ -68,7 +66,7 @@ struct ViewerRootView: View {
 private extension ViewerRootView {
     @ToolbarContentBuilder
     var toolbarContent: some ToolbarContent {
-        if shouldShowCloseButton {
+        if configuration.closeButton {
             ToolbarItem(placement: .cancellationAction) {
                 closeButton
             }
@@ -79,10 +77,6 @@ private extension ViewerRootView {
         }
     }
     
-    var shouldShowCloseButton: Bool {
-        valueFor(iOS: appSizeMode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
-    }
-
     var closeButton: some View {
         Button {
             if let dismissAction {
@@ -106,14 +100,13 @@ private extension ViewerRootView {
         .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
         .foregroundStyle(root.config.module.tint)
     }
-
 }
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(PhotoRootModel.self) var root
     
     NavigationStack {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), externalViewer: true, isGame: true)
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), configuration: ViewerConfiguration())
 #if os(macOS)
             .frame(width: 800, height: 600)
 #endif

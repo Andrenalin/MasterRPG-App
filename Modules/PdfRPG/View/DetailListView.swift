@@ -43,7 +43,7 @@ struct DetailListView: View {
         }
         .overlay {
             if openFileWindowModel.showItem {
-                root.viewController.inlineViewer(root: root, with: openFileWindowModel.itemId, entryId: nil, withoutBookmark: false) {
+                root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, entryId: nil, configuration: ViewerConfiguration(closeButton: true), withoutBookmark: false) {
                     openFileWindowModel.showItem = false
                 }
             }

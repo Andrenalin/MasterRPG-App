@@ -3,27 +3,28 @@
 import SwiftUI
 
 public struct TableRootSheet: View {
-    public init(root: ItemRootController, itemId: UUID, module: NetworkModules, windowMode: Bool = false, dismissAction: (() -> Void)? = nil) {
+    public init(root: ItemRootController, itemId: UUID, module: NetworkModules, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) {
         self.root = root
-        self.windowMode = windowMode
+        self.configuration = configuration
         self.dismissAction = dismissAction
         let model = root.itemControllable.itemOrEmpty(for: itemId)
         self._tableSheetModel = State(wrappedValue: TableSheetModel(linkControllable: root.linkControllable.rootLinkControllable, parent: nil, model: model, level: 0, module: module))
     }
         
     let root: ItemRootController
-    let windowMode: Bool
+    let configuration: ViewerConfiguration
     let dismissAction: (() -> Void)?
-    
+
     @Environment(\.appSizeMode) private var appSizeMode
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.showGame) private var showGame
+
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) var dismiss
 
     @State private var tableSheetModel: TableSheetModel
     
     public var body: some View {
-        TableSheetView(root: root, model: tableSheetModel, windowMode: windowMode, dismissAction: dismissAction)
+        TableSheetView(root: root, model: tableSheetModel)
 #if os(macOS) || os(visionOS)
             .padding(.top)
 #else
@@ -42,7 +43,7 @@ public struct TableRootSheet: View {
 private extension TableRootSheet {
     @ToolbarContentBuilder
     var toolbarContent: some ToolbarContent {
-        if shouldShowCloseButton {
+        if configuration.closeButton {
             ToolbarItem(placement: .cancellationAction) {
                 closeButton
             }
@@ -64,6 +65,4 @@ private extension TableRootSheet {
             Image(systemName: "xmark.circle")
         }
     }
-
-
 }

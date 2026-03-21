@@ -41,16 +41,11 @@ public extension ViewController {
             .environment(itemSelectionModel)
     }
     
-    @MainActor func inlineViewer(root: AdventureRootModel, with id: UUID, dismissAction: (() -> Void)? = nil) -> some View {
-        let model = root.itemController.itemOrEmpty(for: id)
-        return AdventureSheet(model: model, dismissAction: dismissAction)
+    @MainActor func viewer(root: AdventureRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
+        let model = root.itemController.itemOrEmpty(for: itemId)
+        return AdventureSheet(model: model, configuration: configuration, dismissAction: dismissAction)
     }
     
-    @MainActor func windowViewer(root: AdventureRootModel, selection: WindowItemSelection) -> some View {
-        let model = root.itemController.itemOrEmpty(for: selection.itemId)
-        return AdventureSheet(model: model, dismissAction: nil)
-    }
-
     @MainActor func generatorView(root: AdventureRootModel, selection: WindowItemSelection) -> some View {
         EditorRoute.generator(selection.itemId)
     }
@@ -58,7 +53,7 @@ public extension ViewController {
     @MainActor func gameView(root: AdventureRootModel, focusedIds: [UUID]) -> some View {
         Group {
             if let select = focusedIds.first {
-                windowViewer(root: root, selection: WindowItemSelection(itemId: select))
+                viewer(root: root, itemId: select, configuration: ViewerConfiguration(closeButton: false))
             } else {
                 LinkRootView(type: .inspector)
                     .environment(ItemSelectionModel())

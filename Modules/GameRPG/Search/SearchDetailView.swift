@@ -24,16 +24,16 @@ struct SearchDetailView: View {
         if let selection = model.selection {
             Group {
                 switch selection.module {
-                case .adventure: root.adventureRoot.viewController.inlineViewer(root: root.adventureRoot, with: selection.itemId)
-                case .audio: root.audioRoot.viewController.inlineViewer(root: root.audioRoot, with: selection.itemId)
-                case .dice: root.diceRoot.viewController.inlineViewer(root: root.diceRoot, with: selection.itemId)
-                case .map: root.mapRoot.viewController.inlineViewer(root: root.mapRoot, with: selection.itemId)
-                case .pdf: root.pdfRoot.viewController.inlineViewer(root: root.pdfRoot, with: selection.itemId, entryId: selection.entryId, windowMode: true, withoutBookmark: true)
-                case .photo: root.photoRoot.viewController.inlineViewer(root: root.photoRoot, with: selection.itemId)
-                case .space: root.spaceRoot.viewController.inlineViewer(root: root.spaceRoot, with: selection.itemId)
-                case .table: root.tableRoot.viewController.inlineViewer(root: root.tableRoot, with: selection.itemId)
-                case .value: root.characterRoot.viewController.inlineViewer(root: root.characterRoot, with: selection.itemId)
-                case .weather: root.weatherRoot.viewController.inlineViewer(root: root.weatherRoot, with: selection.itemId)
+                case .adventure: root.adventureRoot.viewController.viewer(root: root.adventureRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
+                case .audio: root.audioRoot.viewController.viewer(root: root.audioRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
+                case .dice: root.diceRoot.viewController.viewer(root: root.diceRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
+                case .map: root.mapRoot.viewController.viewer(root: root.mapRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
+                case .pdf: root.pdfRoot.viewController.viewer(root: root.pdfRoot, itemId: selection.itemId, entryId: selection.entryId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false), withoutBookmark: true)
+                case .photo: root.photoRoot.viewController.viewer(root: root.photoRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
+                case .space: root.spaceRoot.viewController.viewer(root: root.spaceRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
+                case .table: root.tableRoot.viewController.viewer(root: root.tableRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
+                case .value: root.characterRoot.viewController.viewer(root: root.characterRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
+                case .weather: root.weatherRoot.viewController.viewer(root: root.weatherRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
                 default: EmptyView()
                 }
             }
