@@ -59,7 +59,7 @@ public final class AdventureRootModel {
         _importController = ImportController(root: self, itemController: itemController)
         _gameController = GameController(rootManager: root, root: self, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: root, itemController: itemController)
-
+        _searchController = SearchController(itemController: itemController)
         _linkRegisterController = linkRegisterController
         
         audioRoot.setUp(context: context, batchContext: batchContext, rootManager: root, linkRegisterController: linkRegisterController)
@@ -161,7 +161,9 @@ public final class AdventureRootModel {
     var gameController: GameController { _gameController! }
     @ObservationIgnored private(set) var _linkController: LinkController?
     var linkController: LinkController { _linkController! }
-    
+    @ObservationIgnored private(set) var _searchController: SearchController?
+    var searchController: SearchController { _searchController! }
+
     @ObservationIgnored private(set) var _linkRegisterController: LinkRegisterController?
     var linkRegisterController: LinkRegisterController { _linkRegisterController! }
     
@@ -190,6 +192,7 @@ public final class AdventureRootModel {
             itemControllable: itemControllable,
             linkControllable: linkControllable,
             folderListControllable: folderListController,
+            searchControllable: searchController,
             viewControllable: viewController
         )
     }()
@@ -225,6 +228,9 @@ extension AdventureRootModel: RootControllable {
 
     public var linkControllable: any LinkControllable {
         linkController as LinkControllable
+    }
+    public var searchControllable: any SearchControllable {
+        searchController
     }
     public var gameImportControllable: any ImportControllable {
         importController as ImportControllable

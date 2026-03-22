@@ -41,7 +41,8 @@ public final class AudioRootModel {
         _gameController = gameController
 
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, audioController: audioController, gameController: gameController)
-
+        _searchController = SearchController(itemController: itemController)
+        
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
 
         _rootController = ItemRootController(
@@ -58,6 +59,7 @@ public final class AudioRootModel {
             itemControllable: itemControllable,
             linkControllable: linkControllable,
             folderListControllable: folderListController,
+            searchControllable: searchController,
             viewControllable: viewController
         )
 
@@ -103,6 +105,8 @@ public final class AudioRootModel {
     var gameController: GameController { _gameController! }
     @ObservationIgnored private(set) var _linkController: LinkController?
     var linkController: LinkController { _linkController! }
+    @ObservationIgnored private(set) var _searchController: SearchController?
+    var searchController: SearchController { _searchController! }
 
     @ObservationIgnored private(set) var _folderListController: FolderListController?
     var folderListController: FolderListControllable { _folderListController! }
@@ -142,6 +146,7 @@ extension AudioRootModel {
     @MainActor public var itemControllable: any ItemControllable {
         itemController
     }
+    public var searchControllable: any SearchControllable { searchController }
     public var audioGameControllable: any (GameControllable & AudioGameStoreable) {
         gameController
     }

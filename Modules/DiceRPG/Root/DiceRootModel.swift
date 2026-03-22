@@ -31,7 +31,8 @@ public final class DiceRootModel {
         _importController = ImportController(itemController: itemController, editController: editController)
         _gameController = GameController(rootManager: rootManager, itemController: itemController, exportController: exportController)
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
-
+        _searchController = SearchController(itemController: itemController)
+        
         _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
 
         _rootController = ItemRootController(
@@ -48,15 +49,14 @@ public final class DiceRootModel {
             itemControllable: itemControllable,
             linkControllable: linkControllable,
             folderListControllable: folderListController,
+            searchControllable: searchController,
             viewControllable: viewController
         )
 
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
-                Task {
                 syncDataController?.start()
-            }
             }
         }
     }
@@ -93,7 +93,9 @@ public final class DiceRootModel {
     var gameController: GameController { _gameController! }
     @ObservationIgnored private(set) var _linkController: LinkController?
     var linkController: LinkController { _linkController! }
-    
+    @ObservationIgnored private(set) var _searchController: SearchController?
+    var searchController: SearchController { _searchController! }
+
     @ObservationIgnored private(set) var _folderListController: FolderListController?
     var folderListController: FolderListControllable { _folderListController! }
         @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
@@ -131,6 +133,7 @@ extension DiceRootModel {
     @MainActor public var itemControllable: any ItemControllable {
         itemController
     }
+    public var searchControllable: any SearchControllable { searchController }
     public var diceGameControllable: any (GameControllable & DiceGameStorable) {
         gameController
     }

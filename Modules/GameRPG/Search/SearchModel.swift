@@ -17,5 +17,7 @@ final class SearchModel {
     var isSearching = false
     var selection: SearchResult?
     
+    var playerMode: Bool = false
+    
     var searchTask: Task<Void, Never>?
 }
