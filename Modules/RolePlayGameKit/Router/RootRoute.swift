@@ -130,6 +130,10 @@ extension RootRoute: NavigationDestination {
         [.game, .adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
     }
 
+    public static var visionTabs: [RootRoute] {
+        [.adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
+    }
+
     public static var macTabs: [RootRoute] {
         [.adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
     }
@@ -185,8 +189,7 @@ struct RouteRouteDestionationView: View {
             case .weathers:
                 WeatherRootFactory.rootView()
             case .search:
-                GameFactory.rootSearchView(root: appModel.gameRoot)
-                //SearchRootView(root: appModel.gameRoot, searchText: "Barcama")
+                GameFactory.rootSearchView(root: appModel.gameRoot, navigator: appModel.navigator)
             }
         }
         .tint(route.module.tint)

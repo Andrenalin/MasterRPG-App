@@ -17,11 +17,11 @@ import SwiftUI
 import WeatherRPG
 
 public enum GameFactory {
-    @MainActor public static func rootSearchView(root: GameRoot) -> some View {
-        SearchRootView(root: root)
+    @MainActor public static func rootSearchView(root: GameRoot, navigator: Navigator) -> some View {
+        SearchRootView(root: root, navigator: navigator)
     }
         
-    @MainActor @ViewBuilder public static func detailSearchView(root: GameRoot) -> some View {
-        SearchDetailView(root: root, searchController: root.searchController)
+    @MainActor @ViewBuilder public static func detailSearchView(root: GameRoot, navigator: Navigator) -> some View {
+        SearchDetailView(root: root, navigator: navigator)
     }
 }

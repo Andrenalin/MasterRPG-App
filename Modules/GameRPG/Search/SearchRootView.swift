@@ -3,24 +3,17 @@
 import CoreRPG
 import SwiftUI
 
-public struct SearchRootView: View {
-    public init(root: GameRoot) {
-        self.root = root
-    }
-
+struct SearchRootView: View {
     let root: GameRoot
+    let navigator: Navigator
 
-    @Environment(\.appSizeMode) private var appSizeMode
-
-    public var body: some View {
-        @Bindable var model = root.searchController.model
-
+    var body: some View {
         SearchListView(root: root, searchController: root.searchController)
             .modifier(CompactNavigationModifier(
-                isCompact: appSizeMode == .compact,
-                selection: $model.selection,
                 root: root,
-                searchController: root.searchController
+                navigator: navigator,
+                model: root.searchController.model,
+                
             ))
     }
 }
@@ -28,16 +21,17 @@ public struct SearchRootView: View {
 // MARK: - Navigation Modifier
 
 private struct CompactNavigationModifier: ViewModifier {
-    let isCompact: Bool
-    @Binding var selection: SearchResult?
     let root: GameRoot
-    let searchController: SearchController
+    let navigator: Navigator
+    @Bindable var model: SearchModel
+
+    @Environment(\.appSizeMode) private var appSizeMode
 
     func body(content: Content) -> some View {
-        if isCompact {
+        if appSizeMode == .compact {
             content
-                .navigationDestination(item: $selection) { _ in
-                    SearchDetailView(root: root, searchController: searchController)
+                .navigationDestination(item: $model.selection) { _ in
+                    SearchDetailView(root: root, navigator: navigator)
                 }
         } else {
             content
@@ -48,5 +42,5 @@ private struct CompactNavigationModifier: ViewModifier {
 // MARK: - Preview
 
 #Preview {
-    SearchRootView(root: GameRoot.preview)
+    SearchRootView(root: GameRoot.preview, navigator: Navigator(configuration: NavigationConfiguration()))
 }

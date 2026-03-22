@@ -13,6 +13,7 @@ public enum WindowIdentifier: String {
     case pdfViewer
     case photoViewer
     case search
+    case settings
     case spaceViewer
     case tableViewer
     case valueViewer

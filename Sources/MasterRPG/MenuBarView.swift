@@ -1,26 +1,29 @@
 // @copyright André Trettin
 
 import AudioRPG
+import RolePlayGameKit
 import SwiftUI
 
 struct MenuBarView: View {
-    let audioRoot: AudioRootModel
+    let appModel: AppModel
 
     var body: some View {
-        VStack {
-            Text("Music in MasterRPG")
-
-            Divider()
-
-            audioRoot.viewController.viewAudioPlayer(root: audioRoot, with: nil)
-
+        DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+            VStack {
+                Text("Music in MasterRPG")
+                
+                Divider()
+                
+                appModel.audioRoot.viewController.viewAudioPlayer(root: appModel.audioRoot, with: nil)
+                
+            }
+            .padding()
+            .environment(appModel.audioRoot)
         }
-        .padding()
-        .environment(audioRoot)
     }
 }
 
 
 #Preview {
-    MenuBarView(audioRoot: .preview)
+    MenuBarView(appModel: .preview)
 }

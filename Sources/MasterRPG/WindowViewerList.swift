@@ -82,7 +82,7 @@ struct WindowViewerList: Scene {
             .restorationBehavior(.disabled)
     #endif
 
-            WindowGroup("Logs", id: WindowIdentifier.logs.rawValue) {
+            BaseWindow("Logs", id: WindowIdentifier.logs.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     appModel.gameRoot.viewController.logWindow()
                 }
@@ -93,6 +93,37 @@ struct WindowViewerList: Scene {
             .restorationBehavior(.disabled)
     #endif
 
+            BaseWindow("Editor", id: WindowIdentifier.editor.rawValue) {
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    RootView(appModel: appModel, editorOnly: true)
+                        .setAppSizeMode()
+                        .environmentSetUp(appModel)
+                        .frame(minWidth: 1000, minHeight: 600)
+                }
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(.leading(WindowIdentifier.game.rawValue))
+#if os(macOS)
+            .keyboardShortcut("E", modifiers: [.command, .shift, .option])
+#endif
+            
+            BaseWindow("Search", id: WindowIdentifier.search.rawValue) {
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    NavigationSplitView {
+                        GameFactory.rootSearchView(root: appModel.gameRoot, navigator: appModel.navigator)
+                    } detail: {
+                        GameFactory.detailSearchView(root: appModel.gameRoot, navigator: appModel.navigator)
+                    }
+                    .setAppSizeMode()
+                    .environmentSetUp(appModel)
+                    .frame(minWidth: 1000, minHeight: 600)
+                }
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(.trailing(WindowIdentifier.game.rawValue))
+#if os(macOS)
+            .keyboardShortcut("S", modifiers: [.command, .shift, .option])
+#endif
         }
         .defaultSize(CGSize(width: 600, height: 800))
     }

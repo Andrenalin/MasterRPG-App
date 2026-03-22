@@ -27,14 +27,13 @@ struct RootView: View {
     @State private var showFirstDataAlert = false
 
     var body: some View {
-
         Group {
-#if os(macOS)
+#if os(macOS) || os(visionOS)
             if editorOnly {
                 TabRootView(appModel: appModel, editorOnly: editorOnly)
             } else {
                 appModel.gameRoot.viewController.gameWindow {
-                    EmptyView()
+                    appModel.gameRoot.viewController.gameTabItem()
                 }
             }
 #elseif os(tvOS)

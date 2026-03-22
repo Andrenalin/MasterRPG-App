@@ -15,12 +15,10 @@ import SpaceRPG
 
 struct SearchDetailView: View {
     let root: GameRoot
-    let searchController: SearchController
-    
-    @Environment(\.navigator) private var navigator
+    let navigator: Navigator
     
     public var body: some View {
-        @Bindable var model = searchController.model
+        @Bindable var model = root.searchController.model
         if let selection = model.selection {
             Group {
                 switch selection.module {
@@ -65,5 +63,5 @@ struct SearchDetailView: View {
 // MARK: - Preview
 
 #Preview {
-    SearchDetailView(root: GameRoot.preview, searchController: SearchController(root: GameRoot.preview, searchText: "Test"))
+    SearchDetailView(root: GameRoot.preview, navigator: Navigator(configuration: NavigationConfiguration()))
 }

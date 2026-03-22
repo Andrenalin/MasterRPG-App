@@ -17,6 +17,19 @@ struct WindowVisionList: Scene {
     var body: some Scene {
         let defaultSize = Size3D(width: 1.5, height: 1, depth: 0.4)
 
+        Window("Settings", id: WindowIdentifier.settings.rawValue) {
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                NavigationStack {
+                    SettingsView(store: appModel)
+                }
+                .setAppSizeMode()
+                .environmentSetUp(appModel)
+                .frame(minWidth: 800, minHeight: 600)
+            }
+        }
+        .windowResizability(.contentSize)
+        .defaultWindowPlacementAll(.below(WindowIdentifier.game.rawValue))
+        
         WindowGroup(id: "SpaceVolume", for: UUID.self) { $id in
             if let id {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in

@@ -9,7 +9,7 @@ public struct SplitNavigation: View {
     public init() {}
 
     @AppStorage("MasterRPGCustomization") private var customization: TabViewCustomization
-    @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
+    @SceneStorage("RootRoute") private var storedTab: RootRoute = SplitNavigation.defaultTab
 
     @Environment(AppModel.self) private var appModel
     
@@ -44,8 +44,14 @@ public struct SplitNavigation: View {
     }
     
     var selectedModule: NetworkModules {
-        (appModel.selectedModule ?? .game).module
+        (appModel.selectedModule ?? SplitNavigation.defaultTab).module
     }
+
+    #if os(visionOS)
+    static let defaultTab: RootRoute = .adventures
+    #else
+    static let defaultTab: RootRoute = .game
+    #endif
 }
 
 private extension SplitNavigation {
@@ -136,7 +142,7 @@ private extension SplitNavigation {
     
     var allCustomTabs: some View {
         ZStack {
-            ForEach(RootRoute.allTabs) { tab in
+            ForEach(RootRoute.visionTabs) { tab in
                 tabView(tab: tab)
                     .opacity(appModel.selectedModule == tab ? 1 : 0)
             }

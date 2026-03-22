@@ -36,7 +36,7 @@ struct SplitDetailView: View {
         case .map: MapRootFactory.detailView(root: appModel.mapRoot)
         case .pdf: PdfFactory.detailView(root: appModel.pdfRoot)
         case .photo: PhotoFactory.detailView(root: appModel.photoRoot)
-        case .search: GameFactory.detailSearchView(root: appModel.gameRoot)
+        case .search: GameFactory.detailSearchView(root: appModel.gameRoot, navigator: appModel.navigator)
         case .space: SpaceFactory.detailView(root: appModel.spaceRoot)
         case .table: TableFactory.detailView(root: appModel.tableRoot)
         case .value: CharacterRootFactory.detailView(root: appModel.characterRoot)

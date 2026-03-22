@@ -9,7 +9,7 @@ struct PrimaryTabBar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(RootRoute.allTabs) { tab in
+            ForEach(RootRoute.visionTabs) { tab in
                 SecondaryTabBarButton(tab: tab, hoverGroup: HoverEffectGroup(hoverEffectNameSpace))
             }
         }
