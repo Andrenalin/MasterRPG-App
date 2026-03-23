@@ -45,6 +45,13 @@ public final class AppModel: Sendable {
     public var hasDatabase: Bool = false
     public var coreDataInitModel: CoreDataInitModel?
     
+#if os(tvOS)
+    public let databaseModel: DataBaseModel
+#else
+    public let databaseModel: DataBaseModel
+#endif
+
+    
     @ObservationIgnored let inAppModel = InAppModel()
     public let inAppController: InAppController
     
@@ -132,6 +139,7 @@ public final class AppModel: Sendable {
         self.weatherRoot = weatherRoot
         
 #if os(tvOS)
+        self.databaseModel = DataBaseModel(useCloudKit: false, currentActor: .mainApp)
         root = RootManager(
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,
@@ -147,6 +155,7 @@ public final class AppModel: Sendable {
         )
         
 #else
+        self.databaseModel = DataBaseModel(useCloudKit: settingsModel.useCloudKit, currentActor: .mainApp)
         root = RootManager(
             adventureRoot: adventureRoot,
             audioRoot: audioRoot,

@@ -103,6 +103,9 @@ struct WindowViewerList: Scene {
             }
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.leading(WindowIdentifier.game.rawValue))
+#if !os(iOS)
+        .restorationBehavior(.disabled)
+#endif
 #if os(macOS)
             .keyboardShortcut("E", modifiers: [.command, .shift, .option])
 #endif
@@ -121,6 +124,9 @@ struct WindowViewerList: Scene {
             }
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.trailing(WindowIdentifier.game.rawValue))
+#if !os(iOS)
+        .restorationBehavior(.disabled)
+#endif
 #if os(macOS)
             .keyboardShortcut("S", modifiers: [.command, .shift, .option])
 #endif

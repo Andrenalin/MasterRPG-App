@@ -35,11 +35,17 @@ public struct CoreDataController<Model: ModelType, DataType: NSManagedObject & C
 
     private let context: NSManagedObjectContext
     private let batchContext: NSManagedObjectContext
+    private let relationshipKeyPaths: [String]
 
     @MainActor
-    public init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil) {
+    public init(
+        context: NSManagedObjectContext,
+        batchContext: NSManagedObjectContext? = nil,
+        relationshipKeyPaths: [String] = []
+    ) {
         self.context = context
         self.batchContext = batchContext ?? context
+        self.relationshipKeyPaths = relationshipKeyPaths
         model = CoreDataModel()
     }
 }
@@ -61,6 +67,11 @@ public extension CoreDataController {
     func fetch(mapper: @escaping @Sendable (DataType) -> Model) async throws -> [Model] {
         await context.perform {
             let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
+            // Prefetch relationships to avoid N+1 queries
+            if !relationshipKeyPaths.isEmpty {
+                request.relationshipKeyPathsForPrefetching = relationshipKeyPaths
+                request.fetchBatchSize = 20
+            }
             return fetchAndDelete(request: request, mapper: mapper)
         }
     }
