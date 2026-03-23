@@ -2,6 +2,9 @@
 
 import CoreRPG
 import SwiftUI
+import MapRPG
+import GameRPG
+import CharacterRPG
 
 public extension View {
     func environmentSetUp(_ appModel: AppModel) -> some View {
@@ -11,12 +14,16 @@ public extension View {
 
 struct AppEnvironmentSetUpViewModifier: ViewModifier {
     let appModel: AppModel
-    
+
     func body(content: Content) -> some View {
         content
+            // Core models
+            .environment(appModel)
             .environment(appModel.optionKeyDownModel)
             .environment(appModel.settingsModel)
             .environment(appModel.windowStateModel)
+
+            // Module roots
             .environment(appModel.adventureRoot)
             .environment(appModel.audioRoot)
             .environment(appModel.characterRoot)
@@ -30,6 +37,15 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.spaceRoot)
             .environment(appModel.tableRoot)
             .environment(appModel.weatherRoot)
-            .environment(appModel)
+
+            // Custom environment values (consolidated from RootView)
+            .environment(\.gameModus, appModel.settingsModel.gameModus)
+            .environment(\.mapActions, appModel.mapRoot.mapActions)
+            .environment(\.networkActions, appModel.gameRoot.networkActions())
+            .environment(\.routeActions, appModel.routeActions)
+            .environment(\.sharingControlActions, appModel.gameRoot.sharingControlActions)
+            .environment(\.sharingFeatureActions, appModel.gameRoot.sharingFeatureActions)
+            .environment(\.showGameActions, appModel.settingsModel.showGameActions)
+            .environment(\.valueActions, appModel.characterRoot.valueActions)
     }
 }
