@@ -58,10 +58,14 @@ struct TabSidebar: View {
         List(selection: $appModel.selectedModule) {
             allTabs
         }
-        .syncOptionalState(
-            source: $storedTab,
-            destination: $appModel.selectedModule
-        )
+        .onChange(of: storedTab, initial: true) {
+            guard storedTab != appModel.selectedModule else { return }
+            appModel.selectedModule = storedTab
+        }
+        .onChange(of: appModel.selectedModule) {
+            guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
+            storedTab = selectedModule
+        }
     }
     
     @ViewBuilder var allTabs: some View {
