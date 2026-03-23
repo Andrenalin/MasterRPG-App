@@ -60,20 +60,37 @@ struct InitialRootView: View {
                     }
                 }
                 .task {
+                    // Check iCloud availability if CloudKit is enabled
                     if appModel.settingsModel.useCloudKit {
                         iCloudAccount = await CloudKitAccountController.checkAccountStatus()
                         if iCloudAccount != .available {
-                            showAccountAlert.toggle()
+                            showAccountAlert = true
                             return
                         }
                     }
+                    // Initialize database
                     databaseModel.setup()
                 }
-                .onChange(of: databaseModel.context, initial: true) {
+                .task(id: databaseModel.context) {
+                    // Setup root models when database context becomes available
                     guard let context = databaseModel.context else { return }
-                    Task { @MainActor in
-                        try? await Task.sleep(for: .seconds(0.25))
-                        appModel.setupRootModels(context: context, batchContext: databaseModel.batchContext, spotlightIndexer: databaseModel.spotlightIndexer, coreDataInitModel: databaseModel.coreDataInitModel)
+
+                    do {
+                        // Small delay to ensure context is fully ready
+                        try await Task.sleep(for: .milliseconds(250))
+
+                        appModel.setupRootModels(
+                            context: context,
+                            batchContext: databaseModel.batchContext,
+                            spotlightIndexer: databaseModel.spotlightIndexer,
+                            coreDataInitModel: databaseModel.coreDataInitModel
+                        )
+                    } catch is CancellationError {
+                        // Task was cancelled, context changed - this is normal
+                        return
+                    } catch {
+                        // Log unexpected errors but don't crash
+                        print("Error during root model setup: \(error)")
                     }
                 }
                 .alert("iCloud Account issues", isPresented: $showAccountAlert) {
