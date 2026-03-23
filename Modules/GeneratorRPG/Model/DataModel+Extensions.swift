@@ -10,10 +10,12 @@ extension RPGGeneratorEntry: CoreDataId {}
 extension RPGGenerator {
     var entriesModel: [RPGGeneratorEntry] {
         get {
-            guard let all = entries?.allObjects as? [RPGGeneratorEntry] else {
+            guard let entries = entries as? Set<RPGGeneratorEntry> else {
                 return []
             }
-            return all.sorted { $0.index < $1.index }
+            // Use NSSortDescriptor for efficient database-level sorting
+            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
+            return (entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGGeneratorEntry]
         }
         set {
             entries = NSSet(array: newValue)

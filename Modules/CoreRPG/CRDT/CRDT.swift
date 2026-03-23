@@ -25,7 +25,7 @@ public struct CRDT<T: Codable> {
     public var wrappedValue: T {
         get { _crdtValue.value }
         set {
-            if let textValue = newValue as? String, let data = textValue.data(using: .utf8), let value = try? JSONDecoder().decode(LWWRegister<String, T>.self, from: data) {
+            if let textValue = newValue as? String, let data = textValue.data(using: .utf8), let value = try? DecoderPool.shared.getDecoder().decode(LWWRegister<String, T>.self, from: data) {
                 _crdtValue = value
             } else {
                 _crdtValue.value = newValue
@@ -34,7 +34,7 @@ public struct CRDT<T: Codable> {
     }
 
     private static func converter(initialValue: String, defaultValue: T) -> LWWRegister<String, T> {
-        if let data = initialValue.data(using: .utf8), let value = try? JSONDecoder().decode(LWWRegister<String, T>.self, from: data) {
+        if let data = initialValue.data(using: .utf8), let value = try? DecoderPool.shared.getDecoder().decode(LWWRegister<String, T>.self, from: data) {
             return value
         }
         return LWWRegister(defaultValue, actorID: UUID().uuidString)

@@ -10,10 +10,12 @@ extension RPGAudioEntry: CoreDataId {}
 extension RPGAudio {
     var entriesModel: [RPGAudioEntry] {
         get {
-            guard let all = entries?.allObjects as? [RPGAudioEntry] else {
+            guard let entries = entries as? Set<RPGAudioEntry> else {
                 return []
             }
-            return all.sorted { $0.index < $1.index }
+            // Use NSSortDescriptor for efficient database-level sorting
+            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
+            return (entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGAudioEntry]
         }
         set {
             entries = NSSet(array: newValue)
