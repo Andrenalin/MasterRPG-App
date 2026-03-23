@@ -10,7 +10,14 @@ struct DataController: DataPersistenceControllable {
         self.dataController = CoreDataController<MapModel, RPGMap>(
             context: context,
             batchContext: batchContext,
-            relationshipKeyPaths: ["entryModels", "entryModels.coordinateModels", "mapPinModels", "displayConfig"]
+            relationshipKeyPaths: [
+                "entryModels",
+                "entryModels.coordinateModels",
+                "mapPinModels",
+                "mapPinModels.location",
+                "displayConfig",
+                "displayConfig.tileCoordinateModels"
+            ]
         )
         self.token = token
     }

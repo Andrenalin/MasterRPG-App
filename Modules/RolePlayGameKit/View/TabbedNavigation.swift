@@ -42,7 +42,6 @@ struct TabbedNavigation: View {
             source: $storedTab,
             destination: $appModel.selectedModule
         ) { newValue in
-            let module = newValue.module
             if appModel.menuSelectedModule != newValue.module {
                 appModel.menuSelectedModule = newValue.module
             }

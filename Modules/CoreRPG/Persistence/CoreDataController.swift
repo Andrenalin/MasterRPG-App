@@ -72,6 +72,8 @@ public extension CoreDataController {
                 request.relationshipKeyPathsForPrefetching = relationshipKeyPaths
                 request.fetchBatchSize = 20
             }
+            // Disable faulting to force immediate hydration and avoid lazy loading overhead
+            request.returnsObjectsAsFaults = false
             return fetchAndDelete(request: request, mapper: mapper)
         }
     }
