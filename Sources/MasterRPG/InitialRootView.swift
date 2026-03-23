@@ -15,7 +15,7 @@ struct InitialRootView: View {
     #else
     @State private var databaseModel = DataBaseModel(useCloudKit: AppModel.shared.settingsModel.useCloudKit, currentActor: .mainApp)
     #endif
-    
+
     @State private var showDeleteAlert = false
     @State private var showAccountAlert = false
     @State private var iCloudAccount: CloudKitAccountStatus = .notChecked
@@ -23,93 +23,91 @@ struct InitialRootView: View {
     var body: some View {
         Group {
             if appModel.hasDatabase {
-                RootView(appModel: appModel, editorOnly: editorOnly)
-                    .onChange(of: appModel.settingsModel.useCloudKit, initial: false) {
-                        if databaseModel.resetDatabase(useCloudKit: appModel.settingsModel.useCloudKit) {
-                            withAnimation {
-                                appModel.hasDatabase = false
-                            }
-                        }
-                    }
+                rootContentView
             } else {
-                VStack {
-                    Text("Init Database").font(.largeTitle).padding()
-
-                    if appModel.hasDatabase {
-                        Text("Database is loaded")
-                    } else {
-                        if databaseModel.hasError {
-                            Text("\(databaseModel.errorMessage)")
-                                .padding()
-
-                            Button(role: .destructive) {
-                                showDeleteAlert.toggle()
-                            } label: {
-                                Label("Delete Database", systemImage: "trash")
-                            }
-                            .alert("Do you really want to delete the Database", isPresented: $showDeleteAlert) {
-                                Button(role: .destructive) {
-                                    databaseModel.deleteDatabase()
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                        } else {
-                            ProgressView().progressViewStyle(.circular)
-                        }
-                    }
-                }
-                .task {
-                    // Check iCloud availability if CloudKit is enabled
-                    if appModel.settingsModel.useCloudKit {
-                        iCloudAccount = await CloudKitAccountController.checkAccountStatus()
-                        if iCloudAccount != .available {
-                            showAccountAlert = true
-                            return
-                        }
-                    }
-                    // Initialize database
-                    databaseModel.setup()
-                }
-                .task(id: databaseModel.context) {
-                    // Setup root models when database context becomes available
-                    guard let context = databaseModel.context else { return }
-
-                    do {
-                        // Small delay to ensure context is fully ready
-                        try await Task.sleep(for: .milliseconds(250))
-
-                        appModel.setupRootModels(
-                            context: context,
-                            batchContext: databaseModel.batchContext,
-                            spotlightIndexer: databaseModel.spotlightIndexer,
-                            coreDataInitModel: databaseModel.coreDataInitModel
-                        )
-                    } catch is CancellationError {
-                        // Task was cancelled, context changed - this is normal
-                        return
-                    } catch {
-                        // Log unexpected errors but don't crash
-                        print("Error during root model setup: \(error)")
-                    }
-                }
-                .alert("iCloud Account issues", isPresented: $showAccountAlert) {
-                    Button(role: .cancel) {
-                        databaseModel.setup()
-                    } label: {
-                        Label("Ok", systemImage: "checkmark")
-                    }
-                } message: {
-                    Text("The iCloud account is not available. Please check the iCloud settings. If you continue the data cannot be sync between devices.")
-                }
+                databaseInitializationView
             }
         }
         .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
             handle(userActivity: userActivity)
         }
     }
+
+    @ViewBuilder
+    private var rootContentView: some View {
+        RootView(appModel: appModel, editorOnly: editorOnly)
+            .onChange(of: appModel.settingsModel.useCloudKit) {
+                handleCloudKitSettingChange()
+            }
+    }
+
+    @ViewBuilder
+    private var databaseInitializationView: some View {
+        DatabaseInitializationView(
+            databaseModel: databaseModel,
+            showDeleteAlert: $showDeleteAlert,
+            showAccountAlert: $showAccountAlert
+        )
+        .task {
+            await initializeDatabase()
+        }
+        .task(id: databaseModel.context) {
+            await setupRootModels()
+        }
+        .alert("iCloud Account Issues", isPresented: $showAccountAlert) {
+            Button("Continue Anyway") {
+                databaseModel.setup()
+            }
+        } message: {
+            Text("The iCloud account is not available. Please check your iCloud settings. If you continue, data cannot be synced between devices.")
+        }
+    }
+
+    private func handleCloudKitSettingChange() {
+        if databaseModel.resetDatabase(useCloudKit: appModel.settingsModel.useCloudKit) {
+            withAnimation {
+                appModel.hasDatabase = false
+            }
+        }
+    }
+
+    private func initializeDatabase() async {
+        // Check iCloud availability if CloudKit is enabled
+        if appModel.settingsModel.useCloudKit {
+            iCloudAccount = await CloudKitAccountController.checkAccountStatus()
+            if iCloudAccount != .available {
+                showAccountAlert = true
+                return
+            }
+        }
+        // Initialize database
+        databaseModel.setup()
+    }
+
+    private func setupRootModels() async {
+        // Setup root models when database context becomes available
+        guard let context = databaseModel.context else { return }
+
+        do {
+            // Small delay to ensure context is fully ready
+            try await Task.sleep(for: .milliseconds(250))
+
+            appModel.setupRootModels(
+                context: context,
+                batchContext: databaseModel.batchContext,
+                spotlightIndexer: databaseModel.spotlightIndexer,
+                coreDataInitModel: databaseModel.coreDataInitModel
+            )
+        } catch is CancellationError {
+            // Task was cancelled, context changed - this is normal
+            return
+        } catch {
+            // Log unexpected errors but don't crash
+            print("Error during root model setup: \(error)")
+        }
+    }
     
-    func handle(userActivity: NSUserActivity) {
+    private func handle(userActivity: NSUserActivity) {
         // SIRI & Search
         let module = UserActivity.module(from: userActivity)
         guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
@@ -117,6 +115,58 @@ struct InitialRootView: View {
         appModel.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: childId))
     }
 }
+
+// MARK: - Database Initialization View
+
+private struct DatabaseInitializationView: View {
+    let databaseModel: DataBaseModel
+    @Binding var showDeleteAlert: Bool
+    @Binding var showAccountAlert: Bool
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Initializing Database")
+                .font(.largeTitle)
+
+            if databaseModel.hasError {
+                errorView
+            } else {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                Text("Setting up your database...")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding()
+    }
+
+    @ViewBuilder
+    private var errorView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.largeTitle)
+                .foregroundStyle(.red)
+
+            Text(databaseModel.errorMessage)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+
+            Button("Delete Database", systemImage: "trash", role: .destructive) {
+                showDeleteAlert = true
+            }
+            .alert("Delete Database?", isPresented: $showDeleteAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    databaseModel.deleteDatabase()
+                }
+            } message: {
+                Text("This will permanently delete the database. This action cannot be undone.")
+            }
+        }
+    }
+}
+
+// MARK: - Database App Store Available
 
 struct DataBaseAppStoreAvailable<Content: View>: View {
     let appModel: AppModel

@@ -21,7 +21,8 @@ struct SearchListView: View {
     
     @State private var expandedModules: Set<NetworkModules> = []
     @State private var modules: [NetworkModules] = []
-    
+    @State private var lastSearchedText: String = ""
+
     public var body: some View {
         @Bindable var model = searchController.model
         
@@ -43,6 +44,9 @@ struct SearchListView: View {
                     prompt: "Search items and entries")
 #endif
         .task(id: model.searchText) {
+            // Only perform search if the search text has actually changed
+            guard model.searchText != lastSearchedText else { return }
+            lastSearchedText = model.searchText
             await searchController.performSearch()
         }
         .task(id: locale.identifier) {

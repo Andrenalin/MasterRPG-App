@@ -2,6 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "%@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -31,7 +32,14 @@
         }
       }
     },
+    "Cancel" : {
+
+    },
+    "Continue Anyway" : {
+
+    },
     "Database is loaded" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -61,7 +69,11 @@
         }
       }
     },
+    "Delete Database?" : {
+
+    },
     "Do you really want to delete the Database" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -134,6 +146,7 @@
       }
     },
     "iCloud Account issues" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -143,7 +156,11 @@
         }
       }
     },
+    "iCloud Account Issues" : {
+
+    },
     "Init Database" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -162,6 +179,9 @@
           }
         }
       }
+    },
+    "Initializing Database" : {
+
     },
     "Logs" : {
       "localizations" : {
@@ -219,6 +239,9 @@
     "Search" : {
 
     },
+    "Setting up your database..." : {
+
+    },
     "Settings" : {
 
     },
@@ -233,6 +256,7 @@
       }
     },
     "The iCloud account is not available. Please check the iCloud settings. If you continue the data cannot be sync between devices." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -241,6 +265,9 @@
           }
         }
       }
+    },
+    "The iCloud account is not available. Please check your iCloud settings. If you continue, data cannot be synced between devices." : {
+
     },
     "This is the first lunch and there is no data in the database. Do you want to initialize the database with explaination data? No download is required the example data is prebundled." : {
       "localizations" : {
@@ -251,6 +278,9 @@
           }
         }
       }
+    },
+    "This will permanently delete the database. This action cannot be undone." : {
+
     },
     "Wait for Database initialization..." : {
       "localizations" : {
