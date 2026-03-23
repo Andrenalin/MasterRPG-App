@@ -9,7 +9,9 @@ import AudioRPG
 import CharacterRPG
 import DiceRPG
 import GameRPG
+#if !os(tvOS)
 import GeneratorRPG
+#endif
 import MapRPG
 import PdfRPG
 import PhotoRPG
@@ -20,7 +22,23 @@ import WeatherRPG
 
 @Observable
 public final class DataBaseModel {
-    
+
+#if os(tvOS)
+    public static let rpgModuleBundles: [Bundle] = [
+        CoreRPG.Resources.bundle,
+        AdventureRPG.Resources.bundle,
+        AudioRPG.Resources.bundle,
+        CharacterRPG.Resources.bundle,
+        DiceRPG.Resources.bundle,
+        GameRPG.Resources.bundle,
+        MapRPG.Resources.bundle,
+        PdfRPG.Resources.bundle,
+        PhotoRPG.Resources.bundle,
+        SpaceRPG.Resources.bundle,
+        TableRPG.Resources.bundle,
+        WeatherRPG.Resources.bundle
+    ]
+#else
     public static let rpgModuleBundles: [Bundle] = [
         CoreRPG.Resources.bundle,
         AdventureRPG.Resources.bundle,
@@ -36,6 +54,7 @@ public final class DataBaseModel {
         TableRPG.Resources.bundle,
         WeatherRPG.Resources.bundle
     ]
+#endif
 
     public private(set) var context: NSManagedObjectContext?
     public private(set) var batchContext: NSManagedObjectContext?

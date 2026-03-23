@@ -3,7 +3,7 @@
 import Foundation
 
 /// Thread-safe JSONDecoder pool to avoid creating new decoder instances on every CRDT operation
-public final class DecoderPool: Sendable {
+public actor DecoderPool: Sendable {
     public static let shared = DecoderPool()
 
     // JSONDecoder is thread-safe for decoding operations
