@@ -1,12 +1,9 @@
 // @copyright André Trettin
 
-
 import CoreRPG
 import SwiftUI
 
-public struct TabbedSplitNavigation: View {
-    public init() {}
-    
+struct TabbedSplitNavigation: View {
     @Environment(AppModel.self) private var appModel
     
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
@@ -14,7 +11,7 @@ public struct TabbedSplitNavigation: View {
     
     @AppStorage("contentColumnWidth") private var contentColumnWidth: Double = 350
     
-    public var body: some View {
+    var body: some View {
         @Bindable var appModel = appModel
 
         NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $preferredCompactColumn) {
@@ -51,25 +48,20 @@ public struct TabbedSplitNavigation: View {
     }
 }
 
-
 struct TabSidebar: View {
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .adventures
-    
+
     @Environment(AppModel.self) private var appModel
-    
+
     var body: some View {
         @Bindable var appModel = appModel
         List(selection: $appModel.selectedModule) {
             allTabs
         }
-        .onChange(of: storedTab, initial: true) {
-            guard storedTab != appModel.selectedModule else { return }
-            appModel.selectedModule = storedTab
-        }
-        .onChange(of: appModel.selectedModule) {
-            guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
-            storedTab = selectedModule
-        }
+        .syncOptionalState(
+            source: $storedTab,
+            destination: $appModel.selectedModule
+        )
     }
     
     @ViewBuilder var allTabs: some View {

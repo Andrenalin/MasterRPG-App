@@ -18,18 +18,15 @@ struct SplitNavigation: View {
     
     var body: some View {
         @Bindable var appModel = appModel
-        
+
         allTabs
-            .onChange(of: storedTab, initial: true) {
-                guard storedTab != appModel.selectedModule else { return }
-                appModel.selectedModule = storedTab
-            }
-            .onChange(of: appModel.selectedModule) {
-                if let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module {
-                    appModel.menuSelectedModule = selected.module
+            .syncOptionalState(
+                source: $storedTab,
+                destination: $appModel.selectedModule
+            ) { newValue in
+                if appModel.menuSelectedModule != newValue.module {
+                    appModel.menuSelectedModule = newValue.module
                 }
-                guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
-                storedTab = selectedModule
             }
             .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
             .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)

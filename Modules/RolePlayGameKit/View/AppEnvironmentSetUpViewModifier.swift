@@ -10,6 +10,10 @@ public extension View {
     func environmentSetUp(_ appModel: AppModel) -> some View {
         modifier(AppEnvironmentSetUpViewModifier(appModel: appModel))
     }
+    
+    func environmentActionSetUp(_ appModel: AppModel) -> some View {
+        modifier(AppActionEnvironmentSetUpViewModifier(appModel: appModel))
+    }
 }
 
 struct AppEnvironmentSetUpViewModifier: ViewModifier {
@@ -37,8 +41,14 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.spaceRoot)
             .environment(appModel.tableRoot)
             .environment(appModel.weatherRoot)
+    }
+}
 
-            // Custom environment values (consolidated from RootView)
+struct AppActionEnvironmentSetUpViewModifier: ViewModifier {
+    let appModel: AppModel
+
+    func body(content: Content) -> some View {
+        content
             .environment(\.gameModus, appModel.settingsModel.gameModus)
             .environment(\.mapActions, appModel.mapRoot.mapActions)
             .environment(\.networkActions, appModel.gameRoot.networkActions())

@@ -3,9 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-public struct TabbedSplitExtNavigation: View {
-    public init() {}
-    
+struct TabbedSplitExtNavigation: View {
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
     
     @Environment(AppModel.self) private var appModel
@@ -13,7 +11,7 @@ public struct TabbedSplitExtNavigation: View {
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
-    public var body: some View {
+    var body: some View {
         @Bindable var appModel = appModel
         
         TabView(selection: $appModel.selectedModule) {
@@ -23,16 +21,13 @@ public struct TabbedSplitExtNavigation: View {
                 }
             }
         }
-        .onChange(of: storedTab, initial: true) {
-            guard storedTab != appModel.selectedModule else { return }
-            appModel.selectedModule = storedTab
-        }
-        .onChange(of: appModel.selectedModule) {
-            if let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module {
-                appModel.menuSelectedModule = selected.module
+        .syncOptionalState(
+            source: $storedTab,
+            destination: $appModel.selectedModule
+        ) { newValue in
+            if appModel.menuSelectedModule != newValue.module {
+                appModel.menuSelectedModule = newValue.module
             }
-            guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
-            storedTab = selectedModule
         }
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive { (route: RootRoute, navigator) in

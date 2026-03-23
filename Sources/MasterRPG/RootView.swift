@@ -49,7 +49,8 @@ struct RootView: View {
         .setWideMode()
         .accentColor(.blue)
         .tint(.blue)
-        .environmentSetUp(appModel)  // Now includes all environment values
+        .environmentSetUp(appModel)
+        .environmentActionSetUp(appModel)
         .navigationRoot(appModel.navigator)
         .appExitNotifications(handler: appModel.adventureRoot.save)
         .task {

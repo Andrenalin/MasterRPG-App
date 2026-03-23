@@ -4,15 +4,13 @@ import AudioRPG
 import CoreRPG
 import SwiftUI
 
-public struct TabbedNavigation: View {
-    public init() {}
-
+struct TabbedNavigation: View {
     @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
 
     @Environment(AppModel.self) private var appModel
     @Environment(\.appSizeMode) private var appSizeMode
         
-    public var body: some View {
+    var body: some View {
         @Bindable var appModel = appModel
         
         TabView(selection: $appModel.selectedModule) {
@@ -24,7 +22,7 @@ public struct TabbedNavigation: View {
                             .tint(tab.module.tint)
                             .accentColor(tab.module.tint)
                     }
-                    .environment(appModel.itemRootController(for: selectedModule))
+                    .environment(appModel.itemRootController(for: tab.module))
                     .tint(tab.module.tint)
                     .accentColor(tab.module.tint)
                 }
@@ -40,16 +38,14 @@ public struct TabbedNavigation: View {
             }
         }
 #endif
-        .onChange(of: storedTab, initial: true) {
-            guard storedTab != appModel.selectedModule else { return }
-            appModel.selectedModule = storedTab
-        }
-        .onChange(of: appModel.selectedModule) {
-            if let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module {
-                appModel.menuSelectedModule = selected.module
+        .syncOptionalState(
+            source: $storedTab,
+            destination: $appModel.selectedModule
+        ) { newValue in
+            let module = newValue.module
+            if appModel.menuSelectedModule != newValue.module {
+                appModel.menuSelectedModule = newValue.module
             }
-            guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
-            storedTab = selectedModule
         }
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive { (route: RootRoute, navigator) in
