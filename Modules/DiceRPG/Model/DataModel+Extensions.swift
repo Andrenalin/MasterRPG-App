@@ -10,12 +10,10 @@ extension RPGDiceEntry: CoreDataId {}
 extension RPGDice {
     var entriesModel: [RPGDiceEntry] {
         get {
-            guard let entries = entries as? Set<RPGDiceEntry> else {
+            guard let all = entries?.allObjects as? [RPGDiceEntry] else {
                 return []
             }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGDiceEntry]
+            return all.sorted { $0.index < $1.index }
         }
         set {
             entries = NSSet(array: newValue)

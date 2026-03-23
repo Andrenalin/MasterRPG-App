@@ -10,12 +10,10 @@ extension RPGPdfEntry: CoreDataId {}
 extension RPGPdf {
     var entriesModel: [RPGPdfEntry] {
         get {
-            guard let entries = entries as? Set<RPGPdfEntry> else {
+            guard let all = entries?.allObjects as? [RPGPdfEntry] else {
                 return []
             }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGPdfEntry]
+            return all.sorted { $0.index < $1.index }
         }
         set {
             entries = NSSet(array: newValue)

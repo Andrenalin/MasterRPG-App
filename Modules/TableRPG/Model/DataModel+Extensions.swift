@@ -10,12 +10,10 @@ extension RPGTableEntry: CoreDataId {}
 extension RPGTable {
     var entriesModel: [RPGTableEntry] {
         get {
-            guard let entries = entries as? Set<RPGTableEntry> else {
+            guard let all = entries?.allObjects as? [RPGTableEntry] else {
                 return []
             }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGTableEntry]
+            return all.sorted { $0.index < $1.index }
         }
         set {
             entries = NSSet(array: newValue)

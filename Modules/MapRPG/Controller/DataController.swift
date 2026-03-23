@@ -7,14 +7,10 @@ import SwiftUI
 
 struct DataController: DataPersistenceControllable {
     @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
-        self.dataController = CoreDataController<MapModel, RPGMap>(
-            context: context,
-            batchContext: batchContext,
-            relationshipKeyPaths: ["entryModels", "entryModels.coordinateModels", "mapPinModels", "displayConfig"]
-        )
+        self.dataController = CoreDataController<MapModel, RPGMap>(context: context, batchContext: batchContext)
         self.token = token
     }
-
+    
     let dataController: CoreDataController<MapModel, RPGMap>
     let token: String
 }

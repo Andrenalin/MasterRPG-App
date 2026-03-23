@@ -10,12 +10,10 @@ extension RPGValueEntry: CoreDataId {}
 extension RPGValue {
     var entriesModel: [RPGValueEntry] {
         get {
-            guard let entries = entries as? Set<RPGValueEntry> else {
+            guard let all = entries?.allObjects as? [RPGValueEntry] else {
                 return []
             }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGValueEntry]
+            return all.sorted { $0.index < $1.index }
         }
         set {
             entries = NSSet(array: newValue)
@@ -36,12 +34,10 @@ extension RPGValue {
     
     var photoIds: [RPGValuePhoto] {
         get {
-            guard let photos = photos as? Set<RPGValuePhoto> else {
+            guard let all = photos?.allObjects as? [RPGValuePhoto] else {
                 return []
             }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (photos as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGValuePhoto]
+            return all.sorted { $0.index < $1.index }
         }
         set {
             photos = NSSet(array: newValue)
