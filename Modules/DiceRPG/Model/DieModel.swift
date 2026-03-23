@@ -92,7 +92,7 @@ extension DieModel {
     }
 
     func diceImage(for number: Int) -> Image {
-        Image(name(for: number), bundle: Resources.bundle)
+        Image(name(for: number), bundle: RPGResources.Resources.bundle)
     }
 }
 

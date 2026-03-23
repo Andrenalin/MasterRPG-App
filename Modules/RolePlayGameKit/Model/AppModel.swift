@@ -186,7 +186,7 @@ extension AppModel {
 
     public func installExampleData(isGerman: Bool = false) {
         let importController = adventureRoot.importControllable
-        let bundle = Resources.bundle
+        let bundle = RPGResources.Resources.bundle
         let name = isGerman ? RPGResources.Resources.exampleFirstGermanData : RPGResources.Resources.exampleFirstData
         guard let url = bundle.url(forResource: name, withExtension: "gmz") else { return }
         let task = importController.importUrl(from: url)
@@ -197,7 +197,7 @@ extension AppModel {
 
     func loadFreePackages(tag: String) {
         let importController = adventureRoot.importControllable
-        let bundle = Resources.bundle
+        let bundle = RPGResources.Resources.bundle
         guard let url = bundle.url(forResource: tag, withExtension: "gmz") else { return }
         let task = importController.importUrl(from: url)
         Task {

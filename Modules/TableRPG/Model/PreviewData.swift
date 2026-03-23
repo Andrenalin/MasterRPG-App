@@ -31,7 +31,7 @@ public extension TableRootModel {
         let gameController = root.gameController
 #if DEBUG
         Task { @MainActor in
-            let bundle = Resources.bundle
+            let bundle = RPGResources.Resources.bundle
             guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
                 print("url nil ")
                 return

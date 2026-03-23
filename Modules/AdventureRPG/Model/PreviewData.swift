@@ -30,7 +30,7 @@ public extension AdventureRootModel {
         let editController = root.editController
 #if DEBUG
         Task(priority: .userInitiated) {
-            let bundle = Resources.bundle
+            let bundle = RPGResources.Resources.bundle
             guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
                 print("url nil ")
                 return
