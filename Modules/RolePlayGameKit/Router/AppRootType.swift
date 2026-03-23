@@ -6,6 +6,7 @@ import SwiftUI
 public enum AppRootType: Int, Codable {
     case tabbed
     case split
+    case tabbedExtSplit
     case tabbedSplit
 }
 
@@ -20,6 +21,8 @@ extension AppRootType: NavigationDestination {
 #else
             SplitNavigation()
 #endif
+        case .tabbedExtSplit:
+            TabbedSplitExtNavigation()
         case .tabbedSplit:
             TabbedSplitNavigation()
         }

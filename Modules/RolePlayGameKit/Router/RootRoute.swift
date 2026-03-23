@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-
 import CoreRPG
 import AdventureRPG
 import AudioRPG
@@ -131,7 +130,7 @@ extension RootRoute: NavigationDestination {
     }
 
     public static var visionTabs: [RootRoute] {
-        [.adventures, .values, .generator, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice]
+        [.game, .adventures, .values, .pdfs, .editors, .generator, .search, .settings]
     }
 
     public static var macTabs: [RootRoute] {
@@ -158,7 +157,7 @@ struct RouteRouteDestionationView: View {
                 DiceFactory.rootView()
             case .editors:
 #if os(visionOS)
-                EmptyView()
+                ExtendedSplitBar()
 #else
                 ExtendedTabBar()
 #endif

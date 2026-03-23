@@ -5,72 +5,60 @@
 import CoreRPG
 import SwiftUI
 
-public struct SplitNavigation: View {
-    public init() {}
-
+struct SplitNavigation: View {
+    init() {}
+    
     @AppStorage("MasterRPGCustomization") private var customization: TabViewCustomization
     @SceneStorage("RootRoute") private var storedTab: RootRoute = SplitNavigation.defaultTab
-
+    
     @Environment(AppModel.self) private var appModel
     
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
-    public var body: some View {
+    var body: some View {
         @Bindable var appModel = appModel
-
-        Group {
-#if os(visionOS)
-            allCustomTabs
-#else
-            allTabs
-#endif
-        }
-        .onChange(of: storedTab, initial: true) {
-            guard storedTab != appModel.selectedModule else { return }
-            appModel.selectedModule = storedTab
-        }
-        .onChange(of: appModel.selectedModule) {
-            if let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module {
-                appModel.menuSelectedModule = selected.module
+        
+        allTabs
+            .onChange(of: storedTab, initial: true) {
+                guard storedTab != appModel.selectedModule else { return }
+                appModel.selectedModule = storedTab
             }
-            guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
-            storedTab = selectedModule
-        }
-        .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
-        .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
-        .onNavigationRoute(RootRouteRouter(appModel: appModel))
-        .onNavigationOpenURL(RootURLHandler(appModel: appModel))
+            .onChange(of: appModel.selectedModule) {
+                if let selected = appModel.selectedModule, appModel.menuSelectedModule != selected.module {
+                    appModel.menuSelectedModule = selected.module
+                }
+                guard storedTab != appModel.selectedModule, let selectedModule = appModel.selectedModule else { return }
+                storedTab = selectedModule
+            }
+            .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
+            .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
+            .onNavigationRoute(RootRouteRouter(appModel: appModel))
+            .onNavigationOpenURL(RootURLHandler(appModel: appModel))
     }
     
     var selectedModule: NetworkModules {
         (appModel.selectedModule ?? SplitNavigation.defaultTab).module
     }
-
-    #if os(visionOS)
-    static let defaultTab: RootRoute = .adventures
-    #else
+    
     static let defaultTab: RootRoute = .game
-    #endif
 }
 
 private extension SplitNavigation {
-    
-    @ViewBuilder
-    var allTabs: some View {
+    @ViewBuilder var allTabs: some View {
         @Bindable var appModel = appModel
         
         TabView(selection: $appModel.selectedModule) {
             pageTab(for: .game)
                 .customizationID("Tab.\(NetworkModules.game.token)")
-            #if !os(macOS)
+#if !os(macOS)
                 .customizationBehavior(.disabled, for: .sidebar, .tabBar)
-            #endif
-
+#endif
+            
             TabSection {
                 pageTab(for: .search)
                     .customizationID("Tab.\(NetworkModules.search.token)")
-
+                
                 pageTab(for: .generator)
                     .customizationID("Tab.\(NetworkModules.generator.token)")
             } header: {
@@ -78,7 +66,7 @@ private extension SplitNavigation {
             }
             .customizationID("Tab.Special")
             .defaultVisibility(.hidden, for: .tabBar)
-
+            
             TabSection {
                 pageTab(for: .adventures)
                     .customizationID("Tab.\(NetworkModules.adventure.token)")
@@ -93,8 +81,8 @@ private extension SplitNavigation {
             }
             .customizationID("Tab.Libaray")
             .defaultVisibility(.hidden, for: .tabBar)
-
-
+            
+            
             TabSection {
                 pageTab(for: .pdfs)
                     .customizationID("Tab.\(NetworkModules.pdf.token)")
@@ -105,7 +93,7 @@ private extension SplitNavigation {
             }
             .customizationID("Tab.References")
             .defaultVisibility(.hidden, for: .tabBar)
-
+            
             TabSection {
                 pageTab(for: .audios)
                     .customizationID("Tab.\(NetworkModules.audio.token)")
@@ -120,7 +108,7 @@ private extension SplitNavigation {
             }
             .customizationID("Tab.Material")
             .defaultVisibility(.hidden, for: .tabBar)
-
+            
             TabSection {
                 pageTab(for: .settings)
                     .customizationID("Tab.\(NetworkModules.setting.token)")
@@ -128,51 +116,36 @@ private extension SplitNavigation {
                 Text("Setting", bundle: .module)
             }
             .customizationID("Tab.Util")
-
+            
         }
         .tabViewCustomization($customization)
         .tabViewStyle(.sidebarAdaptable)
     }
-
+    
     func pageTab(for tab: RootRoute) -> Tab<RootRoute?, some View, DefaultTabLabel> {
         Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
             tabView(tab: tab)
         }
     }
     
-    var allCustomTabs: some View {
-        ZStack {
-            ForEach(RootRoute.visionTabs) { tab in
-                tabView(tab: tab)
-                    .opacity(appModel.selectedModule == tab ? 1 : 0)
-            }
-        }
-#if os(visionOS)
-        .ornament(attachmentAnchor: .scene(.leading), contentAlignment: .center) {
-            PrimaryTabBar()
-        }
-#endif
-    }
-    
-    @ViewBuilder
-    func tabView(tab: RootRoute) -> some View {
+    @ViewBuilder func tabView(tab: RootRoute) -> some View {
         if tab.hasDetailView {
-           splitWithDetail(tab: tab)
+            splitWithDetail(tab: tab)
         } else {
             contentView(tab: tab)
         }
     }
-
+    
     func contentView(tab: RootRoute) -> some View {
         ManagedPresentationView {
             tab
         }
         .environment(appModel.itemRootController(for: tab.module))
     }
-
+    
     @ViewBuilder func splitWithDetail(tab: RootRoute) -> some View {
         @Bindable var model = appModel.itemRootController(for: tab.module)?.folderListControllable.detailInspectorModel ?? DetailInspectorModel()
-
+        
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             contentView(tab: tab)
         } detail: {

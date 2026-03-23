@@ -1,17 +1,16 @@
 // @copyright André Trettin
 
-
-import CoreRPG
 import AdventureRPG
 import AudioRPG
-import SwiftUI
+import CoreRPG
+import CharacterRPG
 import DiceRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
+import SwiftUI
 import TableRPG
-import CharacterRPG
 import WeatherRPG
 
 #if !os(tvOS)

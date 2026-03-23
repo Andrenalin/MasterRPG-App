@@ -28,7 +28,7 @@ struct RootView: View {
 
     var body: some View {
         Group {
-#if os(macOS) || os(visionOS)
+#if os(macOS)
             if editorOnly {
                 TabRootView(appModel: appModel, editorOnly: editorOnly)
             } else {

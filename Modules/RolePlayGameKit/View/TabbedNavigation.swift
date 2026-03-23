@@ -1,8 +1,7 @@
 // @copyright André Trettin
 
-
-import CoreRPG
 import AudioRPG
+import CoreRPG
 import SwiftUI
 
 public struct TabbedNavigation: View {

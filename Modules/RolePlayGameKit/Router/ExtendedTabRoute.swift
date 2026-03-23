@@ -80,6 +80,10 @@ extension ExtendedTabRoute: NavigationDestination {
     static var allTabs: [ExtendedTabRoute] {
         [.pdfs, .tables, .maps, .generator, .photos, .audios, .space, .weathers, .dice, .settings]
     }
+    
+    static var limitedTabs: [ExtendedTabRoute] {
+        [.tables, .maps, .photos, .audios, .space, .weathers, .dice]
+    }
 }
 
 struct ExtendedTabRouteDestionationView: View {

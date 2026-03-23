@@ -12,46 +12,6 @@ struct GameRootTabItemView: View {
     
     var body: some View {
         GameRootTabView(root: root)
-#if os(visionOS)
-        .ornament(attachmentAnchor: .scene(.trailing)) {
-            Button {
-                withAnimation {
-                    openWindow(id: WindowIdentifier.editor.rawValue)
-                }
-            } label: {
-                Label {
-                    Text(NetworkModules.editor.title)
-                } icon: {
-                    Image(systemName: NetworkModules.editor.icon)
-                }
-                
-            }
-            Button {
-                withAnimation {
-                    openWindow(id: WindowIdentifier.search.rawValue)
-                }
-            } label: {
-                Label {
-                    Text(NetworkModules.search.title)
-                } icon: {
-                    Image(systemName: NetworkModules.search.icon)
-                }
-                
-            }
-            Button {
-                withAnimation {
-                    openWindow(id: WindowIdentifier.settings.rawValue)
-                }
-            } label: {
-                Label {
-                    Text(NetworkModules.setting.title)
-                } icon: {
-                    Image(systemName: NetworkModules.setting.icon)
-                }
-                
-            }
-        }
-#endif
     }
 }
 
