@@ -7,19 +7,19 @@ import os.log
 
 public struct CloudKitCoreDataPersistenceController {
     static let cloudKitContainerIdentifier = "iCloud.de.andretrettin.gamemaster"
-    
+
     public init(inMemory: Bool = false, currentActor: AppPersistentActor) {
         model = CoreDataInitModel(inMemory: inMemory, currentActor: currentActor)
     }
-    
+
     public let model: CoreDataInitModel
-    
+
     @MainActor
-    public func loadDatabase() {
+    public func loadDatabase(bundles: [Bundle]) {
         guard !model.isInitialized else {
             return
         }
-        
+
         model.isInitialized = true
         
         // init path to stores
@@ -37,27 +37,7 @@ public struct CloudKitCoreDataPersistenceController {
             }
         }
 
-        // Load Models
-#if os(macOS)
-        let frameworks = Bundle.allFrameworks.filter { $0.bundleIdentifier?.hasPrefix("de.andretrettin") ?? false }
-#else
-        let frameworks = Bundle.allFrameworks.filter {
-            guard let lastPath = $0.resourceURL?.lastPathComponent.replacing(".framework", with: "") else { return false }
-            if lastPath.hasPrefix("RPG") || lastPath.hasSuffix("RPG") {
-                return true
-            }
-            return false
-        }
-#endif
-        
-        var path = Bundle.main.paths(forResourcesOfType: "bundle", inDirectory: nil)
-        if path.isEmpty {
-            path = Bundle(for: RPGPersistentCloudKitContainer.self).paths(forResourcesOfType: "bundle", inDirectory: nil)
-        }
-        var bundles = path.compactMap { Bundle(path: $0) }
-        bundles.append(Bundle.main)
-        bundles.append(Bundle(for: RPGPersistentCloudKitContainer.self))
-        bundles.append(contentsOf: frameworks)
+        // Load Models - use provided bundles (no expensive enumeration or Info.plist parsing)
         guard let models = NSManagedObjectModel.mergedModel(from: bundles) else {
             model.error = .loadModel
             return

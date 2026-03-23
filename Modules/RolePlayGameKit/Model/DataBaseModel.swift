@@ -4,8 +4,39 @@ import CoreRPG
 import CoreData
 import CloudKit
 
+import AdventureRPG
+import AudioRPG
+import CharacterRPG
+import DiceRPG
+import GameRPG
+import GeneratorRPG
+import MapRPG
+import PdfRPG
+import PhotoRPG
+import SpaceRPG
+import TableRPG
+import WeatherRPG
+
+
 @Observable
 public final class DataBaseModel {
+    
+    public static let rpgModuleBundles: [Bundle] = [
+        CoreRPG.Resources.bundle,
+        AdventureRPG.Resources.bundle,
+        AudioRPG.Resources.bundle,
+        CharacterRPG.Resources.bundle,
+        DiceRPG.Resources.bundle,
+        GameRPG.Resources.bundle,
+        GeneratorRPG.Resources.bundle,
+        MapRPG.Resources.bundle,
+        PdfRPG.Resources.bundle,
+        PhotoRPG.Resources.bundle,
+        SpaceRPG.Resources.bundle,
+        TableRPG.Resources.bundle,
+        WeatherRPG.Resources.bundle
+    ]
+
     public private(set) var context: NSManagedObjectContext?
     public private(set) var batchContext: NSManagedObjectContext?
     public private(set) var spotlightIndexer: RpgSpotlightIndexerDelegate?
@@ -46,13 +77,13 @@ public final class DataBaseModel {
             if cloudPersistence == nil {
                 cloudPersistence = CloudKitCoreDataPersistenceController(inMemory: false, currentActor: currentActor)
             }
-            cloudPersistence?.loadDatabase()
+            cloudPersistence?.loadDatabase(bundles: Self.rpgModuleBundles)
         } else {
             cloudPersistence = nil
             if localPersistence == nil {
                 localPersistence = CoreDataPersistenceController(inMemory: false, currentActor: currentActor)
             }
-            localPersistence?.loadDatabase()
+            localPersistence?.loadDatabase(bundles: Self.rpgModuleBundles)
         }
         finishSetup()
     }

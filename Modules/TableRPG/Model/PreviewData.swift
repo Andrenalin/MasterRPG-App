@@ -32,7 +32,7 @@ public extension TableRootModel {
 #if DEBUG
         Task { @MainActor in
             let bundle = Resources.bundle
-            guard let url = bundle.url(forResource: Resources.exampleFirstData, withExtension: "gmz") else {
+            guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
                 print("url nil ")
                 return
             }

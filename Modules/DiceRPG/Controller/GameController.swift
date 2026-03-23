@@ -283,39 +283,39 @@ extension GameController {
             let result = RawDie.role(.number(9))
             switch result {
             case 1:
-                return Resources.Dice.d20_1.rawValue
+                return RPGResources.Resources.Dice.d20_1.rawValue
             case 2:
-                return Resources.Dice.d20_2.rawValue
+                return RPGResources.Resources.Dice.d20_2.rawValue
             case 3:
-                return Resources.Dice.d20_3.rawValue
+                return RPGResources.Resources.Dice.d20_3.rawValue
             case 4:
-                return Resources.Dice.d20_4.rawValue
+                return RPGResources.Resources.Dice.d20_4.rawValue
             case 5:
-                return Resources.Dice.d20_5.rawValue
+                return RPGResources.Resources.Dice.d20_5.rawValue
             case 6:
-                return Resources.Dice.d20_6.rawValue
+                return RPGResources.Resources.Dice.d20_6.rawValue
             case 7:
-                return Resources.Dice.d20_7.rawValue
+                return RPGResources.Resources.Dice.d20_7.rawValue
             case 8:
-                return Resources.Dice.d20_8.rawValue
+                return RPGResources.Resources.Dice.d20_8.rawValue
             default:
-                return Resources.Dice.d20_9.rawValue
+                return RPGResources.Resources.Dice.d20_9.rawValue
             }
         }
         let result = RawDie.role(.number(6))
         switch result {
         case 1:
-            return Resources.Dice.TwoD20_1.rawValue
+            return RPGResources.Resources.Dice.TwoD20_1.rawValue
         case 2:
-            return Resources.Dice.TwoD20_2.rawValue
+            return RPGResources.Resources.Dice.TwoD20_2.rawValue
         case 3:
-            return Resources.Dice.TwoD20_3.rawValue
+            return RPGResources.Resources.Dice.TwoD20_3.rawValue
         case 4:
-            return Resources.Dice.TwoD20_4.rawValue
+            return RPGResources.Resources.Dice.TwoD20_4.rawValue
         case 5:
-            return Resources.Dice.TwoD20_5.rawValue
+            return RPGResources.Resources.Dice.TwoD20_5.rawValue
         default:
-            return Resources.Dice.TwoD20_6.rawValue
+            return RPGResources.Resources.Dice.TwoD20_6.rawValue
         }
     }
 }
