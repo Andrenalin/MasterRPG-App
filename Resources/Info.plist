@@ -50,8 +50,10 @@
 		<string>_gamemasterproxyserver._tcp</string>
 		<string>_gamemasterproxyclient._tcp</string>
 	</array>
-	<key>NSHandsTrackingUsageDescription</key>
-	<string>MasterRPG uses handtracking for rolling the dice during the game.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>MasterRPG needs microphone access to enable voice commands and speech recognition features.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>MasterRPG uses speech recognition to convert your voice commands into text for the voice assistant feature.</string>
 	<key>NSUbiquitousContainers</key>
 	<dict>
 		<key>iCloud.de.andretrettin.gamemaster</key>
@@ -68,8 +70,6 @@
 	<array>
 		<string>de.andretrettin.rpg</string>
 	</array>
-	<key>NSWorldSensingUsageDescription</key>
-	<string>MasterRPG uses the world sensing data to detect tables for the dice rolling during the game.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -156,14 +156,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Adventure</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG Adventure Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Adventure Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Adventure</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -171,14 +171,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Audio</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG Audio Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Audio Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Audio</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -186,14 +186,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Character</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG Character Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Character Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Character</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -201,14 +201,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Dice</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG Dice Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Dice Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Dice</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -216,14 +216,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Map</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG Map Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Map Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Map</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -231,14 +231,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Pdf</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG PDF Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG PDF Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Pdf</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -246,14 +246,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Photo</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG Photo Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Photo Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Photo</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -261,14 +261,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Space</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG Space Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Space Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Space</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -276,14 +276,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Table</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG Table Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Table Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Table</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -291,14 +291,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Weather</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG Weather Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Weather Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Weather</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -306,14 +306,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>de.andretrettin.MasterRPG.Link.Entry</string>
-			<key>UTTypeDescription</key>
-			<string>MasterRPG Entry Link</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.text</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Entry Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Entry</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.mime-type</key>
@@ -364,15 +364,13 @@
 			</dict>
 		</dict>
 	</array>
+	<key>com.apple.developer.icloud-container-environment</key>
+	<string>Production</string>
 	<key>com.apple.security.files.bookmarks.app-scope</key>
 	<true/>
 	<key>com.apple.security.files.bookmarks.document-scope</key>
 	<true/>
 	<key>com.apple.security.files.user-selected.read-only</key>
 	<true/>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>com.apple.developer.icloud-container-environment</key>
-	<string>Production</string>
 </dict>
 </plist>

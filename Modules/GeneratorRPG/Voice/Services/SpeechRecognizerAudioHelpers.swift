@@ -21,21 +21,18 @@ private func copyAudioBuffer(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
     }
 
     copiedBuffer.frameLength = buffer.frameLength
-    let sourceList = UnsafeMutableAudioBufferListPointer(
-        UnsafeMutablePointer(mutating: buffer.audioBufferList)
-    )
-    let destinationList = UnsafeMutableAudioBufferListPointer(
-        UnsafeMutablePointer(mutating: copiedBuffer.audioBufferList)
-    )
 
-    for index in 0..<sourceList.count {
-        let source = sourceList[index]
-        var destination = destinationList[index]
-        destination.mDataByteSize = source.mDataByteSize
-        if let sourceData = source.mData, let destinationData = destination.mData {
-            memcpy(destinationData, sourceData, Int(source.mDataByteSize))
-        }
-        destinationList[index] = destination
+    guard let sourceChannels = buffer.floatChannelData,
+          let destChannels = copiedBuffer.floatChannelData else {
+        return nil
+    }
+
+    let channelCount = Int(buffer.format.channelCount)
+    let frameLength = Int(buffer.frameLength)
+    let bytesPerChannel = frameLength * MemoryLayout<Float>.stride
+
+    for channel in 0..<channelCount {
+        memcpy(destChannels[channel], sourceChannels[channel], bytesPerChannel)
     }
 
     return copiedBuffer
@@ -101,7 +98,10 @@ extension SpeechRecognizer {
             let bufferCopy = copyAudioBuffer(buffer)
             Task { @MainActor [weak self] in
                 guard let self, !self.hasProcessedFinalResult else { return }
-                guard let bufferCopy else { return }
+                guard let bufferCopy else {
+                    self.logger.error("Failed to copy audio buffer")
+                    return
+                }
                 self.recognitionRequest?.append(bufferCopy)
                 self.processAudioBuffer(bufferCopy)
 
@@ -201,7 +201,14 @@ extension SpeechRecognizer {
 
     func configureRecognitionTask(with request: SFSpeechAudioBufferRecognitionRequest) {
         logger.debug("Starting recognition task")
-        recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
+
+        guard let recognizer = speechRecognizer else {
+            logger.error("Cannot create recognition task: speechRecognizer is nil")
+            state = .error(.recognizerNotAvailable)
+            return
+        }
+
+        recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
             Task { @MainActor [weak self] in
                 guard let self, !self.hasProcessedFinalResult else {
                     if VoiceLogging.isVerboseEnabled {

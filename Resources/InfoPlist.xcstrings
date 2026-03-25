@@ -181,13 +181,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "© Copyright 2024, Andre Trettin"
+            "value" : "© Copyright 2024-2026, Andre Trettin"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "© Copyright 2024-2025, Andre Trettin"
+            "value" : "© Copyright 2024-2026, Andre Trettin"
           }
         }
       }
@@ -210,6 +210,18 @@
         }
       }
     },
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Privacy - Microphone Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG needs microphone access to enable voice commands and speech recognition features."
+          }
+        }
+      }
+    },
     "NSPhotoLibraryUsageDescription" : {
       "comment" : "Privacy - Photo Library Usage Description",
       "extractionState" : "extracted_with_value",
@@ -224,6 +236,18 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps"
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription" : {
+      "comment" : "Privacy - Speech Recognition Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "MasterRPG uses speech recognition to convert your voice commands into text for the voice assistant feature."
           }
         }
       }

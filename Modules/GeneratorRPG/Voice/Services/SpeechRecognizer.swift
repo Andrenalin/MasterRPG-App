@@ -149,7 +149,7 @@ class SpeechRecognizer: NSObject, SpeechRecognitionService {
     var currentAmplitude: Double = 0
 
     let logger = VoiceLogging.recognition
-    let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    let speechRecognizer: SFSpeechRecognizer?
     var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     var recognitionTask: SFSpeechRecognitionTask?
     let audioEngine = AVAudioEngine()
@@ -165,12 +165,25 @@ class SpeechRecognizer: NSObject, SpeechRecognitionService {
     let smoothingFactor = 0.8
 
     override init() {
+        // Try en-US first, fall back to system locale, then any available locale
+        if let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US")) {
+            self.speechRecognizer = recognizer
+        } else if let recognizer = SFSpeechRecognizer(locale: Locale.current) {
+            self.speechRecognizer = recognizer
+        } else {
+            self.speechRecognizer = SFSpeechRecognizer()
+        }
+
         super.init()
         speechRecognizer?.delegate = self
 
         // Check initial permission status
         let authStatus = SFSpeechRecognizer.authorizationStatus()
         hasPermission = authStatus == .authorized
+
+        if speechRecognizer == nil {
+            logger.error("Failed to initialize speech recognizer for any locale")
+        }
     }
 
     @discardableResult
@@ -280,7 +293,14 @@ class SpeechRecognizer: NSObject, SpeechRecognitionService {
     }
 
     private func ensureRecognizerAvailable() throws {
-        let isAvailable = speechRecognizer?.isAvailable ?? false
+        guard let recognizer = speechRecognizer else {
+            let error = SpeechRecognitionError.recognizerNotAvailable
+            state = .error(error)
+            logger.error("Speech recognizer is nil")
+            throw error
+        }
+
+        let isAvailable = recognizer.isAvailable
         logger.debug("Speech recognizer available: \(isAvailable)")
 
         guard isAvailable else {

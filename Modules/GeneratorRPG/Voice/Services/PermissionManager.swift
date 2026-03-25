@@ -149,34 +149,46 @@ class PermissionManager: PermissionServiceProtocol {
 
     private func testMicrophoneAccess() async -> Bool {
         let audioEngine = AVAudioEngine()
-        let inputNode = audioEngine.inputNode
-
-        let inputFormat = inputNode.outputFormat(forBus: 0)
-        let recordingFormat: AVAudioFormat
-
-        if inputFormat.sampleRate > 0 && inputFormat.channelCount > 0 {
-            recordingFormat = inputFormat
-        } else {
-            guard let fallbackFormat = AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1) else {
-                self.microphonePermissionStatus = .denied
-                return false
-            }
-            recordingFormat = fallbackFormat
-        }
-
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { _, _ in
-            // Empty tap
-        }
+        var tapInstalled = false
 
         do {
+            let inputNode = audioEngine.inputNode
+            let inputFormat = inputNode.outputFormat(forBus: 0)
+            let recordingFormat: AVAudioFormat
+
+            if inputFormat.sampleRate > 0 && inputFormat.channelCount > 0 {
+                recordingFormat = inputFormat
+            } else {
+                guard let fallbackFormat = AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1) else {
+                    self.microphonePermissionStatus = .denied
+                    return false
+                }
+                recordingFormat = fallbackFormat
+            }
+
+            inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { _, _ in
+                // Empty tap
+            }
+            tapInstalled = true
+
             try audioEngine.start()
             audioEngine.stop()
-            inputNode.removeTap(onBus: 0)
+
+            if tapInstalled {
+                inputNode.removeTap(onBus: 0)
+            }
+
             self.microphonePermissionStatus = .granted
             return true
         } catch {
-            audioEngine.stop()
-            inputNode.removeTap(onBus: 0)
+            if audioEngine.isRunning {
+                audioEngine.stop()
+            }
+
+            if tapInstalled {
+                audioEngine.inputNode.removeTap(onBus: 0)
+            }
+
             self.microphonePermissionStatus = .denied
             return false
         }
