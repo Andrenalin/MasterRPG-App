@@ -128,28 +128,28 @@ struct ChatInputView: View {
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, Spacing.small)
+            .padding(.vertical, 8)
 
             if chatViewModel.voiceState == .preparing {
                 ProgressView()
-                    .padding(.vertical, Spacing.small)
+                    .padding(.vertical, 8)
 
                 Button("Cancel") {
                     chatViewModel.cancelVoiceMode()
                 }
-                .padding(Spacing.small)
+                .padding(8)
             } else if case .listening = chatViewModel.voiceState {
                 Button("End") {
                     Task {
                         await chatViewModel.stopVoiceModeAndSend()
                     }
                 }
-                .padding(Spacing.small)
+                .padding(8)
             } else if case .speaking = chatViewModel.voiceState {
                 Button("Stop") {
                     chatViewModel.stopSpeaking()
                 }
-                .padding(Spacing.small)
+                .padding(8)
             } else if messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Button {
                     Task {
@@ -162,7 +162,7 @@ struct ChatInputView: View {
                 }
                 .accessibilityLabel("Voice mode")
                 .buttonStyle(.plain)
-                .padding(Spacing.small)
+                .padding(8)
                 .disabled(chatViewModel.voiceState.isActive && !chatViewModel.voiceState.isError)
             } else {
                 Button(action: sendMessage) {
@@ -174,7 +174,7 @@ struct ChatInputView: View {
                 }
                 .accessibilityLabel("Send message")
                 .buttonStyle(.plain)
-                .padding(Spacing.small)
+                .padding(8)
                 .disabled(
                     messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
                     chatViewModel.isLoading ||
