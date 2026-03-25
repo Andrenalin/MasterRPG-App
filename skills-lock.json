@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "axiom-foundation-models": {
+      "source": "charleswiltgen/axiom",
+      "sourceType": "github",
+      "computedHash": "4c72077dbb62a3e4c9883fe90e13522b1cdf6c1b3f94c6f2560b5420205f5244"
+    },
+    "axiom-realitykit": {
+      "source": "charleswiltgen/axiom",
+      "sourceType": "github",
+      "computedHash": "fdd903f08f4fcfb1b64b3a4fbafc2a01aad541c3f03c8856fa21f282bda459ba"
+    },
+    "axiom-realitykit-diag": {
+      "source": "charleswiltgen/axiom",
+      "sourceType": "github",
+      "computedHash": "cbe4d9b613dee1737e3c9fd2358a9466037689726d39ec2b39d07598d0984508"
+    },
+    "realitykit-visionos-developer": {
+      "source": "tomkrikorian/visionosagents",
+      "sourceType": "github",
+      "computedHash": "ceaaadf38ee556f3ba73f3826d3d4b0a469ddd57a1ea0d9cd8813d52cfb94dc8"
+    }
+  }
+}

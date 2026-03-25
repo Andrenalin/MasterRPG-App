@@ -60,30 +60,41 @@ struct AdventureChatRootView: View {
 
 private extension AdventureChatRootView {
     @ViewBuilder private var contentView: some View {
-        List(model.session.transcript) { entry in
-            switch entry {
+        @Bindable var model = model
+        VStack {
+            TokenUsageBar(currentTokenCount: model.currentTokenCount, maxContextSize: model.maxContextSize, tokenUsageFraction: model.tokenUsageFraction)
+
+            List(model.session.transcript) { entry in
+                switch entry {
                 case .prompt(let prompt):
-                ChatSegmentsView(segments: prompt.segments, isUser: true)
-                    .listRowSeparator(.hidden)
-            case .response(let answer):
-                ChatSegmentsView(segments: answer.segments, isUser: false)
-            case .instructions, .toolCalls, .toolOutput:
-                EmptyView()
-            @unknown default:
-                EmptyView()
+                    ChatSegmentsView(segments: prompt.segments, isUser: true)
+                        .listRowSeparator(.hidden)
+                case .response(let answer):
+                    ChatSegmentsView(segments: answer.segments, isUser: false)
+                case .instructions, .toolCalls, .toolOutput:
+                    EmptyView()
+                @unknown default:
+                    EmptyView()
+                }
             }
-        }
-        .listStyle(.plain)
-        .overlay {
-            if !model.responseErrorContent.isEmpty {
-                Text(model.responseErrorContent)
-                Button {
-                    model.responseErrorContent = ""
-                } label: {
-                    Text("Understand", bundle: .module)
+            .listStyle(.plain)
+            .overlay {
+                if !model.responseErrorContent.isEmpty {
+                    Text(model.responseErrorContent)
+                    Button {
+                        model.responseErrorContent = ""
+                    } label: {
+                        Text("Understand", bundle: .module)
+                    }
                 }
             }
         }
+        .alert(
+            "Error",
+            isPresented: $model.showError,
+            actions: { Button("OK") { model.dismissError() } },
+            message: { Text(model.responseErrorContent) }
+        )
         .onAppear {
             root.generatorController.generate()
         }

@@ -8,24 +8,35 @@ import Foundation
 @MainActor
 final class GeneratorSessionModel {
     var session = LanguageModelSession()
-    
+
     func set(session: LanguageModelSession) {
         self.session = session
     }
-    
+
     var responses: [LanguageModelSession.ResponseStream<CharacterGenModel>.Snapshot] = []
-    
+
     var result: CharacterGenModel?
     var characterChat: String?
-    
+
     func append(_ content: LanguageModelSession.ResponseStream<CharacterGenModel>.Snapshot) {
         result = try? CharacterGenModel(content.rawContent)
         responses.append(content)
     }
-    
+
     var campaign: CampaignGenModel.PartiallyGenerated?
-    
+
     var extracted: BlockGenModel.PartiallyGenerated?
+
+    // Error tracking
+    var errorMessage: String?
+
+    // Task management for cancellation
+    var currentTask: Task<Void, Never>?
+
+    func cancel() {
+        currentTask?.cancel()
+        currentTask = nil
+    }
 }
 
 struct GeneratorController: Sendable {
@@ -68,22 +79,33 @@ struct GeneratorController: Sendable {
     }
     
     @MainActor func request(message: String) {
-        Task {
+        // Cancel any previous request
+        model.cancel()
+
+        model.currentTask = Task {
             do {
                 let stream = model.session.streamResponse(
                     options: GenerationOptions()) {
                         "\(message)"
                     }
-                
+
                 for try await partialResponse in stream {
+                    // Check for cancellation
+                    try Task.checkCancellation()
                     self.model.characterChat = partialResponse.content
                 }
+
+                // Clear error on success
+                model.errorMessage = nil
+            } catch is CancellationError {
+                // Clean cancellation - don't set error
+                return
             } catch let error as LanguageModelSession.GenerationError {
-                print(error.localizedDescription)
+                model.errorMessage = "Generation Error: \(error.localizedDescription)"
             } catch let error as LanguageModelSession.ToolCallError {
-                print(error.tool)
+                model.errorMessage = "Tool Call Error: \(error.tool)"
             } catch {
-                print(error.localizedDescription)
+                model.errorMessage = error.localizedDescription
             }
         }
     }
@@ -93,18 +115,26 @@ struct GeneratorController: Sendable {
             let prompt = Prompt {
                 "\(message)"
             }
-            
+
             let stream = model.session.streamResponse(to: prompt, generating: CampaignGenModel.self)
-            
+
             for try await partialResponse in stream {
+                // Check for cancellation
+                try Task.checkCancellation()
                 self.model.campaign = partialResponse.content
             }
+
+            // Clear error on success
+            model.errorMessage = nil
+        } catch is CancellationError {
+            // Clean cancellation
+            return
         } catch let error as LanguageModelSession.GenerationError {
-            print(error.localizedDescription)
+            model.errorMessage = "Generation Error: \(error.localizedDescription)"
         } catch let error as LanguageModelSession.ToolCallError {
-            print(error.tool)
+            model.errorMessage = "Tool Call Error: \(error.tool)"
         } catch {
-            print(error.localizedDescription)
+            model.errorMessage = error.localizedDescription
         }
     }
     
@@ -128,14 +158,22 @@ struct GeneratorController: Sendable {
             let stream = model.session.streamResponse(to: prompt, generating: BlockGenModel.self)
 
             for try await partialResponse in stream {
+                // Check for cancellation
+                try Task.checkCancellation()
                 self.model.extracted = partialResponse.content
             }
+
+            // Clear error on success
+            model.errorMessage = nil
+        } catch is CancellationError {
+            // Clean cancellation
+            return
         } catch let error as LanguageModelSession.GenerationError {
-            print(error.localizedDescription)
+            model.errorMessage = "Generation Error: \(error.localizedDescription)"
         } catch let error as LanguageModelSession.ToolCallError {
-            print(error.tool)
+            model.errorMessage = "Tool Call Error: \(error.tool)"
         } catch {
-            print(error.localizedDescription)
+            model.errorMessage = error.localizedDescription
         }
     }
 
