@@ -2,6 +2,7 @@
 
 import Foundation
 import FoundationModels
+import SwiftUI
 
 /// Centralized configuration constants for the app
 enum AppConfiguration {
@@ -39,4 +40,17 @@ enum AppConfiguration {
             return await contextSize(for: model)
         }
     }
+}
+
+extension Color {
+// MARK: - Background Colors
+static var adaptiveBackground: Color {
+    #if os(iOS)
+    Color(UIColor.systemBackground)
+    #elseif os(macOS)
+    Color(NSColor.windowBackgroundColor)
+    #else
+    Color(.systemBackground)
+    #endif
+}
 }

@@ -22,7 +22,12 @@ struct AdventureChatRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     
+    @State private var viewModel = ChatViewModel()
+    @State private var scrollID: String?
+    
     @State private var prompt: String = "Eine Zwergenfestung für Elfen erbaut, hat 7 verschieden farbige Räume. Was könnten sie bedeuten?"
+    
+    @FocusState private var isTextFieldFocused: Bool
     
     var body: some View {
         FoundationBasicView {
@@ -61,46 +66,140 @@ struct AdventureChatRootView: View {
 private extension AdventureChatRootView {
     @ViewBuilder private var contentView: some View {
         @Bindable var model = model
-        VStack {
-            TokenUsageBar(currentTokenCount: model.currentTokenCount, maxContextSize: model.maxContextSize, tokenUsageFraction: model.tokenUsageFraction)
+        VStack(spacing: 0) {
+            TokenUsageBar(currentTokenCount: viewModel.currentTokenCount, maxContextSize: viewModel.maxContextSize, tokenUsageFraction: viewModel.tokenUsageFraction)
 
-            List(model.session.transcript) { entry in
-                switch entry {
-                case .prompt(let prompt):
-                    ChatSegmentsView(segments: prompt.segments, isUser: true)
-                        .listRowSeparator(.hidden)
-                case .response(let answer):
-                    ChatSegmentsView(segments: answer.segments, isUser: false)
-                case .instructions, .toolCalls, .toolOutput:
-                    EmptyView()
-                @unknown default:
-                    EmptyView()
+            messagesView
+//            List(model.session.transcript) { entry in
+//                switch entry {
+//                case .prompt(let prompt):
+//                    ChatSegmentsView(segments: prompt.segments, isUser: true)
+//                        .listRowSeparator(.hidden)
+//                case .response(let answer):
+//                    ChatSegmentsView(segments: answer.segments, isUser: false)
+//                case .instructions, .toolCalls, .toolOutput:
+//                    EmptyView()
+//                @unknown default:
+//                    EmptyView()
+//                }
+//            }
+//            .listStyle(.plain)
+            
+            ChatInputView(messageText: $prompt, chatViewModel: viewModel, isTextFieldFocused: $isTextFieldFocused)
+        }
+        .environment(viewModel)
+        .alert(
+            "Error",
+            isPresented: $model.showError,
+            actions: { Button("OK") { viewModel.dismissError() } },
+            message: { Text(viewModel.errorMessage ?? "") }
+        )
+        .onAppear {
+            root.generatorController.generate()
+            // Auto-focus when chat appears
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                isTextFieldFocused = true
+            }
+        }
+        .onDisappear {
+            viewModel.tearDown()
+        }
+    }
+    
+    private var messagesView: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    if isChatEffectivelyEmpty {
+                        Text("How can we help you today?")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                            .padding(.bottom, 48)
+                    }
+
+                    ForEach(viewModel.session.transcript) { entry in
+                        TranscriptEntryView(entry: entry)
+                            .id(entry.id)
+                    }
+
+                    if viewModel.isSummarizing {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Summarizing conversation...")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                        .id("summarizing")
+                    }
+
+                    if viewModel.isApplyingWindow {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Optimizing conversation history...")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                        .id("windowing")
+                    }
+
+                    // Empty spacer for bottom padding
+                    Rectangle()
+                        .fill(.clear)
+                        .frame(height: 1)
+                        .id("bottom")
+                }
+                .padding(.vertical)
+            }
+#if os(iOS)
+            .scrollDismissesKeyboard(.interactively)
+#endif
+            .scrollPosition(id: $scrollID, anchor: .bottom)
+            .onChange(of: viewModel.session.transcript.count) { _, _ in
+                if let lastEntry = viewModel.session.transcript.last {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo(lastEntry.id, anchor: .bottom)
+                    }
                 }
             }
-            .listStyle(.plain)
-            .overlay {
-                if !model.responseErrorContent.isEmpty {
-                    Text(model.responseErrorContent)
-                    Button {
-                        model.responseErrorContent = ""
-                    } label: {
-                        Text("Understand", bundle: .module)
+            .onChange(of: viewModel.isSummarizing) { _, isSummarizing in
+                if isSummarizing {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo("summarizing", anchor: .bottom)
+                    }
+                }
+            }
+            .onChange(of: viewModel.isApplyingWindow) { _, isApplyingWindow in
+                if isApplyingWindow {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo("windowing", anchor: .bottom)
                     }
                 }
             }
         }
-        .alert(
-            "Error",
-            isPresented: $model.showError,
-            actions: { Button("OK") { model.dismissError() } },
-            message: { Text(model.responseErrorContent) }
-        )
-        .onAppear {
-            root.generatorController.generate()
+        .defaultScrollAnchor(.bottom)
+    }
+
+    private var isChatEffectivelyEmpty: Bool {
+        !viewModel.session.transcript.contains { entry in
+            switch entry {
+            case .instructions:
+                return false
+            default:
+                return true
+            }
         }
-        .safeAreaInset(edge: .bottom) {
-            promptFieldView
-        }
+    }
+
+    private func clearChat() {
+        prompt = ""
+        scrollID = "bottom"
+        viewModel.clearChat()
     }
 
     @ViewBuilder var promptFieldView: some View {
