@@ -32,6 +32,8 @@ public final class LinkHighlightTextModel {
     var updated: UUID = UUID()
     @ObservationIgnored var lastUpdated: UUID = UUID()
     
+    var linkToggled: Bool = false
+    
     public func reset(highlightedText: String) {
         guard self.highlightedText != highlightedText else { return }
         self.highlightedText = highlightedText
@@ -54,6 +56,8 @@ public final class LinkHighlightTextModel {
         
         let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: toggler, editAction: editAction)
 
+        linkToggled.toggle()
+        
         reset(text: updatedText)
     }
 }
