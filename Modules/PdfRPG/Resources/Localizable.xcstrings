@@ -43,6 +43,12 @@
         }
       }
     },
+    "Analyzing PDF with Apple Intelligence..." : {
+
+    },
+    "Apple Intelligence Required" : {
+
+    },
     "Bookmarks" : {
       "localizations" : {
         "de" : {
@@ -53,6 +59,15 @@
         }
       }
     },
+    "Dismiss" : {
+
+    },
+    "Document Information" : {
+
+    },
+    "Extract PDF Information" : {
+
+    },
     "Find in pdf" : {
       "localizations" : {
         "de" : {
@@ -62,6 +77,12 @@
           }
         }
       }
+    },
+    "Found %lld tags" : {
+
+    },
+    "Identified %lld sections" : {
+
     },
     "Open Pdf" : {
       "comment" : "Title of the \"Open Pdf\" intent.",
@@ -75,6 +96,9 @@
         }
       }
     },
+    "Page %lld" : {
+
+    },
     "Pdf" : {
       "localizations" : {
         "de" : {
@@ -84,6 +108,30 @@
           }
         }
       }
+    },
+    "PDF content extraction requires Apple Intelligence, which is not available on this device." : {
+
+    },
+    "Sections" : {
+
+    },
+    "Summary" : {
+
+    },
+    "Summary extracted" : {
+
+    },
+    "Tags" : {
+
+    },
+    "Title" : {
+
+    },
+    "Title: %@" : {
+
+    },
+    "Type" : {
+
     },
     "Unnamed" : {
       "localizations" : {

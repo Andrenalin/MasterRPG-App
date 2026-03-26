@@ -55,6 +55,7 @@
 		59E299062F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
 		59E299072F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
 		59E299082F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
+		59E2991B2F75438C00700934 /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; platformFilters = (ios, macos, xros, ); };
 		8E13A4012BCE88BB00B2FCD4 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */; };
 		8E13A40D2BCE890D00B2FCD4 /* SharingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E13A40C2BCE890D00B2FCD4 /* SharingView.swift */; };
 		8E190D992B8F6C150084B0F4 /* macOSAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC4E48228DDAAF300D0279F /* macOSAppDelegate.swift */; };
@@ -445,6 +446,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 59CE1E9B2E84F011009C6CB5;
 			remoteInfo = GameRPG;
+		};
+		59E2991D2F75438C00700934 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 599DCACF2E8E30C00056E46C;
+			remoteInfo = GeneratorRPG;
 		};
 		8E00BC632990942C00C484A1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1774,6 +1782,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				59E2991B2F75438C00700934 /* GeneratorRPG.framework in Frameworks */,
 				8E56C0852EDB01580026F01C /* CoreRPG.framework in Frameworks */,
 				8EEF8E2C2E363A1F00393DAD /* RPGResources.framework in Frameworks */,
 			);
@@ -3002,6 +3011,7 @@
 			dependencies = (
 				8EEF8E2F2E363A1F00393DAD /* PBXTargetDependency */,
 				8E56C0882EDB01580026F01C /* PBXTargetDependency */,
+				59E2991E2F75438C00700934 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8EEF8E062E3639E200393DAD /* PdfRPG */,
@@ -3918,6 +3928,16 @@
 			isa = PBXTargetDependency;
 			target = 59CE1E9B2E84F011009C6CB5 /* GameRPG */;
 			targetProxy = 59CE1EEA2E84F142009C6CB5 /* PBXContainerItemProxy */;
+		};
+		59E2991E2F75438C00700934 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+				xros,
+			);
+			target = 599DCACF2E8E30C00056E46C /* GeneratorRPG */;
+			targetProxy = 59E2991D2F75438C00700934 /* PBXContainerItemProxy */;
 		};
 		8E00BC642990942C00C484A1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
