@@ -20,14 +20,19 @@ public struct ImmersivePhotoView: View {
     public var body: some View {
         RealityView { content in
             let rootEntity = Entity()
-            rootEntity.addSkybox(root: root, for: photoSelection)
             content.add(rootEntity)
-            destinationChanged = true
+
+            // Load texture asynchronously
+            Task {
+                await rootEntity.loadSkybox(root: root, for: photoSelection)
+                destinationChanged = true
+            }
         } update: { content in
             guard destinationChanged else { return }
-            guard let entity = content.entities.first else { fatalError() }
-            entity.updateTexture(root: root, for: photoSelection)
+            guard let entity = content.entities.first else { return }
+
             Task {
+                await entity.updateTexture(root: root, for: photoSelection)
                 destinationChanged = false
             }
         }
@@ -42,11 +47,19 @@ public struct ImmersivePhotoView: View {
 }
 
 extension Entity {
-    func addSkybox(root: PhotoRootModel, for photoSelection: PhotoWorldSelection) {
-        let subscription = Task {
-            guard let url = await root.itemController.loadableUrl(itemId: photoSelection.id) else { return }
-            guard let texture = try? await TextureResource(contentsOf: url) else { return }
-            
+    @MainActor
+    func loadSkybox(root: PhotoRootModel, for photoSelection: PhotoWorldSelection) async {
+        do {
+            guard let url = await root.itemController.loadableUrl(itemId: photoSelection.id) else {
+                print("Failed to get URL for photo selection: \(photoSelection.id)")
+                return
+            }
+
+            guard let texture = try? await TextureResource(contentsOf: url) else {
+                print("Failed to load texture from URL: \(url)")
+                return
+            }
+
             var material = UnlitMaterial()
             material.color = .init(texture: .init(texture))
             self.components.set(ModelComponent(
@@ -55,17 +68,26 @@ extension Entity {
             ))
             self.scale *= .init(x: -1, y: 1, z: 1)
             self.transform.translation += SIMD3<Float>(0.0, 1.0, 0.0)
-            
+
             // Rotate the sphere to show the best initial view of the space.
             updateRotation(for: photoSelection)
         }
-        components.set(Entity.SubscriptionComponent(subscription: subscription))
     }
 
-    func updateTexture(root: PhotoRootModel, for photoSelection: PhotoWorldSelection) {
-        let subscription = Task {
-            guard let url = await root.itemController.loadableUrl(itemId: photoSelection.id) else { return }
-            guard let texture = try? await TextureResource(contentsOf: url) else { return }
+    @MainActor
+    func updateTexture(root: PhotoRootModel, for photoSelection: PhotoWorldSelection) async {
+        do {
+            guard let url = await root.itemController.loadableUrl(itemId: photoSelection.id) else {
+                print("Failed to get URL for photo selection: \(photoSelection.id)")
+                return
+            }
+
+            guard let texture = try? await TextureResource(contentsOf: url) else {
+                print("Failed to load texture from URL: \(url)")
+                return
+            }
+
+            // If ModelComponent doesn't exist, create it
             guard var modelComponent = self.components[ModelComponent.self] else {
                 var material = UnlitMaterial()
                 material.color = .init(texture: .init(texture))
@@ -75,18 +97,17 @@ extension Entity {
                 ))
                 self.scale *= .init(x: -1, y: 1, z: 1)
                 self.transform.translation += SIMD3<Float>(0.0, 1.0, 0.0)
-
+                updateRotation(for: photoSelection)
                 return
-//                fatalError("Should have already a Model Component!")
             }
 
+            // Update existing ModelComponent
             var material = UnlitMaterial()
             material.color = .init(texture: .init(texture))
             modelComponent.materials = [material]
             self.components.set(modelComponent)
             updateRotation(for: photoSelection)
         }
-        components.set(Entity.SubscriptionComponent(subscription: subscription))
     }
 
     func updateRotation(for photoSelection: PhotoWorldSelection) {
@@ -95,10 +116,6 @@ extension Entity {
         let angle = Angle.degrees(photoSelection.rotationDegrees)
         let rotation = simd_quatf(angle: Float(angle.radians), axis: SIMD3<Float>(0, 1, 0))
         self.transform.rotation = rotation
-    }
-
-    struct SubscriptionComponent: Component {
-        var subscription: Task<(), Never>
     }
 }
 

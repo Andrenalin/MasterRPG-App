@@ -22,6 +22,11 @@ struct MasterRPGApp: App {
 #endif
     
     init() {
+#if !os(tvOS)
+        // Register custom RealityKit components
+        RealityKitInit.registerRealityKitComponents()
+#endif
+
         let data = appModel
         AppDependencyManager.shared.add(dependency: data)
         let navigator = appModel.navigator

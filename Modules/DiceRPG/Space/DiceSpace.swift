@@ -31,19 +31,14 @@ public struct DiceSpace: View {
     public var body: some View {
         @Bindable var viewModel = viewModel
 
-        /*
-         
-         var windowSize = 24
-         var vx1: [Double] = .init(repeating: 0, count: windowSize)
-         var vy1: [Double] = .init(repeating: 0, count: windowSize)
-         var vz1: [Double] = .init(repeating: 0, count: windowSize)
-         var vw1: [Double] = .init(repeating: 0, count: windowSize)
-         var wIndex = 0
-         var lastHeartDetectionTime = Date.timeIntervalSinceReferenceDate
+        RealityView { content in
+            do {
+                // Load the dice entity asynchronously
+                guard let entity = try? await Entity(named: "Dice20", in: dice3dAssetsBundle) else {
+                    print("Failed to load Dice20 entity")
+                    return
+                }
 
-        RealityView { content, _  in
-            // Add the initial RealityKit content
-            if let entity = try? await Entity(named: "Dice20", in: dice3dAssetsBundle) {
                 let rootEntity = Entity()
                 viewModel.rootEntity = rootEntity
                 content.add(rootEntity)
@@ -52,54 +47,8 @@ public struct DiceSpace: View {
                 viewModel.updateDice()
                 viewModel.updateScale()
             }
-        } update: { content, attachments  in
-//            if let diceEntity = viewModel.diceSixEntity, let attachmentEntity = attachments.entity(for: "D6") {
-//                content.add(attachmentEntity)
-//                attachmentEntity.setPosition([0, 0.2, 0], relativeTo: diceEntity)
-//            }
-
-
-            let handsCenterTransform = gestureModel.computeTransformOfUserPerformedGrabingDiceGesture()
-            if let handsCenter = handsCenterTransform {
-                let position = Pose3D(handsCenter)!.position
-                let rotation = Pose3D(handsCenter)!.rotation
-
-                // Rolling average window of N, ~2-30 frames
-                vx1[wIndex] = rotation.vector.x
-                vy1[wIndex] = rotation.vector.y
-                vz1[wIndex] = rotation.vector.z
-                vw1[wIndex] = rotation.vector.w
-
-                let averageX = vDSP.mean(vx1)
-                let averageY = vDSP.mean(vy1)
-                let averageZ = vDSP.mean(vz1)
-                let averageW = vDSP.mean(vw1)
-
-                wIndex += 1
-                wIndex %= windowSize
-
-
-                // change the dices??
-                //beamIntermediate.transform.translation = SIMD3<Float>(position.vector)
-                viewModel.diceSixEntity?.transform.rotation = simd_quatf(vector: [Float(averageX), Float(averageY), Float(averageZ), Float(averageW)])
-
-                lastHeartDetectionTime = Date.timeIntervalSinceReferenceDate
-
-                // Could be intertesting to send this to other players
-                // in ortder to roll this dice on their Spcae too
-//                if gameModel.isSharePlaying {
-//                    sendBeamPositionUpdate(Pose3D(handsCenter)!)
-//                }
-            }
-
-
-        } attachments: {
-            // Labelling the dice.... but not needed
-            Button {} label: {
-                Label("6", systemImage: "dice")
-            }
-            .background(.green)
-            .tag("D6")
+//        } update: { content, attachments in
+//            // Update logic can be added here if needed
         }
         .gesture(DragGesture(minimumDistance: 0.0)
             .targetedToAnyEntity()
@@ -123,18 +72,15 @@ public struct DiceSpace: View {
 
                 // Move
                 let newPosition = drag.convert(drag.location3D, from: .local, to: drag.entity.parent!)
-
                 diceEntity.setPosition(newPosition, relativeTo: entity)
             }
             .onEnded { dragEnd in
                 let diceEntity = dragEnd.entity[parentMatching: "Dice Two"] != nil ? viewModel.diceTwoEntity : viewModel.diceSixEntity
 
                 guard let diceEntity else { return }
-                print("*** orientation: \(diceEntity.orientation)")
                 viewModel.rollDice(diceEntity: diceEntity)
 
                 let newPosition = dragEnd.convert(dragEnd.gestureValue.predictedEndLocation3D, from: .local, to: dragEnd.entity.parent!)
-
                 diceEntity.setPosition(newPosition, relativeTo: dragEnd.entity)
             }
         )
@@ -147,7 +93,6 @@ public struct DiceSpace: View {
         .task {
             await gestureModel.monitorSessionEvents()
         }
-         */
     }
 }
 

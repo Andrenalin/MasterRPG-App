@@ -4,31 +4,76 @@
 
 import Foundation
 import RealityKit
-//import Dice3dAssets
 
-/// This system is used to update the dice component with the new result for each role.
-/// The idea is that also the player dice from the other player will be shown in the space not only it's own dice.
-///  At moment I don't know what I need.. so this is a placeholder for later
-class DiceRoolSystem: System {
+/// Component that holds the state of a dice roll
+public struct DiceComponent: Component {
+    /// The result of the dice roll (1-20 for d20, 1-6 for d6, etc.)
+    public var result: Int
 
-    // This must be called in the init
-    // DiceRoolSystem.registerSystem()
+    /// Whether the dice is currently animating to its final orientation
+    public var isRolling: Bool
 
-    //private static let diceQuery = EntityQuery(where: .has(DiceComponent.self))
+    /// The target orientation the dice should animate to
+    public var targetOrientation: simd_quatf
 
-    // this could be interesting.... at the moment I don't have a concrete use case
-//    static var dependencies: [SystemDependency] {
-//            [.after(SystemA.self),        // Run SystemB after SystemA.
-//             .before(SystemC.self)]       // Run SystemB before SystemC.
-//    }
+    /// The type of dice (d6, d20, etc.)
+    public var diceType: DiceType
 
-    required init(scene: Scene) {}
+    /// Animation progress (0.0 to 1.0)
+    public var animationProgress: Float
 
-//    func update(context: SceneUpdateContext) {
-//        context.scene.performQuery(Self.diceQuery).forEach { entity in
-//            // Make per-frame changes to each dice entity here.
-//        }
-//    }
+    public enum DiceType: String, Codable {
+        case d6 = "Dice Six"
+        case d20 = "Dice Two"
+    }
+
+    public init(result: Int = 1, isRolling: Bool = false, targetOrientation: simd_quatf = simd_quatf(real: 1, imag: .zero), diceType: DiceType = .d20, animationProgress: Float = 1.0) {
+        self.result = result
+        self.isRolling = isRolling
+        self.targetOrientation = targetOrientation
+        self.diceType = diceType
+        self.animationProgress = animationProgress
+    }
+}
+
+/// System that animates dice to their final roll result orientation
+public class DiceRollSystem: System {
+
+    private static let diceQuery = EntityQuery(where: .has(DiceComponent.self))
+
+    /// Animation speed multiplier
+    private let animationSpeed: Float = 5.0
+
+    public required init(scene: Scene) {}
+
+    public func update(context: SceneUpdateContext) {
+        for entity in context.entities(matching: Self.diceQuery, updatingSystemWhen: .rendering) {
+            guard var diceComponent = entity.components[DiceComponent.self] else { continue }
+
+            // Only animate if the dice is rolling
+            guard diceComponent.isRolling else { continue }
+
+            // Update animation progress
+            diceComponent.animationProgress += Float(context.deltaTime) * animationSpeed
+
+            if diceComponent.animationProgress >= 1.0 {
+                // Animation complete - snap to final orientation
+                entity.orientation = diceComponent.targetOrientation
+                diceComponent.isRolling = false
+                diceComponent.animationProgress = 1.0
+            } else {
+                // Smoothly interpolate to target orientation using spherical linear interpolation
+                entity.orientation = simd_slerp(
+                    entity.orientation,
+                    diceComponent.targetOrientation,
+                    Float(context.deltaTime) * animationSpeed
+                )
+            }
+
+            // Update the component back to the entity
+            entity.components.set(diceComponent)
+        }
+    }
 }
 
 #endif

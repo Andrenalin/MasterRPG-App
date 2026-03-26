@@ -52,6 +52,9 @@
 		59D30AEC2E937CEB005AE77B /* MenuMainCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59D30AEA2E937CEB005AE77B /* MenuMainCommand.swift */; };
 		59D30AED2E937CEB005AE77B /* MenuMainCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59D30AEA2E937CEB005AE77B /* MenuMainCommand.swift */; };
 		59DC213D2BD75537001140B1 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 59DC213C2BD75537001140B1 /* Localizable.xcstrings */; };
+		59E299062F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
+		59E299072F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
+		59E299082F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
 		8E13A4012BCE88BB00B2FCD4 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */; };
 		8E13A40D2BCE890D00B2FCD4 /* SharingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E13A40C2BCE890D00B2FCD4 /* SharingView.swift */; };
 		8E190D992B8F6C150084B0F4 /* macOSAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC4E48228DDAAF300D0279F /* macOSAppDelegate.swift */; };
@@ -1279,6 +1282,7 @@
 		59CE1E9C2E84F011009C6CB5 /* GameRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GameRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		59D30AEA2E937CEB005AE77B /* MenuMainCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuMainCommand.swift; sourceTree = "<group>"; };
 		59DC213C2BD75537001140B1 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		59E299052F75313D00700934 /* RealityKitInit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealityKitInit.swift; sourceTree = "<group>"; };
 		8E00BC5D2990942C00C484A1 /* MasterRPGUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MasterRPGUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RPGShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
@@ -1947,16 +1951,17 @@
 			isa = PBXGroup;
 			children = (
 				8E83E4DE2E841B7A00A1095C /* AboutMenuCommand.swift */,
-				8E647DCB2EB4F79600057875 /* RootView.swift */,
+				8E647DC42EB4F79600057875 /* InitialRootView.swift */,
 				8EC4E48628DDAAF300D0279F /* iOS */,
 				8EC4E48128DDAAF300D0279F /* macOS */,
 				8EC4E48928DDAAF300D0279F /* MasterRPGApp.swift */,
-				8E647DC42EB4F79600057875 /* InitialRootView.swift */,
 				8E83E4DA2E841B7200A1095C /* MenuBarView.swift */,
 				8E83E4D62E841B5C00A1095C /* MenuCommandList.swift */,
 				59D30AEA2E937CEB005AE77B /* MenuMainCommand.swift */,
-				8E647DCC2EB4F79600057875 /* TabRootView.swift */,
 				8E83E4CA2E841B4400A1095C /* MyAppPackage.swift */,
+				59E299052F75313D00700934 /* RealityKitInit.swift */,
+				8E647DCB2EB4F79600057875 /* RootView.swift */,
+				8E647DCC2EB4F79600057875 /* TabRootView.swift */,
 				8E83E4CE2E841B5000A1095C /* WindowLinkList.swift */,
 				8E83E4D22E841B5500A1095C /* WindowViewerList.swift */,
 				8E6A8A9C2F6E538E00149E06 /* WindowVisionList.swift */,
@@ -3557,6 +3562,7 @@
 				8E647DD42EB4F79600057875 /* RootView.swift in Sources */,
 				8E647DD52EB4F79600057875 /* TabRootView.swift in Sources */,
 				8E190DA62B8F6C340084B0F4 /* ExternalPlayerWindow.swift in Sources */,
+				59E299062F75313D00700934 /* RealityKitInit.swift in Sources */,
 				8E190D9A2B8F6C150084B0F4 /* LinkWindowCommands.swift in Sources */,
 				8E83E4CB2E841B4400A1095C /* MyAppPackage.swift in Sources */,
 				8E190DA22B8F6C190084B0F4 /* MasterRPGApp.swift in Sources */,
@@ -3588,6 +3594,7 @@
 				8E83E4DF2E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E6BC9CE2AFB0B2300E5E098 /* MasterTVApp.swift in Sources */,
 				8E6BC9E12AFB0BCF00E5E098 /* iOSAppDelegate.swift in Sources */,
+				59E299072F75313D00700934 /* RealityKitInit.swift in Sources */,
 				59D30AEC2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
 				8E83E4DB2E841B7200A1095C /* MenuBarView.swift in Sources */,
 				8E647DDF2EB4F79600057875 /* InitialRootView.swift in Sources */,
@@ -3748,6 +3755,7 @@
 				8E83E4D82E841B5C00A1095C /* MenuCommandList.swift in Sources */,
 				8E6A8AA02F6E538E00149E06 /* WindowVisionList.swift in Sources */,
 				8EC4E49828DDAAF400D0279F /* MasterRPGApp.swift in Sources */,
+				59E299082F75313D00700934 /* RealityKitInit.swift in Sources */,
 				8E83E4DD2E841B7200A1095C /* MenuBarView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -5367,7 +5375,7 @@
 				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2025, Andre Trettin";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -5410,7 +5418,7 @@
 				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2025, Andre Trettin";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -6575,7 +6583,7 @@
 				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2025, Andre Trettin";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
@@ -6639,7 +6647,7 @@
 				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2025, Andre Trettin";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";

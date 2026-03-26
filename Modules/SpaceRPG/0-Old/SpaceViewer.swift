@@ -79,11 +79,19 @@ private extension SpaceViewer {
     var contentView: some View {
         RealityView { content in
             do {
-                guard let url = await root.itemController.loadableUrl(itemId: id) else { return }
-                
+                guard let url = await root.itemController.loadableUrl(itemId: id) else {
+                    print("Failed to get loadable URL for item: \(id)")
+                    hasLoaded = true
+                    return
+                }
+
                 defer { url.stopAccessingSecurityScopedResource() }
-                let _ = url.startAccessingSecurityScopedResource()
-                
+                guard url.startAccessingSecurityScopedResource() else {
+                    print("Failed to access security-scoped resource: \(url)")
+                    hasLoaded = true
+                    return
+                }
+
                 let objectEntity = try await Entity(contentsOf: url, withName: "3DMaster")
                 self.objectEntity = objectEntity
                 
@@ -118,7 +126,10 @@ private extension SpaceViewer {
 #endif
                 content.add(rootEntity)
             } catch {
-                print(error)
+                print("Error loading 3D entity from URL: \(error.localizedDescription)")
+                if let decodingError = error as? DecodingError {
+                    print("Decoding error details: \(decodingError)")
+                }
             }
             hasLoaded = true
         } update: { content in
