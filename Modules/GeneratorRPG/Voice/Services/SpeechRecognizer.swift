@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Speech
+@preconcurrency import Speech
 import AVFoundation
 import Accelerate
 import OSLog
@@ -146,23 +146,23 @@ class SpeechRecognizer: NSObject, SpeechRecognitionService {
     }
 
     var hasPermission = false
-    var currentAmplitude: Double = 0
+    nonisolated(unsafe) var currentAmplitude: Double = 0
 
-    let logger = VoiceLogging.recognition
-    let speechRecognizer: SFSpeechRecognizer?
-    var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    var recognitionTask: SFSpeechRecognitionTask?
-    let audioEngine = AVAudioEngine()
+    nonisolated(unsafe) let logger = VoiceLogging.recognition
+    nonisolated(unsafe) let speechRecognizer: SFSpeechRecognizer?
+    nonisolated(unsafe) var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    nonisolated(unsafe) var recognitionTask: SFSpeechRecognitionTask?
+    nonisolated(unsafe) let audioEngine = AVAudioEngine()
     private var stateHandlers: [UUID: (SpeechRecognitionState) -> Void] = [:]
-    var audioBufferCount = 0
+    nonisolated(unsafe) var audioBufferCount = 0
 
     // Simple flag to prevent double processing
-    var hasProcessedFinalResult = false
+    nonisolated(unsafe) var hasProcessedFinalResult = false
 
     // Amplitude monitoring parameters
-    var amplitudeHistory: [Double] = []
-    let historySize = 10
-    let smoothingFactor = 0.8
+    nonisolated(unsafe) var amplitudeHistory: [Double] = []
+    nonisolated(unsafe) let historySize = 10
+    nonisolated(unsafe) let smoothingFactor = 0.8
 
     override init() {
         // Try en-US first, fall back to system locale, then any available locale

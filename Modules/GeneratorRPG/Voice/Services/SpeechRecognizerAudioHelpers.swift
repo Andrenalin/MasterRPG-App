@@ -39,7 +39,7 @@ private func copyAudioBuffer(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
 }
 
 extension SpeechRecognizer {
-    func configureAudioSessionIfNeeded() throws {
+    nonisolated func configureAudioSessionIfNeeded() throws {
         logger.debug("Configuring audio session for speech recognition")
 
         #if os(iOS)
@@ -70,13 +70,15 @@ extension SpeechRecognizer {
 
         if lastError != nil {
             logger.error("Audio session configuration failed after all attempts")
-            state = .error(.audioSessionFailed)
+            Task { @MainActor [weak self] in
+                self?.state = .error(.audioSessionFailed)
+            }
             throw SpeechRecognitionError.audioSessionFailed
         }
         #endif
     }
 
-    func prepareAudioEngine() throws {
+    nonisolated func prepareAudioEngine() throws {
         if audioEngine.isRunning {
             audioEngine.stop()
         }
@@ -95,21 +97,22 @@ extension SpeechRecognizer {
             bufferSize: 1024,
             format: tapFormat
         ) { [weak self] (buffer: AVAudioPCMBuffer, _: AVAudioTime) in
-            let bufferCopy = copyAudioBuffer(buffer)
-            Task { @MainActor [weak self] in
-                guard let self, !self.hasProcessedFinalResult else { return }
-                guard let bufferCopy else {
-                    self.logger.error("Failed to copy audio buffer")
-                    return
-                }
-                self.recognitionRequest?.append(bufferCopy)
-                self.processAudioBuffer(bufferCopy)
+            guard let self else { return }
+            guard !self.hasProcessedFinalResult else { return }
 
-                if VoiceLogging.isVerboseEnabled {
-                    self.audioBufferCount += 1
-                    if self.audioBufferCount % 200 == 0 {
-                        self.logger.debug("Processed \(self.audioBufferCount) audio buffers (frameLength=\(buffer.frameLength))")
-                    }
+            guard let bufferCopy = copyAudioBuffer(buffer) else {
+                self.logger.error("Failed to copy audio buffer")
+                return
+            }
+
+            self.recognitionRequest?.append(bufferCopy)
+            self.processAudioBuffer(bufferCopy)
+
+            if VoiceLogging.isVerboseEnabled {
+                self.audioBufferCount += 1
+                if self.audioBufferCount % 200 == 0 {
+                    let frameLength = buffer.frameLength
+                    self.logger.debug("Processed \(self.audioBufferCount) audio buffers (frameLength=\(frameLength))")
                 }
             }
         }
@@ -121,12 +124,14 @@ extension SpeechRecognizer {
             logger.debug("Audio engine started successfully")
         } catch {
             logger.error("Audio engine start failed: \(error.localizedDescription, privacy: .public)")
-            state = .error(.audioSessionFailed)
+            Task { @MainActor [weak self] in
+                self?.state = .error(.audioSessionFailed)
+            }
             throw SpeechRecognitionError.audioSessionFailed
         }
     }
 
-    func determineTapFormat(for inputNode: AVAudioInputNode) throws -> AVAudioFormat {
+    nonisolated func determineTapFormat(for inputNode: AVAudioInputNode) throws -> AVAudioFormat {
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         if VoiceLogging.isVerboseEnabled {
             logger.debug("Hardware sampleRate=\(recordingFormat.sampleRate, format: .fixed(precision: 2))")
@@ -135,7 +140,9 @@ extension SpeechRecognizer {
 
         guard recordingFormat.sampleRate > 0, recordingFormat.channelCount > 0 else {
             guard let fallbackFormat = AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1) else {
-                state = .error(.audioSessionFailed)
+                Task { @MainActor [weak self] in
+                    self?.state = .error(.audioSessionFailed)
+                }
                 throw SpeechRecognitionError.audioSessionFailed
             }
             logger.debug("Installing tap with fallback sampleRate=16000 channels=1")
@@ -146,7 +153,7 @@ extension SpeechRecognizer {
         return recordingFormat
     }
 
-    func processAudioBuffer(_ buffer: AVAudioPCMBuffer) {
+    nonisolated func processAudioBuffer(_ buffer: AVAudioPCMBuffer) {
         guard let channelData = buffer.floatChannelData?[0] else {
             return
         }
@@ -164,10 +171,12 @@ extension SpeechRecognizer {
         let normalizedAmplitude = Double(min(log10(1 + rms * 9), 1.0))
         let smoothedAmplitude = smoothAmplitude(normalizedAmplitude)
 
-        currentAmplitude = smoothedAmplitude
+        Task { @MainActor [weak self] in
+            self?.currentAmplitude = smoothedAmplitude
+        }
     }
 
-    func smoothAmplitude(_ newAmplitude: Double) -> Double {
+    nonisolated func smoothAmplitude(_ newAmplitude: Double) -> Double {
         amplitudeHistory.append(newAmplitude)
         if amplitudeHistory.count > historySize {
             amplitudeHistory.removeFirst()
@@ -181,7 +190,7 @@ extension SpeechRecognizer {
         return smoothed
     }
 
-    func prepareRecognitionRequest() -> SFSpeechAudioBufferRecognitionRequest {
+    nonisolated func prepareRecognitionRequest() -> SFSpeechAudioBufferRecognitionRequest {
         let request = SFSpeechAudioBufferRecognitionRequest()
 
         request.shouldReportPartialResults = true
@@ -199,72 +208,82 @@ extension SpeechRecognizer {
         return request
     }
 
-    func configureRecognitionTask(with request: SFSpeechAudioBufferRecognitionRequest) {
+    nonisolated func configureRecognitionTask(with request: SFSpeechAudioBufferRecognitionRequest) {
         logger.debug("Starting recognition task")
 
         guard let recognizer = speechRecognizer else {
             logger.error("Cannot create recognition task: speechRecognizer is nil")
-            state = .error(.recognizerNotAvailable)
+            Task { @MainActor [weak self] in
+                self?.state = .error(.recognizerNotAvailable)
+            }
             return
         }
 
         recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
-            Task { @MainActor [weak self] in
-                guard let self, !self.hasProcessedFinalResult else {
-                    if VoiceLogging.isVerboseEnabled {
-                        if let error {
-                            VoiceLogging.recognition.debug("Callback ignored (already processed) error: \(error.localizedDescription, privacy: .public)")
-                        } else if let result {
-                            VoiceLogging.recognition.debug("Callback ignored (already processed) result final=\(result.isFinal)")
-                        } else {
-                            VoiceLogging.recognition.debug("Callback ignored (already processed) unknown payload")
-                        }
+            guard let self else { return }
+            guard !self.hasProcessedFinalResult else {
+                if VoiceLogging.isVerboseEnabled {
+                    if let error {
+                        VoiceLogging.recognition.debug("Callback ignored (already processed) error: \(error.localizedDescription, privacy: .public)")
+                    } else if let result {
+                        VoiceLogging.recognition.debug("Callback ignored (already processed) result final=\(result.isFinal)")
+                    } else {
+                        VoiceLogging.recognition.debug("Callback ignored (already processed) unknown payload")
                     }
-                    return
                 }
+                return
+            }
 
-                if let error {
-                    self.handleRecognitionError(error)
-                    return
-                }
+            if let error {
+                self.handleRecognitionError(error)
+                return
+            }
 
-                if let result {
-                    self.processRecognitionResult(result)
-                }
+            if let result {
+                self.processRecognitionResult(result)
             }
         }
     }
 
-    func handleRecognitionError(_ error: Error) {
+    nonisolated func handleRecognitionError(_ error: Error) {
         logger.error("Speech recognition error: \(error.localizedDescription, privacy: .public)")
 
-        if case .listening(let partialText) = state,
-           !partialText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            if VoiceLogging.isVerboseEnabled {
-                logger.debug("Ignoring error due to partial text: \(partialText, privacy: .private)")
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            if case .listening(let partialText) = self.state,
+               !partialText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if VoiceLogging.isVerboseEnabled {
+                    logger.debug("Ignoring error due to partial text: \(partialText, privacy: .private)")
+                }
+                self.hasProcessedFinalResult = true
+                self.state = .completed(finalText: partialText)
+            } else {
+                self.hasProcessedFinalResult = true
+                self.state = .error(.recognitionFailed(error.localizedDescription))
             }
-            hasProcessedFinalResult = true
-            state = .completed(finalText: partialText)
-        } else {
-            hasProcessedFinalResult = true
-            state = .error(.recognitionFailed(error.localizedDescription))
         }
     }
 
-    func processRecognitionResult(_ result: SFSpeechRecognitionResult) {
+    nonisolated func processRecognitionResult(_ result: SFSpeechRecognitionResult) {
         let transcription = result.bestTranscription.formattedString
+        let isFinal = result.isFinal
 
-        if result.isFinal {
-            if VoiceLogging.isVerboseEnabled {
-                logger.debug("Final result: \(transcription, privacy: .private)")
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            if isFinal {
+                if VoiceLogging.isVerboseEnabled {
+                    logger.debug("Final result: \(transcription, privacy: .private)")
+                }
+                self.hasProcessedFinalResult = true
+                self.state = .completed(finalText: transcription)
+            } else if !self.hasProcessedFinalResult {
+                if VoiceLogging.isVerboseEnabled {
+                    logger.debug("Partial result: \(transcription, privacy: .private)")
+                }
+                self.state = .listening(partialText: transcription)
             }
-            hasProcessedFinalResult = true
-            state = .completed(finalText: transcription)
-        } else if !hasProcessedFinalResult {
-            if VoiceLogging.isVerboseEnabled {
-                logger.debug("Partial result: \(transcription, privacy: .private)")
-            }
-            state = .listening(partialText: transcription)
         }
     }
 }
