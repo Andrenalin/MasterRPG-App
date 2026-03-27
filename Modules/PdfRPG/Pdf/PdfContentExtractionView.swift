@@ -4,10 +4,7 @@
 
 import SwiftUI
 import GeneratorRPG
-
-#if canImport(PDFKit)
 import PDFKit
-#endif
 
 /// View for extracting and displaying PDF content metadata
 public struct PdfContentExtractionView: View {
