@@ -4,10 +4,9 @@ import SwiftUI
 import FoundationModels
 
 struct MessageBubbleView: View {
-  let message: ChatMessage
-  @Environment(ChatViewModel.self) var viewModel
-  @State private var animateTyping = false
-  @AccessibilityFocusState private var isMessageFocused: Bool
+    let message: ChatMessage
+    @State private var animateTyping = false
+    @AccessibilityFocusState private var isMessageFocused: Bool
 
   var body: some View {
     HStack {

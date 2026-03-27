@@ -4,9 +4,9 @@ import SwiftUI
 import FoundationModels
 
 struct TranscriptEntryView: View {
+    let generatorController: AdventureGeneratorController
     let entry: Transcript.Entry
     @State private var tokenCount: Int?
-    @Environment(ChatViewModel.self) private var chatViewModel
 
     var body: some View {
         VStack(spacing: 2) {
@@ -78,18 +78,18 @@ struct TranscriptEntryView: View {
         }
 
         // Avoid repeatedly calling the tokenizer while the newest entry is still streaming.
-        if chatViewModel.session.isResponding,
-           chatViewModel.session.transcript.last?.id == entry.id {
+        if generatorController.model.session.isResponding,
+           generatorController.model.session.transcript.last?.id == entry.id {
             await waitForStreamingToFinish()
         }
 
         // Always compute tokens from the latest version of the entry in the transcript.
-        let latestEntry = chatViewModel.session.transcript.first(where: { $0.id == entry.id }) ?? entry
+        let latestEntry = generatorController.model.session.transcript.first(where: { $0.id == entry.id }) ?? entry
         return await tokenCount(for: latestEntry)
     }
 
     private func waitForStreamingToFinish() async {
-        while chatViewModel.session.isResponding, !Task.isCancelled {
+        while generatorController.model.session.isResponding, !Task.isCancelled {
             try? await Task.sleep(nanoseconds: 150_000_000)
         }
 

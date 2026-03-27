@@ -67,7 +67,7 @@ private extension AdventureChatRootView {
     @ViewBuilder private var contentView: some View {
         @Bindable var model = model
         VStack(spacing: 0) {
-            TokenUsageBar(currentTokenCount: viewModel.currentTokenCount, maxContextSize: viewModel.maxContextSize, tokenUsageFraction: viewModel.tokenUsageFraction)
+            TokenUsageBar(currentTokenCount: model.currentTokenCount, maxContextSize: model.maxContextSize, tokenUsageFraction: model.tokenUsageFraction)
 
             messagesView
 //            List(model.session.transcript) { entry in
@@ -85,7 +85,7 @@ private extension AdventureChatRootView {
 //            }
 //            .listStyle(.plain)
             
-            ChatInputView(messageText: $prompt, chatViewModel: viewModel, isTextFieldFocused: $isTextFieldFocused)
+            ChatInputView(messageText: $prompt, generatorController: generatorController, isTextFieldFocused: $isTextFieldFocused)
         }
         .environment(viewModel)
         .alert(
@@ -102,7 +102,7 @@ private extension AdventureChatRootView {
             }
         }
         .onDisappear {
-            viewModel.tearDown()
+            generatorController.tearDown()
         }
     }
     
@@ -117,12 +117,12 @@ private extension AdventureChatRootView {
                             .padding(.bottom, 48)
                     }
 
-                    ForEach(viewModel.session.transcript) { entry in
-                        TranscriptEntryView(entry: entry)
+                    ForEach(model.session.transcript) { entry in
+                        TranscriptEntryView(generatorController: generatorController, entry: entry)
                             .id(entry.id)
                     }
 
-                    if viewModel.isSummarizing {
+                    if model.isSummarizing {
                         HStack {
                             ProgressView()
                                 .scaleEffect(0.8)
@@ -135,7 +135,7 @@ private extension AdventureChatRootView {
                         .id("summarizing")
                     }
 
-                    if viewModel.isApplyingWindow {
+                    if model.isApplyingWindow {
                         HStack {
                             ProgressView()
                                 .scaleEffect(0.8)
@@ -160,21 +160,21 @@ private extension AdventureChatRootView {
             .scrollDismissesKeyboard(.interactively)
 #endif
             .scrollPosition(id: $scrollID, anchor: .bottom)
-            .onChange(of: viewModel.session.transcript.count) { _, _ in
-                if let lastEntry = viewModel.session.transcript.last {
+            .onChange(of: model.session.transcript.count) { _, _ in
+                if let lastEntry = model.session.transcript.last {
                     withAnimation(.easeOut(duration: 0.3)) {
                         proxy.scrollTo(lastEntry.id, anchor: .bottom)
                     }
                 }
             }
-            .onChange(of: viewModel.isSummarizing) { _, isSummarizing in
+            .onChange(of: model.isSummarizing) { _, isSummarizing in
                 if isSummarizing {
                     withAnimation(.easeOut(duration: 0.3)) {
                         proxy.scrollTo("summarizing", anchor: .bottom)
                     }
                 }
             }
-            .onChange(of: viewModel.isApplyingWindow) { _, isApplyingWindow in
+            .onChange(of: model.isApplyingWindow) { _, isApplyingWindow in
                 if isApplyingWindow {
                     withAnimation(.easeOut(duration: 0.3)) {
                         proxy.scrollTo("windowing", anchor: .bottom)
@@ -186,7 +186,7 @@ private extension AdventureChatRootView {
     }
 
     private var isChatEffectivelyEmpty: Bool {
-        !viewModel.session.transcript.contains { entry in
+        !model.session.transcript.contains { entry in
             switch entry {
             case .instructions:
                 return false
@@ -199,7 +199,7 @@ private extension AdventureChatRootView {
     private func clearChat() {
         prompt = ""
         scrollID = "bottom"
-        viewModel.clearChat()
+        //model.clearChat()
     }
 
     @ViewBuilder var promptFieldView: some View {

@@ -4,7 +4,8 @@ import SwiftUI
 
 struct ChatInputView: View {
     @Binding var messageText: String
-    var chatViewModel: ChatViewModel
+    let generatorController: AdventureGeneratorController
+    
     @FocusState.Binding var isTextFieldFocused: Bool
     @Namespace private var glassNamespace
     
@@ -40,7 +41,7 @@ struct ChatInputView: View {
                         .interactive(true), in: .circle
                 )
                 .glassEffectID("sendButton", in: glassNamespace)
-                .disabled(chatViewModel.isLoading || chatViewModel.isSummarizing)
+                .disabled(generatorController.model.isLoading || generatorController.model.isSummarizing)
 #if os(macOS)
                 .buttonStyle(.plain)
 #endif
@@ -71,8 +72,8 @@ struct ChatInputView: View {
             .padding(8)
             .disabled(
                 messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                chatViewModel.isLoading ||
-                chatViewModel.isSummarizing
+                generatorController.model.isLoading ||
+                generatorController.model.isSummarizing
             )
         }
         .padding()
@@ -87,8 +88,6 @@ struct ChatInputView: View {
         messageText = ""
         isTextFieldFocused = true // Keep focus for continuous conversation
         
-        Task {
-            await chatViewModel.sendMessage(trimmedMessage)
-        }
+        generatorController.request(message: trimmedMessage)
     }
 }
