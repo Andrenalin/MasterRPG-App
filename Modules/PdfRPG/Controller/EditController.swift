@@ -1,9 +1,12 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
 import CoreGraphics
 import CoreRPG
 import CoreTransferable
 import Foundation
+import GeneratorRPG
+#endif
 
 struct LinkPdfModuleTransferable: LinkDataTransferable {
     let module: NetworkModules
@@ -68,3 +71,64 @@ extension EditController {
         return PdfEntryModel(id: itemId, name: name, content: content, pageNumber: page, bounds: bounds, displayState: 0)
     }
 }
+
+// MARK: - Apply extracted PDF content to a PdfModel using the EditController
+
+#if !os(tvOS)
+extension EditController {
+    @MainActor func applyExtractedContent(
+        _ content: PdfExtractedContent,
+        to itemId: UUID,
+        selection: PdfPropertySelection,
+        updateExisting: Bool = false
+    ) {
+        guard let item = editModel(for: itemId) else { return }
+
+        // Update name if selected and (empty or forcing update)
+        if selection.applyTitle && (updateExisting || item.name.isEmpty) {
+            reset(name: content.title, itemId: itemId)
+        }
+
+        // Update description if selected and (empty or forcing update)
+        if selection.applyDescription && (updateExisting || item.description.isEmpty) {
+            reset(description: content.summary, itemId: itemId)
+        }
+
+        // Update tags if selected and (empty or forcing update)
+        if selection.applyTags && (updateExisting || item.tags.isEmpty) {
+            reset(tags: content.tags, itemId: itemId)
+        }
+
+        // Create entries from sections if selected
+        if selection.applySections && !content.sections.isEmpty {
+            appendSectionsAsEntries(content.sections, to: itemId, replaceExisting: !updateExisting)
+        }
+    }
+
+    @MainActor private func appendSectionsAsEntries(_ sections: [PdfSection], to itemId: UUID, replaceExisting: Bool) {
+        guard var item = editModel(for: itemId) else { return }
+
+        var newEntries: [PdfEntryModel] = []
+        for section in sections {
+            let pageNumberString = section.pageNumber.map { String($0) } ?? ""
+            let entry = PdfEntryModel(
+                id: UUID(),
+                name: section.heading,
+                content: section.summary,
+                pageNumber: pageNumberString,
+                bounds: .zero,
+                displayState: 0
+            )
+            newEntries.append(entry)
+        }
+
+        if replaceExisting {
+            item.entries = newEntries
+        } else {
+            item.entries.append(contentsOf: newEntries)
+        }
+        
+        save(updated: item, message: "Applied PDF sections as bookmarks".localizedString)
+    }
+}
+#endif

@@ -27,7 +27,8 @@ struct DetailListView: View {
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.pdf.viewerWindowId, route: { DetailRoute.viewer($0, nil) })
     @State private var showExtractionSheet = false
     @State private var extractedContent: PdfExtractedContent?
-    
+    @State private var propertySelection = PdfPropertySelection()
+
     @State private var pdfDocument: PDFDocument?
     
     var body: some View {
@@ -72,91 +73,54 @@ struct DetailListView: View {
             HStack {
                 HStack {
                     FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], itemId: model.id)
-                    
+
                     Text(model.url?.path(percentEncoded: false) ?? "No file is set")
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    
+
                 }
                 .opacity(model.specialCategory ? 0 : 1)
             }
-            
+
             // PDF AI Extraction Button
-            if model.url != nil, !model.specialCategory {
-                Button {
-                    Task {
-                        pdfDocument = await root.itemController.pdfDocument(for: model.id)
-                        showExtractionSheet = true
-                    }
-                } label: {
-                    Label("Extract PDF Information with AI", systemImage: "wand.and.stars")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .opacity(model.specialCategory ? 0 : 1)
+            PdfExtractionButton(
+                itemId: model.id,
+                isSpecialCategory: model.specialCategory,
+                hasUrl: model.url != nil
+            ) { document in
+                pdfDocument = document
+                showExtractionSheet = true
             }
+            .opacity(model.specialCategory ? 0 : 1)
         }
         .padding()
+        .environment(\.pdfItemController, root.itemController)
         .sheet(isPresented: $showExtractionSheet) {
-            extractionSheet(for: model)
+            PdfExtractionAnalysisSheet(
+                pdfDocument: pdfDocument,
+                onDismiss: {
+                    showExtractionSheet = false
+                },
+                onContentExtracted: { content in
+                    extractedContent = content
+                }
+            )
         }
         .sheet(item: $extractedContent) { content in
-            NavigationStack {
-                ExtractedPdfContentView(content: content)
-                    .navigationTitle("Extracted Information")
-#if os(iOS)
-                    .navigationBarTitleDisplayMode(.inline)
-#endif
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") {
-                                extractedContent = nil
-                            }
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Apply") {
-                                applyExtractedContent(content, to: model)
-                                extractedContent = nil
-                            }
-                        }
-                    }
-            }
+            PdfExtractionResultSheet(
+                content: content,
+                propertySelection: $propertySelection,
+                onDismiss: {
+                    extractedContent = nil
+                },
+                onApply: { content, selection, overwrite in
+                    applyExtractedContent(content, to: model, selection: selection, overwrite: overwrite)
+                }
+            )
         }
     }
     
-    @ViewBuilder
-    private func extractionSheet(for model: PdfModel) -> some View {
-        NavigationStack {
-            Group {
-                if let pdfDocument {
-                    PdfContentExtractionView(pdfDocument: pdfDocument) { content in
-                        showExtractionSheet = false
-                        extractedContent = content
-                    }
-                } else {
-                    ContentUnavailableView(
-                        "PDF Not Available",
-                        systemImage: "doc.questionmark",
-                        description: Text("The PDF file could not be loaded.")
-                    )
-                }
-            }
-            .navigationTitle("AI PDF Analysis")
-#if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-#endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        showExtractionSheet = false
-                    }
-                }
-            }
-        }
-    }
-    
-    private func applyExtractedContent(_ content: PdfExtractedContent, to model: PdfModel) {
-        // Apply the extracted content to the model
-        model.applyExtractedContent(content, updateExisting: false)
+    private func applyExtractedContent(_ content: PdfExtractedContent, to model: PdfModel, selection: PdfPropertySelection, overwrite: Bool) {
+        root.editController.applyExtractedContent(content, to: model.id, selection: selection, updateExisting: overwrite)
     }
     
 }

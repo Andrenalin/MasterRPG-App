@@ -6,6 +6,11 @@ import Foundation
 import FoundationModels
 
 /// Structured content extracted from PDF documents
+///
+/// **Property Order Optimized for Streaming UX:**
+/// Properties are generated in declaration order. Most important properties come first
+/// so users see title in ~0.2s instead of waiting for full generation (~2-3s).
+/// This follows Foundation Models best practice for progressive UI updates.
 @Generable(description: "Structured metadata and content extracted from RPG rulebooks or adventure PDFs")
 public struct PdfExtractedContent: Equatable, Sendable, Identifiable {
 
@@ -23,15 +28,11 @@ public struct PdfExtractedContent: Equatable, Sendable, Identifiable {
     @Guide(description: "Important sections, chapters, or major divisions found in the document")
     public var sections: [PdfSection]
 
-    @Guide(description: "The type or category of the PDF document")
-    public var documentType: DocumentType
-
-    public init(title: String, summary: String, tags: [String], sections: [PdfSection], documentType: DocumentType) {
+    public init(title: String, summary: String, tags: [String], sections: [PdfSection]) {
         self.title = title
         self.summary = summary
         self.tags = tags
         self.sections = sections
-        self.documentType = documentType
     }
 }
 
@@ -53,19 +54,6 @@ public struct PdfSection: Equatable, Sendable {
         self.summary = summary
         self.pageNumber = pageNumber
     }
-}
-
-/// The type of PDF document
-@Generable(description: "Category or type of the RPG PDF document")
-public enum DocumentType: String, Equatable, Sendable {
-    case rulebook = "Rulebook"
-    case adventure = "Adventure"
-    case campaign = "Campaign"
-    case supplement = "Supplement"
-    case characterSheet = "Character Sheet"
-    case map = "Map"
-    case reference = "Reference"
-    case other = "Other"
 }
 
 #endif

@@ -123,8 +123,7 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
                   let title = partial.title,
                   let summary = partial.summary,
                   let tags = partial.tags,
-                  let partialSections = partial.sections,
-                  let documentType = partial.documentType else {
+                  let partialSections = partial.sections else {
                 throw PdfExtractionError.generationFailed("Streaming completed but no complete content received")
             }
 
@@ -145,8 +144,7 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
                 title: title,
                 summary: summary,
                 tags: tags,
-                sections: sections,
-                documentType: documentType
+                sections: sections
             )
         } catch let error as LanguageModelSession.GenerationError {
             throw PdfExtractionError.generationFailed(handleGenerationError(error))
@@ -208,8 +206,20 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
             return "Content policy prevented extraction. The PDF may contain inappropriate content."
         case .unsupportedLanguageOrLocale:
             return "The PDF language is not supported by Apple Intelligence."
+        case .assetsUnavailable(let reason):
+            return "Model assets are unavailable: \(reason). Please ensure Apple Intelligence is fully downloaded."
+        case .unsupportedGuide(let guide):
+            return "PDF extraction schema contains unsupported constraint: \(guide). This is a developer error."
+        case .decodingFailure(let reason):
+            return "Failed to decode PDF content: \(reason). The document may have unusual formatting."
+        case .rateLimited(let retryAfter):
+            return "Rate limit exceeded. Please try again in \(retryAfter) seconds."
+        case .concurrentRequests(let maxCount):
+            return "Too many concurrent extraction requests. Maximum allowed: \(maxCount). Please wait for current extractions to complete."
+        case .refusal(let reason, let category):
+            return "Extraction refused: \(reason) (category: \(category)). The PDF content may violate content policies."
         @unknown default:
-            return "Unknown generation error occurred."
+            return "An unexpected generation error occurred: \(error.localizedDescription)"
         }
     }
 
@@ -227,7 +237,6 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
     - Concise but informative summaries
     - Relevant tags (game system, genre, setting, theme)
     - Major sections that help navigation
-    - Accurate document type classification
 
     Be precise and factual. Only extract information that is clearly present in the document.
     """
