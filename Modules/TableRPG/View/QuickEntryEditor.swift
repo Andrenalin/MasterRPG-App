@@ -6,9 +6,9 @@ import SwiftUI
 
 struct QuickEntryEditor: View {
     let model: TableModel
-    
+
     @Environment(TableRootModel.self) private var root
-    
+
     @State private var referenceText = DebouncerModel(initialValue: "", delay: 2)
 
     var body: some View {
@@ -17,17 +17,33 @@ struct QuickEntryEditor: View {
         } pdfOverlay: {
 #if os(iOS) || os(tvOS)
             if let selectedPdf = root.editController.tableEditModel.selectionPdf.itemId {
-                root.pdfRoot.viewController.viewer(root: root.pdfRoot, itemId: selectedPdf, entryId: nil, configuration: ViewerConfiguration(closeButton: false, addToolbar: false, isGame: false), withoutBookmark: true) {
-                    withAnimation { root.editController.tableEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil) }
-                }
-                .background(.primary)
-//                .pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
+                pdfOverlayView(selectedPdf: selectedPdf)
             }
 #endif
         }
     }
-    
-//    private func usePdfSelection(selection: NSAttributedString) {
-//        withAnimation { referenceText.input.append(selection.string) }
-//    }
+
+    @ViewBuilder
+    private func pdfOverlayView(selectedPdf: UUID) -> some View {
+        root.pdfRoot.viewController.viewer(
+            root: root.pdfRoot,
+            itemId: selectedPdf,
+            entryId: nil,
+            configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false),
+            withoutBookmark: true,
+            onTextExtracted: { text in
+                withAnimation {
+                    // Append to existing text or replace based on user preference
+                    if referenceText.input.isEmpty {
+                        referenceText.input = text
+                    } else {
+                        referenceText.input += "\n\n" + text
+                    }
+                }
+            }
+        ) {
+            withAnimation { root.editController.tableEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil) }
+        }
+        .background(.primary)
+    }
 }

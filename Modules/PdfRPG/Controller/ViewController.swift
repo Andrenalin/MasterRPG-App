@@ -23,9 +23,9 @@ public extension ViewController {
             .environment(itemSelectionModel)
     }
 
-    @MainActor func viewer(root: PdfRootModel, itemId: UUID, entryId: UUID?, configuration: ViewerConfiguration, withoutBookmark: Bool = false, dismissAction: (() -> Void)? = nil) -> some View {
+    @MainActor func viewer(root: PdfRootModel, itemId: UUID, entryId: UUID?, configuration: ViewerConfiguration, withoutBookmark: Bool = false, onTextExtracted: ((String) -> Void)? = nil, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: itemId)
-        return ViewerRootView(model: model, entryId: entryId, configuration: configuration, withoutBookmark: withoutBookmark, dismissAction: dismissAction)
+        return ViewerRootView(model: model, entryId: entryId, configuration: configuration, withoutBookmark: withoutBookmark, onTextExtracted: onTextExtracted, dismissAction: dismissAction)
     }
     
     @MainActor func gameView(root: PdfRootModel) -> some View {

@@ -66,9 +66,9 @@ struct DetailListView: View {
         }
         .overlay {
             if openFileWindowModel.showItem {
-                root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, entryId: nil, configuration: ViewerConfiguration(closeButton: true), withoutBookmark: false) {
+                root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, entryId: nil, configuration: ViewerConfiguration(closeButton: true), withoutBookmark: false, onTextExtracted: nil, dismissAction: {
                     openFileWindowModel.showItem = false
-                }
+                })
             }
         }
         .environment(openFileWindowModel)

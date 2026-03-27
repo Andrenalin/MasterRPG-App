@@ -17,16 +17,36 @@ struct QuickEntryEditor: View {
         } pdfOverlay: {
 #if os(iOS) || os(tvOS)
             if let selectedPdf = root.editController.valueEditModel.selectionPdf.itemId {
-                root.pdfRoot.viewController.viewer(root: root.pdfRoot, itemId: selectedPdf, entryId: nil, configuration: ViewerConfiguration(closeButton: false, addToolbar: false, isGame: false), withoutBookmark: true) {
-                    withAnimation { root.editController.valueEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil) }
-                }
-                .background(.primary)
-                .pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
+                pdfOverlayView(selectedPdf: selectedPdf)
             }
 #endif
         }
     }
-    
+
+    @ViewBuilder
+    private func pdfOverlayView(selectedPdf: UUID) -> some View {
+        root.pdfRoot.viewController.viewer(
+            root: root.pdfRoot,
+            itemId: selectedPdf,
+            entryId: nil,
+            configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false),
+            withoutBookmark: true,
+            onTextExtracted: { text in
+                withAnimation {
+                    if referenceText.input.isEmpty {
+                        referenceText.input = text
+                    } else {
+                        referenceText.input += "\n\n" + text
+                    }
+                }
+            }
+        ) {
+            withAnimation { root.editController.valueEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil) }
+        }
+        .background(.primary)
+        .pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
+    }
+
     private func usePdfSelection(selection: NSAttributedString) {
         withAnimation { referenceText.input.append(selection.string) }
     }

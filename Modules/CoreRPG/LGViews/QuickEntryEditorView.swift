@@ -79,6 +79,9 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                 .toolbar {
                     toolbarContent
                 }
+#if os(macOS)
+                .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
+#endif
 #if !os(tvOS)
                 .toolbarRole(.editor)
 #endif
@@ -257,11 +260,25 @@ private extension QuickEntryEditorView {
                 Image(systemName: "xmark.circle")
             }
         }
-        
-        ToolbarItem(placement: .secondaryActionAll) {
+
+#if os(macOS)
+        ToolbarItemGroup(placement: .automatic) {
+            showHelpButton
+            Divider()
+            removeLineBreak
+            showResultButton
+            Divider()
+            pdfButton
+            if canShowInspector {
+                showInspectorButton
+            }
+        }
+#else
+        ToolbarItem(placement: .secondaryAction) {
             secondaryActionMenu
         }
-        
+#endif
+
         ToolbarItem(placement: .confirmationAction) {
             ControlGroup {
                 Button {
