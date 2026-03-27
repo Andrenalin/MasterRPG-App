@@ -76,37 +76,30 @@ extension EditController {
 
 #if !os(tvOS)
 extension EditController {
-    @MainActor func applyExtractedContent(
-        _ content: PdfExtractedContent,
-        to itemId: UUID,
-        selection: PdfPropertySelection,
-        updateExisting: Bool = false
-    ) {
-        guard let item = editModel(for: itemId) else { return }
-
+    @MainActor func applyExtractedContent(_ content: PdfExtractedContent, to itemId: UUID, selection: PdfPropertySelection) {
         // Update name if selected and (empty or forcing update)
-        if selection.applyTitle && (updateExisting || item.name.isEmpty) {
+        if selection.applyTitle {
             reset(name: content.title, itemId: itemId)
         }
 
         // Update description if selected and (empty or forcing update)
-        if selection.applyDescription && (updateExisting || item.description.isEmpty) {
+        if selection.applyDescription {
             reset(description: content.summary, itemId: itemId)
         }
 
         // Update tags if selected and (empty or forcing update)
-        if selection.applyTags && (updateExisting || item.tags.isEmpty) {
+        if selection.applyTags {
             reset(tags: content.tags, itemId: itemId)
         }
 
         // Create entries from sections if selected
         if selection.applySections && !content.sections.isEmpty {
-            appendSectionsAsEntries(content.sections, to: itemId, replaceExisting: !updateExisting)
+            appendSectionsAsEntries(content.sections, to: itemId)
         }
     }
 
-    @MainActor private func appendSectionsAsEntries(_ sections: [PdfSection], to itemId: UUID, replaceExisting: Bool) {
-        guard var item = editModel(for: itemId) else { return }
+    @MainActor private func appendSectionsAsEntries(_ sections: [PdfSection], to itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
 
         var newEntries: [PdfEntryModel] = []
         for section in sections {
@@ -122,11 +115,7 @@ extension EditController {
             newEntries.append(entry)
         }
 
-        if replaceExisting {
-            item.entries = newEntries
-        } else {
-            item.entries.append(contentsOf: newEntries)
-        }
+        item.entries.append(contentsOf: newEntries)
         
         save(updated: item, message: "Applied PDF sections as bookmarks".localizedString)
     }

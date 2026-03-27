@@ -25,11 +25,6 @@ struct DetailListView: View {
     
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.pdf.viewerWindowId, route: { DetailRoute.viewer($0, nil) })
-    @State private var showExtractionSheet = false
-    @State private var extractedContent: PdfExtractedContent?
-    @State private var propertySelection = PdfPropertySelection()
-
-    @State private var pdfDocument: PDFDocument?
     
     var body: some View {
         content(listController: detailFolderListController)
@@ -52,6 +47,23 @@ struct DetailListView: View {
         } entryEditor: {
             EntryEditorView(editController: root.editController, model: model, linkTypes: LinkPdfModuleTransferable.self)
         }
+        .toolbar {
+#if !os(tvOS)
+            ToolbarItem(placement: .secondaryAction) {
+                if model.url != nil && !model.specialCategory {
+                    Button {
+                        navigator.navigate(to: PdfDetailRoute.pdfExtraction(model.id), method: .managedSheet)
+                    } label: {
+                        Label {
+                            Text("Extract PDF Information with AI", bundle: .module)
+                        } icon: {
+                            Image(systemName: NetworkModules.generator.icon)
+                        }
+                    }
+                }
+            }
+#endif
+        }
         .overlay {
             if openFileWindowModel.showItem {
                 root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, entryId: nil, configuration: ViewerConfiguration(closeButton: true), withoutBookmark: false) {
@@ -73,54 +85,15 @@ struct DetailListView: View {
             HStack {
                 HStack {
                     FileImporterView(editControllable: root.editController, fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [], itemId: model.id)
-
+                    
                     Text(model.url?.path(percentEncoded: false) ?? "No file is set")
                         .frame(maxWidth: .infinity, alignment: .leading)
-
+                    
                 }
                 .opacity(model.specialCategory ? 0 : 1)
             }
-
-            // PDF AI Extraction Button
-            PdfExtractionButton(
-                itemId: model.id,
-                isSpecialCategory: model.specialCategory,
-                hasUrl: model.url != nil
-            ) { document in
-                pdfDocument = document
-                showExtractionSheet = true
-            }
-            .opacity(model.specialCategory ? 0 : 1)
         }
         .padding()
-        .environment(\.pdfItemController, root.itemController)
-        .sheet(isPresented: $showExtractionSheet) {
-            PdfExtractionAnalysisSheet(
-                pdfDocument: pdfDocument,
-                onDismiss: {
-                    showExtractionSheet = false
-                },
-                onContentExtracted: { content in
-                    extractedContent = content
-                }
-            )
-        }
-        .sheet(item: $extractedContent) { content in
-            PdfExtractionResultSheet(
-                content: content,
-                propertySelection: $propertySelection,
-                onDismiss: {
-                    extractedContent = nil
-                },
-                onApply: { content, selection, overwrite in
-                    applyExtractedContent(content, to: model, selection: selection, overwrite: overwrite)
-                }
-            )
-        }
-    }
-    
-    private func applyExtractedContent(_ content: PdfExtractedContent, to model: PdfModel, selection: PdfPropertySelection, overwrite: Bool) {
-        root.editController.applyExtractedContent(content, to: model.id, selection: selection, updateExisting: overwrite)
     }
     
 }
