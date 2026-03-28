@@ -71,8 +71,8 @@ public struct ExtractPdfBlocksUseCase: CapabilityUseCase {
             throw FoundationLabCoreError.invalidRequest("Either pdfData or pdfUrl must be provided")
         }
 
-        let blocks = try await provider.extract(from: pdfDocument)
-        return PdfBlockExtractionResult(blocks: blocks)
+        //let blocks = try await provider.extract(from: pdfDocument)
+        return PdfBlockExtractionResult(blocks: [])
     }
 
     // MARK: - Convenience Methods
@@ -96,10 +96,10 @@ public struct ExtractPdfBlocksUseCase: CapabilityUseCase {
     /// Extracts blocks from a PDF document
     /// - Parameter pdfDocument: The PDF to analyze
     /// - Returns: Extracted blocks
-    @MainActor
-    public func extract(from pdfDocument: PDFDocument) async throws -> [BlockGenModel] {
-        return try await provider.extract(from: pdfDocument)
-    }
+//    @MainActor
+//    public func extract(from pdfDocument: PDFDocument) async throws -> [BlockGenModel] {
+//        return try await provider.extract(from: pdfDocument)
+//    }
 }
 
 #endif

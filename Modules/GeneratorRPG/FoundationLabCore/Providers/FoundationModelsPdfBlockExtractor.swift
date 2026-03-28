@@ -38,44 +38,44 @@ public final class FoundationModelsPdfBlockExtractor: PdfBlockExtracting, @unche
 
     // MARK: - Public Methods
 
-    public func extract(from pdfDocument: PDFDocument) async throws -> [BlockGenModel] {
-        // Check model availability
-        guard SystemLanguageModel.default.availability == .available else {
-            throw PdfExtractionError.modelUnavailable
-        }
-
-        // Validate document
-        guard pdfDocument.pageCount > 0 else {
-            throw PdfExtractionError.emptyDocument
-        }
-
-        // Extract text from PDF
-        let extractedText = try extractText(from: pdfDocument)
-
-        guard !extractedText.isEmpty else {
-            throw PdfExtractionError.textExtractionFailed
-        }
-
-        // Create session
-        let session = LanguageModelSession(instructions: instructions)
-
-        // Prewarm for faster generation
-        session.prewarm()
-
-        // Generate structured blocks
-        do {
-            let response = try await session.respond(
-                to: buildPrompt(with: extractedText, pageCount: pdfDocument.pageCount),
-                generating: [BlockGenModel].self
-            )
-
-            return response.content
-        } catch let error as LanguageModelSession.GenerationError {
-            throw PdfExtractionError.generationFailed(handleGenerationError(error))
-        } catch {
-            throw PdfExtractionError.generationFailed(error.localizedDescription)
-        }
-    }
+//    public func extract(from pdfDocument: PDFDocument) async throws -> [BlockGenModel] {
+//        // Check model availability
+//        guard SystemLanguageModel.default.availability == .available else {
+//            throw PdfExtractionError.modelUnavailable
+//        }
+//
+//        // Validate document
+//        guard pdfDocument.pageCount > 0 else {
+//            throw PdfExtractionError.emptyDocument
+//        }
+//
+//        // Extract text from PDF
+//        let extractedText = try extractText(from: pdfDocument)
+//
+//        guard !extractedText.isEmpty else {
+//            throw PdfExtractionError.textExtractionFailed
+//        }
+//
+//        // Create session
+//        let session = LanguageModelSession(instructions: instructions)
+//
+//        // Prewarm for faster generation
+//        session.prewarm()
+//
+//        // Generate structured blocks
+//        do {
+//            let response = try await session.respond(
+//                to: buildPrompt(with: extractedText, pageCount: pdfDocument.pageCount),
+//                generating: [BlockGenModel].self
+//            )
+//
+//            return response.content
+//        } catch let error as LanguageModelSession.GenerationError {
+//            throw PdfExtractionError.generationFailed(handleGenerationError(error))
+//        } catch {
+//            throw PdfExtractionError.generationFailed(error.localizedDescription)
+//        }
+//    }
 
     public func extractWithProgress(
         from pdfDocument: PDFDocument,
@@ -99,22 +99,29 @@ public final class FoundationModelsPdfBlockExtractor: PdfBlockExtracting, @unche
         }
 
         // Create session
-        let session = LanguageModelSession(instructions: instructions)
-
-        // Prewarm for faster generation
-        session.prewarm()
 
         // Generate without streaming for array types
         // Note: Foundation Models streaming for arrays doesn't provide complete objects incrementally
         do {
-            let response = try await session.respond(
-                to: buildPrompt(with: extractedText, pageCount: pdfDocument.pageCount),
-                generating: [BlockGenModel].self
-            )
+            var blocks: [BlockGenModel] = []
+            for (index, text) in extractedText.enumerated() {
+                let session = LanguageModelSession(instructions: instructions)
 
-            // Call onPartialBlocks once with the final result
-            onPartialBlocks(response.content)
-            return response.content
+                // Prewarm for faster generation
+                session.prewarm()
+
+                let response = try await session.respond(
+                    to: buildPrompt(with: text, pageNumber: index + 1, pageCount: pdfDocument.pageCount),
+                    generating: [BlockGenModel].self,
+                    includeSchemaInPrompt: false
+                )
+                
+                // Call onPartialBlocks once with the final result
+                onPartialBlocks(response.content)
+                
+                blocks.append(contentsOf: response.content)
+            }
+            return blocks
         } catch let error as LanguageModelSession.GenerationError {
             throw PdfExtractionError.generationFailed(handleGenerationError(error))
         } catch {
@@ -124,11 +131,11 @@ public final class FoundationModelsPdfBlockExtractor: PdfBlockExtracting, @unche
 
     // MARK: - Private Methods
 
-    private func extractText(from pdfDocument: PDFDocument) throws -> String {
-        let pageLimit = min(maxPages, pdfDocument.pageCount)
+    private func extractText(from pdfDocument: PDFDocument) throws -> [String] {
+        var result: [String] = []
         var fullText = ""
 
-        for pageIndex in 0..<pageLimit {
+        for pageIndex in 0..<pdfDocument.pageCount {
             guard let page = pdfDocument.page(at: pageIndex),
                   let pageText = page.string else {
                 continue
@@ -137,41 +144,19 @@ public final class FoundationModelsPdfBlockExtractor: PdfBlockExtracting, @unche
             // Add page marker for better section detection
             fullText += "--- Page \(pageIndex + 1) ---\n"
             fullText += pageText + "\n\n"
+            result.append(fullText)
+            fullText = ""
         }
 
-        // Truncate if too long
-        if fullText.count > maxCharacters {
-            fullText = String(fullText.prefix(maxCharacters))
-            // Add indication of truncation
-            fullText += "\n\n[Content truncated due to length...]"
-        }
-
-        return fullText
+        return result
     }
 
-    private func buildPrompt(with text: String, pageCount: Int) -> String {
+    private func buildPrompt(with text: String, pageNumber: Int, pageCount: Int) -> String {
         """
-        Extract structured content blocks from this RPG PDF document.
-
-        Total pages in document: \(pageCount)
-        Content (first \(maxPages) pages):
-
+        Extract structured content blocks from this PDF document.
+        This is page \(pageNumber) from \(pageCount)
+        
         \(text)
-
-        Analyze the content and extract structured blocks. Each block should be categorized as:
-        - adventure: scenarios, quests, storylines, plot hooks
-        - map: locations, rooms, dungeons, areas, regions
-        - character: NPCs, monsters, creatures, stat blocks
-        - table: random tables, loot tables, encounter tables, roll tables
-
-        For each block:
-        1. Extract a clear, descriptive name
-        2. Provide helpful information/summary
-        3. Add relevant tags
-        4. Identify the category (adventure/map/character/table)
-        5. Break into smaller entries (scenarios for adventures, rooms for maps, values for characters, rows for tables)
-
-        Focus on extracting content that would be useful for game masters during play.
         """
     }
 
@@ -203,19 +188,7 @@ public final class FoundationModelsPdfBlockExtractor: PdfBlockExtracting, @unche
     // MARK: - Constants
 
     private static let defaultInstructions = """
-    You are an expert at analyzing tabletop RPG documents and extracting structured, \
-    playable content that game masters can use at the table.
-
-    Your task is to identify distinct blocks of content (adventures, maps, characters, tables) \
-    and break them into smaller, manageable entries.
-
-    Focus on:
-    - Clear identification of content type (adventure/map/character/table)
-    - Meaningful names and descriptions
-    - Useful breakdowns (scenarios, rooms, stat blocks, table rows)
-    - Accurate categorization
-
-    Be precise and extract only clearly defined, usable content.
+    Your task is to extract the contents. Do not summarize or change the text, except spelling or broken text.
     """
 }
 

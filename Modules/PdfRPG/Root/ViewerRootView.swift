@@ -66,11 +66,11 @@ struct ViewerRootView: View {
             }
 
 #if !os(tvOS)
-            if configuration.addToolbar && configuration.aiExtractor {
-                ToolbarItem(placement: .secondaryActionAll) {
+//            if configuration.addToolbar && configuration.aiExtractor {
+                ToolbarItem(placement: .automatic) {
                     extractionButton
                 }
-            }
+//            }
 #endif
         }
         .applyIf(searchBar) {

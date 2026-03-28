@@ -15,7 +15,7 @@ public protocol PdfBlockExtracting: Sendable {
     /// - Parameter pdfDocument: The PDF document to extract from
     /// - Returns: Array of extracted blocks
     /// - Throws: PdfExtractionError if extraction fails
-    func extract(from pdfDocument: PDFDocument) async throws -> [BlockGenModel]
+    //func extract(from pdfDocument: PDFDocument) async throws -> [BlockGenModel]
 
     /// Extracts blocks with streaming progress updates
     /// - Parameters:

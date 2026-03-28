@@ -18,13 +18,10 @@ struct TabbedNavigation: View {
                 Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
                     ManagedNavigationStack(name: tab.title) { navigator in
                         tab
-                            .environment(appModel.itemRootController(for: tab.module))
-                            .tint(tab.module.tint)
-                            .accentColor(tab.module.tint)
                     }
-                    .environment(appModel.itemRootController(for: tab.module))
-                    .tint(tab.module.tint)
-                    .accentColor(tab.module.tint)
+                    .environment(appModel.itemRootController(for: selectedModule))
+                    .tint(selectedModule.tint)
+                    .accentColor(selectedModule.tint)
                 }
             }
         }
@@ -64,6 +61,7 @@ struct TabbedNavigation: View {
     }
     
     var selectedModule: NetworkModules {
-        (appModel.selectedExtendedModule?.module ?? appModel.selectedModule?.module) ?? .game
+        guard let appModule = appModel.selectedModule?.module else { return .game }
+        return appModule == .editor ? (appModel.selectedExtendedModule?.module ?? .game) : appModule
     }
 }

@@ -18,7 +18,7 @@ struct PdfBlockExtractionView: View {
 
     var body: some View {
         contentView
-            .navigationTitle("PDF Extractor")
+            .navigationTitle(Text("PDF Extractor", bundle: .module))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) {
@@ -31,7 +31,7 @@ struct PdfBlockExtractionView: View {
                         }
                     }
                     .accessibilityLabel(Text("Cancel PDF extraction", bundle: .module))
-                    .accessibilityHint("Closes the extraction view without applying changes")
+                    .accessibilityHint(Text("Closes the extraction view without applying changes", bundle: .module))
                 }
 
                 if case .extracted = viewState {
@@ -47,7 +47,7 @@ struct PdfBlockExtractionView: View {
                         }
                         .disabled(!propertySelection.hasAnySelected)
                         .accessibilityLabel("Apply selected properties")
-                        .accessibilityHint("Applies the selected properties to the PDF and closes")
+                        .accessibilityHint(Text("Applies the selected properties to the PDF and closes", bundle: .module))
                     }
                 }
             }
@@ -64,14 +64,11 @@ struct PdfBlockExtractionView: View {
         case .loading:
             loadingView
         case .extracting(let document):
-            PdfContentExtractionView(pdfDocument: document) { content in
+            PdfBlockContentExtractionView(pdfDocument: document) { content in
                 viewState = .extracted(content)
             }
         case .extracted(let content):
-            ExtractedPdfContentView(
-                content: content,
-                selectedProperties: $propertySelection
-            )
+            BlocksPdfContentView(content: content)
         case .unavailable:
             unavailableView
         }
@@ -81,23 +78,27 @@ struct PdfBlockExtractionView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .controlSize(.large)
-            Text("Loading PDF...")
+            Text("Loading PDF...", bundle: .module)
                 .font(.headline)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Loading PDF document")
+        .accessibilityLabel(Text("Loading PDF document", bundle: .module))
     }
 
     private var unavailableView: some View {
-        ContentUnavailableView(
-            "PDF Not Available",
-            systemImage: "doc.questionmark",
-            description: Text("The PDF file could not be loaded.")
-        )
-        .accessibilityLabel("PDF unavailable")
-        .accessibilityHint("The PDF file could not be loaded")
+        ContentUnavailableView {
+            Label {
+                Text("PDF Not Available", bundle: .module)
+            } icon: {
+                Image(systemName: "doc.questionmark")
+            }
+        } description: {
+            Text("The PDF file could not be loaded.", bundle: .module)
+        }
+        .accessibilityLabel(Text("PDF unavailable", bundle: .module))
+        .accessibilityHint(Text("The PDF file could not be loaded", bundle: .module))
     }
 
     // MARK: - Actions
@@ -116,7 +117,6 @@ struct PdfBlockExtractionView: View {
             return
         }
 
-        root.editController.applyExtractedContent(content, to: itemId, selection: propertySelection)
         navigator.back()
     }
 
@@ -125,7 +125,7 @@ struct PdfBlockExtractionView: View {
     private enum ViewState {
         case loading
         case extracting(PDFDocument)
-        case extracted(PdfExtractedContent)
+        case extracted([BlockGenModel])
         case unavailable
     }
 }

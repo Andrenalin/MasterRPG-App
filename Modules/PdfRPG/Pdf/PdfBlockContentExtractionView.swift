@@ -11,9 +11,13 @@ public struct PdfBlockContentExtractionView: View {
 
     @State private var controller = PdfBlockExtractorController()
     let pdfDocument: PDFDocument
-    let onContentExtracted: (PdfExtractedContent) -> Void
+    let onContentExtracted: ([BlockGenModel]) -> Void
 
-    public init(pdfDocument: PDFDocument, onContentExtracted: @escaping (PdfExtractedContent) -> Void) {
+    @State private var extractionText = ""
+    
+    @State private var extractedBlock: [BlockGenModel] = []
+    
+    public init(pdfDocument: PDFDocument, onContentExtracted: @escaping ([BlockGenModel]) -> Void) {
         self.pdfDocument = pdfDocument
         self.onContentExtracted = onContentExtracted
     }
@@ -44,7 +48,8 @@ public struct PdfBlockContentExtractionView: View {
         Button {
             Task {
                 let content = await controller.extractWithProgress(from: pdfDocument)
-                print(content)
+                extractedBlock = content
+                onContentExtracted(content)
             }
         } label: {
             Label("Extract PDF Information", systemImage: NetworkModules.generator.icon)
@@ -62,8 +67,7 @@ public struct PdfBlockContentExtractionView: View {
             Text("Analyzing PDF with Apple Intelligence...")
                 .font(.headline)
 
-//            let progress = controller.isExtracting
-//            Text("\(progress)")
+            Text(extractionText)
         }
     }
 

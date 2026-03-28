@@ -43,27 +43,27 @@ public final class PdfBlockExtractorController {
     /// Extracts blocks from a PDF document
     /// - Parameter pdfDocument: The PDF to analyze
     /// - Returns: Array of extracted blocks, or empty if extraction fails
-    public func extract(from pdfDocument: PDFDocument) async -> [BlockGenModel] {
-        guard isModelAvailable else {
-            lastError = "Apple Intelligence is not available on this device"
-            return []
-        }
-
-        isExtracting = true
-        extractedBlocks = []
-        lastError = nil
-
-        defer { isExtracting = false }
-
-        do {
-            let blocks = try await useCase.extract(from: pdfDocument)
-            extractedBlocks = blocks
-            return blocks
-        } catch {
-            lastError = error.localizedDescription
-            return []
-        }
-    }
+//    public func extract(from pdfDocument: PDFDocument) async -> [BlockGenModel] {
+//        guard isModelAvailable else {
+//            lastError = "Apple Intelligence is not available on this device"
+//            return []
+//        }
+//
+//        isExtracting = true
+//        extractedBlocks = []
+//        lastError = nil
+//
+//        defer { isExtracting = false }
+//
+//        do {
+//            let blocks = try await useCase.extract(from: pdfDocument)
+//            extractedBlocks = blocks
+//            return blocks
+//        } catch {
+//            lastError = error.localizedDescription
+//            return []
+//        }
+//    }
 
     /// Extracts blocks with streaming progress updates
     /// - Parameter pdfDocument: The PDF to analyze
@@ -104,13 +104,13 @@ public final class PdfBlockExtractorController {
     /// Extracts blocks from a PDF file URL
     /// - Parameter url: URL to the PDF file
     /// - Returns: Array of extracted blocks, or empty if extraction fails
-    public func extract(from url: URL) async -> [BlockGenModel] {
-        guard let pdfDocument = PDFDocument(url: url) else {
-            lastError = "Failed to load PDF from URL"
-            return []
-        }
-        return await extract(from: pdfDocument)
-    }
+//    public func extract(from url: URL) async -> [BlockGenModel] {
+//        guard let pdfDocument = PDFDocument(url: url) else {
+//            lastError = "Failed to load PDF from URL"
+//            return []
+//        }
+//        return await extract(from: pdfDocument)
+//    }
 
     /// Checks if the Foundation Models are available
     public func checkModelAvailability() {
