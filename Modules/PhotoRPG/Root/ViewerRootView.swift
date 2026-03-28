@@ -87,7 +87,11 @@ private extension ViewerRootView {
         } label: {
             Image(systemName: "xmark.circle")
         }
-        .foregroundStyle(root.config.module.tint)
+#if os(macOS)
+                .foregroundStyle(root.config.module.tint)
+#else
+                .tint(root.config.module.tint)
+#endif
     }
     
     var rotateButton: some View {
@@ -98,7 +102,11 @@ private extension ViewerRootView {
                 .rotationEffect(Angle(degrees: model.degrees))
         }
         .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
-        .foregroundStyle(root.config.module.tint)
+#if os(macOS)
+                .foregroundStyle(root.config.module.tint)
+#else
+                .tint(root.config.module.tint)
+#endif
     }
 }
 

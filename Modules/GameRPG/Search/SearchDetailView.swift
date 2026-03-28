@@ -42,7 +42,11 @@ struct SearchDetailView: View {
                     } label: {
                         Image(systemName: selection.module.icon)
                     }
+#if os(macOS)
                     .foregroundStyle(selection.module.tint)
+#else
+                    .tint(selection.module.tint)
+#endif
                 }
             }
             .id(selection.id)

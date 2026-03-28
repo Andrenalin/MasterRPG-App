@@ -55,7 +55,11 @@ struct PdfContentView: View {
                     Image(systemName: showThumbnail ? "rectangle.stack" : "rectangle.stack.fill")
                         .contentTransition(.symbolEffect(.automatic))
                 }
+#if os(macOS)
                 .foregroundStyle(root.config.module.tint)
+#else
+                .tint(root.config.module.tint)
+#endif
             }
         }
     }
