@@ -9,6 +9,10 @@ struct MasterStartView: View {
     
     @Environment(AppSettingsModel.self) private var settingsModel
     
+#if os(visionOS)
+    @Environment(\.openWindow) private var openWindow
+#endif
+    
     var sharePlayStore: RPGSharePlayController {
         root.networkStore.sharePlayStore
     }
@@ -18,6 +22,9 @@ struct MasterStartView: View {
     var body: some View {
         if root.gameModel.selectedGameMaster != nil && root.gameModel.selectedAdventure != nil {
             Button {
+#if os(visionOS)
+                openWindow(id: WindowIdentifier.gameTable.rawValue)
+#endif
                 Task {
                     await startGame()
                 }

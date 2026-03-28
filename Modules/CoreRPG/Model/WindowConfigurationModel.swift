@@ -7,6 +7,7 @@ public enum WindowIdentifier: String {
     case adventureViewer
     case editor
     case game
+    case gameTable
     case generateAdventure
     case logs
     case mapEditor

@@ -213,6 +213,10 @@
 		8E8F02562ED1874500A0A6F7 /* SpaceRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E983DA62E27D057002B25C2 /* SpaceRPG.framework */; };
 		8E8F02572ED1874500A0A6F7 /* SpaceRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E983DA62E27D057002B25C2 /* SpaceRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E926E8B2B453D450025B659 /* WindowMacList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E926E8A2B453D450025B659 /* WindowMacList.swift */; };
+		8E9AE7002F7618C200016DA6 /* RPGTabletopGameContent in Frameworks */ = {isa = PBXBuildFile; productRef = 8E9AE6FF2F7618C200016DA6 /* RPGTabletopGameContent */; };
+		8E9AE7022F7618EE00016DA6 /* RPGTabletopGameContent in Frameworks */ = {isa = PBXBuildFile; productRef = 8E9AE7012F7618EE00016DA6 /* RPGTabletopGameContent */; };
+		8E9AE7042F76192800016DA6 /* RPGTabletopGameContent in Frameworks */ = {isa = PBXBuildFile; productRef = 8E9AE7032F76192800016DA6 /* RPGTabletopGameContent */; };
+		8E9AE7062F76193500016DA6 /* RPGTabletopGameContent in Frameworks */ = {isa = PBXBuildFile; productRef = 8E9AE7052F76193500016DA6 /* RPGTabletopGameContent */; };
 		8EA5A82F2E6A8FD500E70E9C /* DiceRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EB640062E47471400799690 /* DiceRPG.framework */; };
 		8EA5A8332E6A8FD500E70E9C /* PdfRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EEF8E052E3639E200393DAD /* PdfRPG.framework */; };
 		8EA5A8372E6A8FD500E70E9C /* PhotoRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; };
@@ -1453,6 +1457,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				59CE1EBF2E84F11C009C6CB5 /* CharacterRPG.framework in Frameworks */,
+				8E9AE7022F7618EE00016DA6 /* RPGTabletopGameContent in Frameworks */,
 				59CE1ED72E84F11C009C6CB5 /* PhotoRPG.framework in Frameworks */,
 				59CE1EB72E84F11C009C6CB5 /* AdventureRPG.framework in Frameworks */,
 				59CE1ECB2E84F11C009C6CB5 /* DiceRPG.framework in Frameworks */,
@@ -1514,6 +1519,7 @@
 				8E52F6772EC994FF005E6838 /* GeneratorRPG.framework in Frameworks */,
 				590D75022ED93639007570CF /* CharacterRPG.framework in Frameworks */,
 				590D76F42ED9C362007570CF /* AdventureRPG.framework in Frameworks */,
+				8E9AE7042F76192800016DA6 /* RPGTabletopGameContent in Frameworks */,
 				8E8F02562ED1874500A0A6F7 /* SpaceRPG.framework in Frameworks */,
 				8E39AD922ED1E27D00076078 /* DiceRPG.framework in Frameworks */,
 				8E39AD1C2ED1E06F00076078 /* WeatherRPG.framework in Frameworks */,
@@ -1548,6 +1554,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8E39AD182ED1E06700076078 /* WeatherRPG.framework in Frameworks */,
+				8E9AE7062F76193500016DA6 /* RPGTabletopGameContent in Frameworks */,
 				8E39AD8E2ED1E27300076078 /* DiceRPG.framework in Frameworks */,
 				590D76F82ED9C367007570CF /* AdventureRPG.framework in Frameworks */,
 				8E56BD932EDAEE4C0026F01C /* RolePlayGameKit.framework in Frameworks */,
@@ -1743,6 +1750,7 @@
 				8E52F6762EC994F5005E6838 /* GeneratorRPG.framework in Frameworks */,
 				590D76FC2ED9C36D007570CF /* AdventureRPG.framework in Frameworks */,
 				590D750A2ED9364C007570CF /* CharacterRPG.framework in Frameworks */,
+				8E9AE7002F7618C200016DA6 /* RPGTabletopGameContent in Frameworks */,
 				8E39AD142ED1E04E00076078 /* WeatherRPG.framework in Frameworks */,
 				8E39AD8A2ED1E26B00076078 /* DiceRPG.framework in Frameworks */,
 				8E56BD522ED9E8A80026F01C /* GameRPG.framework in Frameworks */,
@@ -2247,6 +2255,7 @@
 			);
 			name = GameRPG;
 			packageProductDependencies = (
+				8E9AE7012F7618EE00016DA6 /* RPGTabletopGameContent */,
 			);
 			productName = GameRPG;
 			productReference = 59CE1E9C2E84F011009C6CB5 /* GameRPG.framework */;
@@ -2385,6 +2394,7 @@
 			);
 			name = MasterMac;
 			packageProductDependencies = (
+				8E9AE7032F76192800016DA6 /* RPGTabletopGameContent */,
 			);
 			productName = MasterMac;
 			productReference = 8E49F9D92B8F654D00527E6D /* MasterRPG.app */;
@@ -2464,6 +2474,7 @@
 			);
 			name = MasterTV;
 			packageProductDependencies = (
+				8E9AE7052F76193500016DA6 /* RPGTabletopGameContent */,
 			);
 			productName = MasterTV;
 			productReference = 8E6BC9CB2AFB0B2200E5E098 /* MasterRPG.app */;
@@ -2956,6 +2967,7 @@
 			);
 			name = MasterRPG;
 			packageProductDependencies = (
+				8E9AE6FF2F7618C200016DA6 /* RPGTabletopGameContent */,
 			);
 			productName = MasterRPG;
 			productReference = 8EC4E46928DDA29600D0279F /* MasterRPG.app */;
@@ -3180,6 +3192,7 @@
 			);
 			mainGroup = 8EC4E46028DDA29600D0279F;
 			packageReferences = (
+				8E9AE6FE2F7618C200016DA6 /* XCLocalSwiftPackageReference "Resources/RPGTabletopGameContent" */,
 			);
 			productRefGroup = 8EC4E46A28DDA29600D0279F /* Products */;
 			projectDirPath = "";
@@ -7239,6 +7252,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		8E9AE6FE2F7618C200016DA6 /* XCLocalSwiftPackageReference "Resources/RPGTabletopGameContent" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Resources/RPGTabletopGameContent;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8E9AE6FF2F7618C200016DA6 /* RPGTabletopGameContent */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RPGTabletopGameContent;
+		};
+		8E9AE7012F7618EE00016DA6 /* RPGTabletopGameContent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E9AE6FE2F7618C200016DA6 /* XCLocalSwiftPackageReference "Resources/RPGTabletopGameContent" */;
+			productName = RPGTabletopGameContent;
+		};
+		8E9AE7032F76192800016DA6 /* RPGTabletopGameContent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E9AE6FE2F7618C200016DA6 /* XCLocalSwiftPackageReference "Resources/RPGTabletopGameContent" */;
+			productName = RPGTabletopGameContent;
+		};
+		8E9AE7052F76193500016DA6 /* RPGTabletopGameContent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E9AE6FE2F7618C200016DA6 /* XCLocalSwiftPackageReference "Resources/RPGTabletopGameContent" */;
+			productName = RPGTabletopGameContent;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8EC4E46128DDA29600D0279F /* Project object */;
 }

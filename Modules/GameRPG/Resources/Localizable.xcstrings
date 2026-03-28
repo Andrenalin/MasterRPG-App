@@ -414,6 +414,9 @@
         }
       }
     },
+    "Reset" : {
+
+    },
     "Save and Quit" : {
       "localizations" : {
         "de" : {
@@ -533,6 +536,9 @@
           }
         }
       }
+    },
+    "SharePlay" : {
+
     },
     "Show All (%lld results)" : {
       "comment" : "A button that toggles the visibility of more search results.",

@@ -3,11 +3,11 @@
 #if os(visionOS)
 import CoreRPG
 import DiceRPG
+import GameRPG
 import RolePlayGameKit
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
-
 
 struct WindowVisionList: Scene {
     let appModel: AppModel
@@ -16,6 +16,12 @@ struct WindowVisionList: Scene {
 
     var body: some Scene {
         let defaultSize = Size3D(width: 1.5, height: 1, depth: 0.4)
+
+        WindowGroup(id: WindowIdentifier.gameTable.rawValue) {
+            GameTableView().volumeBaseplateVisibility(.hidden)
+        }
+        .windowStyle(.volumetric)
+        .defaultSize(width: 2, height: 1.5, depth: 2, in: .meters)
 
         Window("Settings", id: WindowIdentifier.settings.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
