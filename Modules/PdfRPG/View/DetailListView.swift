@@ -1,14 +1,7 @@
 // @copyright André Trettin
 
-#if !os(tvOS)
 import CoreRPG
-import GeneratorRPG
 import SwiftUI
-
-#if canImport(PDFKit)
-import PDFKit
-#endif
-#endif
 
 struct DetailListView: View {
     init(root: PdfRootModel, model: PdfModel) {
@@ -55,18 +48,19 @@ struct DetailListView: View {
                         navigator.navigate(to: PdfDetailRoute.pdfExtraction(model.id), method: .managedSheet)
                     } label: {
                         Label {
-                            Text("Extract PDF Information with AI", bundle: .module)
+                            Text("Extract Information", bundle: .module)
                         } icon: {
                             Image(systemName: NetworkModules.generator.icon)
                         }
                     }
+                    .disabled(openFileWindowModel.showItem)
                 }
             }
 #endif
         }
         .overlay {
             if openFileWindowModel.showItem {
-                root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, entryId: nil, configuration: ViewerConfiguration(closeButton: true), withoutBookmark: false, onTextExtracted: nil, dismissAction: {
+                root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, entryId: nil, configuration: ViewerConfiguration(closeButton: true, canBookmark: true), onTextExtracted: nil, dismissAction: {
                     openFileWindowModel.showItem = false
                 })
             }

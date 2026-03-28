@@ -49,6 +49,15 @@
     "Apple Intelligence Required" : {
 
     },
+    "Applies the selected properties to the PDF and closes" : {
+
+    },
+    "Apply" : {
+
+    },
+    "Apply selected properties" : {
+
+    },
     "Bookmarks" : {
       "localizations" : {
         "de" : {
@@ -59,13 +68,34 @@
         }
       }
     },
+    "Bookmarks from Sections" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cancel PDF extraction" : {
+
+    },
+    "Closes the extraction view without applying changes" : {
+
+    },
+    "Create %lld bookmark(s) from sections" : {
+
+    },
+    "Description" : {
+
+    },
     "Dismiss" : {
 
     },
-    "Document Information" : {
+    "Extract Information" : {
 
     },
     "Extract PDF Information" : {
+
+    },
+    "Extract with AI" : {
 
     },
     "Find in pdf" : {
@@ -82,6 +112,12 @@
 
     },
     "Identified %lld sections" : {
+
+    },
+    "Loading PDF document" : {
+
+    },
+    "Loading PDF..." : {
 
     },
     "Open Pdf" : {
@@ -109,13 +145,22 @@
         }
       }
     },
+    "PDF Analysis" : {
+
+    },
     "PDF content extraction requires Apple Intelligence, which is not available on this device." : {
 
     },
-    "Sections" : {
+    "PDF Extractor" : {
 
     },
-    "Summary" : {
+    "PDF Not Available" : {
+
+    },
+    "PDF unavailable" : {
+
+    },
+    "Select which extracted values you would like to apply on the PDF item." : {
 
     },
     "Summary extracted" : {
@@ -124,13 +169,16 @@
     "Tags" : {
 
     },
+    "The PDF file could not be loaded" : {
+
+    },
+    "The PDF file could not be loaded." : {
+
+    },
     "Title" : {
 
     },
     "Title: %@" : {
-
-    },
-    "Type" : {
 
     },
     "Unnamed" : {

@@ -12,7 +12,6 @@ struct ViewerRootView: View {
     let model: PdfModel
     var entryId: UUID? = nil
     let configuration: ViewerConfiguration
-    var withoutBookmark: Bool = false
     var onTextExtracted: ((String) -> Void)? = nil
     var dismissAction: (() -> Void)? = nil
 
@@ -20,24 +19,16 @@ struct ViewerRootView: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.navigator) private var navigator
 
     @State private var searchModel = PdfSearchModel()
-    @State private var blockExtractor = PdfBlockExtractorController()
 
-    init(model: PdfModel, entryId: UUID? = nil, configuration: ViewerConfiguration, withoutBookmark: Bool = false, onTextExtracted: ((String) -> Void)? = nil, dismissAction: (() -> Void)? = nil) {
+    init(model: PdfModel, entryId: UUID? = nil, configuration: ViewerConfiguration, onTextExtracted: ((String) -> Void)? = nil, dismissAction: (() -> Void)? = nil) {
         self.model = model
         self.entryId = entryId
         self.configuration = configuration
-        self.withoutBookmark = withoutBookmark
         self.onTextExtracted = onTextExtracted
         self.dismissAction = dismissAction
-
-        // Set up the callback
-        _blockExtractor = State(initialValue: {
-            let controller = PdfBlockExtractorController()
-            controller.onTextExtracted = onTextExtracted
-            return controller
-        }())
     }
     
     var body: some View {
@@ -59,7 +50,7 @@ struct ViewerRootView: View {
         .ignoresSafeArea(.container, edges: [.top, .bottom])
         .overlay(alignment: .topTrailing) {
             GlassEffectContainerView {
-                SelectionBar(editController: root.editController, model: model, searchModel: searchModel, withoutBookmark: withoutBookmark)
+                SelectionBar(editController: root.editController, model: model, searchModel: searchModel, withoutBookmark: !configuration.canBookmark)
             }
         }
         .overlay(alignment: .bottomTrailing) {
@@ -75,8 +66,8 @@ struct ViewerRootView: View {
             }
 
 #if !os(tvOS)
-            if configuration.addToolbar && blockExtractor.isModelAvailable {
-                ToolbarItem(placement: .primaryAction) {
+            if configuration.addToolbar && configuration.aiExtractor {
+                ToolbarItem(placement: .secondaryActionAll) {
                     extractionButton
                 }
             }
@@ -91,10 +82,12 @@ struct ViewerRootView: View {
 #if !os(visionOS)
         .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
-        .navigationTitle(Text(model.name))
+        .applyIf(configuration.aiExtractor == false) {
+            $0.navigationTitle(Text(model.name))
 #if !os(macOS) && !os(tvOS)
-        .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
 #endif
+        }
         .onChange(of: model, initial: true) {
             let id = model.id
             guard model.url != nil else {
@@ -142,33 +135,16 @@ private extension ViewerRootView {
 
     var extractionButton: some View {
         Button {
-            Task {
-                await extractBlocks()
-            }
+            navigator.navigate(to: PdfDetailRoute.pdfBlockExtraction(model.id), method: .managedSheet)
         } label: {
             Label {
                 Text("Extract with AI", bundle: .module)
             } icon: {
-                if blockExtractor.isExtracting {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Image(systemName: "wand.and.stars")
-                }
+                Image(systemName: NetworkModules.generator.icon)
             }
         }
-        .disabled(blockExtractor.isExtracting)
         .foregroundStyle(root.config.module.tint)
     }
-
-    func extractBlocks() async {
-        guard let pdfDocument = searchModel.pdfDoc else {
-            return
-        }
-
-        _ = await blockExtractor.extractWithProgress(from: pdfDocument)
-    }
-
 }
 
 #Preview(traits: .mockData) {

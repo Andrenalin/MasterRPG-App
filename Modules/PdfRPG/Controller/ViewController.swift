@@ -23,9 +23,9 @@ public extension ViewController {
             .environment(itemSelectionModel)
     }
 
-    @MainActor func viewer(root: PdfRootModel, itemId: UUID, entryId: UUID?, configuration: ViewerConfiguration, withoutBookmark: Bool = false, onTextExtracted: ((String) -> Void)? = nil, dismissAction: (() -> Void)? = nil) -> some View {
+    @MainActor func viewer(root: PdfRootModel, itemId: UUID, entryId: UUID?, configuration: ViewerConfiguration, onTextExtracted: ((String) -> Void)? = nil, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: itemId)
-        return ViewerRootView(model: model, entryId: entryId, configuration: configuration, withoutBookmark: withoutBookmark, onTextExtracted: onTextExtracted, dismissAction: dismissAction)
+        return ViewerRootView(model: model, entryId: entryId, configuration: configuration, onTextExtracted: onTextExtracted, dismissAction: dismissAction)
     }
     
     @MainActor func gameView(root: PdfRootModel) -> some View {
@@ -36,7 +36,7 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor func gamePdfView(root: PdfRootModel) -> some View {
-        ViewerRootView(model: root.gameController.currentItem(), entryId: nil, configuration: ViewerConfiguration(isGame: true), withoutBookmark: true, dismissAction: nil)
+        ViewerRootView(model: root.gameController.currentItem(), entryId: nil, configuration: ViewerConfiguration(isGame: true), dismissAction: nil)
             .padding(32)
             .padding(.top, 64)
             .environment(root)

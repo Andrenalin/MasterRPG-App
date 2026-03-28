@@ -27,15 +27,19 @@ public enum ThumbnailRowViewType: Hashable, Sendable {
 }
 
 public struct ViewerConfiguration: Hashable, Sendable {
-    public init(closeButton: Bool = false, addToolbar: Bool = true, isGame: Bool = false) {
+    public init(closeButton: Bool = false, addToolbar: Bool = true, isGame: Bool = false, aiExtractor: Bool = false, canBookmark: Bool = false) {
         self.closeButton = closeButton
         self.addToolbar = addToolbar
         self.isGame = isGame
+        self.aiExtractor = aiExtractor
+        self.canBookmark = canBookmark
     }
     
     public let closeButton: Bool
     public let addToolbar: Bool
     public let isGame: Bool
+    public let aiExtractor: Bool
+    public let canBookmark: Bool
 }
 
 public protocol ViewControllable: Sendable {

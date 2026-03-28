@@ -18,30 +18,44 @@ struct PdfExtractionView: View {
 
     var body: some View {
         contentView
-            .navigationTitle("PDF Analysis")
+            .navigationTitle(Text("PDF Analysis", bundle: .module))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(role: .cancel) {
                         navigator.back()
+                    } label: {
+                        Label {
+                            Text("Cancel", bundle: .module)
+                        } icon: {
+                            Image(systemName: "xmark")
+                        }
                     }
-                    .accessibilityLabel("Cancel PDF extraction")
-                    .accessibilityHint("Closes the extraction view without applying changes")
+                    .accessibilityLabel(Text("Cancel PDF extraction", bundle: .module))
+                    .accessibilityHint(Text("Closes the extraction view without applying changes", bundle: .module))
                 }
 
                 if case .extracted = viewState {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Apply") {
+                        Button(role: .confirm) {
                             applyAndClose()
+                        } label: {
+                            Label {
+                                Text("Apply", bundle: .module)
+                            } icon: {
+                                Image(systemName: "checkmark")
+                            }
                         }
                         .disabled(!propertySelection.hasAnySelected)
-                        .accessibilityLabel("Apply selected properties")
-                        .accessibilityHint("Applies the selected properties to the PDF and closes")
+                        .accessibilityLabel(Text("Apply selected properties", bundle: .module))
+                        .accessibilityHint(Text("Applies the selected properties to the PDF and closes", bundle: .module))
                     }
                 }
             }
             .task {
                 await loadPDF()
             }
+            .tint(root.config.module.tint)
+            .accentColor(root.config.module.tint)
     }
 
     // MARK: - View Components
@@ -69,23 +83,27 @@ struct PdfExtractionView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .controlSize(.large)
-            Text("Loading PDF...")
+            Text("Loading PDF...", bundle: .module)
                 .font(.headline)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Loading PDF document")
+        .accessibilityLabel(Text("Loading PDF document", bundle: .module))
     }
 
     private var unavailableView: some View {
-        ContentUnavailableView(
-            "PDF Not Available",
-            systemImage: "doc.questionmark",
-            description: Text("The PDF file could not be loaded.")
-        )
-        .accessibilityLabel("PDF unavailable")
-        .accessibilityHint("The PDF file could not be loaded")
+        ContentUnavailableView {
+            Label {
+                Text("PDF Not Available", bundle: .module)
+            } icon: {
+                Image(systemName: "doc.questionmark")
+            }
+        } description: {
+            Text("The PDF file could not be loaded.", bundle: .module)
+        }
+        .accessibilityLabel(Text("PDF unavailable", bundle: .module))
+        .accessibilityHint(Text("The PDF file could not be loaded", bundle: .module))
     }
 
     // MARK: - Actions

@@ -6,6 +6,7 @@ import SwiftUI
 enum PdfDetailRoute: Equatable, Hashable, Codable {
     case folder(UUID)
     case pdfExtraction(UUID)
+    case pdfBlockExtraction(UUID)
 }
 
 extension PdfDetailRoute: RawRepresentable {
@@ -13,6 +14,7 @@ extension PdfDetailRoute: RawRepresentable {
         switch self {
         case .folder(let id): "folder/\(id.uuidString)"
         case .pdfExtraction(let id): "pdfExtraction/\(id.uuidString)"
+        case .pdfBlockExtraction(let id): "pdfBlockExtraction/\(id.uuidString)"
         }
     }
 
@@ -22,6 +24,7 @@ extension PdfDetailRoute: RawRepresentable {
         switch token {
         case "folder": self = .folder(uuid)
         case "pdfExtraction": self = .pdfExtraction(uuid)
+        case "pdfBlockExtraction": self = .pdfBlockExtraction(uuid)
         default: return nil
         }
     }
@@ -34,6 +37,8 @@ extension PdfDetailRoute: NavigationDestination {
             PdfDetailRouteDestinationView(itemId: itemId)
         case .pdfExtraction(let itemId):
             PdfExtractionView(itemId: itemId)
+        case .pdfBlockExtraction(let itemId):
+            PdfBlockExtractionView(itemId: itemId)
         }
     }
 }
@@ -47,6 +52,7 @@ extension PdfDetailRoute: ItemDetailRoute {
         switch self {
             case .folder(let id): return id
             case .pdfExtraction(let id): return id
+            case .pdfBlockExtraction(let id): return id
         }
     }
 }

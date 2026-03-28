@@ -29,8 +29,7 @@ struct QuickEntryEditor: View {
             root: root.pdfRoot,
             itemId: selectedPdf,
             entryId: nil,
-            configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false),
-            withoutBookmark: true,
+            configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false, aiExtractor: true),
             onTextExtracted: { text in
                 withAnimation {
                     // Append to existing text or replace based on user preference

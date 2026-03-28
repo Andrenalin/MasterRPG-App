@@ -26,7 +26,7 @@ struct SearchDetailView: View {
                 case .audio: root.audioRoot.viewController.viewer(root: root.audioRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
                 case .dice: root.diceRoot.viewController.viewer(root: root.diceRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
                 case .map: root.mapRoot.viewController.viewer(root: root.mapRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
-                case .pdf: root.pdfRoot.viewController.viewer(root: root.pdfRoot, itemId: selection.itemId, entryId: selection.entryId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false), withoutBookmark: true)
+                case .pdf: root.pdfRoot.viewController.viewer(root: root.pdfRoot, itemId: selection.itemId, entryId: selection.entryId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
                 case .photo: root.photoRoot.viewController.viewer(root: root.photoRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
                 case .space: root.spaceRoot.viewController.viewer(root: root.spaceRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
                 case .table: root.tableRoot.viewController.viewer(root: root.tableRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
