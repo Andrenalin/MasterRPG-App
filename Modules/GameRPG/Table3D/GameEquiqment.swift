@@ -150,7 +150,8 @@ struct Die20: EntityEquipment {
                                                         from: "static_scene.usda",
                                                         in: tabletopGameContentBunlde)
         self.audioPlaybackController = self.entity.prepareAudio(audioResource)
-        representation = .dodecahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
+        representation = .icosahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
+            //.dodecahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
         let pose: TableVisualState.Pose2D = .init(position: .init(x: -0.2, z: -0.5), rotation: .zero)
         initialState = .init(value: 1, parentID: .tableID, seatControl: .any, pose: pose, entity: self.entity)
     }
