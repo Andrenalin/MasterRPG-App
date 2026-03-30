@@ -39,9 +39,6 @@ final class AdventureSessionModel {
     // chat
     var adventureChat: String?
 
-    // extracting chat
-    var extracted: [BlockEntryGenModel.PartiallyGenerated] = []
-
     // Task management for cancellation
     var currentTask: Task<Void, Never>?
 
@@ -107,6 +104,15 @@ final class AdventureSessionModel {
         )
         conversationEngine.setMaxContextSize(contextSize)
         syncConversationState()
+    }
+    
+    
+    // extracting
+    var extractSession = LanguageModelSession()
+    var extracted: [BlockEntryGenModel.PartiallyGenerated] = []
+    
+    func set(extractSession: LanguageModelSession) {
+        self.extractSession = extractSession
     }
 }
 
@@ -201,6 +207,51 @@ struct AdventureGeneratorController: Sendable {
         model.syncConversationState()
     }
 
+    @MainActor func generateExtractor() {
+        let instructions = """
+                Your job is to extyract the text into blocks that can be processed later as text blocks for a bigger story. 
+                """
+        let session = LanguageModelSession(instructions: instructions)
+        
+        self.model.set(extractSession: session)
+        session.prewarm()
+    }
+
+    @MainActor func extract(message: String) {
+        Task {
+            do {
+                let prompt = Prompt {
+                    "\(message)"
+                }
+                let stream = model.extractSession.streamResponse(to: prompt, generating: [BlockEntryGenModel].self, includeSchemaInPrompt: false, options: GenerationOptions())
+
+                for try await partialResponse in stream {
+                    self.model.extracted = partialResponse.content
+                }
+            } catch let error as LanguageModelSession.GenerationError {
+                switch error {
+                case .guardrailViolation(let context):
+                    model.responseErrorContent = "Guardrail Violation: \(context.debugDescription)"
+                case .decodingFailure(let context):
+                    model.responseErrorContent = "Decoding Failure: \(context.debugDescription)"
+                case .rateLimited(let context):
+                    model.responseErrorContent = "Rate Limit exceeded: \(context.debugDescription)"
+                case .exceededContextWindowSize(let context):
+                    model.responseErrorContent = "Memory exceeded: \(context.debugDescription)"
+                default:
+                    model.responseErrorContent = "Other error: \(error.localizedDescription)"
+                }
+                if let failureReason = error.failureReason {
+                    model.responseErrorContent += "\n\(failureReason)"
+                }
+                if let recoverySuggestion = error.recoverySuggestion {
+                    model.responseErrorContent += "\n\(recoverySuggestion)"
+                }
+            } catch {
+                model.responseErrorContent = error.localizedDescription
+            }
+        }
+    }
 }
 
 #endif

@@ -22,12 +22,12 @@ struct AdventureChatRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     
-    @State private var viewModel = ChatViewModel()
     @State private var scrollID: String?
-    
     @State private var prompt: String = "Eine Zwergenfestung für Elfen erbaut, hat 7 verschieden farbige Räume. Was könnten sie bedeuten?"
     
     @FocusState private var isTextFieldFocused: Bool
+    
+    @State private var selectedBlocks: Set<GenerationID> = []
     
     var body: some View {
         FoundationBasicView {
@@ -44,10 +44,6 @@ struct AdventureChatRootView: View {
         .glassBackgroundEffect()
 #endif
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("Welcome to the AI Assistant", bundle: .module)
-            }
-
             ToolbarItem(placement: .confirmationAction) {
                 Button {
                     if let dismissAction {
@@ -69,16 +65,26 @@ private extension AdventureChatRootView {
         VStack(spacing: 0) {
             TokenUsageBar(currentTokenCount: model.currentTokenCount, maxContextSize: model.maxContextSize, tokenUsageFraction: model.tokenUsageFraction)
 
-            messagesView
+            transcriptionMessageView
 
-            ChatInputView(messageText: $prompt, generatorController: generatorController, isTextFieldFocused: $isTextFieldFocused)
+            HStack {
+                ChatInputView(messageText: $prompt, generatorController: generatorController, isTextFieldFocused: $isTextFieldFocused)
+                
+                Button {
+                    guard let message = model.adventureChat else { return }
+                    model.adventureChat = nil
+                    generatorController.extract(message: message)
+                } label: {
+                    Image(systemName: "list.bullet.clipboard")
+                }
+                .disabled(model.adventureChat == nil || model.extractSession.isResponding)
+            }
         }
-        .environment(viewModel)
         .alert(
             "Error",
             isPresented: $model.showError,
-            actions: { Button("OK") { viewModel.dismissError() } },
-            message: { Text(viewModel.errorMessage ?? "") }
+            actions: { Button("OK") { model.dismissError() } },
+            message: { Text(model.responseErrorContent) }
         )
         .task {
             await generatorController.generate()
@@ -87,6 +93,53 @@ private extension AdventureChatRootView {
         }
         .onDisappear {
             generatorController.tearDown()
+        }
+    }
+    
+    @ViewBuilder private var transcriptionMessageView: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(model.session.transcript) { entry in
+                        switch entry {
+                        case .prompt(let prompt):
+                            ChatSegmentsView(segments: prompt.segments, isUser: true)
+                                .listRowSeparator(.hidden)
+                        case .response(let answer):
+                            ChatSegmentsView(segments: answer.segments, isUser: false)
+                        case .instructions, .toolCalls, .toolOutput:
+                            EmptyView()
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                    
+                    ForEach(model.extractSession.transcript) { entry in
+                        switch entry {
+                        case .prompt:
+                            EmptyView()
+                        case .response(_):
+                            ForEach(model.extracted) { entryBlock in
+                                BlockEntryGenView(entry: entryBlock)
+                                    .selectListItem {
+                                        if selectedBlocks.contains(entryBlock.id) {
+                                            selectedBlocks.remove(entryBlock.id)
+                                        } else {
+                                            selectedBlocks.insert(entryBlock.id)
+                                        }
+                                    } isSelected: {
+                                        selectedBlocks.contains(entryBlock.id)
+                                    }
+                                
+                            }
+                        case .instructions, .toolCalls, .toolOutput:
+                            EmptyView()
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                }
+            }
         }
     }
     
