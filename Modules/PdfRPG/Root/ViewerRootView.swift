@@ -1,12 +1,12 @@
 // @copyright André Trettin
 
 import CoreRPG
-import GeneratorRPG
-import SwiftUI
-
 #if !os(tvOS)
+import GeneratorRPG
 @preconcurrency import PDFKit
 #endif
+import SwiftUI
+
 
 struct ViewerRootView: View {
     let model: PdfModel
@@ -135,6 +135,7 @@ private extension ViewerRootView {
 #endif
     }
 
+#if !os(tvOS)
     var extractionButton: some View {
         Button {
             navigator.navigate(to: PdfDetailRoute.pdfBlockExtraction(model.id), method: .managedSheet)
@@ -151,6 +152,8 @@ private extension ViewerRootView {
                 .tint(root.config.module.tint)
 #endif
     }
+#endif
+    
 }
 
 #Preview(traits: .mockData) {
