@@ -1,20 +1,20 @@
 import Foundation
 import FoundationModels
 
-public struct StreamingTextGenerationRequest: CapabilityRequest, Sendable {
+struct StreamingTextGenerationRequest: CapabilityRequest, Sendable {
     public let prompt: String
     public let systemPrompt: String?
     public let modelUseCase: FoundationLabModelUseCase
-    public let guardrails: FoundationLabGuardrails?
-    public let generationOptions: FoundationLabGenerationOptions?
+    let guardrails: GuardrailsConfiguration?
+    public let generationOptions: GenerationOptionsConfiguration?
     public let context: CapabilityInvocationContext
 
-    public init(
+    init(
         prompt: String,
         systemPrompt: String? = nil,
         modelUseCase: FoundationLabModelUseCase = .general,
-        guardrails: FoundationLabGuardrails? = nil,
-        generationOptions: FoundationLabGenerationOptions? = nil,
+        guardrails: GuardrailsConfiguration? = nil,
+        generationOptions: GenerationOptionsConfiguration? = nil,
         context: CapabilityInvocationContext
     ) {
         self.prompt = prompt

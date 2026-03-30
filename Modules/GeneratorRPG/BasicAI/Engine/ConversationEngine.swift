@@ -1,8 +1,10 @@
+// @copyright André Trettin
+
 import Foundation
 import FoundationModels
 
 @MainActor
-public final class FoundationLabConversationEngine {
+public final class ConversationEngine {
     public var onStateChange: (@MainActor () -> Void)?
 
     public private(set) var session: LanguageModelSession
@@ -12,11 +14,11 @@ public final class FoundationLabConversationEngine {
     public private(set) var isSummarizing: Bool = false
     public private(set) var isApplyingWindow: Bool = false
 
-    private var configuration: FoundationLabConversationConfiguration
+    private var configuration: ConversationConfiguration
     private var model: SystemLanguageModel
     private var activeStreamingTask: Task<String, Error>?
 
-    public init(configuration: FoundationLabConversationConfiguration) {
+    init(configuration: ConversationConfiguration) {
         self.configuration = configuration
         self.model = SystemLanguageModel(
             useCase: configuration.modelUseCase.foundationModelsValue,
@@ -36,9 +38,9 @@ public final class FoundationLabConversationEngine {
         notifyStateChange()
     }
 
-    public func rebuild(
+    func rebuild(
         baseInstructions: String? = nil,
-        guardrails: FoundationLabGuardrails? = nil
+        guardrails: GuardrailsConfiguration? = nil
     ) {
         if let baseInstructions {
             configuration.baseInstructions = baseInstructions
@@ -81,9 +83,9 @@ public final class FoundationLabConversationEngine {
         }
     }
 
-    public func sendStreamingMessage(
+    func sendStreamingMessage(
         _ content: String,
-        generationOptions: FoundationLabGenerationOptions? = nil,
+        generationOptions: GenerationOptionsConfiguration? = nil,
         onPartialResponse: (@MainActor @Sendable (String) -> Void)? = nil
     ) async throws -> String {
         let prompt = try validatedPrompt(from: content)
@@ -110,9 +112,9 @@ public final class FoundationLabConversationEngine {
         }
     }
 
-    public func sendMessage(
+    func sendMessage(
         _ content: String,
-        generationOptions: FoundationLabGenerationOptions? = nil
+        generationOptions: GenerationOptionsConfiguration? = nil
     ) async throws -> String {
         let prompt = try validatedPrompt(from: content)
 
@@ -135,7 +137,7 @@ public final class FoundationLabConversationEngine {
     }
 }
 
-private extension FoundationLabConversationEngine {
+private extension ConversationEngine {
     enum ResponseMode {
         case streaming
         case oneShot
@@ -204,7 +206,7 @@ private extension FoundationLabConversationEngine {
 
     func streamResponse(
         to prompt: String,
-        generationOptions: FoundationLabGenerationOptions?,
+        generationOptions: GenerationOptionsConfiguration?,
         onPartialResponse: (@MainActor @Sendable (String) -> Void)?
     ) async throws -> String {
         activeStreamingTask?.cancel()
@@ -238,7 +240,7 @@ private extension FoundationLabConversationEngine {
 
     func respond(
         to prompt: String,
-        generationOptions: FoundationLabGenerationOptions?
+        generationOptions: GenerationOptionsConfiguration?
     ) async throws -> String {
         if let generationOptions {
             return try await session.respond(
@@ -252,7 +254,7 @@ private extension FoundationLabConversationEngine {
 
     func recoverFromContextOverflow(
         userMessage: String,
-        generationOptions: FoundationLabGenerationOptions?,
+        generationOptions: GenerationOptionsConfiguration?,
         responseMode: ResponseMode,
         onPartialResponse: (@MainActor @Sendable (String) -> Void)?
     ) async throws -> String {

@@ -1,7 +1,7 @@
 import Foundation
 import FoundationModels
 
-public struct FoundationLabConversationConfiguration {
+struct ConversationConfiguration {
     public var baseInstructions: String
     public var summaryInstructions: String
     public var summaryPromptPreamble: String
@@ -10,14 +10,14 @@ public struct FoundationLabConversationConfiguration {
     public var continuationNote: String
     public var overflowResetMessage: String?
     public var modelUseCase: FoundationLabModelUseCase
-    public var guardrails: FoundationLabGuardrails
+    public var guardrails: GuardrailsConfiguration
     public var tools: [any Tool]
     public var enableSlidingWindow: Bool
     public var windowThreshold: Double
     public var targetWindowSize: Int
     public var defaultMaxContextSize: Int
 
-    public init(
+    init(
         baseInstructions: String,
         summaryInstructions: String,
         summaryPromptPreamble: String,
@@ -26,7 +26,7 @@ public struct FoundationLabConversationConfiguration {
         continuationNote: String,
         overflowResetMessage: String? = nil,
         modelUseCase: FoundationLabModelUseCase = .general,
-        guardrails: FoundationLabGuardrails = .default,
+        guardrails: GuardrailsConfiguration = .default,
         tools: [any Tool] = [],
         enableSlidingWindow: Bool = false,
         windowThreshold: Double = 0.70,

@@ -13,12 +13,12 @@ final class ChatViewModel {
 
     var isLoading: Bool = false
 
-    private let conversationEngine: FoundationLabConversationEngine
+    private let conversationEngine: ConversationEngine
     var isSummarizing: Bool = false
     var isApplyingWindow: Bool = false
     var sessionCount: Int = 1
     var instructions: String
-    var samplingStrategy: SamplingStrategy = .default
+    var SamplingStrategyConfiguration: SamplingStrategyConfiguration = .default
     var topKSamplingValue: Int = 50
     var useFixedSeed: Bool = false
     var usePermissiveGuardrails: Bool = false
@@ -46,15 +46,15 @@ final class ChatViewModel {
 
     // MARK: - Generation Options
 
-    var generationOptions: FoundationLabGenerationOptions {
-        switch samplingStrategy {
+    var generationOptions: GenerationOptionsConfiguration {
+        switch SamplingStrategyConfiguration {
         case .default:
-            return FoundationLabGenerationOptions()
+            return GenerationOptionsConfiguration()
         case .greedy:
-            return FoundationLabGenerationOptions(sampling: .greedy)
+            return GenerationOptionsConfiguration(sampling: .greedy)
         case .sampling:
             let seed: UInt64? = useFixedSeed ? (samplingSeed ?? generateAndStoreSeed()) : nil
-            return FoundationLabGenerationOptions(
+            return GenerationOptionsConfiguration(
                 sampling: .randomTop(topKSamplingValue, seed: seed)
             )
         }
@@ -65,7 +65,7 @@ final class ChatViewModel {
     init() {
         self.instructions = Self.defaultInstructions
 
-        let configuration = FoundationLabConversationConfiguration(
+        let configuration = ConversationConfiguration(
             baseInstructions: Self.defaultInstructions,
             summaryInstructions: """
             You are an expert at summarizing conversations. Create comprehensive summaries that \
@@ -89,7 +89,7 @@ final class ChatViewModel {
             targetWindowSize: AppConfiguration.TokenManagement.targetWindowSize,
             defaultMaxContextSize: AppConfiguration.TokenManagement.defaultMaxTokens
         )
-        let engine = FoundationLabConversationEngine(configuration: configuration)
+        let engine = ConversationEngine(configuration: configuration)
         self.conversationEngine = engine
         self.session = engine.session
 
@@ -186,7 +186,7 @@ private extension ChatViewModel {
 
     // MARK: - Language Model
 
-    func currentGuardrails() -> FoundationLabGuardrails {
+    func currentGuardrails() -> GuardrailsConfiguration {
         usePermissiveGuardrails ? .permissiveContentTransformations : .default
     }
 
