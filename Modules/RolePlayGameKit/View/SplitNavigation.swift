@@ -146,7 +146,7 @@ private extension SplitNavigation {
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             contentView(tab: tab)
         } detail: {
-            SplitDetailView()
+            SplitDetailView(isExtendedRoutes: false)
                 .environment(appModel.itemRootController(for: tab.module))
         }
         .inspectorAll(isPresented: $model.showInspector) {
