@@ -22,7 +22,7 @@ struct ItemControllerTests {
         let sut = await root.itemController
 
         await #expect(sut.itemDataModel.items.count == 3)
-        await #expect(root.photoRoot.itemController.itemDataModel.items.count == 27)
+        await #expect(root.photoRoot.itemController.itemDataModel.items.count == 32)
         let model = await sut.itemOrEmpty(for: sut.itemDataModel.items[0])
         #expect(model.name == "1. Kinder der Ratten")
         let photoId = model.photoId
