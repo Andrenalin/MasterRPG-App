@@ -274,7 +274,7 @@ private extension QuickEntryEditorView {
             }
         }
 #else
-        ToolbarItem(placement: .secondaryAction) {
+        ToolbarItem(placement: .secondaryActionAll) {
             secondaryActionMenu
         }
 #endif
