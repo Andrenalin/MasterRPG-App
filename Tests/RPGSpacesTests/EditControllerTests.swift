@@ -46,7 +46,7 @@ struct EditControllerTests {
 
         let item = await root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])
         let originalCategory = item.category
-        #expect(originalCategory == .item)
+        #expect(originalCategory == .entry)
 
         await sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 

@@ -10,7 +10,7 @@ extension FoundationLabModelUseCase {
     }
 }
 
-extension FoundationLabGuardrails {
+extension GuardrailsConfiguration {
     public var foundationModelsValue: SystemLanguageModel.Guardrails {
         switch self {
         case .default:
@@ -21,7 +21,7 @@ extension FoundationLabGuardrails {
     }
 }
 
-extension FoundationLabGenerationOptions.SamplingMode {
+extension GenerationOptionsConfiguration.SamplingMode {
     var foundationModelsValue: GenerationOptions.SamplingMode {
         switch self {
         case .greedy:
@@ -34,7 +34,7 @@ extension FoundationLabGenerationOptions.SamplingMode {
     }
 }
 
-extension FoundationLabGenerationOptions {
+extension GenerationOptionsConfiguration {
     var foundationModelsValue: GenerationOptions {
         GenerationOptions(
             sampling: sampling?.foundationModelsValue,

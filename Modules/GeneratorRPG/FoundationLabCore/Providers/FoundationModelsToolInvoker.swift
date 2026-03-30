@@ -1,16 +1,14 @@
 import Foundation
 import FoundationModels
 
-public struct FoundationModelsToolInvoker: Sendable {
-    public init() {}
-
-    public func respond<ToolType: Tool>(
+struct FoundationModelsToolInvoker: Sendable {
+    func respond<ToolType: Tool>(
         to prompt: String,
         using tool: ToolType,
         systemPrompt: String? = nil,
         modelUseCase: FoundationLabModelUseCase = .general,
-        guardrails: FoundationLabGuardrails? = nil,
-        generationOptions: FoundationLabGenerationOptions? = nil
+        guardrails: GuardrailsConfiguration? = nil,
+        generationOptions: GenerationOptionsConfiguration? = nil
     ) async throws -> TextGenerationResult {
         let trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedPrompt.isEmpty else {
@@ -19,7 +17,7 @@ public struct FoundationModelsToolInvoker: Sendable {
 
         let model = SystemLanguageModel(
             useCase: modelUseCase.foundationModelsValue,
-            guardrails: (guardrails ?? FoundationLabGuardrails.default).foundationModelsValue
+            guardrails: (guardrails ?? GuardrailsConfiguration.default).foundationModelsValue
         )
         let session: LanguageModelSession
 

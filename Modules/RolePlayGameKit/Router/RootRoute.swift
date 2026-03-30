@@ -77,7 +77,7 @@ public enum RootRoute: Hashable, Codable {
     
     public var hasDetailView: Bool {
         switch self {
-        case .game, .settings: false
+        case .editors, .game, .settings: false
         default: true
         }
     }

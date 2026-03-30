@@ -27,16 +27,25 @@ struct ToolbarItemListViewModifier: ViewModifier {
 #else
                 ToolbarItemGroup(placement: .secondaryActionAll) {
                     secondaryActionMenu
+#if os(visionOS)
+                        .foregroundStyle(.primary)
+#endif
                 }
 #endif
                 if listDisplayModel.isSelectionMode {
                     ToolbarItem(placement: .primaryAction) {
                         MenuSelectionButtonView(listDisplayModel: listDisplayModel)
+#if os(visionOS)
+                            .foregroundStyle(.primary)
+#endif
                     }
                 } else {
                     ToolbarItem(placement: .primaryAction) {
                         if modal == false || (parentModel != nil && parentModel!.specialCategory) {
                             addItemButton(for: .item)
+#if os(visionOS)
+                                .foregroundStyle(.primary)
+#endif
                         }
                     }
                 }
@@ -45,6 +54,9 @@ struct ToolbarItemListViewModifier: ViewModifier {
                 ToolbarItem(placement: .confirmationAction) {
                     if modal == true {
                         dismissButton
+#if os(visionOS)
+                            .foregroundStyle(.primary)
+#endif
                     }
                 }
 #endif

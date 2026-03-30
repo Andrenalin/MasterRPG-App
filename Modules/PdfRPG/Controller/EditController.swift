@@ -1,10 +1,10 @@
 // @copyright André Trettin
 
-#if !os(tvOS)
 import CoreGraphics
 import CoreRPG
 import CoreTransferable
 import Foundation
+#if !os(tvOS)
 import GeneratorRPG
 #endif
 

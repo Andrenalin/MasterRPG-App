@@ -13,9 +13,9 @@ struct FoundationBasicView<Content: View>: View {
         Group {
             if manager.isModelAvailable {
                 VStack {
-                    if !manager.isLanguageSupported {
-                        CheckLanguageSupport()
-                    }
+//                    if !manager.isLanguageSupported {
+//                        CheckLanguageSupport()
+//                    }
                     content()
                 }
             } else {

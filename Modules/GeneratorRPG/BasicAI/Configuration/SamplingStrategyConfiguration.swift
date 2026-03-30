@@ -1,6 +1,6 @@
 import Foundation
 
-enum SamplingStrategy: Int, CaseIterable {
+enum SamplingStrategyConfiguration: Int, CaseIterable {
     case `default`
     case greedy
     case sampling

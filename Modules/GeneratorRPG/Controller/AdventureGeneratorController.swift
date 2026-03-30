@@ -8,7 +8,7 @@ import Foundation
 @Observable
 @MainActor
 final class AdventureSessionModel {
-    init(conversationEngine: FoundationLabConversationEngine) {
+    init(conversationEngine: ConversationEngine) {
         self.conversationEngine = conversationEngine
         self.session = conversationEngine.session
         
@@ -21,7 +21,7 @@ final class AdventureSessionModel {
     }
     
     // session
-    let conversationEngine: FoundationLabConversationEngine
+    let conversationEngine: ConversationEngine
     var session: LanguageModelSession
 
     var isLoading: Bool = false
@@ -39,9 +39,6 @@ final class AdventureSessionModel {
     // chat
     var adventureChat: String?
 
-    // extracting chat
-    var extracted: [BlockEntryGenModel.PartiallyGenerated] = []
-
     // Task management for cancellation
     var currentTask: Task<Void, Never>?
 
@@ -52,27 +49,27 @@ final class AdventureSessionModel {
             
     // MARK: - Generation Options
     
-    var samplingStrategy: SamplingStrategy = .default
+    var SamplingStrategyConfiguration: SamplingStrategyConfiguration = .default
     var useFixedSeed: Bool = false
     var usePermissiveGuardrails: Bool = false
     var topKSamplingValue: Int = 50
     private var samplingSeed: UInt64?
     
-    var generationOptions: FoundationLabGenerationOptions {
-        switch samplingStrategy {
+    var generationOptions: GenerationOptionsConfiguration {
+        switch SamplingStrategyConfiguration {
         case .default:
-            return FoundationLabGenerationOptions()
+            return GenerationOptionsConfiguration()
         case .greedy:
-            return FoundationLabGenerationOptions(sampling: .greedy)
+            return GenerationOptionsConfiguration(sampling: .greedy)
         case .sampling:
             let seed: UInt64? = useFixedSeed ? (samplingSeed ?? generateAndStoreSeed()) : nil
-            return FoundationLabGenerationOptions(
+            return GenerationOptionsConfiguration(
                 sampling: .randomTop(topKSamplingValue, seed: seed)
             )
         }
     }
     
-    func currentGuardrails() -> FoundationLabGuardrails {
+    func currentGuardrails() -> GuardrailsConfiguration {
         usePermissiveGuardrails ? .permissiveContentTransformations : .default
     }
 
@@ -108,11 +105,20 @@ final class AdventureSessionModel {
         conversationEngine.setMaxContextSize(contextSize)
         syncConversationState()
     }
+    
+    
+    // extracting
+    var extractSession = LanguageModelSession()
+    var extracted: [BlockEntryGenModel.PartiallyGenerated] = []
+    
+    func set(extractSession: LanguageModelSession) {
+        self.extractSession = extractSession
+    }
 }
 
 struct AdventureGeneratorController: Sendable {
     @MainActor init() {
-        let configuration = FoundationLabConversationConfiguration(
+        let configuration = ConversationConfiguration(
             baseInstructions: Self.defaultInstructions,
             summaryInstructions: """
             You are an expert at summarizing conversations. Create comprehensive summaries that \
@@ -136,7 +142,7 @@ struct AdventureGeneratorController: Sendable {
             targetWindowSize: AppConfiguration.TokenManagement.targetWindowSize,
             defaultMaxContextSize: AppConfiguration.TokenManagement.defaultMaxTokens
         )
-        let engine = FoundationLabConversationEngine(configuration: configuration)
+        let engine = ConversationEngine(configuration: configuration)
 
         self.model = AdventureSessionModel(conversationEngine: engine)
     }
@@ -158,16 +164,7 @@ struct AdventureGeneratorController: Sendable {
     let llm = SystemLanguageModel.default
     
     @MainActor func generate() async {
-//        let session = LanguageModelSession {
-//        """
-//        You are an assistant to support a game master for creating a fictional game story.
-//        In the game you have NPC and players characters they have to talk to each other.
-//        Add connections to other possible outcomes or stories.
-//        Keep your answer precise except the game master needed a detailed version.
-//        """
-//        }
-//        self.model.set(session: session)
-        model.session.prewarm()
+        model.conversationEngine.prewarm()
     }
     
     @MainActor func request(message: String) {
@@ -178,27 +175,59 @@ struct AdventureGeneratorController: Sendable {
         model.currentTask = Task {
             defer { model.isLoading = model.session.isResponding }
             do {
-                let prompt = Prompt {
-                    "\(message)"
-                }
-                let stream = model.session.streamResponse(to: prompt, options: GenerationOptions())
                 _ = try await model.conversationEngine.sendStreamingMessage(
                     message,
                     generationOptions: model.generationOptions
-                )
+                ) { partial in
+                    self.model.adventureChat = partial
+                }
                 model.syncConversationState()
                 
-                for try await partialResponse in stream {
-                    // Check for cancellation
-                    try Task.checkCancellation()
-                    self.model.adventureChat = partialResponse.content
-                }
-
                 // Clear error on success
                 model.responseErrorContent = ""
             } catch is CancellationError {
                 // Clean cancellation - don't set error
                 return
+            } catch let error as LanguageModelSession.GenerationError {
+                model.responseErrorContent = FoundationModelsErrorHandler.handleError(error)
+                model.showError = true
+            } catch {
+                model.responseErrorContent = error.localizedDescription
+                model.showError = true
+            }
+        }
+    }
+        
+    @MainActor func clearChat() {
+        model.conversationEngine.clear()
+        //model.feedbackState.removeAll()
+        model.isLoading = false
+        model.responseErrorContent = ""
+        model.showError = false
+        model.syncConversationState()
+    }
+
+    @MainActor func generateExtractor() {
+        let instructions = """
+                Your job is to extyract the text into blocks that can be processed later as text blocks for a bigger story. 
+                """
+        let session = LanguageModelSession(instructions: instructions)
+        
+        self.model.set(extractSession: session)
+        session.prewarm()
+    }
+
+    @MainActor func extract(message: String) {
+        Task {
+            do {
+                let prompt = Prompt {
+                    "\(message)"
+                }
+                let stream = model.extractSession.streamResponse(to: prompt, generating: [BlockEntryGenModel].self, includeSchemaInPrompt: false, options: GenerationOptions())
+
+                for try await partialResponse in stream {
+                    self.model.extracted = partialResponse.content
+                }
             } catch let error as LanguageModelSession.GenerationError {
                 switch error {
                 case .guardrailViolation(let context):
@@ -210,8 +239,7 @@ struct AdventureGeneratorController: Sendable {
                 case .exceededContextWindowSize(let context):
                     model.responseErrorContent = "Memory exceeded: \(context.debugDescription)"
                 default:
-                    model.responseErrorContent = FoundationModelsErrorHandler.handleError(error)
-                    //model.responseErrorContent = "Other error: \(error.localizedDescription)"
+                    model.responseErrorContent = "Other error: \(error.localizedDescription)"
                 }
                 if let failureReason = error.failureReason {
                     model.responseErrorContent += "\n\(failureReason)"
@@ -219,10 +247,8 @@ struct AdventureGeneratorController: Sendable {
                 if let recoverySuggestion = error.recoverySuggestion {
                     model.responseErrorContent += "\n\(recoverySuggestion)"
                 }
-                model.showError = true
             } catch {
                 model.responseErrorContent = error.localizedDescription
-                model.showError = true
             }
         }
     }

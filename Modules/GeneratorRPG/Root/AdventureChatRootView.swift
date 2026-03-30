@@ -22,12 +22,12 @@ struct AdventureChatRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     
-    @State private var viewModel = ChatViewModel()
     @State private var scrollID: String?
-    
     @State private var prompt: String = "Eine Zwergenfestung für Elfen erbaut, hat 7 verschieden farbige Räume. Was könnten sie bedeuten?"
     
     @FocusState private var isTextFieldFocused: Bool
+    
+    @State private var selectedBlocks: Set<GenerationID> = []
     
     var body: some View {
         FoundationBasicView {
@@ -44,10 +44,6 @@ struct AdventureChatRootView: View {
         .glassBackgroundEffect()
 #endif
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("Welcome to the AI Assistant", bundle: .module)
-            }
-
             ToolbarItem(placement: .confirmationAction) {
                 Button {
                     if let dismissAction {
@@ -69,40 +65,81 @@ private extension AdventureChatRootView {
         VStack(spacing: 0) {
             TokenUsageBar(currentTokenCount: model.currentTokenCount, maxContextSize: model.maxContextSize, tokenUsageFraction: model.tokenUsageFraction)
 
-            messagesView
-//            List(model.session.transcript) { entry in
-//                switch entry {
-//                case .prompt(let prompt):
-//                    ChatSegmentsView(segments: prompt.segments, isUser: true)
-//                        .listRowSeparator(.hidden)
-//                case .response(let answer):
-//                    ChatSegmentsView(segments: answer.segments, isUser: false)
-//                case .instructions, .toolCalls, .toolOutput:
-//                    EmptyView()
-//                @unknown default:
-//                    EmptyView()
-//                }
-//            }
-//            .listStyle(.plain)
-            
-            ChatInputView(messageText: $prompt, generatorController: generatorController, isTextFieldFocused: $isTextFieldFocused)
+            transcriptionMessageView
+
+            HStack {
+                ChatInputView(messageText: $prompt, generatorController: generatorController, isTextFieldFocused: $isTextFieldFocused)
+                
+                Button {
+                    guard let message = model.adventureChat else { return }
+                    model.adventureChat = nil
+                    generatorController.extract(message: message)
+                } label: {
+                    Image(systemName: "list.bullet.clipboard")
+                }
+                .disabled(model.adventureChat == nil || model.extractSession.isResponding)
+            }
         }
-        .environment(viewModel)
         .alert(
             "Error",
             isPresented: $model.showError,
-            actions: { Button("OK") { viewModel.dismissError() } },
-            message: { Text(viewModel.errorMessage ?? "") }
+            actions: { Button("OK") { model.dismissError() } },
+            message: { Text(model.responseErrorContent) }
         )
-        .onAppear {
-            root.generatorController.generate()
-            // Auto-focus when chat appears
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                isTextFieldFocused = true
-            }
+        .task {
+            await generatorController.generate()
+            try? await Task.sleep(for: .seconds(0.5))
+            isTextFieldFocused = true
         }
         .onDisappear {
             generatorController.tearDown()
+        }
+    }
+    
+    @ViewBuilder private var transcriptionMessageView: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(model.session.transcript) { entry in
+                        switch entry {
+                        case .prompt(let prompt):
+                            ChatSegmentsView(segments: prompt.segments, isUser: true)
+                                .listRowSeparator(.hidden)
+                        case .response(let answer):
+                            ChatSegmentsView(segments: answer.segments, isUser: false)
+                        case .instructions, .toolCalls, .toolOutput:
+                            EmptyView()
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                    
+                    ForEach(model.extractSession.transcript) { entry in
+                        switch entry {
+                        case .prompt:
+                            EmptyView()
+                        case .response(_):
+                            ForEach(model.extracted) { entryBlock in
+                                BlockEntryGenView(entry: entryBlock)
+                                    .selectListItem {
+                                        if selectedBlocks.contains(entryBlock.id) {
+                                            selectedBlocks.remove(entryBlock.id)
+                                        } else {
+                                            selectedBlocks.insert(entryBlock.id)
+                                        }
+                                    } isSelected: {
+                                        selectedBlocks.contains(entryBlock.id)
+                                    }
+                                
+                            }
+                        case .instructions, .toolCalls, .toolOutput:
+                            EmptyView()
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -199,37 +236,9 @@ private extension AdventureChatRootView {
     private func clearChat() {
         prompt = ""
         scrollID = "bottom"
-        //model.clearChat()
+        generatorController.clearChat()
     }
 
-    @ViewBuilder var promptFieldView: some View {
-        HStack {
-            TextField(text: $prompt, prompt: textFieldText, axis: .vertical) {
-                textFieldText
-            }
-            .disabled(model.session.isResponding)
-            .labelsHidden()
-            .textFieldStyle(.plain)
-            .padding(6)
-            .background {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(.secondary, lineWidth: 1)
-            }
-            
-            Button {
-                generatorController.request(message: prompt)
-                prompt = ""
-            } label: {
-                Image(systemName: root.config.module.icon)
-            }
-            .disabled(prompt.isEmpty || model.session.isResponding)
-        }
-        .padding(.horizontal)
-    }
-    
-    var textFieldText: Text {
-        Text("\(Image(systemName: "questionmark.circle")) How can I help you?", bundle: .module)
-    }
 }
 
 #Preview(traits: .mockData) {

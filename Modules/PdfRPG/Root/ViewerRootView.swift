@@ -1,12 +1,12 @@
 // @copyright André Trettin
 
 import CoreRPG
-import GeneratorRPG
-import SwiftUI
-
 #if !os(tvOS)
+import GeneratorRPG
 @preconcurrency import PDFKit
 #endif
+import SwiftUI
+
 
 struct ViewerRootView: View {
     let model: PdfModel
@@ -66,11 +66,9 @@ struct ViewerRootView: View {
             }
 
 #if !os(tvOS)
-//            if configuration.addToolbar && configuration.aiExtractor {
-                ToolbarItem(placement: .automatic) {
-                    extractionButton
-                }
-//            }
+            ToolbarItem(placement: .automatic) {
+                extractionButton
+            }
 #endif
         }
         .applyIf(searchBar) {
@@ -137,6 +135,7 @@ private extension ViewerRootView {
 #endif
     }
 
+#if !os(tvOS)
     var extractionButton: some View {
         Button {
             navigator.navigate(to: PdfDetailRoute.pdfBlockExtraction(model.id), method: .managedSheet)
@@ -153,6 +152,8 @@ private extension ViewerRootView {
                 .tint(root.config.module.tint)
 #endif
     }
+#endif
+    
 }
 
 #Preview(traits: .mockData) {

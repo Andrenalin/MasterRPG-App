@@ -29,7 +29,7 @@ struct TabbedSplitNavigation: View {
                 contentColumnWidth = newWidth
             }
         } detail: {
-            SplitDetailView()
+            SplitDetailView(isExtendedRoutes: false)
                 .environment(appModel.itemRootController(for: selectedModule))
         }
         .onChange(of: appModel.selectedModule) {

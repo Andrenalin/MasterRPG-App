@@ -1,17 +1,17 @@
 import Foundation
 
-public struct FoundationLabGenerationOptions: Sendable, Hashable, Codable {
-    public enum SamplingMode: Sendable, Hashable, Codable {
+struct GenerationOptionsConfiguration: Sendable, Hashable, Codable {
+    enum SamplingMode: Sendable, Hashable, Codable {
         case greedy
         case randomTop(Int, seed: UInt64? = nil)
         case randomProbabilityThreshold(Double, seed: UInt64? = nil)
     }
 
-    public let sampling: SamplingMode?
-    public let temperature: Double?
-    public let maximumResponseTokens: Int?
+    let sampling: SamplingMode?
+    let temperature: Double?
+    let maximumResponseTokens: Int?
 
-    public init(
+    init(
         sampling: SamplingMode? = nil,
         temperature: Double? = nil,
         maximumResponseTokens: Int? = nil

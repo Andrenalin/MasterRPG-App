@@ -19,6 +19,6 @@ struct ImportControllerTests {
 
         let task = sut.importUrl(from: url)
         let _ = try await task.value
-        #expect(await root.itemController.itemDataModel.items.count == 2)
+        #expect(await root.itemController.itemDataModel.items.count == 12)
     }
 }

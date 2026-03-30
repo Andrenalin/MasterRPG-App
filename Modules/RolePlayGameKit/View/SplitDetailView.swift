@@ -19,6 +19,8 @@ import GeneratorRPG
 #endif
 
 struct SplitDetailView: View {
+    let isExtendedRoutes: Bool
+    
     @Environment(AppModel.self) private var appModel
     
     var body: some View {
@@ -48,10 +50,12 @@ struct SplitDetailView: View {
     }
     
     var selectedModule: NetworkModules {
-        (appModel.selectedModule ?? .game).module
+        let module = isExtendedRoutes ? (appModel.selectedExtendedModule ?? .maps).module : (appModel.selectedModule ?? .game).module
+        print(module)
+        return module
     }
 }
 
 #Preview {
-    SplitDetailView()
+    SplitDetailView(isExtendedRoutes: false)
 }

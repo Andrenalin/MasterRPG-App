@@ -22,11 +22,15 @@ struct ExtendedSplitBar: View {
             .navigationAutoReceive(ExtendedTabRoute.self)
             .onNavigationRoute(RootVisionRouteRouter(appModel: appModel))
             .onChange(of: currentModule, initial: true) {
-                appModel.selectedExtendedModule = currentModule
+                appModel.selectedExtendedModule <=> currentModule
                 guard let currentModule else { return }
                 tabSelectedModule = currentModule.module
             }
-            .onChange(of: appModel.selectedModule) {
+            .onChange(of: appModel.selectedExtendedModule) {
+                guard appModel.selectedExtendedModule != currentModule else { return }
+                currentModule <=> appModel.selectedExtendedModule
+            }
+            .onChange(of: appModel.selectedModule, initial: true) {
                 guard let selectedModule = appModel.selectedModule, selectedModule == .editors, currentModule == nil else { return }
                 currentModule = .maps
             }
@@ -56,7 +60,7 @@ private extension ExtendedSplitBar {
         NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
             contentView(tab: tab)
         } detail: {
-            SplitDetailView()
+            SplitDetailView(isExtendedRoutes: true)
                 .environment(appModel.itemRootController(for: tab.module))
         }
         .inspectorAll(isPresented: $model.showInspector) {
