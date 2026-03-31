@@ -353,26 +353,39 @@ extension MapModel: ItemDiffComparable {
     }
 
     public func isSame(_ other: MapModel) -> Bool {
-        name == other.name &&
-        description == other.description &&
-        tags == other.tags &&
-        category == other.category &&
-        entries_.update == other.entries_.update &&
-        displayConfig == other.displayConfig &&
-        photoId_.update == other.photoId_.update &&
-        mapPins_.update == other.mapPins_.update &&
-        hexMapScale == other.hexMapScale &&
-        pinScale == other.pinScale &&
-        parentId == other.parentId &&
-        // santity checks
-        entries.count == other.entries.count &&
-        entries.enumerated().allSatisfy { index, entry in
+        // Split comparison into typed chunks for faster type-checking
+        let basicFieldsMatch: Bool = (
+            name == other.name &&
+            description == other.description &&
+            tags == other.tags &&
+            category == other.category
+        )
+        guard basicFieldsMatch else { return false }
+
+        let configMatch: Bool = (
+            entries_.update == other.entries_.update &&
+            displayConfig == other.displayConfig &&
+            photoId_.update == other.photoId_.update &&
+            mapPins_.update == other.mapPins_.update &&
+            hexMapScale == other.hexMapScale &&
+            pinScale == other.pinScale &&
+            parentId == other.parentId
+        )
+        guard configMatch else { return false }
+
+        // Sanity checks
+        guard entries.count == other.entries.count else { return false }
+        let entriesMatch: Bool = entries.enumerated().allSatisfy { index, entry in
             entry == other.entries[index]
-        } &&
-        mapPins.count == other.mapPins.count &&
-        mapPins.enumerated().allSatisfy { index, pin in
+        }
+        guard entriesMatch else { return false }
+
+        guard mapPins.count == other.mapPins.count else { return false }
+        let pinsMatch: Bool = mapPins.enumerated().allSatisfy { index, pin in
             pin == other.mapPins[index]
         }
+
+        return pinsMatch
     }
     
     public var version: Int {

@@ -73,7 +73,12 @@ extension EditController: EntryDataEditable {
     }
     
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
-        module == .audio || (module == .value && entryId == nil) || module == .dice || module == .map || module == .pdf || module == .photo || (module == .table && entryId == nil)
+        // Split complex expression for faster type-checking
+        let isValueWithoutEntry: Bool = (module == .value && entryId == nil)
+        let isTableWithoutEntry: Bool = (module == .table && entryId == nil)
+        let isSimpleModule: Bool = (module == .audio || module == .dice || module == .map || module == .pdf || module == .photo)
+
+        return isSimpleModule || isValueWithoutEntry || isTableWithoutEntry
     }
     
     @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {

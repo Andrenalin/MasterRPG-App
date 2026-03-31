@@ -4525,7 +4525,10 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		593D0D422E31F2D000410232 /* Release */ = {
@@ -4561,7 +4564,11 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		599DCAE52E8E30C00056E46C /* Debug */ = {
@@ -4594,7 +4601,10 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		599DCAE62E8E30C00056E46C /* Release */ = {
@@ -4627,7 +4637,11 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		599DCAE72E8E30C00056E46C /* Debug */ = {
@@ -4657,7 +4671,10 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Master3RPG.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Master3RPG";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		599DCAE82E8E30C00056E46C /* Release */ = {
@@ -4686,7 +4703,11 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Master3RPG.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Master3RPG";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		59CE1EB12E84F011009C6CB5 /* Debug */ = {
@@ -4717,7 +4738,10 @@
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		59CE1EB22E84F011009C6CB5 /* Release */ = {
@@ -4748,7 +4772,11 @@
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E00BC652990942C00C484A1 /* Debug */ = {
@@ -4765,7 +4793,10 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = MasterRPG;
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E00BC662990942C00C484A1 /* Release */ = {
@@ -4782,7 +4813,11 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = MasterRPG;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E13A40A2BCE88BB00B2FCD4 /* Debug */ = {
@@ -4822,7 +4857,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E13A40B2BCE88BB00B2FCD4 /* Release */ = {
@@ -4862,7 +4900,11 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
 				VALIDATE_PRODUCT = YES;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E33768F2DB1140C00F9C14C /* Debug */ = {
@@ -4907,7 +4949,10 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E3376902DB1140C00F9C14C /* Release */ = {
@@ -4951,7 +4996,11 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E3620C32E1A810000E5C99A /* Debug */ = {
@@ -4984,7 +5033,10 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E3620C42E1A810000E5C99A /* Release */ = {
@@ -5017,7 +5069,11 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E3620F12E1A9EAF00E5C99A /* Debug */ = {
@@ -5060,7 +5116,10 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E3620F22E1A9EAF00E5C99A /* Release */ = {
@@ -5103,7 +5162,11 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E49F9E52B8F654D00527E6D /* Debug */ = {
@@ -5174,7 +5237,10 @@
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E49F9E62B8F654D00527E6D /* Release */ = {
@@ -5244,7 +5310,11 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E4B21A02CD78EF3009AB4D1 /* Debug */ = {
@@ -5265,7 +5335,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E4B21A12CD78EF3009AB4D1 /* Release */ = {
@@ -5285,7 +5358,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E4B270C2CD79E2E009AB4D1 /* Debug */ = {
@@ -5329,7 +5406,10 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E4B270D2CD79E2E009AB4D1 /* Release */ = {
@@ -5372,7 +5452,11 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E6BC9D62AFB0B2400E5E098 /* Debug */ = {
@@ -5415,7 +5499,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = 3;
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E6BC9D72AFB0B2400E5E098 /* Release */ = {
@@ -5458,7 +5545,11 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = 3;
 				VALIDATE_PRODUCT = YES;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E79C4982E6AEDD500893928 /* Debug */ = {
@@ -5494,7 +5585,10 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E79C4992E6AEDD500893928 /* Release */ = {
@@ -5530,7 +5624,11 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E79C4B82E6AEE0500893928 /* Debug */ = {
@@ -5566,7 +5664,10 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E79C4B92E6AEE0500893928 /* Release */ = {
@@ -5602,7 +5703,11 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E8EE6D42CD8E3A10010A25B /* Debug */ = {
@@ -5646,7 +5751,10 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E8EE6D52CD8E3A10010A25B /* Release */ = {
@@ -5689,7 +5797,11 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E8EE8642CD8EA600010A25B /* Debug */ = {
@@ -5710,7 +5822,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E8EE8652CD8EA600010A25B /* Release */ = {
@@ -5730,7 +5845,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E8EE88E2CD8EB450010A25B /* Debug */ = {
@@ -5751,7 +5870,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E8EE88F2CD8EB450010A25B /* Release */ = {
@@ -5771,7 +5893,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E8EE8AF2CD8EB650010A25B /* Debug */ = {
@@ -5792,7 +5918,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E8EE8B02CD8EB650010A25B /* Release */ = {
@@ -5812,7 +5941,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8E983DBB2E27D057002B25C2 /* Debug */ = {
@@ -5843,7 +5976,10 @@
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8E983DBC2E27D057002B25C2 /* Release */ = {
@@ -5874,7 +6010,11 @@
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EA5A7E92E6A8EDB00E70E9C /* Debug */ = {
@@ -5910,7 +6050,10 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EA5A7EA2E6A8EDB00E70E9C /* Release */ = {
@@ -5946,7 +6089,11 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EA804662E62EBC70009479F /* Debug */ = {
@@ -5983,7 +6130,10 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EA804672E62EBC70009479F /* Release */ = {
@@ -6020,7 +6170,11 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EB6401C2E47471400799690 /* Debug */ = {
@@ -6053,7 +6207,10 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EB6401D2E47471400799690 /* Release */ = {
@@ -6086,7 +6243,11 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EBECDAB2CD8EDED004E7103 /* Debug */ = {
@@ -6107,7 +6268,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EBECDAC2CD8EDED004E7103 /* Release */ = {
@@ -6127,7 +6291,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EBECE362CD8EE86004E7103 /* Debug */ = {
@@ -6148,7 +6316,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EBECE372CD8EE86004E7103 /* Release */ = {
@@ -6168,7 +6339,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EBECE572CD8EE92004E7103 /* Debug */ = {
@@ -6189,7 +6364,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EBECE582CD8EE92004E7103 /* Release */ = {
@@ -6209,7 +6387,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EBECE782CD8EE9E004E7103 /* Debug */ = {
@@ -6230,7 +6412,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EBECE792CD8EE9E004E7103 /* Release */ = {
@@ -6250,7 +6435,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EBECE992CD8EEAA004E7103 /* Debug */ = {
@@ -6271,7 +6460,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EBECE9A2CD8EEAA004E7103 /* Release */ = {
@@ -6291,7 +6483,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EBED0A82CD8EF69004E7103 /* Debug */ = {
@@ -6312,7 +6508,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EBED0A92CD8EF69004E7103 /* Release */ = {
@@ -6332,7 +6531,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EBED0C92CD8EF94004E7103 /* Debug */ = {
@@ -6353,7 +6556,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EBED0CA2CD8EF94004E7103 /* Release */ = {
@@ -6373,7 +6579,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EBED0EA2CD8EFA5004E7103 /* Debug */ = {
@@ -6394,7 +6604,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EBED0EB2CD8EFA5004E7103 /* Release */ = {
@@ -6414,7 +6627,11 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EC4E47628DDA29800D0279F /* Debug */ = {
@@ -6633,7 +6850,10 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EC4E47A28DDA29800D0279F /* Release */ = {
@@ -6696,7 +6916,11 @@
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8ED3ABAF2E2B45B000FF3AE8 /* Debug */ = {
@@ -6730,7 +6954,10 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8ED3ABB02E2B45B000FF3AE8 /* Release */ = {
@@ -6764,7 +6991,11 @@
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EEF8E1B2E3639E200393DAD /* Debug */ = {
@@ -6800,7 +7031,10 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EEF8E1C2E3639E200393DAD /* Release */ = {
@@ -6836,7 +7070,11 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 		8EF5129D2E5E03C200B4CE44 /* Debug */ = {
@@ -6872,7 +7110,10 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				EAGER_LINKING = YES;
+				ONLY_ACTIVE_ARCH = YES;};
 			name = Debug;
 		};
 		8EF5129E2E5E03C200B4CE44 /* Release */ = {
@@ -6908,7 +7149,11 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 26.0;
-			};
+			
+				COMPILATION_CACHING = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				ONLY_ACTIVE_ARCH = YES;
+				ENABLE_TESTABILITY = NO;};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
