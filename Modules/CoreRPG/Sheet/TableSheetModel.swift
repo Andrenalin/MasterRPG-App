@@ -255,7 +255,7 @@ public final class TableSheetModel: Sendable {
 
     // MARK: - Search Functionality
 
-    func performSheetSearch(searchText: String) {
+    func performSheetSearch(searchControllable: SearchControllable, searchText: String) {
         // Cancel any existing search task
         searchTask?.cancel()
 
@@ -267,12 +267,6 @@ public final class TableSheetModel: Sendable {
 
         // Start new search task
         searchTask = Task { @MainActor in
-            guard let searchControllable = linkControllable as? SearchControllable else {
-                // Fallback to simple filtering
-                performSimpleSearch(searchText: searchText)
-                return
-            }
-
             let result = await searchControllable.searchInSheet(
                 itemId: itemId,
                 searchText: searchText,

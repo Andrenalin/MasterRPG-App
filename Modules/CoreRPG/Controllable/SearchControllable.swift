@@ -145,6 +145,7 @@ public extension SearchControllable {
 
             // If includeLinks, search within linked items
             if includeLinks {
+                
                 let linkedItemIds = await extractLinkedItemIds(from: entry.content)
 
                 for linkedItemId in linkedItemIds {
@@ -194,29 +195,11 @@ public extension SearchControllable {
     // MARK: - Private Helper Methods
 
     private func extractLinkedItemIds(from content: String) async -> [UUID] {
-        var linkedIds: [UUID] = []
+        // Use existing LinkReplaceController to extract all links
+        let links = await LinkReplaceController.links(for: content)
 
-        // Parse markdown-style links: [text](rpg://module/itemId)
-        let linkPattern = #"\[([^\]]+)\]\(rpg://[^/]+/([a-fA-F0-9-]+)\)"#
-
-        guard let regex = try? NSRegularExpression(pattern: linkPattern, options: []) else {
-            return linkedIds
-        }
-
-        let nsString = content as NSString
-        let matches = regex.matches(in: content, options: [], range: NSRange(location: 0, length: nsString.length))
-
-        for match in matches {
-            if match.numberOfRanges > 2 {
-                let uuidRange = match.range(at: 2)
-                let uuidString = nsString.substring(with: uuidRange)
-                if let uuid = UUID(uuidString: uuidString) {
-                    linkedIds.append(uuid)
-                }
-            }
-        }
-
-        return linkedIds
+        // Extract item IDs from the links
+        return links.map { $0.itemId }
     }
 
     private func searchInLinkedItem(_ item: any ItemDataAccessable, searchText: String) async -> Bool {
