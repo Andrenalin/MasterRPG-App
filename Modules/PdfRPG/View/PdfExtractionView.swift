@@ -66,7 +66,7 @@ struct PdfExtractionView: View {
         case .loading:
             loadingView
         case .extracting(let document):
-            PdfContentExtractionView(pdfDocument: document) { content in
+            PdfSummaryAnalysisView(pdfDocument: document) { content in
                 viewState = .extracted(content)
             }
         case .extracted(let content):
@@ -131,7 +131,7 @@ struct PdfExtractionView: View {
     private enum ViewState {
         case loading
         case extracting(PDFDocument)
-        case extracted(PdfExtractedContent)
+        case extracted(PdfSummaryAnalysis)
         case unavailable
     }
 }

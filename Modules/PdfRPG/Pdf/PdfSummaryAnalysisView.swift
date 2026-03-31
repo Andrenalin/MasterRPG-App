@@ -7,51 +7,51 @@ import GeneratorRPG
 import PDFKit
 import SwiftUI
 
-/// View for extracting and displaying PDF content metadata
-public struct PdfContentExtractionView: View {
+/// View for analyzing and displaying PDF summary
+public struct PdfSummaryAnalysisView: View {
 
-    @State private var controller = PdfContentExtractorController()
+    @State private var model = PdfSummaryAnalysisModel()
     let pdfDocument: PDFDocument
-    let onContentExtracted: (PdfExtractedContent) -> Void
+    let onAnalysisCompleted: (PdfSummaryAnalysis) -> Void
 
-    public init(pdfDocument: PDFDocument, onContentExtracted: @escaping (PdfExtractedContent) -> Void) {
+    public init(pdfDocument: PDFDocument, onAnalysisCompleted: @escaping (PdfSummaryAnalysis) -> Void) {
         self.pdfDocument = pdfDocument
-        self.onContentExtracted = onContentExtracted
+        self.onAnalysisCompleted = onAnalysisCompleted
     }
 
     public var body: some View {
         VStack(spacing: 20) {
-            if !controller.isModelAvailable {
+            if !model.isModelAvailable {
                 unavailableView
-            } else if controller.isExtracting {
-                extractingView
+            } else if model.isAnalyzing {
+                analyzingView
             } else {
-                extractButton
+                analyzeButton
             }
 
-            if let error = controller.lastError {
+            if let error = model.lastError {
                 errorView(error)
             }
         }
         .padding()
         .onAppear {
-            controller.checkModelAvailability()
+            model.checkModelAvailability()
         }
         .task {
             try? await Task.sleep(for: .seconds(1))
-            extracting()
+            analyze()
         }
     }
 
     // MARK: - Subviews
 
-    private var extractButton: some View {
+    private var analyzeButton: some View {
         Button {
-            guard controller.isExtracting else { return }
-            extracting()
+            guard !model.isAnalyzing else { return }
+            analyze()
         } label: {
             Label {
-                Text("Extract PDF Information", bundle: .module)
+                Text("Analyze PDF Summary", bundle: .module)
             } icon: {
                 Image(systemName: NetworkModules.generator.icon)
             }
@@ -60,16 +60,16 @@ public struct PdfContentExtractionView: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
     }
-    
-    private func extracting() {
+
+    private func analyze() {
         Task {
-            if let content = await controller.extractWithProgress(from: pdfDocument) {
-                onContentExtracted(content)
+            if let content = await model.analyzeWithProgress(from: pdfDocument) {
+                onAnalysisCompleted(content)
             }
         }
     }
 
-    private var extractingView: some View {
+    private var analyzingView: some View {
         VStack(spacing: 16) {
             ProgressView()
                 .controlSize(.large)
@@ -77,7 +77,7 @@ public struct PdfContentExtractionView: View {
             Text("Analyzing PDF with Apple Intelligence...", bundle: .module)
                 .font(.headline)
 
-            if let progress = controller.extractionProgress {
+            if let progress = model.analysisProgress {
                 VStack(alignment: .leading, spacing: 8) {
                     if let title = progress.title {
                         HStack {
@@ -152,7 +152,7 @@ public struct PdfContentExtractionView: View {
             Spacer()
 
             Button {
-                controller.clearError()
+                model.clearError()
             } label: {
                 Text("Dismiss", bundle: .module)
             }
@@ -165,11 +165,11 @@ public struct PdfContentExtractionView: View {
     }
 }
 
-#Preview("Extraction View") {
+#Preview("Summary Analysis View") {
     if let url = Bundle.main.url(forResource: "sample", withExtension: "pdf"),
        let pdfDocument = PDFDocument(url: url) {
-        PdfContentExtractionView(pdfDocument: pdfDocument) { content in
-            print("Extracted: \(content.title)")
+        PdfSummaryAnalysisView(pdfDocument: pdfDocument) { content in
+            print("Analyzed: \(content.title)")
         }
     } else {
         Text("No sample PDF available")

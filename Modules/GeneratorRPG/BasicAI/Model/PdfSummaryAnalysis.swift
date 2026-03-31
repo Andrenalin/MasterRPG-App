@@ -5,14 +5,14 @@
 import Foundation
 import FoundationModels
 
-/// Structured content extracted from PDF documents
+/// Summary analysis of PDF documents
 ///
 /// **Property Order Optimized for Streaming UX:**
 /// Properties are generated in declaration order. Most important properties come first
 /// so users see title in ~0.2s instead of waiting for full generation (~2-3s).
 /// This follows Foundation Models best practice for progressive UI updates.
-@Generable(description: "Structured metadata and content extracted from RPG rulebooks or adventure PDFs")
-public struct PdfExtractedContent: Equatable, Sendable, Identifiable {
+@Generable(description: "Summary analysis with structured metadata from RPG rulebooks or adventure PDFs")
+public struct PdfSummaryAnalysis: Equatable, Sendable, Identifiable {
 
     public var id: String { title + summary }
 

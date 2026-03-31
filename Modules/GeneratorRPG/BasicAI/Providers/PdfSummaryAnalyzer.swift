@@ -9,9 +9,9 @@ import FoundationModels
 import PDFKit
 #endif
 
-/// Foundation Models-based PDF content extractor for RPG documents
+/// Foundation Models-based PDF summary analyzer for RPG documents
 @MainActor
-public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @unchecked Sendable {
+public final class PdfSummaryAnalyzer: PdfSummaryAnalyzing, @unchecked Sendable {
 
     // MARK: - Configuration
 
@@ -36,66 +36,25 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
         self.instructions = instructions ?? Self.defaultInstructions
     }
 
-    // MARK: - Public Methods
-
-    public func extract(from pdfDocument: PDFDocument) async throws -> PdfExtractedContent {
-        // Check model availability
-        guard SystemLanguageModel.default.availability == .available else {
-            throw PdfExtractionError.modelUnavailable
-        }
-
-        // Validate document
-        guard pdfDocument.pageCount > 0 else {
-            throw PdfExtractionError.emptyDocument
-        }
-
-        // Extract text from PDF
-        let extractedText = try extractText(from: pdfDocument)
-
-        guard !extractedText.isEmpty else {
-            throw PdfExtractionError.textExtractionFailed
-        }
-
-        // Create session
-        let session = LanguageModelSession(instructions: instructions)
-
-        // Prewarm for faster generation
-        session.prewarm()
-
-        // Generate structured content
-        do {
-            let response = try await session.respond(
-                to: buildPrompt(with: extractedText, pageCount: pdfDocument.pageCount),
-                generating: PdfExtractedContent.self
-            )
-
-            return response.content
-        } catch let error as LanguageModelSession.GenerationError {
-            throw PdfExtractionError.generationFailed(handleGenerationError(error))
-        } catch {
-            throw PdfExtractionError.generationFailed(error.localizedDescription)
-        }
-    }
-
-    public func extractWithProgress(
+    public func analyzeWithProgress(
         from pdfDocument: PDFDocument,
-        onPartialContent: @MainActor @Sendable (PdfExtractedContent.PartiallyGenerated) -> Void
-    ) async throws -> PdfExtractedContent {
+        onPartialContent: @MainActor @Sendable (PdfSummaryAnalysis.PartiallyGenerated) -> Void
+    ) async throws -> PdfSummaryAnalysis {
         // Check model availability
         guard SystemLanguageModel.default.availability == .available else {
-            throw PdfExtractionError.modelUnavailable
+            throw PdfSummaryAnalysisError.modelUnavailable
         }
 
         // Validate document
         guard pdfDocument.pageCount > 0 else {
-            throw PdfExtractionError.emptyDocument
+            throw PdfSummaryAnalysisError.emptyDocument
         }
 
         // Extract text from PDF
         let extractedText = try extractText(from: pdfDocument)
 
         guard !extractedText.isEmpty else {
-            throw PdfExtractionError.textExtractionFailed
+            throw PdfSummaryAnalysisError.textExtractionFailed
         }
 
         // Create session
@@ -108,10 +67,10 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
         do {
             let stream = session.streamResponse(
                 to: buildPrompt(with: extractedText, pageCount: pdfDocument.pageCount),
-                generating: PdfExtractedContent.self
+                generating: PdfSummaryAnalysis.self
             )
 
-            var latestContent: PdfExtractedContent.PartiallyGenerated?
+            var latestContent: PdfSummaryAnalysis.PartiallyGenerated?
 
             for try await snapshot in stream {
                 // Pass the partial content for progress updates
@@ -124,7 +83,7 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
                   let summary = partial.summary,
                   let tags = partial.tags,
                   let partialSections = partial.sections else {
-                throw PdfExtractionError.generationFailed("Streaming completed but no complete content received")
+                throw PdfSummaryAnalysisError.generationFailed("Streaming completed but no complete content received")
             }
 
             // Convert PartiallyGenerated sections to actual PdfSection instances
@@ -140,16 +99,16 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
                 )
             }
 
-            return PdfExtractedContent(
+            return PdfSummaryAnalysis(
                 title: title,
                 summary: summary,
                 tags: tags,
                 sections: sections
             )
         } catch let error as LanguageModelSession.GenerationError {
-            throw PdfExtractionError.generationFailed(handleGenerationError(error))
+            throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))
         } catch {
-            throw PdfExtractionError.generationFailed(error.localizedDescription)
+            throw PdfSummaryAnalysisError.generationFailed(error.localizedDescription)
         }
     }
 
@@ -182,14 +141,14 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
 
     private func buildPrompt(with text: String, pageCount: Int) -> String {
         """
-        Extract structured information from this RPG PDF document.
+        Analyze and summarize this RPG PDF document.
 
         Total pages in document: \(pageCount)
         Content (first \(maxPages) pages):
 
         \(text)
 
-        Analyze the content and extract:
+        Provide structured summary analysis including:
         - The document title
         - A clear summary
         - Relevant RPG tags (genre, setting, system, etc.)
@@ -203,21 +162,21 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
         case .exceededContextWindowSize:
             return "PDF content is too large for processing. Try a smaller document or fewer pages."
         case .guardrailViolation:
-            return "Content policy prevented extraction. The PDF may contain inappropriate content."
+            return "Content policy prevented analysis. The PDF may contain inappropriate content."
         case .unsupportedLanguageOrLocale:
             return "The PDF language is not supported by Apple Intelligence."
         case .assetsUnavailable(let reason):
             return "Model assets are unavailable: \(reason). Please ensure Apple Intelligence is fully downloaded."
         case .unsupportedGuide(let guide):
-            return "PDF extraction schema contains unsupported constraint: \(guide). This is a developer error."
+            return "PDF summary schema contains unsupported constraint: \(guide). This is a developer error."
         case .decodingFailure(let reason):
-            return "Failed to decode PDF content: \(reason). The document may have unusual formatting."
+            return "Failed to decode PDF summary: \(reason). The document may have unusual formatting."
         case .rateLimited(let retryAfter):
             return "Rate limit exceeded. Please try again in \(retryAfter) seconds."
         case .concurrentRequests(let maxCount):
-            return "Too many concurrent extraction requests. Maximum allowed: \(maxCount). Please wait for current extractions to complete."
+            return "Too many concurrent analysis requests. Maximum allowed: \(maxCount). Please wait for current analyses to complete."
         case .refusal(let reason, let category):
-            return "Extraction refused: \(reason) (category: \(category)). The PDF content may violate content policies."
+            return "Analysis refused: \(reason) (category: \(category)). The PDF content may violate content policies."
         @unknown default:
             return "An unexpected generation error occurred: \(error.localizedDescription)"
         }
@@ -226,19 +185,9 @@ public final class FoundationModelsPdfContentExtractor: PdfContentExtracting, @u
     // MARK: - Constants
 
     private static let defaultInstructions = """
-    You are an expert at analyzing tabletop RPG documents including rulebooks, adventures, \
-    campaigns, and supplements.
-
-    Your task is to extract structured metadata that helps game masters quickly understand \
-    and organize their RPG PDF library.
-
-    Focus on:
-    - Clear, descriptive titles
-    - Concise but informative summaries
-    - Relevant tags (game system, genre, setting, theme)
-    - Major sections that help navigation
-
-    Be precise and factual. Only extract information that is clearly present in the document.
+    Analyze and summarize RPG documents (rulebooks, adventures, supplements).
+    Provide clear titles, concise summaries, relevant tags, and major sections.
+    Be precise and factual.
     """
 }
 

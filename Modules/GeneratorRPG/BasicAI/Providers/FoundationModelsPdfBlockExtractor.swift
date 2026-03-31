@@ -83,19 +83,19 @@ public final class FoundationModelsPdfBlockExtractor: PdfBlockExtracting, @unche
     ) async throws -> [BlockGenModel] {
         // Check model availability
         guard SystemLanguageModel.default.availability == .available else {
-            throw PdfExtractionError.modelUnavailable
+            throw PdfSummaryAnalysisError.modelUnavailable
         }
 
         // Validate document
         guard pdfDocument.pageCount > 0 else {
-            throw PdfExtractionError.emptyDocument
+            throw PdfSummaryAnalysisError.emptyDocument
         }
 
         // Extract text from PDF
         let extractedText = try extractText(from: pdfDocument)
 
         guard !extractedText.isEmpty else {
-            throw PdfExtractionError.textExtractionFailed
+            throw PdfSummaryAnalysisError.textExtractionFailed
         }
 
         // Create session
@@ -123,9 +123,9 @@ public final class FoundationModelsPdfBlockExtractor: PdfBlockExtracting, @unche
             }
             return blocks
         } catch let error as LanguageModelSession.GenerationError {
-            throw PdfExtractionError.generationFailed(handleGenerationError(error))
+            throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))
         } catch {
-            throw PdfExtractionError.generationFailed(error.localizedDescription)
+            throw PdfSummaryAnalysisError.generationFailed(error.localizedDescription)
         }
     }
 

@@ -6,13 +6,13 @@ import CoreRPG
 import GeneratorRPG
 import SwiftUI
 
-/// View displaying extracted PDF content with selectable properties
+/// View displaying analyzed PDF summary with selectable properties
 public struct ExtractedPdfContentView: View {
 
-    let content: PdfExtractedContent
+    let content: PdfSummaryAnalysis
     @Binding var selectedProperties: PdfPropertySelection
 
-    public init(content: PdfExtractedContent, selectedProperties: Binding<PdfPropertySelection>) {
+    public init(content: PdfSummaryAnalysis, selectedProperties: Binding<PdfPropertySelection>) {
         self.content = content
         self._selectedProperties = selectedProperties
     }
@@ -140,7 +140,7 @@ public struct PdfPropertySelection {
     @Previewable @State var selection = PdfPropertySelection()
 
     ExtractedPdfContentView(
-        content: PdfExtractedContent(
+        content: PdfSummaryAnalysis(
             title: "Dungeons & Dragons Player's Handbook",
             summary: "The core rulebook for players, containing character creation rules, races, classes, equipment, spells, and gameplay mechanics for D&D 5th Edition.",
             tags: ["D&D 5e", "Fantasy", "Rulebook", "Core Rules", "Character Creation"],
