@@ -177,6 +177,14 @@ private extension LinkItemListView {
                         .onTapGesture(count: 2) {
                             openDetail(for: item)
                         }
+                        .accessibilityHint("Double-tap to open details")
+                        .contextMenu {
+                            Button {
+                                openDetail(for: item)
+                            } label: {
+                                Label("Open Details", systemImage: "arrow.up.right.square")
+                            }
+                        }
                 }
             }
             .selectListItem(isActive: isSelectionActive(item: item)) {

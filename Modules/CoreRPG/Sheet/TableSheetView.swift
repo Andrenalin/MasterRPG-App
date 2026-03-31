@@ -8,9 +8,12 @@ struct TableSheetView: View {
 
     var body: some View {
         @Bindable var model = model
-        
+
         listContentView
             .searchable(text: $model.searchText, placement: .automatic, prompt: "Find in")
+            .onChange(of: model.searchText) { oldValue, newValue in
+                model.performSheetSearch(searchText: newValue)
+            }
     }
 }
 

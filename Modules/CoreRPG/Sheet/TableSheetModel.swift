@@ -31,6 +31,9 @@ public final class TableSheetModel: Sendable {
 
     @ObservationIgnored var sheets: [ItemRowModel: TableSheetModel] = [:]
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
+    @ObservationIgnored private var originalEntries: [SheetModel] = []
+    @ObservationIgnored private var searchTask: Task<Void, Never>?
+    @ObservationIgnored private var currentSearchResult: SheetSearchResult?
 
     func description(for sheetModel: SheetModel) -> String? {
         guard !searchText.isEmpty else { return sheetModel.description }
@@ -248,6 +251,163 @@ public final class TableSheetModel: Sendable {
     
     func isEditing(entry: SheetModel) -> Bool {
         entry.sheetIds.contains(ItemRowModel(itemId: itemId, typeId: module))
+    }
+
+    // MARK: - Search Functionality
+
+    func performSheetSearch(searchText: String) {
+        // Cancel any existing search task
+        searchTask?.cancel()
+
+        // If search is empty, reset to original entries
+        guard !searchText.isEmpty else {
+            resetSearch()
+            return
+        }
+
+        // Start new search task
+        searchTask = Task { @MainActor in
+            guard let searchControllable = linkControllable as? SearchControllable else {
+                // Fallback to simple filtering
+                performSimpleSearch(searchText: searchText)
+                return
+            }
+
+            let result = await searchControllable.searchInSheet(
+                itemId: itemId,
+                searchText: searchText,
+                includeLinks: true
+            )
+
+            // Check if task was cancelled
+            guard !Task.isCancelled else { return }
+
+            // Apply search results
+            await applySearchResults(result, searchText: searchText)
+        }
+    }
+
+    @MainActor
+    private func applySearchResults(_ result: SheetSearchResult, searchText: String) async {
+        // Store original entries if this is the first search
+        if originalEntries.isEmpty {
+            originalEntries = sheetModel.entries
+        }
+
+        // Store current search result
+        currentSearchResult = result
+
+        // Get matched entry IDs
+        let matchedIds = Set(result.matchedEntries.map { $0.entryId })
+
+        // Filter entries to only show matches
+        let filteredEntries = originalEntries.filter { entry in
+            guard let entryId = entry.source.entryId else { return false }
+            return matchedIds.contains(entryId)
+        }
+
+        // Update displayed entries with animation
+        withAnimation {
+            sheetModel.entries = filteredEntries
+        }
+
+        // Auto-expand links with matches
+        await expandLinksWithMatches(result: result, searchText: searchText)
+
+        // Update search highlighting in link text models
+        updateSearch()
+    }
+
+    @MainActor
+    private func expandLinksWithMatches(result: SheetSearchResult, searchText: String) async {
+        for (entryId, linkedItemIds) in result.expandedLinks {
+            // Find the entry in our sheet
+            guard let entryIndex = sheetModel.entries.firstIndex(where: { $0.source.entryId == entryId }) else {
+                continue
+            }
+
+            var entry = sheetModel.entries[entryIndex]
+
+            // Expand each linked item
+            for linkedItemId in linkedItemIds {
+                let rowModel = ItemRowModel(itemId: linkedItemId, typeId: module)
+
+                // Check if link is already expanded
+                guard !entry.sheetIds.contains(rowModel) else { continue }
+
+                // Create sub-sheet model for the linked item
+                let linkedModel = linkControllable.itemControllable.itemOrEmpty(for: linkedItemId)
+                let tableSheetModel = TableSheetModel(
+                    linkControllable: linkControllable,
+                    parent: self,
+                    model: linkedModel,
+                    level: entry.level + 1,
+                    module: module,
+                    searchText: searchText
+                )
+
+                // Store the sub-sheet
+                sheets[rowModel] = tableSheetModel
+
+                // Add to entry's expanded sheets
+                entry.sheetIds.append(rowModel)
+            }
+
+            // Update the entry with expanded links
+            sheetModel.entries[entryIndex] = entry
+        }
+    }
+
+    private func performSimpleSearch(searchText: String) {
+        // Store original entries if this is the first search
+        if originalEntries.isEmpty {
+            originalEntries = sheetModel.entries
+        }
+
+        // Simple filter by name and description
+        let filtered = originalEntries.filter { entry in
+            entry.name.localizedStandardContains(searchText) ||
+            entry.description.localizedStandardContains(searchText)
+        }
+
+        withAnimation {
+            sheetModel.entries = filtered
+        }
+
+        // Update search highlighting
+        updateSearch()
+    }
+
+    private func resetSearch() {
+        // Cancel any ongoing search
+        searchTask?.cancel()
+        searchTask = nil
+        currentSearchResult = nil
+
+        // Restore original entries if we have them
+        if !originalEntries.isEmpty {
+            withAnimation {
+                sheetModel.entries = originalEntries
+            }
+            originalEntries.removeAll()
+        }
+
+        // Update highlighting (removes highlights)
+        updateSearch()
+    }
+
+    func getMatchLocations(for entryId: UUID) -> [SheetMatchLocation] {
+        guard let searchResult = currentSearchResult else { return [] }
+        return searchResult.matchedEntries.first(where: { $0.entryId == entryId })?.matchLocations ?? []
+    }
+
+    func hasLinkMatch(for entry: SheetModel) -> Bool {
+        guard let entryId = entry.source.entryId else { return false }
+        let locations = getMatchLocations(for: entryId)
+        return locations.contains { location in
+            if case .link = location { return true }
+            return false
+        }
     }
 }
 
