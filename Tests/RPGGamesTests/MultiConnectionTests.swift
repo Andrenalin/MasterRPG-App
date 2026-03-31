@@ -174,7 +174,7 @@ struct MultiConnectionAudioTests {
         let env = try await MultiConnectionTestEnvironment.create()
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot)
         try await MockRoot.importTestData(into: env.masterRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 3)
-        try await #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.count == 2)
+        try await #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.count == 12)
 
         await env.masterRoot.adventureRoot.startGame()
         await env.player1Root.adventureRoot.startGame()
@@ -337,7 +337,7 @@ struct MultiConnectionAudioTests {
         #expect(confirmResponse?.subType == .ok)
         await #expect(env.player1Root.audioRoot.gameController.currentId == audioId)
         await #expect(env.player1Root.audioRoot.gameController.gameItem(for: audioId).version == version)
-        await #expect(env.player1Root.audioRoot.itemController.itemDataModel.items.count == 1)
+        await #expect(env.player1Root.audioRoot.itemController.itemDataModel.items.count == 10)
     }
 
     @Test("Master detects all players reported after receiving all confirmations")
