@@ -4,14 +4,11 @@
 
 import Foundation
 import FoundationModels
-
-#if canImport(PDFKit)
 import PDFKit
-#endif
 
 /// Foundation Models-based PDF summary analyzer for RPG documents
 @MainActor
-public final class PdfSummaryAnalyzer: PdfSummaryAnalyzing, @unchecked Sendable {
+struct PdfSummaryAnalyzer: Sendable {
 
     // MARK: - Configuration
 
@@ -26,7 +23,7 @@ public final class PdfSummaryAnalyzer: PdfSummaryAnalyzing, @unchecked Sendable 
 
     // MARK: - Initialization
 
-    public init(
+    init(
         maxPages: Int = 15,
         maxCharacters: Int = 9000,
         instructions: String? = nil
@@ -36,7 +33,7 @@ public final class PdfSummaryAnalyzer: PdfSummaryAnalyzing, @unchecked Sendable 
         self.instructions = instructions ?? Self.defaultInstructions
     }
 
-    public func analyzeWithProgress(
+    func analyzeWithProgress(
         from pdfDocument: PDFDocument,
         onPartialContent: @MainActor @Sendable (PdfSummaryAnalysis.PartiallyGenerated) -> Void
     ) async throws -> PdfSummaryAnalysis {
@@ -187,7 +184,7 @@ public final class PdfSummaryAnalyzer: PdfSummaryAnalyzing, @unchecked Sendable 
     private static let defaultInstructions = """
     Analyze and summarize RPG documents (rulebooks, adventures, supplements).
     Provide clear titles, concise summaries, relevant tags, and major sections.
-    Be precise and factual.
+    Be precise and factual, use document language. Don't change it.
     """
 }
 

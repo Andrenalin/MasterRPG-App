@@ -1,26 +1,8 @@
 // @copyright André Trettin
 
 #if !os(tvOS)
-
 import Foundation
-
-#if canImport(PDFKit)
 import PDFKit
-#endif
-
-/// Protocol for PDF summary analysis services
-@MainActor
-public protocol PdfSummaryAnalyzing: Sendable {
-    /// Analyzes PDF with streaming progress updates
-    /// - Parameters:
-    ///   - pdfDocument: The PDF document to analyze
-    ///   - onPartialContent: Callback for incremental updates during analysis
-    /// - Returns: Final summary analysis
-    func analyzeWithProgress(
-        from pdfDocument: PDFDocument,
-        onPartialContent: @escaping @MainActor @Sendable (PdfSummaryAnalysis.PartiallyGenerated) -> Void
-    ) async throws -> PdfSummaryAnalysis
-}
 
 /// Errors that can occur during PDF summary analysis
 public enum PdfSummaryAnalysisError: LocalizedError {

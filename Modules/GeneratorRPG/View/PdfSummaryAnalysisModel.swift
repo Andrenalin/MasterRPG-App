@@ -13,20 +13,18 @@ final class PdfSummaryAnalysisModel {
     var isAnalyzing: Bool = false
     var analysisProgress: PdfSummaryAnalysis.PartiallyGenerated?
     var lastError: String?
-    var isModelAvailable: Bool = true
 
-    private let useCase: AnalyzePdfSummaryUseCase
+    private let analyzer: PdfSummaryAnalyzer
 
-    init(useCase: AnalyzePdfSummaryUseCase = AnalyzePdfSummaryUseCase()) {
-        self.useCase = useCase
-        checkModelAvailability()
+    init() {
+        analyzer = PdfSummaryAnalyzer()
     }
 
     /// Analyzes PDF with streaming progress updates
     /// - Parameter pdfDocument: The PDF to analyze
     /// - Returns: Final summary analysis, or nil if analysis fails
     func analyzeWithProgress(from pdfDocument: PDFDocument) async -> PdfSummaryAnalysis? {
-        guard isModelAvailable else {
+        guard checkModelAvailability else {
             lastError = "Apple Intelligence is not available on this device"
             return nil
         }
@@ -41,7 +39,7 @@ final class PdfSummaryAnalysisModel {
         }
 
         do {
-            let content = try await useCase.analyzeWithProgress(from: pdfDocument) { [weak self] partial in
+            let content = try await analyzer.analyzeWithProgress(from: pdfDocument) { [weak self] partial in
                 self?.analysisProgress = partial
             }
             return content
@@ -51,9 +49,8 @@ final class PdfSummaryAnalysisModel {
         }
     }
 
-    /// Checks if the Foundation Models are available
-    func checkModelAvailability() {
-        isModelAvailable = SystemLanguageModel.default.availability == .available
+    var checkModelAvailability: Bool {
+        SystemLanguageModel.default.availability == .available
     }
 
     /// Clears the last error message

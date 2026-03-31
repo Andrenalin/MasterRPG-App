@@ -33,9 +33,6 @@ public struct PdfSummaryAnalysisView: View {
             }
             .padding()
         }
-        .onAppear {
-            model.checkModelAvailability()
-        }
         .task {
             try? await Task.sleep(for: .seconds(1))
             analyze()
@@ -46,7 +43,6 @@ public struct PdfSummaryAnalysisView: View {
 
     private var analyzeButton: some View {
         Button {
-            guard !model.isAnalyzing else { return }
             analyze()
         } label: {
             Label {
@@ -61,6 +57,7 @@ public struct PdfSummaryAnalysisView: View {
     }
 
     private func analyze() {
+        guard !model.isAnalyzing else { return }
         Task {
             if let content = await model.analyzeWithProgress(from: pdfDocument) {
                 onAnalysisCompleted(content)
