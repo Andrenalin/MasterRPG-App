@@ -1,12 +1,12 @@
 import Foundation
 
-public enum FoundationLabCoreError: LocalizedError, Sendable, Equatable {
+enum FoundationLabCoreError: LocalizedError, Sendable, Equatable {
     case invalidRequest(String)
     case unavailableCapability(String)
     case providerFailure(String)
     case unsupportedEnvironment(String)
 
-    public var errorDescription: String? {
+    var errorDescription: String? {
         switch self {
         case .invalidRequest(let message):
             return "Invalid request: \(message)"

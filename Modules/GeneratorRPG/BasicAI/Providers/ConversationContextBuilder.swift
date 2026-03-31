@@ -1,8 +1,8 @@
 import Foundation
 import FoundationModels
 
-public enum FoundationLabConversationContextBuilder {
-    public static func conversationText(
+enum ConversationContextBuilder {
+    static func conversationText(
         from transcript: Transcript,
         userLabel: String,
         assistantLabel: String
@@ -22,7 +22,7 @@ public enum FoundationLabConversationContextBuilder {
         .joined(separator: "\n\n")
     }
 
-    public static func contextInstructions(
+    static func contextInstructions(
         baseInstructions: String,
         summary: FoundationLabConversationSummary,
         continuationNote: String? = nil

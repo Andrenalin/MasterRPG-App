@@ -302,7 +302,7 @@ private extension ConversationEngine {
             instructions: Instructions(configuration.summaryInstructions)
         )
 
-        let conversationText = FoundationLabConversationContextBuilder.conversationText(
+        let conversationText = ConversationContextBuilder.conversationText(
             from: session.transcript,
             userLabel: configuration.conversationUserLabel,
             assistantLabel: configuration.conversationAssistantLabel
@@ -322,7 +322,7 @@ private extension ConversationEngine {
     }
 
     func createNewSession(with summary: FoundationLabConversationSummary) {
-        let contextInstructions = FoundationLabConversationContextBuilder.contextInstructions(
+        let contextInstructions = ConversationContextBuilder.contextInstructions(
             baseInstructions: configuration.baseInstructions,
             summary: summary,
             continuationNote: configuration.continuationNote
