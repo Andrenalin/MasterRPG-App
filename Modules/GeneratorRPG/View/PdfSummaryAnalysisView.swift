@@ -3,7 +3,6 @@
 #if !os(tvOS)
 
 import CoreRPG
-import GeneratorRPG
 import PDFKit
 import SwiftUI
 
@@ -20,20 +19,20 @@ public struct PdfSummaryAnalysisView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 20) {
-            if !model.isModelAvailable {
-                unavailableView
-            } else if model.isAnalyzing {
-                analyzingView
-            } else {
-                analyzeButton
+        FoundationBasicView {
+            VStack(spacing: 20) {
+                if model.isAnalyzing {
+                    analyzingView
+                } else {
+                    analyzeButton
+                }
+                
+                if let error = model.lastError {
+                    errorView(error)
+                }
             }
-
-            if let error = model.lastError {
-                errorView(error)
-            }
+            .padding()
         }
-        .padding()
         .onAppear {
             model.checkModelAvailability()
         }
@@ -121,23 +120,6 @@ public struct PdfSummaryAnalysisView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
-    }
-
-    private var unavailableView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.largeTitle)
-                .foregroundStyle(.orange)
-
-            Text("Apple Intelligence Required", bundle: .module)
-                .font(.headline)
-
-            Text("PDF content extraction requires Apple Intelligence, which is not available on this device.", bundle: .module)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding()
     }
 
     private func errorView(_ error: String) -> some View {

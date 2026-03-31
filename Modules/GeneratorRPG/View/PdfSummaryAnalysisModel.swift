@@ -3,43 +3,29 @@
 #if !os(tvOS)
 
 import Foundation
-import GeneratorRPG
 import FoundationModels
 import Observation
-
-#if canImport(PDFKit)
 import PDFKit
-#endif
 
-/// Observable model for PDF summary analysis UI state
-@MainActor
-@Observable
-public final class PdfSummaryAnalysisModel {
+@MainActor @Observable
+final class PdfSummaryAnalysisModel {
 
-    // MARK: - Published State
-
-    public var isAnalyzing: Bool = false
-    public var analysisProgress: PdfSummaryAnalysis.PartiallyGenerated?
-    public var lastError: String?
-    public var isModelAvailable: Bool = true
-
-    // MARK: - Use Case
+    var isAnalyzing: Bool = false
+    var analysisProgress: PdfSummaryAnalysis.PartiallyGenerated?
+    var lastError: String?
+    var isModelAvailable: Bool = true
 
     private let useCase: AnalyzePdfSummaryUseCase
 
-    // MARK: - Initialization
-
-    public init(useCase: AnalyzePdfSummaryUseCase = AnalyzePdfSummaryUseCase()) {
+    init(useCase: AnalyzePdfSummaryUseCase = AnalyzePdfSummaryUseCase()) {
         self.useCase = useCase
         checkModelAvailability()
     }
 
-    // MARK: - Actions
-
     /// Analyzes PDF with streaming progress updates
     /// - Parameter pdfDocument: The PDF to analyze
     /// - Returns: Final summary analysis, or nil if analysis fails
-    public func analyzeWithProgress(from pdfDocument: PDFDocument) async -> PdfSummaryAnalysis? {
+    func analyzeWithProgress(from pdfDocument: PDFDocument) async -> PdfSummaryAnalysis? {
         guard isModelAvailable else {
             lastError = "Apple Intelligence is not available on this device"
             return nil
@@ -66,12 +52,12 @@ public final class PdfSummaryAnalysisModel {
     }
 
     /// Checks if the Foundation Models are available
-    public func checkModelAvailability() {
+    func checkModelAvailability() {
         isModelAvailable = SystemLanguageModel.default.availability == .available
     }
 
     /// Clears the last error message
-    public func clearError() {
+    func clearError() {
         lastError = nil
     }
 }
