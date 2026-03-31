@@ -12,6 +12,7 @@ final class PdfSummaryAnalysisModel {
 
     var isAnalyzing: Bool = false
     var analysisProgress: PdfSummaryAnalysis.PartiallyGenerated?
+    var pageProgress: PdfAnalysisProgress?
     var lastError: String?
 
     private let analyzer: PdfSummaryAnalyzer
@@ -41,6 +42,8 @@ final class PdfSummaryAnalysisModel {
         do {
             let content = try await analyzer.analyzeWithProgress(from: pdfDocument) { [weak self] partial in
                 self?.analysisProgress = partial
+            } onProgress: { [weak self] progress in
+                self?.pageProgress = progress
             }
             return content
         } catch {

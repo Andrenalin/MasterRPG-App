@@ -56,4 +56,20 @@ public struct PdfSection: Equatable, Sendable {
     }
 }
 
+/// Progress information for page-by-page analysis
+public struct PdfAnalysisProgress: Equatable, Sendable {
+    public let currentPage: Int
+    public let totalPages: Int
+
+    public init(currentPage: Int, totalPages: Int) {
+        self.currentPage = currentPage
+        self.totalPages = totalPages
+    }
+
+    public var percentage: Double {
+        guard totalPages > 0 else { return 0 }
+        return Double(currentPage) / Double(totalPages)
+    }
+}
+
 #endif

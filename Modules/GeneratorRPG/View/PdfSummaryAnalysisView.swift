@@ -72,6 +72,8 @@ public struct PdfSummaryAnalysisView: View {
 
             Text("Analyzing PDF with Apple Intelligence...", bundle: .module)
                 .font(.headline)
+            
+            ProgressView(value: Double(model.pageProgress?.currentPage ?? 0), total: Double(model.pageProgress?.totalPages ?? 1))
 
             if let progress = model.analysisProgress {
                 VStack(alignment: .leading, spacing: 8) {

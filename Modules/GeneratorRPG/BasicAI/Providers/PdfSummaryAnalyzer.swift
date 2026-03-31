@@ -24,7 +24,7 @@ struct PdfSummaryAnalyzer: Sendable {
     // MARK: - Initialization
 
     init(
-        maxPages: Int = 15,
+        maxPages: Int = 150,
         maxCharacters: Int = 9000,
         instructions: String? = nil
     ) {
@@ -35,7 +35,8 @@ struct PdfSummaryAnalyzer: Sendable {
 
     func analyzeWithProgress(
         from pdfDocument: PDFDocument,
-        onPartialContent: @MainActor @Sendable (PdfSummaryAnalysis.PartiallyGenerated) -> Void
+        onPartialContent: @MainActor @Sendable (PdfSummaryAnalysis.PartiallyGenerated) -> Void,
+        onProgress: @MainActor @Sendable (PdfAnalysisProgress) -> Void
     ) async throws -> PdfSummaryAnalysis {
         // Check model availability
         guard SystemLanguageModel.default.availability == .available else {
@@ -47,94 +48,102 @@ struct PdfSummaryAnalyzer: Sendable {
             throw PdfSummaryAnalysisError.emptyDocument
         }
 
-        // Extract text from PDF
-        let extractedText = try extractText(from: pdfDocument)
-
-        guard !extractedText.isEmpty else {
-            throw PdfSummaryAnalysisError.textExtractionFailed
-        }
-
-        // Create session
-        let session = LanguageModelSession(instructions: instructions)
-
-        // Prewarm for faster generation
-        session.prewarm()
-
-        // Stream generation with progress updates
-        do {
-            let stream = session.streamResponse(
-                to: buildPrompt(with: extractedText, pageCount: pdfDocument.pageCount),
-                generating: PdfSummaryAnalysis.self
-            )
-
-            var latestContent: PdfSummaryAnalysis.PartiallyGenerated?
-
-            for try await snapshot in stream {
-                // Pass the partial content for progress updates
-                latestContent = snapshot.content
-                onPartialContent(snapshot.content)
-            }
-
-            guard let partial = latestContent,
-                  let title = partial.title,
-                  let summary = partial.summary,
-                  let tags = partial.tags,
-                  let partialSections = partial.sections else {
-                throw PdfSummaryAnalysisError.generationFailed("Streaming completed but no complete content received")
-            }
-
-            // Convert PartiallyGenerated sections to actual PdfSection instances
-            let sections: [PdfSection] = partialSections.compactMap { partialSection in
-                guard let heading = partialSection.heading,
-                      let sectionSummary = partialSection.summary else {
-                    return nil
-                }
-                return PdfSection(
-                    heading: heading,
-                    summary: sectionSummary,
-                    pageNumber: partialSection.pageNumber ?? nil
-                )
-            }
-
-            return PdfSummaryAnalysis(
-                title: title,
-                summary: summary,
-                tags: tags,
-                sections: sections
-            )
-        } catch let error as LanguageModelSession.GenerationError {
-            throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))
-        } catch {
-            throw PdfSummaryAnalysisError.generationFailed(error.localizedDescription)
-        }
-    }
-
-    // MARK: - Private Methods
-
-    private func extractText(from pdfDocument: PDFDocument) throws -> String {
         let pageLimit = min(maxPages, pdfDocument.pageCount)
-        var fullText = ""
-
+        var accumulatedText = ""
+        var accumulatedSections: [PdfSection] = []
+        var finalTitle: String?
+        var finalSummary: String = ""
+        var accumulatedTags: [String] = []
+        
+        // Process page by page
         for pageIndex in 0..<pageLimit {
+            // Report progress for current page
+            onProgress(PdfAnalysisProgress(
+                currentPage: pageIndex + 1,
+                totalPages: pageLimit
+            ))
+
             guard let page = pdfDocument.page(at: pageIndex),
-                  let pageText = page.string else {
+                  let pageText = page.string, !pageText.isEmpty else {
                 continue
             }
 
-            // Add page marker for better section detection
-            fullText += "--- Page \(pageIndex + 1) ---\n"
-            fullText += pageText + "\n\n"
-        }
+            // Add page marker and text
+            accumulatedText += "--- Page \(pageIndex + 1) ---\n"
+            accumulatedText += pageText + "\n\n"
 
-        // Truncate if too long
-        if fullText.count > maxCharacters {
-            fullText = String(fullText.prefix(maxCharacters))
-            // Add indication of truncation
-            fullText += "\n\n[Content truncated due to length...]"
-        }
+            // Truncate if getting too large (stay under context window)
+            if accumulatedText.count > maxCharacters {
+                accumulatedText = String(accumulatedText.prefix(maxCharacters))
+                accumulatedText += "\n\n[Content truncated...]"
+            }
 
-        return fullText
+            guard !accumulatedText.isEmpty else {
+                throw PdfSummaryAnalysisError.textExtractionFailed
+            }
+
+            do {
+                // Now analyze the accumulated text with streaming
+                let session = LanguageModelSession(instructions: instructions)
+                session.prewarm()
+
+                let stream = session.streamResponse(
+                    to: buildPrompt(with: pageText, pageCount: pdfDocument.pageCount),
+                    generating: PdfSummaryAnalysis.self
+                )
+
+                var latestContent: PdfSummaryAnalysis.PartiallyGenerated?
+
+                for try await snapshot in stream {
+                    latestContent = snapshot.content
+                    // Report final analysis progress with partial content
+                    onPartialContent(snapshot.content)
+                }
+
+                guard let partial = latestContent,
+                      let title = partial.title,
+                      let summary = partial.summary,
+                      let tags = partial.tags,
+                      let partialSections = partial.sections else {
+                    throw PdfSummaryAnalysisError.generationFailed("Streaming completed but no complete content received")
+                }
+                
+                if finalTitle == nil {
+                    finalTitle = title
+                }
+                
+                finalSummary.append(summary)
+                accumulatedTags.append(contentsOf: tags)
+                
+                // Convert PartiallyGenerated sections to actual PdfSection instances
+                accumulatedSections.append(contentsOf: partialSections.compactMap { partialSection in
+                    guard let heading = partialSection.heading,
+                          let sectionSummary = partialSection.summary else {
+                        return nil
+                    }
+                    return PdfSection(
+                        heading: heading,
+                        summary: sectionSummary,
+                        pageNumber: partialSection.pageNumber ?? nil
+                    )
+                })
+
+            } catch let error as LanguageModelSession.GenerationError {
+                throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))
+            } catch {
+                throw PdfSummaryAnalysisError.generationFailed(error.localizedDescription)
+            }
+        }
+        return PdfSummaryAnalysis(
+            title: finalTitle ?? "",
+            summary: finalSummary,
+            tags: accumulatedTags,
+            sections: accumulatedSections
+        )
+
     }
+
+    // MARK: - Private Methods
 
     private func buildPrompt(with text: String, pageCount: Int) -> String {
         """
