@@ -35,7 +35,7 @@ struct PdfContentExtractor: Sendable {
 
     public func extractWithProgress(
         from pdfDocument: PDFDocument,
-        onPartialBlocks: @MainActor @Sendable ([BlockGenModel]) -> Void
+        resultModel: PdfContentExtractionResultModel
     ) async throws -> [BlockGenModel] {
         // Check model availability
         guard SystemLanguageModel.default.availability == .available else {
@@ -54,13 +54,16 @@ struct PdfContentExtractor: Sendable {
             throw PdfSummaryAnalysisError.textExtractionFailed
         }
 
-        // Create session
+        let pageLimit = min(maxPages, pdfDocument.pageCount)
 
         // Generate without streaming for array types
         // Note: Foundation Models streaming for arrays doesn't provide complete objects incrementally
         do {
             var blocks: [BlockGenModel] = []
             for (index, text) in extractedText.enumerated() {
+                // Report progress for current page
+                resultModel.pageProgress = PdfAnalysisProgress(currentPage: index + 1, totalPages: pageLimit)
+
                 let session = LanguageModelSession(instructions: instructions)
 
                 // Prewarm for faster generation
@@ -71,11 +74,10 @@ struct PdfContentExtractor: Sendable {
                     generating: [BlockGenModel].self,
                     includeSchemaInPrompt: false
                 )
-                
-                // Call onPartialBlocks once with the final result
-                onPartialBlocks(response.content)
-                
+
+                // Update extraction progress with accumulated blocks
                 blocks.append(contentsOf: response.content)
+                resultModel.extractionProgress = blocks
             }
             return blocks
         } catch let error as LanguageModelSession.GenerationError {

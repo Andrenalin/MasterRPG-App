@@ -9,35 +9,31 @@ import PDFKit
 final class PdfContentExtractionModel {
 
     var isExtracting: Bool = false
-    var extractingProgress: [BlockGenModel] = []
-    var pageProgress: PdfAnalysisProgress?
+    let resultModel: PdfContentExtractionResultModel
     var lastError: String?
 
     private let analyzer: PdfContentExtractor
 
     init() {
         analyzer = PdfContentExtractor()
+        resultModel = PdfContentExtractionResultModel()
     }
 
-    /// Analyzes PDF with streaming progress updates
-    /// - Parameter pdfDocument: The PDF to analyze
-    /// - Returns: Final summary analysis, or nil if analysis fails
+    /// Extracts PDF content with streaming progress updates
+    /// - Parameter pdfDocument: The PDF to extract
+    /// - Returns: Final extracted blocks, or empty array if extraction fails
     func extractWithProgress(from pdfDocument: PDFDocument) async -> [BlockGenModel] {
-
         isExtracting = true
-        extractingProgress = []
+        resultModel.extractionProgress = nil
+        resultModel.pageProgress = nil
         lastError = nil
 
         defer {
             isExtracting = false
-            extractingProgress = []
         }
 
         do {
-            let content = try await analyzer.extractWithProgress(from: pdfDocument) { [weak self] partial in
-                self?.extractingProgress = partial
-            }
-            return content
+            return try await analyzer.extractWithProgress(from: pdfDocument, resultModel: resultModel)
         } catch {
             lastError = error.localizedDescription
             return []
