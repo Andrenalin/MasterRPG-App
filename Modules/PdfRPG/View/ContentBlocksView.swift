@@ -9,24 +9,18 @@ import SwiftUI
 /// View displaying extracted PDF content with selectable properties
 public struct ContentBlocksView: View {
 
-    let content: [BlockGenModel]
+    let content: [BlockEntryGenModel]
 
-    public init(content: [BlockGenModel]) {
+    public init(content: [BlockEntryGenModel]) {
         self.content = content
     }
 
     public var body: some View {
         Form {
             Section {
-                Text("Select which extracted values you would like to apply on the PDF item.", bundle: .module)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
                 ForEach(content) { block in
-                    Text(block.name)
-                    Text(block.information)
+                    Text(block.title)
+                    Text(block.content)
                 }
             }
         }

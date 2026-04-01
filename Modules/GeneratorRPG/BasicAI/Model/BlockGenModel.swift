@@ -30,10 +30,10 @@ public enum BlockCategoryGenModel: String, CaseIterable, Equatable, Sendable {
     case table
 }
 
-@Generable(description: "THe entry of the block: Adventure it could be scenarios, Maps could be rooms, Character could be values, and Table could be rows.")
+@Generable(description: "The entry of the block could be a section / chapter / paragraph")
 public struct BlockEntryGenModel: Equatable, Identifiable, Sendable {
     public let id: UUID = UUID()
-    @Guide(description: "A short title of this particular section.")
+    @Guide(description: "A short title of this particular section, usually the section title.")
     public let title: String
     public let content: String
 }

@@ -6,6 +6,11 @@ import CoreRPG
 import GeneratorRPG
 import SwiftUI
 import PDFKit
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 struct ContentExtractionView: View {
     let itemId: UUID
@@ -13,7 +18,6 @@ struct ContentExtractionView: View {
     @Environment(PdfRootModel.self) private var root
     @Environment(\.navigator) private var navigator
 
-    @State private var propertySelection = PdfPropertySelection()
     @State private var viewState: ViewState = .loading
 
     var body: some View {
@@ -36,18 +40,17 @@ struct ContentExtractionView: View {
 
                 if case .extracted = viewState {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button(role: .confirm) {
-                            applyAndClose()
+                        Button {
+                            copyToClipboard()
                         } label: {
                             Label {
-                                Text("Apply", bundle: .module)
+                                Text("Copy", bundle: .module)
                             } icon: {
-                                Image(systemName: "checkmark")
+                                Image(systemName: "doc.on.clipboard")
                             }
                         }
-                        .disabled(!propertySelection.hasAnySelected)
-                        .accessibilityLabel("Apply selected properties")
-                        .accessibilityHint(Text("Applies the selected properties to the PDF and closes", bundle: .module))
+                        .accessibilityLabel(Text("Copy blocks to clipboard", bundle: .module))
+                        .accessibilityHint(Text("Copies the extracted content blocks as text to the clipboard", bundle: .module))
                     }
                 }
             }
@@ -111,13 +114,25 @@ struct ContentExtractionView: View {
         viewState = .extracting(document)
     }
 
-    private func applyAndClose() {
-        guard case .extracted(let content) = viewState, propertySelection.hasAnySelected else {
-            navigator.back()
+    private func copyToClipboard() {
+        guard case .extracted(let content) = viewState else {
             return
         }
 
-        navigator.back()
+        var text = ""
+        for block in content {
+            text += block.title + "\n"
+            text += block.content + "\n"
+            text += "\n"
+        }
+
+        #if os(macOS)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        #else
+        UIPasteboard.general.string = text
+        #endif
     }
 
     // MARK: - ViewState
@@ -125,7 +140,7 @@ struct ContentExtractionView: View {
     private enum ViewState {
         case loading
         case extracting(PDFDocument)
-        case extracted([BlockGenModel])
+        case extracted([BlockEntryGenModel])
         case unavailable
     }
 }

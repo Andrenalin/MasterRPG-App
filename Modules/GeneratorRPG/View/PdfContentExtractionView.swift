@@ -8,9 +8,9 @@ public struct PdfContentExtractionView: View {
 
     @State private var model = PdfContentExtractionModel()
     let pdfDocument: PDFDocument
-    let onContentExtracted: ([BlockGenModel]) -> Void
+    let onContentExtracted: ([BlockEntryGenModel]) -> Void
     
-    public init(pdfDocument: PDFDocument, onContentExtracted: @escaping ([BlockGenModel]) -> Void) {
+    public init(pdfDocument: PDFDocument, onContentExtracted: @escaping ([BlockEntryGenModel]) -> Void) {
         self.pdfDocument = pdfDocument
         self.onContentExtracted = onContentExtracted
     }
@@ -66,43 +66,40 @@ public struct PdfContentExtractionView: View {
             Text("Extracting PDF content with Apple Intelligence...", bundle: .module)
                 .font(.headline)
 
-            ProgressView(value: Double(model.resultModel.pageProgress?.currentPage ?? 0), total: Double(model.resultModel.pageProgress?.totalPages ?? 1)) {
+            ProgressView(value: Double(model.resultModel.pageProgress.currentPage), total: Double(model.resultModel.pageProgress.totalPages)) {
                 HStack {
-                    Text("Page \(model.resultModel.pageProgress?.currentPage ?? 0)", bundle: .module)
+                    Text("Page \(model.resultModel.pageProgress.currentPage)", bundle: .module)
                     Spacer()
-                    Text("Total: \(model.resultModel.pageProgress?.totalPages ?? 0) pages", bundle: .module)
+                    Text("Total: \(model.resultModel.pageProgress.totalPages) pages", bundle: .module)
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
 
-            if let progress = model.resultModel.extractionProgress, !progress.isEmpty {
+            if !model.resultModel.extractionProgress.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                             .contentTransition(.symbolEffect(.automatic))
-                        Text("Extracted \(progress.count) blocks", bundle: .module)
+                        Text("Extracted \(model.resultModel.extractionProgress.count) blocks", bundle: .module)
                             .font(.subheadline)
                     }
 
-                    ForEach(progress.prefix(3)) { block in
+                    ForEach(model.resultModel.extractionProgress.prefix(3)) { block in
                         HStack {
                             Image(systemName: "doc.text.fill")
                                 .foregroundStyle(.blue)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(block.name)
+                                Text(block.title)
                                     .font(.caption)
                                     .lineLimit(1)
-                                Text("\(block.blockCategory.rawValue.capitalized) - \(block.entries.count) entries")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
 
-                    if progress.count > 3 {
-                        Text("... and \(progress.count - 3) more", bundle: .module)
+                    if model.resultModel.extractionProgress.count > 3 {
+                        Text("... and \(model.resultModel.extractionProgress.count - 3) more", bundle: .module)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }

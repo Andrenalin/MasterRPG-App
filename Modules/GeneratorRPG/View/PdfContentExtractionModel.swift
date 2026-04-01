@@ -22,10 +22,10 @@ final class PdfContentExtractionModel {
     /// Extracts PDF content with streaming progress updates
     /// - Parameter pdfDocument: The PDF to extract
     /// - Returns: Final extracted blocks, or empty array if extraction fails
-    func extractWithProgress(from pdfDocument: PDFDocument) async -> [BlockGenModel] {
+    func extractWithProgress(from pdfDocument: PDFDocument) async -> [BlockEntryGenModel] {
         isExtracting = true
-        resultModel.extractionProgress = nil
-        resultModel.pageProgress = nil
+        resultModel.extractionProgress = []
+        resultModel.pageProgress = PdfAnalysisProgress(currentPage: 0, totalPages: 1)
         lastError = nil
 
         defer {

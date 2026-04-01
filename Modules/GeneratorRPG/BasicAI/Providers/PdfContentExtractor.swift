@@ -36,7 +36,7 @@ struct PdfContentExtractor: Sendable {
     public func extractWithProgress(
         from pdfDocument: PDFDocument,
         resultModel: PdfContentExtractionResultModel
-    ) async throws -> [BlockGenModel] {
+    ) async throws -> [BlockEntryGenModel] {
         // Check model availability
         guard SystemLanguageModel.default.availability == .available else {
             throw PdfSummaryAnalysisError.modelUnavailable
@@ -59,7 +59,7 @@ struct PdfContentExtractor: Sendable {
         // Generate without streaming for array types
         // Note: Foundation Models streaming for arrays doesn't provide complete objects incrementally
         do {
-            var blocks: [BlockGenModel] = []
+            var blocks: [BlockEntryGenModel] = []
             for (index, text) in extractedText.enumerated() {
                 // Report progress for current page
                 resultModel.pageProgress = PdfAnalysisProgress(currentPage: index + 1, totalPages: pageLimit)
@@ -71,7 +71,7 @@ struct PdfContentExtractor: Sendable {
 
                 let response = try await session.respond(
                     to: buildPrompt(with: text, pageNumber: index + 1, pageCount: pdfDocument.pageCount),
-                    generating: [BlockGenModel].self,
+                    generating: [BlockEntryGenModel].self,
                     includeSchemaInPrompt: false
                 )
 
@@ -91,7 +91,6 @@ struct PdfContentExtractor: Sendable {
 
     private func extractText(from pdfDocument: PDFDocument) throws -> [String] {
         var result: [String] = []
-        var fullText = ""
 
         for pageIndex in 0..<pdfDocument.pageCount {
             guard let page = pdfDocument.page(at: pageIndex),
@@ -99,11 +98,7 @@ struct PdfContentExtractor: Sendable {
                 continue
             }
 
-            // Add page marker for better section detection
-            fullText += "--- Page \(pageIndex + 1) ---\n"
-            fullText += pageText + "\n\n"
-            result.append(fullText)
-            fullText = ""
+            result.append(pageText)
         }
 
         return result
@@ -146,7 +141,7 @@ struct PdfContentExtractor: Sendable {
     // MARK: - Constants
 
     private static let defaultInstructions = """
-    Your task is to extract the contents. Do not summarize or change the text, except spelling.
+    Your task is to extract the content. Do not summarize or change the text, except spelling, or if the text is missplaced. Don't change the content language!
     """
 }
 
