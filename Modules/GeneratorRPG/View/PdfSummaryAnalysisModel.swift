@@ -1,7 +1,5 @@
 // @copyright André Trettin
 
-#if !os(tvOS)
-
 import Foundation
 import FoundationModels
 import Observation
@@ -11,14 +9,14 @@ import PDFKit
 final class PdfSummaryAnalysisModel {
 
     var isAnalyzing: Bool = false
-    var analysisProgress: PdfSummaryAnalysis.PartiallyGenerated?
-    var pageProgress: PdfAnalysisProgress?
+    let resultModel: PdfSummaryAnalyzyerResultModel
     var lastError: String?
 
     private let analyzer: PdfSummaryAnalyzer
 
     init() {
         analyzer = PdfSummaryAnalyzer()
+        resultModel = PdfSummaryAnalyzyerResultModel()
     }
 
     /// Analyzes PDF with streaming progress updates
@@ -26,21 +24,16 @@ final class PdfSummaryAnalysisModel {
     /// - Returns: Final summary analysis, or nil if analysis fails
     func analyzeWithProgress(from pdfDocument: PDFDocument) async -> PdfSummaryAnalysis? {
         isAnalyzing = true
-        analysisProgress = nil
+        resultModel.analysisProgress = nil
+        resultModel.pageProgress = nil
         lastError = nil
 
         defer {
             isAnalyzing = false
-            analysisProgress = nil
         }
 
         do {
-            let content = try await analyzer.analyzeWithProgress(from: pdfDocument) { [weak self] partial in
-                self?.analysisProgress = partial
-            } onProgress: { [weak self] progress in
-                self?.pageProgress = progress
-            }
-            return content
+            return try await analyzer.analyzeWithProgress(from: pdfDocument, resultModel: resultModel)
         } catch {
             lastError = error.localizedDescription
             return nil
@@ -52,5 +45,3 @@ final class PdfSummaryAnalysisModel {
         lastError = nil
     }
 }
-
-#endif

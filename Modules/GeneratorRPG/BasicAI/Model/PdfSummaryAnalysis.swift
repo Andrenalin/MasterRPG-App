@@ -1,7 +1,5 @@
 // @copyright André Trettin
 
-#if !os(tvOS)
-
 import Foundation
 import FoundationModels
 
@@ -71,5 +69,3 @@ public struct PdfAnalysisProgress: Equatable, Sendable {
         return Double(currentPage) / Double(totalPages)
     }
 }
-
-#endif

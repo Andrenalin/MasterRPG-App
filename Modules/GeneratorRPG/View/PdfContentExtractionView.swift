@@ -1,7 +1,5 @@
 // @copyright André Trettin
 
-#if !os(tvOS)
-
 import CoreRPG
 import SwiftUI
 import PDFKit
@@ -91,5 +89,3 @@ public struct PdfContentExtractionView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
-
-#endif

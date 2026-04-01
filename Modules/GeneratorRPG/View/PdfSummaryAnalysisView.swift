@@ -1,7 +1,5 @@
 // @copyright André Trettin
 
-#if !os(tvOS)
-
 import CoreRPG
 import PDFKit
 import SwiftUI
@@ -72,45 +70,51 @@ public struct PdfSummaryAnalysisView: View {
 
             Text("Analyzing PDF with Apple Intelligence...", bundle: .module)
                 .font(.headline)
-            
-            ProgressView(value: Double(model.pageProgress?.currentPage ?? 0), total: Double(model.pageProgress?.totalPages ?? 1))
 
-            if let progress = model.analysisProgress {
+            ProgressView(value: Double(model.resultModel.pageProgress?.currentPage ?? 0), total: Double(model.resultModel.pageProgress?.totalPages ?? 1)) {
+                HStack {
+                    Text("Page \(model.resultModel.pageProgress?.currentPage ?? 0)", bundle: .module)
+                    Spacer()
+                    Text("Total: \(model.resultModel.pageProgress?.totalPages ?? 0) pages", bundle: .module)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            if let progress = model.resultModel.analysisProgress {
                 VStack(alignment: .leading, spacing: 8) {
-                    if let title = progress.title {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                            Text("Title: \(title)", bundle: .module)
-                                .font(.subheadline)
-                        }
+                    HStack {
+                        Image(systemName: progress.title == nil ? "xmark.circle" : "checkmark.circle.fill")
+                            .foregroundStyle(progress.title == nil ? .red : .green)
+                            .contentTransition(.symbolEffect(.automatic))
+                        Text("Title: \(progress.title ?? "<none>")", bundle: .module)
+                            .font(.subheadline)
                     }
 
-                    if progress.summary != nil {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                            Text("Summary extracted", bundle: .module)
-                                .font(.subheadline)
-                        }
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(progress.summary == nil ? .red : .green)
+                            .contentTransition(.symbolEffect(.automatic))
+                        Text("Summary \(progress.summary == nil ? "...." : "extracted")", bundle: .module)
+                            .font(.subheadline)
                     }
 
-                    if let tags = progress.tags, !tags.isEmpty {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                            Text("Found \(tags.count) tags", bundle: .module)
-                                .font(.subheadline)
-                        }
+                    HStack {
+                        Image(systemName: (progress.tags?.isEmpty ?? true) ? "xmark.circle" : "checkmark.circle.fill")
+                            .foregroundStyle((progress.tags?.isEmpty ?? true) ? .red : .green)
+                            .contentTransition(.symbolEffect(.automatic))
+
+                        Text("Found \(progress.tags?.count ?? 0) tags", bundle: .module)
+                            .font(.subheadline)
                     }
 
-                    if let sections = progress.sections, !sections.isEmpty {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                            Text("Identified \(sections.count) sections", bundle: .module)
-                                .font(.subheadline)
-                        }
+                    HStack {
+                        Image(systemName: (progress.sections?.isEmpty ?? true) ? "xmark.circle" : "checkmark.circle.fill")
+                            .foregroundStyle((progress.sections?.isEmpty ?? true) ? .red : .green)
+                            .contentTransition(.symbolEffect(.automatic))
+
+                        Text("Identified \(progress.sections?.count ?? 0) sections", bundle: .module)
+                            .font(.subheadline)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -156,5 +160,3 @@ public struct PdfSummaryAnalysisView: View {
         Text("No sample PDF available")
     }
 }
-
-#endif

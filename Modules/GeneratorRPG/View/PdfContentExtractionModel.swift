@@ -1,7 +1,5 @@
 // @copyright André Trettin
 
-#if !os(tvOS)
-
 import Foundation
 import FoundationModels
 import Observation
@@ -51,5 +49,3 @@ final class PdfContentExtractionModel {
         lastError = nil
     }
 }
-
-#endif

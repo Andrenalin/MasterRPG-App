@@ -1,7 +1,5 @@
 // @copyright André Trettin
 
-#if !os(tvOS)
-
 import Foundation
 import FoundationModels
 import PDFKit
@@ -10,14 +8,10 @@ import PDFKit
 @MainActor
 struct PdfSummaryAnalyzer: Sendable {
 
-    // MARK: - Configuration
-
     /// Maximum number of pages to process (to stay under 4096 token limit)
     private let maxPages: Int
-
     /// Maximum characters to extract (rough estimate: 3 chars per token, targeting ~3000 tokens for input)
     private let maxCharacters: Int
-
     /// Instructions for the model
     private let instructions: String
 
@@ -33,11 +27,7 @@ struct PdfSummaryAnalyzer: Sendable {
         self.instructions = instructions ?? Self.defaultInstructions
     }
 
-    func analyzeWithProgress(
-        from pdfDocument: PDFDocument,
-        onPartialContent: @MainActor @Sendable (PdfSummaryAnalysis.PartiallyGenerated) -> Void,
-        onProgress: @MainActor @Sendable (PdfAnalysisProgress) -> Void
-    ) async throws -> PdfSummaryAnalysis {
+    func analyzeWithProgress(from pdfDocument: PDFDocument, resultModel: PdfSummaryAnalyzyerResultModel) async throws -> PdfSummaryAnalysis {
         // Check model availability
         guard SystemLanguageModel.default.availability == .available else {
             throw PdfSummaryAnalysisError.modelUnavailable
@@ -58,10 +48,7 @@ struct PdfSummaryAnalyzer: Sendable {
         // Process page by page
         for pageIndex in 0..<pageLimit {
             // Report progress for current page
-            onProgress(PdfAnalysisProgress(
-                currentPage: pageIndex + 1,
-                totalPages: pageLimit
-            ))
+            resultModel.pageProgress = PdfAnalysisProgress(currentPage: pageIndex + 1, totalPages: pageLimit)
 
             guard let page = pdfDocument.page(at: pageIndex),
                   let pageText = page.string, !pageText.isEmpty else {
@@ -97,7 +84,7 @@ struct PdfSummaryAnalyzer: Sendable {
                 for try await snapshot in stream {
                     latestContent = snapshot.content
                     // Report final analysis progress with partial content
-                    onPartialContent(snapshot.content)
+                    resultModel.analysisProgress = snapshot.content
                 }
 
                 guard let partial = latestContent,
@@ -196,5 +183,3 @@ struct PdfSummaryAnalyzer: Sendable {
     Be precise and factual, use document language. Don't change it.
     """
 }
-
-#endif
