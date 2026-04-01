@@ -1,6 +1,8 @@
+// @copyright André Trettin
+
 import Foundation
 
-enum FoundationLabCoreError: LocalizedError, Sendable, Equatable {
+enum FoundationModelCoreError: LocalizedError, Sendable, Equatable {
     case invalidRequest(String)
     case unavailableCapability(String)
     case providerFailure(String)

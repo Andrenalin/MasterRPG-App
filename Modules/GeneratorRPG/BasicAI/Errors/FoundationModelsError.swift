@@ -1,9 +1,4 @@
-//
-//  FoundationModelsError.swift
-//  FoundationLab
-//
-//  Created by Rudrank Riyam on 6/9/25.
-//
+// @copyright André Trettin
 
 import Foundation
 import FoundationModels
@@ -70,7 +65,7 @@ struct FoundationModelsErrorHandler: Sendable {
             return handleGenerationError(generationError)
         } else if let toolCallError = error as? LanguageModelSession.ToolCallError {
             return handleToolCallError(toolCallError)
-        } else if let coreError = error as? FoundationLabCoreError {
+        } else if let coreError = error as? FoundationModelCoreError {
             return coreError.localizedDescription
         } else if let customError = error as? FoundationModelsError {
             return customError.localizedDescription

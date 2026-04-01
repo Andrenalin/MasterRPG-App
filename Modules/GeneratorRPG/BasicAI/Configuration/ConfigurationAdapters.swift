@@ -1,7 +1,7 @@
 import Foundation
 import FoundationModels
 
-extension FoundationLabModelUseCase {
+extension FoundationModelConfiguration {
     public var foundationModelsValue: SystemLanguageModel.UseCase {
         switch self {
         case .general:

@@ -4,14 +4,11 @@
 
 import Foundation
 import FoundationModels
-
-#if canImport(PDFKit)
 import PDFKit
-#endif
 
 /// Foundation Models-based PDF block extractor for table/adventure content
 @MainActor
-public final class FoundationModelsPdfBlockExtractor: PdfBlockExtracting, @unchecked Sendable {
+struct PdfContentExtractor: Sendable {
 
     // MARK: - Configuration
 
@@ -35,47 +32,6 @@ public final class FoundationModelsPdfBlockExtractor: PdfBlockExtracting, @unche
         self.maxCharacters = maxCharacters
         self.instructions = instructions ?? Self.defaultInstructions
     }
-
-    // MARK: - Public Methods
-
-//    public func extract(from pdfDocument: PDFDocument) async throws -> [BlockGenModel] {
-//        // Check model availability
-//        guard SystemLanguageModel.default.availability == .available else {
-//            throw PdfExtractionError.modelUnavailable
-//        }
-//
-//        // Validate document
-//        guard pdfDocument.pageCount > 0 else {
-//            throw PdfExtractionError.emptyDocument
-//        }
-//
-//        // Extract text from PDF
-//        let extractedText = try extractText(from: pdfDocument)
-//
-//        guard !extractedText.isEmpty else {
-//            throw PdfExtractionError.textExtractionFailed
-//        }
-//
-//        // Create session
-//        let session = LanguageModelSession(instructions: instructions)
-//
-//        // Prewarm for faster generation
-//        session.prewarm()
-//
-//        // Generate structured blocks
-//        do {
-//            let response = try await session.respond(
-//                to: buildPrompt(with: extractedText, pageCount: pdfDocument.pageCount),
-//                generating: [BlockGenModel].self
-//            )
-//
-//            return response.content
-//        } catch let error as LanguageModelSession.GenerationError {
-//            throw PdfExtractionError.generationFailed(handleGenerationError(error))
-//        } catch {
-//            throw PdfExtractionError.generationFailed(error.localizedDescription)
-//        }
-//    }
 
     public func extractWithProgress(
         from pdfDocument: PDFDocument,
@@ -188,7 +144,7 @@ public final class FoundationModelsPdfBlockExtractor: PdfBlockExtracting, @unche
     // MARK: - Constants
 
     private static let defaultInstructions = """
-    Your task is to extract the contents. Do not summarize or change the text, except spelling or broken text.
+    Your task is to extract the contents. Do not summarize or change the text, except spelling.
     """
 }
 

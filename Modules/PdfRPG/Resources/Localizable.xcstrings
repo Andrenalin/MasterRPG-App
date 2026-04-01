@@ -43,12 +43,6 @@
         }
       }
     },
-    "Analyzing PDF with Apple Intelligence..." : {
-
-    },
-    "Apple Intelligence Required" : {
-
-    },
     "Applies the selected properties to the PDF and closes" : {
 
     },
@@ -86,13 +80,7 @@
     "Description" : {
 
     },
-    "Dismiss" : {
-
-    },
     "Extract Information" : {
-
-    },
-    "Extract PDF Information" : {
 
     },
     "Extract with AI" : {
@@ -140,9 +128,6 @@
       }
     },
     "PDF Analysis" : {
-
-    },
-    "PDF content extraction requires Apple Intelligence, which is not available on this device." : {
 
     },
     "PDF Extractor" : {

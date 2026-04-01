@@ -43,9 +43,9 @@ extension PdfDetailRoute: NavigationDestination {
             PdfDetailRouteDestinationView(itemId: itemId)
 #if !os(tvOS)
         case .pdfExtraction(let itemId):
-            PdfExtractionView(itemId: itemId)
+            SummaryAnalysisView(itemId: itemId)
         case .pdfBlockExtraction(let itemId):
-            PdfBlockExtractionView(itemId: itemId)
+            ContentExtractionView(itemId: itemId)
 #endif
         }
     }

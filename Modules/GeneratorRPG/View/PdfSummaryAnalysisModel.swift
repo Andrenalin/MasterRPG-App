@@ -25,11 +25,6 @@ final class PdfSummaryAnalysisModel {
     /// - Parameter pdfDocument: The PDF to analyze
     /// - Returns: Final summary analysis, or nil if analysis fails
     func analyzeWithProgress(from pdfDocument: PDFDocument) async -> PdfSummaryAnalysis? {
-        guard checkModelAvailability else {
-            lastError = "Apple Intelligence is not available on this device"
-            return nil
-        }
-
         isAnalyzing = true
         analysisProgress = nil
         lastError = nil
@@ -50,10 +45,6 @@ final class PdfSummaryAnalysisModel {
             lastError = error.localizedDescription
             return nil
         }
-    }
-
-    var checkModelAvailability: Bool {
-        SystemLanguageModel.default.availability == .available
     }
 
     /// Clears the last error message

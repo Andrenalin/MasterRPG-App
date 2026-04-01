@@ -4,12 +4,11 @@
 
 import CoreRPG
 import SwiftUI
-import GeneratorRPG
 import PDFKit
 
-public struct PdfBlockContentExtractionView: View {
+public struct PdfContentExtractionView: View {
 
-    @State private var controller = PdfBlockExtractorController()
+    @State private var model = PdfContentExtractionModel()
     let pdfDocument: PDFDocument
     let onContentExtracted: ([BlockGenModel]) -> Void
 
@@ -23,22 +22,19 @@ public struct PdfBlockContentExtractionView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 20) {
-            if !controller.isModelAvailable {
-                unavailableView
-            } else if controller.isExtracting {
-                extractingView
-            } else {
-                extractButton
+        FoundationBasicView {
+            VStack(spacing: 20) {
+                if model.isExtracting {
+                    extractingView
+                } else {
+                    extractButton
+                }
+                
+                if let error = model.lastError {
+                    errorView(error)
+                }
             }
-
-            if let error = controller.lastError {
-                errorView(error)
-            }
-        }
-        .padding()
-        .onAppear {
-            controller.checkModelAvailability()
+            .padding()
         }
     }
 
@@ -47,7 +43,7 @@ public struct PdfBlockContentExtractionView: View {
     private var extractButton: some View {
         Button {
             Task {
-                let content = await controller.extractWithProgress(from: pdfDocument)
+                let content = await model.extractWithProgress(from: pdfDocument)
                 extractedBlock = content
                 onContentExtracted(content)
             }
@@ -71,23 +67,6 @@ public struct PdfBlockContentExtractionView: View {
         }
     }
 
-    private var unavailableView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.largeTitle)
-                .foregroundStyle(.orange)
-
-            Text("Apple Intelligence Required")
-                .font(.headline)
-
-            Text("PDF content extraction requires Apple Intelligence, which is not available on this device.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding()
-    }
-
     private func errorView(_ error: String) -> some View {
         HStack {
             Image(systemName: "exclamationmark.circle.fill")
@@ -99,8 +78,10 @@ public struct PdfBlockContentExtractionView: View {
 
             Spacer()
 
-            Button("Dismiss") {
-                controller.clearError()
+            Button {
+                model.clearError()
+            } label: {
+                Text("Dismiss", bundle: .module)
             }
             .buttonStyle(.bordered)
             .controlSize(.small)

@@ -7,7 +7,7 @@ import GeneratorRPG
 import SwiftUI
 import PDFKit
 
-struct PdfExtractionView: View {
+struct ContentExtractionView: View {
     let itemId: UUID
 
     @Environment(PdfRootModel.self) private var root
@@ -18,7 +18,7 @@ struct PdfExtractionView: View {
 
     var body: some View {
         contentView
-            .navigationTitle(Text("PDF Analysis", bundle: .module))
+            .navigationTitle(Text("PDF Extractor", bundle: .module))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) {
@@ -46,7 +46,7 @@ struct PdfExtractionView: View {
                             }
                         }
                         .disabled(!propertySelection.hasAnySelected)
-                        .accessibilityLabel(Text("Apply selected properties", bundle: .module))
+                        .accessibilityLabel("Apply selected properties")
                         .accessibilityHint(Text("Applies the selected properties to the PDF and closes", bundle: .module))
                     }
                 }
@@ -54,8 +54,6 @@ struct PdfExtractionView: View {
             .task {
                 await loadPDF()
             }
-            .tint(root.config.module.tint)
-            .accentColor(root.config.module.tint)
     }
 
     // MARK: - View Components
@@ -66,14 +64,11 @@ struct PdfExtractionView: View {
         case .loading:
             loadingView
         case .extracting(let document):
-            PdfSummaryAnalysisView(pdfDocument: document) { content in
+            PdfContentExtractionView(pdfDocument: document) { content in
                 viewState = .extracted(content)
             }
         case .extracted(let content):
-            ExtractedPdfContentView(
-                content: content,
-                selectedProperties: $propertySelection
-            )
+            ContentBlocksView(content: content)
         case .unavailable:
             unavailableView
         }
@@ -122,7 +117,6 @@ struct PdfExtractionView: View {
             return
         }
 
-        root.editController.applyExtractedContent(content, to: itemId, selection: propertySelection)
         navigator.back()
     }
 
@@ -131,7 +125,7 @@ struct PdfExtractionView: View {
     private enum ViewState {
         case loading
         case extracting(PDFDocument)
-        case extracted(PdfSummaryAnalysis)
+        case extracted([BlockGenModel])
         case unavailable
     }
 }

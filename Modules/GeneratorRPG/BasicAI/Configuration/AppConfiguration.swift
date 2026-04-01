@@ -30,7 +30,7 @@ enum AppConfiguration {
         }
 
         static func contextSize(
-            modelUseCase: FoundationLabModelUseCase = .general,
+            modelUseCase: FoundationModelConfiguration = .general,
             guardrails: GuardrailsConfiguration = .default
         ) async -> Int {
             let model = SystemLanguageModel(

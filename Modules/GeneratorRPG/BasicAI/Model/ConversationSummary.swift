@@ -2,7 +2,7 @@ import Foundation
 import FoundationModels
 
 @Generable
-public struct FoundationLabConversationSummary: Sendable {
+public struct ConversationSummary: Sendable {
     @Guide(
         description:
             "A comprehensive summary of the conversation including the important context needed to continue it."

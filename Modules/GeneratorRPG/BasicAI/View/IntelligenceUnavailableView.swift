@@ -7,7 +7,11 @@ struct IntelligenceUnavailableView: View {
     @Environment(FoundationManager.self) var manager
     var body: some View {
         ContentUnavailableView {
-            Label("AI Not available", systemImage: NetworkModules.generator.icon)
+            Label {
+                Text("Apple Intelligence Not available", bundle: .module)
+            } icon: {
+                Image(systemName: NetworkModules.generator.icon)
+            }
         } description: {
             Text(manager.notAvailableReason)
         } actions: {

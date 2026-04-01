@@ -1,3 +1,5 @@
+// @copyright André Trettin
+
 import Foundation
 import FoundationModels
 
@@ -24,7 +26,7 @@ enum ConversationContextBuilder {
 
     static func contextInstructions(
         baseInstructions: String,
-        summary: FoundationLabConversationSummary,
+        summary: ConversationSummary,
         continuationNote: String? = nil
     ) -> String {
         var contextInstructions = """

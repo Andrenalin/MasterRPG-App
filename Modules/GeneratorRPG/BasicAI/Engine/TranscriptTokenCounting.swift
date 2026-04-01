@@ -1,3 +1,5 @@
+// @copyright André Trettin
+
 import Foundation
 import FoundationModels
 

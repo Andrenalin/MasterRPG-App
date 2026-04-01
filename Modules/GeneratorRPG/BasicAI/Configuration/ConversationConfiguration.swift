@@ -9,7 +9,7 @@ struct ConversationConfiguration {
     public var conversationAssistantLabel: String
     public var continuationNote: String
     public var overflowResetMessage: String?
-    public var modelUseCase: FoundationLabModelUseCase
+    public var modelUseCase: FoundationModelConfiguration
     public var guardrails: GuardrailsConfiguration
     public var tools: [any Tool]
     public var enableSlidingWindow: Bool
@@ -25,7 +25,7 @@ struct ConversationConfiguration {
         conversationAssistantLabel: String,
         continuationNote: String,
         overflowResetMessage: String? = nil,
-        modelUseCase: FoundationLabModelUseCase = .general,
+        modelUseCase: FoundationModelConfiguration = .general,
         guardrails: GuardrailsConfiguration = .default,
         tools: [any Tool] = [],
         enableSlidingWindow: Bool = false,

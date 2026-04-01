@@ -1,8 +1,5 @@
 // @copyright André Trettin
 
-
-// @copyright André Trettin
-
 #if !os(tvOS)
 
 import CoreRPG
@@ -10,7 +7,7 @@ import GeneratorRPG
 import SwiftUI
 
 /// View displaying extracted PDF content with selectable properties
-public struct BlocksPdfContentView: View {
+public struct ContentBlocksView: View {
 
     let content: [BlockGenModel]
 

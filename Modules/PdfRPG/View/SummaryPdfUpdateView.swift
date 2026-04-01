@@ -7,7 +7,7 @@ import GeneratorRPG
 import SwiftUI
 
 /// View displaying analyzed PDF summary with selectable properties
-public struct ExtractedPdfContentView: View {
+public struct SummaryPdfUpdateView: View {
 
     let content: PdfSummaryAnalysis
     @Binding var selectedProperties: PdfPropertySelection
@@ -139,7 +139,7 @@ public struct PdfPropertySelection {
 #Preview("Extracted Content") {
     @Previewable @State var selection = PdfPropertySelection()
 
-    ExtractedPdfContentView(
+    SummaryPdfUpdateView(
         content: PdfSummaryAnalysis(
             title: "Dungeons & Dragons Player's Handbook",
             summary: "The core rulebook for players, containing character creation rules, races, classes, equipment, spells, and gameplay mechanics for D&D 5th Edition.",
