@@ -4,35 +4,17 @@ import CoreRPG
 import RolePlayGameKit
 import SwiftUI
 
-// MARK: - View State
-
-enum AppInitialState: Codable, Equatable, Hashable {
-    case initializing
-    case ready
-}
-
-extension AppInitialState: NavigationDestination {
-    var body: some View {
-        switch self {
-        case .initializing:
-            DatabaseInitializationView()
-        case .ready:
-            DestinationReadyView()
-        }
-    }
-}
-
 struct InitialRootView: View {
-    let appModel: AppModel
+    @Environment(AppModel.self) private var appModel
 
     var body: some View {
-        viewState
+        initViewState
             .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
                 handle(userActivity: userActivity)
             }
     }
 
-    private var viewState: AppInitialState {
+    private var initViewState: AppInitialStateRoute {
         appModel.hasDatabase ? .ready : .initializing
     }
 
@@ -41,11 +23,12 @@ struct InitialRootView: View {
         let module = UserActivity.module(from: userActivity)
         guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
         let childId = UserActivity.childId(from: userActivity)
+        // this must be stored on NavigationModel and done as soon the database is loaded
         appModel.navigator.perform(route: KnownRoutes.route(module: module, itemId: itemId, entryId: childId))
     }
 }
 
 #Preview {
-    InitialRootView(appModel: .previewWithoutDatabase)
+    InitialRootView()
         .frame(width: 400, height: 400)
 }

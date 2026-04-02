@@ -62,7 +62,7 @@ struct MasterRPGApp: App {
     
     var body: some Scene {
         BaseWindow("Game", id: WindowIdentifier.game.rawValue) {
-            InitialRootView(appModel: appModel)
+            InitialRootView()
 #if os(macOS)
                 .frame(minWidth: 800, minHeight: 600)
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)

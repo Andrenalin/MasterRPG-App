@@ -277,7 +277,7 @@ private struct NavigateToModifier<T: NavigationDestination>: ViewModifier {
     internal let method: NavigationMethod?
     func body(content: Content) -> some View {
         content
-            .onChange(of: destination) { destination in
+            .onChange(of: destination) {
                 if let destination {
                     navigator.navigate(to: destination, method: method ?? destination.method)
                     self.destination = nil
@@ -293,7 +293,7 @@ private struct NavigateTriggerModifier<T: NavigationDestination>: ViewModifier {
     @Environment(\.navigator) internal var navigator: Navigator
     func body(content: Content) -> some View {
         content
-            .onChange(of: trigger) { trigger in
+            .onChange(of: trigger) {
                 if trigger {
                     navigator.navigate(to: destination, method: method ?? destination.method)
                     self.trigger = false

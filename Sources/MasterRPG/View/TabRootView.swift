@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import AdventureRPG
 import CoreRPG
 import RolePlayGameKit
 import SwiftUI
@@ -11,6 +12,7 @@ struct TabRootView: View {
 
     var body: some View {
         layout
+            .appExitNotifications(handler: appModel.adventureRoot.save)
             .onChange(of: appSizeMode) { oldValue, newValue in
                 appModel.resetNavigation()
             }

@@ -104,6 +104,6 @@ struct DatabaseInitializationView: View {
 }
 
 #Preview {
-    InitialRootView(appModel: .previewWithoutDatabase)
+    InitialRootView()
         .frame(width: 400, height: 400)
 }

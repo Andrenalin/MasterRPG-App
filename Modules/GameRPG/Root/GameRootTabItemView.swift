@@ -18,6 +18,8 @@ struct GameRootTabItemView: View {
 struct GameRootTabView: View {
     let root: GameRoot
 
+    @Environment(AppSettingsModel.self) private var settingsModel
+
 #if os(macOS) || os(visionOS)
     @Environment(\.openWindow) private var openWindow
 #endif
@@ -45,6 +47,14 @@ struct GameRootTabView: View {
             }
             .task {
                 await root.networkStore.setup(gameModel: root.gameModel)
+            }
+        }
+        .onChange(of: root.gameModel.gameConfig.state, initial: true) {
+            settingsModel.showGame <=> root.gameModel.gameConfig.state == .started
+            if root.gameModel.gameConfig.state == .started {
+                settingsModel.gameModus = root.gameModel.gameConfig.isMaster ? .master : .player
+            } else {
+                settingsModel.gameModus = .edit
             }
         }
     }
