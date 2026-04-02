@@ -19,8 +19,8 @@ import WeatherRPG
 @MainActor
 struct RootView: View {
     let appModel: AppModel
-    let editorOnly: Bool
-
+    var editorOnly: Bool = false
+    
     @Environment(\.locale) private var locale: Locale
     
     @State private var showFirstLunchAlert = false
@@ -30,7 +30,7 @@ struct RootView: View {
         Group {
 #if os(macOS)
             if editorOnly {
-                TabRootView(appModel: appModel, editorOnly: editorOnly)
+                TabRootView(appModel: appModel)
             } else {
                 appModel.gameRoot.viewController.gameWindow {
                     appModel.gameRoot.viewController.gameTabItem()
@@ -42,7 +42,7 @@ struct RootView: View {
             }
 #else
             appModel.gameRoot.viewController.gameWindow {
-                TabRootView(appModel: appModel, editorOnly: editorOnly)
+                TabRootView(appModel: appModel)
             }
 #endif
         }
@@ -66,16 +66,7 @@ struct RootView: View {
             }
             try? await Task.sleep(for: .seconds(5))
             
-            try? await appModel.adventureRoot.itemDataCleanup()
-            try? await appModel.audioRoot.itemDataCleanup()
-            try? await appModel.characterRoot.itemDataCleanup()
-            try? await appModel.diceRoot.itemDataCleanup()
-            try? await appModel.mapRoot.itemDataCleanup()
-            try? await appModel.pdfRoot.itemDataCleanup()
-            try? await appModel.photoRoot.itemDataCleanup()
-            try? await appModel.tableRoot.itemDataCleanup()
-            try? await appModel.spaceRoot.itemDataCleanup()
-            try? await appModel.weatherRoot.itemDataCleanup()
+            await appModel.cleanDatabase()
 #endif
         }
         .alert("First Launch", isPresented: $showFirstLunchAlert) {
@@ -107,9 +98,5 @@ struct RootView: View {
 }
 
 #Preview("Game") {
-    RootView(appModel: .preview, editorOnly: false)
-}
-
-#Preview("Editor") {
-    RootView(appModel: .preview, editorOnly: true)
+    RootView(appModel: .preview)
 }
