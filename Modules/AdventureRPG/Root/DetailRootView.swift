@@ -93,7 +93,7 @@ private extension DetailListView {
             if !model.specialCategory && !openFileWindowModel.showItem {
                 ControlGroup {
                     Button {
-                        navigator.navigate(to: EditorRoute.quickEditor(model.id), method: .cover)
+                        navigator.navigate(to: EditorRoute.quickEditor(model.id))
                     } label: {
                         Label {
                             Text("Quick Editor", bundle: .module)
@@ -125,7 +125,7 @@ private extension DetailListView {
 #if os(visionOS) || os(macOS)
                     openWindow(id: WindowIdentifier.generateAdventure.rawValue)
 #else
-                    navigator.navigate(to: EditorRoute.generator(model.id), method: .managedSheet)
+                    navigator.navigate(to: EditorRoute.generator(model.id))
 #endif
                     } label: {
                         Label {
@@ -150,7 +150,7 @@ private extension DetailListView {
     private func addLinkButton(module: NetworkModules) -> some View {
         Button {
             withAnimation {
-                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)), method: .managedSheet)
+                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)))
             }
         } label: {
             Label {

@@ -95,7 +95,7 @@ private extension DetailListView {
             if !model.specialCategory {
                 ControlGroup {
                     Button {
-                        navigator.navigate(to: EditorRoute.quickEditor(model.id), method: .cover)
+                        navigator.navigate(to: EditorRoute.quickEditor(model.id))
                     } label: {
                         Label {
                             Text("Quick Editor", bundle: .module)
@@ -108,7 +108,7 @@ private extension DetailListView {
 #if os(visionOS) || os(macOS)
                         openWindow(id: WindowIdentifier.mapEditor.rawValue)
 #else
-                        navigator.navigate(to: EditorRoute.mapEditor(model.id), method: .cover)
+                        navigator.navigate(to: EditorRoute.mapEditor(model.id))
 #endif
                     } label: {
                         Label {
@@ -117,12 +117,12 @@ private extension DetailListView {
                             Image(systemName: "mappin.and.ellipse")
                         }
                     }
-                    
+
                     Button {
 #if os(visionOS) || os(macOS)
                         openWindow(id: WindowIdentifier.mapEditor.rawValue)
 #else
-                        navigator.navigate(to: EditorRoute.mapEditor(model.id), method: .cover)
+                        navigator.navigate(to: EditorRoute.mapEditor(model.id))
 #endif
                     } label: {
                         Label { Text("Edit Tile", bundle: .module) } icon: { Image(systemName: "skew") }
@@ -159,7 +159,7 @@ private extension DetailListView {
     private func addLinkButton(module: NetworkModules) -> some View {
         Button {
             withAnimation {
-                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)), method: .managedSheet)
+                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)))
             }
         } label: {
             Label {

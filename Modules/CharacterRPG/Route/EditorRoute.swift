@@ -13,6 +13,17 @@ enum EditorRoute: Equatable, Hashable, Codable {
 }
 
 extension EditorRoute: NavigationDestination {
+    public var method: NavigationMethod {
+        switch self {
+        case .quickEditor:
+            return .cover
+        case .addLink:
+            return .managedSheet
+        case .selectionPdf, .linkSelection:
+            return .push
+        }
+    }
+
     public var body: some View {
         DestinationTableEditorRoute(route: self)
     }
