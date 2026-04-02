@@ -9,6 +9,7 @@ enum AppModeTypeRoute: Codable, Equatable, Hashable {
     case editor
     case game
     case gameSetup
+    case gameRootSetup
 }
 
 extension AppModeTypeRoute: NavigationDestination {
@@ -29,6 +30,8 @@ struct AppGameTypeDestinationView: View {
                 GameFactory.rootGameView(root: appModel.gameRoot)
                     .setWideMode()
             case .gameSetup:
+                GameFactory.rootSetupView(root: appModel.gameRoot)
+            case .gameRootSetup:
                 GameFactory.rootSetupView(root: appModel.gameRoot)
             case .editor:
                 TabRootView(appModel: appModel)

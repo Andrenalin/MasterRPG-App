@@ -14,7 +14,11 @@ struct GameOptionView: View {
                     await root.startDemo()
                 }
             } label: {
-                Label { Text("Demo", bundle: .module) } icon: { Image(systemName: "play.rectangle") }
+                Label {
+                    Text("Demo", bundle: .module)
+                } icon: {
+                    Image(systemName: "play.rectangle")
+                }
             }
 #endif
             

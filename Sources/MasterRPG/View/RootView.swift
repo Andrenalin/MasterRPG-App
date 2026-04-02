@@ -9,7 +9,7 @@ struct RootView: View {
     let appModel: AppModel
     
     var appMode: AppModeTypeRoute {
-#if os(macOS)
+#if os(macOS) || os(tvOS)
         appModel.settingsModel.showGame ? .game : .gameSetup
 #else
         appModel.settingsModel.showGame ? .game : .editor

@@ -3,23 +3,10 @@
 import CoreRPG
 import SwiftUI
 
-struct GameRootTabItemView: View {
+struct GameRootSetupView: View {
     let root: GameRoot
     
-#if os(macOS) || os(visionOS)
-    @Environment(\.openWindow) private var openWindow
-#endif
-    
-    var body: some View {
-        GameRootTabView(root: root)
-    }
-}
-
-struct GameRootTabView: View {
-    let root: GameRoot
-
     @Environment(AppSettingsModel.self) private var settingsModel
-
 #if os(macOS) || os(visionOS)
     @Environment(\.openWindow) private var openWindow
 #endif
@@ -61,7 +48,7 @@ struct GameRootTabView: View {
 }
 
 #Preview {
-    GameRootTabItemView(root: .preview)
+    GameRootSetupView(root: .preview)
         .environment(\.wideMode, .small)
         .environment(AppSettingsModel())
 }

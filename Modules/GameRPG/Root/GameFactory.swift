@@ -30,6 +30,6 @@ public enum GameFactory {
     }
 
     @MainActor public static func rootSetupView(root: GameRoot) -> some View {
-        GameRootTabItemView(root: root)
+        GameRootSetupView(root: root)
     }
 }
