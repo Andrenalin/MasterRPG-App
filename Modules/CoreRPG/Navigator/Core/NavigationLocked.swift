@@ -5,30 +5,12 @@
 //  Created by Michael Long on 11/30/24.
 //
 
-import Combine
 import SwiftUI
 
 extension Navigator {
 
     /// Returns true if navigation is locked.
-    public nonisolated var isNavigationLocked: Bool {
-        state.isNavigationLocked
-    }
-
-}
-
-extension View {
-
-    /// Apply to a presented view on which you want to prevent global dismissal.
-    @MainActor public func navigationLocked() -> some View {
-        self.modifier(NavigationLockedModifier())
-    }
-
-}
-
-extension NavigationState {
-
-    internal var isNavigationLocked: Bool {
+    public var isNavigationLocked: Bool {
         !root.navigationLocks.isEmpty
     }
 
@@ -42,9 +24,18 @@ extension NavigationState {
 
 }
 
+extension View {
+
+    /// Apply to a presented view on which you want to prevent global dismissal.
+    @MainActor public func navigationLocked() -> some View {
+        self.modifier(NavigationLockedModifier())
+    }
+
+}
+
 private struct NavigationLockedModifier: ViewModifier {
 
-    @StateObject private var sentinel: NavigationLockedSentinel = .init()
+    @State private var sentinel: NavigationLockedSentinel = .init()
     @Environment(\.navigator) private var navigator: Navigator
 
     func body(content: Content) -> some View {
@@ -56,19 +47,23 @@ private struct NavigationLockedModifier: ViewModifier {
 
 }
 
-private class NavigationLockedSentinel: ObservableObject {
+private final class NavigationLockedSentinel {
 
     private let id: UUID = UUID()
-    private var state: NavigationState?
+    private var navigator: Navigator?
 
     deinit {
-        state?.removeNavigationLock(id: id)
+        let id = self.id
+        let navigator = self.navigator
+        MainActor.assumeIsolated {
+            navigator?.removeNavigationLock(id: id)
+        }
     }
 
+    @MainActor
     func lock(_ navigator: Navigator) {
-        self.state = navigator.root.state
-        self.state?.addNavigationLock(id: id)
+        self.navigator = navigator.root
+        self.navigator?.addNavigationLock(id: id)
     }
-    
-}
 
+}

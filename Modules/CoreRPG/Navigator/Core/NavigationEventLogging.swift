@@ -8,13 +8,14 @@
 import Foundation
 
 extension Navigator {
+    /// Logs a navigation event using the configured logger.
+    ///
+    /// This method respects the current ``NavigationConfiguration/verbosity``
+    /// setting. If logging is disabled or no logger is installed, the call
+    /// is a no-op.
+    ///
+    /// - Parameter event: The event to record.
     public func log(_ event: NavigationEvent.Event) {
-        state.log(event)
-    }
-}
-
-extension NavigationState {
-    nonisolated internal func log(_ event: NavigationEvent.Event) {
         guard let configuration, let logger = configuration.logger else {
             return
         }
@@ -34,6 +35,11 @@ extension NavigationState {
     }
 }
 
+/// A single navigation log entry produced by a ``Navigator``.
+///
+/// The default logger prints the description of these events during
+/// development, but you can provide your own logger via
+/// ``NavigationConfiguration/logger``.
 nonisolated public struct NavigationEvent: CustomStringConvertible {
 
     let verbosity: Verbosity
@@ -41,14 +47,16 @@ nonisolated public struct NavigationEvent: CustomStringConvertible {
     let event: Event
     let timestamp: Date
 
+    /// A human-readable description suitable for logging.
     public var description: String {
         "Navigator \(navigator) \(event)"
     }
-    
+
 }
 
 extension NavigationEvent {
 
+    /// Controls which events are emitted by the logger.
     public enum Verbosity: Int {
         case info
         case warning
@@ -60,6 +68,7 @@ extension NavigationEvent {
 
 extension NavigationEvent {
 
+    /// High-level navigation events emitted by a ``Navigator``.
     nonisolated public enum Event: CustomStringConvertible {
 
         case lifecycle(LifecycleEvent)
@@ -93,6 +102,7 @@ extension NavigationEvent {
             }
         }
 
+        /// Lifecycle events for a given navigator instance.
         nonisolated public enum LifecycleEvent {
             case configured
             case intialized
@@ -101,6 +111,7 @@ extension NavigationEvent {
             case `deinit`
         }
 
+        /// Events related to presenting and popping navigation destinations.
         nonisolated public enum NavigationEvent {
             case presenting(any NavigationDestination)
             case pushing(any Hashable)
@@ -108,16 +119,19 @@ extension NavigationEvent {
             case dismissed
         }
 
+        /// Events related to resolving provided views.
         nonisolated public enum ProvidingEvent {
             case destination(any NavigationDestination)
         }
 
+        /// Events related to navigation send/receive sequences.
         nonisolated public enum SendEvent {
             case performing(any Hashable)
             case sending(any Hashable)
             case receiving(any Hashable)
         }
 
+        /// Events related to adding and returning to checkpoints.
         nonisolated public enum CheckpointEvent {
             case adding(String)
             case removing(String)

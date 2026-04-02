@@ -7,18 +7,33 @@
 
 import SwiftUI
 
-/// Wrapper boxes a specific NavigationDestination.
+/// A type-erased wrapper around a specific ``NavigationDestination``.
+///
+/// `AnyNavigationDestination` stores both the underlying destination and the
+/// ``NavigationMethod`` used to present it, allowing heterogeneous destinations
+/// to be stored in a single `NavigationPath`.
 public struct AnyNavigationDestination {
-    public var wrapped: any NavigationDestination
-    public var method: NavigationMethod
 
+    /// The wrapped navigation destination.
+    public var wrapped: any NavigationDestination
+
+    /// The navigation method used to present the wrapped destination.
+    public var method: NavigationMethod
+    
+    @MainActor public var detents: Set<PresentationDetent> { wrapped.detents }
+    @MainActor public var selectedDetent: PresentationDetent? { wrapped.selectedDetent }
+
+    /// Creates a type-erased wrapper for the given destination.
+    ///
+    /// - Parameter destination: The destination to wrap. Its configured
+    ///   ``NavigationDestination/method`` is captured at creation time.
     @MainActor
     public init<D: NavigationDestination>(_ destination: D) {
         self.wrapped = destination
         self.method = destination.method
     }
 
-    public init(wrapped: any NavigationDestination, method: NavigationMethod) {
+    internal init(wrapped: any NavigationDestination, method: NavigationMethod) {
         self.wrapped = wrapped
         self.method = method
     }
@@ -26,8 +41,10 @@ public struct AnyNavigationDestination {
 
 extension AnyNavigationDestination: Identifiable {
 
+    /// An identifier derived from the wrapped destination's identifier.
     public nonisolated var id: Int { wrapped.id }
 
+    /// Renders the wrapped destination as an `AnyView`.
     @MainActor public func callAsFunction() -> AnyView {
         wrapped.asAnyView()
     }
@@ -114,7 +131,7 @@ private struct NavigationAutoDestinationModeModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .onAppear {
-                navigator.state.autoDestinationModeOverride = enabled
+                navigator.autoDestinationModeOverride = enabled
             }
     }
 }
@@ -134,8 +151,8 @@ extension AnyNavigationDestination: Codable {
         guard let destination = (try container.decode(type)) as? any NavigationDestination else {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "\(typeName) is not decodable.")
         }
-        wrapped = destination
-        method = try container.decode(NavigationMethod.self)
+        let method = try container.decode(NavigationMethod.self)
+        self.init(wrapped: destination, method: method)
     }
 
     // convert NavigationDestination to storable data

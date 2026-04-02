@@ -82,74 +82,85 @@ public struct ManagedNavigationStack<Content: View>: View {
         self.isScene = true
     }
 
+    /// The managed navigation stack that either uses an existing navigator
+    /// (when wrapped in ``ManagedPresentationView``) or creates its own.
     public var body: some View {
         if isWrappedInPresentationView {
-            WrappedNavigationStack(state: navigator.state.setting(name), name: sceneName, content: content(navigator))
+            WrappedNavigationStack(navigator: navigator.setting(name), sceneName: sceneName, content: content(navigator))
         } else {
-            CreateNavigationStack(state: .init(owner: .stack, name: name), name: sceneName, content: content)
+            CreateNavigationStack(name: name, sceneName: sceneName, content: content)
         }
     }
 
     internal var isWrappedInPresentationView: Bool {
-        isPresented && navigator.state.owner == .presenter
+        isPresented && navigator.owner == .presenter
     }
 
     internal var sceneName: String? {
         isScene ? name : nil
     }
 
-    // Allows NavigationStack to use Navigator and NavigationState provided by ManagedPresentationView
+    // Allows NavigationStack to use Navigator provided by ManagedPresentationView
     internal struct WrappedNavigationStack: View {
 
-        @ObservedObject internal var state: NavigationState
-        internal let name: String?
+        internal var navigator: Navigator
+        internal let sceneName: String?
         internal let content: Content
 
-        init(state: NavigationState, name: String?, content: Content) {
-            self.state = state
-            self.name = name
+        init(navigator: Navigator, sceneName: String?, content: Content) {
+            self.navigator = navigator
+            self.sceneName = sceneName
             self.content = content
         }
+
         var body: some View {
-            NavigationStack(path: $state.path) {
+            NavigationStack(path: Bindable(navigator).path) {
                 content
                     .navigationDestination(for: AnyNavigationDestination.self) { destination in
-                        state.mappedNavigationView(for: destination.wrapped)
+                        navigator.mappedNavigationView(for: destination.wrapped)
                     }
             }
-            .modifier(NavigationSceneStorageModifier(state: state, name: name))
+            .modifier(NavigationSceneStorageModifier(navigator: navigator, name: sceneName))
+            .onAppear {
+                Navigator.current = navigator
+            }
         }
     }
 
-    // Allow NavigationStack to create and manage its own Navigator and NavigationState
+    // Allow NavigationStack to create and manage its own Navigator
     internal struct CreateNavigationStack: View {
 
-        @State internal var state: NavigationState
-        internal let name: String?
-        internal let content: (Navigator) -> Content
-    
         @Environment(\.navigator) private var parent
         @Environment(\.isPresented) private var isPresented
         @Environment(\.dismiss) private var dismiss
 
-        var body: some View {
-            let navigator = Navigator(state: state, parent: parent, dismissible: isPresented ? dismiss : nil)
-            NavigationStackContentView(state: state, content: content(navigator))
-                .modifier(NavigationPresentationModifiers(state: state))
-                .modifier(NavigationSceneStorageModifier(state: state, name: name))
-                .environment(\.navigator, navigator)
+        @LazyState private var navigator: Navigator
+
+        private let sceneName: String?
+        private let content: (Navigator) -> Content
+
+        init(name: String?, sceneName: String?, content: @escaping (Navigator) -> Content) {
+            self._navigator = .init(wrappedValue: Navigator(owner: .stack, name: name))
+            self.sceneName = sceneName
+            self.content = content
         }
 
-        struct NavigationStackContentView: View {
-            @StateObject internal var state: NavigationState
-            internal let content: Content
-            var body: some View {
-                NavigationStack(path: $state.path) {
-                    content
-                        .navigationDestination(for: AnyNavigationDestination.self) { destination in
-                            state.mappedNavigationView(for: destination.wrapped)
-                        }
-                }
+        var body: some View {
+            let _ = {
+                parent.addChild(navigator, dismissible: isPresented ? dismiss : nil)
+            }()
+            NavigationStack(path: Bindable(navigator).path) {
+                content(navigator)
+                    .navigationDestination(for: AnyNavigationDestination.self) { destination in
+                        navigator.mappedNavigationView(for: destination.wrapped)
+                    }
+                    .environment(\.navigator, navigator)
+            }
+            .modifier(NavigationPresentationModifiers(navigator: navigator))
+            .modifier(NavigationSceneStorageModifier(navigator: navigator, name: sceneName))
+            .environment(\.navigator, navigator)
+            .onAppear {
+                Navigator.current = navigator
             }
         }
     }
