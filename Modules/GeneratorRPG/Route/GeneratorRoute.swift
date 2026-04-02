@@ -42,7 +42,6 @@ extension GeneratorRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             GeneratorRouteDestinationView(itemId: itemId)
-                .navigationDestination(GeneratorDetailRoute.self)
                 .navigationAutoReceive(GeneratorDetailRoute.self)
         }
     }

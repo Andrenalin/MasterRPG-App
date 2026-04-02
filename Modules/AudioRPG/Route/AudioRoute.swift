@@ -30,7 +30,6 @@ extension AudioRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             AudioRouteDestinationView(itemId: itemId)
-                .navigationDestination(AudioDetailRoute.self)
                 .navigationAutoReceive(AudioDetailRoute.self)
         }
     }

@@ -30,7 +30,6 @@ extension SpaceRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             SpaceRouteDestinationView(itemId: itemId)
-                .navigationDestination(SpaceDetailRoute.self)
                 .navigationAutoReceive(SpaceDetailRoute.self)
         }
     }

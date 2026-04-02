@@ -30,7 +30,6 @@ extension CharacterRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             CHaracterRouteDestinationView(itemId: itemId)
-                .navigationDestination(CharacterDetailRoute.self)
                 .navigationAutoReceive(CharacterDetailRoute.self)
         }
     }

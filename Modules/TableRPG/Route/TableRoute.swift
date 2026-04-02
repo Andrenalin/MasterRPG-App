@@ -30,7 +30,6 @@ extension TableRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             DestinationTableRouteView(itemId: itemId)
-                .navigationDestination(TableDetailRoute.self)
                 .navigationAutoReceive(TableDetailRoute.self)
         }
     }
