@@ -99,15 +99,17 @@ private extension CarouselItemView {
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .selection:
-                SelectionModuleRoute.selection
-                    .environment(root.rootController)
-                    .environment(root.itemSelectionModel)
-                    .onDisappear {
-                        if let itemId = root.itemSelectionModel.itemId {
-                            linkHandler(name: "", itemId: itemId, entryId: nil)
-                            root.itemSelectionModel.resetSelection(itemId: nil, entryId: nil)
+                ManagedPresentationView {
+                    SelectionModuleRoute.selection
+                        .environment(root.rootController)
+                        .environment(root.itemSelectionModel)
+                        .onDisappear {
+                            if let itemId = root.itemSelectionModel.itemId {
+                                linkHandler(name: "", itemId: itemId, entryId: nil)
+                                root.itemSelectionModel.resetSelection(itemId: nil, entryId: nil)
+                            }
                         }
-                    }
+                }
             }
         }
     }
