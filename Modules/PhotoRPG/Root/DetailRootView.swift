@@ -30,51 +30,24 @@ struct DetailListView: View {
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.photo.viewerWindowId, route: { DetailRoute.viewer($0) })
     
     @State private var detailRoute: PhotoDetailRoute?
+    @State private var lastFolderId: UUID?
     
     var body: some View {
         content(listController: detailFolderListController)
             .navigate(to: $detailRoute)
-            .onChange(of: detailFolderListController.listModel.subFolderRoute) {
-                guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
+            .onChange(of: root.navigationModel.folderItems) {
+                guard lastFolderId == nil else { return }
+                guard let subItemId = root.navigationModel.folderItems.last else { return }
+                lastFolderId = subItemId
                 detailRoute = PhotoDetailRoute.folder(subItemId)
-
-                // Sync to AppNavigationModel
-                if let navigationModel = detailFolderListController.listModel.navigationModel {
-                    navigationModel.selectedEntryId = subItemId
-                }
             }
-            .onChange(of: detailRoute) {
-                if detailRoute == nil {
-                    // Back navigation detected
-                    if detailFolderListController.listModel.subFolderRoute != nil {
-                        detailFolderListController.listModel.subFolderRoute = nil
-                    }
-
-                    // Clear from AppNavigationModel
-                    if let navigationModel = detailFolderListController.listModel.navigationModel {
-                        navigationModel.selectedEntryId = nil
-                    }
+            .onChange(of: detailRoute) { oldRoute, newRoute in
+                guard let lastFolderId, oldRoute?.detail() == lastFolderId && newRoute == nil else { return }
+                if let index = root.navigationModel.folderItems.firstIndex(of: lastFolderId) {
+                    root.navigationModel.folderItems = Array(root.navigationModel.folderItems.prefix(index))
                 }
-            }
-            .onChange(of: detailFolderListController.listModel.navigationModel?.selectedEntryId) {
-                // Sync AppNavigationModel -> detailRoute
-                guard let navigationModel = detailFolderListController.listModel.navigationModel else { return }
-
-                if let entryId = navigationModel.selectedEntryId {
-                    if detailRoute?.detail() != entryId {
-                        detailRoute = PhotoDetailRoute.folder(entryId)
-                        if detailFolderListController.listModel.subFolderRoute != entryId {
-                            detailFolderListController.listModel.subFolderRoute = entryId
-                        }
-                    }
-                } else {
-                    if detailRoute != nil {
-                        detailRoute = nil
-                        if detailFolderListController.listModel.subFolderRoute != nil {
-                            detailFolderListController.listModel.subFolderRoute = nil
-                        }
-                    }
-                }
+                detailFolderListController.listModel.resetListModel()
+                self.lastFolderId = nil
             }
     }
     
