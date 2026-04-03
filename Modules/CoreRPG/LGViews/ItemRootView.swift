@@ -12,7 +12,6 @@ public struct ItemRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     public var body: some View {
-        
         ItemRootSingleListView(root: root)
             .environment(root.folderListControllable.cacheListItemModel)
             .environment(root.listDisplayModel)
@@ -30,12 +29,11 @@ struct ItemRootSingleListView: View {
     @Environment(\.appSizeMode) private var appSizeMode
     
     var body: some View {
-        
         ItemRootListView(root: root)
             .onChange(of: listModel.itemRoute) {
                 guard let itemId = listModel.itemRoute else { return }
-                listModel.itemRoute = nil
                 guard appSizeMode == .compact else { return }
+                listModel.itemRoute = nil
                 navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
             }
     }
@@ -82,7 +80,6 @@ struct SplitContentDetailRootView: View {
     let itemId: UUID?
     
     var body: some View {
-        
         if let itemId {
             root.folderListControllable.detailDestination(for: itemId).asAnyView()
         } else {
