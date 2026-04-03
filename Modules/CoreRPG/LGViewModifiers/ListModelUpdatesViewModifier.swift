@@ -82,8 +82,12 @@ private extension ListModelUpdatesViewModifier {
             if let itemId = listModel.selectedItemId {
                 if listModel.parentModel != nil {
                     listModel.subFolderRoute = itemId
+                    if listModel.navigationModel.folderItems.last != itemId {
+                        listModel.navigationModel.folderItems.append(itemId)
+                    }
                 } else {
                     listModel.itemRoute = itemId
+                    listModel.navigationModel.selectedItemId = itemId
                 }
             }
         } else {

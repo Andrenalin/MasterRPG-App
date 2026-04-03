@@ -10,4 +10,6 @@ import SwiftUI
     
     public var selectedItemId: UUID?
     public var selectedEntryId: UUID?
+    
+    public var folderItems: [UUID] = []
 }

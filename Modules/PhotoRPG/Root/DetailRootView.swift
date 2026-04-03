@@ -29,12 +29,52 @@ struct DetailListView: View {
     @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.photo.viewerWindowId, route: { DetailRoute.viewer($0) })
     
+    @State private var detailRoute: PhotoDetailRoute?
+    
     var body: some View {
         content(listController: detailFolderListController)
+            .navigate(to: $detailRoute)
             .onChange(of: detailFolderListController.listModel.subFolderRoute) {
                 guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
-                navigator.navigate(to: PhotoDetailRoute.folder(subItemId), method: .push)
-                detailFolderListController.listModel.subFolderRoute = nil
+                detailRoute = PhotoDetailRoute.folder(subItemId)
+
+                // Sync to AppNavigationModel
+                if let navigationModel = detailFolderListController.listModel.navigationModel {
+                    navigationModel.selectedEntryId = subItemId
+                }
+            }
+            .onChange(of: detailRoute) {
+                if detailRoute == nil {
+                    // Back navigation detected
+                    if detailFolderListController.listModel.subFolderRoute != nil {
+                        detailFolderListController.listModel.subFolderRoute = nil
+                    }
+
+                    // Clear from AppNavigationModel
+                    if let navigationModel = detailFolderListController.listModel.navigationModel {
+                        navigationModel.selectedEntryId = nil
+                    }
+                }
+            }
+            .onChange(of: detailFolderListController.listModel.navigationModel?.selectedEntryId) {
+                // Sync AppNavigationModel -> detailRoute
+                guard let navigationModel = detailFolderListController.listModel.navigationModel else { return }
+
+                if let entryId = navigationModel.selectedEntryId {
+                    if detailRoute?.detail() != entryId {
+                        detailRoute = PhotoDetailRoute.folder(entryId)
+                        if detailFolderListController.listModel.subFolderRoute != entryId {
+                            detailFolderListController.listModel.subFolderRoute = entryId
+                        }
+                    }
+                } else {
+                    if detailRoute != nil {
+                        detailRoute = nil
+                        if detailFolderListController.listModel.subFolderRoute != nil {
+                            detailFolderListController.listModel.subFolderRoute = nil
+                        }
+                    }
+                }
             }
     }
     

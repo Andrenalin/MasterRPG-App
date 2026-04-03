@@ -30,12 +30,12 @@ struct ItemRootSingleListView: View {
     
     var body: some View {
         ItemRootListView(root: root)
-            .onChange(of: listModel.itemRoute) {
-                guard let itemId = listModel.itemRoute else { return }
-                guard appSizeMode == .compact else { return }
-                listModel.itemRoute = nil
-                navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
-            }
+//            .onChange(of: listModel.itemRoute) {
+//                guard let itemId = listModel.itemRoute else { return }
+//                guard appSizeMode == .compact else { return }
+//                listModel.itemRoute = nil
+//                navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
+//            }
     }
     
     var listModel: FolderListModel {

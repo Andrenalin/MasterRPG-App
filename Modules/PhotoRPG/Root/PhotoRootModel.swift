@@ -34,7 +34,7 @@ public final class PhotoRootModel {
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
         _searchController = SearchController(itemController: itemController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
 
         _rootController = ItemRootController(
             config: config,

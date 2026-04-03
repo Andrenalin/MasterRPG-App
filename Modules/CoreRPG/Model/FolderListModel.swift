@@ -4,31 +4,36 @@ import SwiftUI
 
 @Observable
 public final class FolderListModel {
-    public init(isSelectionMode: Bool = false, selection: [String] = []) {
+    public init(isSelectionMode: Bool = false, selection: [String] = [], navigationModel: AppNavigationModel) {
         self.isSelectionMode = isSelectionMode
         self.selection = selection
         self.listSelection = Set(selection)
+        self.navigationModel = navigationModel
         update(selection: Set(selection))
     }
-    
-    public init(parentModel: (any ItemDataAccessable)?) {
+
+    public init(parentModel: (any ItemDataAccessable)?, navigationModel: AppNavigationModel) {
         self.parentModel = parentModel
         self.selectedParentId = parentModel?.id
         self.isSelectionMode = false
         self.selection = []
         self.listSelection = []
+        self.navigationModel = navigationModel
     }
     
+    // MARK: - Navigation
+    @ObservationIgnored public let navigationModel: AppNavigationModel
+
     // MARK: - Items
     @ObservationIgnored var parentModel: (any ItemDataAccessable)?
-    
+
     @ObservationIgnored var updatedOnce: Bool = false
     @ObservationIgnored var originalItems: [ListItemModel] = []
     @ObservationIgnored var parentOriginalItems: [ListItemModel] = []
-    
+
     public var displayedItems: [ListItemModel] = []
     public var displayedParentItems: [ListItemModel] = []
-        
+
     var addedModelId: UUID?
     
     // MARK: - List navigation

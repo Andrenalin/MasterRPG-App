@@ -41,6 +41,7 @@ public final class AdventureRootModel {
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
+        self.navigationModel = AppNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
     }
     
@@ -101,6 +102,7 @@ public final class AdventureRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var navigationModel: AppNavigationModel
     public var linkSelectionModel: ItemSelectionModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
@@ -168,7 +170,7 @@ public final class AdventureRootModel {
     var linkRegisterController: LinkRegisterController { _linkRegisterController! }
     
     @MainActor @ObservationIgnored lazy var folderListController: FolderListControllable = {
-        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
+        FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
     }()
     @MainActor @ObservationIgnored var folderLinkController: FolderListControllable {
         rootController.folderLinkControllable
