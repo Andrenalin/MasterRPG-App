@@ -5,11 +5,13 @@ import SwiftUI
 
 struct AudioPlayerBarView: View {
     @Environment(AudioRootModel.self) private var root
-    
+
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
-    
+
+    @State private var isHovering = false
+
     var body: some View {
 #if os(iOS)
         if horizontalSizeClass == .compact {
@@ -18,94 +20,73 @@ struct AudioPlayerBarView: View {
                     .glassEffect(.clear)
             }
         } else {
-            content
+            GlassEffectContainerView {
+                content
+                    .glassEffect(.clear)
+            }
         }
-#else
+#elseif os(visionOS)
         content
+        #else
+        GlassEffectContainer {
+            content
+                .glassEffect(.clear)
+        }
 #endif
     }
-    
+
     var content: some View {
-        GlassEffectContainerView {
-            HStack(spacing: 16) {
-                playbackControls
-                
-                Spacer(minLength: 8)
-                
-                musicArtTitleTimeline
-                
-                Spacer(minLength: 8)
-                
-                volumeControl
-            }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 8)
-#if !os(visionOS)
-            .glassEffect(.clear)
-#endif
+        HStack(spacing: 12) {
+            playbackControls
+
+            Spacer(minLength: 8)
+
+            musicArtTitleTimeline
+
+            Spacer(minLength: 8)
+
+            volumeControl
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 }
 
 private extension AudioPlayerBarView {
     var playbackControls: some View {
-        HStack(spacing: 24) {
+        HStack(spacing: 8) {
             Button {
                 withAnimation { root.audioController.skipToCurrentItem(offsetBy: -1) }
             } label: {
-                Label {
-                    Text("Previous", bundle: .module)
-                } icon: {
-                    Image(systemName: "backward.fill")
-                }
-                .labelStyle(.iconOnly)
-                .font(.title3)
-                .padding(8)
+                Image(systemName: "backward.fill")
+                    .font(.title3)
+                    .frame(width: 32, height: 32)
             }
+            .buttonStyle(.plain)
             .accessibilityLabel(Text("Previous Track", bundle: .module))
-            .accessibilityHint(Text("Play the previous track in the playlist", bundle: .module))
-#if !os(visionOS)
-            .glassEffect(.regular.interactive())
-#endif
             .disabled(!root.audioPlayerModel.hasPrev)
 
             Button {
                 withAnimation { root.audioController.togglePlay() }
             } label: {
-                Label {
-                    Text(root.audioPlayerModel.isPlaying ? "Pause" : "Play", bundle: .module)
-                } icon: {
-                    Image(systemName: root.audioPlayerModel.isPlaying ? "pause.fill" : "play.fill")
-                }
-                .labelStyle(.iconOnly)
-                .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
-                .font(.title2)
-                .padding(8)
+                Image(systemName: root.audioPlayerModel.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.title2)
+                    .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                    .frame(width: 36, height: 36)
             }
+            .buttonStyle(.plain)
             .accessibilityLabel(root.audioPlayerModel.isPlaying ? Text("Pause", bundle: .module) : Text("Play", bundle: .module))
-            .accessibilityHint(root.audioPlayerModel.isPlaying ? Text("Pause playback", bundle: .module) : Text("Resume playback", bundle: .module))
-#if !os(visionOS)
-            .glassEffect(.regular.interactive())
-#endif
             .disabled(root.audioPlayerModel.playList.isEmpty)
 
             Button {
                 withAnimation { root.audioController.skipToCurrentItem(offsetBy: 1) }
             } label: {
-                Label {
-                    Text("Next", bundle: .module)
-                } icon: {
-                    Image(systemName: "forward.fill")
-                }
-                .labelStyle(.iconOnly)
-                .font(.title3)
-                .padding(8)
+                Image(systemName: "forward.fill")
+                    .font(.title3)
+                    .frame(width: 32, height: 32)
             }
+            .buttonStyle(.plain)
             .accessibilityLabel(Text("Next Track", bundle: .module))
-            .accessibilityHint(Text("Play the next track in the playlist", bundle: .module))
-#if !os(visionOS)
-            .glassEffect(.regular.interactive())
-#endif
             .disabled(!root.audioPlayerModel.hasNext)
         }
         .foregroundStyle(.primary)
@@ -114,71 +95,96 @@ private extension AudioPlayerBarView {
     @ViewBuilder
     var musicArtTitleTimeline: some View {
         VStack(spacing: 4) {
-            HStack {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 44, height: 44)
+            HStack(spacing: 10) {
+                // Album art
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(.secondary.opacity(0.15))
+                    .frame(width: 48, height: 48)
                     .overlay(
                         Image(systemName: "music.note")
                             .foregroundStyle(.secondary)
+                            .font(.body)
                     )
-                    .shadow(radius: 2, y: 1)
-                
+
                 // Song Info
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(currentItem?.title ?? "")
-                        .font(.headline).bold()
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(currentItem?.title ?? "Not Playing")
+                        .font(.system(size: 13, weight: .semibold))
                         .lineLimit(1)
-                    Text(currentItem?.artist ?? "")
-                        .font(.subheadline)
+                    Text(currentItem?.artist ?? "---")
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-            }.overlay {
-                HStack {
+            }
+
+            // Time scrubber (shows on hover)
+            if isHovering {
+                HStack(spacing: 6) {
                     Text(root.audioPlayerModel.playerTime.elapsedText)
-                        .font(.caption2)
+                        .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
-                    Spacer(minLength: 0)
-                    Text(root.audioPlayerModel.playerTime.remainingText)
-                        .font(.caption2)
+
+                    ProgressView(value: root.audioPlayerModel.currentTime, total: root.audioPlayerModel.playerTime.totalDuration)
+                        .progressViewStyle(.linear)
+                        .tint(.primary)
+
+                    Text(formatTotalTime(root.audioPlayerModel.playerTime.totalDuration))
+                        .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
-                .opacity(0)
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
             }
-            
-            ProgressView(value: root.audioPlayerModel.currentTime, total: root.audioPlayerModel.playerTime.totalDuration)
-                .progressViewStyle(.linear)
         }
-#if !os(visionOS)
-        .glassEffect(.regular)
-#endif
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isHovering = hovering
+            }
+        }
     }
-    
+
     var volumeControl: some View {
         Button {
-            // Next action
+            // Volume action
         } label: {
-            Label {
-                Text("Volume", bundle: .module)
-            } icon: {
-                Image(systemName: "speaker.wave.2.fill")
-            }
-            .labelStyle(.iconOnly)
-            .font(.title3)
+            Image(systemName: "speaker.wave.2.fill")
+                .font(.body)
+                .frame(width: 32, height: 32)
         }
+        .buttonStyle(.plain)
         .accessibilityLabel(Text("Volume Control", bundle: .module))
-        .accessibilityHint(Text("Adjust playback volume", bundle: .module))
-#if !os(visionOS)
-        .glassEffect(.regular.interactive())
-#endif
     }
     
     var currentItem: PlaylistItem? {
         root.audioPlayerModel.currentItem
+    }
+
+    func formatTotalTime(_ time: Double) -> String {
+        guard !time.isNaN else { return "--:--" }
+        var seconds = Int(ceil(time))
+        var hours = 0
+        var mins = 0
+
+        if seconds > TimeConstant.secsPerHour {
+            hours = seconds / TimeConstant.secsPerHour
+            seconds -= hours * TimeConstant.secsPerHour
+        }
+
+        if seconds > TimeConstant.secsPerMin {
+            mins = seconds / TimeConstant.secsPerMin
+            seconds -= mins * TimeConstant.secsPerMin
+        }
+
+        if hours > 0 {
+            return String(format: "%02d:%02d:%02d", hours, mins, seconds)
+        } else {
+            return String(format: "%02d:%02d", mins, seconds)
+        }
     }
 }
 
