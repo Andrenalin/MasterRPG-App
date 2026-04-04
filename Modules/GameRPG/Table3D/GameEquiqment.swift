@@ -94,10 +94,10 @@ struct Die20: EntityEquipment {
     func restingOrientation(state: DieState) -> Rotation3D {
         // The die asset's default orientation shows 6 on top (+y), 2 on the right (+x), and 3 on the front (+z).
         switch state.value {
-            case 1: // Flip upside down.
+            case 20: // Flip upside down.
                 return .init(angle: .init(degrees: +180), axis: .init(x: 0, y: 0, z: 1))
-            case 2: // Flip to the left once.
-                return .init(angle: .init(degrees: +90), axis: .init(x: 0, y: 0, z: 1))
+            case 14: // Flip to the left once.
+                return .init(angle: .init(degrees: +180 + 41.811), axis: .init(x: 1, y: 0, z: 1))
             case 3: // Flip to the back once.
                 return .init(angle: .init(degrees: -90), axis: .init(x: 1, y: 0, z: 0))
             case 4: // Flip to the front once.
@@ -121,7 +121,7 @@ struct Die20: EntityEquipment {
 
         case 13: // Flip upside down.
             return .init(angle: .init(degrees: +180), axis: .init(x: 0, y: 0, z: 1))
-        case 14: // Flip to the left once.
+        case 2: // Flip to the left once.
             return .init(angle: .init(degrees: +90), axis: .init(x: 0, y: 0, z: 1))
         case 15: // Flip to the back once.
             return .init(angle: .init(degrees: -90), axis: .init(x: 1, y: 0, z: 0))
@@ -134,8 +134,8 @@ struct Die20: EntityEquipment {
 
         case 19: // Flip upside down.
             return .init(angle: .init(degrees: +180), axis: .init(x: 0, y: 0, z: 1))
-        case 20: // Flip to the left once.
-            return .init(angle: .init(degrees: +90), axis: .init(x: 0, y: 0, z: 1))
+        case 1: // Flip to the left once.
+            return .init(angle: .init(degrees: +0), axis: .init(x: 0, y: 0, z: 1))
 
         default:
             fatalError("Invalid die value")
@@ -146,6 +146,9 @@ struct Die20: EntityEquipment {
     init(id: ID) {
         self.id = id
         self.entity = try! Entity.load(named: "D20Blue", in: tabletopGameContentBunlde)
+        self.entity.scale.x = 0.00025
+        self.entity.scale.y = 0.00025
+        self.entity.scale.z = 0.00025
         let audioResource = try! AudioFileResource.load(named: "/Root/dieSoundShort_mp3",
                                                         from: "static_scene.usda",
                                                         in: tabletopGameContentBunlde)

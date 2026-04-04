@@ -57,6 +57,23 @@ struct GameInteraction: TabletopInteraction.Delegate {
             // Move the die back to the starting pose on the table after toss animation finishes.
             interaction.addAction(.moveEquipment(matching: die.id, childOf: .tableID, pose: die.initialState.pose))
         }
+        
+        if let die20 = game.tabletopGame.equipment(of: Die20.self, matching: interaction.value.startingEquipmentID) {
+            // Play a sound when a player tosses a die.
+            Task { @MainActor in
+                if let audioLibraryComponent = die20.entity.components[AudioLibraryComponent.self] {
+                    if let soundResource = audioLibraryComponent.resources["dieSoundShort.mp3"] {
+                        die20.entity.playAudio(soundResource)
+                    }
+                }
+            }
+            // Pick a random value for the result of the die toss and toss the die.
+            let nextValue = Int.random(in: 1 ... 20)
+            interaction.addAction(.updateEquipment(die20, value: nextValue))
+            interaction.toss(equipmentID: interaction.value.startingEquipmentID, as: die20.representation)
+            // Move the die back to the starting pose on the table after toss animation finishes.
+            interaction.addAction(.moveEquipment(matching: die20.id, childOf: .tableID, pose: die20.initialState.pose))
+        }
     }
     
     func onPhaseEnded(interaction: TabletopInteraction) {
