@@ -19,7 +19,9 @@ struct BrowserView: View {
                 BrowserRowView(root: root, playerNetworkControllable: playerNetworkControllable, model: browser)
             }
         }
-        .onAppear { playerNetworkControllable.browserController.start() }
+        .onAppear {
+            playerNetworkControllable.browserController.start()
+        }
         .animation(.default, value: playerNetworkControllable.networkModel.isConnected)
         .animation(.default, value: playerNetworkControllable.browserController.isBrowsing)
     }
