@@ -8,83 +8,69 @@ public struct ThumbnailRowPhotoView: View {
         self.model = model
         self.entryId = entryId
     }
-
+    
     let cacheController: ImageCacheControllable
     let model: any ItemDataAccessable
     let entryId: UUID?
-
+    
     @Environment(CacheItemListModel.self) private var cacheItemListModel
     @Environment(ListDisplayModel.self) private var listDisplayModel
-
+    
     @State private var lastFileUrl: FileUrl?
     @State private var isLoading: Bool = false
     
     public var body: some View {
+        let _ = Self._printChanges()
         VStack {
             if let image = cachedImage {
-                GeometryReader { proxy in
-                    imageView(image: image)
-                    #if os(iOS)
-                        .clipShape(
-                            .rect(
-                                bottomTrailingRadius: listDisplayModel.isPadStyle ? 24 : 0,
-                                topTrailingRadius: listDisplayModel.isPadStyle ? 24 : 0,
-                                style: .continuous
-                            )
+                imageView(image: image)
+                    .frame(height: imageHeight)
+#if os(iOS)
+                    .clipShape(
+                        .rect(
+                            bottomTrailingRadius: listDisplayModel.isPadStyle ? 24 : 0,
+                            topTrailingRadius: listDisplayModel.isPadStyle ? 24 : 0,
+                            style: .continuous
                         )
-                    #else
-                        .clipShape(
-                            .rect(
-                                bottomTrailingRadius: 8,
-                                topTrailingRadius: 8,
-                                style: .continuous
-                            )
+                    )
+#else
+                    .clipShape(
+                        .rect(
+                            bottomTrailingRadius: 8,
+                            topTrailingRadius: 8,
+                            style: .continuous
                         )
-                    #endif
-                }
-                .frame(width: width)
+                    )
+#endif
             } else {
-                VStack {
-                    placeHolder(size: CGSize(width: widthPlaceHolder, height: heightPlaceHolder))
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                placeHolder(size: CGSize(width: imageHeight, height: imageHeight))
             }
         }
-        .onChange(of: model.fileUrl, initial: true) {
+        .task(id: model.fileUrl) {
             initImage()
         }
     }
 }
 
 private extension ThumbnailRowPhotoView {
-    var width: CGFloat {
+    var imageHeight: CGFloat {
         switch listDisplayModel.displayMode {
-            case .compact: 160
-            case .medium: 128
-            case .regular: 96
-            @unknown default: 96
+        case .compact: 64
+        case .medium: 96
+        case .regular: 128
         }
     }
     
     var cachedImage: AKImage? {
         cacheItemListModel.imageCache(cacheType: .thumbnail, itemId: entryId ?? model.id)
     }
-
+    
     func imageView(image: AKImage) -> some View {
         Image(akImage: image)
             .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+            .aspectRatio(contentMode: .fit)
     }
-
-    var heightPlaceHolder: CGFloat {
-        width == 96 ? 96 : 64
-    }
-
-    var widthPlaceHolder: CGFloat {
-        width
-    }
-
+        
     @ViewBuilder
     func placeHolder(size: CGSize) -> some View {
         if isLoading {
@@ -108,14 +94,14 @@ private extension ThumbnailRowPhotoView {
                 }
         }
     }
-
+    
     func initImage() {
         guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage == nil) else { return }
         isLoading = true
         lastFileUrl = model.fileUrl
         loadImage()
     }
-
+    
     func loadImage() {
         Task(priority: .userInitiated) {
             let fileId = entryId ?? model.id
