@@ -20,7 +20,6 @@ public struct ThumbnailRowPhotoView: View {
     @State private var isLoading: Bool = false
     
     public var body: some View {
-        let _ = Self._printChanges()
         VStack {
             if let image = cachedImage {
                 imageView(image: image)

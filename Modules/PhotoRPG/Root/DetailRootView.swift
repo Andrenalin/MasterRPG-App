@@ -31,23 +31,38 @@ struct DetailListView: View {
     
     @State private var detailRoute: PhotoDetailRoute?
     @State private var lastFolderId: UUID?
+    @State private var canClean: Bool = false
     
     var body: some View {
+        let _ = Self._printChanges()
+        let _ = print("*** from \(model.id)")
         content(listController: detailFolderListController)
             .navigate(to: $detailRoute)
-            .onChange(of: root.navigationModel.folderItems) {
+            .onChange(of: detailFolderListController.listModel.subFolderRoute) {
+                //let _ = print("*** folderItems \(detailFolderListController.listModel.subFolderRoute) --> \(model.id)")
                 guard lastFolderId == nil else { return }
-                guard let subItemId = root.navigationModel.folderItems.last else { return }
+                guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
                 lastFolderId = subItemId
                 detailRoute = PhotoDetailRoute.folder(subItemId)
             }
             .onChange(of: detailRoute) { oldRoute, newRoute in
                 guard let lastFolderId, oldRoute?.detail() == lastFolderId && newRoute == nil else { return }
-                if let index = root.navigationModel.folderItems.firstIndex(of: lastFolderId) {
-                    root.navigationModel.folderItems = Array(root.navigationModel.folderItems.prefix(index))
-                }
+//                if let index = root.navigationModel.folderItems.firstIndex(of: lastFolderId) {
+//                    root.navigationModel.folderItems = Array(root.navigationModel.folderItems.prefix(index))
+//                }
                 detailFolderListController.listModel.resetListModel()
                 self.lastFolderId = nil
+            }
+            .onAppear {
+                print("OnAppear \(model.id)")
+                if canClean {
+                    //detailFolderListController.listModel.resetListModel()
+                    canClean = false
+                }
+            }
+            .onDisappear() {
+                print("OnDissapear \(model.id)")
+                canClean = true
             }
     }
     

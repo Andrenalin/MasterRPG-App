@@ -195,6 +195,7 @@ public extension FolderListModel {
 
 public extension FolderListModel {
     func resetListModel() {
+        subFolderRoute = nil
         resetListSelection()
         update(selection: Set())
         subListModel = nil

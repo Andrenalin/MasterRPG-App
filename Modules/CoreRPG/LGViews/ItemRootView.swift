@@ -32,6 +32,36 @@ struct ItemRootListView: View {
     }
 }
 
+
+public struct ItemSplitDetailRouteRootView<Route: NavigationDestination>: View {
+    public init(root: ItemRootController, route: Route) {
+        self.root = root
+        self.route = route
+    }
+    
+    let root: ItemRootController
+    let route: Route
+    
+    public var body: some View {
+        ManagedNavigationStack(name: "Split-\(root.configurable.module.token)") {
+            if listModel.selectedItemId != nil {
+                route
+                //root.folderListControllable.detailDestination(for: itemId).asAnyView()
+            } else {
+                SplitContentUnavailableView(module: root.configurable.module)
+            }
+        }
+        .environment(root)
+        .tint(root.configurable.module.tint)
+        .accentColor(root.configurable.module.tint)
+    }
+    
+    var listModel: FolderListModel {
+        root.folderListControllable.listModel
+    }
+}
+
+
 public struct ItemSplitDetailRootView: View {
     public init(root: ItemRootController) {
         self.root = root
