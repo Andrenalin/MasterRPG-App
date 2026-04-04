@@ -30,7 +30,6 @@ extension DiceRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             DiceRouteDestinationView(itemId: itemId)
-                .navigationDestination(DiceDetailRoute.self)
                 .navigationAutoReceive(DiceDetailRoute.self)
         }
     }

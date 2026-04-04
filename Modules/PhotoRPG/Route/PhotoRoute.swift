@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 public enum PhotoRoute: Equatable, Hashable, Codable {
@@ -30,7 +29,6 @@ extension PhotoRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             PhotoRouteDestinationView(itemId: itemId)
-                .navigationDestination(PhotoDetailRoute.self)
                 .navigationAutoReceive(PhotoDetailRoute.self)
         }
     }

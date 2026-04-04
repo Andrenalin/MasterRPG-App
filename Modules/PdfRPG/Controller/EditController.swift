@@ -76,7 +76,7 @@ extension EditController {
 
 #if !os(tvOS)
 extension EditController {
-    @MainActor func applyExtractedContent(_ content: PdfExtractedContent, to itemId: UUID, selection: PdfPropertySelection) {
+    @MainActor func applyExtractedContent(_ content: PdfSummaryAnalysis, to itemId: UUID, selection: PdfPropertySelection) {
         // Update name if selected and (empty or forcing update)
         if selection.applyTitle {
             reset(name: content.title, itemId: itemId)

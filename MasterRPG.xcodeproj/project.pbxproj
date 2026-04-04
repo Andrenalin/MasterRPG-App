@@ -34,6 +34,21 @@
 		593568FD2ED8761800FA4C87 /* TableRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		593D0DA12E32136800410232 /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
 		5946860C2E1E0F69004DC406 /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
+		5978B41B2F7E615900818159 /* DatabaseInitializationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4172F7E615900818159 /* DatabaseInitializationView.swift */; };
+		5978B41C2F7E615900818159 /* DestinationReadyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4182F7E615900818159 /* DestinationReadyView.swift */; };
+		5978B41D2F7E615900818159 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4192F7E615900818159 /* InitialRootView.swift */; };
+		5978B41E2F7E615900818159 /* DatabaseInitializationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4172F7E615900818159 /* DatabaseInitializationView.swift */; };
+		5978B41F2F7E615900818159 /* DestinationReadyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4182F7E615900818159 /* DestinationReadyView.swift */; };
+		5978B4202F7E615900818159 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4192F7E615900818159 /* InitialRootView.swift */; };
+		5978B4212F7E615900818159 /* DatabaseInitializationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4172F7E615900818159 /* DatabaseInitializationView.swift */; };
+		5978B4222F7E615900818159 /* DestinationReadyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4182F7E615900818159 /* DestinationReadyView.swift */; };
+		5978B4232F7E615900818159 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4192F7E615900818159 /* InitialRootView.swift */; };
+		5978B4292F7E785A00818159 /* AppModeTypeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */; };
+		5978B42A2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */; };
+		5978B42B2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */; };
+		5978B42D2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */; };
+		5978B42E2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */; };
+		5978B42F2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */; };
 		5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		599DCAD92E8E30C00056E46C /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; };
@@ -145,13 +160,10 @@
 		8E56C0A62EDB01CF0026F01C /* CoreRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; };
 		8E56C0A72EDB01CF0026F01C /* CoreRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E5B8C712E3235ED00321B4A /* AudioRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 593D0D2C2E31F2D000410232 /* AudioRPG.framework */; };
-		8E647DCD2EB4F79600057875 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DC42EB4F79600057875 /* InitialRootView.swift */; };
 		8E647DD42EB4F79600057875 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCB2EB4F79600057875 /* RootView.swift */; };
 		8E647DD52EB4F79600057875 /* TabRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCC2EB4F79600057875 /* TabRootView.swift */; };
-		8E647DD62EB4F79600057875 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DC42EB4F79600057875 /* InitialRootView.swift */; };
 		8E647DDD2EB4F79600057875 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCB2EB4F79600057875 /* RootView.swift */; };
 		8E647DDE2EB4F79600057875 /* TabRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCC2EB4F79600057875 /* TabRootView.swift */; };
-		8E647DDF2EB4F79600057875 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DC42EB4F79600057875 /* InitialRootView.swift */; };
 		8E647DE62EB4F79600057875 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCB2EB4F79600057875 /* RootView.swift */; };
 		8E647DE72EB4F79600057875 /* TabRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCC2EB4F79600057875 /* TabRootView.swift */; };
 		8E668C752B5AB7A5005BA45F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */; };
@@ -1288,6 +1300,11 @@
 
 /* Begin PBXFileReference section */
 		593D0D2C2E31F2D000410232 /* AudioRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5978B4172F7E615900818159 /* DatabaseInitializationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseInitializationView.swift; sourceTree = "<group>"; };
+		5978B4182F7E615900818159 /* DestinationReadyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationReadyView.swift; sourceTree = "<group>"; };
+		5978B4192F7E615900818159 /* InitialRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitialRootView.swift; sourceTree = "<group>"; };
+		5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModeTypeRoute.swift; sourceTree = "<group>"; };
+		5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInitialStateRoute.swift; sourceTree = "<group>"; };
 		5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalPlayerWindow.swift; sourceTree = "<group>"; };
 		599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GeneratorRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		599DCAD82E8E30C00056E46C /* GeneratorRPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeneratorRPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1313,7 +1330,6 @@
 		8E5104E82BD2413900F10E87 /* SharingInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingInput.swift; sourceTree = "<group>"; };
 		8E5104EA2BD2425900F10E87 /* SaveAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveAction.swift; sourceTree = "<group>"; };
 		8E5104EC2BD2440300F10E87 /* ItemProviderImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemProviderImporter.swift; sourceTree = "<group>"; };
-		8E647DC42EB4F79600057875 /* InitialRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitialRootView.swift; sourceTree = "<group>"; };
 		8E647DCB2EB4F79600057875 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		8E647DCC2EB4F79600057875 /* TabRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabRootView.swift; sourceTree = "<group>"; };
 		8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -1809,6 +1825,55 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5978B4142F7E613F00818159 /* Menu */ = {
+			isa = PBXGroup;
+			children = (
+				8E83E4DE2E841B7A00A1095C /* AboutMenuCommand.swift */,
+				8E83E4DA2E841B7200A1095C /* MenuBarView.swift */,
+				8E83E4D62E841B5C00A1095C /* MenuCommandList.swift */,
+				59D30AEA2E937CEB005AE77B /* MenuMainCommand.swift */,
+			);
+			path = Menu;
+			sourceTree = "<group>";
+		};
+		5978B4152F7E614400818159 /* Window */ = {
+			isa = PBXGroup;
+			children = (
+				8E83E4CE2E841B5000A1095C /* WindowLinkList.swift */,
+				8E83E4D22E841B5500A1095C /* WindowViewerList.swift */,
+			);
+			path = Window;
+			sourceTree = "<group>";
+		};
+		5978B41A2F7E615900818159 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				5978B4172F7E615900818159 /* DatabaseInitializationView.swift */,
+				5978B4182F7E615900818159 /* DestinationReadyView.swift */,
+				5978B4192F7E615900818159 /* InitialRootView.swift */,
+				8E647DCB2EB4F79600057875 /* RootView.swift */,
+				8E647DCC2EB4F79600057875 /* TabRootView.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		5978B4242F7E618500818159 /* visionOS */ = {
+			isa = PBXGroup;
+			children = (
+				8E6A8A9C2F6E538E00149E06 /* WindowVisionList.swift */,
+			);
+			path = visionOS;
+			sourceTree = "<group>";
+		};
+		5978B4272F7E785000818159 /* Route */ = {
+			isa = PBXGroup;
+			children = (
+				5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */,
+				5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */,
+			);
+			path = Route;
+			sourceTree = "<group>";
+		};
 		8E13A3FF2BCE88BB00B2FCD4 /* RPGShare */ = {
 			isa = PBXGroup;
 			children = (
@@ -1967,21 +2032,16 @@
 		8EC4E48028DDAAF300D0279F /* MasterRPG */ = {
 			isa = PBXGroup;
 			children = (
-				8E83E4DE2E841B7A00A1095C /* AboutMenuCommand.swift */,
-				8E647DC42EB4F79600057875 /* InitialRootView.swift */,
 				8EC4E48628DDAAF300D0279F /* iOS */,
 				8EC4E48128DDAAF300D0279F /* macOS */,
 				8EC4E48928DDAAF300D0279F /* MasterRPGApp.swift */,
-				8E83E4DA2E841B7200A1095C /* MenuBarView.swift */,
-				8E83E4D62E841B5C00A1095C /* MenuCommandList.swift */,
-				59D30AEA2E937CEB005AE77B /* MenuMainCommand.swift */,
+				5978B4142F7E613F00818159 /* Menu */,
 				8E83E4CA2E841B4400A1095C /* MyAppPackage.swift */,
 				59E299052F75313D00700934 /* RealityKitInit.swift */,
-				8E647DCB2EB4F79600057875 /* RootView.swift */,
-				8E647DCC2EB4F79600057875 /* TabRootView.swift */,
-				8E83E4CE2E841B5000A1095C /* WindowLinkList.swift */,
-				8E83E4D22E841B5500A1095C /* WindowViewerList.swift */,
-				8E6A8A9C2F6E538E00149E06 /* WindowVisionList.swift */,
+				5978B4272F7E785000818159 /* Route */,
+				5978B41A2F7E615900818159 /* View */,
+				5978B4242F7E618500818159 /* visionOS */,
+				5978B4152F7E614400818159 /* Window */,
 			);
 			path = MasterRPG;
 			sourceTree = "<group>";
@@ -1989,9 +2049,9 @@
 		8EC4E48128DDAAF300D0279F /* macOS */ = {
 			isa = PBXGroup;
 			children = (
-				8E926E8A2B453D450025B659 /* WindowMacList.swift */,
 				8E6761E52A04B58F001AAE0E /* LinkWindowCommands.swift */,
 				8EC4E48228DDAAF300D0279F /* macOSAppDelegate.swift */,
+				8E926E8A2B453D450025B659 /* WindowMacList.swift */,
 			);
 			path = macOS;
 			sourceTree = "<group>";
@@ -3574,6 +3634,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5978B42A2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */,
 				8E83E4DC2E841B7200A1095C /* MenuBarView.swift in Sources */,
 				8E83E4D02E841B5000A1095C /* WindowLinkList.swift in Sources */,
 				59D30AEB2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
@@ -3581,12 +3642,15 @@
 				8E83E4E02E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E190D992B8F6C150084B0F4 /* macOSAppDelegate.swift in Sources */,
 				8E190D9C2B8F6C150084B0F4 /* WindowMacList.swift in Sources */,
-				8E647DCD2EB4F79600057875 /* InitialRootView.swift in Sources */,
 				8E647DD42EB4F79600057875 /* RootView.swift in Sources */,
 				8E647DD52EB4F79600057875 /* TabRootView.swift in Sources */,
 				8E190DA62B8F6C340084B0F4 /* ExternalPlayerWindow.swift in Sources */,
+				5978B41B2F7E615900818159 /* DatabaseInitializationView.swift in Sources */,
+				5978B41C2F7E615900818159 /* DestinationReadyView.swift in Sources */,
+				5978B41D2F7E615900818159 /* InitialRootView.swift in Sources */,
 				59E299062F75313D00700934 /* RealityKitInit.swift in Sources */,
 				8E190D9A2B8F6C150084B0F4 /* LinkWindowCommands.swift in Sources */,
+				5978B42E2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */,
 				8E83E4CB2E841B4400A1095C /* MyAppPackage.swift in Sources */,
 				8E190DA22B8F6C190084B0F4 /* MasterRPGApp.swift in Sources */,
 				8E6A8A9E2F6E538E00149E06 /* WindowVisionList.swift in Sources */,
@@ -3616,11 +3680,15 @@
 				8E83E4D72E841B5C00A1095C /* MenuCommandList.swift in Sources */,
 				8E83E4DF2E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E6BC9CE2AFB0B2300E5E098 /* MasterTVApp.swift in Sources */,
+				5978B42D2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */,
 				8E6BC9E12AFB0BCF00E5E098 /* iOSAppDelegate.swift in Sources */,
 				59E299072F75313D00700934 /* RealityKitInit.swift in Sources */,
+				5978B41E2F7E615900818159 /* DatabaseInitializationView.swift in Sources */,
+				5978B41F2F7E615900818159 /* DestinationReadyView.swift in Sources */,
+				5978B4202F7E615900818159 /* InitialRootView.swift in Sources */,
 				59D30AEC2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
+				5978B4292F7E785A00818159 /* AppModeTypeRoute.swift in Sources */,
 				8E83E4DB2E841B7200A1095C /* MenuBarView.swift in Sources */,
-				8E647DDF2EB4F79600057875 /* InitialRootView.swift in Sources */,
 				8E647DE62EB4F79600057875 /* RootView.swift in Sources */,
 				8E647DE72EB4F79600057875 /* TabRootView.swift in Sources */,
 				5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
@@ -3761,17 +3829,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5978B42F2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */,
 				8E83E4CD2E841B4400A1095C /* MyAppPackage.swift in Sources */,
 				8EC4E49628DDAAF400D0279F /* iOSAppDelegate.swift in Sources */,
 				8E6761E62A04B58F001AAE0E /* LinkWindowCommands.swift in Sources */,
 				5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
+				5978B42B2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */,
 				8E926E8B2B453D450025B659 /* WindowMacList.swift in Sources */,
-				8E647DD62EB4F79600057875 /* InitialRootView.swift in Sources */,
 				8E647DDD2EB4F79600057875 /* RootView.swift in Sources */,
 				8E647DDE2EB4F79600057875 /* TabRootView.swift in Sources */,
 				59D30AED2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
 				8E83E4E12E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E83E4D12E841B5000A1095C /* WindowLinkList.swift in Sources */,
+				5978B4212F7E615900818159 /* DatabaseInitializationView.swift in Sources */,
+				5978B4222F7E615900818159 /* DestinationReadyView.swift in Sources */,
+				5978B4232F7E615900818159 /* InitialRootView.swift in Sources */,
 				8E83E4D52E841B5500A1095C /* WindowViewerList.swift in Sources */,
 				8EC4E49728DDAAF400D0279F /* iOSSceneDelegate.swift in Sources */,
 				8EC4E49228DDAAF400D0279F /* macOSAppDelegate.swift in Sources */,
@@ -4512,10 +4584,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -4527,6 +4601,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.AudioRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -4548,10 +4623,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -4563,6 +4641,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.AudioRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -4584,10 +4663,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
@@ -4598,6 +4679,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.ModuleRPG.GeneratorRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -4617,10 +4699,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
@@ -4631,6 +4716,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.ModuleRPG.GeneratorRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -4650,12 +4736,15 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.ModuleRPG.GeneratorRPGTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -4680,12 +4769,16 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.ModuleRPG.GeneratorRPGTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -4708,10 +4801,12 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
@@ -4722,6 +4817,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.ModuleRPG.GameRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -4739,10 +4835,13 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
@@ -4753,6 +4852,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.ModuleRPG.GameRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -4768,9 +4868,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.gamemaster.MasterRPGUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -4785,9 +4888,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.gamemaster.MasterRPGUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -4808,7 +4915,9 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 511;
+				EAGER_LINKING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -4823,6 +4932,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 3.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.RPGShare;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -4848,10 +4958,13 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 511;
 				ENABLE_APP_SANDBOX = YES;
+				ENABLE_TESTABILITY = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/RPGShare/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RPGShare;
@@ -4863,6 +4976,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 3.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.RPGShare;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -4888,7 +5002,9 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 511;
+				EAGER_LINKING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
@@ -4909,6 +5025,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 3.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.RPGWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -4933,11 +5050,14 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 511;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_TESTABILITY = NO;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/RPGWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RPGWidget;
@@ -4954,6 +5074,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 3.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.RPGWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -4974,10 +5095,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
@@ -4988,6 +5111,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.CoreRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5007,10 +5131,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
@@ -5021,6 +5148,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.CoreRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5041,11 +5169,13 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				ENABLE_MODULE_VERIFIER = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -5063,6 +5193,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.PhotoRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5084,13 +5215,16 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_MODULE_VERIFIER = YES;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -5106,6 +5240,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.PhotoRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5128,8 +5263,10 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MasterRPG.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 511;
 				DEVELOPMENT_ASSET_PATHS = "";
+				EAGER_LINKING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -5181,6 +5318,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 3.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = MasterRPG;
 				REGISTER_APP_GROUPS = YES;
@@ -5199,6 +5337,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MasterRPG.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 511;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_APP_SANDBOX = YES;
@@ -5215,8 +5354,10 @@
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_TESTABILITY = NO;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Master RPG";
@@ -5252,6 +5393,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 3.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = MasterRPG;
 				REGISTER_APP_GROUPS = YES;
@@ -5266,11 +5408,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.AndrenalinKitTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -5287,11 +5432,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.AndrenalinKitTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -5308,11 +5457,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				ENABLE_MODULE_VERIFIER = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -5330,6 +5481,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGResources;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5352,13 +5504,16 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_MODULE_VERIFIER = YES;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -5374,6 +5529,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGResources;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5395,8 +5551,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Resources/MasterTV.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 511;
 				DEVELOPMENT_ASSET_PATHS = "";
+				EAGER_LINKING = YES;
 				ENABLE_PREVIEWS = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -5422,6 +5580,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 3.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = MasterRPG;
 				SDKROOT = appletvos;
@@ -5438,10 +5597,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Resources/MasterTV.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 511;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Resources/InfoTV.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Master RPG";
@@ -5465,6 +5627,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 3.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = MasterRPG;
 				SDKROOT = appletvos;
@@ -5481,10 +5644,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5497,6 +5662,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.MapRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5517,10 +5683,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5533,6 +5702,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.MapRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5553,10 +5723,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5569,6 +5741,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.AdventureRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5589,10 +5762,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5605,6 +5781,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.AdventureRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5625,11 +5802,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				ENABLE_MODULE_VERIFIER = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -5647,6 +5826,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGResourcesDebug;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5669,13 +5849,16 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_MODULE_VERIFIER = YES;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -5691,6 +5874,7 @@
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGResourcesDebug;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5711,11 +5895,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGAudiosTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -5732,11 +5919,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGAudiosTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -5752,11 +5943,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGPdfsTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -5773,11 +5967,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGPdfsTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -5793,11 +5991,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGPhotosTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -5814,11 +6015,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGPhotosTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -5834,10 +6039,12 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1.0;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
@@ -5848,6 +6055,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.SpaceRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5865,10 +6073,13 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1.0;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
@@ -5879,6 +6090,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.SpaceRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5897,10 +6109,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5913,6 +6127,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.CharacterRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5933,10 +6148,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5949,6 +6167,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.CharacterRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -5969,10 +6188,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5985,6 +6206,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.TableRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -6006,10 +6228,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -6022,6 +6247,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.TableRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -6043,10 +6269,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
@@ -6057,6 +6285,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.DiceRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -6076,10 +6305,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"@executable_path/Frameworks",
@@ -6090,6 +6322,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.DiceRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -6108,11 +6341,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGDieTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6129,11 +6365,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGDieTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6149,11 +6389,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGSpacesTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6170,11 +6413,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGSpacesTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6190,11 +6437,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGTablesTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6211,11 +6461,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGTablesTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6231,11 +6485,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGValuesTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6252,11 +6509,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGValuesTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6272,11 +6533,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGWeathersTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6293,11 +6557,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGWeathersTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6313,11 +6581,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGAdventuresTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6334,11 +6605,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGAdventuresTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6354,11 +6629,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGGamesTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6375,11 +6653,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGGamesTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6395,11 +6677,14 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				EAGER_LINKING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGMapsTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6416,11 +6701,15 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.RPGMapsTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6595,9 +6884,11 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 511;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
+				EAGER_LINKING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
@@ -6636,6 +6927,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 3.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6659,6 +6951,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 511;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
@@ -6669,7 +6962,9 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
+				ENABLE_TESTABILITY = NO;
 				ENABLE_USER_SELECTED_FILES = readwrite;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Master RPG";
@@ -6700,6 +6995,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 3.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -6719,10 +7015,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -6734,6 +7032,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RolePlayGameKit;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -6753,10 +7052,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -6768,6 +7070,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RolePlayGameKit;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -6787,10 +7090,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -6803,6 +7108,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.PdfRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -6823,10 +7129,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -6839,6 +7148,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.PdfRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -6859,10 +7169,12 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				EAGER_LINKING = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -6875,6 +7187,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.WeatherRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
@@ -6895,10 +7208,13 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_TESTABILITY = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -6911,6 +7227,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.andretrettin.RPGModule.WeatherRPG;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;

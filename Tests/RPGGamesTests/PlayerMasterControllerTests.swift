@@ -111,7 +111,7 @@ struct PlayerMasterControllerTests {
         // Arrange
         let env = try await PlayerMasterControllerTestEnvironment.create()
         try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 0)
-        await #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 2)
+        await #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 12)
         await env.masterRoot.adventureRoot.startGame()
         await env.playerRoot.adventureRoot.startGame()
 
@@ -146,7 +146,7 @@ struct PlayerMasterControllerTests {
         #expect(playerResult!.subType == .ok)
         await #expect(env.playerRoot.audioRoot.gameController.currentId == audioId)
         await #expect(env.playerRoot.audioRoot.gameController.gameItem(for: audioId).version == version)
-        await #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 2)
+        await #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 12)
     }
 
     @Test("Player sends photo to master and receives it back")
@@ -154,7 +154,7 @@ struct PlayerMasterControllerTests {
         // Arrange
         let env = try await PlayerMasterControllerTestEnvironment.create()
         try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.photoTestData, itemCounter: 0)
-        await #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 3)
+        await #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 6)
         await env.masterRoot.adventureRoot.startGame()
         await env.playerRoot.adventureRoot.startGame()
 
@@ -188,7 +188,7 @@ struct PlayerMasterControllerTests {
         #expect(playerResult!.subType == .ok)
         await #expect(env.playerRoot.photoRoot.gameController.currentId == photoId)
         await #expect(env.playerRoot.photoRoot.gameController.gameItem(for: photoId).version == version)
-        await #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 3)
+        await #expect(env.playerRoot.photoRoot.itemController.itemDataModel.items.count == 6)
     }
 
     @Test("Player sends space to master and receives it back")

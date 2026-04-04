@@ -146,7 +146,7 @@ private extension ConversationEngine {
     func validatedPrompt(from content: String) throws -> String {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            throw FoundationLabCoreError.invalidRequest("Missing prompt")
+            throw FoundationModelCoreError.invalidRequest("Missing prompt")
         }
         return trimmed
     }
@@ -296,13 +296,13 @@ private extension ConversationEngine {
         return response
     }
 
-    func generateConversationSummary() async throws -> FoundationLabConversationSummary {
+    func generateConversationSummary() async throws -> ConversationSummary {
         let summarySession = LanguageModelSession(
             model: model,
             instructions: Instructions(configuration.summaryInstructions)
         )
 
-        let conversationText = FoundationLabConversationContextBuilder.conversationText(
+        let conversationText = ConversationContextBuilder.conversationText(
             from: session.transcript,
             userLabel: configuration.conversationUserLabel,
             assistantLabel: configuration.conversationAssistantLabel
@@ -315,14 +315,14 @@ private extension ConversationEngine {
 
         let summaryResponse = try await summarySession.respond(
             to: Prompt(summaryPrompt),
-            generating: FoundationLabConversationSummary.self
+            generating: ConversationSummary.self
         )
 
         return summaryResponse.content
     }
 
-    func createNewSession(with summary: FoundationLabConversationSummary) {
-        let contextInstructions = FoundationLabConversationContextBuilder.contextInstructions(
+    func createNewSession(with summary: ConversationSummary) {
+        let contextInstructions = ConversationContextBuilder.contextInstructions(
             baseInstructions: configuration.baseInstructions,
             summary: summary,
             continuationNote: configuration.continuationNote

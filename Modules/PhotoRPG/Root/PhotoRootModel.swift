@@ -15,9 +15,11 @@ public final class PhotoRootModel {
         self.listDisplayModel = listDisplayModel
         let searchModel = SearchModel(tagController: tagController, module: config.module, categoryTags: config.categoryTags)
         self.searchModel = searchModel
-        
+                
         self.itemSelectionModel = ItemSelectionModel()
         self.linkSelectionModel = config.linkSelectionModel
+        
+        self.navigationModel = AppNavigationModel()
     }
     
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, linkRegisterController: LinkRegisterController) {
@@ -32,7 +34,7 @@ public final class PhotoRootModel {
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
         _searchController = SearchController(itemController: itemController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
 
         _rootController = ItemRootController(
             config: config,
@@ -68,6 +70,8 @@ public final class PhotoRootModel {
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
     public var linkSelectionModel: ItemSelectionModel
+    
+    @MainActor public var navigationModel: AppNavigationModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }
     public let removeEntryListModel = RemoveEntryListModel()

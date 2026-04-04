@@ -30,7 +30,6 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
     
     public var body: some View {
-        //let _ = Self._printChanges()
         HStack(alignment: .center, spacing: 4) {
             specialCategoryIcon
             
@@ -195,9 +194,3 @@ private struct TwoLineTagView: View {
         }
     }
 }
-
-//#Preview("Split", traits: .mockData) {
-//    @Previewable @Environment(FakeItemRootController.self) var root
-//
-//    ItemRowView(root: root, model: ItemDataModel(), cacheItemListModel: CacheItemListModel())
-//}

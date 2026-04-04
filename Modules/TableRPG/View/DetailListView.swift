@@ -79,7 +79,7 @@ private extension DetailListView {
             if !model.specialCategory {
                 ControlGroup {
                     Button {
-                        navigator.navigate(to: EditorRoute.quickEditor(model.id), method: .cover)
+                        navigator.navigate(to: EditorRoute.quickEditor(model.id))
                     } label: {
                         Label {
                             Text("Quick Editor", bundle: .module)
@@ -120,7 +120,7 @@ private extension DetailListView {
     private func addLinkButton(module: NetworkModules) -> some View {
         Button {
             withAnimation {
-                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)), method: .managedSheet)
+                navigator.navigate(to: EditorRoute.addLink(ItemRowModel(itemId: model.id, typeId: module)))
             }
         } label: {
             Label {

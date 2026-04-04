@@ -427,26 +427,43 @@ extension DiceModel: ItemDiffComparable {
     }
 
     public func isSame(_ other: DiceModel) -> Bool {
-        name == other.name &&
-        description == other.description &&
-        tags == other.tags &&
-        category == other.category &&
-        dice_.update == other.dice_.update &&
-        sumUp == other.sumUp &&
-        modifier == other.modifier &&
-        percentDice == other.percentDice &&
-        compareOption == other.compareOption &&
-        compareValue == other.compareValue &&
-        coupValues == other.coupValues &&
-        coupOnlyOnFirstDie == other.coupOnlyOnFirstDie &&
-        fumbleValues == other.fumbleValues &&
-        fumbleOnlyOnFirstDie == other.fumbleOnlyOnFirstDie &&
-        rerollOptions == other.rerollOptions &&
-        reorderDice == other.reorderDice &&
-        addDiceEvery == other.addDiceEvery &&
-        resultCategory == other.resultCategory &&
-        entries_.update == other.entries_.update &&
-        parentId == other.parentId
+        // Split comparison into typed chunks for faster type-checking
+        let basicFieldsMatch: Bool = (
+            name == other.name &&
+            description == other.description &&
+            tags == other.tags &&
+            category == other.category
+        )
+        guard basicFieldsMatch else { return false }
+
+        let diceConfigMatch: Bool = (
+            dice_.update == other.dice_.update &&
+            sumUp == other.sumUp &&
+            modifier == other.modifier &&
+            percentDice == other.percentDice
+        )
+        guard diceConfigMatch else { return false }
+
+        let compareMatch: Bool = (
+            compareOption == other.compareOption &&
+            compareValue == other.compareValue
+        )
+        guard compareMatch else { return false }
+
+        let specialRollsMatch: Bool = (
+            coupValues == other.coupValues &&
+            coupOnlyOnFirstDie == other.coupOnlyOnFirstDie &&
+            fumbleValues == other.fumbleValues &&
+            fumbleOnlyOnFirstDie == other.fumbleOnlyOnFirstDie &&
+            rerollOptions == other.rerollOptions &&
+            reorderDice == other.reorderDice &&
+            addDiceEvery == other.addDiceEvery
+        )
+        guard specialRollsMatch else { return false }
+
+        return resultCategory == other.resultCategory &&
+               entries_.update == other.entries_.update &&
+               parentId == other.parentId
     }
 }
 

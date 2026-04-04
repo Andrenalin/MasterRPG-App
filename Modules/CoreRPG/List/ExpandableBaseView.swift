@@ -105,8 +105,8 @@ fileprivate extension View {
             }
         )
         .background(.background.secondary)
-        .cornerRadius(8)
-        
+        .clipShape(.rect(cornerRadius: 8))
+
         ExpandableBaseView(
             animatableData: isExpanded ? 1 : 0,
             header: {
@@ -130,7 +130,7 @@ fileprivate extension View {
             }
         )
         .background(.background.secondary)
-        .cornerRadius(8)
+        .clipShape(.rect(cornerRadius: 8))
 
     }
 }

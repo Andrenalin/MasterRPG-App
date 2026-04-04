@@ -47,9 +47,9 @@ struct ItemControllerTests {
         let sut = await root.itemController
 
         let cc = await ConvertController(itemController: sut, editController: root.editController)
-        await cc.createFoldersAndCollections(reportModel: ValidateRepairModel())
+        await cc.createFoldersAndCollections(reportModel: ValidateRepairModel(), overwriteEntryCheck: true)
         
-        await #expect(sut.itemDataModel.items.count == 6)
+        await #expect(sut.itemDataModel.items.count == 4)
         let item = await sut.itemOrEmpty(for: sut.itemDataModel.items[0])
         try #require(item.photoId != nil)
         

@@ -24,4 +24,12 @@ public enum GameFactory {
     @MainActor @ViewBuilder public static func detailSearchView(root: GameRoot, navigator: Navigator) -> some View {
         SearchDetailView(root: root, navigator: navigator)
     }
+    
+    @MainActor public static func rootGameView(root: GameRoot) -> some View {
+        GameRootView(root: root)
+    }
+
+    @MainActor public static func rootSetupView(root: GameRoot) -> some View {
+        GameRootSetupView(root: root)
+    }
 }

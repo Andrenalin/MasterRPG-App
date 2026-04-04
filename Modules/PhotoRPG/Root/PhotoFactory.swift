@@ -17,6 +17,6 @@ public enum PhotoFactory {
     }
     
     @MainActor @ViewBuilder public static func detailView(root: PhotoRootModel) -> some View {
-        ItemSplitDetailRootView(root: root.rootController)
+        ItemSplitDetailRouteRootView(root: root.rootController, route: PhotoRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
     }
 }

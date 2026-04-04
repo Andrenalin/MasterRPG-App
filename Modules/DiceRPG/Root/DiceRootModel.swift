@@ -18,6 +18,7 @@ public final class DiceRootModel {
         
         let itemSelectionModel = ItemSelectionModel()
         self.itemSelectionModel = itemSelectionModel
+        self.navigationModel = AppNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
     }
     
@@ -33,7 +34,7 @@ public final class DiceRootModel {
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, gameController: gameController)
         _searchController = SearchController(itemController: itemController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
 
         _rootController = ItemRootController(
             config: config,
@@ -70,6 +71,7 @@ public final class DiceRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var navigationModel: AppNavigationModel
     public var linkSelectionModel: ItemSelectionModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }

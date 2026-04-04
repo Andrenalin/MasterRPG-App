@@ -185,22 +185,39 @@ extension WeatherModel: ItemDiffComparable {
     }
 
     public func isSame(_ other: WeatherModel) -> Bool {
-        name == other.name &&
-        description == other.description &&
-        tags == other.tags &&
-        category == other.category &&
-        weatherUpdate_.wrappedValue == other.weatherUpdate_.wrappedValue &&
-        time == other.time &&
-        cloudThickness == other.cloudThickness &&
-        stormType == other.stormType &&
-        rainAngle == other.rainAngle &&
-        rainIntensity == other.rainIntensity &&
-        lightningFrequency == other.lightningFrequency &&
-        lightningMaxBolts == other.lightningMaxBolts &&
-        lightningForkProbability == other.lightningForkProbability &&
-        photoId == other.photoId &&
-        entries_.update == other.entries_.update &&
-        parentId == other.parentId
+        // Split comparison into typed chunks for faster type-checking
+        let basicFieldsMatch: Bool = (
+            name == other.name &&
+            description == other.description &&
+            tags == other.tags &&
+            category == other.category
+        )
+        guard basicFieldsMatch else { return false }
+
+        let weatherConfigMatch: Bool = (
+            weatherUpdate_.wrappedValue == other.weatherUpdate_.wrappedValue &&
+            time == other.time &&
+            cloudThickness == other.cloudThickness &&
+            stormType == other.stormType
+        )
+        guard weatherConfigMatch else { return false }
+
+        let rainConfigMatch: Bool = (
+            rainAngle == other.rainAngle &&
+            rainIntensity == other.rainIntensity
+        )
+        guard rainConfigMatch else { return false }
+
+        let lightningConfigMatch: Bool = (
+            lightningFrequency == other.lightningFrequency &&
+            lightningMaxBolts == other.lightningMaxBolts &&
+            lightningForkProbability == other.lightningForkProbability
+        )
+        guard lightningConfigMatch else { return false }
+
+        return photoId == other.photoId &&
+               entries_.update == other.entries_.update &&
+               parentId == other.parentId
     }
 }
 

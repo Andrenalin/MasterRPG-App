@@ -40,6 +40,7 @@ public final class MapRootModel {
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
+        self.navigationModel = AppNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
     }
     
@@ -57,7 +58,7 @@ public final class MapRootModel {
         _linkController = LinkController(rootManager: rootManager, itemController: itemController, editController: editController, gameController: gameController)
         _searchController = SearchController(itemController: itemController)
         
-        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: []), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
+        _folderListController = FolderListController(listModel: FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel), listDisplayModel: listDisplayModel, searchModel: searchModel, itemControllable: itemController)
 
         _rootController = ItemRootController(
             config: config,
@@ -98,6 +99,7 @@ public final class MapRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
+    @MainActor public var navigationModel: AppNavigationModel
     public var linkSelectionModel: ItemSelectionModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }

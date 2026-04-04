@@ -151,7 +151,7 @@ public struct ConvertController: Sendable {
         await createCollections(tagCounter: tagCounter)
     }
     
-    @MainActor public func createFoldersAndCollections(reportModel: ValidateRepairModel, excludeHidden: Bool = false) async {
+    @MainActor public func createFoldersAndCollections(reportModel: ValidateRepairModel, excludeHidden: Bool = false, overwriteEntryCheck: Bool = false) async {
         var tagCounter: [String: [UUID]] = [:]
         var categoryCounter: [ItemListCategory: [UUID]] = [:]
         
@@ -170,7 +170,7 @@ public struct ConvertController: Sendable {
             let linkModels = model.linkRegisterModels
             editController.linkRegisterController.register(links: linkModels)
 
-            guard model.specialCategory == false, model.category != .entry else { continue }
+            guard model.specialCategory == false, (overwriteEntryCheck || model.category != .entry) else { continue }
             guard model.parentId == nil else { continue }
             
             categoryCounter[model.category, default: []] += [model.id]

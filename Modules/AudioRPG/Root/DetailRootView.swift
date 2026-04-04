@@ -86,15 +86,8 @@ struct DetailListView: View {
     }
 
     var playerView: some View {
-#if os(visionOS)
         AudioPlayerBarView()
             .padding()
-#else
-        GlassEffectContainer {
-            AudioPlayerBarView()
-                .padding()
-        }
-#endif
     }
     
     var playButton: some View {

@@ -41,21 +41,20 @@ extension Navigator {
         }
     }
 
-    /// Returns true if the current ManagedNavigationStack or navigationDismissible is presenting.
-    public nonisolated var isPresenting: Bool {
-        state.isPresenting
-    }
-
     /// Returns true if any child of the current ManagedNavigationStack or navigationDismissible is presenting.
-    public nonisolated var isAnyChildPresenting: Bool {
-        state.isAnyChildPresenting
+    public func isAnyChildPresenting() -> Bool {
+        _children.values.first(where: {
+            if let object = $0.object, object.isPresented || object.isAnyChildPresenting() {
+                return true
+            }
+            return false
+        }) != nil
     }
 
-    /// Returns true if the current ManagedNavigationStack or navigationDismissible is presented.
-    public nonisolated var isPresented: Bool {
-        state.isPresented
+    /// Returns NavigationDestination of sheet or cover we're currently presenting, if any.
+    public var presentingSheetOrCover: (any NavigationDestination)? {
+        (sheet ?? cover)?.wrapped as? (any NavigationDestination)
     }
-
 }
 
 extension View {
@@ -94,34 +93,22 @@ extension View {
 
 }
 
-extension NavigationState {
-
-    internal nonisolated var isPresenting: Bool {
-        children.values.first(where: { $0.object?.isPresented ?? false }) != nil
-    }
-
-    internal nonisolated var isAnyChildPresenting: Bool {
-        children.values.first(where: {
-            if let object = $0.object, object.isPresented || object.isAnyChildPresenting {
-                return true
-            }
-            return false
-        }) != nil
-    }
-
-}
-
 internal struct NavigationPresentationModifiers: ViewModifier {
 
-    @ObservedObject internal var state: NavigationState
+    internal var navigator: Navigator
 
     func body(content: Content) -> some View {
+        @Bindable var nav = navigator
         content
-            .sheet(item: $state.sheet) { (destination) in
+            .sheet(item: $nav.sheet) { (destination) in
                 managedView(for: destination)
+                    .modifier(PresentationDetentsModifier(
+                        detents: destination.detents,
+                        initialSelection: destination.selectedDetent
+                    ))
             }
-            #if os(iOS)
-            .fullScreenCover(item: $state.cover) { (destination) in
+            #if os(iOS) || os(tvOS) || os(watchOS)
+            .fullScreenCover(item: $nav.cover) { (destination) in
                 managedView(for: destination)
             }
             #endif
@@ -131,11 +118,41 @@ internal struct NavigationPresentationModifiers: ViewModifier {
         ManagedPresentationView {
             if destination.method.requiresNavigationStack {
                 ManagedNavigationStack {
-                    state.mappedPresentationView(for: destination.wrapped)
+                    navigator.mappedPresentationView(for: destination.wrapped)
                 }
             } else {
-                state.mappedPresentationView(for: destination.wrapped)
+                navigator.mappedPresentationView(for: destination.wrapped)
             }
+        }
+    }
+
+}
+
+/// Applies `.presentationDetents()` conditionally based on destination configuration.
+///
+/// When detents are provided, they constrain the sheet to the specified sizes.
+/// When a selected detent is provided, the sheet opens at that size initially.
+internal struct PresentationDetentsModifier: ViewModifier {
+
+    let detents: Set<PresentationDetent>
+    let initialSelection: PresentationDetent?
+
+    @State private var selectedDetent: PresentationDetent = .large
+
+    func body(content: Content) -> some View {
+        if detents.isEmpty {
+            content
+        } else if initialSelection != nil {
+            content
+                .presentationDetents(detents, selection: $selectedDetent)
+                .onAppear {
+                    if let initialSelection {
+                        selectedDetent = initialSelection
+                    }
+                }
+        } else {
+            content
+                .presentationDetents(detents)
         }
     }
 

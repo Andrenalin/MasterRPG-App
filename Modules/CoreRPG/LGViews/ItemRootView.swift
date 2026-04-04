@@ -12,8 +12,7 @@ public struct ItemRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     public var body: some View {
-        
-        ItemRootSingleListView(root: root)
+        ItemRootListView(root: root)
             .environment(root.folderListControllable.cacheListItemModel)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
@@ -23,21 +22,38 @@ public struct ItemRootView: View {
     }
 }
 
-struct ItemRootSingleListView: View {
+struct ItemRootListView: View {
     let root: ItemRootController
     
-    @Environment(\.navigator) private var navigator
-    @Environment(\.appSizeMode) private var appSizeMode
-    
     var body: some View {
-        
-        ItemRootListView(root: root)
-            .onChange(of: listModel.itemRoute) {
-                guard let itemId = listModel.itemRoute else { return }
-                listModel.itemRoute = nil
-                guard appSizeMode == .compact else { return }
-                navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
+        ListRootView(root: root, listController: root.folderListControllable, parentModel: nil)
+            .searchItemList(listControllable: root.folderListControllable)
+            .navigationAutoReceive(InternalRoute.self)
+    }
+}
+
+
+public struct ItemSplitDetailRouteRootView<Route: NavigationDestination>: View {
+    public init(root: ItemRootController, route: Route) {
+        self.root = root
+        self.route = route
+    }
+    
+    let root: ItemRootController
+    let route: Route
+    
+    public var body: some View {
+        ManagedNavigationStack(name: "Split-\(root.configurable.module.token)") {
+            if listModel.selectedItemId != nil {
+                route
+                //root.folderListControllable.detailDestination(for: itemId).asAnyView()
+            } else {
+                SplitContentUnavailableView(module: root.configurable.module)
             }
+        }
+        .environment(root)
+        .tint(root.configurable.module.tint)
+        .accentColor(root.configurable.module.tint)
     }
     
     var listModel: FolderListModel {
@@ -45,16 +61,6 @@ struct ItemRootSingleListView: View {
     }
 }
 
-struct ItemRootListView: View {
-    let root: ItemRootController
-    
-    var body: some View {
-        
-        ListRootView(root: root, listController: root.folderListControllable, parentModel: nil)
-            .searchItemList(listControllable: root.folderListControllable)
-            .navigationAutoReceive(InternalRoute.self)
-    }
-}
 
 public struct ItemSplitDetailRootView: View {
     public init(root: ItemRootController) {
@@ -82,7 +88,6 @@ struct SplitContentDetailRootView: View {
     let itemId: UUID?
     
     var body: some View {
-        
         if let itemId {
             root.folderListControllable.detailDestination(for: itemId).asAnyView()
         } else {

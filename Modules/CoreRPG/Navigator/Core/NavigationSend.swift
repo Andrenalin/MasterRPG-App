@@ -8,8 +8,20 @@
 import Combine
 import SwiftUI
 
-extension Navigator {
+/// A type that can broadcast hashable values through the navigation system.
+///
+/// Conforming types are responsible for delivering values to registered
+/// `onNavigationReceive` handlers, enabling features such as deep linking
+/// and cross-tree coordination.
+public protocol NavigationSending {
+    /// Sends an ordered list of values to navigation receivers.
+    ///
+    /// - Parameter values: The values to broadcast. Each value will be
+    ///   matched against registered receive handlers.
+    @MainActor func send(values: [any Hashable])
+}
 
+extension NavigationSending {
     /// Sends a value or values to navigation receivers throughout the application.
     ///
     /// This is the core functionality behind deep linking support in Navigator.
@@ -60,13 +72,23 @@ extension Navigator {
     public func send(_ values: any Hashable...) {
         send(values: values)
     }
+}
 
+extension Navigator: NavigationSending {
+
+    /// Sends a single value through the navigation system.
+    ///
+    /// This deprecated overload forwards to ``Navigator/send(values:)``.
     @available(*, deprecated, renamed: "send", message: "Use send(...) instead.")
     @MainActor
     public func send(value: any Hashable) {
         send(values: [value])
     }
 
+    /// Core implementation for broadcasting one or more values to navigation receivers.
+    ///
+    /// Most callers should prefer the variadic ``NavigationSending/send(_:)``
+    /// convenience API, which forwards to this method.
     @MainActor
     public func send(values: [any Hashable]) {
         guard let value: any Hashable = values.first else {
@@ -78,7 +100,7 @@ extension Navigator {
             resume(action(self), values: remainingValues)
         } else {
             log(.send(.sending(value)))
-            state.publisher.send(NavigationSendValues(navigator: root, value: value, values: remainingValues))
+            publisher.send(NavigationSendValues(navigator: root, value: value, values: remainingValues))
         }
     }
 
@@ -86,7 +108,7 @@ extension Navigator {
     internal func resume(_ action: NavigationReceiveResumeType, values: [any Hashable] = [], delay: TimeInterval? = nil) {
         switch action {
         case .auto:
-            let delay: TimeInterval = delay ?? state.executionDelay
+            let delay: TimeInterval = delay ?? executionDelay
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 self.send(values: values)
             }
@@ -107,7 +129,7 @@ extension Navigator {
         }
     }
 
-    /// Resumes sending any values paused by an onNavigationReceive handler.
+    /// Resumes sending any values paused by an `onNavigationReceive` handler.
     ///
     /// This allows for actions like authentication sequences to occur as part of a deep linking sequence. The onNavigationReceive
     /// handler pauses the sequence, and this function resumes them.
@@ -134,12 +156,40 @@ extension View {
 
     /// Declarative access to `navigator.send(value:)`.
     ///
+    /// ```swift
+    /// struct ContentView: View {
+    ///     @Environment(\.navigator) private var navigator
+    ///     @State private var pendingTab: RootTabs?
+    ///
+    ///     var body: some View {
+    ///         Button("Go Home") {
+    ///             pendingTab = .home
+    ///         }
+    ///         .navigationSend($pendingTab)
+    ///     }
+    /// }
+    /// ```
+    ///
     /// Note that the bound optional value will be cleared immediately after it's sent.
     public func navigationSend<T: Hashable & Equatable>(_ item: Binding<T?>) -> some View {
         self.modifier(NavigationSendValueModifier<T>(item: item))
     }
 
     /// Declarative access to `navigator.send(values:)`.
+    ///
+    /// ```swift
+    /// struct ContentView: View {
+    ///     @Environment(\.navigator) private var navigator
+    ///     @State private var pendingActions: [NavigationAction]?
+    ///
+    ///     var body: some View {
+    ///         Button("Perform actions") {
+    ///             pendingActions = [.dismissAny, .popAny]
+    ///         }
+    ///         .navigationSend(values: $pendingActions)
+    ///     }
+    /// }
+    /// ```
     ///
     /// Note that the bound optional values will be cleared immediately after the first value is sent.
     public func navigationSend<T: Hashable & Equatable>(values: Binding<[T]?>) -> some View {
@@ -162,7 +212,7 @@ extension View {
     /// Note that there should be one and only one registered handler for a given type in the navigation tree. If more than
     /// one exists the first handler will consume the value and the remaining handlers should be ignored.
     public func onNavigationReceive<T: Hashable>(handler: @escaping NavigationReceiveResumeValueOnlyHandler<T>) -> some View {
-        self.modifier(OnNavigationReceiveModifier(handler: { (value, _) in handler(value) }))
+        self.modifier(OnNavigationReceiveModifier<T>(handler: { (value, _) in handler(value) }))
     }
 
     /// Handler receives values of a specific type broadcast via `navigator.send`.
@@ -180,10 +230,31 @@ extension View {
     /// Note that there should be one and only one registered handler for a given type in the navigation tree. If more than
     /// one exists the first handler will consume the value and the remaining handlers should be ignored.
     public func onNavigationReceive<T: Hashable>(handler: @escaping NavigationReceiveResumeHandler<T>) -> some View {
-        self.modifier(OnNavigationReceiveModifier(handler: handler))
+        self.modifier(OnNavigationReceiveModifier<T>(handler: handler))
     }
 
-    // Handler receives values of a specific type broadcast via `navigator.send` and assigns the result to bound value
+    /// Handler receives values of a specific type broadcast via `navigator.send`
+    /// and assigns the result to a bound value.
+    ///
+    /// Use this when you want to drive local state from navigation sends
+    /// without writing a full receive handler.
+    ///
+    /// ```swift
+    /// struct ContentView: View {
+    ///     @State private var selectedTab: RootTabs = .home
+    ///
+    ///     var body: some View {
+    ///         TabView(selection: $selectedTab) {
+    ///             // ...
+    ///         }
+    ///         .onNavigationReceive(assign: $selectedTab)
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - binding: The binding to update when a value is received.
+    ///   - delay: Optional delay to wait before resuming any remaining values.
     public func onNavigationReceive<T: Hashable & Equatable>(assign binding: Binding<T>, delay: TimeInterval? = nil) -> some View {
         self.modifier(OnNavigationReceiveModifier<T> { (value, _) in
             if binding.wrappedValue == value {
@@ -218,6 +289,15 @@ extension View {
         })
     }
 
+    /// Resumes any values previously paused by an `onNavigationReceive` handler.
+    ///
+    /// Apply this modifier to a view that should resume a deep-link sequence
+    /// or other queued navigation work once it appears.
+    ///
+    /// ```swift
+    /// DetailView()
+    ///     .navigationResume()
+    /// ```
     public func navigationResume() -> some View {
         self.modifier(NavigationResumeModifier())
     }
@@ -284,9 +364,12 @@ private struct NavigationSendValuesModifier<T: Hashable & Equatable>: ViewModifi
 private struct OnNavigationReceiveModifier<T: Hashable>: ViewModifier {
     internal let handler: NavigationReceiveResumeHandler<T>
     @Environment(\.navigator) var navigator: Navigator
+    init(handler: @escaping NavigationReceiveResumeHandler<T>) {
+        self.handler = handler
+    }
     func body(content: Content) -> some View {
         content
-            .onReceive(navigator.state.publisher) { values in
+            .onReceive(navigator.publisher) { values in
                 if let value: T = values.consume() {
                     navigator.log(.send(.receiving(value)))
                     let type = handler(value, navigator)
@@ -327,8 +410,13 @@ internal final class NavigationSendValues {
     }
 
     deinit {
-        if consumed == false {
-            navigator.log(.error("missing receive handler for type: \(type(of: value))!!!"))
+        let navigator = self.navigator
+        let valueType = String(describing: type(of: value))
+        let consumed = self.consumed
+        MainActor.assumeIsolated {
+            if consumed == false {
+                navigator.log(.error("missing receive handler for type: \(valueType)!!!"))
+            }
         }
     }
 

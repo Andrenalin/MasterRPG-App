@@ -13,11 +13,6 @@ public extension EnvironmentValues {
         get { self[WideModeKey.self] }
         set { self[WideModeKey.self] = newValue }
     }
-    
-    var safeAreaInsets: EdgeInsets {
-        get { self[SafeAreaInsetsKey.self] }
-        set { self[SafeAreaInsetsKey.self] = newValue }
-    }
 }
 
 public struct SmallWideView<Small: View, Wide: View, Large: View>: View {
@@ -96,7 +91,6 @@ struct SmallWideLargeViewModifier: ViewModifier {
 #if os(iOS) || os(visionOS)
         content
             .environment(\.wideMode, size)
-            .environment(\.safeAreaInsets, UIApplication.keyWindow?.safeAreaInsets.swiftUiInsets ?? .init())
 #else
         content
 #endif
@@ -122,10 +116,6 @@ struct WideModeKey: EnvironmentKey {
 #else
     static let defaultValue: WideMode = .small
 #endif
-}
-
-private struct SafeAreaInsetsKey: EnvironmentKey {
-    static let defaultValue: EdgeInsets = .init()
 }
 
 #if os(iOS) || os(visionOS)

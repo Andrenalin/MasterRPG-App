@@ -52,6 +52,20 @@ nonisolated public struct NavigationConfiguration {
     /// AutoDestinationMode
     public let autoDestinationMode: Bool
 
+    /// Creates a new navigation configuration.
+    ///
+    /// - Parameters:
+    ///   - restorationKey: An optional key used to enable state restoration
+    ///     for named managed navigation stacks. Change the key when you add
+    ///     or remove checkpoints or destination types.
+    ///   - logger: A closure that receives navigation events for logging.
+    ///     The default implementation prints events in debug builds.
+    ///   - executionDelay: Controls the timing of deep-link animations.
+    ///     Smaller values speed up multi-step navigation; larger values make
+    ///     each step more visible.
+    ///   - verbosity: Controls which events are emitted by the logger.
+    ///   - autoDestinationMode: When enabled, allows navigation to
+    ///     ``NavigationDestination`` values without explicit registration.
     public init(
         restorationKey: String? = nil,
         logger: ((NavigationEvent) -> Void)? = {
@@ -95,18 +109,18 @@ extension View {
     /// }
     /// ```
     public func navigationRoot(_ navigator: Navigator) -> some View {
-        self.modifier(NavigationRootModifier(state: navigator.state))
+        self.modifier(NavigationRootModifier(navigator: navigator))
     }
 }
 
 private struct NavigationRootModifier: ViewModifier {
 
-    @StateObject var state: NavigationState
+    var navigator: Navigator
 
     public func body(content: Content) -> some View {
         content
-            .modifier(NavigationPresentationModifiers(state: state))
-            .environment(\.navigator, Navigator(state: state, parent: nil, dismissible: nil))
+            .modifier(NavigationPresentationModifiers(navigator: navigator))
+            .environment(\.navigator, navigator)
     }
 
 }

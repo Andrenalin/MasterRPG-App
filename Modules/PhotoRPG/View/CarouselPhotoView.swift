@@ -76,7 +76,6 @@ private extension CarouselPhotoView {
             }
             Button {
                 withAnimation(.easeInOut) { activeSheet = .selection }
-                //navigator.navigate(to: SelectionModuleRoute.selection, method: .managedSheet)
             } label: {
                 VStack {
                     Text("Select", bundle: .module)
@@ -94,9 +93,11 @@ private extension CarouselPhotoView {
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .selection:
-                SelectionModuleRoute.selection
-                    .environment(root.rootController)
-                    .environment(photoIds)
+                ManagedPresentationView {
+                    SelectionModuleRoute.selection
+                        .environment(root.rootController)
+                        .environment(photoIds)
+                }
             }
         }
     }

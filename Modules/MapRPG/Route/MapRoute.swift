@@ -30,7 +30,6 @@ extension MapRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             MapRouteDestinationView(itemId: itemId)
-                .navigationDestination(MapDetailRoute.self)
                 .navigationAutoReceive(MapDetailRoute.self)
         }
     }

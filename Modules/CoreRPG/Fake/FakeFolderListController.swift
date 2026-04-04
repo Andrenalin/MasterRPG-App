@@ -17,7 +17,7 @@ struct FakeFolderListController: FolderListControllable {
     }
     
     let itemControllable: any ItemControllable = FakeItemController.fake
-    let listModel: FolderListModel = FolderListModel()
+    let listModel: FolderListModel = FolderListModel(navigationModel: AppNavigationModel())
     let listDisplayModel: ListDisplayModel = ListDisplayModel()
     let searchModel: SearchModel = .preview()
     

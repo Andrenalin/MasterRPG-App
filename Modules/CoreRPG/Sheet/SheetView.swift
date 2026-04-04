@@ -100,11 +100,7 @@ public struct SheetView<LinkType: LinkDataTransferable>: View {
         Color.accentColor.opacity(0.3)
             .frame(height: 8)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            .listRowBackground(Color.clear)
-        
-            .onChange(of: model.searchText) {
-                withAnimation { model.updateSearch() }
-            }
+            .listRowBackground(Color.clear)        
     }
     
     func relocate(indexSet: IndexSet, to: Int) -> (IndexSet, Int) {

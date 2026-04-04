@@ -52,6 +52,8 @@ struct PhotoDetailRouteDestinationView: View {
     @Environment(PhotoRootModel.self) private var root
     
     var body: some View {
+        let _ = Self._printChanges()
+        let _ = print("*** from \(itemId)")
         DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
             .environment(root.listDisplayModel)
             .environment(root.searchModel)

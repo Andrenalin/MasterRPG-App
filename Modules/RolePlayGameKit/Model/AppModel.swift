@@ -184,6 +184,18 @@ extension AppModel {
         await adventureRoot.save()
     }
 
+    public func cleanDatabase() async {
+        try? await adventureRoot.itemDataCleanup()
+        try? await audioRoot.itemDataCleanup()
+        try? await characterRoot.itemDataCleanup()
+        try? await diceRoot.itemDataCleanup()
+        try? await mapRoot.itemDataCleanup()
+        try? await pdfRoot.itemDataCleanup()
+        try? await photoRoot.itemDataCleanup()
+        try? await tableRoot.itemDataCleanup()
+        try? await spaceRoot.itemDataCleanup()
+        try? await weatherRoot.itemDataCleanup()
+    }
     public func installExampleData(isGerman: Bool = false) {
         let importController = adventureRoot.importControllable
         let bundle = RPGResources.Resources.bundle

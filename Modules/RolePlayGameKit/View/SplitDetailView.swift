@@ -50,9 +50,7 @@ struct SplitDetailView: View {
     }
     
     var selectedModule: NetworkModules {
-        let module = isExtendedRoutes ? (appModel.selectedExtendedModule ?? .maps).module : (appModel.selectedModule ?? .game).module
-        print(module)
-        return module
+        isExtendedRoutes ? (appModel.selectedExtendedModule ?? .maps).module : (appModel.selectedModule ?? .game).module
     }
 }
 

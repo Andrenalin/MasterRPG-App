@@ -29,7 +29,6 @@ extension WeatherRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             WeatherRouteDestinationView(itemId: itemId)
-                .navigationDestination(WeatherDetailRoute.self)
                 .navigationAutoReceive(WeatherDetailRoute.self)
         }
     }

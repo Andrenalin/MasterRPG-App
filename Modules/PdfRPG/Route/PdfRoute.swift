@@ -30,7 +30,6 @@ extension PdfRoute: NavigationDestination {
         switch self {
         case .detail(let itemId):
             DestinationPdfRouteView(itemId: itemId)
-                .navigationDestination(PdfDetailRoute.self)
                 .navigationAutoReceive(PdfDetailRoute.self)
         }
     }

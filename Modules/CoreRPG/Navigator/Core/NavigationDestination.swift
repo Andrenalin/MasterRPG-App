@@ -104,6 +104,25 @@ import SwiftUI
 
     /// Can be overridden to define a specific send resume type for each destination.
     var receiveResumeType: NavigationReceiveResumeType { get }
+    
+    /// Can be overridden to define specific presentation detents for sheet presentations.
+    ///
+    /// Return an empty set to use the system default (full-height sheet).
+    /// ```swift
+    /// var detents: Set<PresentationDetent> {
+    ///     switch self {
+    ///     case .settings: [.medium, .large]
+    ///     case .info: [.medium]
+    ///     default: []
+    ///     }
+    /// }
+    /// ```
+    var detents: Set<PresentationDetent> { get }
+
+    /// Can be overridden to define the initially selected detent for sheet presentations.
+    ///
+    /// If nil, the system will choose the default detent.
+    var selectedDetent: PresentationDetent? { get }
 
 }
 
@@ -117,6 +136,16 @@ extension NavigationDestination {
     /// Default resume behavior.
     public var receiveResumeType: NavigationReceiveResumeType {
         .auto
+    }
+    
+    /// Default detents (empty = system default, full-height sheet).
+    public var detents: Set<PresentationDetent> {
+        []
+    }
+    
+    /// Default selected detent (nil = system default).
+    public var selectedDetent: PresentationDetent? {
+        nil
     }
 
     /// Convenience shortcut to implicitly return AnyView.
@@ -187,7 +216,6 @@ private struct NavigationDestinationModifier<D: NavigationDestination>: ViewModi
     let destination: D.Type
     @Environment(\.navigator) var navigator
     func body(content: Content) -> some View {
-        let _ = navigator.register(D.self)
         content
             .navigationDestination(for: D.self) { destination in
                 destination
@@ -196,28 +224,4 @@ private struct NavigationDestinationModifier<D: NavigationDestination>: ViewModi
                     .environment(\.navigator, navigator)
             }
     }
-}
-
-extension Navigator {
-
-    public func register<D: NavigationDestination>(_ destination: D.Type) -> Void {
-        #if DEBUG
-        state.register(destination)
-        #endif
-    }
-    
-}
-
-extension NavigationState {
-
-    /// Checks for known navigation destination
-    internal func known<D: NavigationDestination>(destination: D) -> Bool {
-        navigationDestinations.contains(ObjectIdentifier(D.self))
-    }
-
-    /// Register the specified navigation destination type with the current navigation state.
-    internal func register<D: NavigationDestination>(_ type: D.Type) -> Void {
-        navigationDestinations.insert(ObjectIdentifier(D.self))
-    }
-
 }

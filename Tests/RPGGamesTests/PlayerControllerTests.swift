@@ -77,7 +77,7 @@ struct PlayerControllerTests {
         try await MockRoot.importTestData(into: env.root.adventureRoot)
         await env.root.adventureRoot.startGame()
 
-        await #expect(env.root.photoRoot.itemControllable.itemDataModel.items.count == 27)
+        await #expect(env.root.photoRoot.itemControllable.itemDataModel.items.count == 32)
         let itemId = await env.root.photoRoot.itemControllable.itemDataModel.items[0]
         let netData = try await env.root.photoRoot.gameControllable.createGameData(for: itemId)
         let netId = await env.root.photoRoot.gameControllable.share(id: itemId)
