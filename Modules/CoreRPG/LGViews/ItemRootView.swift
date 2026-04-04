@@ -12,7 +12,7 @@ public struct ItemRootView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     public var body: some View {
-        ItemRootSingleListView(root: root)
+        ItemRootListView(root: root)
             .environment(root.folderListControllable.cacheListItemModel)
             .environment(root.listDisplayModel)
             .environment(root.searchModel)
@@ -22,32 +22,10 @@ public struct ItemRootView: View {
     }
 }
 
-struct ItemRootSingleListView: View {
-    let root: ItemRootController
-    
-    @Environment(\.navigator) private var navigator
-    @Environment(\.appSizeMode) private var appSizeMode
-    
-    var body: some View {
-        ItemRootListView(root: root)
-//            .onChange(of: listModel.itemRoute) {
-//                guard let itemId = listModel.itemRoute else { return }
-//                guard appSizeMode == .compact else { return }
-//                listModel.itemRoute = nil
-//                navigator.navigate(to: root.folderListControllable.detailDestination(for: itemId))
-//            }
-    }
-    
-    var listModel: FolderListModel {
-        root.folderListControllable.listModel
-    }
-}
-
 struct ItemRootListView: View {
     let root: ItemRootController
     
     var body: some View {
-        
         ListRootView(root: root, listController: root.folderListControllable, parentModel: nil)
             .searchItemList(listControllable: root.folderListControllable)
             .navigationAutoReceive(InternalRoute.self)
