@@ -8,6 +8,10 @@ struct FakeFolderListController: FolderListControllable {
         FakeFolderListController()
     }
     
+    func copy(listModel: FolderListModel) -> FakeFolderListController {
+        FakeFolderListController()
+    }
+    
     func detailDestination(for itemId: UUID) -> any NavigationDestination {
         InternalRoute.export(ids: [itemId])
     }

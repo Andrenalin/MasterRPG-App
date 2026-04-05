@@ -14,11 +14,16 @@ public protocol FolderListControllable: Sendable {
     var detailInspectorModel: DetailInspectorModel { get }
         
     func copy(parentModel: (any ItemDataAccessable)?) -> Self
+    func copy(listModel: FolderListModel) -> Self
     func detailDestination(for itemId: UUID) -> any NavigationDestination
     func viewerDestination(for itemId: UUID) -> any NavigationDestination
 }
 
 extension FolderListControllable {
+    public func copyModel(parentModel: (any ItemDataAccessable)?) -> FolderListModel {
+        FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel)
+    }
+
     public func resetItemOnce() {
         guard listModel.updatedOnce == false else { return }
         listModel.updatedOnce = true

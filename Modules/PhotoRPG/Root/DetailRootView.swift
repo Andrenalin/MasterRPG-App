@@ -13,56 +13,40 @@ struct DetailRootView: View {
     }
 }
 
-struct DetailListView: View {
-    init(root: PhotoRootModel, model: PhotoModel) {
-        self.root = root
-        self.model = model
-        let listController = root.folderListController.copy(parentModel: model) as! FolderListController
-        self._detailFolderListController = State(wrappedValue: listController)
-    }
-    
+struct DetailListView: View {    
     let root: PhotoRootModel
     let model: PhotoModel
     
     @Environment(\.navigator) private var navigator
+    @Environment(\.appSizeMode) private var appSizeMode
     
-    @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.photo.viewerWindowId, route: { DetailRoute.viewer($0) })
     
     @State private var detailRoute: PhotoDetailRoute?
-    @State private var lastFolderId: UUID?
-    @State private var canClean: Bool = false
+    
+    var detailFolderListController: FolderListController {
+        let listModel = root.navigationModel.folderModels[model.id]
+        
+        let allListModel = listModel ?? root.folderListController.copyModel(parentModel: model)
+        if listModel == nil {
+            root.navigationModel.folderModels[model.id] = allListModel
+        }
+        
+        return root.folderListController.copy(listModel: allListModel) as! FolderListController
+    }
     
     var body: some View {
-        let _ = Self._printChanges()
-        let _ = print("*** from \(model.id)")
         content(listController: detailFolderListController)
-            .navigate(to: $detailRoute)
+            .applyIf(appSizeMode == .compact) {
+                $0.navigate(to: $detailRoute)
+            }
             .onChange(of: detailFolderListController.listModel.subFolderRoute) {
-                //let _ = print("*** folderItems \(detailFolderListController.listModel.subFolderRoute) --> \(model.id)")
-                guard lastFolderId == nil else { return }
                 guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
-                lastFolderId = subItemId
                 detailRoute = PhotoDetailRoute.folder(subItemId)
             }
             .onChange(of: detailRoute) { oldRoute, newRoute in
-                guard let lastFolderId, oldRoute?.detail() == lastFolderId && newRoute == nil else { return }
-//                if let index = root.navigationModel.folderItems.firstIndex(of: lastFolderId) {
-//                    root.navigationModel.folderItems = Array(root.navigationModel.folderItems.prefix(index))
-//                }
+                guard detailRoute == nil else { return }
                 detailFolderListController.listModel.resetListModel()
-                self.lastFolderId = nil
-            }
-            .onAppear {
-                print("OnAppear \(model.id)")
-                if canClean {
-                    //detailFolderListController.listModel.resetListModel()
-                    canClean = false
-                }
-            }
-            .onDisappear() {
-                print("OnDissapear \(model.id)")
-                canClean = true
             }
     }
     
