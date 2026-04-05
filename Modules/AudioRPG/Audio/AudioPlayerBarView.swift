@@ -5,13 +5,13 @@ import SwiftUI
 
 struct AudioPlayerBarView: View {
     @Environment(AudioRootModel.self) private var root
-
+    
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
-
+    
     @State private var isHovering = false
-
+    
     var body: some View {
 #if os(iOS)
         if horizontalSizeClass == .compact {
@@ -27,24 +27,24 @@ struct AudioPlayerBarView: View {
         }
 #elseif os(visionOS)
         content
-        #else
+#else
         GlassEffectContainer {
             content
                 .glassEffect(.clear)
         }
 #endif
     }
-
+    
     var content: some View {
         HStack(spacing: 12) {
             playbackControls
-
+            
             Spacer(minLength: 8)
-
+            
             musicArtTitleTimeline
-
+            
             Spacer(minLength: 8)
-
+            
             volumeControl
         }
         .padding(.horizontal, 16)
@@ -65,7 +65,7 @@ private extension AudioPlayerBarView {
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Previous Track", bundle: .module))
             .disabled(!root.audioPlayerModel.hasPrev)
-
+            
             Button {
                 withAnimation { root.audioController.togglePlay() }
             } label: {
@@ -77,7 +77,7 @@ private extension AudioPlayerBarView {
             .buttonStyle(.plain)
             .accessibilityLabel(root.audioPlayerModel.isPlaying ? Text("Pause", bundle: .module) : Text("Play", bundle: .module))
             .disabled(root.audioPlayerModel.playList.isEmpty)
-
+            
             Button {
                 withAnimation { root.audioController.skipToCurrentItem(offsetBy: 1) }
             } label: {
@@ -105,7 +105,7 @@ private extension AudioPlayerBarView {
                             .foregroundStyle(.secondary)
                             .font(.body)
                     )
-
+                
                 // Song Info
                 VStack(alignment: .leading, spacing: 1) {
                     Text(currentItem?.title ?? "Not Playing")
@@ -118,7 +118,7 @@ private extension AudioPlayerBarView {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-
+            
             // Time scrubber (shows on hover)
             if isHovering {
                 HStack(spacing: 6) {
@@ -126,11 +126,11 @@ private extension AudioPlayerBarView {
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
-
+                    
                     ProgressView(value: root.audioPlayerModel.currentTime, total: root.audioPlayerModel.playerTime.totalDuration)
                         .progressViewStyle(.linear)
                         .tint(.primary)
-
+                    
                     Text(formatTotalTime(root.audioPlayerModel.playerTime.totalDuration))
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
@@ -141,13 +141,15 @@ private extension AudioPlayerBarView {
         }
         .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
+#if !os(tvOS)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.2)) {
                 isHovering = hovering
             }
         }
+#endif
     }
-
+    
     var volumeControl: some View {
         Button {
             // Volume action
@@ -163,23 +165,23 @@ private extension AudioPlayerBarView {
     var currentItem: PlaylistItem? {
         root.audioPlayerModel.currentItem
     }
-
+    
     func formatTotalTime(_ time: Double) -> String {
         guard !time.isNaN else { return "--:--" }
         var seconds = Int(ceil(time))
         var hours = 0
         var mins = 0
-
+        
         if seconds > TimeConstant.secsPerHour {
             hours = seconds / TimeConstant.secsPerHour
             seconds -= hours * TimeConstant.secsPerHour
         }
-
+        
         if seconds > TimeConstant.secsPerMin {
             mins = seconds / TimeConstant.secsPerMin
             seconds -= mins * TimeConstant.secsPerMin
         }
-
+        
         if hours > 0 {
             return String(format: "%02d:%02d:%02d", hours, mins, seconds)
         } else {

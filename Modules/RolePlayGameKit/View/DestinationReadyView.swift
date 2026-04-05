@@ -11,7 +11,7 @@ struct DestinationReadyView: View {
     @State private var showFirstDataAlert = false
 
     var body: some View {
-        RootView(appModel: appModel)
+        appModel.appNavigationModel.modeRouteType
             .onChange(of: appModel.settingsModel.useCloudKit) {
                 if appModel.databaseModel.resetDatabase(useCloudKit: appModel.settingsModel.useCloudKit) {
                     withAnimation {
