@@ -15,7 +15,7 @@ public struct RootURLHandler: NavigationURLHandler {
     @MainActor public func handles(_ url: URL, with navigator: Navigator) -> Bool {
         guard !url.isGmzDocument else {
             // GMZ document
-            if appModel.hasDatabase {
+            if appModel.appNavigationModel.initialRouteType == .ready {
                 _ = appModel.adventureRoot.importControllable.importUrl(from: url)
             }
             return true

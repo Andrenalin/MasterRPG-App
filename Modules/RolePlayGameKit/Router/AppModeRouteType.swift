@@ -2,24 +2,23 @@
 
 import CoreRPG
 import GameRPG
-import RolePlayGameKit
 import SwiftUI
 
-enum AppModeTypeRoute: Codable, Equatable, Hashable {
+public enum AppModeRouteType: Codable, Equatable, Hashable {
     case editor
     case game
     case gameSetup
     case gameRootSetup
 }
 
-extension AppModeTypeRoute: NavigationDestination {
-    var body: some View {
+extension AppModeRouteType: NavigationDestination {
+    public var body: some View {
         AppGameTypeDestinationView(type: self)
     }
 }
 
 struct AppGameTypeDestinationView: View {
-    let type: AppModeTypeRoute
+    let type: AppModeRouteType
     
     @Environment(AppModel.self) private var appModel
     

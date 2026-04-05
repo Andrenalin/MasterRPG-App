@@ -1,21 +1,18 @@
 // @copyright André Trettin
 
 import CoreRPG
-import RolePlayGameKit
 import SwiftUI
 
-struct InitialRootView: View {
+public struct InitialRootView: View {
+    public init() {}
+    
     @Environment(AppModel.self) private var appModel
 
-    var body: some View {
-        initViewState
+    public var body: some View {
+        appModel.appNavigationModel.initialRouteType
             .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
                 handle(userActivity: userActivity)
             }
-    }
-
-    private var initViewState: AppInitialStateRoute {
-        appModel.hasDatabase ? .ready : .initializing
     }
 
     private func handle(userActivity: NSUserActivity) {

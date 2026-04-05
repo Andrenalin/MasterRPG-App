@@ -3,19 +3,19 @@
 import CoreRPG
 import SwiftUI
 
-enum AppInitialStateRoute: Codable, Equatable, Hashable {
+public enum AppInitialRouteType: Codable, Equatable, Hashable {
     case initializing
     case ready
 }
 
-extension AppInitialStateRoute: NavigationDestination {
-    var body: some View {
-        AppInitialStateRouteDestinationView(route: self)
+extension AppInitialRouteType: NavigationDestination {
+    public var body: some View {
+        AppInitialRouteTypeDestinationView(route: self)
     }
 }
 
-struct AppInitialStateRouteDestinationView: View {
-    let route: AppInitialStateRoute
+struct AppInitialRouteTypeDestinationView: View {
+    let route: AppInitialRouteType
     
     var body: some View {
         switch route {

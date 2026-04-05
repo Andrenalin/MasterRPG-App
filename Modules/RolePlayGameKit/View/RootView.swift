@@ -1,14 +1,13 @@
 // @copyright André Trettin
 
 import CoreRPG
-import RolePlayGameKit
 import SwiftUI
 
 @MainActor
 struct RootView: View {
     let appModel: AppModel
     
-    var appMode: AppModeTypeRoute {
+    var appMode: AppModeRouteType {
 #if os(macOS) || os(tvOS)
         appModel.settingsModel.showGame ? .game : .gameSetup
 #else

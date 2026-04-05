@@ -52,6 +52,6 @@ struct SaveAction: View {
     }
     
     private var disableSave: Bool {
-        !appModel.hasDatabase || inputModel.name.isEmpty
+        appModel.appNavigationModel.initialRouteType == .initializing || inputModel.name.isEmpty
     }
 }

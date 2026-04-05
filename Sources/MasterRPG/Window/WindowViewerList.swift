@@ -95,7 +95,7 @@ struct WindowViewerList: Scene {
 
             BaseWindow("Editor", id: WindowIdentifier.editor.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    AppModeTypeRoute.editor
+                    AppModeRouteType.editor
                         .setAppSizeMode()
                         .environmentSetUp(appModel)
                         .frame(minWidth: 1000, minHeight: 600)

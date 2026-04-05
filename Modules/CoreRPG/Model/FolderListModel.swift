@@ -4,7 +4,7 @@ import SwiftUI
 
 @Observable
 public final class FolderListModel {
-    public init(isSelectionMode: Bool = false, selection: [String] = [], navigationModel: AppNavigationModel) {
+    public init(isSelectionMode: Bool = false, selection: [String] = [], navigationModel: ModuleNavigationModel) {
         self.isSelectionMode = isSelectionMode
         self.selection = selection
         self.listSelection = Set(selection)
@@ -12,7 +12,7 @@ public final class FolderListModel {
         update(selection: Set(selection))
     }
 
-    public init(parentModel: (any ItemDataAccessable)?, navigationModel: AppNavigationModel) {
+    public init(parentModel: (any ItemDataAccessable)?, navigationModel: ModuleNavigationModel) {
         self.parentModel = parentModel
         self.selectedParentId = parentModel?.id
         self.isSelectionMode = false
@@ -22,7 +22,7 @@ public final class FolderListModel {
     }
     
     // MARK: - Navigation
-    @ObservationIgnored public let navigationModel: AppNavigationModel
+    @ObservationIgnored public let navigationModel: ModuleNavigationModel
 
     // MARK: - Items
     @ObservationIgnored var parentModel: (any ItemDataAccessable)?

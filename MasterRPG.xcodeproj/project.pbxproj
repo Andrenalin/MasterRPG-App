@@ -34,21 +34,6 @@
 		593568FD2ED8761800FA4C87 /* TableRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA804512E62EBC60009479F /* TableRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		593D0DA12E32136800410232 /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
 		5946860C2E1E0F69004DC406 /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
-		5978B41B2F7E615900818159 /* DatabaseInitializationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4172F7E615900818159 /* DatabaseInitializationView.swift */; };
-		5978B41C2F7E615900818159 /* DestinationReadyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4182F7E615900818159 /* DestinationReadyView.swift */; };
-		5978B41D2F7E615900818159 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4192F7E615900818159 /* InitialRootView.swift */; };
-		5978B41E2F7E615900818159 /* DatabaseInitializationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4172F7E615900818159 /* DatabaseInitializationView.swift */; };
-		5978B41F2F7E615900818159 /* DestinationReadyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4182F7E615900818159 /* DestinationReadyView.swift */; };
-		5978B4202F7E615900818159 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4192F7E615900818159 /* InitialRootView.swift */; };
-		5978B4212F7E615900818159 /* DatabaseInitializationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4172F7E615900818159 /* DatabaseInitializationView.swift */; };
-		5978B4222F7E615900818159 /* DestinationReadyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4182F7E615900818159 /* DestinationReadyView.swift */; };
-		5978B4232F7E615900818159 /* InitialRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4192F7E615900818159 /* InitialRootView.swift */; };
-		5978B4292F7E785A00818159 /* AppModeTypeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */; };
-		5978B42A2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */; };
-		5978B42B2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */; };
-		5978B42D2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */; };
-		5978B42E2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */; };
-		5978B42F2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */; };
 		5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		599DCAD92E8E30C00056E46C /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; };
@@ -160,12 +145,6 @@
 		8E56C0A62EDB01CF0026F01C /* CoreRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; };
 		8E56C0A72EDB01CF0026F01C /* CoreRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8E5B8C712E3235ED00321B4A /* AudioRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 593D0D2C2E31F2D000410232 /* AudioRPG.framework */; };
-		8E647DD42EB4F79600057875 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCB2EB4F79600057875 /* RootView.swift */; };
-		8E647DD52EB4F79600057875 /* TabRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCC2EB4F79600057875 /* TabRootView.swift */; };
-		8E647DDD2EB4F79600057875 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCB2EB4F79600057875 /* RootView.swift */; };
-		8E647DDE2EB4F79600057875 /* TabRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCC2EB4F79600057875 /* TabRootView.swift */; };
-		8E647DE62EB4F79600057875 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCB2EB4F79600057875 /* RootView.swift */; };
-		8E647DE72EB4F79600057875 /* TabRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E647DCC2EB4F79600057875 /* TabRootView.swift */; };
 		8E668C752B5AB7A5005BA45F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */; };
 		8E668C772B5AB7A5005BA45F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */; };
 		8E6761E62A04B58F001AAE0E /* LinkWindowCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E6761E52A04B58F001AAE0E /* LinkWindowCommands.swift */; };
@@ -1296,11 +1275,6 @@
 
 /* Begin PBXFileReference section */
 		593D0D2C2E31F2D000410232 /* AudioRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5978B4172F7E615900818159 /* DatabaseInitializationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseInitializationView.swift; sourceTree = "<group>"; };
-		5978B4182F7E615900818159 /* DestinationReadyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationReadyView.swift; sourceTree = "<group>"; };
-		5978B4192F7E615900818159 /* InitialRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitialRootView.swift; sourceTree = "<group>"; };
-		5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModeTypeRoute.swift; sourceTree = "<group>"; };
-		5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInitialStateRoute.swift; sourceTree = "<group>"; };
 		5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalPlayerWindow.swift; sourceTree = "<group>"; };
 		599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GeneratorRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		599DCAD82E8E30C00056E46C /* GeneratorRPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeneratorRPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1326,8 +1300,6 @@
 		8E5104E82BD2413900F10E87 /* SharingInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingInput.swift; sourceTree = "<group>"; };
 		8E5104EA2BD2425900F10E87 /* SaveAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveAction.swift; sourceTree = "<group>"; };
 		8E5104EC2BD2440300F10E87 /* ItemProviderImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemProviderImporter.swift; sourceTree = "<group>"; };
-		8E647DCB2EB4F79600057875 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
-		8E647DCC2EB4F79600057875 /* TabRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabRootView.swift; sourceTree = "<group>"; };
 		8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		8E6761E52A04B58F001AAE0E /* LinkWindowCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkWindowCommands.swift; sourceTree = "<group>"; };
 		8E6A8A9C2F6E538E00149E06 /* WindowVisionList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowVisionList.swift; sourceTree = "<group>"; };
@@ -1837,33 +1809,12 @@
 			path = Window;
 			sourceTree = "<group>";
 		};
-		5978B41A2F7E615900818159 /* View */ = {
-			isa = PBXGroup;
-			children = (
-				5978B4172F7E615900818159 /* DatabaseInitializationView.swift */,
-				5978B4182F7E615900818159 /* DestinationReadyView.swift */,
-				5978B4192F7E615900818159 /* InitialRootView.swift */,
-				8E647DCB2EB4F79600057875 /* RootView.swift */,
-				8E647DCC2EB4F79600057875 /* TabRootView.swift */,
-			);
-			path = View;
-			sourceTree = "<group>";
-		};
 		5978B4242F7E618500818159 /* visionOS */ = {
 			isa = PBXGroup;
 			children = (
 				8E6A8A9C2F6E538E00149E06 /* WindowVisionList.swift */,
 			);
 			path = visionOS;
-			sourceTree = "<group>";
-		};
-		5978B4272F7E785000818159 /* Route */ = {
-			isa = PBXGroup;
-			children = (
-				5978B42C2F7E78AC00818159 /* AppInitialStateRoute.swift */,
-				5978B4282F7E785A00818159 /* AppModeTypeRoute.swift */,
-			);
-			path = Route;
 			sourceTree = "<group>";
 		};
 		8E13A3FF2BCE88BB00B2FCD4 /* RPGShare */ = {
@@ -2030,8 +1981,6 @@
 				5978B4142F7E613F00818159 /* Menu */,
 				8E83E4CA2E841B4400A1095C /* MyAppPackage.swift */,
 				59E299052F75313D00700934 /* RealityKitInit.swift */,
-				5978B4272F7E785000818159 /* Route */,
-				5978B41A2F7E615900818159 /* View */,
 				5978B4242F7E618500818159 /* visionOS */,
 				5978B4152F7E614400818159 /* Window */,
 			);
@@ -3621,7 +3570,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5978B42A2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */,
 				8E83E4DC2E841B7200A1095C /* MenuBarView.swift in Sources */,
 				8E83E4D02E841B5000A1095C /* WindowLinkList.swift in Sources */,
 				59D30AEB2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
@@ -3629,15 +3577,9 @@
 				8E83E4E02E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E190D992B8F6C150084B0F4 /* macOSAppDelegate.swift in Sources */,
 				8E190D9C2B8F6C150084B0F4 /* WindowMacList.swift in Sources */,
-				8E647DD42EB4F79600057875 /* RootView.swift in Sources */,
-				8E647DD52EB4F79600057875 /* TabRootView.swift in Sources */,
 				8E190DA62B8F6C340084B0F4 /* ExternalPlayerWindow.swift in Sources */,
-				5978B41B2F7E615900818159 /* DatabaseInitializationView.swift in Sources */,
-				5978B41C2F7E615900818159 /* DestinationReadyView.swift in Sources */,
-				5978B41D2F7E615900818159 /* InitialRootView.swift in Sources */,
 				59E299062F75313D00700934 /* RealityKitInit.swift in Sources */,
 				8E190D9A2B8F6C150084B0F4 /* LinkWindowCommands.swift in Sources */,
-				5978B42E2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */,
 				8E83E4CB2E841B4400A1095C /* MyAppPackage.swift in Sources */,
 				8E190DA22B8F6C190084B0F4 /* MasterRPGApp.swift in Sources */,
 				8E6A8A9E2F6E538E00149E06 /* WindowVisionList.swift in Sources */,
@@ -3667,17 +3609,10 @@
 				8E83E4D72E841B5C00A1095C /* MenuCommandList.swift in Sources */,
 				8E83E4DF2E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E6BC9CE2AFB0B2300E5E098 /* MasterTVApp.swift in Sources */,
-				5978B42D2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */,
 				8E6BC9E12AFB0BCF00E5E098 /* iOSAppDelegate.swift in Sources */,
 				59E299072F75313D00700934 /* RealityKitInit.swift in Sources */,
-				5978B41E2F7E615900818159 /* DatabaseInitializationView.swift in Sources */,
-				5978B41F2F7E615900818159 /* DestinationReadyView.swift in Sources */,
-				5978B4202F7E615900818159 /* InitialRootView.swift in Sources */,
 				59D30AEC2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
-				5978B4292F7E785A00818159 /* AppModeTypeRoute.swift in Sources */,
 				8E83E4DB2E841B7200A1095C /* MenuBarView.swift in Sources */,
-				8E647DE62EB4F79600057875 /* RootView.swift in Sources */,
-				8E647DE72EB4F79600057875 /* TabRootView.swift in Sources */,
 				5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
 				8E6BC9E22AFB0BCF00E5E098 /* iOSSceneDelegate.swift in Sources */,
 				8E83E4CC2E841B4400A1095C /* MyAppPackage.swift in Sources */,
@@ -3816,21 +3751,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5978B42F2F7E78AC00818159 /* AppInitialStateRoute.swift in Sources */,
 				8E83E4CD2E841B4400A1095C /* MyAppPackage.swift in Sources */,
 				8EC4E49628DDAAF400D0279F /* iOSAppDelegate.swift in Sources */,
 				8E6761E62A04B58F001AAE0E /* LinkWindowCommands.swift in Sources */,
 				5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
-				5978B42B2F7E785A00818159 /* AppModeTypeRoute.swift in Sources */,
 				8E926E8B2B453D450025B659 /* WindowMacList.swift in Sources */,
-				8E647DDD2EB4F79600057875 /* RootView.swift in Sources */,
-				8E647DDE2EB4F79600057875 /* TabRootView.swift in Sources */,
 				59D30AED2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
 				8E83E4E12E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E83E4D12E841B5000A1095C /* WindowLinkList.swift in Sources */,
-				5978B4212F7E615900818159 /* DatabaseInitializationView.swift in Sources */,
-				5978B4222F7E615900818159 /* DestinationReadyView.swift in Sources */,
-				5978B4232F7E615900818159 /* InitialRootView.swift in Sources */,
 				8E83E4D52E841B5500A1095C /* WindowViewerList.swift in Sources */,
 				8EC4E49728DDAAF400D0279F /* iOSSceneDelegate.swift in Sources */,
 				8EC4E49228DDAAF400D0279F /* macOSAppDelegate.swift in Sources */,

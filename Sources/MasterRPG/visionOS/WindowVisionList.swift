@@ -8,7 +8,6 @@ import PhotoRPG
 import SpaceRPG
 import SwiftUI
 
-
 struct WindowVisionList: Scene {
     let appModel: AppModel
     

@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-@MainActor @Observable public final class AppNavigationModel {
+@MainActor @Observable public final class ModuleNavigationModel {
     public init(selectedItemId: UUID? = nil, selectedEntryId: UUID? = nil) {
         self.selectedItemId = selectedItemId
         self.selectedEntryId = selectedEntryId

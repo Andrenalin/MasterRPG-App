@@ -17,7 +17,7 @@ public final class GeneratorRootModel {
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.navigationModel = AppNavigationModel()
+        self.navigationModel = ModuleNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
     }
     
@@ -68,7 +68,7 @@ public final class GeneratorRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public let itemSelectionModel: ItemSelectionModel
-    @MainActor public var navigationModel: AppNavigationModel
+    @MainActor public var navigationModel: ModuleNavigationModel
     public let linkSelectionModel: ItemSelectionModel
 
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }

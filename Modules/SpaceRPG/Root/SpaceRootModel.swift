@@ -17,7 +17,7 @@ public final class SpaceRootModel {
         self.searchModel = searchModel
         
         self.itemSelectionModel = ItemSelectionModel()
-        self.navigationModel = AppNavigationModel()
+        self.navigationModel = ModuleNavigationModel()
         self.linkSelectionModel = config.linkSelectionModel
     }
     
@@ -66,7 +66,7 @@ public final class SpaceRootModel {
     public let listDisplayModel: ListDisplayModel
     public let searchModel: SearchModel
     public var itemSelectionModel: ItemSelectionModel
-    @MainActor public var navigationModel: AppNavigationModel
+    @MainActor public var navigationModel: ModuleNavigationModel
     public var linkSelectionModel: ItemSelectionModel
     
     @MainActor public var currentSelectedItemId: UUID? { folderListController.listModel.selectedItemId }

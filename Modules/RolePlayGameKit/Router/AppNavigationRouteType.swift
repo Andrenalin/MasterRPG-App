@@ -3,14 +3,14 @@
 import CoreRPG
 import SwiftUI
 
-public enum AppRootType: Int, Codable {
+public enum AppNavigationRouteType: Int, Codable {
     case tabbed
     case split
     case tabbedExtSplit
     case tabbedSplit
 }
 
-extension AppRootType: NavigationDestination {
+extension AppNavigationRouteType: NavigationDestination {
     public var body: some View {
         switch self {
         case .tabbed:

@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import RolePlayGameKit
 import SwiftUI
 
 struct DestinationReadyView: View {
@@ -16,7 +15,7 @@ struct DestinationReadyView: View {
             .onChange(of: appModel.settingsModel.useCloudKit) {
                 if appModel.databaseModel.resetDatabase(useCloudKit: appModel.settingsModel.useCloudKit) {
                     withAnimation {
-                        appModel.hasDatabase = false
+                        appModel.appNavigationModel.initialRouteType = .initializing
                     }
                 }
             }
@@ -50,12 +49,17 @@ struct DestinationReadyView: View {
 
 // MARK: - Database App Store Available
 
-struct DataBaseAppStoreAvailable<Content: View>: View {
+public struct DataBaseAppStoreAvailable<Content: View>: View {
+    public init(appModel: AppModel, contentView: @escaping (AppModel) -> Content) {
+        self.appModel = appModel
+        self.contentView = contentView
+    }
+    
     let appModel: AppModel
     let contentView: (AppModel) -> Content
 
-    var body: some View {
-        if appModel.hasDatabase {
+    public var body: some View {
+        if appModel.appNavigationModel.initialRouteType == .ready {
             contentView(appModel)
         } else {
             Text("Wait for Database initialization...")

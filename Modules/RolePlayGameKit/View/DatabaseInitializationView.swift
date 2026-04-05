@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import RolePlayGameKit
 import SwiftUI
 
 struct DatabaseInitializationView: View {

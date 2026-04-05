@@ -42,7 +42,6 @@ public final class AppModel: Sendable {
     @ObservationIgnored public let windowStateModel: WindowStateModel
     
     // Options
-    public var hasDatabase: Bool = false
     public var coreDataInitModel: CoreDataInitModel?
     
 #if os(tvOS)
@@ -60,6 +59,8 @@ public final class AppModel: Sendable {
     var selectedModule: RootRoute? = .game
     var selectedExtendedModule: ExtendedTabRoute? = nil
     var menuSelectedModule: NetworkModules = .game
+    
+    public var appNavigationModel: AppNavigationModel
     
     // Module roots
     @ObservationIgnored public let adventureRoot: AdventureRootModel
@@ -97,6 +98,8 @@ public final class AppModel: Sendable {
                 autoDestinationMode: true
             )
         )
+        
+        self.appNavigationModel = AppNavigationModel()
         
         let tagController = TagController()
         self.tagController = tagController
@@ -276,7 +279,7 @@ extension AppModel {
         
         self.coreDataInitModel = coreDataInitModel
 
-        hasDatabase = true
+        self.appNavigationModel.initialRouteType = .ready
     }
 }
 

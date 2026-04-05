@@ -2,7 +2,6 @@
 
 import AdventureRPG
 import CoreRPG
-import RolePlayGameKit
 import SwiftUI
 
 struct TabRootView: View {
@@ -18,7 +17,7 @@ struct TabRootView: View {
             }
     }
     
-    private var layout: AppRootType {
+    private var layout: AppNavigationRouteType {
         valueFor(iOS: appSizeMode == .compact ? .tabbed : .split, macOS: .tabbedSplit, tvOS: .tabbed, visionOS: .tabbedExtSplit)
     }
 }
