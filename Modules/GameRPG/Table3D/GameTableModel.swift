@@ -1,9 +1,9 @@
 // @copyright André Trettin
 
+#if os(visionOS)
 import TabletopKit
 import RealityKit
 import SwiftUI
-//import TabletopGameSampleContent
 
 @Observable
 class GameTableModel {
@@ -37,3 +37,5 @@ class GameTableModel {
         tabletopGame.removeRenderDelegate(renderer)
     }
 }
+
+#endif

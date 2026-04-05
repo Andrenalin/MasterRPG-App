@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if os(visionOS)
 import TabletopKit
 import RealityKit
 import RPGTabletopGameContent
@@ -217,3 +218,5 @@ struct Die: EntityEquipment {
         }
     }
 }
+
+#endif

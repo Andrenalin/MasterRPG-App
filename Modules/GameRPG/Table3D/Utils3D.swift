@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if os(visionOS)
 import TabletopKit
 import Spatial
 import RealityKit
@@ -44,3 +45,5 @@ extension TableVisualState.Pose2D {
         return TableVisualState.Pose2D(position: position, rotation: rotation)
     }
 }
+
+#endif

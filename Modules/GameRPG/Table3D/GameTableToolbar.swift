@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if os(visionOS)
 import SwiftUI
 import GroupActivities
 
@@ -20,3 +21,5 @@ struct GameTableToolbar: ToolbarContent {
         }
     }
 }
+
+#endif

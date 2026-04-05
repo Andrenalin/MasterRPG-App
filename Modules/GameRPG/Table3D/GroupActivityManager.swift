@@ -1,17 +1,9 @@
 // @copyright André Trettin
 
+#if os(visionOS)
 import GroupActivities
 import SwiftUI
 @preconcurrency import TabletopKit
-
-//struct Activity: GroupActivity {
-//    var metadata: GroupActivityMetadata {
-//        var metadata = GroupActivityMetadata()
-//        metadata.type = .generic
-//        metadata.title = "TabletopKitSample"
-//        return metadata
-//    }
-//}
 
 class GroupActivityManager: Observable {
     var tabletopGame: TabletopGame
@@ -31,3 +23,5 @@ class GroupActivityManager: Observable {
         tabletopGame.detachNetworkCoordinator()
     }
 }
+
+#endif

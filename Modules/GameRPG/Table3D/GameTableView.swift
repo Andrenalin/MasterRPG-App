@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if os(visionOS)
 import Foundation
 import GroupActivities
 import RealityKit
@@ -35,3 +36,5 @@ public struct GameTableView: View {
         }
     }
 }
+
+#endif

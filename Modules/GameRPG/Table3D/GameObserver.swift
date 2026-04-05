@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+#if os(visionOS)
+
 import TabletopKit
 import RealityKit
 
@@ -32,3 +34,5 @@ class GameObserver: TabletopGame.Observer {
         }
     }
 }
+
+#endif

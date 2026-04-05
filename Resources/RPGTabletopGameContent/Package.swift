@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 /*
 See the LICENSE.txt file for this sample’s licensing information.
@@ -11,7 +11,12 @@ import PackageDescription
 
 let package = Package(
     name: "RPGTabletopGameContent",
-    platforms: [.visionOS(.v2)],
+    platforms: [
+        .visionOS(.v26),
+        .macOS(.v26),
+        .iOS(.v26),
+        .tvOS(.v26)
+    ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
@@ -27,6 +32,9 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "RPGTabletopGameContent",
-            dependencies: [])
+            dependencies: [],
+            swiftSettings: [
+                .enableUpcomingFeature("MemberImportVisibility")
+            ]),
     ]
 )

@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if os(visionOS)
 import TabletopKit
 import RealityKit
 
@@ -89,3 +90,5 @@ struct GameInteraction: TabletopInteraction.Delegate {
         }        
     }
 }
+
+#endif
