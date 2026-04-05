@@ -6,5 +6,4 @@ public enum AppModeRouteType: Codable, Equatable, Hashable {
     case editor
     case game
     case gameSetup
-    case gameRootSetup
 }

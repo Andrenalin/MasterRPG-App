@@ -249,6 +249,9 @@
         }
       }
     },
+    "GameMaster" : {
+
+    },
     "Join Game" : {
       "localizations" : {
         "de" : {

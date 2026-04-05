@@ -155,11 +155,7 @@ public final class GameRoot: @unchecked Sendable {
 
     @MainActor
     var gameMasterName: String {
-        if let selectedGameMaster = gameModel.selectedGameMaster {
-            return characterRoot.linkControllable.name(for: selectedGameMaster)
-        } else {
-            return "Unknown"
-        }
+        String(localized: "GameMaster", bundle: .module).localizedString
     }
 }
 
@@ -230,8 +226,7 @@ extension GameRoot {
         adventureRoot.startGame()
 
         await gameModel.masterController?.start()
-        characterRoot.valueGameControllable.startGame(for: gameModel.selectedGameMaster!)
-        diceRoot.diceGameControllable.setFocusDice(on: characterRoot.valueGameControllable.focusDice(for: gameModel.selectedGameMaster!))
+        diceRoot.diceGameControllable.setFocusDice(on: adventureRoot.adventureGameControllable.focusDice(for: gameModel.selectedAdventure!))
         
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = true

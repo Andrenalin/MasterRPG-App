@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24411" systemVersion="25B78" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24837" systemVersion="25E246" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="RPGAdventure" representedClassName="RPGAdventure" syncable="YES" codeGenerationType="class">
         <attribute name="adventureCategory" attributeType="String" defaultValueString=""/>
+        <attribute name="diceId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="entriesUpdate" attributeType="String" defaultValueString=""/>
         <attribute name="information" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>

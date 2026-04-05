@@ -6,7 +6,7 @@ import Observation
 
 @Observable
 public final class AdventureModel: Identifiable, @unchecked Sendable {
-    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, photoId: UUID? = nil, entries: [AdventureEntryModel] = [], parentId: UUID? = nil) {
+    init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, photoId: UUID? = nil, diceId: UUID? = nil, entries: [AdventureEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         name_ = CRDT(wrappedValue: name)
         description_ = CRDT(wrappedValue: description)
@@ -14,11 +14,12 @@ public final class AdventureModel: Identifiable, @unchecked Sendable {
         category_ = CRDT(wrappedValue: category)
         self.displayState = displayState
         photoId_ = CRDT(wrappedValue: photoId)
+        self.diceId = diceId
         entries_ = CRDTDataUpdate(wrappedValue: entries)
         self.parentId = parentId
     }
 
-    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, entries: CRDTDataUpdate<[AdventureEntryModel]>, parentId: UUID?) {
+    public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, diceId: UUID?, entries: CRDTDataUpdate<[AdventureEntryModel]>, parentId: UUID?) {
         self.id = id
         name_ = name
         description_ = description
@@ -26,6 +27,7 @@ public final class AdventureModel: Identifiable, @unchecked Sendable {
         category_ = category
         self.displayState = displayState
         photoId_ = photoId
+        self.diceId = diceId
         entries_ = entries
         self.parentId = parentId
     }
@@ -40,6 +42,7 @@ public final class AdventureModel: Identifiable, @unchecked Sendable {
         self._category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: AdventureModel.CodingKeys._category_)
         self._displayState = try container.decode(Int.self, forKey: AdventureModel.CodingKeys._displayState)
         self._photoId_ = try container.decode(CRDT<UUID?>.self, forKey: AdventureModel.CodingKeys._photoId_)
+        self._diceId = try container.decodeIfPresent(UUID.self, forKey: AdventureModel.CodingKeys._diceId)
         self._entries_ = try container.decode(CRDTDataUpdate<[AdventureEntryModel]>.self, forKey: AdventureModel.CodingKeys._entries_)
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: AdventureModel.CodingKeys._parentId)
     }
@@ -77,6 +80,8 @@ public final class AdventureModel: Identifiable, @unchecked Sendable {
         set { photoId_.wrappedValue = newValue }
     }
     var photoId_: CRDT<UUID?>
+    
+    public var diceId: UUID?
 
     public var entries: [AdventureEntryModel] {
         get { entries_.wrappedValue }
@@ -151,6 +156,7 @@ extension AdventureModel: ItemDiffComparable {
             category: category_.merged(other: other.category_),
             displayState: other.displayState,
             photoId: photoId_.merged(other: other.photoId_),
+            diceId: other.diceId,
             entries: entries_.merged(other: other.entries_),
             parentId: other.parentId
         )
@@ -194,7 +200,7 @@ extension AdventureModel: ItemDataAccessable {
     public static let typeId: NetworkModules = .adventure
 
     public func copy() -> AdventureModel {
-        AdventureModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, entries: entries_, parentId: parentId)
+        AdventureModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, diceId: diceId, entries: entries_, parentId: parentId)
     }
 
     public func filter(filter: String, includeEntries: Bool) -> Bool {
@@ -229,6 +235,7 @@ extension AdventureModel: ItemDataAccessable {
         category_ <=> model.category_
         displayState <=> model.displayState
         photoId_ <=> model.photoId_
+        diceId <=> model.diceId
         entries_ <=> model.entries_
         parentId <=> model.parentId
         return true
@@ -261,6 +268,7 @@ extension AdventureModel: Codable {
         case _category_
         case _displayState
         case _photoId_
+        case _diceId
         case _entries_
         case _parentId
     }
@@ -275,6 +283,7 @@ extension AdventureModel: Codable {
         try container.encode(self._category_, forKey: AdventureModel.CodingKeys._category_)
         try container.encode(self._displayState, forKey: AdventureModel.CodingKeys._displayState)
         try container.encode(self._photoId_, forKey: AdventureModel.CodingKeys._photoId_)
+        try container.encodeIfPresent(self._diceId, forKey: AdventureModel.CodingKeys._diceId)
         try container.encode(self._entries_, forKey: AdventureModel.CodingKeys._entries_)
         try container.encodeIfPresent(self._parentId, forKey: AdventureModel.CodingKeys._parentId)
     }

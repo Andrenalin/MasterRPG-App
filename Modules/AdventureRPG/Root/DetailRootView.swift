@@ -77,6 +77,14 @@ struct DetailListView: View {
 
 private extension DetailListView {
     @ViewBuilder var detailEditorView: some View {
+        root.diceRoot.viewController.dropChooseView(model: root.editController.adventureEditModel.selectionDice)
+            .onChange(of: root.editController.adventureEditModel.selectionDice.selection) {
+                withAnimation { root.editController.add(diceId: root.editController.adventureEditModel.selectionDice.itemId, itemId: model.id) }
+            }
+            .onChange(of: model.diceId, initial: true) {
+                withAnimation { root.editController.adventureEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil) }
+            }
+
         root.photoRoot.viewController.dropSelectionView(model: root.editController.adventureEditModel.selectionPhoto)
             .onChange(of: root.editController.adventureEditModel.selectionPhoto.itemId) {
                 withAnimation { root.editController.add(photoId: root.editController.adventureEditModel.selectionPhoto.itemId, itemId: model.id) }

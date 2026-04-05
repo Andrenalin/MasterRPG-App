@@ -19,7 +19,7 @@ struct GameRootSetupView: View {
                 .opacity(0.5)
             
             ScrollView {
-#if os(macOS)
+#if os(macOS) || os(visionOS)
                 Button {
                     withAnimation {
                         openWindow(id: WindowIdentifier.editor.rawValue)
@@ -52,4 +52,5 @@ struct GameRootSetupView: View {
     GameRootSetupView(root: .preview)
         .environment(\.wideMode, .small)
         .environment(AppSettingsModel())
+        .environment(AppNavigationModel())
 }

@@ -16,7 +16,7 @@ struct MasterStartView: View {
     @State private var startSharePlayAnimation: Bool = false
     
     var body: some View {
-        if root.gameModel.selectedGameMaster != nil && root.gameModel.selectedAdventure != nil {
+        if root.gameModel.selectedAdventure != nil {
             Button {
                 Task {
                     await startGame()
@@ -42,7 +42,6 @@ struct MasterStartView: View {
     
     private var overlayAnimation: some View {
         Capsule()
-        //RoundedRectangle(cornerRadius: 10)
             .stroke(Color.accentColor, lineWidth: 4)
             .scaleEffect(startSharePlayAnimation ? 2 : 1)
             .opacity(startSharePlayAnimation ? 0 : 1)

@@ -23,8 +23,6 @@ struct AppGameTypeDestinationView: View {
                     .setWideMode()
             case .gameSetup:
                 GameFactory.rootSetupView(root: appModel.gameRoot)
-            case .gameRootSetup:
-                GameFactory.rootSetupView(root: appModel.gameRoot)
             case .editor:
                 TabRootView(appModel: appModel)
                     .navigationRoot(appModel.navigator)
