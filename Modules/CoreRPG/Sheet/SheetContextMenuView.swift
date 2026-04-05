@@ -16,7 +16,7 @@ struct SheetContextMenuView: View {
     let entry: SheetModel
     
     @Environment(\.networkActions) private var networkActions
-    @Environment(\.showGame) private var showGame
+    @Environment(AppNavigationModel.self) private var appNavigationModel
     @Environment(\.gameModus) private var gameModus
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator

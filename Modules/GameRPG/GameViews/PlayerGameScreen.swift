@@ -10,7 +10,7 @@ struct PlayerGameScreen: View {
     let root: GameRoot
     let playerController: PlayerController
     
-    @Environment(\.showGameActions) private var showGameActions
+    @Environment(AppNavigationModel.self) private var appNavigationModel
     
     @State private var gameScreenModel = GameScreenModel()
     @State private var infoState: NetworkModules = .none
@@ -142,7 +142,7 @@ private extension PlayerGameScreen {
     }
 
     func endGame() {
-        showGameActions.show(false)
+        appNavigationModel.resetAppMode(isGame: false)
         Task {
             await root.stopGame()
         }

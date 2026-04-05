@@ -5,9 +5,8 @@ import SwiftUI
 
 @MainActor @Observable
 public final class AppSettingsModel: Sendable {
-    public init(gameModus: GameModus = .edit, showGame: Bool = false) {
+    public init(gameModus: GameModus = .edit) {
         self.gameModus = gameModus
-        self.showGame = showGame
         
         initSettings()
     }
@@ -36,7 +35,6 @@ public final class AppSettingsModel: Sendable {
     // MARK: - Runtime Value only on this device
     
     public var gameModus: GameModus = .edit
-    public var showGame: Bool = false
 
     // MARK: - Settings Value only on this device
 
@@ -135,12 +133,6 @@ public final class AppSettingsModel: Sendable {
         }
     }
     
-    // MARK: - Others
-    
-    public var showGameActions: ShowGameActions {
-        ShowGameActions(show: { @MainActor [weak self] in self?.showGame = $0 })
-    }
-        
     // MARK: - Init Settings
     
     private func initSettings() {

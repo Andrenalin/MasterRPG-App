@@ -23,6 +23,7 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
         content
             // Core models
             .environment(appModel)
+            .environment(appModel.appNavigationModel)
             .environment(appModel.optionKeyDownModel)
             .environment(appModel.settingsModel)
             .environment(appModel.windowStateModel)
@@ -52,7 +53,6 @@ struct AppActionEnvironmentSetUpViewModifier: ViewModifier {
             .environment(\.gameModus, appModel.settingsModel.gameModus)
             .environment(\.mapActions, appModel.mapRoot.mapActions)
             .environment(\.routeActions, appModel.routeActions)
-            .environment(\.showGameActions, appModel.settingsModel.showGameActions)
             .environment(\.valueActions, appModel.characterRoot.valueActions)
     }
 }

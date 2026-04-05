@@ -3,12 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-public enum AppInitialRouteType: Codable, Equatable, Hashable {
-    case initializing
-    case ready
-}
-
-extension AppInitialRouteType: NavigationDestination {
+extension AppInitialRouteType: @retroactive NavigationDestination {
     public var body: some View {
         AppInitialRouteTypeDestinationView(route: self)
     }

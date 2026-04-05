@@ -18,7 +18,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     let linkTypes: LinkType.Type
     
     @Environment(\.networkActions) private var networkActions
-    @Environment(\.showGame) private var showGame
+    @Environment(AppNavigationModel.self) private var appNavigationModel
     @Environment(\.gameModus) private var gameModus
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
@@ -189,7 +189,7 @@ private extension SheetEntryView {
     }
     
     var shareResult: ShareValueResult {
-        ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: entry.source.itemId, childId: entry.source.entryId, module: entry.source.typeId), showGame: showGame, gameModus: gameModus)
+        ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: entry.source.itemId, childId: entry.source.entryId, module: entry.source.typeId), showGame: appNavigationModel.isGameRunning, gameModus: gameModus)
     }
     
     var text: String {

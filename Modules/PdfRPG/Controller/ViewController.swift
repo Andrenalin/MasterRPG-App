@@ -40,6 +40,5 @@ public extension ViewController {
             .padding(32)
             .padding(.top, 64)
             .environment(root)
-            .environment(\.showGame, true)
     }
 }

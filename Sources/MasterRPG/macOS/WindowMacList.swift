@@ -14,6 +14,7 @@ struct WindowMacList: Scene {
     var body: some Scene {
         MenuBarExtra() {
             MenuBarView(appModel: appModel)
+                .environmentSetUp(appModel)
         } label: {
             Label("MasterRPG", systemImage: "music.note.list")
         }

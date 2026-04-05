@@ -16,7 +16,7 @@ public struct TableRootSheet: View {
     let dismissAction: (() -> Void)?
 
     @Environment(\.appSizeMode) private var appSizeMode
-    @Environment(\.showGame) private var showGame
+    @Environment(AppNavigationModel.self) private var appNavigationModel
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) var dismiss
@@ -51,7 +51,7 @@ private extension TableRootSheet {
     }
     
     var shouldShowCloseButton: Bool {
-        valueFor(iOS: (!showGame && appSizeMode == .compact) || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
+        valueFor(iOS: (!appNavigationModel.isGameRunning && appSizeMode == .compact) || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
     }
     
     var closeButton: some View {

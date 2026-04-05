@@ -26,7 +26,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     
     @Environment(\.gameModus) private var gameModus
     @Environment(\.networkActions) private var networkActions
-    @Environment(\.showGame) private var showGame
+    @Environment(AppNavigationModel.self) private var appNavigationModel
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
     
     public var body: some View {
@@ -124,16 +124,16 @@ private extension ItemRowView {
             let features = sharingFeatureActions.features()
             switch root.configurable.module {
             case .photo:
-                return features.photoSharing && showGame
+                return features.photoSharing && appNavigationModel.isGameRunning
             case .audio:
-                return features.audioSharing && showGame
+                return features.audioSharing && appNavigationModel.isGameRunning
             case .space:
-                return features.spaceSharing && showGame
+                return features.spaceSharing && appNavigationModel.isGameRunning
             default:
                 return false
             }
         } else {
-            return showGame
+            return appNavigationModel.isGameRunning
         }
     }
     

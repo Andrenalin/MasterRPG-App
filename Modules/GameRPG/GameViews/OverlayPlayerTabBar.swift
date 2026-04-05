@@ -38,7 +38,7 @@ struct OverlayPlayerTabBar: View {
         if root.gameModel.gameConfig.type != .observer {
             root.characterRoot.viewController.gameView(root: root.characterRoot, select: root.gameModel.selectedCharacter)
                 .environment(\.gameModus, .player)
-                .environment(\.showGame, true)
+                //.environment(\.showGame, true)
                 .gameOverlayTabBarView(value: NetworkModules.game)
                 .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
                 .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
@@ -56,7 +56,7 @@ struct OverlayPlayerTabBar: View {
             if root.gameModel.gameConfig.type != .observer, let characterId = root.gameModel.selectedCharacter {
                 root.characterRoot.viewController.gameView(root: root.characterRoot, select: characterId)
                     .environment(\.gameModus, .player)
-                    .environment(\.showGame, true)
+                    //.environment(\.showGame, true)
             }
         }
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
@@ -74,7 +74,7 @@ struct OverlayPlayerTabBar: View {
         @Bindable var gameScreenModel = gameScreenModel
         root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: true)
             .environment(\.gameModus, .player)
-            .environment(\.showGame, true)
+            //.environment(\.showGame, true)
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading))
 #if !os(visionOS)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))

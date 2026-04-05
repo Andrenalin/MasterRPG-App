@@ -12,12 +12,12 @@ struct SharingActionView: View, Equatable {
     @Environment(\.gameModus) private var gameModus
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
-    @Environment(\.showGame) private var showGame
+    @Environment(AppNavigationModel.self) private var appNavigationModel
     
     @State private var waitForSharing: Bool = false
     
     var body: some View {
-        if showGame {
+        if appNavigationModel.isGameRunning {
             EmptyView()
                 .shareListItem(isActive: canShare, allReported: root.gameController.allPlayersReported(for: itemId), feedBackEnabled: true, secondActionIcon: playIcon) {
                     shareAudio()
@@ -52,14 +52,14 @@ struct SharingActionView: View, Equatable {
     private var canShare: Bool {
         if gameModus == .player {
             let features = sharingFeatureActions.features()
-            return features.audioSharing && showGame
+            return features.audioSharing && appNavigationModel.isGameRunning
         } else {
-            return showGame
+            return appNavigationModel.isGameRunning
         }
     }
     
     private var playIcon: String {
-        if showGame && !root.gameController.allPlayersReported(for: itemId) {
+        if appNavigationModel.isGameRunning && !root.gameController.allPlayersReported(for: itemId) {
             return "square.and.arrow.up"
         }
         return isPlaying ? "pause" : "play"

@@ -8,7 +8,7 @@ struct AudioPlayerView: View {
     @Environment(AudioRootModel.self) private var root
     
     @Environment(\.networkActions) private var networkActions
-    @Environment(\.showGame) private var showGame
+    @Environment(AppNavigationModel.self) private var appNavigationModel
     
     @State private var name: String = String(localized: "No song currently loaded", bundle: .module)
     @State private var playerTime = PlayerTime.zero
@@ -105,7 +105,7 @@ extension AudioPlayerView {
             }
             
             Button {
-                if let currentId = root.audioController.model.currentId, showGame {
+                if let currentId = root.audioController.model.currentId, appNavigationModel.isGameRunning {
                     networkActions?.game(root.gameController.requestPlay(id: currentId), .generic, nil)
                 } else {
                     root.audioController.toggle()

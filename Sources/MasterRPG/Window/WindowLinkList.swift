@@ -82,7 +82,6 @@ struct WindowLinkSetUpViewModifier: ViewModifier {
             .environment(\.networkActions, model.gameRoot.networkActions())
             .environment(\.sharingControlActions, model.gameRoot.sharingControlActions)
             .environment(\.sharingFeatureActions, model.gameRoot.sharingFeatureActions)
-            .environment(\.showGame, model.settingsModel.showGame)
 #if os(macOS)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
 #endif

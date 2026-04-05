@@ -9,7 +9,7 @@ struct DiceInline: View {
 
     @Environment(DiceRootModel.self) private var root
 
-    @Environment(\.showGame) private var showGame
+    @Environment(AppNavigationModel.self) private var appNavigationModel
     @Environment(\.gameModus) private var gameModus
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingControlActions) private var playerSharingActions
@@ -18,7 +18,7 @@ struct DiceInline: View {
 
     var body: some View {
         HStack {
-            if !showGame || gameModus == .player {
+            if !appNavigationModel.isGameRunning || gameModus == .player {
                 Button {
                     withAnimation {
                         root.gameController.gameModel.focusItemIds <=> [itemId]

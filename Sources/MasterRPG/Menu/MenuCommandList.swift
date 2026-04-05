@@ -3,6 +3,7 @@
 #if !os(tvOS)
 
 import AdventureRPG
+import CoreRPG
 import DiceRPG
 import RolePlayGameKit
 import AudioRPG

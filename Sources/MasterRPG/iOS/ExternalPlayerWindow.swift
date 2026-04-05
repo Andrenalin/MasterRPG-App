@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import RolePlayGameKit
 import GameRPG
 import SwiftUI
