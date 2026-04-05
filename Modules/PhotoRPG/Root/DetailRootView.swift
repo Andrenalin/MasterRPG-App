@@ -23,6 +23,7 @@ struct DetailListView: View {
     @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.photo.viewerWindowId, route: { DetailRoute.viewer($0) })
     
     @State private var detailRoute: PhotoDetailRoute?
+    @State private var showFolderDetail: Bool = false
     
     var detailFolderListController: FolderListController {
         let listModel = root.navigationModel.folderModels[model.id]
@@ -39,14 +40,38 @@ struct DetailListView: View {
         content(listController: detailFolderListController)
             .applyIf(appSizeMode == .compact) {
                 $0.navigate(to: $detailRoute)
+                    .onChange(of: detailRoute) { oldRoute, newRoute in
+                        guard detailRoute == nil else { return }
+                        detailFolderListController.listModel.resetListModel()
+                    }
             }
             .onChange(of: detailFolderListController.listModel.subFolderRoute) {
                 guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
                 detailRoute = PhotoDetailRoute.folder(subItemId)
+                if appSizeMode != .compact {
+                    withAnimation {
+                        showFolderDetail = true
+                    }
+                }
             }
-            .onChange(of: detailRoute) { oldRoute, newRoute in
-                guard detailRoute == nil else { return }
-                detailFolderListController.listModel.resetListModel()
+            .overlay {
+                if showFolderDetail {
+                    ManagedNavigationStack {
+                        detailRoute?.padding(.top, 32)
+                            .toolbar {
+                                ToolbarItem(placement: .cancellationAction) {
+                                    Button {
+                                        showFolderDetail = false
+                                        detailRoute = nil
+                                        detailFolderListController.listModel.resetListModel()
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                    }
+                                }
+                            }
+                    }
+                    .transition(.move(edge: .bottom))
+                }
             }
     }
     
