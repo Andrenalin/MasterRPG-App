@@ -42,7 +42,7 @@ struct SpaceViewer: View {
             ZStack(alignment: .bottomLeading) {
                 progressView
                 
-                contentView
+                contentView(geometry: proxy)
                 
                 spaceContentView
             }
@@ -80,7 +80,7 @@ private extension SpaceViewer {
             .opacity(hasLoaded ? 0 : 1)
     }
     
-    var contentView: some View {
+    func contentView(geometry: GeometryProxy) -> some View {
         RealityView { content in
             do {
                 guard let url = await root.itemController.loadableUrl(itemId: id) else {
@@ -90,12 +90,10 @@ private extension SpaceViewer {
                 }
 
                 defer { url.stopAccessingSecurityScopedResource() }
-                guard url.startAccessingSecurityScopedResource() else {
-                    print("Failed to access security-scoped resource: \(url)")
-                    hasLoaded = true
-                    return
-                }
+                let _ = url.startAccessingSecurityScopedResource()
 
+                // doea not work
+                //let objectEntity = try await ModelEntity(contentsOf: url, withName: "3DMaster")
                 let objectEntity = try await Entity(contentsOf: url, withName: "3DMaster")
                 self.objectEntity = objectEntity
                 
@@ -137,6 +135,35 @@ private extension SpaceViewer {
             }
             hasLoaded = true
         } update: { content in
+
+#if os(visionOS)
+//            this is we activate later
+//            let model = objectEntity
+//            
+//            /// The volume's dimensions in local coordinates.
+//            let viewBounds = content.convert(
+//                geometry.frame(in: .local),
+//                from: .local,
+//                to: .scene
+//            )
+//                        
+//            // Set the model's position to the bottom of the visual bounding box.
+//            model.position.y -= model.visualBounds(relativeTo: nil).min.y
+//
+//            // Adjust the model's position on the y-axis to align with the view bounds.
+//            model.position.y += viewBounds.min.y
+//
+//            /// The base size of the model when the scale is 1.
+//            let baseExtents = model.visualBounds(relativeTo: nil).extents / model.scale
+//
+//            /// The scale required for the model to fit the bounds of the volumetric window.
+//            let scale = (Float(viewBounds.extents.x) / baseExtents.x) / 4.0
+//
+//            // Apply the scale to the model to fill the full size of the window.
+//            model.scale = SIMD3<Float>(repeating: scale)
+
+#endif
+            
             objectEntity.transform.rotation = .init(angle: pitch, axis: .left) *
                 .init(angle: yaw, axis: .upward)
             nameEntity.setPosition([0, 2, 0], relativeTo: objectEntity)
