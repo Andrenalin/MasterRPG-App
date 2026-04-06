@@ -2,7 +2,6 @@
 
 import CoreRPG
 import PhotoRPG
-import SwiftData
 import SwiftUI
 
 public enum WeatherRootFactory {
@@ -15,6 +14,6 @@ public enum WeatherRootFactory {
     }
     
     @MainActor public static func detailView(root: WeatherRootModel) -> some View {
-        ItemSplitDetailRootView(root: root.rootController)
+        ItemSplitDetailRouteRootView(root: root.rootController, route: WeatherRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
     }
 }

@@ -5,75 +5,29 @@ import DiceRPG
 import SwiftUI
 
 struct DetailListView: View {
-    init(root: TableRootModel, model: TableModel) {
-        self.root = root
-        self.model = model
-        let listController = root.folderListController.copy(parentModel: model) as! FolderListController
-        self._detailFolderListController = State(wrappedValue: listController)
-    }
-    
     let root: TableRootModel
     let model: TableModel
     
     @Environment(\.navigator) private var navigator
     
-    @State private var detailFolderListController: FolderListController
     @State private var openFileWindowModel = OpenFileWindowModel()
     
     var body: some View {
-        content(listController: detailFolderListController)
-            .onChange(of: detailFolderListController.listModel.subFolderRoute) {
-                guard let subItemId = detailFolderListController.listModel.subFolderRoute else { return }
-                navigator.navigate(to: TableDetailRoute.folder(subItemId), method: .push)
-                detailFolderListController.listModel.subFolderRoute = nil
+        DetailFolderListView(root: root, model: model)
+            .toolbar {
+                toolbarContent
             }
-            .onAppear {
-                root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: model.id, typeId: root.config.module))
-            }
-    }
-    
-    func content(listController: any FolderListControllable) -> some View {
-        ItemDetailRootView(detailListController: listController, selectedModel: model, editorAsBackground: false) {
-        } editor: {
-            detailEditorView
-        } inspector: {
-            EditorLinkView(root: root.rootController, model: model, editorLinkModel: root.editorLinkModel)
-        } entryEditor: {
-            EntryEditorView(editController: root.editController, model: model, linkTypes: LinkTableModuleTransferable.self)
-        }
-        .overlay {
-            if openFileWindowModel.showItem {
-                root.viewController.viewer(root: root, itemId: openFileWindowModel.itemId, configuration: ViewerConfiguration(closeButton: true)) {
-                    openFileWindowModel.showItem = false
-                }
-            }
-        }
-        .toolbar {
-            toolbarContent
-        }
-        .environment(openFileWindowModel)
-        .environment(root.folderListController.cacheListItemModel)
-        .environment(root.listDisplayModel)
-        .environment(root.searchModel)
-        .environment(root.rootController)
-        .tint(root.configurable.module.tint)
-        .accentColor(root.configurable.module.tint)
+            .environment(openFileWindowModel)
+            .environment(root.folderListController.cacheListItemModel)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .environment(root.rootController)
+            .tint(root.configurable.module.tint)
+            .accentColor(root.configurable.module.tint)
     }
 }
 
 private extension DetailListView {
-    @ViewBuilder var detailEditorView: some View {
-        root.diceRoot.viewController.dropChooseView(model: root.editController.tableEditModel.selectionDice)
-            .onChange(of: root.editController.tableEditModel.selectionDice.selection) {
-                withAnimation { root.editController.add(diceId: root.editController.tableEditModel.selectionDice.itemId, itemId: model.id) }
-            }
-            .onChange(of: model.diceId, initial: true) {
-                withAnimation { root.editController.tableEditModel.selectionDice.resetSelection(itemId: model.diceId, entryId: nil) }
-            }
-        
-        SheetRootEditorView(root: root.rootController, linkControllable: root.linkControllable, model: model, module: root.config.module, headerTitle: String(localized: "Entries", bundle: .module).localizedString, linkTypes: LinkTableModuleTransferable.self)
-    }
-    
     @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
             if !model.specialCategory {
@@ -108,13 +62,13 @@ private extension DetailListView {
                 }
             }
         }
-        #if os(iOS)
+#if os(iOS)
         ToolbarItemGroup(placement: .keyboard) {
             ForEach(root.editorLinkModel.modulesRow, id: \.self) { module in
                 addLinkButton(module: module)
             }
         }
-        #endif
+#endif
     }
     
     private func addLinkButton(module: NetworkModules) -> some View {

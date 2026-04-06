@@ -1,0 +1,22 @@
+// @copyright André Trettin
+
+import CoreRPG
+import SwiftUI
+
+struct DetailListView: View {
+    let root: SpaceRootModel
+    let model: SpaceModel
+    
+    @State private var openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.space.viewerWindowId, route: { DetailRoute.viewer($0) })
+    
+    var body: some View {
+        DetailFolderListView(root: root, model: model)
+            .environment(openFileWindowModel)
+            .environment(root.folderListController.cacheListItemModel)
+            .environment(root.listDisplayModel)
+            .environment(root.searchModel)
+            .environment(root.rootController)
+            .tint(root.configurable.module.tint)
+            .accentColor(root.configurable.module.tint)
+    }
+}

@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import SwiftData
 import SwiftUI
 
 public enum SpaceFactory {
@@ -14,6 +13,6 @@ public enum SpaceFactory {
     }
     
     @MainActor @ViewBuilder public static func detailView(root: SpaceRootModel) -> some View {
-        ItemSplitDetailRootView(root: root.rootController)
+        ItemSplitDetailRouteRootView(root: root.rootController, route: SpaceRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
     }
 }

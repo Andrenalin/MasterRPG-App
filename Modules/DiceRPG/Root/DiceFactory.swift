@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import SwiftData
 import SwiftUI
 
 public enum DiceFactory {
@@ -18,7 +17,7 @@ public enum DiceFactory {
         return model.diceImage(for: result)
     }
     
-    @MainActor @ViewBuilder public static func detailView(root: DiceRootModel) -> some View {
-        ItemSplitDetailRootView(root: root.rootController)
+    @MainActor public static func detailView(root: DiceRootModel) -> some View {
+        ItemSplitDetailRouteRootView(root: root.rootController, route: DiceRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
     }
 }

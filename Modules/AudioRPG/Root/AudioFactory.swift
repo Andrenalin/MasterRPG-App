@@ -15,6 +15,6 @@ public enum AudioFactory {
     }
 
     @MainActor @ViewBuilder public static func detailView(root: AudioRootModel) -> some View {
-        ItemSplitDetailRootView(root: root.rootController)
+        ItemSplitDetailRouteRootView(root: root.rootController, route: AudioRoute.detail(root.navigationModel.selectedItemId ?? UUID()))
     }
 }
