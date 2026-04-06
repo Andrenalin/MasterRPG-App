@@ -1,17 +1,18 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 public enum CharacterDetailRoute: Equatable, Hashable, Codable {
     case folder(UUID)
+    case folderInline(UUID)
 }
 
 extension CharacterDetailRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
         case .folder(let id): "folder/\(id.uuidString)"
+        case .folderInline(let id): "folderInline/\(id.uuidString)"
         }
     }
 
@@ -20,6 +21,7 @@ extension CharacterDetailRoute: RawRepresentable {
         guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
         switch token {
         case "folder": self = .folder(uuid)
+        case "folderInline": self = .folder(uuid)
         default: return nil
         }
     }
@@ -27,10 +29,7 @@ extension CharacterDetailRoute: RawRepresentable {
 
 extension CharacterDetailRoute: NavigationDestination {
     public var body: some View {
-        switch self {
-        case .folder(let itemId):
-            CharacterDetailRouteDestinationView(itemId: itemId)
-        }
+        CharacterDetailRouteDestinationView(route: self)
     }
 }
 
@@ -42,20 +41,27 @@ extension CharacterDetailRoute: ItemDetailRoute {
     public func detail() -> UUID? {
         switch self {
             case .folder(let id): return id
+            case .folderInline(let id): return id
         }
     }
 }
 
 struct CharacterDetailRouteDestinationView: View {
-    let itemId: UUID
+    let route: CharacterDetailRoute
 
     @Environment(CharacterRootModel.self) private var root
-    
+
     var body: some View {
-        DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
-            .environment(root.listDisplayModel)
-            .environment(root.searchModel)
-            .environment(root.folderListController.detailInspectorModel)
-            .environment(root.rootController)
+        switch route {
+        case .folder(let itemId):
+            DetailListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
+                .environment(root.listDisplayModel)
+                .environment(root.searchModel)
+                .environment(root.folderListController.detailInspectorModel)
+                .environment(root.rootController)
+
+        case .folderInline(let itemId):
+            DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
+        }
     }
 }

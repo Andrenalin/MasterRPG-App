@@ -16,10 +16,35 @@
       "sourceType": "github",
       "computedHash": "cbe4d9b613dee1737e3c9fd2358a9466037689726d39ec2b39d07598d0984508"
     },
+    "core-data-expert": {
+      "source": "avdlee/core-data-agent-skill",
+      "sourceType": "github",
+      "computedHash": "b8d2829005b1f2fefbaa8af2ea7d7d64e2fbeca2f2172033176ad0780edc3970"
+    },
     "realitykit-visionos-developer": {
       "source": "tomkrikorian/visionosagents",
       "sourceType": "github",
       "computedHash": "ceaaadf38ee556f3ba73f3826d3d4b0a469ddd57a1ea0d9cd8813d52cfb94dc8"
+    },
+    "swift-concurrency": {
+      "source": "avdlee/swift-concurrency-agent-skill",
+      "sourceType": "github",
+      "computedHash": "05ef28a2e0eb4eacd6a958cf07c1f5bd5d600e147c844b26dde42a9bdd2f633d"
+    },
+    "swift-testing-expert": {
+      "source": "avdlee/swift-testing-agent-skill",
+      "sourceType": "github",
+      "computedHash": "ee2a73c7148264cb7e0a0819d3063225541e57162353d97707d9fab830d27ba6"
+    },
+    "swiftui-expert-skill": {
+      "source": "avdlee/swiftui-agent-skill",
+      "sourceType": "github",
+      "computedHash": "6ee49ef533bac7e930efb2e2e5ae61399de9ffb52645df311740cbe6b4108134"
+    },
+    "xcode-compilation-analyzer": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "computedHash": "9857f081cf044a06f93f382ea1a53c3fe9699ac0d0686abbabea67696c2eff6a"
     }
   }
 }
