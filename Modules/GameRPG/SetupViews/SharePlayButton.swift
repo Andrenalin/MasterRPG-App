@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if !os(tvOS)
 import CoreTransferable
 import GroupActivities
 import SwiftUI
@@ -35,8 +36,9 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
     
     var body: some View {
         ZStack {
+#if !os(tvOS)
             ShareLink(item: activity, preview: SharePreview(text)).hidden()
-            
+#endif
             Button(text, systemImage: "shareplay") {
                 if groupStateObserver.isEligibleForGroupSession {
                     Task.detached {
@@ -87,4 +89,7 @@ struct ActivitySharingView<ActivityType: GroupActivity & Sendable>: UIViewContro
 
     func updateUIViewController(_: GroupActivitySharingController, context: Context) {}
 }
+#endif
+
+
 #endif

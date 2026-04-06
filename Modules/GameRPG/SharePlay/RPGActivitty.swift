@@ -6,7 +6,7 @@ import CoreGraphics
 import Foundation
 import GroupActivities
 
-public struct RPGActivity: GroupActivity, Transferable, Sendable {
+public struct RPGActivity: GroupActivity, Sendable {
     public init(adventureTitle: String? = nil) {
         if let adventureTitle {
             self.adventureTitle = adventureTitle
@@ -29,3 +29,7 @@ public struct RPGActivity: GroupActivity, Transferable, Sendable {
         return metadata
     }
 }
+
+#if !os(tvOS)
+extension RPGActivity: Transferable {}
+#endif

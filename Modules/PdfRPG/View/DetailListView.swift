@@ -13,9 +13,11 @@ struct DetailListView: View {
     
     var body: some View {
         DetailFolderListView(root: root, model: model)
+#if !os(tvOS)
             .toolbar {
                 toolbarContent
             }
+#endif
             .environment(openFileWindowModel)
             .environment(root.folderListController.cacheListItemModel)
             .environment(root.listDisplayModel)
@@ -24,9 +26,9 @@ struct DetailListView: View {
             .tint(root.configurable.module.tint)
             .accentColor(root.configurable.module.tint)
     }
-    
-    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
+
 #if !os(tvOS)
+    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
             ToolbarItem(placement: .secondaryAction) {
                 if model.url != nil && !model.specialCategory {
                     Button {
@@ -41,8 +43,9 @@ struct DetailListView: View {
                     .disabled(openFileWindowModel.showItem)
                 }
             }
-#endif
     }
+#endif
+
 }
 
 #Preview(traits: .mockData) {
