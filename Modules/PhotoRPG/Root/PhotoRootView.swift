@@ -30,16 +30,16 @@ struct StateRestorationView: View {
     @SceneStorage("PhotoDisplayModel") private var displayMode: ListDisplayModel.DisplayMode = .medium
     @SceneStorage("PhotoListModel") private var listMode: ListDisplayModel.ListMode = .list
 
-    @State private var photoRoute: PhotoRoute?
+    @State private var route: PhotoRoute?
 
     var body: some View {
         Color.clear
             .syncListDisplay(listControllable: root.folderListController, displayMode: $displayMode, listMode: $listMode)
             .applyIf(appSizeMode == .compact) {
-                $0.navigate(to: $photoRoute)
-                    .onChange(of: photoRoute) {
+                $0.navigate(to: $route)
+                    .onChange(of: route) {
                         // Detect back navigation: when photoRoute becomes nil, user navigated back
-                        if photoRoute == nil && root.navigationModel.selectedItemId != nil {
+                        if route == nil && root.navigationModel.selectedItemId != nil {
                             // Clear selection when back navigation happened
                             root.navigationModel.selectedItemId = nil
                         }
@@ -48,14 +48,14 @@ struct StateRestorationView: View {
             .onChange(of: root.navigationModel.selectedItemId) {
                 // Sync AppNavigationModel -> SceneStorage and photoRoute
                 if let itemId = root.navigationModel.selectedItemId {
-                    photoRoute <=> PhotoRoute.detail(itemId)
+                    route <=> PhotoRoute.detail(itemId)
 
                     selectedItemId <=> itemId.uuidString
                     if root.folderListController.listModel.selectedItemId != itemId {
                         root.folderListController.listModel.set(selectedItemId: itemId)
                     }
                 } else {
-                    photoRoute <=> nil
+                    route <=> nil
                     selectedItemId <=> nil
                     if root.folderListController.listModel.selected != nil {
                         root.folderListController.listModel.update(selection: Set())

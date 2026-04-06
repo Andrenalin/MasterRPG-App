@@ -57,9 +57,7 @@ public final class PhotoRootModel {
         if let dataController, let context {
             _syncDataController = SyncDataController(context: context, dataController: dataController, editController: editController)
             Task {
-                Task {
                 syncDataController?.start()
-            }
             }
         }
     }

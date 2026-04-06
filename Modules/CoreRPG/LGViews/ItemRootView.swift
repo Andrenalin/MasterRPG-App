@@ -46,7 +46,6 @@ public struct ItemSplitDetailRouteRootView<Route: NavigationDestination>: View {
         ManagedNavigationStack(name: "Split-\(root.configurable.module.token)") {
             if listModel.selectedItemId != nil {
                 route
-                //root.folderListControllable.detailDestination(for: itemId).asAnyView()
             } else {
                 SplitContentUnavailableView(module: root.configurable.module)
             }
