@@ -33,6 +33,9 @@ struct MasterStartView: View {
                 startSharePlayAnimation = sharePlayStore.canActivateSharePlay
             }
             
+            SharePlayButton("Play RPG Online", activity: RPGActivity())
+                .opacity(startSharePlayAnimation ? 0 : 1)
+            
             ImportDataModels(importController: root.adventureRoot.gameImportControllable, isSaveGame: true) {
                 await startGame()
             }

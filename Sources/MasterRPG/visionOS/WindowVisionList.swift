@@ -7,6 +7,7 @@ import RolePlayGameKit
 import PhotoRPG
 import SpaceRPG
 import SwiftUI
+import GroupActivities
 
 struct WindowVisionList: Scene {
     let appModel: AppModel
@@ -43,8 +44,8 @@ struct WindowVisionList: Scene {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.spaceRoot.viewController.spaceImmersionWindow(root: appModel.spaceRoot, id: selection?.itemId ?? UUID(), defaultSize: defaultSize)
                     .environment(appModel.windowStateModel)
+                    .groupActivityAssociation(selection != nil ? .primary(WindowIdentifier.spaceViewer.rawValue) : nil)
             }
-            .handlesExternalEvents(preferring: [], allowing: [])
         }
         .defaultWindowPlacementAll( .above(NetworkModules.adventure.linkWindowId, fallback: WindowIdentifier.game.rawValue))
         //.windowStyle(.volumetric)

@@ -1,10 +1,13 @@
 // @copyright André Trettin
 
-import CoreRPG
 import AppIntents
+import CoreRPG
+import GameRPG
+import GroupActivities
 import RolePlayGameKit
 import SwiftUI
 import os.log
+
 
 #if os(macOS)
 typealias BaseWindow = Window
@@ -71,6 +74,9 @@ struct MasterRPGApp: App {
                 .modifier(UserSettingsViewModifier(appModel: appModel))
                 .setAppSizeMode()
                 .environmentSetUp(appModel)
+#if os(visionOS)
+                .groupActivityAssociation(.primary(WindowIdentifier.game.rawValue))
+#endif
         }
         .commands {
             MenuMainCommand(appModel: appModel)
