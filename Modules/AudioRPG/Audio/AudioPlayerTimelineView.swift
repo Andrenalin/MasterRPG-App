@@ -64,11 +64,13 @@ struct AudioPlayerTimelineView: View {
                 scrubberOverlay
             }
             .contentShape(Rectangle())
+        #if !os(tvOS)
             .onHover { hovering in
                 withAnimation(Constants.hoverSpring) {
                     viewModel.isScubberVisible = hovering
                 }
             }
+        #endif
             .task(id: currentItem?.id) {
                 viewModel.loadAlbumArtwork(for: currentItem)
             }
